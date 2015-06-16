@@ -8,7 +8,12 @@
     <artifactId>meeting-organizer</artifactId>
     <version>1.0-SNAPSHOT</version>
     <name>Grassroot Meeting Organizer</name>
+    <url>http://www.grassroot.org.za/</url>
 
+    <organization>
+        <name>Grassroot</name>
+        <url>http://www.grassroot.org.za/</url>
+    </organization>
 
 
 
