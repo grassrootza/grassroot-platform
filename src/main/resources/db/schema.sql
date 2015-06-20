@@ -2,6 +2,7 @@ CREATE TABLE "user"
 (
   id                SERIAL PRIMARY KEY      NOT NULL,
   phone_number      VARCHAR(20)             NOT NULL,
+  display_name      VARCHAR(70)             NULL,
   created_date_time TIMESTAMP DEFAULT now() NOT NULL
 );
 CREATE TABLE "group"

@@ -41,7 +41,7 @@ public class AatApiTestControllerIT {
 
     @Test
     public void getHello() throws Exception {
-        final URI requesUri = base.path("question1").build().toUri();
+        final URI requesUri = base.path("ussd/test_question").build().toUri();
         ResponseEntity<String> response = template.getForEntity(requesUri, String.class);
 
         assertThat(response.getStatusCode(),is(OK));
