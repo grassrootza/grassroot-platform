@@ -2,7 +2,6 @@ package za.org.grassroot.meeting_organizer.service.repository;
 
 import com.github.springtestdbunit.DbUnitTestExecutionListener;
 import com.github.springtestdbunit.annotation.DatabaseSetup;
-import com.github.springtestdbunit.annotation.DbUnitConfiguration;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,17 +10,16 @@ import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.TestExecutionListeners.MergeMode;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.meeting_organizer.Application;
-import za.org.grassroot.meeting_organizer.IntegrationTestConfig;
+import za.org.grassroot.meeting_organizer.DbUnitConfig;
 import za.org.grassroot.meeting_organizer.model.User;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {Application.class, IntegrationTestConfig.class})
+@SpringApplicationConfiguration(classes = {Application.class, DbUnitConfig.class})
 @TestExecutionListeners( listeners = DbUnitTestExecutionListener.class, mergeMode = MergeMode.MERGE_WITH_DEFAULTS)
 @DatabaseSetup("/db/empty_tables.xml") //init the database with empty tables before each test
-@DbUnitConfiguration(databaseConnection = "dbUnitDatabaseConnection")
 public class UserRepositoryIT {
 
     @Autowired

@@ -8,23 +8,17 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class IntegrationTestConfig {
+public class DbUnitConfig {
 
     @Bean
-    public DatabaseDataSourceConnectionFactoryBean dbUnitDatabaseConnection(DataSource dataSource, final DatabaseConfigBean dbUnitDatabaseConfig) {
-
-        return new DatabaseDataSourceConnectionFactoryBean(dataSource) {{
-            setDatabaseConfig(dbUnitDatabaseConfig);
-        }};
-    }
-
-    @Bean
-    public DatabaseConfigBean dbUnitDatabaseConfig() {
-
-        return new DatabaseConfigBean(){{
+    public DatabaseDataSourceConnectionFactoryBean dbUnitDatabaseConnection(DataSource dataSource) {
+        final DatabaseConfigBean databaseConfig = new DatabaseConfigBean() {{
             setCaseSensitiveTableNames(true);
             setQualifiedTableNames(true);
             setEscapePattern("\"");
+        }};
+        return new DatabaseDataSourceConnectionFactoryBean(dataSource) {{
+            setDatabaseConfig(databaseConfig);
         }};
     }
 }
