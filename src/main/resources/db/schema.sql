@@ -8,7 +8,7 @@ CREATE TABLE "group"
 (
   id                SERIAL PRIMARY KEY      NOT NULL,
   name              VARCHAR                 NOT NULL,
-  created_by_user   INT                     NOT NULL,
+  created_by_user   INT                     NULL,
   created_date_time TIMESTAMP DEFAULT now() NOT NULL
 );
 CREATE TABLE event

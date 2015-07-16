@@ -38,6 +38,9 @@ local.properties
 
 ## Plugin-specific files:
 out/
-.idea_modules/
 .idea/
+.idea_modules/
 atlassian-ide-plugin.xml
+
+## Maven build folder
+.target/
