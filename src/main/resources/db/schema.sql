@@ -17,6 +17,7 @@ CREATE TABLE event
   location          VARCHAR                 NOT NULL,
   start_date_time   TIMESTAMP               NOT NULL,
   created_by_user   INT                     NOT NULL,
+  applies_to_group  INT                     NOT NULL,
   created_date_time TIMESTAMP DEFAULT now() NOT NULL
 );
 CREATE TABLE group_user_membership

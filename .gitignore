@@ -39,4 +39,5 @@ local.properties
 ## Plugin-specific files:
 out/
 .idea_modules/
+.idea/
 atlassian-ide-plugin.xml
