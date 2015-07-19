@@ -12,6 +12,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.meeting_organizer.Application;
 import za.org.grassroot.meeting_organizer.DbUnitConfig;
 import za.org.grassroot.meeting_organizer.model.Group;
+import za.org.grassroot.meeting_organizer.model.User;
 
 import static org.junit.Assert.*;
 import static org.hamcrest.CoreMatchers.is;
@@ -25,12 +26,23 @@ public class GroupRepositoryIT {
     @Autowired
     GroupRepository groupRepository;
 
+    @Autowired
+    UserRepository userRepository; // LSJ: there may be a less expensive way to do this?
+
+    User userToDoTests;
+
     @Test
     public void shouldSaveAndRetrieveGroupData() throws Exception {
         assertThat(groupRepository.count(), is(0L));
 
         Group groupToCreate = new Group();
+
+        User userToDoTests = new User();
+        userToDoTests.setPhoneNumber("56789");
+        userRepository.save(userToDoTests);
+
         groupToCreate.setGroupName("TestGroup");
+        groupToCreate.setCreatedByUser(userToDoTests);
         assertNull(groupToCreate.getId());
         assertNull(groupToCreate.getCreatedDateTime());
         groupRepository.save(groupToCreate);
@@ -40,6 +52,7 @@ public class GroupRepositoryIT {
         assertNotNull(groupFromDb.getId());
         assertNotNull(groupFromDb.getCreatedDateTime());
         assertThat(groupFromDb.getGroupName(), is("TestGroup"));
+        assertThat(groupFromDb.getCreatedByUser().getPhoneNumber(), is("56789"));
     }
 
 }

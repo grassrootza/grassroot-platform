@@ -44,3 +44,4 @@ atlassian-ide-plugin.xml
 
 ## Maven build folder
 .target/
+target/
