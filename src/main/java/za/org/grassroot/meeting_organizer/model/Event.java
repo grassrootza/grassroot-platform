@@ -10,13 +10,7 @@ package za.org.grassroot.meeting_organizer.model;
  */
 
 import java.sql.Timestamp;
-import javax.persistence.Basic;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 
 @Entity
 @Table(name="event")
@@ -25,6 +19,9 @@ public class Event {
     private Integer id;
     private Timestamp createdDateTime;
     private Timestamp eventStartDateTime;
+
+    private User createdByUser;
+    private Group appliesToGroup;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -50,4 +47,16 @@ public class Event {
     public Timestamp getCreatedDateTime() { return createdDateTime; }
 
     public void setCreatedDateTime(Timestamp createdDateTime) { this.createdDateTime = createdDateTime; }
+
+    @ManyToOne
+    @JoinColumn(name="created_by_user")
+    public User getCreatedByUser() { return createdByUser; }
+
+    public void setCreatedByUser(User createdByUser) { this.createdByUser = createdByUser; }
+
+    @ManyToOne
+    @JoinColumn(name="applies_to_group")
+    public Group getAppliesToGroup() { return appliesToGroup; }
+
+    public void setAppliesToGroup(Group appliesToGroup) { this.appliesToGroup = appliesToGroup; }
 }
