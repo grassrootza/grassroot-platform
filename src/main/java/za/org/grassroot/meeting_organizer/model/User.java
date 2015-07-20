@@ -1,13 +1,8 @@
 package za.org.grassroot.meeting_organizer.model;
 
 import java.sql.Timestamp;
-import javax.persistence.Basic;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import java.util.List;
+import javax.persistence.*;
 
 //todo: add validation to all model classes
 //todo: use java 8 date and time types and a JPA converter instead of Timestamp type
@@ -55,6 +50,12 @@ public class User {
     public void setCreatedDateTime(Timestamp createdDateTime) {
         this.createdDateTime = createdDateTime;
     }
+
+    @OneToMany(mappedBy = "user")
+    private List<Group> groupsCreated;
+
+    @OneToMany(mappedBy = "user")
+    private List<Event> eventsCreated;
 
     @Override
     public int hashCode() {

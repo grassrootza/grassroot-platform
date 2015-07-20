@@ -33,7 +33,8 @@ CREATE TABLE event_user_invitation
   created_by_user   INT                     NOT NULL,
   created_date_time TIMESTAMP DEFAULT now() NOT NULL
 );
-ALTER TABLE event ADD FOREIGN KEY (created_by_user) REFERENCES "user" (id);
+ALTER TABLE event ADD FOREIGN KEY (created_by_user) REFERENCES "user" (id) ON DELETE NO ACTION;
+ALTER TABLE event ADD FOREIGN KEY (applies_to_group) REFERENCES "group" (id);
 ALTER TABLE event_user_invitation ADD FOREIGN KEY (event_id) REFERENCES event (id);
 ALTER TABLE event_user_invitation ADD FOREIGN KEY (created_by_user) REFERENCES "user" (id);
 ALTER TABLE event_user_invitation ADD FOREIGN KEY (user_id) REFERENCES "user" (id);

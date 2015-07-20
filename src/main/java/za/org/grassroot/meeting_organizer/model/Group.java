@@ -6,6 +6,7 @@ package za.org.grassroot.meeting_organizer.model;
  */
 
 import java.sql.Timestamp;
+import java.util.List;
 import javax.persistence.*;
 
 @Entity
@@ -40,6 +41,9 @@ public class Group {
     public User getCreatedByUser() { return this.createdByUser; }
 
     public void setCreatedByUser(User createdByUser) { this.createdByUser = createdByUser; }
+
+    @OneToMany(mappedBy = "group")
+    private List<Event> eventsApplied;
 
     // To do: add hash tag method, analogous to User
 

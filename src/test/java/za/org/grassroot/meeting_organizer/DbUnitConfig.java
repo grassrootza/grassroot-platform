@@ -16,6 +16,7 @@ public class DbUnitConfig {
             setCaseSensitiveTableNames(true);
             setQualifiedTableNames(true);
             setEscapePattern("\"");
+
         }};
         return new DatabaseDataSourceConnectionFactoryBean(dataSource) {{
             setDatabaseConfig(databaseConfig);
