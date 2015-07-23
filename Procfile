@@ -1,1 +1,1 @@
-web:    java -cp target/classes:target/dependency/* Application
+web:    java -cp target/classes:target/dependency/* za.org.grassroot.Application
