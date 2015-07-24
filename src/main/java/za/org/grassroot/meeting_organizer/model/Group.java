@@ -17,6 +17,8 @@ public class Group {
     private Timestamp createdDateTime;
     private User createdByUser;
 
+    private List<User> groupMembers;
+
     @Basic
     @Column(name = "name", nullable = false, length = 50)
     public String getGroupName() { return groupName; }
@@ -44,6 +46,11 @@ public class Group {
 
     @OneToMany(mappedBy = "group")
     private List<Event> eventsApplied;
+
+    @ManyToMany(cascade = CascadeType.ALL)
+    @JoinTable(name="group_user_membership", joinColumns=@JoinColumn(name="group_id"), inverseJoinColumns=@JoinColumn(name="user_id"))
+    public List<User> getGroupMembers() { return groupMembers; }
+    public void setGroupMembers(List<User> groupMembers) { this.groupMembers = groupMembers; }
 
     // To do: add hash tag method, analogous to User
 
