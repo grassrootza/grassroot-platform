@@ -2,30 +2,20 @@ package za.org.grassroot.meeting_organizer.model;
 
 /**
  * Created by luke on 2015/07/16.
- * Modified by luke on 2015/07/22.
- * Created many-to-many relationship. Using List implementation of Collection so we can iterate later. But not sure if Set may be better.
- * Assumed from SQL schema table names that we are going to have Group as owner and User as inverse, which makes sense to me.
+ * Lots of to-dos, principally: check/validate the "created_by_user" relationship; do the hash code
  */
-
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
 
 import java.sql.Timestamp;
 import java.util.List;
-import java.util.Set;
 import javax.persistence.*;
 
 @Entity
 @Table(name="\"group\"") // quoting table name in case "group" is a reserved keyword
-@EqualsAndHashCode
-@ToString
 public class Group {
     private String groupName;
     private Integer id;
     private Timestamp createdDateTime;
     private User createdByUser;
-
-    private List<User> groupMembers;
 
     @Basic
     @Column(name = "name", nullable = false, length = 50)
@@ -55,9 +45,19 @@ public class Group {
     @OneToMany(mappedBy = "group")
     private List<Event> eventsApplied;
 
-    @ManyToMany(cascade = CascadeType.ALL)
-    @JoinTable(name="group_user_membership", joinColumns=@JoinColumn(name="group_id"), inverseJoinColumns=@JoinColumn(name="user_id"))
-    public List<User> getGroupMembers() { return groupMembers; }
-    public void setGroupMembers(List<User> groupMembers) { this.groupMembers = groupMembers; }
+    // To do: add hash tag method, analogous to User
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) { return true; }
+        if (o == null || getClass() != o.getClass()) { return false; }
+
+        final Group group = (Group) o;
+
+        if (createdDateTime != null ? !createdDateTime.equals(group.createdDateTime) : group.createdDateTime != null) { return false; }
+        if (id != null ? !id.equals(group.id) : group.id != null) { return false; }
+        if (groupName != null ? !groupName.equals(group.groupName) : group.groupName != null) { return false; }
+
+        return true;
+    }
 }

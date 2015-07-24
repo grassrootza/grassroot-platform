@@ -9,16 +9,11 @@ package za.org.grassroot.meeting_organizer.model;
  * Other: All to-dos as for User class
  */
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-
 import java.sql.Timestamp;
 import javax.persistence.*;
 
 @Entity
 @Table(name="event")
-@EqualsAndHashCode
-@ToString
 public class Event {
     private String eventLocation;
     private Integer id;
