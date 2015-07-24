@@ -2,9 +2,7 @@ package za.org.grassroot.meeting_organizer.controller;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -14,7 +12,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.meeting_organizer.model.AAT.Option;
 import za.org.grassroot.meeting_organizer.model.AAT.Request;
+import za.org.grassroot.meeting_organizer.model.Group;
 import za.org.grassroot.meeting_organizer.model.User;
+import za.org.grassroot.meeting_organizer.service.repository.GroupRepository;
 import za.org.grassroot.meeting_organizer.service.repository.UserRepository;
 
 import javax.print.URIException;
@@ -37,6 +37,9 @@ public class AatApiTestController {
 
     @Autowired
     UserRepository userRepository;
+
+    @Autowired
+    GroupRepository groupRepository;
 
     @RequestMapping(value = "/ussd/test_question")
     @ResponseBody
@@ -92,9 +95,19 @@ public class AatApiTestController {
         String phoneNumber = convertPhoneNumber(inputNumber);
         if (userRepository.findByPhoneNumber(phoneNumber).isEmpty()) return noUserError;
 
-        String returnMessage = "You typed in this: " + userResponse;
+        Group groupToMessage = new Group();
+        groupToMessage.setCreatedByUser(userRepository.findByPhoneNumber(phoneNumber).iterator().next());
+
+        // todo: make a more informed decision about whether this should be a HashSet or an ArrayList or ...
+        List<User> usersToCreateGroup = usersFromNumbers(userResponse);
+
+        List<String> transientDisplay = new ArrayList<String>();
+        for (User userToDisplay : usersToCreateGroup)
+            transientDisplay.add(userToDisplay.getPhoneNumber());
+
+        String returnMessage = "You typed in these numbers: " + String.join(" ", transientDisplay) +
+                ". We'll do something with them soon, promise.";
         return new Request(returnMessage, new ArrayList<Option>());
-        // todo: turn the if user not found -> error block above into a small aux function;
     }
 
     @RequestMapping(value = { "/ussd/error", "/ussd/vote", "/ussd/log", "/ussd/user", "ussd/group" })
@@ -119,5 +132,26 @@ public class AatApiTestController {
         }
     }
 
+    public List<User> usersFromNumbers(String listOfNumbers) {
+        List<User> usersToReturn = new ArrayList<User>();
 
+        // todo: uh, make less strong assumptions that users are perfectly well behaved ...
+
+        listOfNumbers = listOfNumbers.replace("\"", ""); // in case the response is passed with quotes around it
+        List<String> splitNumbers = Arrays.asList(listOfNumbers.split(" "));
+        List<User> usersToAdd = new ArrayList<User>();
+
+        for (String inputNumber : splitNumbers) {
+            String phoneNumber = convertPhoneNumber(inputNumber);
+            if (userRepository.findByPhoneNumber(phoneNumber).isEmpty()) {
+                User userToCreate = new User();
+                userToCreate.setPhoneNumber(phoneNumber);
+                // userRepository.save(userToCreate); # removing in deployment, so don't swamp Heroku DB with crud
+                usersToAdd.add(userToCreate);
+            } else {
+                usersToAdd.add(userRepository.findByPhoneNumber(phoneNumber).iterator().next());
+            }
+        }
+        return usersToAdd;
+    }
 }
