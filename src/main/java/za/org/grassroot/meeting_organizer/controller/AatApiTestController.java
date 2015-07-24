@@ -8,6 +8,7 @@ import java.util.Collections;
 
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.meeting_organizer.model.AAT.Option;
@@ -43,6 +44,13 @@ public class AatApiTestController {
         final Option userProfile = new Option("Change my profile", 4, 4, new URI(baseURI + "user"), true);
         final Option manageGroups = new Option("Manage groups", 5, 5, new URI(baseURI + "group"), true);
         return new Request(welcomeMessage, Arrays.asList(meetingOrg, voteTake, logAction, userProfile, manageGroups));
+    }
+
+    @RequestMapping(value = "/ussd/mtg")
+    @ResponseBody
+    public Request meetingOrg(@RequestParam(value="msisdn", required=true) String phoneNumber) {
+        String returnMessage = "Okay, we'll set up a meeting. Your number is" + phoneNumber;
+        return new Request(returnMessage, new ArrayList<Option>());
     }
 
     @RequestMapping(value = { "/ussd/error", "/ussd/mtg", "/ussd/vote", "/ussd/log", "/ussd/user", "ussd/group" })
