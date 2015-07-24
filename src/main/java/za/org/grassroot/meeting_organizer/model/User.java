@@ -20,6 +20,8 @@ public class User {
     private Integer id;
     private Timestamp createdDateTime;
 
+    private List<Group> groupsPartOf;
+
     @Basic
     @Column(name = "phone_number", nullable = false, length = 20)
     public String getPhoneNumber() {
@@ -56,6 +58,10 @@ public class User {
 
     @OneToMany(mappedBy = "user")
     private List<Event> eventsCreated;
+
+    @ManyToMany(cascade = CascadeType.ALL, mappedBy = "groupMembers") // not sure which cascade type is going to be best
+    public List<Group> getGroupsPartOf() { return groupsPartOf; }
+    public void setGroupsPartOf(List<Group> groupsPartOf) { this.groupsPartOf = groupsPartOf; }
 
     @Override
     public int hashCode() {

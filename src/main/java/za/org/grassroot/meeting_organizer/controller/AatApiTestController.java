@@ -95,18 +95,27 @@ public class AatApiTestController {
         String phoneNumber = convertPhoneNumber(inputNumber);
         if (userRepository.findByPhoneNumber(phoneNumber).isEmpty()) return noUserError;
 
-        Group groupToMessage = new Group();
-        groupToMessage.setCreatedByUser(userRepository.findByPhoneNumber(phoneNumber).iterator().next());
+        // todo: consider some way to check if group "exists", needs a solid "equals" logic
+        // todo: defaulting to using Lists as Collection type for many-many, but that's an amateur decision ...
 
-        // todo: make a more informed decision about whether this should be a HashSet or an ArrayList or ...
+        Group groupToMessage = new Group();
+        User groupCreator = userRepository.findByPhoneNumber(phoneNumber).iterator().next();
+        groupToMessage.setCreatedByUser(groupCreator);
+        groupToMessage.setGroupName(""); // column not-null, so use blank string as default
+
         List<User> usersToCreateGroup = usersFromNumbers(userResponse);
+        usersToCreateGroup.add(groupCreator); // So that later actions pick up whoever created group
+        groupToMessage.setGroupMembers(usersToCreateGroup);
+
+        groupRepository.save(groupToMessage);
 
         List<String> transientDisplay = new ArrayList<String>();
         for (User userToDisplay : usersToCreateGroup)
             transientDisplay.add(userToDisplay.getPhoneNumber());
 
-        String returnMessage = "You typed in these numbers: " + String.join(" ", transientDisplay) +
-                ". We'll do something with them soon, promise.";
+        String returnMessage = "We just created a group with these numbers: " + String.join(" ", transientDisplay) +
+                ". We'll do something with it soon, promise.";
+
         return new Request(returnMessage, new ArrayList<Option>());
     }
 
@@ -146,7 +155,7 @@ public class AatApiTestController {
             if (userRepository.findByPhoneNumber(phoneNumber).isEmpty()) {
                 User userToCreate = new User();
                 userToCreate.setPhoneNumber(phoneNumber);
-                // userRepository.save(userToCreate); # removing in deployment, so don't swamp Heroku DB with crud
+                userRepository.save(userToCreate); // removing in deployment, so don't swamp Heroku DB with crud
                 usersToAdd.add(userToCreate);
             } else {
                 usersToAdd.add(userRepository.findByPhoneNumber(phoneNumber).iterator().next());
