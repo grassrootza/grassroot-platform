@@ -20,6 +20,7 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
  * Controller to play around with the AAT api
  * To do: abstract the tuples of menu option and URL redirect
  * To do: abstract out the messages, so can introduce a dictionary mechanism of some sort to deal with languages
+ * To do: write a phone number parsing method / converter so we get them consistent. Coming in as 27....
  */
 @RequestMapping(method = GET, produces = MediaType.APPLICATION_XML_VALUE)
 @RestController
@@ -36,8 +37,9 @@ public class AatApiTestController {
 
     @RequestMapping(value = "/ussd/start")
     @ResponseBody
-    public Request startMenu() throws URISyntaxException {
-        String welcomeMessage = "Hello! Welcome to GrassRoot. What do you want to do?";
+    public Request startMenu(@RequestParam(value="msisdn") String phoneNumber) throws URISyntaxException {
+        // So we need to create a user from this. Here we go.
+        String welcomeMessage = "Hello! Welcome to GrassRoot. Your number is " + phoneNumber + ". What do you want to do?";
         final Option meetingOrg = new Option("Call a meeting", 1,1, new URI(baseURI + "mtg"),true);
         final Option voteTake = new Option("Take a vote", 2,2, new URI(baseURI + "vote"),true);
         final Option logAction = new Option("Record an action", 3,3, new URI(baseURI + "log"),true);
@@ -49,7 +51,8 @@ public class AatApiTestController {
     @RequestMapping(value = "/ussd/mtg")
     @ResponseBody
     public Request meetingOrg(@RequestParam(value="msisdn", required=true) String phoneNumber) {
-        String returnMessage = "Okay, we'll set up a meeting. Your number is" + phoneNumber;
+        // We'll use the phone number to persist the user.
+        String returnMessage = "Okay, we'll set up a meeting.";
         return new Request(returnMessage, new ArrayList<Option>());
     }
 
