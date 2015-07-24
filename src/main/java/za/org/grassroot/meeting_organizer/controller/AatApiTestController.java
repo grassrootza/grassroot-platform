@@ -53,7 +53,7 @@ public class AatApiTestController {
         return new Request(returnMessage, new ArrayList<Option>());
     }
 
-    @RequestMapping(value = { "/ussd/error", "/ussd/mtg", "/ussd/vote", "/ussd/log", "/ussd/user", "ussd/group" })
+    @RequestMapping(value = { "/ussd/error", "/ussd/vote", "/ussd/log", "/ussd/user", "ussd/group" })
     @ResponseBody
     public Request notBuilt() throws URISyntaxException {
         String errorMessage = "Sorry! We haven't built that yet. We're working on it.";
