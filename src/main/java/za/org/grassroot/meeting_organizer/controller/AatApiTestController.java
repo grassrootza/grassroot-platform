@@ -33,6 +33,7 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 public class AatApiTestController {
 
     String baseURI = "http://meeting-organizer.herokuapp.com/ussd/";
+    Request noUserError = new Request("Error! Couldn't find you as a user.", new ArrayList<Option>());
 
     @Autowired
     UserRepository userRepository;
@@ -71,20 +72,32 @@ public class AatApiTestController {
     @RequestMapping(value = "/ussd/mtg")
     @ResponseBody
     public Request meetingOrg(@RequestParam(value="msisdn", required=true) String inputNumber) throws URISyntaxException {
+
         String phoneNumber = convertPhoneNumber(inputNumber);
-        if (userRepository.findByPhoneNumber(phoneNumber).isEmpty()) {
-            return new Request("Error! This shouldn't happen.", new ArrayList<Option>());
-        } else {
-            // note: not calling the instance of User as we don't use anything ... yet
-            // todo: look up the user's groups, and give a menu of those, if they exist (w/ scrolling)
-            // todo: Add an example in promptMessage, but make sure not too long (already too much, maybe).
-            String promptMessage = "Okay, we'll set up a meeting. Please enter the numbers of the people to invite.";
-            Option freeText = new Option("", 1, 1, new URI(baseURI + "mtg2"), true);
-            return new Request(promptMessage, Collections.singletonList(freeText));
-        }
+        if (userRepository.findByPhoneNumber(phoneNumber).isEmpty()) return noUserError;
+
+        // note: not calling the instance of User as we don't use anything ... yet
+        // todo: look up the user's groups, and give a menu of those, if they exist (w/ scrolling)
+        // todo: Add an example in promptMessage, but make sure not too long (already too much, maybe).
+        String promptMessage = "Okay, we'll set up a meeting. Please enter the numbers of the people to invite.";
+        Option freeText = new Option("", 1, 1, new URI(baseURI + "mtg2"), false);
+        return new Request(promptMessage, Collections.singletonList(freeText));
     }
 
-    @RequestMapping(value = { "/ussd/error", "ussd/mtg2", "/ussd/vote", "/ussd/log", "/ussd/user", "ussd/group" })
+    @RequestMapping(value = "/ussd/mtg2")
+    @ResponseBody
+    public Request saveNumbers(@RequestParam(value="msisdn", required=true) String inputNumber,
+                               @RequestParam(value="request", required=true) String userResponse) throws URISyntaxException {
+
+        String phoneNumber = convertPhoneNumber(inputNumber);
+        if (userRepository.findByPhoneNumber(phoneNumber).isEmpty()) return noUserError;
+
+        String returnMessage = "You typed in this: " + userResponse;
+        return new Request(returnMessage, new ArrayList<Option>());
+        // todo: turn the if user not found -> error block above into a small aux function;
+    }
+
+    @RequestMapping(value = { "/ussd/error", "/ussd/vote", "/ussd/log", "/ussd/user", "ussd/group" })
     @ResponseBody
     public Request notBuilt() throws URISyntaxException {
         String errorMessage = "Sorry! We haven't built that yet. We're working on it.";
