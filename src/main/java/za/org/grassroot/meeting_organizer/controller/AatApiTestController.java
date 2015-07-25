@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.meeting_organizer.model.AAT.Option;
 import za.org.grassroot.meeting_organizer.model.AAT.Request;
 import za.org.grassroot.meeting_organizer.model.Group;
@@ -17,7 +19,9 @@ import za.org.grassroot.meeting_organizer.model.User;
 import za.org.grassroot.meeting_organizer.service.repository.GroupRepository;
 import za.org.grassroot.meeting_organizer.service.repository.UserRepository;
 
+import javax.net.ssl.HttpsURLConnection;
 import javax.print.URIException;
+import javax.servlet.http.HttpServletRequest;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
@@ -33,6 +37,10 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 public class AatApiTestController {
 
     String baseURI = "http://meeting-organizer.herokuapp.com/ussd/";
+    private UriComponentsBuilder smsBaseUri = UriComponentsBuilder.newInstance().scheme("https").host("xml2sms.gsm.co.za");
+    private String smsUsername = ""; // todo: set these when get from AAT
+    private String smsPassword = ""; // todo: set these when get from AAT
+
     Request noUserError = new Request("Error! Couldn't find you as a user.", new ArrayList<Option>());
 
     @Autowired
@@ -53,15 +61,7 @@ public class AatApiTestController {
     public Request startMenu(@RequestParam(value="msisdn") String passedNumber) throws URISyntaxException {
         // So we need to create a user from this. Here we go.
         String phoneNumber = convertPhoneNumber(passedNumber);
-
-        // todo: probably another auxiliary function here ("loadOrSaveUser")
-        User sessionUser = new User();
-        if (userRepository.findByPhoneNumber(phoneNumber).isEmpty()) {
-            sessionUser.setPhoneNumber(phoneNumber);
-            userRepository.save(sessionUser);
-        } else {
-            sessionUser = userRepository.findByPhoneNumber(phoneNumber).iterator().next();
-        }
+        User sessionUser = loadOrSaveUser(phoneNumber);
 
         String welcomeMessage = "Hello! Welcome to GrassRoot. What do you want to do?";
         final Option meetingOrg = new Option("Call a meeting", 1,1, new URI(baseURI + "mtg"),true);
@@ -83,8 +83,7 @@ public class AatApiTestController {
         // todo: look up the user's groups, and give a menu of those, if they exist (w/ scrolling)
         // todo: Add an example in promptMessage, but make sure not too long (already too much, maybe).
         String promptMessage = "Okay, we'll set up a meeting. Please enter the numbers of the people to invite.";
-        Option freeText = new Option("", 1, 1, new URI(baseURI + "mtg2"), false);
-        return new Request(promptMessage, Collections.singletonList(freeText));
+        return new Request(promptMessage, Collections.singletonList(freeText("mtg2")));
     }
 
     @RequestMapping(value = "/ussd/mtg2")
@@ -107,15 +106,41 @@ public class AatApiTestController {
         usersToCreateGroup.add(groupCreator); // So that later actions pick up whoever created group
         groupToMessage.setGroupMembers(usersToCreateGroup);
 
-        groupRepository.save(groupToMessage);
+        groupToMessage = groupRepository.save(groupToMessage);
 
-        List<String> transientDisplay = new ArrayList<String>();
-        for (User userToDisplay : usersToCreateGroup)
-            transientDisplay.add(userToDisplay.getPhoneNumber());
+        String returnMessage = "Okay, we just created a group with those numbers. Please enter a message to send to them.";
 
-        String returnMessage = "We just created a group with these numbers: " + String.join(" ", transientDisplay) +
-                ". We'll do something with it soon, promise.";
+        return new Request(returnMessage, Collections.singletonList(freeText("mtg3?groupId=" + groupToMessage.getId())));
+    }
 
+    @RequestMapping(value = "/ussd/mtg3")
+    @ResponseBody
+    public Request saveNumbers(@RequestParam(value="msisdn", required=true) String inputNumber,
+                               @RequestParam(value="groupId", required=true) String groupId,
+                               @RequestParam(value="request", required=true) String userResponse) throws URISyntaxException {
+
+        String phoneNumber = convertPhoneNumber(inputNumber);
+        if (userRepository.findByPhoneNumber(phoneNumber).isEmpty()) return noUserError;
+
+        // todo: various forms of error handling here (e.g., non-existent group, invalid users, etc)
+        // todo: store the response from the SMS gateway and use it to state how many messages successful
+        // todo: split up the URI into multiple if it gets >2k chars (will be an issue when have 20+ person groups)
+
+        Group groupToMessage = groupRepository.findOne(Integer.parseInt(groupId));
+        List<User> usersToMessage = groupToMessage.getGroupMembers();
+
+        RestTemplate sendGroupSMS = new RestTemplate();
+        UriComponentsBuilder sendMsgURI = smsBaseUri.path("send/").queryParam("username", smsUsername).queryParam("password", smsPassword);
+
+        for (int i = 1; i <= usersToMessage.size(); i++) {
+            sendMsgURI = sendMsgURI.queryParam("number" + i, usersToMessage.get(i-1).getPhoneNumber());
+            sendMsgURI = sendMsgURI.queryParam("message" + i, userResponse);
+        }
+
+        String returnMessage = sendMsgURI.build().toUriString(); // use for debugging, for now
+        // String returnMessage = sendGroupSMS.getForObject(sendMsgURI.build().toUri(), String.class);
+
+        // String returnMessage = "Well, when we get the SMS gateway up, that will have sent the message. We hope.";
         return new Request(returnMessage, new ArrayList<Option>());
     }
 
@@ -124,6 +149,22 @@ public class AatApiTestController {
     public Request notBuilt() throws URISyntaxException {
         String errorMessage = "Sorry! We haven't built that yet. We're working on it.";
         return new Request(errorMessage, new ArrayList<Option>());
+    }
+
+    /* Start auxilliary and helper methods here ... */
+
+    public User loadOrSaveUser(String phoneNumber) {
+        if (userRepository.findByPhoneNumber(phoneNumber).isEmpty()) {
+            User sessionUser = new User();
+            sessionUser.setPhoneNumber(phoneNumber);
+            return userRepository.save(sessionUser);
+        } else {
+            return userRepository.findByPhoneNumber(phoneNumber).iterator().next();
+        }
+    }
+
+    public Option freeText(String urlEnding) throws URISyntaxException {
+        return new Option("", 1, 1, new URI(baseURI + urlEnding), false);
     }
 
     // todo: decide on our preferred string format, for now keeping it at for 27 (not discarding info)
