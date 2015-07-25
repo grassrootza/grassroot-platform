@@ -144,14 +144,30 @@ public class AatApiTestController {
         return new Request(returnMessage, new ArrayList<Option>());
     }
 
-    @RequestMapping(value = { "/ussd/error", "/ussd/vote", "/ussd/log", "/ussd/user", "ussd/group" })
+    @RequestMapping(value = "ussd/group")
+    @ResponseBody
+    public Request groupList(@RequestParam(value="msisdn", required=true) String inputNumber) throws URISyntaxException {
+
+        String phoneNumber = convertPhoneNumber(inputNumber);
+        if (userRepository.findByPhoneNumber(phoneNumber).isEmpty()) return noUserError;
+
+        User userForSession = userRepository.findByPhoneNumber(phoneNumber).iterator().next();
+
+        String returnMessage = "Okay! Please pick one of the groups you belong to:";
+        return new Request(returnMessage, userGroupMenu(userForSession, "grp2"));
+
+    }
+
+    @RequestMapping(value = { "/ussd/error", "/ussd/vote", "/ussd/log", "/ussd/user", "/ussd/grp2" })
     @ResponseBody
     public Request notBuilt() throws URISyntaxException {
         String errorMessage = "Sorry! We haven't built that yet. We're working on it.";
         return new Request(errorMessage, new ArrayList<Option>());
     }
 
-    /* Start auxilliary and helper methods here ... */
+    /*
+     * Auxiliary and helper methods start here ...
+     * */
 
     public User loadOrSaveUser(String phoneNumber) {
         if (userRepository.findByPhoneNumber(phoneNumber).isEmpty()) {
@@ -165,6 +181,24 @@ public class AatApiTestController {
 
     public Option freeText(String urlEnding) throws URISyntaxException {
         return new Option("", 1, 1, new URI(baseURI + urlEnding), false);
+    }
+
+    public List<Option> userGroupMenu(User userForSession, String path) throws URISyntaxException {
+
+        // todo: display a timestamp of the date created if no name
+
+        List<Group> groupsPartOf = userForSession.getGroupsPartOf();
+        List<Option> menuBuilder = new ArrayList<Option>();
+
+        for (int i = 0; i < groupsPartOf.size(); i++) {
+            Group groupForMenu = groupsPartOf.get(i);
+            String groupName = groupForMenu.getGroupName();
+            if (groupName == null || groupName.isEmpty())
+                groupName = "Unnamed group, created on " + String.format("%1$TD", groupForMenu.getCreatedDateTime());
+            menuBuilder.add(new Option(groupName,i+1,i+1, new URI(baseURI+path+"?groupId="+groupForMenu.getId()),true));
+        }
+
+        return menuBuilder;
     }
 
     // todo: decide on our preferred string format, for now keeping it at for 27 (not discarding info)
