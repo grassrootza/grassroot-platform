@@ -36,6 +36,13 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 @RestController
 public class AatApiTestController {
 
+    /**
+     * Set up of wiring, some strings that are used frequently, and the main menu
+     * To do: Insert logic to check if user has set their display name and, if not, prompt for it
+     * To do: Insert logic to check for unnamed groups and then prompt to name them
+     * To do: Move 'manage groups' earlier in the main menu
+     */
+
     String baseURI = "http://meeting-organizer.herokuapp.com/ussd/";
     private UriComponentsBuilder smsBaseUri = UriComponentsBuilder.newInstance().scheme("https").host("xml2sms.gsm.co.za");
     private String smsUsername = ""; // todo: set these when get from AAT
@@ -71,6 +78,15 @@ public class AatApiTestController {
         final Option manageGroups = new Option("Manage groups", 5, 5, new URI(baseURI + "group"), true);
         return new Request(welcomeMessage, Arrays.asList(meetingOrg, voteTake, logAction, userProfile, manageGroups));
     }
+
+    /**
+     * The meeting organizer menus
+     * To do: Carve these out into their own controller class to make everything more readable
+     * To do: Use a folder URL structure for the different menu trees
+     * To do: Figure out some way around the absence of USSD push
+     * To do: Various forms of validation and checking throughout
+     * To do: Major -- Start working on the "event" creation, so we have a persistent record of the meeting structure
+     */
 
     @RequestMapping(value = "/ussd/mtg")
     @ResponseBody
@@ -151,8 +167,11 @@ public class AatApiTestController {
         return new Request(returnMessage, new ArrayList<Option>());
     }
 
-    /*
+    /**
      * Starting the group management menu flow here
+     * To do: Add in validation and checking that group is valid, and user can call a meeting on it
+     * To do: Add in extracting names and numbers from groups without names so users know what group it is
+     * To do: Stub out remaining menus
      */
 
     @RequestMapping(value = "ussd/group")
@@ -226,8 +245,8 @@ public class AatApiTestController {
 
     }
 
-    /*
-     * Starting the user profile management menu flow here
+    /**
+     * Starting the so-far-stubbed menu flows here
      */
 
 
@@ -257,8 +276,12 @@ public class AatApiTestController {
         return new Request(errorMessage, new ArrayList<Option>());
     }
 
-    /*
+    /**
      * Auxiliary and helper methods start here ...
+     * To do: Reconsider if loadOrSaveUser has a point
+     * To do: Create an 'invert phoneNumber' aux method, to turn '2781...' into user readable format
+     * To do: Expand -- a lot -- the various methods needed to handle phone number inputs
+     * To do: Move some of the code for renaming groups from menu function down here
      * */
 
     public User loadOrSaveUser(String phoneNumber) {
