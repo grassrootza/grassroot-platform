@@ -76,46 +76,53 @@ public class AatApiTestController {
     @ResponseBody
     public Request meetingOrg(@RequestParam(value="msisdn", required=true) String inputNumber) throws URISyntaxException {
 
-        String phoneNumber = convertPhoneNumber(inputNumber);
-        if (userRepository.findByPhoneNumber(phoneNumber).isEmpty()) return noUserError;
+        User sessionUser = new User();
 
-        // note: not calling the instance of User as we don't use anything ... yet
-        // todo: look up the user's groups, and give a menu of those, if they exist (w/ scrolling)
-        // todo: Add an example in promptMessage, but make sure not too long (already too much, maybe).
-        String promptMessage = "Okay, we'll set up a meeting. Please enter the numbers of the people to invite.";
-        return new Request(promptMessage, Collections.singletonList(freeText("mtg2")));
+        try { sessionUser = userRepository.findByPhoneNumber(convertPhoneNumber(inputNumber)).iterator().next(); }
+        catch (NoSuchElementException e) { return noUserError; }
+
+        if (sessionUser.getGroupsPartOf().isEmpty()) {
+            String promptMessage = "Okay, we'll set up a meeting. Please enter the numbers of the people to invite.";
+            return new Request(promptMessage, Collections.singletonList(freeText("mtg2")));
+        } else {
+            String promptMessage = "Do you want to call a meeting of an existing group, or create a new one?";
+            return new Request(promptMessage, userGroupMenu(sessionUser, "mtg2", true));
+        }
     }
 
     @RequestMapping(value = "/ussd/mtg2")
     @ResponseBody
     public Request saveNumbers(@RequestParam(value="msisdn", required=true) String inputNumber,
-                               @RequestParam(value="request", required=true) String userResponse) throws URISyntaxException {
+                               @RequestParam(value="request", required=false) String userResponse,
+                               @RequestParam(value="groupId", required=false) Integer groupId) throws URISyntaxException {
 
         String phoneNumber = convertPhoneNumber(inputNumber);
-        if (userRepository.findByPhoneNumber(phoneNumber).isEmpty()) return noUserError;
+        String returnMessage;
 
-        // todo: consider some way to check if group "exists", needs a solid "equals" logic
-        // todo: defaulting to using Lists as Collection type for many-many, but that's an amateur decision ...
-
+        User sessionUser = new User();
         Group groupToMessage = new Group();
-        User groupCreator = userRepository.findByPhoneNumber(phoneNumber).iterator().next();
-        groupToMessage.setCreatedByUser(groupCreator);
-        groupToMessage.setGroupName(""); // column not-null, so use blank string as default
 
-        List<User> usersToCreateGroup = usersFromNumbers(userResponse);
-        usersToCreateGroup.add(groupCreator); // So that later actions pick up whoever created group
-        groupToMessage.setGroupMembers(usersToCreateGroup);
+        try { sessionUser = userRepository.findByPhoneNumber(phoneNumber).iterator().next(); }
+        catch (NoSuchElementException e) { return noUserError; }
 
-        groupToMessage = groupRepository.save(groupToMessage);
-
-        String returnMessage = "Okay, we just created a group with those numbers. Please enter a message to send to them.";
-
+        if (groupId != null) {
+            if (groupId == 0) {
+                return new Request("Okay. We'll create a new group for this meeting. Please enter the numbers for it.",
+                        Collections.singletonList(freeText("mtg2")));
+            } else {
+                groupToMessage = groupRepository.findOne(groupId);
+                returnMessage = "Okay, please enter the message to send to the group.";
+            }
+        } else {
+            groupToMessage = createNewGroup(sessionUser, userResponse);
+            returnMessage = "Okay, we just created a group with those numbers. Please enter a message to send to them.";
+        }
         return new Request(returnMessage, Collections.singletonList(freeText("mtg3?groupId=" + groupToMessage.getId())));
     }
 
     @RequestMapping(value = "/ussd/mtg3")
     @ResponseBody
-    public Request saveNumbers(@RequestParam(value="msisdn", required=true) String inputNumber,
+    public Request sendMessage(@RequestParam(value="msisdn", required=true) String inputNumber,
                                @RequestParam(value="groupId", required=true) String groupId,
                                @RequestParam(value="request", required=true) String userResponse) throws URISyntaxException {
 
@@ -144,6 +151,25 @@ public class AatApiTestController {
         return new Request(returnMessage, new ArrayList<Option>());
     }
 
+    @RequestMapping(value = "ussd/user")
+    @ResponseBody
+    public Request userProfile(@RequestParam(value="msisdn", required=true) String inputNumber) throws URISyntaxException {
+
+        String phoneNumber = convertPhoneNumber(inputNumber);
+        if (userRepository.findByPhoneNumber(phoneNumber).isEmpty()) return noUserError;
+
+        User userForSession = userRepository.findByPhoneNumber(phoneNumber).iterator().next();
+
+        String returnMessage = "What would you like to do?";
+
+        final Option changeName = new Option("Change my display name", 1,1, new URI(baseURI + "user/name"),true);
+        final Option changeLanguage = new Option("Change my language", 2,2, new URI(baseURI + "user/language"),true);
+        final Option addNumber = new Option("Add phone number to my profile", 3,3, new URI(baseURI + "user/phone"), true);
+
+        return new Request(returnMessage, Arrays.asList(changeName, changeLanguage, addNumber));
+
+    }
+
     @RequestMapping(value = "ussd/group")
     @ResponseBody
     public Request groupList(@RequestParam(value="msisdn", required=true) String inputNumber) throws URISyntaxException {
@@ -154,11 +180,11 @@ public class AatApiTestController {
         User userForSession = userRepository.findByPhoneNumber(phoneNumber).iterator().next();
 
         String returnMessage = "Okay! Please pick one of the groups you belong to:";
-        return new Request(returnMessage, userGroupMenu(userForSession, "grp2"));
+        return new Request(returnMessage, userGroupMenu(userForSession, "grp2", true));
 
     }
 
-    @RequestMapping(value = { "/ussd/error", "/ussd/vote", "/ussd/log", "/ussd/user", "/ussd/grp2" })
+    @RequestMapping(value = { "/ussd/error", "/ussd/vote", "/ussd/log", "/ussd/grp2" })
     @ResponseBody
     public Request notBuilt() throws URISyntaxException {
         String errorMessage = "Sorry! We haven't built that yet. We're working on it.";
@@ -183,14 +209,13 @@ public class AatApiTestController {
         return new Option("", 1, 1, new URI(baseURI + urlEnding), false);
     }
 
-    public List<Option> userGroupMenu(User userForSession, String path) throws URISyntaxException {
-
-        // todo: display a timestamp of the date created if no name
+    public List<Option> userGroupMenu(User userForSession, String path, boolean optionNewGroup) throws URISyntaxException {
 
         List<Group> groupsPartOf = userForSession.getGroupsPartOf();
         List<Option> menuBuilder = new ArrayList<Option>();
+        int listLength = groupsPartOf.size();
 
-        for (int i = 0; i < groupsPartOf.size(); i++) {
+        for (int i = 0; i < listLength; i++) {
             Group groupForMenu = groupsPartOf.get(i);
             String groupName = groupForMenu.getGroupName();
             if (groupName == null || groupName.isEmpty())
@@ -198,14 +223,39 @@ public class AatApiTestController {
             menuBuilder.add(new Option(groupName,i+1,i+1, new URI(baseURI+path+"?groupId="+groupForMenu.getId()),true));
         }
 
+        if (optionNewGroup)
+            menuBuilder.add(new Option ("New group", listLength, listLength, new URI(baseURI+path+"?groupId=0"), true));
+
         return menuBuilder;
     }
 
-    // todo: decide on our preferred string format, for now keeping it at for 27 (not discarding info)
-    // todo: add error handling to this.
-    // todo: consider using Guava libraries, or another, for when we get to tricky user input
-    // todo: put this in a wrapper class for a bunch of auxiliary methods? think we'll use this a lot
+    public Group createNewGroup(User creatingUser, String phoneNumbers) {
+
+        // todo: consider some way to check if group "exists", needs a solid "equals" logic
+        // todo: defaulting to using Lists as Collection type for many-many, but that's an amateur decision ...
+
+        System.out.println("Got to createNewGroup with this string:" + phoneNumbers);
+
+        Group groupToCreate = new Group();
+
+        groupToCreate.setCreatedByUser(creatingUser);
+        groupToCreate.setGroupName(""); // column not-null, so use blank string as default
+
+        List<User> usersToCreateGroup = usersFromNumbers(phoneNumbers);
+        usersToCreateGroup.add(creatingUser); // So that later actions pick up whoever created group
+        groupToCreate.setGroupMembers(usersToCreateGroup);
+
+        return groupRepository.save(groupToCreate);
+
+    }
+
     public String convertPhoneNumber(String inputString) {
+
+        // todo: decide on our preferred string format, for now keeping it at for 27 (not discarding info)
+        // todo: add error handling to this.
+        // todo: consider using Guava libraries, or another, for when we get to tricky user input
+        // todo: put this in a wrapper class for a bunch of auxiliary methods? think we'll use this a lot
+
         int codeLocation = inputString.indexOf("27");
         boolean hasCountryCode = (codeLocation >= 0 && codeLocation < 2); // allowing '1' for '+' and 2 for '00'
         if (hasCountryCode) {
@@ -221,6 +271,7 @@ public class AatApiTestController {
 
         // todo: uh, make less strong assumptions that users are perfectly well behaved ...
 
+        System.out.println("Got to usersFromNumbers with this string:" + listOfNumbers);
         listOfNumbers = listOfNumbers.replace("\"", ""); // in case the response is passed with quotes around it
         List<String> splitNumbers = Arrays.asList(listOfNumbers.split(" "));
         List<User> usersToAdd = new ArrayList<User>();
