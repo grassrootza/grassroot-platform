@@ -36,6 +36,13 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 @RestController
 public class AatApiTestController {
 
+    /**
+     * Set up of wiring, some strings that are used frequently, and the main menu
+     * To do: Insert logic to check if user has set their display name and, if not, prompt for it
+     * To do: Insert logic to check for unnamed groups and then prompt to name them
+     * To do: Move 'manage groups' earlier in the main menu
+     */
+
     String baseURI = "http://meeting-organizer.herokuapp.com/ussd/";
     private UriComponentsBuilder smsBaseUri = UriComponentsBuilder.newInstance().scheme("https").host("xml2sms.gsm.co.za");
     private String smsUsername = ""; // todo: set these when get from AAT
@@ -72,6 +79,15 @@ public class AatApiTestController {
         return new Request(welcomeMessage, Arrays.asList(meetingOrg, voteTake, logAction, userProfile, manageGroups));
     }
 
+    /**
+     * The meeting organizer menus
+     * To do: Carve these out into their own controller class to make everything more readable
+     * To do: Use a folder URL structure for the different menu trees
+     * To do: Figure out some way around the absence of USSD push
+     * To do: Various forms of validation and checking throughout
+     * To do: Major -- Start working on the "event" creation, so we have a persistent record of the meeting structure
+     */
+
     @RequestMapping(value = "/ussd/mtg")
     @ResponseBody
     public Request meetingOrg(@RequestParam(value="msisdn", required=true) String inputNumber) throws URISyntaxException {
@@ -83,7 +99,7 @@ public class AatApiTestController {
 
         if (sessionUser.getGroupsPartOf().isEmpty()) {
             String promptMessage = "Okay, we'll set up a meeting. Please enter the numbers of the people to invite.";
-            return new Request(promptMessage, Collections.singletonList(freeText("mtg2")));
+            return new Request(promptMessage, freeText("mtg2"));
         } else {
             String promptMessage = "Do you want to call a meeting of an existing group, or create a new one?";
             return new Request(promptMessage, userGroupMenu(sessionUser, "mtg2", true));
@@ -108,7 +124,7 @@ public class AatApiTestController {
         if (groupId != null) {
             if (groupId == 0) {
                 return new Request("Okay. We'll create a new group for this meeting. Please enter the numbers for it.",
-                        Collections.singletonList(freeText("mtg2")));
+                        freeText("mtg2"));
             } else {
                 groupToMessage = groupRepository.findOne(groupId);
                 returnMessage = "Okay, please enter the message to send to the group.";
@@ -117,7 +133,7 @@ public class AatApiTestController {
             groupToMessage = createNewGroup(sessionUser, userResponse);
             returnMessage = "Okay, we just created a group with those numbers. Please enter a message to send to them.";
         }
-        return new Request(returnMessage, Collections.singletonList(freeText("mtg3?groupId=" + groupToMessage.getId())));
+        return new Request(returnMessage, freeText("mtg3?groupId=" + groupToMessage.getId()));
     }
 
     @RequestMapping(value = "/ussd/mtg3")
@@ -151,6 +167,89 @@ public class AatApiTestController {
         return new Request(returnMessage, new ArrayList<Option>());
     }
 
+    /**
+     * Starting the group management menu flow here
+     * To do: Add in validation and checking that group is valid, and user can call a meeting on it
+     * To do: Add in extracting names and numbers from groups without names so users know what group it is
+     * To do: Stub out remaining menus
+     */
+
+    @RequestMapping(value = "ussd/group")
+    @ResponseBody
+    public Request groupList(@RequestParam(value="msisdn", required=true) String inputNumber) throws URISyntaxException {
+
+        String phoneNumber = convertPhoneNumber(inputNumber);
+        if (userRepository.findByPhoneNumber(phoneNumber).isEmpty()) return noUserError;
+
+        User userForSession = userRepository.findByPhoneNumber(phoneNumber).iterator().next();
+
+        String returnMessage = "Okay! Please pick one of the groups you belong to:";
+        return new Request(returnMessage, userGroupMenu(userForSession, "group/menu", true));
+
+    }
+
+    @RequestMapping(value = "ussd/group/menu")
+    @ResponseBody
+    public Request groupMenu(@RequestParam(value="msisdn", required=true) String inputNumber,
+                             @RequestParam(value="groupId", required=true) Integer groupId) throws URISyntaxException {
+
+        String returnMessage = "Group selected. What would you like to do?";
+        String groupIdP = "?groupId=" + groupId;
+
+        Option renameGroup = new Option("Rename the group", 1, 1, new URI(baseURI + "group/rename" + groupIdP), true);
+        Option addNumber = new Option("Add a phone number to the group", 2, 2, new URI(baseURI + "group/addnumber" + groupIdP), true);
+        Option removeNumber = new Option("Remove a number from the group", 3, 3, new URI(baseURI + "group/delnumber" + groupIdP), true);
+
+        return new Request(returnMessage, Arrays.asList(renameGroup, addNumber, removeNumber));
+
+    }
+
+    @RequestMapping(value = "ussd/group/rename")
+    @ResponseBody
+    public Request renamePrompt(@RequestParam(value="msisdn", required=true) String inputNumber,
+                                @RequestParam(value="groupId", required=true) Integer groupId) throws URISyntaxException {
+
+        // todo: make sure to check if user calling this is part of group (later: permissions logic)
+
+        Group groupToRename = new Group();
+        String promptMessage;
+
+        try { groupToRename = groupRepository.findOne(groupId); }
+        catch (Exception e) { return new Request("Sorry! Something went wrong finding the group.", new ArrayList<Option>()); }
+
+        if (groupToRename.getGroupName().trim().length() == 0)
+            promptMessage = "This group doesn't have a name yet. Please enter a name.";
+        else
+            promptMessage = "This group's current name is " + groupToRename.getGroupName() + ". What do you want to rename it?";
+
+        return new Request(promptMessage, freeText("group/rename2?groupId=" + groupId));
+
+    }
+
+    @RequestMapping(value = "ussd/group/rename2")
+    @ResponseBody
+    public Request renameGroup(@RequestParam(value="msisdn", required=true) String inputNumber,
+                               @RequestParam(value="groupId", required=true) Integer groupId,
+                               @RequestParam(value="request", required=true) String newName) throws URISyntaxException {
+
+        // todo: make sure to check if user calling this is part of group (later: permissions logic)
+
+        Group groupToRename = new Group();
+        try { groupToRename = groupRepository.findOne(groupId); }
+        catch (Exception e) { return new Request("Sorry! Something went wrong finding the group.", new ArrayList<Option>()); }
+
+        groupToRename.setGroupName(newName);
+        groupToRename = groupRepository.save(groupToRename);
+
+        return new Request("Group successfully renamed to " + groupToRename.getGroupName(), new ArrayList<Option>());
+
+    }
+
+    /**
+     * Starting the so-far-stubbed menu flows here
+     */
+
+
     @RequestMapping(value = "ussd/user")
     @ResponseBody
     public Request userProfile(@RequestParam(value="msisdn", required=true) String inputNumber) throws URISyntaxException {
@@ -170,20 +269,6 @@ public class AatApiTestController {
 
     }
 
-    @RequestMapping(value = "ussd/group")
-    @ResponseBody
-    public Request groupList(@RequestParam(value="msisdn", required=true) String inputNumber) throws URISyntaxException {
-
-        String phoneNumber = convertPhoneNumber(inputNumber);
-        if (userRepository.findByPhoneNumber(phoneNumber).isEmpty()) return noUserError;
-
-        User userForSession = userRepository.findByPhoneNumber(phoneNumber).iterator().next();
-
-        String returnMessage = "Okay! Please pick one of the groups you belong to:";
-        return new Request(returnMessage, userGroupMenu(userForSession, "grp2", true));
-
-    }
-
     @RequestMapping(value = { "/ussd/error", "/ussd/vote", "/ussd/log", "/ussd/grp2" })
     @ResponseBody
     public Request notBuilt() throws URISyntaxException {
@@ -191,8 +276,12 @@ public class AatApiTestController {
         return new Request(errorMessage, new ArrayList<Option>());
     }
 
-    /*
+    /**
      * Auxiliary and helper methods start here ...
+     * To do: Reconsider if loadOrSaveUser has a point
+     * To do: Create an 'invert phoneNumber' aux method, to turn '2781...' into user readable format
+     * To do: Expand -- a lot -- the various methods needed to handle phone number inputs
+     * To do: Move some of the code for renaming groups from menu function down here
      * */
 
     public User loadOrSaveUser(String phoneNumber) {
@@ -205,8 +294,8 @@ public class AatApiTestController {
         }
     }
 
-    public Option freeText(String urlEnding) throws URISyntaxException {
-        return new Option("", 1, 1, new URI(baseURI + urlEnding), false);
+    public List<Option> freeText(String urlEnding) throws URISyntaxException {
+        return Collections.singletonList(new Option("", 1, 1, new URI(baseURI + urlEnding), false));
     }
 
     public List<Option> userGroupMenu(User userForSession, String path, boolean optionNewGroup) throws URISyntaxException {
@@ -224,7 +313,7 @@ public class AatApiTestController {
         }
 
         if (optionNewGroup)
-            menuBuilder.add(new Option ("New group", listLength, listLength, new URI(baseURI+path+"?groupId=0"), true));
+            menuBuilder.add(new Option ("Create a new group", listLength+1, listLength+1, new URI(baseURI+path+"?groupId=0"), true));
 
         return menuBuilder;
     }
@@ -233,8 +322,6 @@ public class AatApiTestController {
 
         // todo: consider some way to check if group "exists", needs a solid "equals" logic
         // todo: defaulting to using Lists as Collection type for many-many, but that's an amateur decision ...
-
-        System.out.println("Got to createNewGroup with this string:" + phoneNumbers);
 
         Group groupToCreate = new Group();
 
