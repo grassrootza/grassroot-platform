@@ -49,6 +49,7 @@ public class AatApiTestController {
     private String smsPassword = "***REMOVED***"; // todo: check with Praekelt ... also maybe shift to properties file
 
     Request noUserError = new Request("Error! Couldn't find you as a user.", new ArrayList<Option>());
+    Request noGroupError = new Request("Sorry! Something went wrong finding the group.", new ArrayList<Option>());
 
     @Autowired
     UserRepository userRepository;
@@ -193,15 +194,41 @@ public class AatApiTestController {
     public Request groupMenu(@RequestParam(value="msisdn", required=true) String inputNumber,
                              @RequestParam(value="groupId", required=true) Integer groupId) throws URISyntaxException {
 
+        // todo: check what permissions the user has and only display options that they can do
+
         String returnMessage = "Group selected. What would you like to do?";
         String groupIdP = "?groupId=" + groupId;
 
-        Option renameGroup = new Option("Rename the group", 1, 1, new URI(baseURI + "group/rename" + groupIdP), true);
-        Option addNumber = new Option("Add a phone number to the group", 2, 2, new URI(baseURI + "group/addnumber" + groupIdP), true);
-        Option removeNumber = new Option("Remove a number from the group", 3, 3, new URI(baseURI + "group/delnumber" + groupIdP), true);
+        Option listGroup = new Option("List group members", 1, 1, new URI(baseURI + "group/list" + groupIdP), true);
+        Option renameGroup = new Option("Rename the group", 2, 2, new URI(baseURI + "group/rename" + groupIdP), true);
+        Option addNumber = new Option("Add a phone number to the group", 3, 3, new URI(baseURI + "group/addnumber" + groupIdP), true);
+        Option removeMe = new Option("Remove a number from the group", 4, 4, new URI(baseURI + "group/unsubscribe" + groupIdP), true);
+        Option removeNumber = new Option("Remove a number from the group", 5, 5, new URI(baseURI + "group/delnumber" + groupIdP), true);
 
-        return new Request(returnMessage, Arrays.asList(renameGroup, addNumber, removeNumber));
+        return new Request(returnMessage, Arrays.asList(listGroup, renameGroup, addNumber, removeMe, removeNumber));
 
+    }
+
+    @RequestMapping(value = "ussd/group/list")
+    @ResponseBody
+    public Request listGroup(@RequestParam(value="msisdn", required=true) String inputNumber,
+                             @RequestParam(value="groupId", required=true) Integer groupId) throws URISyntaxException {
+
+        // todo: only list users who are not the same as the user calling the function
+        // todo: check if user has a display name, and, if so, just print the display name
+
+        Group groupToList = new Group();
+        try { groupToList = groupRepository.findOne(groupId); }
+        catch (Exception e) { return noGroupError; }
+
+        List<String> usersList = new ArrayList<>();
+        for (User userToList : groupToList.getGroupMembers()) {
+            usersList.add(invertPhoneNumber(userToList.getPhoneNumber()));
+        }
+
+        String returnMessage = "Users in this group are: " + String.join("\n", usersList);
+
+        return new Request(returnMessage, new ArrayList<Option>());
     }
 
     @RequestMapping(value = "ussd/group/rename")
@@ -215,7 +242,7 @@ public class AatApiTestController {
         String promptMessage;
 
         try { groupToRename = groupRepository.findOne(groupId); }
-        catch (Exception e) { return new Request("Sorry! Something went wrong finding the group.", new ArrayList<Option>()); }
+        catch (Exception e) { return noGroupError; }
 
         if (groupToRename.getGroupName().trim().length() == 0)
             promptMessage = "This group doesn't have a name yet. Please enter a name.";
@@ -236,12 +263,89 @@ public class AatApiTestController {
 
         Group groupToRename = new Group();
         try { groupToRename = groupRepository.findOne(groupId); }
-        catch (Exception e) { return new Request("Sorry! Something went wrong finding the group.", new ArrayList<Option>()); }
+        catch (Exception e) { return noGroupError; }
 
         groupToRename.setGroupName(newName);
         groupToRename = groupRepository.save(groupToRename);
 
         return new Request("Group successfully renamed to " + groupToRename.getGroupName(), new ArrayList<Option>());
+
+    }
+
+    @RequestMapping(value = "ussd/group/addnumber")
+    @ResponseBody
+    public Request addNumberInput(@RequestParam(value="msisdn", required=true) String inputNumber,
+                                    @RequestParam(value="groupId", required=true) Integer groupId) throws URISyntaxException {
+
+        // todo: have a way to flag if returned here from next menu because number wasn't right
+        // todo: load and display some brief descriptive text about the group, e.g., name and who created it
+        // todo: add a lot of validation logic (user is part of group, has permission to adjust, etc etc).
+
+        String promptMessage = "Okay, we'll add a number to this group. Please enter it below.";
+        return new Request(promptMessage, freeText("group/addnumber2?groupId=" + groupId));
+
+    }
+
+    @RequestMapping(value = "ussd/group/addnumber2")
+    @ResponseBody
+    public Request addNummberToGroup(@RequestParam(value="msisdn", required=true) String inputNumber,
+                                     @RequestParam(value="groupId", required=true) Integer groupId,
+                                     @RequestParam(value="request", required=true) String numberToAdd) throws URISyntaxException {
+
+        // todo: make sure this user is part of the group and has permission to add people to it
+        // todo: check the user-to-add isn't already part of the group, and, if so, notify the user who is adding
+        // todo: build logic to handle it if the number submitted is badly formatted/doesn't work/etc
+
+        Group sessionGroup = new Group();
+        try { sessionGroup = groupRepository.findOne(groupId); }
+        catch (Exception e) { return noGroupError; }
+
+        List<User> groupMembers = sessionGroup.getGroupMembers();
+        groupMembers.add(loadOrSaveUser(convertPhoneNumber(numberToAdd)));
+        sessionGroup.setGroupMembers(groupMembers);
+        sessionGroup = groupRepository.save(sessionGroup);
+
+        return new Request("Done! The group has been updated.", new ArrayList<Option>());
+
+    }
+
+    @RequestMapping(value = "ussd/group/unsubscribe")
+    @ResponseBody
+    public Request unsubscribeConfirm(@RequestParam(value="msisdn", required=true) String inputNumber,
+                                      @RequestParam(value="groupId", required=true) Integer groupId) throws URISyntaxException {
+
+        // todo: add in a brief description of group, e.g., who created it
+
+        String promptMessage = "Are you sure you want to remove yourself from this group?";
+        Option yesOption = new Option("Yes, take me off.", 1, 1, new URI(baseURI + "group/unsubscribe2?groupId=" + groupId), true);
+        Option noOption = new Option("No, return to the last menu", 2, 2, new URI(baseURI + "group/menu?groupId=" + groupId), true);
+
+        return new Request(promptMessage, Arrays.asList(yesOption, noOption));
+
+    }
+
+    @RequestMapping(value = "ussd/group/unsubscribe2")
+    @ResponseBody
+    public Request unsubscribeDo(@RequestParam(value="msisdn", required=true) String inputNumber,
+                                 @RequestParam(value="groupId", required=true) Integer groupId) throws URISyntaxException {
+
+        User sessionUser = new User();
+        try { sessionUser = userRepository.findByPhoneNumber(convertPhoneNumber(inputNumber)).iterator().next(); }
+        catch (NoSuchElementException e) { return noUserError; }
+
+        Group sessionGroup = new Group();
+        try { sessionGroup = groupRepository.findOne(groupId); }
+        catch (Exception e) { return noGroupError; }
+
+        // todo: add error and exception handling, as well as validation and checking (e.g., if user in group, etc)
+        // todo: check if the list in the user is updated too ...
+
+        sessionGroup.getGroupMembers().remove(sessionUser);
+        sessionGroup = groupRepository.save(sessionGroup);
+
+        String returnMessage = "Done! You won't receive messages from that group anymore.";
+
+        return new Request(returnMessage, new ArrayList<Option>());
 
     }
 
@@ -351,6 +455,27 @@ public class AatApiTestController {
             String truncedNumber = (inputString.charAt(0) == '0') ? inputString.substring(1) : inputString;
             return "27" + truncedNumber;
         }
+    }
+
+    public String invertPhoneNumber(String storedNumber) {
+
+        // todo: handle error if number has gotten into database in incorrect format
+        // todo: make this much faster, e.g., use a simple regex / split function?
+
+        List<String> numComponents = new ArrayList<>();
+        String prefix = String.join("", Arrays.asList("0", storedNumber.substring(2,3)));
+        String midnumbers, finalnumbers;
+
+        try {
+            midnumbers = storedNumber.substring(4,6);
+            finalnumbers = storedNumber.substring(7,10);
+        } catch (Exception e) { // in case the string doesn't have enough digits ...
+            midnumbers = storedNumber.substring(4);
+            finalnumbers = "";
+        }
+
+        return String.join(" ", Arrays.asList(prefix, midnumbers, finalnumbers));
+
     }
 
     public List<User> usersFromNumbers(String listOfNumbers) {
