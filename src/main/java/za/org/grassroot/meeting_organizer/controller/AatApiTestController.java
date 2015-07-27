@@ -45,8 +45,8 @@ public class AatApiTestController {
 
     String baseURI = "http://meeting-organizer.herokuapp.com/ussd/";
     private UriComponentsBuilder smsBaseUri = UriComponentsBuilder.newInstance().scheme("https").host("xml2sms.gsm.co.za");
-    private String smsUsername = ""; // todo: set these when get from AAT
-    private String smsPassword = ""; // todo: set these when get from AAT
+    private String smsUsername = "***REMOVED***"; // todo: check with Praekelt ... also maybe shift to properties file
+    private String smsPassword = "***REMOVED***"; // todo: check with Praekelt ... also maybe shift to properties file
 
     Request noUserError = new Request("Error! Couldn't find you as a user.", new ArrayList<Option>());
 
@@ -160,8 +160,8 @@ public class AatApiTestController {
             sendMsgURI = sendMsgURI.queryParam("message" + i, userResponse);
         }
 
-        String returnMessage = sendMsgURI.build().toUriString(); // use for debugging, for now
-        // String returnMessage = sendGroupSMS.getForObject(sendMsgURI.build().toUri(), String.class);
+        // String returnMessage = sendMsgURI.build().toUriString(); // use for debugging, for now
+        String returnMessage = sendGroupSMS.getForObject(sendMsgURI.build().toUri(), String.class);
 
         // String returnMessage = "Well, when we get the SMS gateway up, that will have sent the message. We hope.";
         return new Request(returnMessage, new ArrayList<Option>());
