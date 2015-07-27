@@ -17,6 +17,7 @@ import javax.persistence.*;
 @Table(name = "\"user\"")  //table name needs to be quoted in SQL because 'user' is a reserved keyword
 public class User {
     private String phoneNumber;
+    private String displayName;
     private Integer id;
     private Timestamp createdDateTime;
 
@@ -24,13 +25,15 @@ public class User {
 
     @Basic
     @Column(name = "phone_number", nullable = false, length = 20)
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
+    public String getPhoneNumber() { return phoneNumber; }
 
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
-    }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+
+    @Basic
+    @Column(name = "display_name", nullable = true, length = 70) // allowing this to be nullable as might not be set
+    public String getDisplayName() { return displayName; }
+
+    public void setDisplayName(String displayName) { this.displayName = displayName; }
 
     @Id
     @GeneratedValue(strategy= GenerationType.IDENTITY)

@@ -226,7 +226,7 @@ public class AatApiTestController {
             usersList.add(invertPhoneNumber(userToList.getPhoneNumber()));
         }
 
-        String returnMessage = "Users in this group are: " + String.join("\n", usersList);
+        String returnMessage = "Users in this group are: " + String.join(", ", usersList);
 
         return new Request(returnMessage, new ArrayList<Option>());
     }
@@ -350,9 +350,8 @@ public class AatApiTestController {
     }
 
     /**
-     * Starting the so-far-stubbed menu flows here
+     * Starting the user profile management flow here
      */
-
 
     @RequestMapping(value = "ussd/user")
     @ResponseBody
@@ -370,8 +369,46 @@ public class AatApiTestController {
         final Option addNumber = new Option("Add phone number to my profile", 3,3, new URI(baseURI + "user/phone"), true);
 
         return new Request(returnMessage, Arrays.asList(changeName, changeLanguage, addNumber));
-
     }
+
+    @RequestMapping(value = "ussd/user/name")
+    @ResponseBody
+    public Request userDisplayName(@RequestParam(value="msisdn", required=true) String inputNumber) throws URISyntaxException {
+
+        User sessionUser = new User();
+        try { sessionUser = userRepository.findByPhoneNumber(convertPhoneNumber(inputNumber)).iterator().next(); }
+        catch (NoSuchElementException e) { return noUserError; }
+
+        String promptPhrase;
+        if (sessionUser.getDisplayName() == null || sessionUser.getDisplayName().trim().length() == 0) {
+            promptPhrase = "You haven't set your name yet. What name do you want to use?";
+        } else {
+            promptPhrase = "Your name is currently set to '" + sessionUser.getDisplayName() + "'. What do you want to change it to?";
+        }
+
+        return new Request(promptPhrase, freeText("user/name2"));
+    }
+
+    @RequestMapping(value = "ussd/user/name2")
+    @ResponseBody
+    public Request userChangeName(@RequestParam(value="msisdn", required=true) String inputNumber,
+                                  @RequestParam(value="request", required=true) String newName) throws URISyntaxException {
+
+        // todo: add validation and processing of the name that is passed, as well as exception handling etc
+
+        User sessionUser = new User();
+        try { sessionUser = userRepository.findByPhoneNumber(convertPhoneNumber(inputNumber)).iterator().next(); }
+        catch (NoSuchElementException e) { return noUserError; }
+
+        sessionUser.setDisplayName(newName);
+        sessionUser = userRepository.save(sessionUser);
+
+        return new Request("Success! Name changed to " + sessionUser.getDisplayName(), new ArrayList<Option>());
+    }
+
+    /**
+     * Starting the so-far-stubbed menu flows here
+     */
 
     @RequestMapping(value = { "/ussd/error", "/ussd/vote", "/ussd/log", "/ussd/grp2" })
     @ResponseBody
@@ -463,12 +500,12 @@ public class AatApiTestController {
         // todo: make this much faster, e.g., use a simple regex / split function?
 
         List<String> numComponents = new ArrayList<>();
-        String prefix = String.join("", Arrays.asList("0", storedNumber.substring(2,3)));
+        String prefix = String.join("", Arrays.asList("0", storedNumber.substring(2,4)));
         String midnumbers, finalnumbers;
 
         try {
-            midnumbers = storedNumber.substring(4,6);
-            finalnumbers = storedNumber.substring(7,10);
+            midnumbers = storedNumber.substring(4,7);
+            finalnumbers = storedNumber.substring(7,11);
         } catch (Exception e) { // in case the string doesn't have enough digits ...
             midnumbers = storedNumber.substring(4);
             finalnumbers = "";
@@ -483,7 +520,6 @@ public class AatApiTestController {
 
         // todo: uh, make less strong assumptions that users are perfectly well behaved ...
 
-        System.out.println("Got to usersFromNumbers with this string:" + listOfNumbers);
         listOfNumbers = listOfNumbers.replace("\"", ""); // in case the response is passed with quotes around it
         List<String> splitNumbers = Arrays.asList(listOfNumbers.split(" "));
         List<User> usersToAdd = new ArrayList<User>();
