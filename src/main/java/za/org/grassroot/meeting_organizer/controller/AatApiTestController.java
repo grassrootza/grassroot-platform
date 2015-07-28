@@ -161,7 +161,7 @@ public class AatApiTestController {
             sendMsgURI = sendMsgURI.queryParam("message" + i, userResponse);
         }
 
-        // String returnMessage = sendMsgURI.build().toUriString(); // use for debugging, for now
+        System.out.println(sendMsgURI.build().toUri().toString()); // use for debugging, for now
         String messageResult = sendGroupSMS.getForObject(sendMsgURI.build().toUri(), String.class);
 
         String returnMessage = "Done! We sent the message.";
