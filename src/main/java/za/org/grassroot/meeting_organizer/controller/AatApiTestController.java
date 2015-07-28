@@ -195,6 +195,7 @@ public class AatApiTestController {
                              @RequestParam(value="groupId", required=true) Integer groupId) throws URISyntaxException {
 
         // todo: check what permissions the user has and only display options that they can do
+        // todo: think about slimming down the menu size
 
         String returnMessage = "Group selected. What would you like to do?";
         String groupIdP = "?groupId=" + groupId;
@@ -202,10 +203,11 @@ public class AatApiTestController {
         Option listGroup = new Option("List group members", 1, 1, new URI(baseURI + "group/list" + groupIdP), true);
         Option renameGroup = new Option("Rename the group", 2, 2, new URI(baseURI + "group/rename" + groupIdP), true);
         Option addNumber = new Option("Add a phone number to the group", 3, 3, new URI(baseURI + "group/addnumber" + groupIdP), true);
-        Option removeMe = new Option("Remove a number from the group", 4, 4, new URI(baseURI + "group/unsubscribe" + groupIdP), true);
+        Option removeMe = new Option("Remove me from the group", 4, 4, new URI(baseURI + "group/unsubscribe" + groupIdP), true);
         Option removeNumber = new Option("Remove a number from the group", 5, 5, new URI(baseURI + "group/delnumber" + groupIdP), true);
+        Option delGroup = new Option("Delete this group (beta only)", 6, 6, new URI(baseURI + "group/delgroup" + groupIdP), true);
 
-        return new Request(returnMessage, Arrays.asList(listGroup, renameGroup, addNumber, removeMe, removeNumber));
+        return new Request(returnMessage, Arrays.asList(listGroup, renameGroup, addNumber, removeMe, removeNumber, delGroup));
 
     }
 
@@ -344,6 +346,33 @@ public class AatApiTestController {
         sessionGroup = groupRepository.save(sessionGroup);
 
         String returnMessage = "Done! You won't receive messages from that group anymore.";
+
+        return new Request(returnMessage, new ArrayList<Option>());
+
+    }
+
+    @RequestMapping(value = "ussd/group/delgroup")
+    @ResponseBody
+    public Request deleteConfirm(@RequestParam(value="msisdn", required=true) String inputNumber,
+                                 @RequestParam(value="groupId", required=true) Integer groupId) throws URISyntaxException {
+
+        // todo: add confirmation screen
+        // todo: check for user permissions
+        // todo: generally make this more than a quick-and-dirty to clean up prototype database
+
+        String returnMessage;
+        Group sessionGroup = new Group();
+        try { sessionGroup = groupRepository.findOne(groupId); }
+        catch (Exception e) { return noGroupError; }
+
+        try {
+            sessionGroup.setGroupMembers(new ArrayList<User>());
+            sessionGroup = groupRepository.save(sessionGroup);
+            groupRepository.delete(sessionGroup.getId());
+            returnMessage = "Success! The group is gone.";
+        } catch (Exception e) {
+            returnMessage = "Nope, something went wrong with deleting that group.";
+        }
 
         return new Request(returnMessage, new ArrayList<Option>());
 
