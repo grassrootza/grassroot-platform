@@ -509,6 +509,33 @@ public class AatApiTestController {
 
     }
 
+    public List<User> usersFromNumbers(String listOfNumbers) {
+        List<User> usersToReturn = new ArrayList<User>();
+
+        // todo: uh, make less strong assumptions that users are perfectly well behaved ...
+
+        listOfNumbers = listOfNumbers.replace("\"", ""); // in case the response is passed with quotes around it
+        List<String> splitNumbers = Arrays.asList(listOfNumbers.split(" "));
+        List<User> usersToAdd = new ArrayList<User>();
+
+        for (String inputNumber : splitNumbers) {
+            String phoneNumber = convertPhoneNumber(inputNumber);
+            if (userRepository.findByPhoneNumber(phoneNumber).isEmpty()) {
+                User userToCreate = new User();
+                userToCreate.setPhoneNumber(phoneNumber);
+                userRepository.save(userToCreate); // removing in deployment, so don't swamp Heroku DB with crud
+                usersToAdd.add(userToCreate);
+            } else {
+                usersToAdd.add(userRepository.findByPhoneNumber(phoneNumber).iterator().next());
+            }
+        }
+        return usersToAdd;
+    }
+
+    /**
+     * Going to move the phone number string handling functions to User class as static methods ... can shift elsewhere later
+     */
+
     public String convertPhoneNumber(String inputString) {
 
         // todo: decide on our preferred string format, for now keeping it at for 27 (not discarding info)
@@ -532,7 +559,7 @@ public class AatApiTestController {
         // todo: make this much faster, e.g., use a simple regex / split function?
 
         List<String> numComponents = new ArrayList<>();
-        String prefix = String.join("", Arrays.asList("0", storedNumber.substring(2,4)));
+        String prefix = String.join("", Arrays.asList("0", storedNumber.substring(2, 4)));
         String midnumbers, finalnumbers;
 
         try {
@@ -545,28 +572,5 @@ public class AatApiTestController {
 
         return String.join(" ", Arrays.asList(prefix, midnumbers, finalnumbers));
 
-    }
-
-    public List<User> usersFromNumbers(String listOfNumbers) {
-        List<User> usersToReturn = new ArrayList<User>();
-
-        // todo: uh, make less strong assumptions that users are perfectly well behaved ...
-
-        listOfNumbers = listOfNumbers.replace("\"", ""); // in case the response is passed with quotes around it
-        List<String> splitNumbers = Arrays.asList(listOfNumbers.split(" "));
-        List<User> usersToAdd = new ArrayList<User>();
-
-        for (String inputNumber : splitNumbers) {
-            String phoneNumber = convertPhoneNumber(inputNumber);
-            if (userRepository.findByPhoneNumber(phoneNumber).isEmpty()) {
-                User userToCreate = new User();
-                userToCreate.setPhoneNumber(phoneNumber);
-                userRepository.save(userToCreate); // removing in deployment, so don't swamp Heroku DB with crud
-                usersToAdd.add(userToCreate);
-            } else {
-                usersToAdd.add(userRepository.findByPhoneNumber(phoneNumber).iterator().next());
-            }
-        }
-        return usersToAdd;
     }
 }
