@@ -161,6 +161,9 @@ public class AatApiTestController {
             sendMsgURI = sendMsgURI.queryParam("message" + i, userResponse);
         }
 
+        // todo: figure out why the behavior of this is a bit unpredictable ... every now and then it fails
+        // todo: may have something to do with the length of the message? and/or encoding ... not entirely clear
+
         System.out.println(sendMsgURI.build().toUri().toString()); // use for debugging, for now
         String messageResult = sendGroupSMS.getForObject(sendMsgURI.build().toUri(), String.class);
 
