@@ -157,8 +157,8 @@ public class AatApiTestController {
         UriComponentsBuilder sendMsgURI = smsBaseUri.path("send/").queryParam("username", smsUsername).queryParam("password", smsPassword);
 
         for (int i = 1; i <= usersToMessage.size(); i++) {
-            sendMsgURI = sendMsgURI.queryParam("number" + i, usersToMessage.get(i-1).getPhoneNumber());
-            sendMsgURI = sendMsgURI.queryParam("message" + i, userResponse);
+            sendMsgURI.queryParam("number" + i, usersToMessage.get(i-1).getPhoneNumber());
+            sendMsgURI.queryParam("message" + i, userResponse);
         }
 
         // todo: figure out why the behavior of this is a bit unpredictable ... every now and then it fails
