@@ -162,9 +162,9 @@ public class AatApiTestController {
         }
 
         // String returnMessage = sendMsgURI.build().toUriString(); // use for debugging, for now
-        String returnMessage = sendGroupSMS.getForObject(sendMsgURI.build().toUri(), String.class);
+        String messageResult = sendGroupSMS.getForObject(sendMsgURI.build().toUri(), String.class);
 
-        // String returnMessage = "Well, when we get the SMS gateway up, that will have sent the message. We hope.";
+        String returnMessage = "Done! We sent the message.";
         return new Request(returnMessage, new ArrayList<Option>());
     }
 
