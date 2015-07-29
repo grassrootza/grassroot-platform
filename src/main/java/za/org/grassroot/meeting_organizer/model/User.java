@@ -73,8 +73,18 @@ public class User {
     public void setGroupsPartOf(List<Group> groupsPartOf) { this.groupsPartOf = groupsPartOf; }
 
     /**
-     * Inserting string functions to handle phone numbers here, as placeholder
+     * Inserting string functions to handle phone numbers here, for the moment
      */
+
+    public String getName(String unknownPrefix) {
+        if (displayName != null && displayName.trim().length() > 0) {
+            return displayName;
+        } else if (unknownPrefix.trim().length() == 0){
+            return invertPhoneNumber(phoneNumber);
+        } else {
+            return unknownPrefix + " (" + invertPhoneNumber(phoneNumber) + ")";
+        }
+    }
 
     public static String convertPhoneNumber(String inputString) {
 
