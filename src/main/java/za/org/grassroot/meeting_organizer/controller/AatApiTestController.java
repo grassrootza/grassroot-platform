@@ -154,7 +154,8 @@ public class AatApiTestController {
         List<User> usersToMessage = groupToMessage.getGroupMembers();
 
         RestTemplate sendGroupSMS = new RestTemplate();
-        UriComponentsBuilder sendMsgURI = smsBaseUri.path("send/").queryParam("username", smsUsername).queryParam("password", smsPassword);
+        UriComponentsBuilder sendMsgURI = new UriComponentsBuilder(); // think have to clear out the string, is issue
+        smsBaseUri.path("send/").queryParam("username", smsUsername).queryParam("password", smsPassword);
 
         System.out.println("Base set up of message string: " + sendMsgURI.build().toUri().toString());
 
