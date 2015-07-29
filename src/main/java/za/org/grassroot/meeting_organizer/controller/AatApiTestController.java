@@ -31,6 +31,8 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
  * To do: abstract out the messages, so can introduce a dictionary mechanism of some sort to deal with languages
  * To do: write a phone number parsing method / converter so we get them consistent. Coming in as 27....
  * To do: avoid hard-coding the URLs in the menus, so we can swap them around later
+ * To do: add in functions to prompt returning user for display name, and use display names in building groups
+ * To do: wire up creating groups sub-routines in various sub-menus
  */
 @RequestMapping(method = GET, produces = MediaType.APPLICATION_XML_VALUE)
 @RestController
@@ -44,7 +46,7 @@ public class AatApiTestController {
      */
 
     String baseURI = "http://meeting-organizer.herokuapp.com/ussd/";
-    private UriComponentsBuilder smsBaseUri = UriComponentsBuilder.newInstance().scheme("https").host("xml2sms.gsm.co.za");
+    private String smsHost = "xml2sms.gsm.co.za";
     private String smsUsername = "***REMOVED***"; // todo: check with Praekelt ... also maybe shift to properties file
     private String smsPassword = "***REMOVED***"; // todo: check with Praekelt ... also maybe shift to properties file
 
@@ -56,6 +58,7 @@ public class AatApiTestController {
 
     @Autowired
     GroupRepository groupRepository;
+    private String phoneNumber;
 
     @RequestMapping(value = "/ussd/test_question")
     @ResponseBody
@@ -67,7 +70,7 @@ public class AatApiTestController {
     @RequestMapping(value = "/ussd/start")
     @ResponseBody
     public Request startMenu(@RequestParam(value="msisdn") String passedNumber) throws URISyntaxException {
-        // So we need to create a user from this. Here we go.
+
         String phoneNumber = convertPhoneNumber(passedNumber);
         User sessionUser = loadOrSaveUser(phoneNumber);
 
@@ -154,10 +157,8 @@ public class AatApiTestController {
         List<User> usersToMessage = groupToMessage.getGroupMembers();
 
         RestTemplate sendGroupSMS = new RestTemplate();
-        UriComponentsBuilder sendMsgURI = UriComponentsBuilder.newInstance().scheme("https").host("xml2sms.gsm.co.za");
+        UriComponentsBuilder sendMsgURI = UriComponentsBuilder.newInstance().scheme("https").host(smsHost);
         sendMsgURI.path("send/").queryParam("username", smsUsername).queryParam("password", smsPassword);
-
-        System.out.println("Base set up of message string: " + sendMsgURI.build().toUri().toString());
 
         for (int i = 1; i <= usersToMessage.size(); i++) {
             sendMsgURI.queryParam("number" + i, usersToMessage.get(i-1).getPhoneNumber());
@@ -443,7 +444,7 @@ public class AatApiTestController {
     }
 
     /**
-     * Starting the so-far-stubbed menu flows here
+     * Starting stubs and commonly-used mini flows here
      */
 
     @RequestMapping(value = { "/ussd/error", "/ussd/vote", "/ussd/log", "/ussd/grp2" })
@@ -455,13 +456,13 @@ public class AatApiTestController {
 
     /**
      * Auxiliary and helper methods start here ...
-     * To do: Reconsider if loadOrSaveUser has a point
      * To do: Create an 'invert phoneNumber' aux method, to turn '2781...' into user readable format
      * To do: Expand -- a lot -- the various methods needed to handle phone number inputs
      * To do: Move some of the code for renaming groups from menu function down here
      * */
 
     public User loadOrSaveUser(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
         if (userRepository.findByPhoneNumber(phoneNumber).isEmpty()) {
             User sessionUser = new User();
             sessionUser.setPhoneNumber(phoneNumber);
@@ -476,6 +477,9 @@ public class AatApiTestController {
     }
 
     public List<Option> userGroupMenu(User userForSession, String path, boolean optionNewGroup) throws URISyntaxException {
+
+        // todo: some way to handle pagination if user has many groups -- USSD can only handle five options on a menu ...
+        // todo: also, lousy user experience if too many -- should sort by last accessed & most accessed (some combo)
 
         List<Group> groupsPartOf = userForSession.getGroupsPartOf();
         List<Option> menuBuilder = new ArrayList<Option>();
