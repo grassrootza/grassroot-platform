@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>List of groups</title>
+</head>
+<body>
+<div>
+    <strong>Your groups</strong>
+</div>
+<div>
+    <p>These are the groups we found:</p>
+    <table>
+        {{ #groups }}
+        <tr>
+            <td><a href="{{ next_link }}{{ groupId }}">{{ groupName }}</a></td>
+            <td>It was created by {{ groupCreatedBy }} and it has {{ numberUsers }} members.</td>
+        </tr>
+        {{ /groups }}
+    </table>
+</div>
+</body>
+</html>
