@@ -156,15 +156,18 @@ public class AatApiTestController {
         RestTemplate sendGroupSMS = new RestTemplate();
         UriComponentsBuilder sendMsgURI = smsBaseUri.path("send/").queryParam("username", smsUsername).queryParam("password", smsPassword);
 
+        System.out.println("Base set up of message string: " + sendMsgURI.build().toUri().toString());
+
         for (int i = 1; i <= usersToMessage.size(); i++) {
             sendMsgURI.queryParam("number" + i, usersToMessage.get(i-1).getPhoneNumber());
             sendMsgURI.queryParam("message" + i, userResponse);
+            System.out.println("After pass number " + i + ", URI: " + sendMsgURI.build().toUri().toString());
         }
 
         // todo: figure out why the behavior of this is a bit unpredictable ... every now and then it fails
-        // todo: may have something to do with the length of the message? and/or encoding ... not entirely clear
+        // todo: it's do with the URI replicating the base path, not sure why ... adding a bunch of debugging
 
-        System.out.println(sendMsgURI.build().toUri().toString()); // use for debugging, for now
+        System.out.println("String to send: " + sendMsgURI.build().toUri().toString()); // use for debugging, for now
         String messageResult = sendGroupSMS.getForObject(sendMsgURI.build().toUri(), String.class);
 
         String returnMessage = "Done! We sent the message.";
