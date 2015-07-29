@@ -4,10 +4,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import za.org.grassroot.meeting_organizer.model.Group;
 import za.org.grassroot.meeting_organizer.model.User;
 import za.org.grassroot.meeting_organizer.service.repository.GroupRepository;
 import za.org.grassroot.meeting_organizer.service.repository.UserRepository;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * Created by luke on 2015/07/28.
@@ -59,14 +65,56 @@ public class WebController {
         }
     }
 
-    @RequestMapping("/web/find_group")
+    @RequestMapping(value="/web/find_group")
     public String listGroups(@RequestParam(value="user_id", required=true) Integer userId,
                              @RequestParam(value="group_search", required=false) String searchTerm, Model model) {
 
         User sessionUser = userRepository.findOne(userId);
+        List<Group> groupstoList = sessionUser.getGroupsPartOf();
+        List<HashMap<String,String>> groupList = new ArrayList<>();
 
-        return "list_group";
+        for (Group groupToList : groupstoList) {
+            HashMap<String,String> groupAttributes = new HashMap<>();
+            groupAttributes.put("groupId", "" + groupToList.getId());
+            groupAttributes.put("groupName", groupToList.getGroupName());
+            groupAttributes.put("groupCreatedBy", groupToList.getCreatedByUser().getDisplayName());
+            groupAttributes.put("numberUsers", "" + groupToList.getGroupMembers().size());
+            groupList.add(groupAttributes);
+        }
 
+        model.addAttribute("groups", groupList);
+        model.addAttribute("next_link", "group_details?user_id=" + userId + "&group_id=");
+
+        return "find_group";
+
+    }
+
+    @RequestMapping(value="/web/group_details")
+    public String detailGroup(@RequestParam(value="user_id", required=true) Integer userId,
+                              @RequestParam(value="group_id", required=true) Integer groupId, Model model) {
+
+        // todo: really need an auxilliary function in User class to return something intelligible if no display name
+
+        Group groupToDisplay = groupRepository.findOne(groupId);
+        List<User> usersToList = groupToDisplay.getGroupMembers();
+        List<HashMap<String,String>> userList =new ArrayList<>();
+
+        for (User userToList : usersToList) {
+            HashMap<String,String> userAttributes = new HashMap<>();
+            userAttributes.put("user_id", "" + userToList.getId());
+            userAttributes.put("phone_number", User.invertPhoneNumber(userToList.getPhoneNumber()));
+            String storedName = userToList.getDisplayName();
+            String displayName = (storedName == null || storedName.trim().length() == 0) ? "Unnamed user" : storedName;
+            userAttributes.put("display_name", displayName);
+            userList.add(userAttributes);
+        }
+
+        model.addAttribute("users", userList);
+        model.addAttribute("group_name", groupToDisplay.getGroupName());
+        model.addAttribute("created_date", groupToDisplay.getCreatedDateTime().toLocalDateTime().toString());
+        model.addAttribute("created_by", groupToDisplay.getCreatedByUser().getDisplayName());
+
+        return "group_details";
 
     }
 
