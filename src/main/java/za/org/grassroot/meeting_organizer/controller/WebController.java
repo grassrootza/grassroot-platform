@@ -75,10 +75,10 @@ public class WebController {
 
         for (Group groupToList : groupstoList) {
             HashMap<String,String> groupAttributes = new HashMap<>();
-            groupAttributes.put("groupId", "" + groupToList.getId());
-            groupAttributes.put("groupName", groupToList.getGroupName());
-            groupAttributes.put("groupCreatedBy", groupToList.getCreatedByUser().getDisplayName());
-            groupAttributes.put("numberUsers", "" + groupToList.getGroupMembers().size());
+            groupAttributes.put("group_id", "" + groupToList.getId());
+            groupAttributes.put("group_name", groupToList.getGroupName());
+            groupAttributes.put("created_by", groupToList.getCreatedByUser().getName("Unnamed user"));
+            groupAttributes.put("number_users", "" + groupToList.getGroupMembers().size());
             groupList.add(groupAttributes);
         }
 
@@ -93,7 +93,7 @@ public class WebController {
     public String detailGroup(@RequestParam(value="user_id", required=true) Integer userId,
                               @RequestParam(value="group_id", required=true) Integer groupId, Model model) {
 
-        // todo: really need an auxilliary function in User class to return something intelligible if no display name
+        // todo: add in the authentication and group logic to check what rights this user has on this group
 
         Group groupToDisplay = groupRepository.findOne(groupId);
         List<User> usersToList = groupToDisplay.getGroupMembers();
@@ -103,9 +103,7 @@ public class WebController {
             HashMap<String,String> userAttributes = new HashMap<>();
             userAttributes.put("user_id", "" + userToList.getId());
             userAttributes.put("phone_number", User.invertPhoneNumber(userToList.getPhoneNumber()));
-            String storedName = userToList.getDisplayName();
-            String displayName = (storedName == null || storedName.trim().length() == 0) ? "Unnamed user" : storedName;
-            userAttributes.put("display_name", displayName);
+            userAttributes.put("display_name", userToList.getName("Unnamed user"));
             userList.add(userAttributes);
         }
 
@@ -115,6 +113,28 @@ public class WebController {
         model.addAttribute("created_by", groupToDisplay.getCreatedByUser().getDisplayName());
 
         return "group_details";
+
+    }
+
+    @RequestMapping(value="/web/user_rename") // to handle multiple renames at once (key prototype feature)
+    public String userRename(@RequestParam(value="user_id", required=true) Integer userId) {
+
+        User sessionUser = userRepository.findOne(userId);
+        return "404";
+
+    }
+
+    @RequestMapping(value="/web/group/new") // to create a new group (with forms & drop-down boxes)
+    public String newGroupForm(@RequestParam(value="user_id", required=true) Integer userId) {
+
+        return "404";
+
+    }
+
+    @RequestMapping(value="/web/group/new2") // to process the input from the last one
+    public String newGroupAction(@RequestParam(value="user_id", required=true) Integer userId) {
+
+        return "404";
 
     }
 
