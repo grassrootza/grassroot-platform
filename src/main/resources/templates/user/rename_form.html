@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+<div>
+    <strong>We're renaming people.</strong>
+</div>
+<div>
+    <table><form action="rename_do"></form>
+    {{ #users }}
+        <tr><td>This ID: {{ key }}</td><td>This name: {{ value }}</td></tr>
+    {{ /users }}
+    </table>
+</div>
+</body>
+</html>
