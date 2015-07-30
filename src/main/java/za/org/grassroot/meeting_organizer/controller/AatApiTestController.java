@@ -47,8 +47,9 @@ public class AatApiTestController {
 
     String baseURI = "http://meeting-organizer.herokuapp.com/ussd/";
     private String smsHost = "xml2sms.gsm.co.za";
-    private String smsUsername = "***REMOVED***"; // todo: check with Praekelt ... also maybe shift to properties file
-    private String smsPassword = "***REMOVED***"; // todo: check with Praekelt ... also maybe shift to properties file
+
+    private String smsUsername = System.getenv("SMSUSER");
+    private String smsPassword = System.getenv("SMSPASS");
 
     Request noUserError = new Request("Error! Couldn't find you as a user.", new ArrayList<Option>());
     Request noGroupError = new Request("Sorry! Something went wrong finding the group.", new ArrayList<Option>());
@@ -163,13 +164,8 @@ public class AatApiTestController {
         for (int i = 1; i <= usersToMessage.size(); i++) {
             sendMsgURI.queryParam("number" + i, usersToMessage.get(i-1).getPhoneNumber());
             sendMsgURI.queryParam("message" + i, userResponse);
-            System.out.println("After pass number " + i + ", URI: " + sendMsgURI.build().toUri().toString());
         }
 
-        // todo: figure out why the behavior of this is a bit unpredictable ... every now and then it fails
-        // todo: it's do with the URI replicating the base path, not sure why ... adding a bunch of debugging
-
-        System.out.println("String to send: " + sendMsgURI.build().toUri().toString()); // use for debugging, for now
         String messageResult = sendGroupSMS.getForObject(sendMsgURI.build().toUri(), String.class);
 
         String returnMessage = "Done! We sent the message.";

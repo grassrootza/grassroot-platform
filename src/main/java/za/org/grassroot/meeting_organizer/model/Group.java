@@ -5,12 +5,17 @@ package za.org.grassroot.meeting_organizer.model;
  * Lots of to-dos, principally: check/validate the "created_by_user" relationship; do the hash code
  */
 
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+
 import java.sql.Timestamp;
 import java.util.List;
 import javax.persistence.*;
 
 @Entity
 @Table(name="\"group\"") // quoting table name in case "group" is a reserved keyword
+@EqualsAndHashCode
+@ToString
 public class Group {
     private String groupName;
     private Integer id;
@@ -52,19 +57,17 @@ public class Group {
     public List<User> getGroupMembers() { return groupMembers; }
     public void setGroupMembers(List<User> groupMembers) { this.groupMembers = groupMembers; }
 
-    // To do: add hash tag method, analogous to User
+    /**
+     * Adding some auxiliary methods for coping with blank names, etc.
+     */
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) { return true; }
-        if (o == null || getClass() != o.getClass()) { return false; }
-
-        final Group group = (Group) o;
-
-        if (createdDateTime != null ? !createdDateTime.equals(group.createdDateTime) : group.createdDateTime != null) { return false; }
-        if (id != null ? !id.equals(group.id) : group.id != null) { return false; }
-        if (groupName != null ? !groupName.equals(group.groupName) : group.groupName != null) { return false; }
-
-        return true;
+    public String getName(String unnamedPrefix) {
+        if (groupName != null && groupName.trim().length() != 0) {
+            return groupName;
+        } else if (unnamedPrefix.trim().length() == 0) {
+            return "Unnamed group (" + groupMembers.size() + " members)";
+        } else {
+            return unnamedPrefix;
+        }
     }
 }
