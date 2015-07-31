@@ -96,19 +96,11 @@ public class WebController {
         // todo: add in the authentication and group logic to check what rights this user has on this group
 
         Group groupToDisplay = groupRepository.findOne(groupId);
-        List<User> usersToList = groupToDisplay.getGroupMembers();
-        List<HashMap<String,String>> userList =new ArrayList<>();
 
-        for (User userToList : usersToList) {
-            HashMap<String,String> userAttributes = new HashMap<>();
-            userAttributes.put("user_id", "" + userToList.getId());
-            userAttributes.put("phone_number", User.invertPhoneNumber(userToList.getPhoneNumber()));
-            userAttributes.put("display_name", userToList.getName("Unnamed user"));
-            userList.add(userAttributes);
-        }
-
-        model.addAttribute("users", userList);
-        model.addAttribute("group_name", groupToDisplay.getGroupName());
+        model.addAttribute("users", getUserListFromGroup(groupToDisplay));
+        model.addAttribute("user_id", userId);
+        model.addAttribute("group_id", groupId);
+        model.addAttribute("group_name", groupToDisplay.getName(""));
         model.addAttribute("created_date", groupToDisplay.getCreatedDateTime().toLocalDateTime().toString());
         model.addAttribute("created_by", groupToDisplay.getCreatedByUser().getDisplayName());
 
@@ -116,11 +108,39 @@ public class WebController {
 
     }
 
-    @RequestMapping(value="/web/user_rename") // to handle multiple renames at once (key prototype feature)
-    public String userRename(@RequestParam(value="user_id", required=true) Integer userId) {
+    @RequestMapping(value="/web/user/rename_form")
+    public String userRenameForm(@RequestParam(value="user_id", required=true) Integer userId,
+                                 @RequestParam(value="group_id", required=true) Integer groupId, Model model) {
+
+        // todo: as elsewhere, check if user has permission to do this for these group members
+
+        List<HashMap<String, String>> userList = getUserListFromGroup(groupRepository.findOne(groupId));
+
+        model.addAttribute("users", userList);
+
+        return "rename_form";
+
+    }
+
+    @RequestMapping(value="/web/user/rename_do") // to handle multiple renames at once (key prototype feature)
+    public String userRename(@RequestParam(value="user_id", required=true) Integer userId,
+                             @RequestParam(value="users_selected[]", required=true) Integer[] usersSelected, Model model) {
 
         User sessionUser = userRepository.findOne(userId);
-        return "404";
+
+        User userToRename;
+        List<User> usersToRename = new ArrayList<>(usersSelected.length);
+        HashMap<String, String> detailsToDisplay = new HashMap<>();
+
+        for (int i : usersSelected) {
+            userToRename = userRepository.findOne(usersSelected[i]);
+            usersToRename.add(i, userToRename);
+            detailsToDisplay.put("" + userToRename.getId(), userToRename.getName(""));
+        }
+
+        model.addAttribute("users", detailsToDisplay);
+
+        return "user/rename_do";
 
     }
 
@@ -136,6 +156,28 @@ public class WebController {
 
         return "404";
 
+    }
+
+    /**
+     * Start auxilliary functionshere
+     */
+
+    public List<HashMap<String,String>> getUserListFromGroup(Group groupToDisplay) {
+
+        // todo: work out best level of abstraction here (i.e., what to pass, what to return)
+
+        List<User> usersToList = groupToDisplay.getGroupMembers();
+        List<HashMap<String,String>> userList =new ArrayList<>();
+
+        for (User userToList : usersToList) {
+            HashMap<String,String> userAttributes = new HashMap<>();
+            userAttributes.put("user_id", "" + userToList.getId());
+            userAttributes.put("phone_number", User.invertPhoneNumber(userToList.getPhoneNumber()));
+            userAttributes.put("display_name", userToList.getName("Unnamed user"));
+            userList.add(userAttributes);
+        }
+
+        return userList;
     }
 
 }
