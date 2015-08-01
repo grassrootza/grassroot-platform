@@ -147,8 +147,11 @@ public class AatApiTestController {
                                @RequestParam(value="groupId", required=true) String groupId,
                                @RequestParam(value="request", required=true) String userResponse) throws URISyntaxException {
 
-        String phoneNumber = convertPhoneNumber(inputNumber);
-        if (userRepository.findByPhoneNumber(phoneNumber).isEmpty()) return noUserError;
+        User userSending = new User();
+        try { userSending = userRepository.findByPhoneNumber(convertPhoneNumber(inputNumber)).iterator().next(); }
+        catch (Exception e) { return noUserError; }
+
+        String msgText = "From: " + userSending.getName("") + ": " + userResponse;
 
         // todo: various forms of error handling here (e.g., non-existent group, invalid users, etc)
         // todo: store the response from the SMS gateway and use it to state how many messages successful
@@ -163,7 +166,7 @@ public class AatApiTestController {
 
         for (int i = 1; i <= usersToMessage.size(); i++) {
             sendMsgURI.queryParam("number" + i, usersToMessage.get(i-1).getPhoneNumber());
-            sendMsgURI.queryParam("message" + i, userResponse);
+            sendMsgURI.queryParam("message" + i, msgText);
         }
 
         String messageResult = sendGroupSMS.getForObject(sendMsgURI.build().toUri(), String.class);

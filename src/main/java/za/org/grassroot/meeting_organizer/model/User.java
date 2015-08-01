@@ -76,6 +76,10 @@ public class User {
      * Inserting string functions to handle phone numbers here, for the moment
      */
 
+    public boolean hasName() {
+        return (displayName != null && displayName.trim().length() > 0);
+    }
+
     public String getName(String unknownPrefix) {
         if (displayName != null && displayName.trim().length() > 0) {
             return displayName;

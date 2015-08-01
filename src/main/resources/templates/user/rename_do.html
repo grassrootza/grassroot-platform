@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+<div>
+    <strong>Renamed!</strong>
+</div>
+<div>
+    <p>We have renamed some of the users in your group. Here is the revised group:</p>
+    <table>
+        <tr><td>Number</td><td>Name</td></tr>
+        {{ #users }}
+        <tr><td>{{ phone_number }}</td><td>{{ display_name }}</td></tr>
+        {{ /users }}
+    </table>
+</div>
+</body>
+</html>

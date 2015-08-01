@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+<div>
+    <strong>Hi, {{ user_name }}. Let's create a group.</strong>
+</div>
+<form action="new2" method="post">
+    <input type="hidden" name="user_id" value="{{ user_id }}">
+    <p>Please enter a name for the group:
+    <input type="text" name="group_name"></p>
+    <p>Please enter the phone numbers and names (optional) of the group members:</p>
+    <table>
+        <tr><td>Phone number</td><td>Name</td></tr>
+        <tr>
+            <td><input type="text" name="member_phone_1"></td>
+            <td><input type="text" name="member_name_1"></td>
+        </tr>
+        <tr>
+            <td><input type="text" name="member_phone_2"></td>
+            <td><input type="text" name="member_name_2"></td>
+        </tr>
+        </table>
+    <button type="button">Add another member</button><button type="submit">Create!</button>
+    </table>
+</form>
+</body>
+</html>

@@ -11,9 +11,11 @@ import za.org.grassroot.meeting_organizer.model.User;
 import za.org.grassroot.meeting_organizer.service.repository.GroupRepository;
 import za.org.grassroot.meeting_organizer.service.repository.UserRepository;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by luke on 2015/07/28.
@@ -83,13 +85,52 @@ public class WebController {
         }
 
         model.addAttribute("groups", groupList);
-        model.addAttribute("next_link", "group_details?user_id=" + userId + "&group_id=");
+        model.addAttribute("next_link", "group/details?user_id=" + userId + "&group_id=");
 
         return "find_group";
 
     }
 
-    @RequestMapping(value="/web/group_details")
+    @RequestMapping(value="/web/user/rename_form")
+    public String userRenameForm(@RequestParam(value="user_id", required=true) Integer userId,
+                                 @RequestParam(value="group_id", required=true) Integer groupId, Model model) {
+
+        // todo: as elsewhere, check if user has permission to do this for these group members
+
+        List<HashMap<String, String>> userList = getUserListFromGroup(groupRepository.findOne(groupId));
+
+        model.addAttribute("users", userList);
+        model.addAttribute("group_id", groupId);
+        model.addAttribute("user_id", userId);
+
+        return "user/rename_form";
+
+    }
+
+    @RequestMapping(value="/web/user/rename_do") // to handle multiple renames at once (key prototype feature)
+    public String userRenameAction(@RequestParam(value="user_id", required=true) Integer userId,
+                                   @RequestParam(value="group_id", required=true) Integer groupId,
+                                   @RequestParam(value="users_selected", required=true) Integer[] usersSelected,
+                                   HttpServletRequest request, Model model) {
+
+        User sessionUser = userRepository.findOne(userId);
+
+        User userToRename;
+        List<HashMap<String, String>> detailsToDisplay = new ArrayList<>();
+
+        for (int i = 0; i < usersSelected.length; i++) {
+            userToRename = userRepository.findOne(usersSelected[i]);
+            userToRename.setDisplayName(request.getParameter("name_" + usersSelected[i]));
+            userRepository.save(userToRename);
+        }
+
+        model.addAttribute("users", getUserListFromGroup(groupRepository.findOne(groupId)));
+
+        return "user/rename_do";
+
+    }
+
+    @RequestMapping(value="/web/group/details")
     public String detailGroup(@RequestParam(value="user_id", required=true) Integer userId,
                               @RequestParam(value="group_id", required=true) Integer groupId, Model model) {
 
@@ -104,62 +145,72 @@ public class WebController {
         model.addAttribute("created_date", groupToDisplay.getCreatedDateTime().toLocalDateTime().toString());
         model.addAttribute("created_by", groupToDisplay.getCreatedByUser().getDisplayName());
 
-        return "group_details";
-
-    }
-
-    @RequestMapping(value="/web/user/rename_form")
-    public String userRenameForm(@RequestParam(value="user_id", required=true) Integer userId,
-                                 @RequestParam(value="group_id", required=true) Integer groupId, Model model) {
-
-        // todo: as elsewhere, check if user has permission to do this for these group members
-
-        List<HashMap<String, String>> userList = getUserListFromGroup(groupRepository.findOne(groupId));
-
-        model.addAttribute("users", userList);
-
-        return "rename_form";
-
-    }
-
-    @RequestMapping(value="/web/user/rename_do") // to handle multiple renames at once (key prototype feature)
-    public String userRename(@RequestParam(value="user_id", required=true) Integer userId,
-                             @RequestParam(value="users_selected[]", required=true) Integer[] usersSelected, Model model) {
-
-        User sessionUser = userRepository.findOne(userId);
-
-        User userToRename;
-        List<User> usersToRename = new ArrayList<>(usersSelected.length);
-        HashMap<String, String> detailsToDisplay = new HashMap<>();
-
-        for (int i : usersSelected) {
-            userToRename = userRepository.findOne(usersSelected[i]);
-            usersToRename.add(i, userToRename);
-            detailsToDisplay.put("" + userToRename.getId(), userToRename.getName(""));
-        }
-
-        model.addAttribute("users", detailsToDisplay);
-
-        return "user/rename_do";
+        return "group/details";
 
     }
 
     @RequestMapping(value="/web/group/new") // to create a new group (with forms & drop-down boxes)
-    public String newGroupForm(@RequestParam(value="user_id", required=true) Integer userId) {
+    public String newGroupForm(@RequestParam(value="user_id", required=true) Integer userId, Model model) {
 
-        return "404";
+        User sessionUser = new User();
+        try { sessionUser = userRepository.findOne(userId); }
+        catch (Exception e) { return "user_error"; }
+
+        model.addAttribute("user_id", userId);
+        model.addAttribute("user_name", sessionUser.getName(""));
+
+        return "group/new_form";
 
     }
 
     @RequestMapping(value="/web/group/new2") // to process the input from the last one
-    public String newGroupAction(@RequestParam(value="user_id", required=true) Integer userId) {
+    public String newGroupAction(@RequestParam(value="user_id", required=true) Integer userId,
+                                 @RequestParam(value="group_name", required=true) String groupName,
+                                 HttpServletRequest request, Model model) {
 
-        return "404";
+        User sessionUser, userToCreate = new User();
+        try { sessionUser = userRepository.findOne(userId); }
+        catch (Exception e) { return "user_error"; }
+
+        Group groupToCreate = new Group();
+        groupToCreate.setCreatedByUser(sessionUser);
+        groupToCreate.setGroupName(groupName);
+
+        Map<String, Object> attributeMap = new HashMap<>();
+
+        // todo: once have proper service layer, with common create group method, use for both this & ussd version
+        // todo: reconsider how to handle the parameters, whether as array from param, or pass a counter in form, or ...
+
+        List<User> groupMembers = new ArrayList<>();
+        String phoneBase = "member_phone_";
+        String nameBase = "member_name_";
+        Integer counter = 1;
+
+        while (request.getParameter(phoneBase + counter) != null) {
+            String inputNumber = request.getParameter(phoneBase + counter);
+            String inputName = request.getParameter(nameBase + counter);
+            userToCreate = loadOrSaveUser(inputNumber);
+            if (!userToCreate.hasName()) {
+                userToCreate.setDisplayName(inputName);
+                userToCreate = userRepository.save(userToCreate);
+            }
+            groupMembers.add(userToCreate);
+            counter++;
+        }
+
+        groupMembers.add(sessionUser);
+        groupToCreate.setGroupMembers(groupMembers);
+        groupToCreate = groupRepository.save(groupToCreate);
+
+        attributeMap.put("group_name", groupName);
+        attributeMap.put("group_size", groupToCreate.getGroupMembers().size());
+        model.addAllAttributes(attributeMap);
+        return "group/new_action";
 
     }
 
     /**
-     * Start auxilliary functionshere
+     * Start auxilliary functions here
      */
 
     public List<HashMap<String,String>> getUserListFromGroup(Group groupToDisplay) {
@@ -178,6 +229,19 @@ public class WebController {
         }
 
         return userList;
+    }
+
+    // todo: NB: move this to service layer (copy and pasted code here from USSD controller, really need to not do that)
+
+    public User loadOrSaveUser(String inputNumber) {
+        String phoneNumber = User.convertPhoneNumber(inputNumber);
+        if (userRepository.findByPhoneNumber(phoneNumber).isEmpty()) {
+            User sessionUser = new User();
+            sessionUser.setPhoneNumber(phoneNumber);
+            return userRepository.save(sessionUser);
+        } else {
+            return userRepository.findByPhoneNumber(phoneNumber).iterator().next();
+        }
     }
 
 }

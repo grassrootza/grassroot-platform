@@ -9,11 +9,21 @@
     <strong>We're renaming people.</strong>
 </div>
 <div>
-    <table><form action="rename_do"></form>
-    {{ #users }}
-        <tr><td>This ID: {{ key }}</td><td>This name: {{ value }}</td></tr>
-    {{ /users }}
+    <form action="rename_do" method="post">
+    <table>
+        <tr><td>Rename?</td><td>Phone</td><td>Name</td></tr>
+        {{ #users }}
+        <tr>
+            <td><input type="checkbox" name="users_selected" value="{{ user_id }}">
+            <td>{{ phone_number }}</td>
+            <td><input type="text" name="name_{{ user_id }}" value="{{ display_name }}"></td>
+        </tr>
+        {{ /users }}
+        <tr><td><button type="submit">Submit!</button></td></tr>
+        <input type="hidden" name="user_id" value="{{ user_id }}">
+        <input type="hidden" name="group_id" value="{{ group_id }}">
     </table>
+    </form>
 </div>
 </body>
 </html>
