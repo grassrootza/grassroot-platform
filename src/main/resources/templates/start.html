@@ -8,19 +8,28 @@
 <div><strong>Welcome back.</strong></div>
 <div>
     <p>Hello, {{ display_name }}. Welcome back to GrassRoot.
-    Search for group:</p>
+    Search for a group:</p>
 </div>
 <div>
     <table>
-    <tr><td><form action="find_group" method=post>
-        <input type="hidden" name="user_id" value="{{user_id}}">
-        <input type="text" name="group_search" />
-        <button type="submit">Act</button>
-    </form></td></tr>
-    <tr><td><form action="group/new" method="post">
+        <tr>
+            <td><form action="find_group" method=post>
+            <input type="hidden" name="user_id" value="{{user_id}}">
+            <input type="text" name="group_search" />
+            <button type="submit">Act</button>
+        </form></td>
+        </tr>
+        <tr><td>Your existing groups:</td></tr>
+        {{ #groups }}
+        <tr>
+            <td><a href="{{ next_link }}{{ group_id }}">{{ group_name }}</a></td>
+        </tr>
+        {{ /groups }}
+        <tr><td><form action="group/new" method="post">
         <input type="hidden" name="user_id" value="{{user_id}}">
         <button type="submit">Create new group</button>
     </form></td></tr>
+    </table>
 </div>
 </body>
 </html>

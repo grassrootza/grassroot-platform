@@ -16,9 +16,9 @@
 
 <div>
     <table>
-        <tr><td>UserID</td><td>Phone number</td><td>Display name</td></tr>
+        <tr><td>Phone number</td><td>Member's name</td></tr>
         {{ #users }}
-        <tr><td>{{user_id}}</td><td>{{phone_number}}</td><td>{{display_name}}</td></tr>
+        <tr><td>{{phone_number}}</td><td>{{display_name}}</td></tr>
         {{ /users }}
     </table>
 </div>
@@ -27,6 +27,10 @@
     <input type="hidden" name="user_id" value="{{ user_id }}">
     <input type="hidden" name="group_id" value="{{ group_id }}">
     <button type="submit">Rename members</button>
+</form>
+<form action="/web/start" method="post">
+    <input type="hidden" name="user_id" value="{{ user_id }}">
+    <button type="submit">Back home</button>
 </form>
 
 </body>

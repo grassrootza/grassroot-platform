@@ -75,7 +75,8 @@ public class AatApiTestController {
         String phoneNumber = convertPhoneNumber(passedNumber);
         User sessionUser = loadOrSaveUser(phoneNumber);
 
-        String welcomeMessage = "Hello! Welcome to GrassRoot. What do you want to do?";
+        String welcomeMessage = sessionUser.hasName() ? ("Hi " + sessionUser.getName("") + ". What do you want to do?") :
+                "Hello! Welcome to GrassRoot. What do you want to do?";
         final Option meetingOrg = new Option("Call a meeting", 1,1, new URI(baseURI + "mtg"),true);
         final Option voteTake = new Option("Take a vote", 2,2, new URI(baseURI + "vote"),true);
         final Option logAction = new Option("Record an action", 3,3, new URI(baseURI + "log"),true);

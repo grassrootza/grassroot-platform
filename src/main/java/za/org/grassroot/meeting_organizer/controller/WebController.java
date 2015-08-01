@@ -39,20 +39,29 @@ public class WebController {
     }
 
     @RequestMapping("/web/start")
-    public String userHome(@RequestParam(value="input_number") String inputNumber,
+    public String userHome(@RequestParam(value="input_number", required=false) String inputNumber,
+                           @RequestParam(value="user_id", required=false) Integer userId,
                            @RequestParam(value="display_name", required=false) String displayName, Model model) {
 
         User sessionUser = new User();
-        String phoneNumber = User.convertPhoneNumber(inputNumber);
+        String phoneNumber;
 
-        try {
-            sessionUser = userRepository.findByPhoneNumber(phoneNumber).iterator().next();
-        } catch (Exception e) {
-            model.addAttribute("input_number", inputNumber);
-            return "user_error";
+        if (userId != null) {
+            sessionUser = userRepository.findOne(userId);
+            inputNumber = User.invertPhoneNumber(sessionUser.getPhoneNumber());
+        } else {
+            phoneNumber = User.convertPhoneNumber(inputNumber);
+            try { sessionUser = userRepository.findByPhoneNumber(phoneNumber).iterator().next(); }
+            catch (Exception e) {
+                model.addAttribute("input_number", inputNumber);
+                return "user_error";
+            }
         }
 
         model.addAttribute("user_id", sessionUser.getId());
+        model.addAttribute("groups", getGroupListFromUser(sessionUser));
+        model.addAttribute("next_link", "group/details?user_id=" + sessionUser.getId() + "&group_id=");
+
         if (displayName != null) {
             sessionUser.setDisplayName(displayName);
             sessionUser = userRepository.save(sessionUser);
@@ -72,19 +81,9 @@ public class WebController {
                              @RequestParam(value="group_search", required=false) String searchTerm, Model model) {
 
         User sessionUser = userRepository.findOne(userId);
-        List<Group> groupstoList = sessionUser.getGroupsPartOf();
-        List<HashMap<String,String>> groupList = new ArrayList<>();
 
-        for (Group groupToList : groupstoList) {
-            HashMap<String,String> groupAttributes = new HashMap<>();
-            groupAttributes.put("group_id", "" + groupToList.getId());
-            groupAttributes.put("group_name", groupToList.getGroupName());
-            groupAttributes.put("created_by", groupToList.getCreatedByUser().getName("Unnamed user"));
-            groupAttributes.put("number_users", "" + groupToList.getGroupMembers().size());
-            groupList.add(groupAttributes);
-        }
-
-        model.addAttribute("groups", groupList);
+        model.addAttribute("user_id", userId);
+        model.addAttribute("groups", getGroupListFromUser(sessionUser));
         model.addAttribute("next_link", "group/details?user_id=" + userId + "&group_id=");
 
         return "find_group";
@@ -125,6 +124,7 @@ public class WebController {
         }
 
         model.addAttribute("users", getUserListFromGroup(groupRepository.findOne(groupId)));
+        model.addAttribute("user_id", userId);
 
         return "user/rename_do";
 
@@ -198,10 +198,11 @@ public class WebController {
             counter++;
         }
 
-        groupMembers.add(sessionUser);
+        if (!groupMembers.contains(sessionUser)) { groupMembers.add(sessionUser); }
         groupToCreate.setGroupMembers(groupMembers);
         groupToCreate = groupRepository.save(groupToCreate);
 
+        attributeMap.put("user_id", userId);
         attributeMap.put("group_name", groupName);
         attributeMap.put("group_size", groupToCreate.getGroupMembers().size());
         model.addAllAttributes(attributeMap);
@@ -229,6 +230,23 @@ public class WebController {
         }
 
         return userList;
+    }
+
+    public List<HashMap<String,String>> getGroupListFromUser(User userToDisplay) {
+
+        List<Group> groupstoList = userToDisplay.getGroupsPartOf();
+        List<HashMap<String,String>> groupList = new ArrayList<>();
+
+        for (Group groupToList : groupstoList) {
+            HashMap<String,String> groupAttributes = new HashMap<>();
+            groupAttributes.put("group_id", "" + groupToList.getId());
+            groupAttributes.put("group_name", groupToList.getGroupName());
+            groupAttributes.put("created_by", groupToList.getCreatedByUser().getName("Unnamed user"));
+            groupAttributes.put("number_users", "" + groupToList.getGroupMembers().size());
+            groupList.add(groupAttributes);
+        }
+
+        return groupList;
     }
 
     // todo: NB: move this to service layer (copy and pasted code here from USSD controller, really need to not do that)
