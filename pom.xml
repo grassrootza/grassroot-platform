@@ -4,21 +4,15 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <!--<parent>-->
-        <!--<groupId>org.springframework.boot</groupId>-->
-        <!--<artifactId>spring-boot-starter-parent</artifactId>-->
-        <!--<version>1.2.3.RELEASE</version>-->
-    <!--</parent>-->
-
     <groupId>za.org.grassroot</groupId>
-    <artifactId>meeting-organizer</artifactId>
+    <artifactId>grassroot</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>Grassroot Meeting Organizer</name>
+    <name>GrassRoot Application</name>
     <url>http://www.grassroot.org.za/</url>
 
     <organization>
-        <name>Grassroot</name>
+        <name>GrassRoot</name>
         <url>http://www.grassroot.org.za/</url>
     </organization>
 
@@ -28,12 +22,52 @@
 
 
     <modules>
-        <module>meeting-organizer-webapp</module>
-        <module>meeting-organizer-core</module>
-        <module>meeting-organizer-messaging</module>
-        <module>meeting-organizer-integration</module>
-        <module>meeting-organizer-services</module>
+        <module>grassroot-webapp</module>
+        <module>grassroot-core</module>
+        <module>grassroot-messaging</module>
+        <module>grassroot-integration</module>
+        <module>grassroot-services</module>
+        <module>grassroot-aat-ussd-web-emulator</module>
     </modules>
+    <dependencies>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>18.0</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.dbunit</groupId>
+            <artifactId>dbunit</artifactId>
+            <version>2.4.8</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.springtestdbunit</groupId>
+            <artifactId>spring-test-dbunit</artifactId>
+            <version>1.2.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-library</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
     <dependencyManagement>
         <dependencies>

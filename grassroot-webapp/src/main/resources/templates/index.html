@@ -1,0 +1,21 @@
+<html
+    xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorator="layout">
+  <head>
+    <title>GrassRoot - Home</title>
+
+    <meta property="og:title" content="grassroot.org.za" />
+    <meta property="og:image" content="/img/grass.png" />
+    <meta property="og:description" content="The GrassRoot Platform." />
+  </head>
+  <body>
+    <div layout:fragment="header-container"></div>
+    <div layout:fragment="full-width--layout">
+      <div class="homepage--body">
+        <h1>GrassRoot</h1>
+
+      </div>
+    </div>
+    <div layout:fragment="content"></div>
+  </body>
+</html>
