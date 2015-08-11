@@ -33,6 +33,7 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
  * To do: avoid hard-coding the URLs in the menus, so we can swap them around later
  * To do: add in functions to prompt returning user for display name, and use display names in building groups
  * To do: wire up creating groups sub-routines in various sub-menus
+ * To do: Check if responses are less than 140 characters before sending
  */
 @RequestMapping(method = GET, produces = MediaType.APPLICATION_XML_VALUE)
 @RestController
@@ -75,23 +76,51 @@ public class AatApiTestController {
         String phoneNumber = convertPhoneNumber(passedNumber);
         User sessionUser = loadOrSaveUser(phoneNumber);
 
-        String welcomeMessage = sessionUser.hasName() ? ("Hi " + sessionUser.getName("") + ". What do you want to do?") :
-                "Hello! Welcome to GrassRoot. What do you want to do?";
-        final Option meetingOrg = new Option("Call a meeting", 1,1, new URI(baseURI + "mtg"),true);
-        final Option voteTake = new Option("Take a vote", 2,2, new URI(baseURI + "vote"),true);
-        final Option logAction = new Option("Record an action", 3,3, new URI(baseURI + "log"),true);
-        final Option userProfile = new Option("Change my profile", 4, 4, new URI(baseURI + "user"), true);
-        final Option manageGroups = new Option("Manage groups", 5, 5, new URI(baseURI + "group"), true);
-        return new Request(welcomeMessage, Arrays.asList(meetingOrg, voteTake, logAction, userProfile, manageGroups));
+        if (sessionUser.needsToRenameSelf(10)) {
+            return new Request("Hi! We notice you haven't set a name yet. What should we call you?", freeText("rename-start"));
+        } else if (sessionUser.needsToRenameGroup()) {
+            return new Request("Hi! Last time you created a group, but it doesn't have a name yet. What's it called?",
+                    freeText("group-start"));
+        } else {
+            String welcomeMessage = sessionUser.hasName() ? ("Hi " + sessionUser.getName("") + ". What do you want to do?") :
+                    "Hi! Welcome to GrassRoot. What will you do?";
+            return welcomeMenu(welcomeMessage);
+        }
+    }
+
+    @RequestMapping(value = "/ussd/rename-start")
+    @ResponseBody
+    public Request renameAndStart(@RequestParam(value="msisdn") String passedNumber,
+                                  @RequestParam(value="request") String userName) throws URISyntaxException {
+
+        User sessionUser = loadOrSaveUser(convertPhoneNumber(passedNumber));
+        sessionUser.setDisplayName(userName);
+        sessionUser = userRepository.save(sessionUser);
+
+        return welcomeMenu("Thanks " + userName + ". What do you want to do?");
+    }
+
+    @RequestMapping(value = "/ussd/group-start")
+    @ResponseBody
+    public Request groupNameAndStart(@RequestParam(value="msisdn") String passedNumber,
+                                     @RequestParam(value="groupId") Integer groupId,
+                                     @RequestParam(value="request") String groupName) throws URISyntaxException {
+
+        // todo: use permission model to check if user can actually do this
+
+        Group groupToRename = groupRepository.findOne(groupId);
+        groupToRename.setGroupName(groupName);
+        groupToRename = groupRepository.save(groupToRename);
+
+        return welcomeMenu("Thanks! Now what do you want to do?");
+
     }
 
     /**
      * The meeting organizer menus
      * To do: Carve these out into their own controller class to make everything more readable
      * To do: Use a folder URL structure for the different menu trees
-     * To do: Figure out some way around the absence of USSD push
      * To do: Various forms of validation and checking throughout
-     * To do: Major -- Start working on the "event" creation, so we have a persistent record of the meeting structure
      */
 
     @RequestMapping(value = "/ussd/mtg")
@@ -417,7 +446,7 @@ public class AatApiTestController {
         catch (NoSuchElementException e) { return noUserError; }
 
         String promptPhrase;
-        if (sessionUser.getDisplayName() == null || sessionUser.getDisplayName().trim().length() == 0) {
+        if (!sessionUser.hasName()) {
             promptPhrase = "You haven't set your name yet. What name do you want to use?";
         } else {
             promptPhrase = "Your name is currently set to '" + sessionUser.getDisplayName() + "'. What do you want to change it to?";
@@ -470,6 +499,17 @@ public class AatApiTestController {
         } else {
             return userRepository.findByPhoneNumber(phoneNumber).iterator().next();
         }
+    }
+
+    public Request welcomeMenu(String opening) throws URISyntaxException {
+
+        final Option meetingOrg = new Option("Call a meeting", 1,1, new URI(baseURI + "mtg"),true);
+        final Option voteTake = new Option("Take a vote", 2,2, new URI(baseURI + "vote"),true);
+        final Option logAction = new Option("Record an action", 3,3, new URI(baseURI + "log"),true);
+        final Option manageGroups = new Option("Manage groups", 4, 4, new URI(baseURI + "group"), true);
+        final Option userProfile = new Option("Change profile", 5, 5, new URI(baseURI + "user"), true);
+        return new Request(opening, Arrays.asList(meetingOrg, voteTake, logAction, manageGroups, userProfile));
+
     }
 
     public List<Option> freeText(String urlEnding) throws URISyntaxException {

@@ -73,6 +73,24 @@ public class User {
     public void setGroupsPartOf(List<Group> groupsPartOf) { this.groupsPartOf = groupsPartOf; }
 
     /**
+     * Two methods to check if this user needs to rename themselves, and/or name a group--probably move to service
+     * UX logic: If user accesses through USSD, on first use, don't want to ask for name, but do thereafter
+     * Similarly, for Group, don't want to slow down to ask for group when we start, but want to come back and get it
+     */
+
+    public boolean needsToRenameSelf(Integer timeLimit) {
+        if (hasName()) return false;
+        Timestamp minutesAgo = new Timestamp(System.currentTimeMillis() - (timeLimit * 60 * 1000));
+        if (createdDateTime == null || createdDateTime.after(minutesAgo))
+            return false;
+        return true;
+    }
+
+    public boolean needsToRenameGroup() { // placeholder
+        return false;
+    }
+
+    /**
      * Inserting string functions to handle phone numbers here, for the moment
      */
 
