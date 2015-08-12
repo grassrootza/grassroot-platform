@@ -14,8 +14,14 @@ public class HomeController {
     private static final Logger LOGGER = LoggerFactory.getLogger(HomeController.class);
 
     @RequestMapping("/")
-    public String getHomePage() {
+    public String getIndexPage() {
         LOGGER.debug("Getting home page");
         return "index";
+    }
+
+    @RequestMapping("/home")
+    public String getHomePage()
+    {
+        return "home";
     }
 }
