@@ -94,7 +94,7 @@
             &copy; <span th:text="${#calendars.format(#calendars.createToday(),'yyyy')}">2015</span> <a href="http://www.grassroot.org.za/">GrassRoot</a>. All Rights Reserved.
 
             <span id='authentication' sec:authorize="isFullyAuthenticated()">
-              [<a th:href="@{/signout}">Sign out</a>]
+              [<a th:href="@{/logout}">Sign out</a>]
             </span>
           </div>
 
