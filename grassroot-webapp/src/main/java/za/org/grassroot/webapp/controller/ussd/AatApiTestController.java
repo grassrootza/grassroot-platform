@@ -509,17 +509,6 @@ public class AatApiTestController {
         }
     }
 
-    public Request welcomeMenu(String opening) throws URISyntaxException {
-
-        final Option meetingOrg = new Option("Call a meeting", 1,1, new URI(baseURI + "mtg"),true);
-        final Option voteTake = new Option("Take a vote", 2,2, new URI(baseURI + "vote"),true);
-        final Option logAction = new Option("Record an action", 3,3, new URI(baseURI + "log"),true);
-        final Option manageGroups = new Option("Manage groups", 4, 4, new URI(baseURI + "group"), true);
-        final Option userProfile = new Option("Change profile", 5, 5, new URI(baseURI + "user"), true);
-        return new Request(opening, Arrays.asList(meetingOrg, voteTake, logAction, manageGroups, userProfile));
-
-    }
-
     public List<Option> freeText(String urlEnding) throws URISyntaxException {
         return Collections.singletonList(new Option("", 1, 1, new URI(baseURI + urlEnding), false));
     }
