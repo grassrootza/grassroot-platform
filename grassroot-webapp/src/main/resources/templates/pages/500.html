@@ -1,0 +1,23 @@
+<html   xmlns:th="http://www.thymeleaf.org"
+        xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+        layout:decorator="layout">
+<head>
+    <title>Server Error</title>
+</head>
+<body>
+  <div layout:fragment="header-container"></div>
+
+<div layout:fragment="content" class="container">
+  <div class="main-body--wrapper">
+    <div class="error-page">
+        <div>
+            <h1>500</h1>
+        </div>
+      <a href="https://twitter.com/grassrootza" class="error-bottom-link">
+        <div class="social-icon twitter"></div>@grassrootza
+      </a>
+    </div>
+  </div>
+</div>
+</body>
+</html>

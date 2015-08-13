@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <title>GrassRoot - SignIn</title>
+    <meta id="Viewport" name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1, minimum-scale=1, user-scalable=no"/>
+    <link rel="shortcut icon" type="image/x-icon" th:href="@{/images/favicon.ico}"/>
+    <link rel="stylesheet" type="text/css" th:href="@{/css/bootstrap.min.css}"/>
+    <link rel="stylesheet" type="text/css" th:href="@{/css/material-fullpalette.min.css}"/>
+    <link rel="stylesheet" type="text/css" th:href="@{/css/ripples.min.css}"/>
+    <style>
+        .card-signin {
+            margin: 100px auto 25px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!--<div>-->
+        <!--<img src="../../images/grassroot-logo.png" th:attr="src=@{/images/grassroot-logo.png}" />-->
+    <!--</div>-->
+    <div class="card-signin">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="well bs-component">
+                    <form class="form-horizontal" th:action="@{/login}"  method="post">
+
+                        <fieldset>
+                            <legend>Signin</legend>
+                        </fieldset>
+                        <div th:class="${error}? '  alert alert-danger alert-dismissable' : ' hide'">
+                            <p th:if="${error}">Wrong user or password <span th:text="${error}"></span></p>
+                        </div>
+                        <div class="form-group">
+                            <label for="username" class="col-lg-2 control-label">GrassRoot ID</label>
+
+                            <div class="col-lg-10">
+                                <input type="text" class="form-control" id="username" name="username" placeholder="Username"/>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="password" class="col-lg-2 control-label">Password</label>
+
+                            <div class="col-lg-10">
+                                <input type="password" class="form-control" id="password" name="password" placeholder="Password"/>
+                            </div>
+                        </div>
+
+                        <fieldset>
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                        </fieldset>
+
+                        <!--<input type="hidden" th:name="${_csrf.parameterName}"-->
+                               <!--th:value="${_csrf.token}"/>-->
+                        <button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script th:src="@{/js/jquery-1.11.3.min.js}"></script>
+<script th:src="@{/js/bootstrap.min.js}"></script>
+<script th:src="@{/js/material.min.js}"></script>
+<script th:src="@{/js/ripples.min.js}"></script>
+<script>
+    $.material.init();
+</script>
+</body>
+</html>
