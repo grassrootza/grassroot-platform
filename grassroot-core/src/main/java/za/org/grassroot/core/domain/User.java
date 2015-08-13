@@ -211,8 +211,21 @@ public class User implements UserDetails {
     //~=================================================================================================================
 
     /**
-     * Inserting string functions to handle phone numbers here, for the moment
+     * Inserting some methods to deal with users not having names -- might want to move to service layer...
+     * May want to switch from a time-based logic on needing to rename to a login count (2nd or 3rd time accessing system)
      */
+
+    public boolean needsToRenameSelf(Integer timeLimit) {
+        if (hasName()) return false;
+        Timestamp minutesAgo = new Timestamp(System.currentTimeMillis() - (timeLimit * 60 * 1000));
+        if (createdDateTime == null || createdDateTime.after(minutesAgo))
+            return false;
+        return true;
+    }
+
+    public boolean hasName() {
+        return (displayName != null && displayName.trim().length() > 0);
+    }
 
     public String getName(String unknownPrefix) {
         if (displayName != null && displayName.trim().length() > 0) {
@@ -223,6 +236,15 @@ public class User implements UserDetails {
             return unknownPrefix + " (" + invertPhoneNumber(phoneNumber) + ")";
         }
     }
+
+    public boolean needsToRenameGroup() { // placeholder
+        return false;
+    } // stub for now
+
+    /**
+     * Inserting string functions to handle phone numbers here, for the moment
+     */
+
 
     public static String convertPhoneNumber(String inputString) {
 

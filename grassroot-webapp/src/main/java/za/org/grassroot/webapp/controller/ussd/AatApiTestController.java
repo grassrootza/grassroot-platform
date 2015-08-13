@@ -57,7 +57,6 @@ public class AatApiTestController {
 
     @Autowired
     GroupRepository groupRepository;
-    private String phoneNumber;
 
     @RequestMapping(value = "/ussd/test_question")
     @ResponseBody
@@ -73,13 +72,55 @@ public class AatApiTestController {
         String phoneNumber = convertPhoneNumber(passedNumber);
         User sessionUser = loadOrSaveUser(phoneNumber);
 
-        String welcomeMessage = "Hello! Welcome to GrassRoot. What do you want to do?";
+        if (sessionUser.needsToRenameSelf(10)) {
+            return new Request("Hi! We notice you haven't set a name yet. What should we call you?", freeText("rename-start"));
+        } else if (sessionUser.needsToRenameGroup()) {
+            return new Request("Hi! Last time you created a group, but it doesn't have a name yet. What's it called?",
+                    freeText("group-start"));
+        } else {
+            String welcomeMessage = sessionUser.hasName() ? ("Hi " + sessionUser.getName("") + ". What do you want to do?") :
+                    "Hi! Welcome to GrassRoot. What will you do?";
+            return welcomeMenu(welcomeMessage);
+        }
+    }
+
+    @RequestMapping(value = "/ussd/rename-start")
+    @ResponseBody
+    public Request renameAndStart(@RequestParam(value="msisdn") String passedNumber,
+                                  @RequestParam(value="request") String userName) throws URISyntaxException {
+
+        User sessionUser = loadOrSaveUser(convertPhoneNumber(passedNumber));
+        sessionUser.setDisplayName(userName);
+        sessionUser = userRepository.save(sessionUser);
+
+        return welcomeMenu("Thanks " + userName + ". What do you want to do?");
+    }
+
+    @RequestMapping(value = "/ussd/group-start")
+    @ResponseBody
+    public Request groupNameAndStart(@RequestParam(value="msisdn") String passedNumber,
+                                     @RequestParam(value="groupId") Long groupId,
+                                     @RequestParam(value="request") String groupName) throws URISyntaxException {
+
+        // todo: use permission model to check if user can actually do this
+
+        Group groupToRename = groupRepository.findOne(groupId);
+        groupToRename.setGroupName(groupName);
+        groupToRename = groupRepository.save(groupToRename);
+
+        return welcomeMenu("Thanks! Now what do you want to do?");
+
+    }
+
+    public Request welcomeMenu(String opening) throws URISyntaxException {
+
         final Option meetingOrg = new Option("Call a meeting", 1,1, new URI(baseURI + "mtg"),true);
         final Option voteTake = new Option("Take a vote", 2,2, new URI(baseURI + "vote"),true);
         final Option logAction = new Option("Record an action", 3,3, new URI(baseURI + "log"),true);
-        final Option userProfile = new Option("Change my profile", 4, 4, new URI(baseURI + "user"), true);
-        final Option manageGroups = new Option("Manage groups", 5, 5, new URI(baseURI + "group"), true);
-        return new Request(welcomeMessage, Arrays.asList(meetingOrg, voteTake, logAction, userProfile, manageGroups));
+        final Option manageGroups = new Option("Manage groups", 4, 4, new URI(baseURI + "group"), true);
+        final Option userProfile = new Option("Change profile", 5, 5, new URI(baseURI + "user"), true);
+        return new Request(opening, Arrays.asList(meetingOrg, voteTake, logAction, manageGroups, userProfile));
+
     }
 
     /**
@@ -101,7 +142,8 @@ public class AatApiTestController {
         catch (NoSuchElementException e) { return noUserError; }
 
         if (sessionUser.getGroupsPartOf().isEmpty()) {
-            String promptMessage = "Okay, we'll set up a meeting. Please enter the numbers of the people to invite.";
+            String promptMessage = "Okay, we'll set up a meeting. Please enter the phone numbers of the people to invite." +
+                    " You can enter multiple numbers separated by a space or comma.";
             return new Request(promptMessage, freeText("mtg2"));
         } else {
             String promptMessage = "Do you want to call a meeting of an existing group, or create a new one?";
@@ -145,8 +187,11 @@ public class AatApiTestController {
                                @RequestParam(value="groupId", required=true) String groupId,
                                @RequestParam(value="request", required=true) String userResponse) throws URISyntaxException {
 
-        String phoneNumber = convertPhoneNumber(inputNumber);
-        if (userRepository.findByPhoneNumber(phoneNumber).isEmpty()) return noUserError;
+        User userSending = new User();
+        try { userSending = userRepository.findByPhoneNumber(convertPhoneNumber(inputNumber)).iterator().next(); }
+        catch (Exception e) { return noUserError; }
+
+        String msgText = "From: " + userSending.getName("") + ": " + userResponse;
 
         // todo: various forms of error handling here (e.g., non-existent group, invalid users, etc)
         // todo: store the response from the SMS gateway and use it to state how many messages successful
@@ -456,7 +501,6 @@ public class AatApiTestController {
      * */
 
     public User loadOrSaveUser(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
         if (userRepository.findByPhoneNumber(phoneNumber).isEmpty()) {
             User sessionUser = new User();
             sessionUser.setPhoneNumber(phoneNumber);
@@ -534,9 +578,8 @@ public class AatApiTestController {
         return usersToAdd;
     }
 
-    /**
-     * Going to move the phone number string handling functions to User class as static methods ... can shift elsewhere later
-     */
+    // todo: build out the phone number / string handling methods, probably in service layer somewhere
+    // todo: probably distinguish between numbers we get via msisdn param, and user inputted numbers, for speed
 
     public String convertPhoneNumber(String inputString) {
 

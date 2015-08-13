@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+
+<div>
+    <strong>Displaying group, with name: {{ group_name }}</strong>
+</div>
+
+<div>
+    <p>It was created by {{ created_by }}, on {{ created_date }}. It has these users:</p>
+</div>
+
+<div>
+    <table>
+        <tr><td>Phone number</td><td>Member's name</td></tr>
+        {{ #users }}
+        <tr><td>{{phone_number}}</td><td>{{display_name}}</td></tr>
+        {{ /users }}
+    </table>
+</div>
+
+<form action="/web/user/rename_form">
+    <input type="hidden" name="user_id" value="{{ user_id }}">
+    <input type="hidden" name="group_id" value="{{ group_id }}">
+    <button type="submit">Rename members</button>
+</form>
+<form action="/web/start" method="post">
+    <input type="hidden" name="user_id" value="{{ user_id }}">
+    <button type="submit">Back home</button>
+</form>
+
+</body>
+</html>
