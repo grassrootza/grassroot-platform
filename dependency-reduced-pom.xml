@@ -47,7 +47,7 @@
         <configuration>
           <tansformers>
             <transformer>
-              <mainClass>za.org.grassroot.meeting_organizer.Application</mainClass>
+              <mainClass>za.org.grassroot.webapp.Application</mainClass>
             </transformer>
           </tansformers>
         </configuration>

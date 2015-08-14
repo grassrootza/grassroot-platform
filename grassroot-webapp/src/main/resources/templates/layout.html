@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:data="https://github.com/mxab/thymeleaf-extras-data-attribute">
+<head>
+  <title>Layout</title>
+  <meta id="Viewport" name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, minimum-scale=1, user-scalable=no"/>
+  <link rel="shortcut icon" type="image/x-icon" th:href="@{/images/favicon.ico}"/>
+  <link rel="stylesheet" type="text/css" th:href="@{/css/bootstrap.min.css}" />
+  <link rel="stylesheet" type="text/css" th:href="@{/css/material-fullpalette.min.css}" />
+  <link rel="stylesheet" type="text/css" th:href="@{/css/ripples.min.css}" />
+  <link rel="stylesheet" type="text/css" th:href="@{/css/grassroot.css}" />
+
+  <script th:inline="javascript">
+        var baseUrl = /*[[@{/}]]*/ '../static/';
+  </script>
+</head>
+<body>
+  <script type="text/javascript">
+    // Work around Google font rendering issues in webkit browsers on Windows 7
+    if (navigator.userAgent.indexOf("NT 6.1") != -1) {
+      document.body.style.WebkitTextStroke = "0.5px";
+    }
+  </script>
+  <div>
+
+     <!-- // Navigation -->
+
+      <div class="navbar navbar-default">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-responsive-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand"   href="javascript:void(0)" th:href="@{/home}">GrassRoot</a>
+        </div>
+        <div class="navbar-collapse collapse navbar-responsive-collapse">
+          <ul class="nav navbar-nav">
+
+            <li sec:authorize="isFullyAuthenticated()" class="active"><a href="javascript:void(0)">Start Meeting Group</a></li>
+
+
+          </ul>
+
+          <ul sec:authorize="isAnonymous()" class="nav navbar-nav navbar-right">
+            <li sec:authorize="isAnonymous()" class=""><a href="javascript:void(0)"><span class="badge">Sign Up</span></a></li>
+            <li sec:authorize="isAnonymous()" class=""><a href="javascript:void(0)" th:href="@{/home}">Login</a></li>
+           </ul>
+
+          <ul sec:authorize="isFullyAuthenticated()" class="nav navbar-nav navbar-right">
+            <li class="dropdown">
+              <a href="javascript:void(0)" data-target="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false">My Profile <b class="caret"></b><div class="ripple-wrapper"></div></a>
+              <ul class="dropdown-menu">
+                <li><a href="javascript:void(0)">Profile</a></li>
+                <li><a href="javascript:void(0)">Settings</a></li>
+                <li class="divider"></li>
+                <li><a href="javascript:void(0)"  class="user-logout" id="user-logout" th:href="@{/logout}">Logout</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <!-- // Navigation -->
+
+
+    <div class="header-container" layout:fragment="header-container">
+      <div class="header--content" layout:fragment="header-content">
+        <div class="row-fluid container-fluid">
+          <div class="span8">
+            <h1 class="header-content-title" layout:fragment="header">
+              First Last
+            </h1>
+            <p class="header-content-subtitle" layout:fragment="overview">
+              Subttitle Ligula Risus Tristique Pharetra
+            </p>
+          </div>
+          <div class="span4">
+            <div layout:fragment="header-sidebar"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="container-fluid" layout:fragment="top-content"></div>
+
+
+    <main class="body-container container-fluid " layout:fragment="content">
+      <div id="footer-push-down"></div>
+    </main>
+
+    <footer class="footer">
+      <div class="container-fluid">
+        <div class="row-fluid">
+          <div class="span8">
+            &copy; <span th:text="${#calendars.format(#calendars.createToday(),'yyyy')}">2015</span> <a href="http://www.grassroot.org.za/">GrassRoot</a>. All Rights Reserved.
+
+            <span id='authentication' sec:authorize="isFullyAuthenticated()">
+              [<a th:href="@{/logout}">Sign out</a>]
+            </span>
+          </div>
+
+        </div>
+      </div>
+    </footer>
+    <div id="scrim"></div>
+  </div>
+
+
+  <div sec:authorize="isFullyAuthenticated()" >
+    <form id="logoutForm"  th:action="@{/logout}" method="post">
+      <fieldset>
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+      </fieldset>
+    </form>
+  </div>
+
+  <script th:src="@{/js/jquery-1.11.3.min.js}"></script>
+  <script th:src="@{/js/bootstrap.min.js}"></script>
+  <script th:src="@{/js/material.min.js}"></script>
+  <script th:src="@{/js/ripples.min.js}"></script>
+  <script>
+    $.material.init();
+  </script>
+
+<script>
+  $(document).ready(function(){
+    $('.user-logout').click(function(){
+      document.getElementById("logoutForm").submit();
+    });
+  });
+</script>
+
+  <div class="header-container" layout:fragment="script-container">
+  </div>
+
+
+</body>
+</html>
