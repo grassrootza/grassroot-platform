@@ -9,6 +9,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.services.UserManager;
 
 
 import javax.servlet.http.HttpServletRequest;
@@ -27,6 +28,8 @@ import java.util.Map;
 @Controller
 public class WebController {
 
+    UserManager userManager;
+
     @Autowired
     UserRepository userRepository;
 
@@ -43,10 +46,9 @@ public class WebController {
                            @RequestParam(value="display_name", required=false) String displayName, Model model) {
 
         User sessionUser = new User();
-        String phoneNumber = User.convertPhoneNumber(inputNumber);
 
         try {
-            sessionUser = userRepository.findByPhoneNumber(phoneNumber).iterator().next();
+            sessionUser = userManager.findByInputNumber(inputNumber);
         } catch (Exception e) {
             model.addAttribute("input_number", inputNumber);
             return "user_error";
@@ -198,7 +200,7 @@ public class WebController {
         while (request.getParameter(phoneBase + counter) != null) {
             String inputNumber = request.getParameter(phoneBase + counter);
             String inputName = request.getParameter(nameBase + counter);
-            userToCreate = loadOrSaveUser(inputNumber);
+            userToCreate = userManager.loadOrSaveUser(inputNumber);
             if (!userToCreate.hasName()) {
                 userToCreate.setDisplayName(inputName);
                 userToCreate = userRepository.save(userToCreate);
@@ -257,19 +259,4 @@ public class WebController {
 
         return groupList;
     }
-
-    // todo: NB: move this to service layer (copy and pasted code here from USSD controller, really need to not do that)
-
-    public User loadOrSaveUser(String inputNumber) {
-        String phoneNumber = User.convertPhoneNumber(inputNumber);
-        if (userRepository.findByPhoneNumber(phoneNumber).isEmpty()) {
-            User sessionUser = new User();
-            sessionUser.setPhoneNumber(phoneNumber);
-            return userRepository.save(sessionUser);
-        } else {
-            return userRepository.findByPhoneNumber(phoneNumber).iterator().next();
-        }
-    }
-
-
 }
