@@ -14,7 +14,7 @@ import java.util.Calendar;
 import java.util.List;
 
 @Entity
-@Table(name="group_profile ") // quoting table name in case "group" is a reserved keyword
+@Table(name="group_profile") // quoting table name in case "group" is a reserved keyword
 @EqualsAndHashCode
 @ToString
 public class Group {
@@ -67,11 +67,13 @@ public class Group {
     }
 
     /**
-     * Adding some auxiliary methods for coping with blank names, etc.
+     * Adding some auxiliary methods for checking if blank name, coping with blank names, etc.
      */
 
+    public boolean hasName() { return (groupName != null && groupName.trim().length() != 0);  }
+
     public String getName(String unnamedPrefix) {
-        if (groupName != null && groupName.trim().length() != 0) {
+        if (hasName()) {
             return groupName;
         } else if (unnamedPrefix.trim().length() == 0) {
             return "Unnamed group (" + groupMembers.size() + " members)";

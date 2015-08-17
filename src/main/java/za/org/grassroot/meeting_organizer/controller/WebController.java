@@ -1,16 +1,15 @@
-package za.org.grassroot.webapp.controller.webapp;
+package za.org.grassroot.meeting_organizer.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.services.UserManager;
-
+import za.org.grassroot.meeting_organizer.model.Group;
+import za.org.grassroot.meeting_organizer.model.User;
+import za.org.grassroot.meeting_organizer.service.repository.GroupRepository;
+import za.org.grassroot.meeting_organizer.service.repository.UserRepository;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
@@ -28,8 +27,6 @@ import java.util.Map;
 @Controller
 public class WebController {
 
-    UserManager userManager;
-
     @Autowired
     UserRepository userRepository;
 
@@ -42,19 +39,25 @@ public class WebController {
     }
 
     @RequestMapping("/web/start")
-    public String userHome(@RequestParam(value="input_number") String inputNumber,
+    public String userHome(@RequestParam(value="input_number", required=false) String inputNumber,
+                           @RequestParam(value="user_id", required=false) Integer userId,
                            @RequestParam(value="display_name", required=false) String displayName, Model model) {
 
         User sessionUser = new User();
+        String phoneNumber;
 
-        try {
-            sessionUser = userManager.findByInputNumber(inputNumber);
-        } catch (Exception e) {
-            model.addAttribute("input_number", inputNumber);
-            return "user_error";
+        if (userId != null) {
+            sessionUser = userRepository.findOne(userId);
+            inputNumber = User.invertPhoneNumber(sessionUser.getPhoneNumber());
+        } else {
+            phoneNumber = User.convertPhoneNumber(inputNumber);
+            try { sessionUser = userRepository.findByPhoneNumber(phoneNumber).iterator().next(); }
+            catch (Exception e) {
+                model.addAttribute("input_number", inputNumber);
+                return "user_error";
+            }
         }
 
-        model.addAttribute("user_id", sessionUser.getId());
         model.addAttribute("user_id", sessionUser.getId());
         model.addAttribute("groups", getGroupListFromUser(sessionUser));
         model.addAttribute("next_link", "group/details?user_id=" + sessionUser.getId() + "&group_id=");
@@ -64,7 +67,7 @@ public class WebController {
             sessionUser = userRepository.save(sessionUser);
             model.addAttribute("display_name", sessionUser.getDisplayName());
             return "start";
-        } else if (!sessionUser.hasName()) {
+        } else if (sessionUser.getDisplayName() == null || sessionUser.getDisplayName().trim().length() == 0) {
             model.addAttribute("input_number", inputNumber);
             return "user_name";
         } else {
@@ -73,22 +76,8 @@ public class WebController {
         }
     }
 
-
-    @RequestMapping("/web/create_user")
-    public String createUser(@RequestParam(value = "input_number") String inputNumber, Model model) {
-        ///web/find_group
-
-        User user = new User();
-        user.setPhoneNumber(inputNumber);
-        user = userRepository.save(user);
-
-        model.addAttribute("phoneNumber", user.getPhoneNumber());
-        return "user";
-
-    }
-
     @RequestMapping(value="/web/find_group")
-    public String listGroups(@RequestParam(value="user_id", required=true) Long userId,
+    public String listGroups(@RequestParam(value="user_id", required=true) Integer userId,
                              @RequestParam(value="group_search", required=false) String searchTerm, Model model) {
 
         User sessionUser = userRepository.findOne(userId);
@@ -102,8 +91,8 @@ public class WebController {
     }
 
     @RequestMapping(value="/web/user/rename_form")
-    public String userRenameForm(@RequestParam(value="user_id", required=true) Long userId,
-                                 @RequestParam(value="group_id", required=true) Long groupId, Model model) {
+    public String userRenameForm(@RequestParam(value="user_id", required=true) Integer userId,
+                                 @RequestParam(value="group_id", required=true) Integer groupId, Model model) {
 
         // todo: as elsewhere, check if user has permission to do this for these group members
 
@@ -118,9 +107,9 @@ public class WebController {
     }
 
     @RequestMapping(value="/web/user/rename_do") // to handle multiple renames at once (key prototype feature)
-    public String userRenameAction(@RequestParam(value="user_id", required=true) Long userId,
-                                   @RequestParam(value="group_id", required=true) Long groupId,
-                                   @RequestParam(value="users_selected", required=true) Long[] usersSelected,
+    public String userRenameAction(@RequestParam(value="user_id", required=true) Integer userId,
+                                   @RequestParam(value="group_id", required=true) Integer groupId,
+                                   @RequestParam(value="users_selected", required=true) Integer[] usersSelected,
                                    HttpServletRequest request, Model model) {
 
         User sessionUser = userRepository.findOne(userId);
@@ -142,8 +131,8 @@ public class WebController {
     }
 
     @RequestMapping(value="/web/group/details")
-    public String detailGroup(@RequestParam(value="user_id", required=true) Long userId,
-                              @RequestParam(value="group_id", required=true) Long groupId, Model model) {
+    public String detailGroup(@RequestParam(value="user_id", required=true) Integer userId,
+                              @RequestParam(value="group_id", required=true) Integer groupId, Model model) {
 
         // todo: add in the authentication and group logic to check what rights this user has on this group
 
@@ -161,7 +150,7 @@ public class WebController {
     }
 
     @RequestMapping(value="/web/group/new") // to create a new group (with forms & drop-down boxes)
-    public String newGroupForm(@RequestParam(value="user_id", required=true) Long userId, Model model) {
+    public String newGroupForm(@RequestParam(value="user_id", required=true) Integer userId, Model model) {
 
         User sessionUser = new User();
         try { sessionUser = userRepository.findOne(userId); }
@@ -175,7 +164,7 @@ public class WebController {
     }
 
     @RequestMapping(value="/web/group/new2") // to process the input from the last one
-    public String newGroupAction(@RequestParam(value="user_id", required=true) Long userId,
+    public String newGroupAction(@RequestParam(value="user_id", required=true) Integer userId,
                                  @RequestParam(value="group_name", required=true) String groupName,
                                  HttpServletRequest request, Model model) {
 
@@ -200,7 +189,7 @@ public class WebController {
         while (request.getParameter(phoneBase + counter) != null) {
             String inputNumber = request.getParameter(phoneBase + counter);
             String inputName = request.getParameter(nameBase + counter);
-            userToCreate = userManager.loadOrSaveUser(inputNumber);
+            userToCreate = loadOrSaveUser(inputNumber);
             if (!userToCreate.hasName()) {
                 userToCreate.setDisplayName(inputName);
                 userToCreate = userRepository.save(userToCreate);
@@ -222,7 +211,7 @@ public class WebController {
     }
 
     /**
-     * Start auxilliary functions here. All should be moved to service layer.
+     * Start auxilliary functions here
      */
 
     public List<HashMap<String,String>> getUserListFromGroup(Group groupToDisplay) {
@@ -259,4 +248,18 @@ public class WebController {
 
         return groupList;
     }
+
+    // todo: NB: move this to service layer (copy and pasted code here from USSD controller, really need to not do that)
+
+    public User loadOrSaveUser(String inputNumber) {
+        String phoneNumber = User.convertPhoneNumber(inputNumber);
+        if (userRepository.findByPhoneNumber(phoneNumber).isEmpty()) {
+            User sessionUser = new User();
+            sessionUser.setPhoneNumber(phoneNumber);
+            return userRepository.save(sessionUser);
+        } else {
+            return userRepository.findByPhoneNumber(phoneNumber).iterator().next();
+        }
+    }
+
 }

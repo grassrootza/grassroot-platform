@@ -11,13 +11,20 @@
 <div>
     <p>These are the groups we found:</p>
     <table>
+        <tr><td>Name</td><td>Created by</td><td>Number of members</td></tr>
         {{ #groups }}
         <tr>
             <td><a href="{{ next_link }}{{ group_id }}">{{ group_name }}</a></td>
-            <td>It was created by {{ created_by }} and it has {{ number_users }} members.</td>
+            <td>{{ created_by }}</td><td>{{ number_users }} members.</td>
         </tr>
         {{ /groups }}
     </table>
+</div>
+<div>
+    <form action="/web/start" method="post">
+        <input type="hidden" name="user_id" value="{{ user_id }}">
+        <button type="submit">Back home</button>
+    </form>
 </div>
 </body>
 </html>

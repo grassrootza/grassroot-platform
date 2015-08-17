@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+<div>
+    <strong>We've created a group!</strong>
+</div>
+<div>
+    <p>Done. We've created a group with the name '{{ group_name }}', and {{ group_size }} members (including you).
+    The group will display the next time you access the system from your phone.</p>
+</div>
+<div>
+    <form action="/web/start" method="post">
+        <input type="hidden" name="user_id" value="{{ user_id }}">
+        <button type="submit">Back home</button>
+    </form>
+</div>
+</body>
+</html>

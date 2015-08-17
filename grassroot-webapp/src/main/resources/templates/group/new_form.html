@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create a new group</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script>
+            $(document).ready(function() {
+            $counter = 2;
+            $('.add-row').click(function() {
+                $counter++;
+                $('#members').append("<tr><td><input type='text' name='member_phone_" + $counter + "'></td>"
+                    + "<td><input type='text' name='member_name_" + $counter + "'></td></tr>");
+            });
+        });
+    </script>
+</head>
+<body>
+<div>
+    <strong>Hi, {{ user_name }}. Let's create a group.</strong>
+</div>
+<form action="new2" method="post">
+    <input type="hidden" name="user_id" value="{{ user_id }}">
+    <p>Please enter a name for the group:
+    <input type="text" name="group_name"></p>
+    <p>Please enter the phone numbers and names (optional) of the group members:</p>
+    <table id="members">
+        <tr><td>Phone number</td><td>Name</td></tr>
+        <tr>
+            <td><input type="text" name="member_phone_1"></td>
+            <td><input type="text" name="member_name_1"></td>
+        </tr>
+        <tr>
+            <td><input type="text" name="member_phone_2"></td>
+            <td><input type="text" name="member_name_2"></td>
+        </tr>
+    </table>
+    <button type="button" class="add-row">Add another member</button><button type="submit">Create!</button>
+    </form>
+</form>
+<div>
+    <form action="/web/start" method="post">
+        <input type="hidden" name="user_id" value="{{ user_id }}">
+        <button type="submit">Back home</button>
+    </form>
+</div>
+</body>
+</html>

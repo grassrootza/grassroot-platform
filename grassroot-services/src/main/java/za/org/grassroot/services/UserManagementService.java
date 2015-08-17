@@ -15,4 +15,15 @@ public interface UserManagementService {
     List<User> getAllUsers();
 
     public Page<User> getDeploymentLog(Integer pageNumber);
+
+    User save(User userToSave);
+
+    User loadOrSaveUser(String inputNumber);
+
+    User findByInputNumber(String inputNumber);
+
+    List<User> getUsersFromNumbers(String listOfNumbers);
+
+
+
 }
