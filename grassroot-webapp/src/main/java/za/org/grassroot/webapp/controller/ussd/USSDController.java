@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.ussd;
 
+import com.google.common.collect.ImmutableMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
@@ -9,6 +10,7 @@ import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.GroupManager;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.services.UserManager;
+import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Option;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
@@ -22,14 +24,20 @@ import java.util.*;
  */
 public class USSDController {
 
-    String baseURI = "http://meeting-organizer.herokuapp.com/ussd/";
-    protected String smsHost = "xml2sms.gsm.co.za";
+    protected final String baseURI = "http://meeting-organizer.herokuapp.com/ussd/";
+    protected final String USSD_BASE = "ussd/", PHONE_PARAM = "msisdn", TEXT_PARAM = "request";
 
-    protected String smsUsername = System.getenv("SMSUSER");
-    protected String smsPassword = System.getenv("SMSPASS");
+    protected final String smsHost = "xml2sms.gsm.co.za";
+    protected final String smsUsername = System.getenv("SMSUSER");
+    protected final String smsPassword = System.getenv("SMSPASS");
 
     Request noUserError = new Request("Error! Couldn't find you as a user.", new ArrayList<Option>());
     Request noGroupError = new Request("Sorry! Something went wrong finding the group.", new ArrayList<Option>());
+    Request exitScreen = new Request("Thanks! We're done.", new ArrayList<Option>());
+
+    protected static final Map<String, String> optionsHomeExit = ImmutableMap.<String, String>builder().
+            put("start", "Go back to the main menu").
+            put("exit", "Exit GrassRoot").build();
 
     @Autowired
     UserManagementService userManager;
@@ -47,6 +55,17 @@ public class USSDController {
         return menuToBuild;
     }
 
+    public Request menuBuilder(USSDMenu thisMenu) throws URISyntaxException {
+        Request menuRequest;
+        if (thisMenu.isFreeText()) {
+            menuRequest = new Request(thisMenu.getPromptMessage(), freeText(thisMenu.getNextURI()));
+        } else {
+            menuRequest = new Request(thisMenu.getPromptMessage(), createMenu(thisMenu.getMenuOptions()));
+        }
+        return menuRequest;
+    }
+
+    // todo: standardize handling of base vs ending URIs wrt folder names
     public List<Option> freeText(String urlEnding) throws URISyntaxException {
         return Collections.singletonList(new Option("", 1, 1, new URI(baseURI + urlEnding), false));
     }

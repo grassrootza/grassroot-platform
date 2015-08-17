@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.ussd;
 
+import com.google.common.collect.ImmutableMap;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -9,11 +10,13 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Option;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -29,8 +32,7 @@ public class USSDMeetingController extends USSDController {
 
     /**
      * The meeting organizer menus
-     * To do: Carve these out into their own controller class to make everything more readable
-     * To do: Use a folder URL structure for the different menu trees
+     * To do: Decide whether to use the menu abstraction now built into this, or not
      * To do: Various forms of validation and checking throughout
      */
 
@@ -46,14 +48,14 @@ public class USSDMeetingController extends USSDController {
         if (sessionUser.getGroupsPartOf().isEmpty()) {
             String promptMessage = "Okay, we'll set up a meeting. Please enter the phone numbers of the people to invite." +
                     " You can enter multiple numbers separated by a space or comma.";
-            return new Request(promptMessage, freeText("mtg2"));
+            return new Request(promptMessage, freeText("mtg/group"));
         } else {
             String promptMessage = "Do you want to call a meeting of an existing group, or create a new one?";
-            return new Request(promptMessage, userGroupMenu(sessionUser, "mtg2", true));
+            return new Request(promptMessage, userGroupMenu(sessionUser, "mtg/group", true));
         }
     }
 
-    @RequestMapping(value = "/ussd/mtg2")
+    @RequestMapping(value = "/ussd/mtg/group")
     @ResponseBody
     public Request saveNumbers(@RequestParam(value="msisdn", required=true) String inputNumber,
                                @RequestParam(value="request", required=false) String userResponse,
@@ -70,36 +72,88 @@ public class USSDMeetingController extends USSDController {
         if (groupId != null) {
             if (groupId == 0) {
                 return new Request("Okay. We'll create a new group for this meeting. Please enter the numbers for it.",
-                        freeText("mtg2"));
+                        freeText("mtg/group"));
             } else {
                 groupToMessage = groupManager.loadGroup(groupId);
-                returnMessage = "Okay, please enter the message to send to the group.";
+                returnMessage = "Okay, please enter the date for the meeting.";
             }
         } else {
             groupToMessage = groupManager.createNewGroup(sessionUser, userResponse);
-            returnMessage = "Okay, we just created a group with those numbers. Please enter a message to send to them.";
+            returnMessage = "Okay, we just created a group with those numbers. What day do you want the meeting?";
         }
-        return new Request(returnMessage, freeText("mtg3?groupId=" + groupToMessage.getId()));
+        return new Request(returnMessage, freeText("mtg/time?groupId=" + groupToMessage.getId()));
     }
 
-    @RequestMapping(value = "/ussd/mtg3")
+    // todo: instead of handing along the groupId, date, time, etc., create an event and hand over its ID
+    // todo: create some default options for the next 3 days, for date
+    // todo: clean up the flow and logic between these menus (they are getting a little confusing, even to me ...)
+
+    @RequestMapping(value = "/ussd/mtg/date")
+    @ResponseBody
+    public Request getDate(@RequestParam(value="msisdn", required=true) String inputNumber,
+                           @RequestParam(value="groupId", required=false) Long groupId) throws URISyntaxException {
+
+        HashMap<String, String> menuValues = new HashMap<>();
+
+        menuValues.put("returnMessage", "Okay. What day do you want the meeting?");
+        menuValues.put("url", "mtg/time?groupId=" + groupId);
+
+        // String returnMessage = "Okay. What day do you want the meeting?";
+        return new Request(menuValues.get("returnMessage"), freeText("mtg/time?groupId=" + groupId));
+
+    }
+
+    @RequestMapping(value = "/ussd/mtg/time")
+    @ResponseBody
+    public Request getTime(@RequestParam(value="msisdn", required=true) String inputNumber,
+                           @RequestParam(value="groupId", required=false) Long groupId,
+                           @RequestParam(value="request", required=true) String meetingDate) throws URISyntaxException {
+
+        String returnMessage = "Okay. What time?";
+        return new Request(returnMessage, freeText("mtg/place?groupId=" + groupId + "&date=" + meetingDate));
+
+    }
+
+    @RequestMapping(value = "/ussd/mtg/place")
+    @ResponseBody
+    public Request getPlace(@RequestParam(value="msisdn", required=true) String inputNumber,
+                            @RequestParam(value="groupId", required=false) Long groupId,
+                            @RequestParam(value="date", required=true) String meetingDate,
+                            @RequestParam(value="request", required=true) String meetingTime) throws URISyntaxException {
+
+        // todo: add a lookup of group default places
+
+        String returnMessage = "Done. What place?";
+        return new Request(returnMessage, freeText("mtg/message?groupId=" + groupId + "&date=" + meetingDate + "&time=" + meetingTime));
+
+    }
+
+    @RequestMapping(value = "/ussd/mtg/message")
     @ResponseBody
     public Request sendMessage(@RequestParam(value="msisdn", required=true) String inputNumber,
                                @RequestParam(value="groupId", required=true) Long groupId,
-                               @RequestParam(value="request", required=true) String userResponse) throws URISyntaxException {
+                               @RequestParam(value="date", required=true) String meetingDate,
+                               @RequestParam(value="time", required=true) String meetingTime,
+                               @RequestParam(value="request", required=true) String meetingPlace) throws URISyntaxException {
+
+        // todo: various forms of error handling here (e.g., non-existent group, invalid users, etc)
+        // todo: store the response from the SMS gateway and use it to state how many messages successful
+        // todo: split up the URI into multiple if it gets >2k chars (will be an issue when have 20+ person groups)
+        // todo: add shortcode for RSVP reply
 
         User userSending = new User();
         try { userSending = userManager.findByInputNumber(inputNumber); }
         catch (Exception e) { return noUserError; }
 
-        String msgText = "From: " + userSending.getName("") + ": " + userResponse;
-
-        // todo: various forms of error handling here (e.g., non-existent group, invalid users, etc)
-        // todo: store the response from the SMS gateway and use it to state how many messages successful
-        // todo: split up the URI into multiple if it gets >2k chars (will be an issue when have 20+ person groups)
-
         Group groupToMessage = groupManager.loadGroup(groupId);
         List<User> usersToMessage = groupToMessage.getGroupMembers();
+
+        String groupName = (groupToMessage.hasName()) ? ("of group, " + groupToMessage.getGroupName() + ", ") : "";
+
+        String msgText = "From " + userSending.getName("") + ": Meeting called " + groupName + "on " + meetingDate
+                + ", at time " + meetingTime + " and place " + meetingPlace;
+
+        System.out.println(msgText);
 
         RestTemplate sendGroupSMS = new RestTemplate();
         UriComponentsBuilder sendMsgURI = UriComponentsBuilder.newInstance().scheme("https").host(smsHost);
@@ -111,6 +165,7 @@ public class USSDMeetingController extends USSDController {
         }
 
         String messageResult = sendGroupSMS.getForObject(sendMsgURI.build().toUri(), String.class);
+        System.out.println(messageResult);
 
         String returnMessage = "Done! We sent the message.";
         return new Request(returnMessage, new ArrayList<Option>());
