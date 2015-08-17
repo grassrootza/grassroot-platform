@@ -5,6 +5,9 @@
 <head>
   <title>Layout</title>
   <meta id="Viewport" name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, minimum-scale=1, user-scalable=no"/>
+
+  <meta name="_csrf" value="dummy" th:value="${_csrf.token}"/>
+
   <link rel="shortcut icon" type="image/x-icon" th:href="@{/images/favicon.ico}"/>
   <link rel="stylesheet" type="text/css" th:href="@{/css/bootstrap.min.css}" />
   <link rel="stylesheet" type="text/css" th:href="@{/css/material-fullpalette.min.css}" />
@@ -44,7 +47,7 @@
           </ul>
 
           <ul sec:authorize="isAnonymous()" class="nav navbar-nav navbar-right">
-            <li sec:authorize="isAnonymous()" class=""><a href="javascript:void(0)"><span class="badge">Sign Up</span></a></li>
+            <li sec:authorize="isAnonymous()" class=""><a href="javascript:void(0)" th:href="@{/signup}"><span class="badge">Sign Up</span></a></li>
             <li sec:authorize="isAnonymous()" class=""><a href="javascript:void(0)" th:href="@{/home}">Login</a></li>
            </ul>
 

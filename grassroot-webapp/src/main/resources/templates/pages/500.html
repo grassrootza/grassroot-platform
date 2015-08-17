@@ -5,14 +5,62 @@
     <title>Server Error</title>
 </head>
 <body>
-  <div layout:fragment="header-container"></div>
+
+<div layout:fragment="header">
+    <h2>500</h2>
+</div>
+<div layout:fragment="overview">Application Error</div>
 
 <div layout:fragment="content" class="container">
   <div class="main-body--wrapper">
-    <div class="error-page">
-        <div>
-            <h1>500</h1>
-        </div>
+    <div class="well">
+
+
+        <p th:if="${url}">
+            <b>Page:</b> <span th:text="${url}">Page URL</span>
+        </p>
+
+        <p th:if="${timestamp}" id='created'>
+            <b>Occurred:</b> <span th:text="${timestamp}">Timestamp</span>
+        </p>
+
+        <p th:if="${status}">
+            <b>Response Status:</b> <span th:text="${status}">status-code</span> <span
+                th:if="${error}" th:text="'('+${error}+')'">error ...</span>
+        </p>
+
+
+
+        <!--<div th:utext="'Failed URL: ' +  ${url}" th:remove="tag">${url}</div>-->
+
+        <!--<div th:utext="'Exception: ' + ${exception.message}" th:remove="tag">${exception.message}</div>-->
+        <!--<ul th:remove="tag">-->
+            <!--<li th:each="ste : ${exception.stackTrace}" th:remove="tag"><span-->
+                    <!--th:utext="${ste}" th:remove="tag">${ste}</span></li>-->
+        <!--</ul>-->
+
+        <!--<div-->
+                <!--th:if="${ex} or ${exception} or (${message} and ${message.length() != 0})">-->
+            <!--<b>Cause:</b> <span th:if="${ex}" th:text="${ex}">exception ...</span>-->
+            <!--<span th:if="${exception}" th:text="${exception}">exception ...</span>-->
+		<!--<span th:if="${message} and ${message.length() != 0}"-->
+              <!--th:text="${message}">message ...</span>-->
+            <!--<blockquote>-->
+                <!--<i>Note: You would never generate a page that displays a Java-->
+                    <!--exception to an end-user in a real application</i>-->
+            <!--</blockquote>-->
+        <!--</div>-->
+
+        <!--<p-->
+                <!--th:unless="${ex} or ${exception} or (${message} and ${message.length() != 0})">-->
+            <!--Cause unknown (no exception details available)</p>-->
+
+        <!--<p>-->
+
+
+        <br/>
+
+
       <a href="https://twitter.com/grassrootza" class="error-bottom-link">
         <div class="social-icon twitter"></div>@grassrootza
       </a>

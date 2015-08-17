@@ -36,34 +36,15 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/ussd/**")
                 .antMatchers("/web/**")
                 .antMatchers("/test/**")
-                .antMatchers("/console/**");
+                .antMatchers("/console/**")
+//                .antMatchers("/signup")
+                .antMatchers("/404")
+                .antMatchers("/500");
+
     }
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-//        http
-//                .authorizeRequests()
-//
-//                .antMatchers("/public/**", "/static/**").permitAll()
-//                .antMatchers("/signin").permitAll()
-//                .antMatchers("/ussd").permitAll()
-//                .antMatchers("/ussd/**").permitAll()
-//                .antMatchers("/web/**").permitAll()
-//                .antMatchers("/users/**").hasAuthority("ADMIN")
-//                //.antMatchers("/**").hasAnyRole("USER")
-//                .anyRequest().hasAnyAuthority("USER")
-//                .and()
-//                    .formLogin()
-//                    .loginPage("/login").permitAll()
-//                .and()
-//                    .logout()
-//                    .logoutUrl("/logout")
-//                    .deleteCookies("remember-me")
-//                    .logoutSuccessUrl("/signin")
-//                .and()
-//                    .rememberMe();
-
-
             http
                 .formLogin()
                     .defaultSuccessUrl("/home")
@@ -77,6 +58,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                     .and()
 
                         .authorizeRequests()
+                        .antMatchers("/signup").permitAll()
                         .antMatchers("/home").fullyAuthenticated()
                         .anyRequest()
                         .fullyAuthenticated();

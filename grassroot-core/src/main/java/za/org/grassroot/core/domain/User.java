@@ -23,8 +23,6 @@ import java.util.*;
 @ToString
 public class User implements UserDetails {
 
-
-
     private String firstName;
     private String lastName;
     private String phoneNumber;
@@ -97,6 +95,7 @@ public class User implements UserDetails {
         this.createdDateTime = createdDateTime;
     }
 
+    // todo: finish wiring this up so that the groupToRename logic works
     @OneToMany(mappedBy = "user")
     private List<Group> groupsCreated;
 
@@ -119,7 +118,6 @@ public class User implements UserDetails {
             createdDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis());
         }
     }
-
 
     @Column(name = "user_name", length = 50)
     public String getUsername() {
@@ -211,8 +209,21 @@ public class User implements UserDetails {
     //~=================================================================================================================
 
     /**
-     * Inserting string functions to handle phone numbers here, for the moment
+     * Inserting some methods to deal with users not having names -- might want to move to service layer...
+     * May want to switch from a time-based logic on needing to rename to a login count (2nd or 3rd time accessing system)
      */
+
+    public boolean needsToRenameSelf(Integer timeLimit) {
+        if (hasName()) return false;
+        Timestamp minutesAgo = new Timestamp(System.currentTimeMillis() - (timeLimit * 60 * 1000));
+        if (createdDateTime == null || createdDateTime.after(minutesAgo))
+            return false;
+        return true;
+    }
+
+    public boolean hasName() {
+        return (displayName != null && displayName.trim().length() > 0);
+    }
 
     public String getName(String unknownPrefix) {
         if (displayName != null && displayName.trim().length() > 0) {
@@ -224,22 +235,18 @@ public class User implements UserDetails {
         }
     }
 
-    public static String convertPhoneNumber(String inputString) {
-
-        // todo: decide on our preferred string format, for now keeping it at for 27 (not discarding info)
-        // todo: add error handling to this.
-        // todo: consider using Guava libraries, or another, for when we get to tricky user input
-        // todo: put this in a wrapper class for a bunch of auxiliary methods? think we'll use this a lot
-
-        int codeLocation = inputString.indexOf("27");
-        boolean hasCountryCode = (codeLocation >= 0 && codeLocation < 2); // allowing '1' for '+' and 2 for '00'
-        if (hasCountryCode) {
-            return inputString.substring(codeLocation);
-        } else {
-            String truncedNumber = (inputString.charAt(0) == '0') ? inputString.substring(1) : inputString;
-            return "27" + truncedNumber;
+    public Group needsToRenameGroup() {
+        // todo: for speed reasons, probably need a SQL query to do this, rather than this loop, but using a loop for now
+        if (groupsCreated == null || groupsCreated.size() == 0) return null;
+        for (Group groupCreated : groupsCreated) {
+            if (!groupCreated.hasName()) return groupCreated;
         }
+        return null;
     }
+
+    /**
+     * Inserting string functions to handle phone numbers here, for the moment
+     */
 
     public static String invertPhoneNumber(String storedNumber) {
 

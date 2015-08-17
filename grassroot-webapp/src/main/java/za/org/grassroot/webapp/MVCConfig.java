@@ -5,26 +5,33 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.embedded.ConfigurableEmbeddedServletContainer;
 import org.springframework.boot.context.embedded.EmbeddedServletContainerCustomizer;
 import org.springframework.boot.context.embedded.ErrorPage;
+import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.Validator;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.filter.CharacterEncodingFilter;
 import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
+import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
+import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 
 import javax.servlet.Filter;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.util.Locale;
 
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
@@ -63,6 +70,7 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+
         registry.addInterceptor(new HandlerInterceptorAdapter() {
             @Override
             public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler,
@@ -74,6 +82,8 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
                 }
             }
         });
+
+        registry.addInterceptor(localeChangeInterceptor());
     }
 
     @Override
@@ -101,6 +111,36 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
             factory.addErrorPages(new ErrorPage(HttpStatus.INTERNAL_SERVER_ERROR, "/500"));
         }
 
+    }
+
+
+//    @Bean
+//    public MessageSource messageSource() {
+//        ReloadableResourceBundleMessageSource messageSource = new ReloadableResourceBundleMessageSource();
+//       // messageSource.setBasename("/messages");
+//        messageSource.setDefaultEncoding("UTF-8");
+//        return messageSource;
+//    }
+//
+//    @Override
+//    public Validator getValidator() {
+//        LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
+//        validator.setValidationMessageSource(messageSource());
+//        return validator;
+//    }
+
+    @Bean
+    public LocaleResolver localeResolver() {
+        SessionLocaleResolver sessionLocaleResolver = new SessionLocaleResolver();
+        sessionLocaleResolver.setDefaultLocale(Locale.US);
+        return sessionLocaleResolver;
+    }
+
+    @Bean
+    public LocaleChangeInterceptor localeChangeInterceptor() {
+        LocaleChangeInterceptor LocaleChangeInterceptor = new LocaleChangeInterceptor();
+        LocaleChangeInterceptor.setParamName("lang");
+        return LocaleChangeInterceptor;
     }
 
 }

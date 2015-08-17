@@ -1,0 +1,55 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+        xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+        layout:decorator="layout">
+<head>
+    <title>GrassRoot - SignUp</title>
+</head>
+<body>
+
+<div layout:fragment="header">
+  <h2>Sign Up</h2>
+</div>
+<div layout:fragment="overview"></div>
+
+<div layout:fragment="content">
+
+    <div class="well" style="max-width: 800px!important;" >
+
+
+
+        <form   name="userRegistration" th:action="@{/signup}"  th:object="${userRegistration}"  method="post" class="form-horizontal">
+            <div  th:if="${#fields.hasErrors('*')}" class=" alert alert-danger alert-dismissable">
+             <p>Please fill the required fields</p>
+            </div>
+
+            <div class="form-group"  th:class="${#fields.hasErrors('firstName')}? 'form-group has-error':' form-group'">
+                <label for="name" class="col-lg-2 control-label">Name</label>
+                <div class="col-lg-10">
+                    <input type="text" th:field="*{user.firstName}" class="form-control" id="name" placeholder="Jane Doe"/>
+                </div>
+            </div>
+
+            <div class="form-group" th:class="${#fields.hasErrors('phoneNumber')}? 'form-group has-error':' form-group'">
+                <label for="mobile-number" class="col-lg-2 control-label">GrassRoot ID</label>
+                <div class="col-lg-10">
+                    <input type="text" th:field="*{user.phoneNumber}" class="form-control" id="mobile-number" placeholder="Mobile Number"/>
+                </div>
+            </div>
+
+            <div class="form-group" th:class="${#fields.hasErrors('password')}? 'form-group has-error':' form-group'">
+                <label for="password" class="col-lg-2 control-label">Password</label>
+
+                <div class="col-lg-10">
+                    <input type="password" th:field="*{user.password}" class="form-control" id="password" name="password" placeholder="Password"/>
+                </div>
+            </div>
+            <!--<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />-->
+            <button type="submit" class="btn btn-lg btn-primary btn-block col-lg-offset-2">Sign Up</button>
+
+        </form>
+    </div>
+
+</div>
+
+</body>
+</html>
