@@ -14,6 +14,10 @@
     <name>GrassRoot Web Application</name>
     <url>http://www.grassroot.org.za/</url>
 
+    <properties>
+        <hibernate-validator.version>5.2.1.Final</hibernate-validator.version>
+    </properties>
+
 
     <dependencies>
         <dependency>
@@ -110,6 +114,12 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>${basedir}/src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -131,6 +141,9 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>1.2.5.RELEASE</version>
+                <configuration>
+                    <addResources>true</addResources>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>

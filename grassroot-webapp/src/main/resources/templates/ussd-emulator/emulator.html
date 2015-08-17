@@ -8,7 +8,7 @@
 <body th:inline="text">
 
 <div layout:fragment="header">
-        <h2>USSD Emulator </h2>
+        <h2>USSD Emulator</h2>
 </div>
 <div layout:fragment="overview"></div>
 
@@ -46,7 +46,7 @@
     $(document).ready(function(){
         var started = false;
 
-        $('#ussd-msdn').blur(function()
+        $('#ussd-msisdn').blur(function()
         {
             if( $(this).val().length == 0 ) {
                 $("#ussd-input").addClass('hide');
