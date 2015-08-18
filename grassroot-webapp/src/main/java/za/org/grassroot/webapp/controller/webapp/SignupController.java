@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.ModelAndView;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.UserRegistration;
 
 import javax.validation.Valid;
@@ -18,7 +19,7 @@ import javax.validation.Valid;
  * @author Lesetse Kimwaga
  */
 @Controller
-public class SignUpController {
+public class SignUpController extends BaseController{
 
     @Autowired
     private UserManagementService userManagementService;
