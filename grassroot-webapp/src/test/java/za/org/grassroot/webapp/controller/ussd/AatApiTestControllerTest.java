@@ -8,6 +8,7 @@ package za.org.grassroot.webapp.controller.ussd;
 import org.custommonkey.xmlunit.XMLUnit;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,7 @@ import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.GrassRootWebApplicationConfig;
 
+import javax.transaction.Transactional;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
@@ -39,6 +41,7 @@ import static org.springframework.http.HttpStatus.OK;
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = {GrassRootWebApplicationConfig.class})
 @WebIntegrationTest(randomPort = true)
+@Transactional
 public class AatApiTestControllerTest {
 
     @Value("${local.server.port}")
@@ -170,7 +173,7 @@ public class AatApiTestControllerTest {
 
         System.out.println("URI STRING: " + createGroupUri.toString());
 
-        assertThat(userManager.getAllUsers().size(), is(testGroupSize+1)); // again, not sure why it needs to be +1 to pass tests
+        assertThat(userManager.getAllUsers().size(), is(testGroupSize));
         // assertThat(groupManager)
 
         User userCreated = userManager.findByInputNumber(testPhone);

@@ -1,6 +1,9 @@
 package za.org.grassroot.services;
 
 import com.google.common.collect.Lists;
+import com.google.i18n.phonenumbers.NumberParseException;
+import com.google.i18n.phonenumbers.PhoneNumberUtil;
+import com.google.i18n.phonenumbers.Phonenumber;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -112,31 +115,28 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     /**
      * Moving some functions from the controller classes here, to handle phone number strings given by users
-     * todo: Move the country code definition into a properties file, rather than a system variable?
-     * todo: Similarly, probably want to move the regex expression into a properties file or system variable
+     * todo: Move the country code definition into a properties file ?
      */
 
     public static String convertPhoneNumber(String inputString) {
 
-        // todo: add error handling to this.
-        // todo: consider using Guava libraries, or another, for when we get to tricky user input
-        // todo: make sure this just returns the same string if it is already well formatted
+        try {
+            PhoneNumberUtil phoneNumberUtil = PhoneNumberUtil.getInstance();
+            Phonenumber.PhoneNumber phoneNumber = phoneNumberUtil.parse(inputString, "ZA");
 
-        String countryCode = System.getenv("CCODE");
-        String phoneNumberFormat = "^" + countryCode + "\\d{9}";
+            if (phoneNumberUtil.isValidNumber(phoneNumber)) {
+                return phoneNumberUtil.format(phoneNumber, PhoneNumberUtil.PhoneNumberFormat.E164).replace("+", "");
+            } else {
+                throw new RuntimeException("Could not format phone number '" + inputString + "'");
+            }
 
-        Pattern phoneNumberPattern = Pattern.compile(phoneNumberFormat);
-        if (Pattern.matches(phoneNumberFormat, inputString)) return inputString;
-
-        int codeLocation = inputString.indexOf(countryCode);
-        boolean hasCountryCode = (codeLocation >= 0 && codeLocation < 2); // allowing '1' for '+' and 2 for '00'
-        if (hasCountryCode) {
-            return inputString.substring(codeLocation);
-        } else {
-            String truncedNumber = (inputString.charAt(0) == '0') ? inputString.substring(1) : inputString;
-            return countryCode + truncedNumber;
+        } catch (NumberParseException e) {
+            throw new RuntimeException("Could not format phone number '" + inputString + "'");
         }
+
     }
+
+
 
     public static String invertPhoneNumber(String storedNumber) {
 
