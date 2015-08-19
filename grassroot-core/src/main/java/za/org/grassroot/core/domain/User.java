@@ -102,7 +102,7 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "user")
     private List<Event> eventsCreated;
 
-    @ManyToMany(cascade = CascadeType.ALL, mappedBy = "groupMembers") // not sure which cascade type is going to be best
+    @ManyToMany(cascade = CascadeType.ALL, mappedBy = "groupMembers", fetch = FetchType.EAGER) // not sure which cascade type is going to be best
     public List<Group> getGroupsPartOf() {
         return groupsPartOf;
     }

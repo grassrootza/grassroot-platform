@@ -53,7 +53,7 @@ public class Group {
     @OneToMany(mappedBy = "group")
     private List<Event> eventsApplied;
 
-    @ManyToMany(cascade = CascadeType.ALL)
+    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinTable(name="group_user_membership", joinColumns=@JoinColumn(name="group_id"), inverseJoinColumns=@JoinColumn(name="user_id"))
     public List<User> getGroupMembers() { return groupMembers; }
     public void setGroupMembers(List<User> groupMembers) { this.groupMembers = groupMembers; }
