@@ -19,7 +19,7 @@ import javax.validation.Valid;
  * @author Lesetse Kimwaga
  */
 @Controller
-public class SignUpController extends BaseController{
+public class UserSignUpController extends BaseController{
 
     @Autowired
     private UserManagementService userManagementService;
