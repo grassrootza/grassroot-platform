@@ -164,6 +164,8 @@ public class AatApiTestControllerTest {
     @Test
     public void groupCreate() throws Exception {
 
+        assertThat(userManager.getAllUsers().size(), is(0));
+
         final URI createUserUri = testPhoneUri("start").build().toUri();
         final URI createGroupUri = testPhoneUri(mtgPath + "/group").
                 queryParam(freeTextParam, String.join(" ", testPhones)).build().toUri();
