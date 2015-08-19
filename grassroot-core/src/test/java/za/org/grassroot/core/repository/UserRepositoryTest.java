@@ -1,5 +1,6 @@
 package za.org.grassroot.core.repository;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +15,9 @@ import za.org.grassroot.core.repository.UserRepository;
  */
 import javax.transaction.Transactional;
 
+import java.util.NoSuchElementException;
+import java.util.logging.Logger;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
@@ -21,6 +25,8 @@ import static org.junit.Assert.*;
 @SpringApplicationConfiguration(classes = TestContextConfiguration.class)
 @Transactional
 public class UserRepositoryTest {
+
+    private Logger log = Logger.getLogger(getClass().getName());
 
 
     @Autowired
@@ -66,5 +72,22 @@ public class UserRepositoryTest {
         fail("Saving a user with the phone number of an already existing user should throw an exception");
 
 
+    }
+
+    @Test
+    public void shouldSaveAndFindByPhoneNumber() throws Exception {
+        User userToCreate = new User();
+        userToCreate.setPhoneNumber("54321");
+        assertNull(userToCreate.getId());
+        assertNull(userToCreate.getCreatedDateTime());
+        User savedUser = userRepository.save(userToCreate);
+        Assert.assertNotEquals(Long.valueOf(0), savedUser.getId());
+        User foundUser = userRepository.findByPhoneNumber("54321").iterator().next();
+        assertEquals(savedUser.getPhoneNumber(), foundUser.getPhoneNumber());
+    }
+
+    @Test(expected = NoSuchElementException.class)
+    public void shouldNotFindPhoneNumber() throws Exception {
+        User dbUser = userRepository.findByPhoneNumber("99999999999").iterator().next();
     }
 }

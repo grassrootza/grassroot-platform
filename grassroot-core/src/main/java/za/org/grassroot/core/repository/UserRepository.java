@@ -11,6 +11,8 @@ public interface UserRepository extends PagingAndSortingRepository<User, Long> {
 
     List<User> findByUsername(String username);
 
+    //TODO get all users linked to a group
+    //TODO get all users linked to a group hierarchy, remember to remove duplicates at service level
 
 
 }

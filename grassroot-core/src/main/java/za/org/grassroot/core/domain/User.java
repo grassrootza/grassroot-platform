@@ -269,4 +269,19 @@ public class User implements UserDetails {
 
     }
 
+    /*
+    Constructors
+    */
+
+    public User() {
+    }
+
+    public User(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public User(String phoneNumber, String displayName) {
+        this.phoneNumber = phoneNumber;
+        this.displayName = displayName;
+    }
 }
