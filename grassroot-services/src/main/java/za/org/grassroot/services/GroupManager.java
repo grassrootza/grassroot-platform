@@ -11,7 +11,7 @@ import java.util.List;
 
 /**
  * @author luke on 2015/08/14.
- * todo: add a "getlastgroupcreated" method, which we will use a lot
+ *
  */
 
 @Service

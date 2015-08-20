@@ -24,6 +24,8 @@ public interface UserManagementService {
 
     List<User> getUsersFromNumbers(String listOfNumbers);
 
+    public boolean userExist(String phoneNumber);
+
 
 
 }

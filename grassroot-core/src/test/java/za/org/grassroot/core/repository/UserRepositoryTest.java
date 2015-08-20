@@ -90,4 +90,16 @@ public class UserRepositoryTest {
     public void shouldNotFindPhoneNumber() throws Exception {
         User dbUser = userRepository.findByPhoneNumber("99999999999").iterator().next();
     }
+
+    @Test
+    public void shouldNotExist() {
+        assertEquals(false, userRepository.existsByPhoneNumber("99999999999"));
+    }
+
+    @Test
+    public void shouldExist() {
+        userRepository.save(new User("4444444"));
+        assertEquals(true, userRepository.existsByPhoneNumber("4444444"));
+    }
+
 }

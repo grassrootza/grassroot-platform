@@ -94,6 +94,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
         List<User> usersToReturn = new ArrayList<User>();
 
         // todo: make less strong assumptions that users are perfectly well behaved ...
+        // todo - aakil - also consider asking for a , or something easily entered from keypad # or *
+        //                if the number is pasted from contacts it might have spaces in it.
 
         listOfNumbers = listOfNumbers.replace("\"", ""); // in case the response is passed with quotes around it
         List<String> splitNumbers = Arrays.asList(listOfNumbers.split(" "));
@@ -111,6 +113,11 @@ public class UserManager implements UserManagementService, UserDetailsService {
             }
         }
         return usersToAdd;
+    }
+
+    @Override
+    public boolean userExist(String phoneNumber) {
+        return userRepository.existsByPhoneNumber(phoneNumber);
     }
 
     /**
