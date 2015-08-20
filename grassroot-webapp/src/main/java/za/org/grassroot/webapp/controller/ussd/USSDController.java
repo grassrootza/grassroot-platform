@@ -25,12 +25,18 @@ import java.util.*;
 public class USSDController {
 
     protected final String baseURI = "http://meeting-organizer.herokuapp.com/ussd/";
-    protected final String USSD_BASE = "ussd/", PHONE_PARAM = "msisdn", TEXT_PARAM = "request";
+
+    // adopting a convention to capitalize constant strings that are used across all controllers
+    protected static final String USSD_BASE = "/ussd/", MTG_MENUS = "mtg/", USER_MENUS = "user/", GROUP_MENUS = "group/";
+    protected static final String PHONE_PARAM = "msisdn", TEXT_PARAM = "request", GROUP_PARAM = "groupId";
+    protected static final String START_KEY = "start";
+
 
     protected final String smsHost = "xml2sms.gsm.co.za";
     protected final String smsUsername = System.getenv("SMSUSER");
     protected final String smsPassword = System.getenv("SMSPASS");
 
+    Request tooLongError = new Request("Error! Menu is too long.", new ArrayList<Option>());
     Request noUserError = new Request("Error! Couldn't find you as a user.", new ArrayList<Option>());
     Request noGroupError = new Request("Sorry! Something went wrong finding the group.", new ArrayList<Option>());
     Request exitScreen = new Request("Thanks! We're done.", new ArrayList<Option>());
@@ -45,7 +51,7 @@ public class USSDController {
     @Autowired
     GroupManagementService groupManager;
 
-    public List<Option> createMenu(Map<String, String> menuOptions) throws URISyntaxException {
+    protected List<Option> createMenu(Map<String, String> menuOptions) throws URISyntaxException {
         List<Option> menuToBuild = new ArrayList<>();
         Integer counter = 1;
         for (Map.Entry<String, String> option : menuOptions.entrySet()) {
@@ -55,7 +61,7 @@ public class USSDController {
         return menuToBuild;
     }
 
-    public Request menuBuilder(USSDMenu thisMenu) throws URISyntaxException {
+    protected Request menuBuilder(USSDMenu thisMenu) throws URISyntaxException {
         Request menuRequest;
         if (thisMenu.isFreeText()) {
             menuRequest = new Request(thisMenu.getPromptMessage(), freeText(thisMenu.getNextURI()));
@@ -66,8 +72,20 @@ public class USSDController {
     }
 
     // todo: standardize handling of base vs ending URIs wrt folder names
-    public List<Option> freeText(String urlEnding) throws URISyntaxException {
+    protected List<Option> freeText(String urlEnding) throws URISyntaxException {
         return Collections.singletonList(new Option("", 1, 1, new URI(baseURI + urlEnding), false));
+    }
+
+    // method to check the length of a USSD menu and make sure it is under 140/160 chars.
+    // at present, am just returning a boolean, but may want to truncate / throw an exception or do something else
+    // last: writing it here, so that if we change aggregator / view technology, we adjust here
+
+    protected boolean checkMenuLength(USSDMenu menuToCheck, boolean firstMenu) {
+
+        Integer enumLength = ("1. ").length();
+        Integer characterLimit = firstMenu ? 140 : 160;
+
+        return (menuToCheck.getMenuCharLength(enumLength) < characterLimit); // might be able to get away with <=, but prefer to be conservative
     }
 
     public List<Option> userGroupMenu(User userForSession, String path, boolean optionNewGroup) throws URISyntaxException {

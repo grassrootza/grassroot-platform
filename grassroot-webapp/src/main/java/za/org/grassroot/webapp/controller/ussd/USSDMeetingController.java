@@ -36,7 +36,7 @@ public class USSDMeetingController extends USSDController {
      * To do: Various forms of validation and checking throughout
      */
 
-    @RequestMapping(value = "/ussd/mtg")
+    @RequestMapping(value = USSD_BASE + MTG_MENUS + START_KEY)
     @ResponseBody
     public Request meetingOrg(@RequestParam(value="msisdn", required=true) String inputNumber) throws URISyntaxException {
 
@@ -55,7 +55,7 @@ public class USSDMeetingController extends USSDController {
         }
     }
 
-    @RequestMapping(value = "/ussd/mtg/group")
+    @RequestMapping(value = USSD_BASE + MTG_MENUS + "group")
     @ResponseBody
     public Request saveNumbers(@RequestParam(value="msisdn", required=true) String inputNumber,
                                @RequestParam(value="request", required=false) String userResponse,
@@ -88,7 +88,7 @@ public class USSDMeetingController extends USSDController {
     // todo: create some default options for the next 3 days, for date
     // todo: clean up the flow and logic between these menus (they are getting a little confusing, even to me ...)
 
-    @RequestMapping(value = "/ussd/mtg/date")
+    @RequestMapping(value = USSD_BASE + MTG_MENUS + "date")
     @ResponseBody
     public Request getDate(@RequestParam(value="msisdn", required=true) String inputNumber,
                            @RequestParam(value="groupId", required=false) Long groupId) throws URISyntaxException {
@@ -103,7 +103,7 @@ public class USSDMeetingController extends USSDController {
 
     }
 
-    @RequestMapping(value = "/ussd/mtg/time")
+    @RequestMapping(value = USSD_BASE + MTG_MENUS + "time")
     @ResponseBody
     public Request getTime(@RequestParam(value="msisdn", required=true) String inputNumber,
                            @RequestParam(value="groupId", required=false) Long groupId,
@@ -114,7 +114,7 @@ public class USSDMeetingController extends USSDController {
 
     }
 
-    @RequestMapping(value = "/ussd/mtg/place")
+    @RequestMapping(value = USSD_BASE + MTG_MENUS + "place")
     @ResponseBody
     public Request getPlace(@RequestParam(value="msisdn", required=true) String inputNumber,
                             @RequestParam(value="groupId", required=false) Long groupId,
@@ -128,7 +128,7 @@ public class USSDMeetingController extends USSDController {
 
     }
 
-    @RequestMapping(value = "/ussd/mtg/message")
+    @RequestMapping(value = USSD_BASE + MTG_MENUS + "message")
     @ResponseBody
     public Request sendMessage(@RequestParam(value="msisdn", required=true) String inputNumber,
                                @RequestParam(value="groupId", required=true) Long groupId,

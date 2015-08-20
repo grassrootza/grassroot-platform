@@ -23,7 +23,7 @@ public class USSDMenu {
     protected String promptMessage;
     protected boolean isFreeText;
 
-    protected Map<String, String> menuOptions; // format is key and then description text
+    protected LinkedHashMap<String, String> menuOptions; // format is key and then description text
 
     // most common and basic constructor
     public USSDMenu(String thisUri, String promptMessage) {
@@ -82,16 +82,32 @@ public class USSDMenu {
         return menuOptions.entrySet().iterator().next().getKey();
     }
 
-    public Map<String, String> getMenuOptions() {
+    public LinkedHashMap<String, String> getMenuOptions() {
         return menuOptions;
     }
 
-    public void setMenuOptions(Map<String, String> menuOptions) {
+    public void setMenuOptions(LinkedHashMap<String, String> menuOptions) {
         this.menuOptions = menuOptions;
     }
 
     public void addMenuOption(String optionURL, String optionDescription) {
         this.menuOptions.put(optionURL, optionDescription);
+    }
+
+    public Integer getMenuCharLength(Integer enumLength) {
+        Integer characterCount = 0;
+        characterCount += promptMessage.length();
+
+        if (!isFreeText) {
+            for (Map.Entry<String, String> menuOption : menuOptions.entrySet())
+                characterCount += enumLength + menuOption.getValue().length();
+        }
+
+        return characterCount;
+    }
+
+    public Integer getMenuCharLength() {
+        return getMenuCharLength("1. ".length());
     }
 
 }

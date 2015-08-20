@@ -16,6 +16,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.UserManager;
+import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Option;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import za.org.grassroot.core.repository.GroupRepository;
@@ -37,18 +38,22 @@ public class USSDHomeController extends USSDController {
 
     public Request welcomeMenu(String opening) throws URISyntaxException {
 
-        Map<String, String> welcomeOptions = new LinkedHashMap<>();
-        welcomeOptions.put("mtg", "Call a meeting");
-        welcomeOptions.put("vote", "Take a vote");
-        welcomeOptions.put("log", "Record an action");
-        welcomeOptions.put("group", "Manage groups");
-        welcomeOptions.put("user", "Change profile");
-        return new Request(opening, createMenu(welcomeOptions));
+        USSDMenu homeMenu = new USSDMenu(START_KEY, opening, false);
+
+        homeMenu.addMenuOption(MTG_MENUS + START_KEY, "Call a meeting");
+        homeMenu.addMenuOption("vote", "Take a vote");
+        homeMenu.addMenuOption("log", "Record an action");
+        homeMenu.addMenuOption(GROUP_MENUS + START_KEY, "Manage groups");
+        homeMenu.addMenuOption(USER_MENUS + START_KEY, "Change profile");
+
+        System.out.println("Menu size: " + homeMenu.getMenuCharLength());
+
+        return (checkMenuLength(homeMenu, true)) ? menuBuilder(homeMenu) : tooLongError;
     }
 
-    @RequestMapping(value = "/ussd/start")
+    @RequestMapping(value = USSD_BASE + START_KEY)
     @ResponseBody
-    public Request startMenu(@RequestParam(value="msisdn") String inputNumber) throws URISyntaxException {
+    public Request startMenu(@RequestParam(value=PHONE_PARAM) String inputNumber) throws URISyntaxException {
 
         User sessionUser = userManager.loadOrSaveUser(inputNumber);
 
@@ -64,10 +69,10 @@ public class USSDHomeController extends USSDController {
         }
     }
 
-    @RequestMapping(value = "/ussd/rename-start")
+    @RequestMapping(value = USSD_BASE + "rename-start")
     @ResponseBody
-    public Request renameAndStart(@RequestParam(value="msisdn") String inputNumber,
-                                  @RequestParam(value="request") String userName) throws URISyntaxException {
+    public Request renameAndStart(@RequestParam(value=PHONE_PARAM) String inputNumber,
+                                  @RequestParam(value=TEXT_PARAM) String userName) throws URISyntaxException {
 
         User sessionUser = userManager.loadOrSaveUser(inputNumber);
         sessionUser.setDisplayName(userName);
@@ -76,11 +81,11 @@ public class USSDHomeController extends USSDController {
         return welcomeMenu("Thanks " + userName + ". What do you want to do?");
     }
 
-    @RequestMapping(value = "/ussd/group-start")
+    @RequestMapping(value = USSD_BASE + "group-start")
     @ResponseBody
-    public Request groupNameAndStart(@RequestParam(value="msisdn") String passedNumber,
-                                     @RequestParam(value="groupId") Long groupId,
-                                     @RequestParam(value="request") String groupName) throws URISyntaxException {
+    public Request groupNameAndStart(@RequestParam(value=PHONE_PARAM) String passedNumber,
+                                     @RequestParam(value=GROUP_PARAM) Long groupId,
+                                     @RequestParam(value=TEXT_PARAM) String groupName) throws URISyntaxException {
 
         // todo: use permission model to check if user can actually do this
 
@@ -92,14 +97,14 @@ public class USSDHomeController extends USSDController {
 
     }
 
-    @RequestMapping(value = { "/ussd/error", "/ussd/vote", "/ussd/log", "/ussd/grp2" })
+    @RequestMapping(value = { USSD_BASE + "error", USSD_BASE + "vote", USSD_BASE + "log", USSD_BASE + GROUP_MENUS + "menu2" })
     @ResponseBody
     public Request notBuilt() throws URISyntaxException {
         String errorMessage = "Sorry! We haven't built that yet. We're working on it.";
         return new Request(errorMessage, new ArrayList<Option>());
     }
 
-    @RequestMapping(value = "/ussd/test_question")
+    @RequestMapping(value = USSD_BASE + "test_question")
     @ResponseBody
     public Request question1() throws URISyntaxException {
         final Option option = new Option("Yes I can!", 1,1, new URI("http://yourdomain.tld/ussdxml.ashx?file=2"),true);

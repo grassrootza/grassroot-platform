@@ -23,7 +23,6 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 @RestController
 public class USSDUserController extends USSDController {
 
-    private static final String USER_MENUS = "user/";
     private static final String keyStart = "start", keyPromptName = "name", keyRenameDo = "name2";
     private static final String keyPromptLanguage = "language", keyPromptPhone = "phone";
 

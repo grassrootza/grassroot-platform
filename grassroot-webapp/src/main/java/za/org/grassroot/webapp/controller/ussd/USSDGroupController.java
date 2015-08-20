@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.UserManager;
+import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Option;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
@@ -31,7 +32,7 @@ public class USSDGroupController extends USSDController {
      * To do: Stub out remaining menus
      */
 
-    @RequestMapping(value = "ussd/group")
+    @RequestMapping(value = USSD_BASE + GROUP_MENUS + START_KEY)
     @ResponseBody
     public Request groupList(@RequestParam(value="msisdn", required=true) String inputNumber) throws URISyntaxException {
 
@@ -45,30 +46,33 @@ public class USSDGroupController extends USSDController {
 
     }
 
-    @RequestMapping(value = "ussd/group/menu")
+    @RequestMapping(value = USSD_BASE + GROUP_MENUS + "menu")
     @ResponseBody
     public Request groupMenu(@RequestParam(value="msisdn", required=true) String inputNumber,
                              @RequestParam(value="groupId", required=true) Long groupId) throws URISyntaxException {
 
         // todo: check what permissions the user has and only display options that they can do
-        // todo: think about slimming down the menu size
 
         String returnMessage = "Group selected. What would you like to do?";
-        String groupIdP = "?groupId=" + groupId;
-        Map<String, String> groupMenu = new LinkedHashMap<>();
+        String groupParam = "?" + GROUP_PARAM + groupId;
 
-        groupMenu.put("group/list" + groupIdP, "List group members");
-        groupMenu.put("group/rename" + groupIdP, "Rename the group");
-        groupMenu.put("group/addnumber" + groupIdP, "Add a phone number to the group");
-        groupMenu.put("group/unsubscribe" + groupIdP, "Remove me from the group");
-        groupMenu.put("group/delnumber" + groupIdP, "Remove a number from the group");
-        groupMenu.put("group/delgroup" + groupIdP, "Delete this group (beta only)");
+        USSDMenu listMenu = new USSDMenu(USSD_BASE + GROUP_MENUS + "menu", returnMessage, false);
 
-        return new Request(returnMessage, createMenu(groupMenu));
+        listMenu.addMenuOption(GROUP_MENUS + "list" + groupParam, "List group members");
+        listMenu.addMenuOption(GROUP_MENUS + "rename" + groupParam, "Rename group");
+        listMenu.addMenuOption(GROUP_MENUS + "addnumber" + groupParam, "Add a phone number");
+        listMenu.addMenuOption(GROUP_MENUS + "unsubscribe" + groupParam, "Remove me");
+        listMenu.addMenuOption(GROUP_MENUS + "menu2", "More options");
+        // listMenu.addMenuOption(GROUP_MENUS + "delnumber" + groupParam, "Remove a number from the group");
+        // listMenu.addMenuOption(GROUP_MENUS + "delgroup" + groupParam, "Delete this group (beta only)");
+
+        System.out.println("Menu length: " + listMenu.getMenuCharLength());
+
+        return (checkMenuLength(listMenu, false)) ? menuBuilder(listMenu) : tooLongError;
 
     }
 
-    @RequestMapping(value = "ussd/group/list")
+    @RequestMapping(value = USSD_BASE + GROUP_MENUS + "list")
     @ResponseBody
     public Request listGroup(@RequestParam(value="msisdn", required=true) String inputNumber,
                              @RequestParam(value="groupId", required=true) Long groupId) throws URISyntaxException {
@@ -90,7 +94,7 @@ public class USSDGroupController extends USSDController {
         return new Request(returnMessage, new ArrayList<Option>());
     }
 
-    @RequestMapping(value = "ussd/group/rename")
+    @RequestMapping(value = USSD_BASE + GROUP_MENUS + "rename")
     @ResponseBody
     public Request renamePrompt(@RequestParam(value="msisdn", required=true) String inputNumber,
                                 @RequestParam(value="groupId", required=true) Long groupId) throws URISyntaxException {
@@ -112,7 +116,7 @@ public class USSDGroupController extends USSDController {
 
     }
 
-    @RequestMapping(value = "ussd/group/rename2")
+    @RequestMapping(value = USSD_BASE + GROUP_MENUS + "rename2")
     @ResponseBody
     public Request renameGroup(@RequestParam(value="msisdn", required=true) String inputNumber,
                                @RequestParam(value="groupId", required=true) Long groupId,
@@ -131,7 +135,7 @@ public class USSDGroupController extends USSDController {
 
     }
 
-    @RequestMapping(value = "ussd/group/addnumber")
+    @RequestMapping(value = USSD_BASE + GROUP_MENUS + "addnumber")
     @ResponseBody
     public Request addNumberInput(@RequestParam(value="msisdn", required=true) String inputNumber,
                                   @RequestParam(value="groupId", required=true) Long groupId) throws URISyntaxException {
@@ -145,7 +149,7 @@ public class USSDGroupController extends USSDController {
 
     }
 
-    @RequestMapping(value = "ussd/group/addnumber2")
+    @RequestMapping(value = USSD_BASE + GROUP_MENUS + "addnumber2")
     @ResponseBody
     public Request addNummberToGroup(@RequestParam(value="msisdn", required=true) String inputNumber,
                                      @RequestParam(value="groupId", required=true) Long groupId,
@@ -168,7 +172,7 @@ public class USSDGroupController extends USSDController {
 
     }
 
-    @RequestMapping(value = "ussd/group/unsubscribe")
+    @RequestMapping(value = USSD_BASE + GROUP_MENUS + "unsubscribe")
     @ResponseBody
     public Request unsubscribeConfirm(@RequestParam(value="msisdn", required=true) String inputNumber,
                                       @RequestParam(value="groupId", required=true) Long groupId) throws URISyntaxException {
@@ -183,7 +187,7 @@ public class USSDGroupController extends USSDController {
 
     }
 
-    @RequestMapping(value = "ussd/group/unsubscribe2")
+    @RequestMapping(value = USSD_BASE + GROUP_MENUS + "unsubscribe2")
     @ResponseBody
     public Request unsubscribeDo(@RequestParam(value="msisdn", required=true) String inputNumber,
                                  @RequestParam(value="groupId", required=true) Long groupId) throws URISyntaxException {
@@ -208,7 +212,7 @@ public class USSDGroupController extends USSDController {
 
     }
 
-    @RequestMapping(value = "ussd/group/delgroup")
+    @RequestMapping(value = USSD_BASE + GROUP_MENUS + "delgroup")
     @ResponseBody
     public Request deleteConfirm(@RequestParam(value="msisdn", required=true) String inputNumber,
                                  @RequestParam(value="groupId", required=true) Long groupId) throws URISyntaxException {
