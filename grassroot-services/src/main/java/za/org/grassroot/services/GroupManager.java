@@ -63,4 +63,14 @@ public class GroupManager implements GroupManagementService {
 
     }
 
+    @Override
+    public Group getLastCreatedGroup(User creatingUser) {
+        return groupRepository.findFirstByCreatedByUserOrderByIdDesc(creatingUser);
+    }
+
+    @Override
+    public List<Group> getCreatedGroups(User creatingUser) {
+        return groupRepository.findByCreatedByUser(creatingUser);
+    }
+
 }

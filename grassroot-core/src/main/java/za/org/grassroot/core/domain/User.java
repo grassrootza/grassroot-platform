@@ -160,7 +160,6 @@ public class User implements UserDetails {
         this.roles = roles;
     }
 
-
     @Transient
     public Set<Permission> getPermissions() {
         Set<Permission> perms = new HashSet<Permission>();
@@ -248,7 +247,7 @@ public class User implements UserDetails {
      * Inserting string functions to handle phone numbers here, for the moment
      */
 
-    public static String invertPhoneNumber(String storedNumber) {
+    public static String invertPhoneNumber(String storedNumber, String joinString) {
 
         // todo: handle error if number has gotten into database in incorrect format
         // todo: make this much faster, e.g., use a simple regex / split function?
@@ -265,8 +264,12 @@ public class User implements UserDetails {
             finalnumbers = "";
         }
 
-        return String.join(" ", Arrays.asList(prefix, midnumbers, finalnumbers));
+        return String.join(joinString, Arrays.asList(prefix, midnumbers, finalnumbers));
 
+    }
+
+    public static String invertPhoneNumber(String storedNumber) {
+        return invertPhoneNumber(storedNumber, " ");
     }
 
     /*
