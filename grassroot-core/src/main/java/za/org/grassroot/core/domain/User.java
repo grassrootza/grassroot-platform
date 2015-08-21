@@ -9,6 +9,8 @@ import javax.persistence.*;
 import java.sql.Timestamp;
 import java.util.*;
 
+//todo: reconsider if language should be nullable, or not null and set to "en" by default (when set not nullable, broke tests)
+
 //todo: add validation to all model classes
 //todo: use java 8 date and time types and a JPA converter instead of Timestamp type
 //todo: createdDateTime should be read-only -  the database should insert this automatically
@@ -27,6 +29,7 @@ public class User implements UserDetails {
     private String lastName;
     private String phoneNumber;
     private String displayName;
+    private String languageCode;
     private Long id;
     private Timestamp createdDateTime;
     private List<Group> groupsPartOf;
@@ -73,6 +76,12 @@ public class User implements UserDetails {
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
     }
+
+    @Basic
+    @Column(name = "language_code", nullable = true, length=10)
+    public String getLanguageCode() { return languageCode; }
+
+    public void setLanguageCode (String languageCode) { this.languageCode = languageCode; }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -281,10 +290,12 @@ public class User implements UserDetails {
 
     public User(String phoneNumber) {
         this.phoneNumber = phoneNumber;
+        this.languageCode = "en"; // anyone else should remove this if it shouldn't be here
     }
 
     public User(String phoneNumber, String displayName) {
         this.phoneNumber = phoneNumber;
         this.displayName = displayName;
+        this.languageCode = "en";
     }
 }
