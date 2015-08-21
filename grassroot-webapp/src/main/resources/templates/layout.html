@@ -6,13 +6,14 @@
   <title>Layout</title>
   <meta id="Viewport" name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, minimum-scale=1, user-scalable=no"/>
 
-  <meta name="_csrf" value="dummy" th:value="${_csrf.token}"/>
+  <!--<meta name="_csrf" value="dummy" th:value="${_csrf.token}"/>-->
 
   <link rel="shortcut icon" type="image/x-icon" th:href="@{/images/favicon.ico}"/>
   <link rel="stylesheet" type="text/css" th:href="@{/css/bootstrap.min.css}" />
   <link rel="stylesheet" type="text/css" th:href="@{/css/material-fullpalette.min.css}" />
   <link rel="stylesheet" type="text/css" th:href="@{/css/ripples.min.css}" />
   <link rel="stylesheet" type="text/css" th:href="@{/css/grassroot.css}" />
+  <link rel="stylesheet" type="text/css" th:href="@{/css/intl-tel-input.css}" />
 
   <script th:inline="javascript">
         var baseUrl = /*[[@{/}]]*/ '../static/';
@@ -29,43 +30,44 @@
 
      <!-- // Navigation -->
 
-      <div class="navbar navbar-default">
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-responsive-collapse">
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="navbar-brand"   href="javascript:void(0)" th:href="@{/home}">GrassRoot</a>
-        </div>
-        <div class="navbar-collapse collapse navbar-responsive-collapse">
-          <ul class="nav navbar-nav">
+      <div layout:fragment="navigation">
+        <div class="navbar navbar-default">
+          <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-responsive-collapse">
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand"   href="javascript:void(0)" th:href="@{/home}">GrassRoot</a>
+          </div>
+          <div class="navbar-collapse collapse navbar-responsive-collapse">
+            <ul class="nav navbar-nav">
 
-            <li sec:authorize="isFullyAuthenticated()" class="active"><a href="javascript:void(0)">Start Meeting Group</a></li>
+              <li sec:authorize="isFullyAuthenticated()" class="active"><a href="javascript:void(0)">Start Meeting Group</a></li>
 
 
-          </ul>
+            </ul>
 
-          <ul sec:authorize="isAnonymous()" class="nav navbar-nav navbar-right">
-            <li sec:authorize="isAnonymous()" class=""><a href="javascript:void(0)" th:href="@{/signup}"><span class="badge">Sign Up</span></a></li>
-            <li sec:authorize="isAnonymous()" class=""><a href="javascript:void(0)" th:href="@{/home}">Login</a></li>
-           </ul>
+            <ul sec:authorize="isAnonymous()" class="nav navbar-nav navbar-right">
+              <li sec:authorize="isAnonymous()" class=""><a href="javascript:void(0)" th:href="@{/signup}"><span class="badge">Sign Up</span></a></li>
+              <li sec:authorize="isAnonymous()" class=""><a href="javascript:void(0)" th:href="@{/home}">Login</a></li>
+            </ul>
 
-          <ul sec:authorize="isFullyAuthenticated()" class="nav navbar-nav navbar-right">
-            <li class="dropdown">
-              <a href="javascript:void(0)" data-target="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false">My Profile <b class="caret"></b><div class="ripple-wrapper"></div></a>
-              <ul class="dropdown-menu">
-                <li><a href="javascript:void(0)">Profile</a></li>
-                <li><a href="javascript:void(0)">Settings</a></li>
-                <li class="divider"></li>
-                <li><a href="javascript:void(0)"  class="user-logout" id="user-logout" th:href="@{/logout}">Logout</a></li>
-              </ul>
-            </li>
-          </ul>
+            <ul sec:authorize="isFullyAuthenticated()" class="nav navbar-nav navbar-right">
+              <li class="dropdown">
+                <a href="javascript:void(0)" data-target="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false">My Profile <b class="caret"></b><div class="ripple-wrapper"></div></a>
+                <ul class="dropdown-menu">
+                  <li><a href="javascript:void(0)">Profile</a></li>
+                  <li><a href="javascript:void(0)">Settings</a></li>
+                  <li class="divider"></li>
+                  <li><a href="javascript:void(0)"  class="user-logout" id="user-logout" th:href="@{/logout}">Logout</a></li>
+                </ul>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
       <!-- // Navigation -->
-
 
     <div class="header-container" layout:fragment="header-container">
       <div class="header--content" layout:fragment="header-content">
@@ -86,6 +88,25 @@
     </div>
     <div class="container-fluid" layout:fragment="top-content"></div>
 
+    <div layout:fragment="messages" class="container-fluid">
+      <div layout:fragment="alert">
+        <div th:if="${errorMessage}" class="alert alert-warning alert-dismissible col-lg-6" role="alert">
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <p th:text="${errorMessage}"></p>
+        </div>
+
+        <div th:if="${infoMessage != null}" class="alert alert-info alert-dismissible col-lg-6" role="alert">
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <p th:text="${infoMessage}"></p>
+        </div>
+
+        <div th:if="${successMessage != null}" class="alert alert-success alert-dismissible col-lg-6" role="alert">
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <p th:text="${successMessage}"></p>
+        </div>
+
+      </div>
+    </div>
 
     <main class="body-container container-fluid " layout:fragment="content">
       <div id="footer-push-down"></div>
@@ -121,6 +142,8 @@
   <script th:src="@{/js/bootstrap.min.js}"></script>
   <script th:src="@{/js/material.min.js}"></script>
   <script th:src="@{/js/ripples.min.js}"></script>
+  <script th:src="@{/js/intl-tel-input.min.js}"></script>
+  <script th:src="@{/js/intl-tel-input-utils.js}"></script>
   <script>
     $.material.init();
   </script>

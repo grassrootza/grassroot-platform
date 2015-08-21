@@ -8,7 +8,9 @@ import org.springframework.boot.context.embedded.ErrorPage;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
+import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.Validator;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
@@ -128,6 +130,20 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
 //        validator.setValidationMessageSource(messageSource());
 //        return validator;
 //    }
+
+
+    @Bean
+    public ResourceBundleMessageSource messageSource() {
+        ResourceBundleMessageSource source = new ResourceBundleMessageSource();
+        source.setBasename("messages");
+        return source;
+    }
+
+    @Bean
+    public MessageSourceAccessor getMessageSourceAccessor()
+    {
+        return  new MessageSourceAccessor(messageSource());
+    }
 
     @Bean
     public LocaleResolver localeResolver() {

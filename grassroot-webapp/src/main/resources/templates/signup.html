@@ -1,55 +1,110 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
-        xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-        layout:decorator="layout">
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
 <head>
     <title>GrassRoot - SignUp</title>
 </head>
 <body>
 
 <div layout:fragment="header">
-  <h2>Sign Up</h2>
+    <h2>Sign Up</h2>
 </div>
 <div layout:fragment="overview"></div>
 
 <div layout:fragment="content">
+    <div layout:fragment="messages"></div>
+    <div class="well col-lg-8">
 
-    <div class="well" style="max-width: 800px!important;" >
-
-
-
-        <form   name="userRegistration" th:action="@{/signup}"  th:object="${userRegistration}"  method="post" class="form-horizontal">
-            <div  th:if="${#fields.hasErrors('*')}" class=" alert alert-danger alert-dismissable">
-             <p>Please fill the required fields</p>
+        <form name="userRegistration" th:action="@{/signup}" th:object="${userRegistration}" method="post"
+              class="form-horizontal">
+            <div th:if="${#fields.hasErrors('*')}" class=" alert alert-danger alert-dismissable">
+                <p>Please fill the required fields</p>
             </div>
 
-            <div class="form-group"  th:class="${#fields.hasErrors('firstName')}? 'form-group has-error':' form-group'">
-                <label for="name" class="col-lg-2 control-label">Name</label>
+            <div class="form-group" th:class="${#fields.hasErrors('firstName')}? 'form-group has-error':' form-group'">
+                <label for="name" class="col-lg-2 control-label">First Name</label>
+
                 <div class="col-lg-10">
-                    <input type="text" th:field="*{user.firstName}" class="form-control" id="name" placeholder="Jane Doe"/>
+                    <input type="text" th:field="*{user.firstName}" class="form-control" id="name" placeholder="Jane"/>
                 </div>
             </div>
 
-            <div class="form-group" th:class="${#fields.hasErrors('phoneNumber')}? 'form-group has-error':' form-group'">
-                <label for="mobile-number" class="col-lg-2 control-label">GrassRoot ID</label>
+
+            <div class="form-group" th:class="${#fields.hasErrors('firstName')}? ' form-group has-error':' form-group'">
+                <label for="name" class="col-lg-2 control-label">Surname</label>
+
                 <div class="col-lg-10">
-                    <input type="text" th:field="*{user.phoneNumber}" class="form-control" id="mobile-number" placeholder="Mobile Number"/>
+                    <input type="text" th:field="*{user.lastName}" class="form-control" id="lastName"
+                           placeholder="Doe"/>
                 </div>
             </div>
+
+
+
+            <div class="form-group"
+                     th:class="${#fields.hasErrors('username')}? 'form-group has-error':' form-group'">
+                    <label for="mobile-number" class="col-lg-2 control-label">GrassRoot ID</label>
+
+                    <div class="col-lg-10">
+                        <input type="text" th:field="*{user.username}" class="form-control" id="mobile-number"
+                               placeholder="Mobile Number" style="width: 100%"/>
+                        <input type="hidden" id="full-mobile-number"  th:field="*{user.phoneNumber}"  />
+                    </div>
+            </div>
+
+
+
+
 
             <div class="form-group" th:class="${#fields.hasErrors('password')}? 'form-group has-error':' form-group'">
                 <label for="password" class="col-lg-2 control-label">Password</label>
 
                 <div class="col-lg-10">
-                    <input type="password" th:field="*{user.password}" class="form-control" id="password" name="password" placeholder="Password"/>
+                    <input type="password" th:field="*{user.password}" class="form-control" id="password"
+                           name="password" placeholder="Password"/>
                 </div>
             </div>
             <!--<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />-->
-            <button type="submit" class="btn btn-lg btn-primary btn-block col-lg-offset-2">Sign Up</button>
+
+            <div class="form-group">
+
+                <div class="col-lg-12">
+                    <button type="submit" id="register" class="btn btn-lg btn-primary btn-block col-lg-offset-2">Sign Up</button>
+                </div>
+            </div>
+
 
         </form>
     </div>
 
 </div>
+
+<div class="header-container" layout:fragment="script-container">
+    <script>
+        $(document).ready(function () {
+            //$("#mobile-number").intlTelInput();
+
+            $("#mobile-number").intlTelInput({
+                onlyCountries: ["za"],
+                utilsScript: "../js/intl-tel-input-utils.js" // just for formatting/placeholders etc
+            });
+
+
+            $( "#register" ).click(function() {
+
+                $("#full-mobile-number").val($("#mobile-number").intlTelInput("getNumber"));
+                $( "#userRegistration" ).submit();
+            });
+
+
+//            $("#userRegistration").submit(function() {
+//                $("#full-mobile-number").val($("#mobile-number").intlTelInput("getNumber"));
+//                alert(  $("#full-mobile-number").val() );
+//            });
+        });
+    </script>
+</div>
+
 
 </body>
 </html>

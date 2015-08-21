@@ -62,5 +62,27 @@ public class PhoneNumberParsingTest {
             log.error(e.getMessage());
         }
 
+    }    @Test
+    public void testPhoneNumberParse3() throws Exception {
+
+        String phoneNumberString = "072 916 6903";
+        PhoneNumberUtil phoneNumberUtil = PhoneNumberUtil.getInstance();
+
+        try {
+
+            Phonenumber.PhoneNumber phoneNumber = phoneNumberUtil.parse(phoneNumberString,"ZA");
+            log.info("{}", phoneNumberUtil.format(phoneNumber, PhoneNumberUtil.PhoneNumberFormat.E164));
+            log.info("Country Code: {}", phoneNumber.getCountryCode()) ;
+            log.info("Country Source: {}", phoneNumber.getCountryCodeSource()) ;
+            log.info("National Number: {}", phoneNumber.getNationalNumber()) ;
+            log.info("National Number: {}", phoneNumber.getNationalNumber()) ;
+            assertTrue(  phoneNumberUtil.isValidNumber(phoneNumber));
+
+
+        }catch (Exception e)
+        {
+            log.error(e.getMessage());
+        }
+
     }
 }

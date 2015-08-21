@@ -32,8 +32,9 @@ public class User implements UserDetails {
     private List<Group> groupsPartOf;
     private String username;
     private String password;
-    private boolean enabled;
+    private boolean enabled = true;
     private Set<Role> roles;
+    private Integer version;
 
 
     @Column( name = "first_name")
@@ -119,7 +120,7 @@ public class User implements UserDetails {
         }
     }
 
-    @Column(name = "user_name", length = 50)
+    @Column(name = "user_name", length = 50, unique = true)
     public String getUsername() {
         return username;
     }
@@ -128,8 +129,8 @@ public class User implements UserDetails {
         this.username = username;
     }
 
-    @Transient
-    @Column(name = "password", length = 50)
+
+    @Column(name = "password")
     public String getPassword() {
         return password;
     }
@@ -205,7 +206,16 @@ public class User implements UserDetails {
         return this.getEnabled();
     }
 
-    //~=================================================================================================================
+    @Version
+    public Integer getVersion() {
+        return version;
+    }
+
+    public void setVersion(Integer version) {
+        this.version = version;
+    }
+
+//~=================================================================================================================
 
     /**
      * Inserting some methods to deal with users not having names -- might want to move to service layer...

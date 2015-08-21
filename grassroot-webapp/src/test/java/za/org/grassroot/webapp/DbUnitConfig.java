@@ -7,10 +7,10 @@ import com.github.springtestdbunit.bean.DatabaseDataSourceConnectionFactoryBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-@Configuration
+//@Configuration
 public class DbUnitConfig {
 
-    @Bean
+   // @Bean
     public DatabaseDataSourceConnectionFactoryBean dbUnitDatabaseConnection(DataSource dataSource) {
         final DatabaseConfigBean databaseConfig = new DatabaseConfigBean() {{
             setCaseSensitiveTableNames(true);

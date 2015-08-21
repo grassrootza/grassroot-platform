@@ -12,6 +12,8 @@ public interface UserManagementService {
 
     User createUserProfile(User userProfile);
 
+    User createUserWebProfile(User userProfile) throws UserExistsException;
+
     List<User> getAllUsers();
 
     public Page<User> getDeploymentLog(Integer pageNumber);

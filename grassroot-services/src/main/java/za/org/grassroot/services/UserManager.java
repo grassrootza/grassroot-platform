@@ -4,6 +4,8 @@ import com.google.common.collect.Lists;
 import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.Phonenumber;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -11,15 +13,16 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.UserRepository;
 
 import javax.transaction.Transactional;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -30,7 +33,12 @@ import java.util.regex.Pattern;
 @Transactional
 public class UserManager implements UserManagementService, UserDetailsService {
 
+    private Logger log = LoggerFactory.getLogger(UserManager.class);
+
     private static final int PAGE_SIZE = 50;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
     private UserRepository userRepository;
@@ -38,6 +46,39 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public User createUserProfile(User userProfile) {
         return userRepository.save(userProfile);
+    }
+
+    @Override
+    public User createUserWebProfile(User userProfile) throws UserExistsException {
+
+        Assert.notNull(userProfile, "User is required");
+        Assert.hasText(userProfile.getPhoneNumber(), "User phone number is required");
+
+        String phoneNumber = convertPhoneNumber(userProfile.getPhoneNumber());
+
+        userProfile.setPhoneNumber(phoneNumber);
+        userProfile.setUsername( phoneNumber);
+        userProfile.setDisplayName(String.join(userProfile.getFirstName()," ", userProfile.getLastName()));
+
+        if(userExist(userProfile.getPhoneNumber()))
+        {
+            throw new UserExistsException("User '" + userProfile.getUsername() + "' already exists!");
+        }
+
+        if (passwordEncoder != null) {
+            userProfile.setPassword(passwordEncoder.encode(userProfile.getPassword()));
+        } else {
+            log.warn("PasswordEncoder not set, skipping password encryption...");
+        }
+
+        try {
+            return userRepository.save(userProfile);
+        } catch (final Exception e) {
+            e.printStackTrace();
+            log.warn(e.getMessage());
+            throw new UserExistsException("User '" + userProfile.getUsername() + "' already exists!");
+        }
+
     }
 
     @Override
@@ -55,12 +96,17 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
-        List<User> users = userRepository.findByUsername(username);
-
-        if (users.isEmpty()) {
+        if(StringUtils.isEmpty(username))
+        {
             throw new UsernameNotFoundException("Username not found.");
         }
-        return users.get(0);
+
+        User user = userRepository.findByUsername(username.toLowerCase().trim());
+
+        if (user == null) {
+            throw new UsernameNotFoundException("Username not found.");
+        }
+        return user;
     }
 
     @Override
@@ -129,20 +175,19 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
         try {
             PhoneNumberUtil phoneNumberUtil = PhoneNumberUtil.getInstance();
-            Phonenumber.PhoneNumber phoneNumber = phoneNumberUtil.parse(inputString, "ZA");
+            Phonenumber.PhoneNumber phoneNumber = phoneNumberUtil.parse(inputString.trim(), "ZA");
 
             if (phoneNumberUtil.isValidNumber(phoneNumber)) {
                 return phoneNumberUtil.format(phoneNumber, PhoneNumberUtil.PhoneNumberFormat.E164).replace("+", "");
             } else {
-                throw new RuntimeException("Could not format phone number '" + inputString + "'");
+                throw new InvalidPhoneNumber("Could not format phone number '" + inputString + "'");
             }
 
         } catch (NumberParseException e) {
-            throw new RuntimeException("Could not format phone number '" + inputString + "'");
+            throw new InvalidPhoneNumber("Could not format phone number '" + inputString + "'");
         }
 
     }
-
 
 
     public static String invertPhoneNumber(String storedNumber) {
@@ -163,5 +208,10 @@ public class UserManager implements UserManagementService, UserDetailsService {
         }
 
         return String.join(" ", Arrays.asList(prefix, midnumbers, finalnumbers));
+    }
+
+
+    public void setPasswordEncoder(final PasswordEncoder passwordEncoder) {
+        this.passwordEncoder = passwordEncoder;
     }
 }
