@@ -27,14 +27,17 @@ public class USSDGroupController extends USSDController {
 
     /**
      * Starting the group management menu flow here
-     * To do: Add in validation and checking that group is valid, and user can call a meeting on it
-     * To do: Add in extracting names and numbers from groups without names so users know what group it is
-     * To do: Stub out remaining menus
+     * todo: Add in validation and checking that group is valid, and user can call a meeting on it
+     * todo: Add in extracting names and numbers from groups without names so users know what group it is
+     * todo: Stub out remaining menus
      */
+
+    private static final String keyMenu = "menu", keyListGroup = "list", keyRenameGroup = "rename",
+            keyAddNumber = "addnumber", keyUnsubscribe = "unsubscribe", keySecondMenu = "menu2", keyDelGroup = "clean";
 
     @RequestMapping(value = USSD_BASE + GROUP_MENUS + START_KEY)
     @ResponseBody
-    public Request groupList(@RequestParam(value="msisdn", required=true) String inputNumber) throws URISyntaxException {
+    public Request groupList(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber) throws URISyntaxException {
 
         User sessionUser;
 
@@ -42,27 +45,28 @@ public class USSDGroupController extends USSDController {
         catch (NoSuchElementException e) { return noUserError; }
 
         String returnMessage = "Okay! Please pick one of the groups you belong to:";
-        return new Request(returnMessage, userGroupMenu(sessionUser, "group/menu", true));
+
+        return menuBuilder(userGroupMenu(sessionUser, returnMessage, GROUP_MENUS + keyMenu, true));
 
     }
 
-    @RequestMapping(value = USSD_BASE + GROUP_MENUS + "menu")
+    @RequestMapping(value = USSD_BASE + GROUP_MENUS + keyMenu)
     @ResponseBody
-    public Request groupMenu(@RequestParam(value="msisdn", required=true) String inputNumber,
-                             @RequestParam(value="groupId", required=true) Long groupId) throws URISyntaxException {
+    public Request groupMenu(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                             @RequestParam(value=GROUP_PARAM, required=true) Long groupId) throws URISyntaxException {
 
         // todo: check what permissions the user has and only display options that they can do
 
         String returnMessage = "Group selected. What would you like to do?";
-        String groupParam = "?" + GROUP_PARAM + groupId;
+        String groupParam = GROUPID_URL + groupId;
 
-        USSDMenu listMenu = new USSDMenu(USSD_BASE + GROUP_MENUS + "menu", returnMessage, false);
+        USSDMenu listMenu = new USSDMenu(returnMessage, false);
 
-        listMenu.addMenuOption(GROUP_MENUS + "list" + groupParam, "List group members");
-        listMenu.addMenuOption(GROUP_MENUS + "rename" + groupParam, "Rename group");
-        listMenu.addMenuOption(GROUP_MENUS + "addnumber" + groupParam, "Add a phone number");
-        listMenu.addMenuOption(GROUP_MENUS + "unsubscribe" + groupParam, "Remove me");
-        listMenu.addMenuOption(GROUP_MENUS + "menu2", "More options");
+        listMenu.addMenuOption(GROUP_MENUS + keyListGroup + groupParam, "List group members");
+        listMenu.addMenuOption(GROUP_MENUS + keyRenameGroup + groupParam, "Rename group");
+        listMenu.addMenuOption(GROUP_MENUS + keyAddNumber + groupParam, "Add a phone number");
+        listMenu.addMenuOption(GROUP_MENUS + keyUnsubscribe + groupParam, "Remove me");
+        listMenu.addMenuOption(GROUP_MENUS + keySecondMenu , "More options");
         // listMenu.addMenuOption(GROUP_MENUS + "delnumber" + groupParam, "Remove a number from the group");
         // listMenu.addMenuOption(GROUP_MENUS + "delgroup" + groupParam, "Delete this group (beta only)");
 
@@ -72,10 +76,10 @@ public class USSDGroupController extends USSDController {
 
     }
 
-    @RequestMapping(value = USSD_BASE + GROUP_MENUS + "list")
+    @RequestMapping(value = USSD_BASE + GROUP_MENUS + keyListGroup)
     @ResponseBody
-    public Request listGroup(@RequestParam(value="msisdn", required=true) String inputNumber,
-                             @RequestParam(value="groupId", required=true) Long groupId) throws URISyntaxException {
+    public Request listGroup(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                             @RequestParam(value=GROUP_PARAM, required=true) Long groupId) throws URISyntaxException {
 
         // todo: only list users who are not the same as the user calling the function
         // todo: check if user has a display name, and, if so, just print the display name
@@ -91,13 +95,15 @@ public class USSDGroupController extends USSDController {
 
         String returnMessage = "Users in this group are: " + String.join(", ", usersList);
 
-        return new Request(returnMessage, new ArrayList<Option>());
+        // need page length checking here, plus "back to home"
+
+        return menuBuilder(new USSDMenu(returnMessage, optionsHomeExit));
     }
 
-    @RequestMapping(value = USSD_BASE + GROUP_MENUS + "rename")
+    @RequestMapping(value = USSD_BASE + GROUP_MENUS + keyRenameGroup)
     @ResponseBody
-    public Request renamePrompt(@RequestParam(value="msisdn", required=true) String inputNumber,
-                                @RequestParam(value="groupId", required=true) Long groupId) throws URISyntaxException {
+    public Request renamePrompt(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                                @RequestParam(value=GROUP_PARAM, required=true) Long groupId) throws URISyntaxException {
 
         // todo: make sure to check if user calling this is part of group (later: permissions logic)
 
@@ -112,15 +118,15 @@ public class USSDGroupController extends USSDController {
         else
             promptMessage = "This group's current name is " + groupToRename.getGroupName() + ". What do you want to rename it?";
 
-        return new Request(promptMessage, freeText("group/rename2?groupId=" + groupId));
+        return menuBuilder(new USSDMenu(promptMessage, GROUP_MENUS + keyRenameGroup + DO_SUFFIX + GROUPID_URL + groupId));
 
     }
 
-    @RequestMapping(value = USSD_BASE + GROUP_MENUS + "rename2")
+    @RequestMapping(value = USSD_BASE + GROUP_MENUS + keyRenameGroup + DO_SUFFIX)
     @ResponseBody
-    public Request renameGroup(@RequestParam(value="msisdn", required=true) String inputNumber,
-                               @RequestParam(value="groupId", required=true) Long groupId,
-                               @RequestParam(value="request", required=true) String newName) throws URISyntaxException {
+    public Request renameGroup(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                               @RequestParam(value=GROUP_PARAM, required=true) Long groupId,
+                               @RequestParam(value=TEXT_PARAM, required=true) String newName) throws URISyntaxException {
 
         // todo: make sure to check if user calling this is part of group (later: permissions logic)
 
@@ -131,29 +137,29 @@ public class USSDGroupController extends USSDController {
         groupToRename.setGroupName(newName);
         groupToRename = groupManager.saveGroup(groupToRename);
 
-        return new Request("Group successfully renamed to " + groupToRename.getGroupName(), new ArrayList<Option>());
+        return menuBuilder(new USSDMenu("Group successfully renamed to " + newName, optionsHomeExit));
 
     }
 
-    @RequestMapping(value = USSD_BASE + GROUP_MENUS + "addnumber")
+    @RequestMapping(value = USSD_BASE + GROUP_MENUS + keyAddNumber)
     @ResponseBody
-    public Request addNumberInput(@RequestParam(value="msisdn", required=true) String inputNumber,
-                                  @RequestParam(value="groupId", required=true) Long groupId) throws URISyntaxException {
+    public Request addNumberInput(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                                  @RequestParam(value=GROUP_PARAM, required=true) Long groupId) throws URISyntaxException {
 
         // todo: have a way to flag if returned here from next menu because number wasn't right
         // todo: load and display some brief descriptive text about the group, e.g., name and who created it
         // todo: add a lot of validation logic (user is part of group, has permission to adjust, etc etc).
 
         String promptMessage = "Okay, we'll add a number to this group. Please enter it below.";
-        return new Request(promptMessage, freeText("group/addnumber2?groupId=" + groupId));
+        return menuBuilder(new USSDMenu(promptMessage, GROUP_MENUS + keyAddNumber + DO_SUFFIX + GROUPID_URL + groupId));
 
     }
 
-    @RequestMapping(value = USSD_BASE + GROUP_MENUS + "addnumber2")
+    @RequestMapping(value = USSD_BASE + GROUP_MENUS + keyAddNumber + DO_SUFFIX)
     @ResponseBody
-    public Request addNummberToGroup(@RequestParam(value="msisdn", required=true) String inputNumber,
-                                     @RequestParam(value="groupId", required=true) Long groupId,
-                                     @RequestParam(value="request", required=true) String numberToAdd) throws URISyntaxException {
+    public Request addNummberToGroup(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                                     @RequestParam(value=GROUP_PARAM, required=true) Long groupId,
+                                     @RequestParam(value=TEXT_PARAM, required=true) String numberToAdd) throws URISyntaxException {
 
         // todo: make sure this user is part of the group and has permission to add people to it
         // todo: check the user-to-add isn't already part of the group, and, if so, notify the user who is adding
@@ -168,29 +174,30 @@ public class USSDGroupController extends USSDController {
         sessionGroup.setGroupMembers(groupMembers);
         sessionGroup = groupManager.saveGroup(sessionGroup);
 
-        return new Request("Done! The group has been updated.", new ArrayList<Option>());
+        // as above, home / exit menu
+        return menuBuilder(new USSDMenu("Done! The group has been updated.", optionsHomeExit));
 
     }
 
-    @RequestMapping(value = USSD_BASE + GROUP_MENUS + "unsubscribe")
+    @RequestMapping(value = USSD_BASE + GROUP_MENUS + keyUnsubscribe)
     @ResponseBody
-    public Request unsubscribeConfirm(@RequestParam(value="msisdn", required=true) String inputNumber,
-                                      @RequestParam(value="groupId", required=true) Long groupId) throws URISyntaxException {
+    public Request unsubscribeConfirm(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                                      @RequestParam(value=GROUP_PARAM, required=true) Long groupId) throws URISyntaxException {
 
         // todo: add in a brief description of group, e.g., who created it
 
-        String promptMessage = "Are you sure you want to remove yourself from this group?";
-        Option yesOption = new Option("Yes, take me off.", 1, 1, new URI(baseURI + "group/unsubscribe2?groupId=" + groupId), true);
-        Option noOption = new Option("No, return to the last menu", 2, 2, new URI(baseURI + "group/menu?groupId=" + groupId), true);
+        USSDMenu promptMenu = new USSDMenu("Are you sure you want to remove yourself from this group?");
+        promptMenu.addMenuOption(GROUP_MENUS + keyUnsubscribe + DO_SUFFIX + GROUPID_URL + groupId, "Yes, take me off.");
+        promptMenu.addMenuOption(GROUP_MENUS + keyMenu + GROUPID_URL + groupId, "No, return to the last menu");
 
-        return new Request(promptMessage, Arrays.asList(yesOption, noOption));
+        return menuBuilder(promptMenu);
 
     }
 
-    @RequestMapping(value = USSD_BASE + GROUP_MENUS + "unsubscribe2")
+    @RequestMapping(value = USSD_BASE + GROUP_MENUS + keyUnsubscribe + DO_SUFFIX)
     @ResponseBody
-    public Request unsubscribeDo(@RequestParam(value="msisdn", required=true) String inputNumber,
-                                 @RequestParam(value="groupId", required=true) Long groupId) throws URISyntaxException {
+    public Request unsubscribeDo(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                                 @RequestParam(value=GROUP_PARAM, required=true) Long groupId) throws URISyntaxException {
 
         User sessionUser = new User();
         try { sessionUser = userManager.findByInputNumber(inputNumber); }
@@ -208,14 +215,14 @@ public class USSDGroupController extends USSDController {
 
         String returnMessage = "Done! You won't receive messages from that group anymore.";
 
-        return new Request(returnMessage, new ArrayList<Option>());
+        return menuBuilder(new USSDMenu(returnMessage, optionsHomeExit));
 
     }
 
-    @RequestMapping(value = USSD_BASE + GROUP_MENUS + "delgroup")
+    @RequestMapping(value = USSD_BASE + GROUP_MENUS + keyDelGroup)
     @ResponseBody
-    public Request deleteConfirm(@RequestParam(value="msisdn", required=true) String inputNumber,
-                                 @RequestParam(value="groupId", required=true) Long groupId) throws URISyntaxException {
+    public Request deleteConfirm(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                                 @RequestParam(value=GROUP_PARAM, required=true) Long groupId) throws URISyntaxException {
 
         // todo: add confirmation screen
         // todo: check for user permissions
@@ -235,7 +242,7 @@ public class USSDGroupController extends USSDController {
             returnMessage = "Nope, something went wrong with deleting that group.";
         }
 
-        return new Request(returnMessage, new ArrayList<Option>());
+        return menuBuilder(new USSDMenu(returnMessage, optionsHomeExit));
 
     }
 

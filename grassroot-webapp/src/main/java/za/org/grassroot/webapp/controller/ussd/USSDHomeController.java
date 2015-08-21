@@ -36,40 +36,49 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 @RestController
 public class USSDHomeController extends USSDController {
 
-    public Request welcomeMenu(String opening) throws URISyntaxException {
+    private static final String keyRenameStart = "rename-start", keyGroupNameStart = "group-start";
 
-        USSDMenu homeMenu = new USSDMenu(START_KEY, opening, false);
+    public USSDMenu welcomeMenu(String opening) throws URISyntaxException {
+
+        USSDMenu homeMenu = new USSDMenu(opening, false);
 
         homeMenu.addMenuOption(MTG_MENUS + START_KEY, "Call a meeting");
-        homeMenu.addMenuOption("vote", "Take a vote");
-        homeMenu.addMenuOption("log", "Record an action");
+        homeMenu.addMenuOption(VOTE_MENUS, "Take a vote");
+        homeMenu.addMenuOption(LOG_MENUS, "Record an action");
         homeMenu.addMenuOption(GROUP_MENUS + START_KEY, "Manage groups");
         homeMenu.addMenuOption(USER_MENUS + START_KEY, "Change profile");
 
         System.out.println("Menu size: " + homeMenu.getMenuCharLength());
 
-        return (checkMenuLength(homeMenu, true)) ? menuBuilder(homeMenu) : tooLongError;
+        return homeMenu;
     }
 
     @RequestMapping(value = USSD_BASE + START_KEY)
     @ResponseBody
     public Request startMenu(@RequestParam(value=PHONE_PARAM) String inputNumber) throws URISyntaxException {
 
+        USSDMenu startMenu = new USSDMenu("", false);
         User sessionUser = userManager.loadOrSaveUser(inputNumber);
 
         if (sessionUser.needsToRenameSelf(10)) {
-            return new Request("Hi! We notice you haven't set a name yet. What should we call you?", freeText("rename-start"));
+            startMenu.setPromptMessage("Hi! We notice you haven't set a name yet. What should we call you?");
+            startMenu.setFreeText(true);
+            startMenu.addMenuOption(keyRenameStart, "");
         } else if (sessionUser.needsToRenameGroup() != null) {
-            return new Request("Hi! Last time you created a group, but it doesn't have a name yet. What's it called?",
-                    freeText("group-start?groupId=" + sessionUser.needsToRenameGroup().getId()));
+            startMenu.setPromptMessage("Hi! Last time you created a group, but it doesn't have a name yet. What's it called?");
+            startMenu.setFreeText(true);
+            startMenu.addMenuOption(keyGroupNameStart + GROUPID_URL + sessionUser.needsToRenameGroup().getId(), "");
         } else {
             String welcomeMessage = sessionUser.hasName() ? ("Hi " + sessionUser.getName("") + ". What do you want to do?") :
                     "Hi! Welcome to GrassRoot. What will you do?";
-            return welcomeMenu(welcomeMessage);
+            startMenu = welcomeMenu(welcomeMessage);
         }
+
+        return (checkMenuLength(startMenu, true)) ? menuBuilder(startMenu) : tooLongError;
+
     }
 
-    @RequestMapping(value = USSD_BASE + "rename-start")
+    @RequestMapping(value = USSD_BASE + keyRenameStart)
     @ResponseBody
     public Request renameAndStart(@RequestParam(value=PHONE_PARAM) String inputNumber,
                                   @RequestParam(value=TEXT_PARAM) String userName) throws URISyntaxException {
@@ -78,10 +87,10 @@ public class USSDHomeController extends USSDController {
         sessionUser.setDisplayName(userName);
         sessionUser = userManager.save(sessionUser);
 
-        return welcomeMenu("Thanks " + userName + ". What do you want to do?");
+        return menuBuilder(welcomeMenu("Thanks " + userName + ". What do you want to do?"));
     }
 
-    @RequestMapping(value = USSD_BASE + "group-start")
+    @RequestMapping(value = USSD_BASE + keyGroupNameStart)
     @ResponseBody
     public Request groupNameAndStart(@RequestParam(value=PHONE_PARAM) String passedNumber,
                                      @RequestParam(value=GROUP_PARAM) Long groupId,
@@ -93,11 +102,11 @@ public class USSDHomeController extends USSDController {
         groupToRename.setGroupName(groupName);
         groupToRename = groupManager.saveGroup(groupToRename);
 
-        return welcomeMenu("Thanks! Now what do you want to do?");
+        return menuBuilder(welcomeMenu("Thanks! Now what do you want to do?"));
 
     }
 
-    @RequestMapping(value = { USSD_BASE + "error", USSD_BASE + "vote", USSD_BASE + "log", USSD_BASE + GROUP_MENUS + "menu2" })
+    @RequestMapping(value = { USSD_BASE + U404, USSD_BASE + VOTE_MENUS, USSD_BASE + LOG_MENUS, USSD_BASE + GROUP_MENUS + "menu2" })
     @ResponseBody
     public Request notBuilt() throws URISyntaxException {
         String errorMessage = "Sorry! We haven't built that yet. We're working on it.";

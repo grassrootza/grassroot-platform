@@ -1,7 +1,5 @@
 package za.org.grassroot.webapp.controller.ussd.menus;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.*;
 
 /**
@@ -18,38 +16,34 @@ public class USSDMenu {
 
     protected static final String BASE_URI_STRING = "http://meeting-organizer.herokuapp.com/ussd/";
 
-    protected String mappedURI;
-    protected String fullURI;
     protected String promptMessage;
     protected boolean isFreeText;
 
     protected LinkedHashMap<String, String> menuOptions; // format is key and then description text
 
     // most common and basic constructor
-    public USSDMenu(String thisUri, String promptMessage) {
-        this.mappedURI = thisUri;
-        this.fullURI = BASE_URI_STRING + mappedURI;
+    public USSDMenu(String promptMessage) {
         this.promptMessage = promptMessage;
     }
     
     // constructor for free-text menu
-    public USSDMenu(String thisUri, String promptMessage, String nextUri) {
-        this(thisUri, promptMessage);
+    public USSDMenu(String promptMessage, String nextUri) {
+        this(promptMessage);
         this.isFreeText = true;
         this.menuOptions = new LinkedHashMap<>();
         this.menuOptions.put(nextUri, "");
     }
     
     // constructor for multi-option menu, where menu not already known
-    public USSDMenu(String thisUri, String promptMessage, boolean isFreeText) {
-        this(thisUri, promptMessage);
+    public USSDMenu(String promptMessage, boolean isFreeText) {
+        this(promptMessage);
         this.isFreeText = isFreeText;
         this.menuOptions = new LinkedHashMap<>();
     }
 
     // constructor for multi-option menu, where keys and string already known
-    public USSDMenu(String thisUri, String promptMessage, Map<String, String> nextOptionKeys) {
-        this(thisUri, promptMessage);
+    public USSDMenu(String promptMessage, Map<String, String> nextOptionKeys) {
+        this(promptMessage);
         this.isFreeText = false;
         this.promptMessage = promptMessage;
         this.menuOptions = new LinkedHashMap<>(nextOptionKeys);
@@ -71,11 +65,7 @@ public class USSDMenu {
         return isFreeText;
     }
 
-    public String getUri() {
-        return mappedURI;
-    }
-
-    public URI getFullURI() throws URISyntaxException { return new URI(fullURI); }
+    public void setFreeText(boolean isFreeText) { this.isFreeText = isFreeText; }
 
     public String getNextURI() {
         // todo: throw an exception if this is not a free text

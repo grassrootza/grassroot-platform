@@ -51,7 +51,7 @@ public class USSDMeetingController extends USSDController {
             return new Request(promptMessage, freeText("mtg/group"));
         } else {
             String promptMessage = "Do you want to call a meeting of an existing group, or create a new one?";
-            return new Request(promptMessage, userGroupMenu(sessionUser, "mtg/group", true));
+            return menuBuilder(userGroupMenu(sessionUser, promptMessage, "mtg/group", true));
         }
     }
 

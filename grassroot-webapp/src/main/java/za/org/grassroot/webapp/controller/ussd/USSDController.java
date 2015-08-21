@@ -28,8 +28,9 @@ public class USSDController {
 
     // adopting a convention to capitalize constant strings that are used across all controllers
     protected static final String USSD_BASE = "/ussd/", MTG_MENUS = "mtg/", USER_MENUS = "user/", GROUP_MENUS = "group/";
+    protected static final String VOTE_MENUS = "vote", LOG_MENUS = "log", U404="error"; // leaving off '/' for now, until built
     protected static final String PHONE_PARAM = "msisdn", TEXT_PARAM = "request", GROUP_PARAM = "groupId";
-    protected static final String START_KEY = "start";
+    protected static final String START_KEY = "start", GROUPID_URL = ("?" + GROUP_PARAM + "="), DO_SUFFIX = "-do";
 
 
     protected final String smsHost = "xml2sms.gsm.co.za";
@@ -88,27 +89,27 @@ public class USSDController {
         return (menuToCheck.getMenuCharLength(enumLength) < characterLimit); // might be able to get away with <=, but prefer to be conservative
     }
 
-    public List<Option> userGroupMenu(User userForSession, String path, boolean optionNewGroup) throws URISyntaxException {
+    public USSDMenu userGroupMenu(User userForSession, String promptMessage, String path, boolean optionNewGroup)
+            throws URISyntaxException {
 
         // todo: some way to handle pagination if user has many groups -- USSD can only handle five options on a menu ...
         // todo: also, lousy user experience if too many -- should sort by last accessed & most accessed (some combo)
 
         List<Group> groupsPartOf = userForSession.getGroupsPartOf();
-        List<Option> menuBuilder = new ArrayList<>();
-        int listLength = groupsPartOf.size();
+        USSDMenu menuBuild = new USSDMenu(promptMessage, false);
+        String unnamedPrefix = "Unnamed, created ", dateFormat = "%1$TD";
+        String formedUrl = path + GROUPID_URL;
 
-        for (int i = 0; i < listLength; i++) {
-            Group groupForMenu = groupsPartOf.get(i);
-            String groupName = groupForMenu.getGroupName();
-            if (groupName == null || groupName.isEmpty())
-                groupName = "Unnamed group, created on " + String.format("%1$TD", groupForMenu.getCreatedDateTime());
-            menuBuilder.add(new Option(groupName,i+1,i+1, new URI(baseURI+path+"?groupId="+groupForMenu.getId()),true));
+        for (Group groupForMenu : groupsPartOf) {
+            String groupName = (groupForMenu.hasName()) ? groupForMenu.getGroupName() :
+                    ("Unnamed group, created on " + String.format("%1$TD", groupForMenu.getCreatedDateTime()));
+            menuBuild.addMenuOption(formedUrl + groupForMenu.getId(), groupName);
         }
 
         if (optionNewGroup)
-            menuBuilder.add(new Option ("Create a new group", listLength+1, listLength+1, new URI(baseURI+path+"?groupId=0"), true));
+            menuBuild.addMenuOption(formedUrl + "0", "Create a new group");
 
-        return menuBuilder;
+        return menuBuild;
     }
 
 }
