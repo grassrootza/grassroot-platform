@@ -29,7 +29,7 @@ public class USSDController {
     // adopting a convention to capitalize constant strings that are used across all controllers
     protected static final String USSD_BASE = "/ussd/", MTG_MENUS = "mtg/", USER_MENUS = "user/", GROUP_MENUS = "group/";
     protected static final String VOTE_MENUS = "vote", LOG_MENUS = "log", U404="error"; // leaving off '/' for now, until built
-    protected static final String PHONE_PARAM = "msisdn", TEXT_PARAM = "request", GROUP_PARAM = "groupId";
+    protected static final String PHONE_PARAM = "msisdn", TEXT_PARAM = "request", GROUP_PARAM = "groupId", EVENT_PARAM = "eventId";
     protected static final String START_KEY = "start", GROUPID_URL = ("?" + GROUP_PARAM + "="), DO_SUFFIX = "-do";
 
 
@@ -62,17 +62,22 @@ public class USSDController {
         return menuToBuild;
     }
 
+    // integrating check for menu length in here, to avoid writing it in every return
+    // defaulting to not first screen, can do an override in start (shouldn't cause speed issues, but watch)
+    // not bothering to check free text input, since the odds of those exceeding are very low (and then a UX issue...)
     protected Request menuBuilder(USSDMenu thisMenu) throws URISyntaxException {
         Request menuRequest;
         if (thisMenu.isFreeText()) {
             menuRequest = new Request(thisMenu.getPromptMessage(), freeText(thisMenu.getNextURI()));
         } else {
-            menuRequest = new Request(thisMenu.getPromptMessage(), createMenu(thisMenu.getMenuOptions()));
+            if (checkMenuLength(thisMenu, false))
+                menuRequest = new Request(thisMenu.getPromptMessage(), createMenu(thisMenu.getMenuOptions()));
+            else
+                menuRequest = tooLongError;
         }
         return menuRequest;
     }
 
-    // todo: standardize handling of base vs ending URIs wrt folder names
     protected List<Option> freeText(String urlEnding) throws URISyntaxException {
         return Collections.singletonList(new Option("", 1, 1, new URI(baseURI + urlEnding), false));
     }
@@ -96,13 +101,13 @@ public class USSDController {
         // todo: also, lousy user experience if too many -- should sort by last accessed & most accessed (some combo)
 
         List<Group> groupsPartOf = userForSession.getGroupsPartOf();
-        USSDMenu menuBuild = new USSDMenu(promptMessage, false);
-        String unnamedPrefix = "Unnamed, created ", dateFormat = "%1$TD";
+        USSDMenu menuBuild = new USSDMenu(promptMessage);
+        String unnamedPrefix = "Group created on ", dateFormat = "%1$TD";
         String formedUrl = path + GROUPID_URL;
 
         for (Group groupForMenu : groupsPartOf) {
             String groupName = (groupForMenu.hasName()) ? groupForMenu.getGroupName() :
-                    ("Unnamed group, created on " + String.format("%1$TD", groupForMenu.getCreatedDateTime()));
+                    (unnamedPrefix + String.format("%1$TD", groupForMenu.getCreatedDateTime()));
             menuBuild.addMenuOption(formedUrl + groupForMenu.getId(), groupName);
         }
 

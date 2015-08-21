@@ -19,40 +19,32 @@ public class USSDMenu {
     protected String promptMessage;
     protected boolean isFreeText;
 
-    protected LinkedHashMap<String, String> menuOptions; // format is key and then description text
+    protected LinkedHashMap<String, String> menuOptions; // key is URL and value is description text
 
-    // most common and basic constructor
+    // most common and basic constructor, initialized options string and defaults to a menu (not free text)
     public USSDMenu(String promptMessage) {
         this.promptMessage = promptMessage;
+        this.isFreeText = false;
+        this.menuOptions = new LinkedHashMap<>();
     }
     
-    // constructor for free-text menu
+    // constructor for free-text menu, i.e., if pass a string, assume free text, if a map, assume menu
     public USSDMenu(String promptMessage, String nextUri) {
         this(promptMessage);
         this.isFreeText = true;
-        this.menuOptions = new LinkedHashMap<>();
         this.menuOptions.put(nextUri, "");
-    }
-    
-    // constructor for multi-option menu, where menu not already known
-    public USSDMenu(String promptMessage, boolean isFreeText) {
-        this(promptMessage);
-        this.isFreeText = isFreeText;
-        this.menuOptions = new LinkedHashMap<>();
     }
 
     // constructor for multi-option menu, where keys and string already known
     public USSDMenu(String promptMessage, Map<String, String> nextOptionKeys) {
         this(promptMessage);
-        this.isFreeText = false;
-        this.promptMessage = promptMessage;
         this.menuOptions = new LinkedHashMap<>(nextOptionKeys);
     }
 
     // now starting getters and setters
 
     public String getPromptMessage() {
-        // todo : introduce localization here later, for now just returning the prompt
+        // todo : introduce localization here later (or in controller?), for now just returning the prompt
         return promptMessage;
     }
 
@@ -66,6 +58,11 @@ public class USSDMenu {
     }
 
     public void setFreeText(boolean isFreeText) { this.isFreeText = isFreeText; }
+
+    public void setNextURI(String nextUri) {
+        // todo: throw an exception if this is not a free text
+        menuOptions.put(nextUri, "");
+    }
 
     public String getNextURI() {
         // todo: throw an exception if this is not a free text

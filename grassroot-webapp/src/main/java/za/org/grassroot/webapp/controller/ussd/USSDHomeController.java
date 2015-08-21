@@ -40,7 +40,7 @@ public class USSDHomeController extends USSDController {
 
     public USSDMenu welcomeMenu(String opening) throws URISyntaxException {
 
-        USSDMenu homeMenu = new USSDMenu(opening, false);
+        USSDMenu homeMenu = new USSDMenu(opening);
 
         homeMenu.addMenuOption(MTG_MENUS + START_KEY, "Call a meeting");
         homeMenu.addMenuOption(VOTE_MENUS, "Take a vote");
@@ -57,7 +57,7 @@ public class USSDHomeController extends USSDController {
     @ResponseBody
     public Request startMenu(@RequestParam(value=PHONE_PARAM) String inputNumber) throws URISyntaxException {
 
-        USSDMenu startMenu = new USSDMenu("", false);
+        USSDMenu startMenu = new USSDMenu("");
         User sessionUser = userManager.loadOrSaveUser(inputNumber);
 
         if (sessionUser.needsToRenameSelf(10)) {
@@ -111,6 +111,13 @@ public class USSDHomeController extends USSDController {
     public Request notBuilt() throws URISyntaxException {
         String errorMessage = "Sorry! We haven't built that yet. We're working on it.";
         return new Request(errorMessage, new ArrayList<Option>());
+    }
+
+    @RequestMapping(value = USSD_BASE + "exit")
+    @ResponseBody
+    public Request exitScreen() throws URISyntaxException {
+        String exitMessage = "Thanks for using GrassRoot. We hope we were useful.";
+        return new Request(exitMessage, new ArrayList<Option>());
     }
 
     @RequestMapping(value = USSD_BASE + "test_question")

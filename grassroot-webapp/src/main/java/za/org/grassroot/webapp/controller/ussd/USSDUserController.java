@@ -27,7 +27,7 @@ public class USSDUserController extends USSDController {
     private static final String keyPromptLanguage = "language", keyPromptPhone = "phone";
 
     private static final Map<String, USSDMenu> menuFlow = ImmutableMap.<String,USSDMenu>builder().
-            put(keyStart, new USSDMenu("What would you like to do?", false)).
+            put(keyStart, new USSDMenu("What would you like to do?")).
             put(keyPromptName, new USSDMenu("You haven't set your name yet. What should we call you?", USER_MENUS + keyRenameDo)).
             put(keyRenameDo, new USSDMenu("Done! Name changed.", optionsHomeExit)).
             put(keyPromptLanguage, new USSDMenu("Sorry, not built yet." , optionsHomeExit)).

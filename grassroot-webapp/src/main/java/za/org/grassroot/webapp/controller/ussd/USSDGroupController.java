@@ -60,7 +60,7 @@ public class USSDGroupController extends USSDController {
         String returnMessage = "Group selected. What would you like to do?";
         String groupParam = GROUPID_URL + groupId;
 
-        USSDMenu listMenu = new USSDMenu(returnMessage, false);
+        USSDMenu listMenu = new USSDMenu(returnMessage);
 
         listMenu.addMenuOption(GROUP_MENUS + keyListGroup + groupParam, "List group members");
         listMenu.addMenuOption(GROUP_MENUS + keyRenameGroup + groupParam, "Rename group");
