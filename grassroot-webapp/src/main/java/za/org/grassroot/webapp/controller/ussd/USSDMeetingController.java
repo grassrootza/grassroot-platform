@@ -1,6 +1,5 @@
 package za.org.grassroot.webapp.controller.ussd;
 
-import com.google.common.collect.ImmutableMap;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -15,10 +14,7 @@ import za.org.grassroot.webapp.model.ussd.AAT.Option;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
@@ -32,36 +28,52 @@ public class USSDMeetingController extends USSDController {
 
     /**
      * The meeting organizer menus
-     * To do: Decide whether to use the menu abstraction now built into this, or not
-     * To do: Various forms of validation and checking throughout
+     * todo: Various forms of validation and checking throughout
+     * todo: Think of a way to pull together the common method set up stuff (try to load user, get next key)
+     * todo: Make the prompts also follow the sequence somehow (via a map of some sort, likely)
      */
 
-    @RequestMapping(value = "/ussd/mtg")
+    private static final String keyGroup = "group", keyDate = "date", keyTime = "time", keyPlace = "place", keySend = "send";
+
+    private static final List<String> menuSequence = Arrays.asList(START_KEY, keyGroup, keyTime, keyPlace, keySend);
+
+    private String nextMenuKey(String currentMenuKey) {
+        return menuSequence.get(menuSequence.indexOf(currentMenuKey) + 1);
+    }
+
+    @RequestMapping(value = USSD_BASE + MTG_MENUS + START_KEY)
     @ResponseBody
-    public Request meetingOrg(@RequestParam(value="msisdn", required=true) String inputNumber) throws URISyntaxException {
+    public Request meetingOrg(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber) throws URISyntaxException {
 
         User sessionUser = new User();
 
         try { sessionUser = userManager.findByInputNumber(inputNumber); }
         catch (NoSuchElementException e) { return noUserError; }
 
+        USSDMenu thisMenu = new USSDMenu("");
+        String keyNext = nextMenuKey(START_KEY);
+
         if (sessionUser.getGroupsPartOf().isEmpty()) {
-            String promptMessage = "Okay, we'll set up a meeting. Please enter the phone numbers of the people to invite." +
-                    " You can enter multiple numbers separated by a space or comma.";
-            return new Request(promptMessage, freeText("mtg/group"));
+            thisMenu.setFreeText(true);
+            thisMenu.setPromptMessage("Okay, we'll set up a meeting. Please enter the phone numbers of the people to invite." +
+                                              " You can enter multiple numbers separated by a space or comma.");
+            thisMenu.setNextURI(MTG_MENUS + keyNext);
         } else {
             String promptMessage = "Do you want to call a meeting of an existing group, or create a new one?";
-            return new Request(promptMessage, userGroupMenu(sessionUser, "mtg/group", true));
+            thisMenu = userGroupMenu(sessionUser, promptMessage, MTG_MENUS + keyNext, true);
         }
+
+        return menuBuilder(thisMenu);
     }
 
-    @RequestMapping(value = "/ussd/mtg/group")
+    @RequestMapping(value = USSD_BASE + MTG_MENUS + keyGroup)
     @ResponseBody
-    public Request saveNumbers(@RequestParam(value="msisdn", required=true) String inputNumber,
-                               @RequestParam(value="request", required=false) String userResponse,
-                               @RequestParam(value="groupId", required=false) Long groupId) throws URISyntaxException {
+    public Request saveNumbers(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                               @RequestParam(value=TEXT_PARAM, required=false) String userResponse,
+                               @RequestParam(value=GROUP_PARAM, required=false) Long groupId) throws URISyntaxException {
 
         String returnMessage;
+        String keyNext = nextMenuKey(keyGroup);
 
         User sessionUser = new User();
         Group groupToMessage = new Group();
@@ -69,72 +81,77 @@ public class USSDMeetingController extends USSDController {
         try { sessionUser = userManager.findByInputNumber(inputNumber); }
         catch (NoSuchElementException e) { return noUserError; }
 
+        USSDMenu thisMenu = new USSDMenu("");
+        thisMenu.setFreeText(true);
+
         if (groupId != null) {
             if (groupId == 0) {
-                return new Request("Okay. We'll create a new group for this meeting. Please enter the numbers for it.",
-                        freeText("mtg/group"));
+                thisMenu.setPromptMessage("Okay. We'll create a new group for this meeting. Please enter the numbers for it.");
+                thisMenu.setNextURI(MTG_MENUS + keyGroup);
             } else {
                 groupToMessage = groupManager.loadGroup(groupId);
-                returnMessage = "Okay, please enter the date for the meeting.";
+                thisMenu.setPromptMessage("Okay, please enter the date for the meeting.");
+                thisMenu.setNextURI(MTG_MENUS + keyNext + GROUPID_URL + groupToMessage.getId());
             }
         } else {
             groupToMessage = groupManager.createNewGroup(sessionUser, userResponse);
-            returnMessage = "Okay, we just created a group with those numbers. What day do you want the meeting?";
+            thisMenu.setPromptMessage("Okay, we just created a group with those numbers. What day do you want the meeting?");
+            thisMenu.setNextURI(MTG_MENUS + keyNext + GROUPID_URL + groupToMessage.getId());
         }
-        return new Request(returnMessage, freeText("mtg/time?groupId=" + groupToMessage.getId()));
+        return menuBuilder(thisMenu);
+
     }
 
     // todo: instead of handing along the groupId, date, time, etc., create an event and hand over its ID
     // todo: create some default options for the next 3 days, for date
     // todo: clean up the flow and logic between these menus (they are getting a little confusing, even to me ...)
 
-    @RequestMapping(value = "/ussd/mtg/date")
+    @RequestMapping(value = USSD_BASE + MTG_MENUS + keyDate)
     @ResponseBody
-    public Request getDate(@RequestParam(value="msisdn", required=true) String inputNumber,
-                           @RequestParam(value="groupId", required=false) Long groupId) throws URISyntaxException {
+    public Request getDate(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                           @RequestParam(value=GROUP_PARAM, required=false) Long groupId) throws URISyntaxException {
 
-        HashMap<String, String> menuValues = new HashMap<>();
-
-        menuValues.put("returnMessage", "Okay. What day do you want the meeting?");
-        menuValues.put("url", "mtg/time?groupId=" + groupId);
-
-        // String returnMessage = "Okay. What day do you want the meeting?";
-        return new Request(menuValues.get("returnMessage"), freeText("mtg/time?groupId=" + groupId));
+        // todo: make groupId not required and check for it in passing, in case we shuffle the sequence
+        String keyNext = nextMenuKey(keyDate);
+        USSDMenu thisMenu = new USSDMenu("Okay. What day do you want the meeting?", MTG_MENUS + keyNext + GROUPID_URL + groupId);
+        return menuBuilder(thisMenu);
 
     }
 
-    @RequestMapping(value = "/ussd/mtg/time")
+    @RequestMapping(value = USSD_BASE + MTG_MENUS + keyTime)
     @ResponseBody
-    public Request getTime(@RequestParam(value="msisdn", required=true) String inputNumber,
-                           @RequestParam(value="groupId", required=false) Long groupId,
-                           @RequestParam(value="request", required=true) String meetingDate) throws URISyntaxException {
+    public Request getTime(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                           @RequestParam(value=GROUP_PARAM, required=false) Long groupId,
+                           @RequestParam(value=TEXT_PARAM, required=true) String meetingDate) throws URISyntaxException {
 
-        String returnMessage = "Okay. What time?";
-        return new Request(returnMessage, freeText("mtg/place?groupId=" + groupId + "&date=" + meetingDate));
+        String keyNext = nextMenuKey(keyTime);
+        return menuBuilder(new USSDMenu("Okay. What time?", MTG_MENUS + keyNext + GROUPID_URL + groupId + "&date=" + meetingDate));
 
     }
 
-    @RequestMapping(value = "/ussd/mtg/place")
+    @RequestMapping(value = USSD_BASE + MTG_MENUS + keyPlace)
     @ResponseBody
-    public Request getPlace(@RequestParam(value="msisdn", required=true) String inputNumber,
-                            @RequestParam(value="groupId", required=false) Long groupId,
+    public Request getPlace(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                            @RequestParam(value=GROUP_PARAM, required=false) Long groupId,
                             @RequestParam(value="date", required=true) String meetingDate,
-                            @RequestParam(value="request", required=true) String meetingTime) throws URISyntaxException {
+                            @RequestParam(value=TEXT_PARAM, required=true) String meetingTime) throws URISyntaxException {
 
         // todo: add a lookup of group default places
 
         String returnMessage = "Done. What place?";
-        return new Request(returnMessage, freeText("mtg/message?groupId=" + groupId + "&date=" + meetingDate + "&time=" + meetingTime));
+        String keyNext = nextMenuKey(keyPlace);
+        return menuBuilder(new USSDMenu(returnMessage, MTG_MENUS + keyNext + GROUPID_URL + groupId + "&date="
+                + meetingDate + "&time=" + meetingTime));
 
     }
 
-    @RequestMapping(value = "/ussd/mtg/message")
+    @RequestMapping(value = USSD_BASE + MTG_MENUS + keySend)
     @ResponseBody
-    public Request sendMessage(@RequestParam(value="msisdn", required=true) String inputNumber,
-                               @RequestParam(value="groupId", required=true) Long groupId,
+    public Request sendMessage(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                               @RequestParam(value=GROUP_PARAM, required=true) Long groupId,
                                @RequestParam(value="date", required=true) String meetingDate,
                                @RequestParam(value="time", required=true) String meetingTime,
-                               @RequestParam(value="request", required=true) String meetingPlace) throws URISyntaxException {
+                               @RequestParam(value=TEXT_PARAM, required=true) String meetingPlace) throws URISyntaxException {
 
         // todo: various forms of error handling here (e.g., non-existent group, invalid users, etc)
         // todo: store the response from the SMS gateway and use it to state how many messages successful
@@ -168,6 +185,6 @@ public class USSDMeetingController extends USSDController {
         System.out.println(messageResult);
 
         String returnMessage = "Done! We sent the message.";
-        return new Request(returnMessage, new ArrayList<Option>());
+        return menuBuilder(new USSDMenu(returnMessage, optionsHomeExit));
     }
 }

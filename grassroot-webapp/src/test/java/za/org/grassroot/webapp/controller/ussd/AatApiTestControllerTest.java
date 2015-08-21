@@ -64,6 +64,7 @@ public class AatApiTestControllerTest {
 
     // Some strings used throughout tests
     private final String testPhone = "27815550000"; // todo: make sure this isn't an actual number
+    private final String onceOffPhone= "27805550000"; // slightly different ot main testPhone so rename doesn't break XML checks if renamed already
     private final String testDisplayName = "TestPhone1";
     private final List<String> testPhones = Arrays.asList("0825550000", "0835550000", "0845550000"); // todo: as above
     private final Integer testGroupSize = testPhones.size() + 1; // includes creating user
@@ -125,17 +126,35 @@ public class AatApiTestControllerTest {
     @Test
     public void userStart() throws Exception {
 
-        final URI requestUri = base.path("ussd/start").queryParam(phoneParam, testPhone).build().toUri();
+        final URI requestUri = base.path("ussd/start").queryParam(phoneParam, onceOffPhone).build().toUri();
         ResponseEntity<String> response = template.getForEntity(requestUri, String.class);
 
         System.out.println(base.toUriString());
 
         // assertThat(userManager.getAllUsers().size(), is(2)); // size of repository behaving a little strangely
-        User userCreated = userManager.findByInputNumber(testPhone);
+        User userCreated = userManager.findByInputNumber(onceOffPhone);
         assertNotNull(userCreated.getId());
         assertNotNull(userCreated.getCreatedDateTime());
-        assertThat(userCreated.getPhoneNumber(), is(testPhone));
+        assertThat(userCreated.getPhoneNumber(), is(onceOffPhone));
 
+        final String expectedResponseXml = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>" +
+                "<request>" +
+                "    <headertext>Hi! Welcome to GrassRoot. What will you do?</headertext>" +
+                "    <options>" +
+                "        <option command=\"1\" order=\"1\" callback=\"http://meeting-organizer.herokuapp.com/ussd/mtg/start\"" +
+                "                display=\"true\">Call a meeting</option>\n" +
+                "        <option command=\"2\" order=\"2\" callback=\"http://meeting-organizer.herokuapp.com/ussd/vote\"" +
+                "                display=\"true\">Take a vote</option>\n" +
+                "        <option command=\"3\" order=\"3\" callback=\"http://meeting-organizer.herokuapp.com/ussd/log\"" +
+                "                display=\"true\">Record an action</option>\n" +
+                "        <option command=\"4\" order=\"4\" callback=\"http://meeting-organizer.herokuapp.com/ussd/group/start\"" +
+                "                display=\"true\">Manage groups</option>\n" +
+                "        <option command=\"5\" order=\"5\" callback=\"http://meeting-organizer.herokuapp.com/ussd/user/start\"" +
+                "                display=\"true\">Change profile</option>\n" +
+                "    </options>" +
+                "</request>";
+
+        assertXMLEqual(expectedResponseXml, response.getBody());
     }
 
     // Test to check that a user can rename themselves and be greeted on next access

@@ -23,16 +23,15 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 @RestController
 public class USSDUserController extends USSDController {
 
-    private static final String USER_MENUS = "user/";
     private static final String keyStart = "start", keyPromptName = "name", keyRenameDo = "name2";
     private static final String keyPromptLanguage = "language", keyPromptPhone = "phone";
 
     private static final Map<String, USSDMenu> menuFlow = ImmutableMap.<String,USSDMenu>builder().
-            put(keyStart, new USSDMenu(USER_MENUS + keyStart, "What would you like to do?", false)).
-            put(keyPromptName, new USSDMenu(USER_MENUS + keyPromptName, "You haven't set your name yet. What should we call you?", USER_MENUS + keyRenameDo)).
-            put(keyRenameDo, new USSDMenu(USER_MENUS + keyRenameDo, "Done! Name changed.", optionsHomeExit)).
-            put(keyPromptLanguage, new USSDMenu(USER_MENUS + keyPromptLanguage, "Sorry, not built yet." , optionsHomeExit)).
-            put(keyPromptPhone, new USSDMenu(USER_MENUS + keyPromptPhone, "Sorry, not built yet.", optionsHomeExit)).build();
+            put(keyStart, new USSDMenu("What would you like to do?")).
+            put(keyPromptName, new USSDMenu("You haven't set your name yet. What should we call you?", USER_MENUS + keyRenameDo)).
+            put(keyRenameDo, new USSDMenu("Done! Name changed.", optionsHomeExit)).
+            put(keyPromptLanguage, new USSDMenu("Sorry, not built yet." , optionsHomeExit)).
+            put(keyPromptPhone, new USSDMenu("Sorry, not built yet.", optionsHomeExit)).build();
 
     /**
      * Starting the user profile management flow here
@@ -44,9 +43,9 @@ public class USSDUserController extends USSDController {
 
         USSDMenu thisMenu = menuFlow.get(keyStart);
 
-        thisMenu.addMenuOption(menuFlow.get(keyPromptName).getUri(), "Change my display name");
-        thisMenu.addMenuOption(menuFlow.get(keyPromptLanguage).getUri(), "Change my language");
-        thisMenu.addMenuOption(menuFlow.get(keyPromptPhone).getUri(), "Add phone number to my profile");
+        thisMenu.addMenuOption(USER_MENUS + keyPromptName, "Change my display name");
+        thisMenu.addMenuOption(USER_MENUS + keyPromptLanguage, "Change my language");
+        thisMenu.addMenuOption(USER_MENUS + keyPromptPhone, "Add phone number to my profile");
 
         return menuBuilder(thisMenu);
     }
