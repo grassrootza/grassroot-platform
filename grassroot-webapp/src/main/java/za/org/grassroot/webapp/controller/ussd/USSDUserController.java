@@ -23,15 +23,15 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 @RestController
 public class USSDUserController extends USSDController {
 
-    private static final String keyStart = "start", keyPromptName = "name", keyRenameDo = "name2";
-    private static final String keyPromptLanguage = "language", keyPromptPhone = "phone";
+    private static final String keyStart = "start", keyName = "name";
+    private static final String keyLanguage = "language", keyPhone = "phone";
 
     private static final Map<String, USSDMenu> menuFlow = ImmutableMap.<String,USSDMenu>builder().
             put(keyStart, new USSDMenu("What would you like to do?")).
-            put(keyPromptName, new USSDMenu("You haven't set your name yet. What should we call you?", USER_MENUS + keyRenameDo)).
-            put(keyRenameDo, new USSDMenu("Done! Name changed.", optionsHomeExit)).
-            put(keyPromptLanguage, new USSDMenu("Sorry, not built yet." , optionsHomeExit)).
-            put(keyPromptPhone, new USSDMenu("Sorry, not built yet.", optionsHomeExit)).build();
+            put(keyName, new USSDMenu("You haven't set your name yet. What should we call you?", USER_MENUS + keyName + DO_SUFFIX)).
+            put(keyName + DO_SUFFIX, new USSDMenu("Done! Name changed.", optionsHomeExit)).
+            put(keyLanguage, new USSDMenu("Sorry, not built yet." , optionsHomeExit)).
+            put(keyPhone, new USSDMenu("Sorry, not built yet.", optionsHomeExit)).build();
 
     /**
      * Starting the user profile management flow here
@@ -43,18 +43,18 @@ public class USSDUserController extends USSDController {
 
         USSDMenu thisMenu = menuFlow.get(keyStart);
 
-        thisMenu.addMenuOption(USER_MENUS + keyPromptName, "Change my display name");
-        thisMenu.addMenuOption(USER_MENUS + keyPromptLanguage, "Change my language");
-        thisMenu.addMenuOption(USER_MENUS + keyPromptPhone, "Add phone number to my profile");
+        thisMenu.addMenuOption(USER_MENUS + keyName, "Change my display name");
+        thisMenu.addMenuOption(USER_MENUS + keyLanguage, "Change my language");
+        thisMenu.addMenuOption(USER_MENUS + keyPhone, "Add phone number to my profile");
 
         return menuBuilder(thisMenu);
     }
 
-    @RequestMapping(value = USSD_BASE + USER_MENUS + keyPromptName)
+    @RequestMapping(value = USSD_BASE + USER_MENUS + keyName)
     @ResponseBody
     public Request userDisplayName(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber) throws URISyntaxException {
 
-        USSDMenu thisMenu = menuFlow.get(keyPromptName);
+        USSDMenu thisMenu = menuFlow.get(keyName);
 
         User sessionUser = new User();
         try { sessionUser = userManager.findByInputNumber(inputNumber); }
@@ -68,12 +68,12 @@ public class USSDUserController extends USSDController {
         return menuBuilder(thisMenu);
     }
 
-    @RequestMapping(value = USSD_BASE + USER_MENUS + keyRenameDo)
+    @RequestMapping(value = USSD_BASE + USER_MENUS + keyName + DO_SUFFIX)
     @ResponseBody
     public Request userChangeName(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
                                   @RequestParam(value=TEXT_PARAM, required=true) String newName) throws URISyntaxException {
 
-        USSDMenu thisMenu = menuFlow.get(keyRenameDo);
+        USSDMenu thisMenu = menuFlow.get(keyName + DO_SUFFIX);
 
         // todo: add validation and processing of the name that is passed, as well as exception handling etc
 
@@ -85,6 +85,37 @@ public class USSDUserController extends USSDController {
         sessionUser = userManager.save(sessionUser);
 
         return menuBuilder(thisMenu);
+    }
+
+    @RequestMapping(value = USSD_BASE + USER_MENUS + keyLanguage)
+    @ResponseBody
+    public Request userPromptLanguage(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber) throws URISyntaxException {
+
+        USSDMenu thisMenu = new USSDMenu("What language do you want?");
+        thisMenu.addMenuOption(USER_MENUS + keyLanguage + DO_SUFFIX + "?language=en", "English");
+        thisMenu.addMenuOption(USER_MENUS + keyLanguage + DO_SUFFIX + "?language=zu", "isiZulu");
+
+        User sessionUser = new User();
+        try { sessionUser = userManager.findByInputNumber(inputNumber); }
+        catch (NoSuchElementException e) { return noUserError; }
+
+        return menuBuilder(thisMenu);
+    }
+
+    @RequestMapping(value = USSD_BASE + USER_MENUS + keyLanguage + DO_SUFFIX)
+    @ResponseBody
+    public Request userChangeLanguage(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                                      @RequestParam(value="language", required=true) String language) throws URISyntaxException {
+
+        User sessionUser = new User();
+        try { sessionUser = userManager.findByInputNumber(inputNumber); }
+        catch (NoSuchElementException e) { return noUserError; }
+
+        sessionUser.setLanguageCode(language);
+        sessionUser = userManager.save(sessionUser);
+
+        return menuBuilder(new USSDMenu(getMessage(USER_KEY, keyLanguage + DO_SUFFIX, PROMPT, sessionUser),
+                                        optionsHomeExit(sessionUser)));
     }
 
 }

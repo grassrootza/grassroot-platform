@@ -35,6 +35,7 @@ import java.util.List;
 
 import static junit.framework.Assert.assertNotNull;
 import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
+import static org.custommonkey.xmlunit.XMLAssert.assertXMLNotEqual;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -163,7 +164,7 @@ public class AatApiTestControllerTest {
     public void userRename() throws Exception {
 
         final URI createUserUri = testPhoneUri("start").build().toUri();
-        final URI renameUserUri = testPhoneUri(userPath + "name2").queryParam(freeTextParam, testDisplayName).build().toUri();
+        final URI renameUserUri = testPhoneUri(userPath + "name-do").queryParam(freeTextParam, testDisplayName).build().toUri();
 
         List<ResponseEntity<String>> responseEntities = executeQueries(Arrays.asList(createUserUri, renameUserUri, createUserUri));
 
@@ -267,6 +268,59 @@ public class AatApiTestControllerTest {
         assertTrue(finalResponse.toString().contains("groupId=" + groupCreated.getId()));
         assertTrue(finalResponse.toString().contains("date=Saturday" ));
         assertTrue(finalResponse.toString().contains("time=10am" ));
+    }
+
+    // set of automatic tests to make sure the standard menus aren't too long
+    @Test
+    public void menuLength() throws Exception {
+
+        // doing the first two separately so that the userId and groupId can be extracted
+        List<UriComponentsBuilder> allUssdUri = new ArrayList<>();
+        List<ResponseEntity<String>> responseEntities = new ArrayList<>();
+
+        final URI createUserUri = testPhoneUri("start").build().toUri();
+        final URI createGroupUri = testPhoneUri(mtgPath + "/group").
+                queryParam(freeTextParam, String.join(" ", testPhones)).build().toUri();
+
+        responseEntities.add(template.getForEntity(createUserUri, String.class));
+        responseEntities.add(template.getForEntity(createGroupUri, String.class));
+
+        User userCreated = userManager.findByInputNumber(testPhone);
+        Group groupCreated = groupManager.getLastCreatedGroup(userCreated);
+
+        Long userId = userCreated.getId(), groupId = groupCreated.getId();
+
+        // leaving out most of the free text menus, as highly unlikely to be overlength
+
+        allUssdUri.add(testPhoneUri("mtg/start"));
+        allUssdUri.add(testPhoneUri("mtg/group").queryParam("groupId", groupId));
+        allUssdUri.add(testPhoneUri("mtg/group").queryParam("request", onceOffPhone));
+        allUssdUri.add(testPhoneUri("mtg/start")); // just to check two-group menu
+
+        allUssdUri.add(testPhoneUri("group/start"));
+        allUssdUri.add(testPhoneUri("group/menu").queryParam("groupId", groupId));
+        allUssdUri.add(testPhoneUri("group/list").queryParam("groupId", groupId));
+        allUssdUri.add(testPhoneUri("group/rename").queryParam("groupId", groupId));
+        allUssdUri.add(testPhoneUri("group/unsubscribe").queryParam("groupId", groupId));
+
+        allUssdUri.add(testPhoneUri("user/start"));
+        allUssdUri.add(testPhoneUri("user/name"));
+
+        for (UriComponentsBuilder uriToExecute : allUssdUri)
+            responseEntities.add(template.getForEntity(uriToExecute.build().toUri(), String.class));
+
+        final String menuTooLongResponse = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>" +
+                "<request>" +
+                "   <headertext>Error! Menu is too long.</headertext>" +
+                "   <options/>" +
+                "</request>";
+
+        for (ResponseEntity<String> responseEntity : responseEntities) {
+            assertThat(responseEntity.getStatusCode(), is(OK));
+            assertXMLNotEqual(menuTooLongResponse, responseEntity.getBody());
+        }
+
+
     }
 
     // todo: write a couple of tests for bad input, to check phone number error handling, once it's built

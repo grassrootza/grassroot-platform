@@ -5,6 +5,7 @@ import java.net.URISyntaxException;
 import java.util.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -38,15 +39,16 @@ public class USSDHomeController extends USSDController {
 
     private static final String keyRenameStart = "rename-start", keyGroupNameStart = "group-start";
 
-    public USSDMenu welcomeMenu(String opening) throws URISyntaxException {
+    public USSDMenu welcomeMenu(String opening, User sessionUser) throws URISyntaxException {
 
         USSDMenu homeMenu = new USSDMenu(opening);
+        Locale menuLang = new Locale(getLanguage(sessionUser));
 
-        homeMenu.addMenuOption(MTG_MENUS + START_KEY, "Call a meeting");
-        homeMenu.addMenuOption(VOTE_MENUS, "Take a vote");
-        homeMenu.addMenuOption(LOG_MENUS, "Record an action");
-        homeMenu.addMenuOption(GROUP_MENUS + START_KEY, "Manage groups");
-        homeMenu.addMenuOption(USER_MENUS + START_KEY, "Change profile");
+        homeMenu.addMenuOption(MTG_MENUS + START_KEY, getMessage(HOME_KEY, START_KEY, OPTION + MTG_KEY, menuLang));
+        homeMenu.addMenuOption(VOTE_MENUS, getMessage(HOME_KEY, START_KEY, OPTION + VOTE_KEY, menuLang));
+        homeMenu.addMenuOption(LOG_MENUS, getMessage(HOME_KEY, START_KEY, OPTION + LOG_KEY, menuLang));
+        homeMenu.addMenuOption(GROUP_MENUS + START_KEY, getMessage(HOME_KEY, START_KEY, OPTION + GROUP_KEY, menuLang));
+        homeMenu.addMenuOption(USER_MENUS + START_KEY, getMessage(HOME_KEY, START_KEY, OPTION + USER_KEY, menuLang));
 
         System.out.println("Menu size: " + homeMenu.getMenuCharLength());
 
@@ -61,17 +63,18 @@ public class USSDHomeController extends USSDController {
         User sessionUser = userManager.loadOrSaveUser(inputNumber);
 
         if (sessionUser.needsToRenameSelf(10)) {
-            startMenu.setPromptMessage("Hi! We notice you haven't set a name yet. What should we call you?");
+            startMenu.setPromptMessage(getMessage(HOME_KEY, START_KEY, PROMPT + "-rename", sessionUser));
             startMenu.setFreeText(true);
-            startMenu.addMenuOption(keyRenameStart, "");
+            startMenu.setNextURI(keyRenameStart);
         } else if (sessionUser.needsToRenameGroup() != null) {
-            startMenu.setPromptMessage("Hi! Last time you created a group, but it doesn't have a name yet. What's it called?");
+            startMenu.setPromptMessage(getMessage(HOME_KEY, START_KEY, PROMPT + "-group-rename", sessionUser));
             startMenu.setFreeText(true);
-            startMenu.addMenuOption(keyGroupNameStart + GROUPID_URL + sessionUser.needsToRenameGroup().getId(), "");
+            startMenu.setNextURI(keyGroupNameStart + GROUPID_URL + sessionUser.needsToRenameGroup().getId());
         } else {
-            String welcomeMessage = sessionUser.hasName() ? ("Hi " + sessionUser.getName("") + ". What do you want to do?") :
-                    "Hi! Welcome to GrassRoot. What will you do?";
-            startMenu = welcomeMenu(welcomeMessage);
+            String welcomeMessage = sessionUser.hasName() ?
+                    getMessage(HOME_KEY, START_KEY, PROMPT + "-named", sessionUser.getName(""), sessionUser) :
+                    getMessage(HOME_KEY, START_KEY, PROMPT, sessionUser);
+            startMenu = welcomeMenu(welcomeMessage, sessionUser);
         }
 
         return (checkMenuLength(startMenu, true)) ? menuBuilder(startMenu) : tooLongError;
@@ -87,29 +90,31 @@ public class USSDHomeController extends USSDController {
         sessionUser.setDisplayName(userName);
         sessionUser = userManager.save(sessionUser);
 
-        return menuBuilder(welcomeMenu("Thanks " + userName + ". What do you want to do?"));
+        return menuBuilder(welcomeMenu("Thanks " + userName + ". What do you want to do?", sessionUser));
     }
 
     @RequestMapping(value = USSD_BASE + keyGroupNameStart)
     @ResponseBody
-    public Request groupNameAndStart(@RequestParam(value=PHONE_PARAM) String passedNumber,
+    public Request groupNameAndStart(@RequestParam(value=PHONE_PARAM) String inputNumber,
                                      @RequestParam(value=GROUP_PARAM) Long groupId,
                                      @RequestParam(value=TEXT_PARAM) String groupName) throws URISyntaxException {
 
         // todo: use permission model to check if user can actually do this
 
+        User sessionUser = userManager.loadOrSaveUser(inputNumber);
         Group groupToRename = groupManager.loadGroup(groupId);
         groupToRename.setGroupName(groupName);
         groupToRename = groupManager.saveGroup(groupToRename);
 
-        return menuBuilder(welcomeMenu("Thanks! Now what do you want to do?"));
+        return menuBuilder(welcomeMenu("Thanks! Now what do you want to do?", sessionUser));
 
     }
 
     @RequestMapping(value = { USSD_BASE + U404, USSD_BASE + VOTE_MENUS, USSD_BASE + LOG_MENUS, USSD_BASE + GROUP_MENUS + "menu2" })
     @ResponseBody
     public Request notBuilt() throws URISyntaxException {
-        String errorMessage = "Sorry! We haven't built that yet. We're working on it.";
+        // String errorMessage = "Sorry! We haven't built that yet. We're working on it.";
+        String errorMessage = messageSource.getMessage("ussd.error", null, new Locale("en"));
         return new Request(errorMessage, new ArrayList<Option>());
     }
 
@@ -126,5 +131,12 @@ public class USSDHomeController extends USSDController {
         final Option option = new Option("Yes I can!", 1,1, new URI("http://yourdomain.tld/ussdxml.ashx?file=2"),true);
         return new Request("Can you answer the question?", Collections.singletonList(option));
     }
+
+    @RequestMapping(value = USSD_BASE + "too_long")
+    @ResponseBody
+    public Request tooLong() throws URISyntaxException {
+        return tooLongError;
+    }
+
 
 }
