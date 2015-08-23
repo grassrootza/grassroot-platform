@@ -33,7 +33,7 @@ public class USSDGroupController extends USSDController {
      */
 
     private static final String keyMenu = "menu", keyListGroup = "list", keyRenameGroup = "rename",
-            keyAddNumber = "addnumber", keyUnsubscribe = "unsubscribe", keySecondMenu = "menu2", keyDelGroup = "clean";
+            keyAddNumber = "addnumber", keyUnsubscribe = "unsubscribe", keySecondMenu = "menu2", keyDelGroup = "delete";
 
     @RequestMapping(value = USSD_BASE + GROUP_MENUS + START_KEY)
     @ResponseBody
@@ -44,7 +44,7 @@ public class USSDGroupController extends USSDController {
         try { sessionUser = userManager.findByInputNumber(inputNumber); }
         catch (NoSuchElementException e) { return noUserError; }
 
-        String returnMessage = "Okay! Please pick one of the groups you belong to:";
+        String returnMessage = getMessage(GROUP_KEY, START_KEY, PROMPT, sessionUser);
 
         return menuBuilder(userGroupMenu(sessionUser, returnMessage, GROUP_MENUS + keyMenu, true));
 
@@ -57,22 +57,23 @@ public class USSDGroupController extends USSDController {
 
         // todo: check what permissions the user has and only display options that they can do
 
-        String returnMessage = "Group selected. What would you like to do?";
-        String groupParam = GROUPID_URL + groupId;
+        User sessionUser = userManager.findByInputNumber(inputNumber);
 
+        String returnMessage = getMessage(GROUP_KEY, keyMenu, PROMPT, sessionUser);
         USSDMenu listMenu = new USSDMenu(returnMessage);
 
-        listMenu.addMenuOption(GROUP_MENUS + keyListGroup + groupParam, "List group members");
-        listMenu.addMenuOption(GROUP_MENUS + keyRenameGroup + groupParam, "Rename group");
-        listMenu.addMenuOption(GROUP_MENUS + keyAddNumber + groupParam, "Add a phone number");
-        listMenu.addMenuOption(GROUP_MENUS + keyUnsubscribe + groupParam, "Remove me");
-        listMenu.addMenuOption(GROUP_MENUS + keySecondMenu , "More options");
-        // listMenu.addMenuOption(GROUP_MENUS + "delnumber" + groupParam, "Remove a number from the group");
-        // listMenu.addMenuOption(GROUP_MENUS + "delgroup" + groupParam, "Delete this group (beta only)");
+        String groupParam = GROUPID_URL + groupId;
+        String menuKey = GROUP_KEY + "." + keyMenu + "." + OPTION;
+
+        listMenu.addMenuOption(GROUP_MENUS + keyListGroup + groupParam, getMessage(menuKey + keyListGroup, sessionUser));
+        listMenu.addMenuOption(GROUP_MENUS + keyRenameGroup + groupParam, getMessage(menuKey + keyRenameGroup, sessionUser));
+        listMenu.addMenuOption(GROUP_MENUS + keyAddNumber + groupParam, getMessage(menuKey + keyAddNumber, sessionUser));
+        listMenu.addMenuOption(GROUP_MENUS + keyUnsubscribe + groupParam, getMessage(menuKey + keyUnsubscribe, sessionUser));
+        listMenu.addMenuOption(GROUP_MENUS + keySecondMenu , getMessage(menuKey + MORE, sessionUser));
 
         System.out.println("Menu length: " + listMenu.getMenuCharLength());
 
-        return (checkMenuLength(listMenu, false)) ? menuBuilder(listMenu) : tooLongError;
+        return menuBuilder(listMenu);
 
     }
 
@@ -83,8 +84,9 @@ public class USSDGroupController extends USSDController {
 
         // todo: only list users who are not the same as the user calling the function
         // todo: check if user has a display name, and, if so, just print the display name
+        // todo: sorting and pagination
 
-        Group groupToList = new Group();
+        Group groupToList;
         try { groupToList = groupManager.loadGroup(groupId); }
         catch (Exception e) { return noGroupError; }
 
@@ -93,11 +95,11 @@ public class USSDGroupController extends USSDController {
             usersList.add(UserManager.invertPhoneNumber(userToList.getPhoneNumber()));
         }
 
-        String returnMessage = "Users in this group are: " + String.join(", ", usersList);
+        User sessionUser = userManager.findByInputNumber(inputNumber);
+        String returnMessage = getMessage(GROUP_KEY, keyListGroup, PROMPT,
+                                          String.join(", ", usersList), sessionUser);
 
-        // need page length checking here, plus "back to home"
-
-        return menuBuilder(new USSDMenu(returnMessage, optionsHomeExit));
+        return menuBuilder(new USSDMenu(returnMessage, optionsHomeExit(sessionUser)));
     }
 
     @RequestMapping(value = USSD_BASE + GROUP_MENUS + keyRenameGroup)
@@ -108,15 +110,16 @@ public class USSDGroupController extends USSDController {
         // todo: make sure to check if user calling this is part of group (later: permissions logic)
 
         Group groupToRename = new Group();
+        User sessionUser = userManager.findByInputNumber(inputNumber);
         String promptMessage;
 
         try { groupToRename = groupManager.loadGroup(groupId); }
         catch (Exception e) { return noGroupError; }
 
         if (groupToRename.getGroupName().trim().length() == 0)
-            promptMessage = "This group doesn't have a name yet. Please enter a name.";
+            promptMessage = getMessage(GROUP_KEY, keyRenameGroup, PROMPT + "1", sessionUser);
         else
-            promptMessage = "This group's current name is " + groupToRename.getGroupName() + ". What do you want to rename it?";
+            promptMessage = getMessage(GROUP_KEY, keyRenameGroup, PROMPT + "2", groupToRename.getGroupName(), sessionUser);
 
         return menuBuilder(new USSDMenu(promptMessage, GROUP_MENUS + keyRenameGroup + DO_SUFFIX + GROUPID_URL + groupId));
 
@@ -130,14 +133,16 @@ public class USSDGroupController extends USSDController {
 
         // todo: make sure to check if user calling this is part of group (later: permissions logic)
 
-        Group groupToRename = new Group();
+        User sessionUser = userManager.findByInputNumber(inputNumber);
+        Group groupToRename;
         try { groupToRename = groupManager.loadGroup(groupId); }
         catch (Exception e) { return noGroupError; }
 
         groupToRename.setGroupName(newName);
         groupToRename = groupManager.saveGroup(groupToRename);
 
-        return menuBuilder(new USSDMenu("Group successfully renamed to " + newName, optionsHomeExit));
+        return menuBuilder(new USSDMenu(getMessage(GROUP_KEY, keyRenameGroup + DO_SUFFIX, PROMPT, newName, sessionUser),
+                                        optionsHomeExit(sessionUser)));
 
     }
 
@@ -150,7 +155,8 @@ public class USSDGroupController extends USSDController {
         // todo: load and display some brief descriptive text about the group, e.g., name and who created it
         // todo: add a lot of validation logic (user is part of group, has permission to adjust, etc etc).
 
-        String promptMessage = "Okay, we'll add a number to this group. Please enter it below.";
+        User sessionUser = userManager.findByInputNumber(inputNumber);
+        String promptMessage = getMessage(GROUP_KEY, keyAddNumber, PROMPT, sessionUser);
         return menuBuilder(new USSDMenu(promptMessage, GROUP_MENUS + keyAddNumber + DO_SUFFIX + GROUPID_URL + groupId));
 
     }
@@ -165,7 +171,9 @@ public class USSDGroupController extends USSDController {
         // todo: check the user-to-add isn't already part of the group, and, if so, notify the user who is adding
         // todo: build logic to handle it if the number submitted is badly formatted/doesn't work/etc
 
-        Group sessionGroup = new Group();
+        User sessionUser = userManager.findByInputNumber(inputNumber);
+
+        Group sessionGroup;
         try { sessionGroup = groupManager.loadGroup(groupId); }
         catch (Exception e) { return noGroupError; }
 
@@ -174,8 +182,7 @@ public class USSDGroupController extends USSDController {
         sessionGroup.setGroupMembers(groupMembers);
         sessionGroup = groupManager.saveGroup(sessionGroup);
 
-        // as above, home / exit menu
-        return menuBuilder(new USSDMenu("Done! The group has been updated.", optionsHomeExit));
+        return menuBuilder(new USSDMenu(getMessage(GROUP_KEY, keyAddNumber + DO_SUFFIX, PROMPT, sessionUser), optionsHomeExit(sessionUser)));
 
     }
 
@@ -186,9 +193,14 @@ public class USSDGroupController extends USSDController {
 
         // todo: add in a brief description of group, e.g., who created it
 
-        USSDMenu promptMenu = new USSDMenu("Are you sure you want to remove yourself from this group?");
-        promptMenu.addMenuOption(GROUP_MENUS + keyUnsubscribe + DO_SUFFIX + GROUPID_URL + groupId, "Yes, take me off.");
-        promptMenu.addMenuOption(GROUP_MENUS + keyMenu + GROUPID_URL + groupId, "No, return to the last menu");
+        User sessionUser = userManager.loadOrSaveUser(inputNumber);
+        String menuKey = GROUP_KEY + "." + keyUnsubscribe + ".";
+
+        USSDMenu promptMenu = new USSDMenu(getMessage(menuKey + PROMPT, sessionUser));
+        promptMenu.addMenuOption(GROUP_MENUS + keyUnsubscribe + DO_SUFFIX + GROUPID_URL + groupId,
+                                 getMessage(menuKey + OPTION + "confirm", sessionUser));
+        promptMenu.addMenuOption(GROUP_MENUS + keyMenu + GROUPID_URL + groupId,
+                                 getMessage(menuKey + OPTION + "back", sessionUser));
 
         return menuBuilder(promptMenu);
 
@@ -213,9 +225,9 @@ public class USSDGroupController extends USSDController {
         sessionGroup.getGroupMembers().remove(sessionUser);
         sessionGroup = groupManager.saveGroup(sessionGroup);
 
-        String returnMessage = "Done! You won't receive messages from that group anymore.";
+        String returnMessage = getMessage(GROUP_KEY, keyUnsubscribe + DO_SUFFIX, PROMPT, sessionUser);
 
-        return menuBuilder(new USSDMenu(returnMessage, optionsHomeExit));
+        return menuBuilder(new USSDMenu(returnMessage, optionsHomeExit(sessionUser)));
 
     }
 
@@ -224,11 +236,13 @@ public class USSDGroupController extends USSDController {
     public Request deleteConfirm(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
                                  @RequestParam(value=GROUP_PARAM, required=true) Long groupId) throws URISyntaxException {
 
+        // todo: decide if this function will exist through USSD
         // todo: add confirmation screen
         // todo: check for user permissions
         // todo: generally make this more than a quick-and-dirty to clean up prototype database
 
         String returnMessage;
+        User sessionUser = userManager.findByInputNumber(inputNumber);
         Group sessionGroup = new Group();
         try { sessionGroup = groupManager.loadGroup(groupId); }
         catch (Exception e) { return noGroupError; }
@@ -237,12 +251,12 @@ public class USSDGroupController extends USSDController {
             sessionGroup.setGroupMembers(new ArrayList<User>());
             sessionGroup = groupManager.saveGroup(sessionGroup);
             groupManager.deleteGroup(sessionGroup);
-            returnMessage = "Success! The group is gone.";
+            returnMessage = getMessage(GROUP_KEY, keyDelGroup, PROMPT + ".success", sessionUser);
         } catch (Exception e) {
-            returnMessage = "Nope, something went wrong with deleting that group.";
+            returnMessage = getMessage(GROUP_KEY, keyDelGroup, PROMPT + ".error", sessionUser);
         }
 
-        return menuBuilder(new USSDMenu(returnMessage, optionsHomeExit));
+        return menuBuilder(new USSDMenu(returnMessage, optionsHomeExit(sessionUser)));
 
     }
 

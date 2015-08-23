@@ -48,7 +48,7 @@ public class USSDController {
 
     // Constants used in i18n and message handling
     protected static final String HOME_KEY = "home", MTG_KEY = "mtg", USER_KEY = "user", GROUP_KEY = "group", VOTE_KEY = "vote", LOG_KEY = "log";
-    protected static final String PROMPT = "prompt", OPTION = "options.";
+    protected static final String PROMPT = "prompt", OPTION = "options.", MORE = "more";
 
     protected final String smsHost = "xml2sms.gsm.co.za";
     protected final String smsUsername = System.getenv("SMSUSER");
@@ -96,25 +96,25 @@ public class USSDController {
         return (menuToCheck.getMenuCharLength(enumLength) < characterLimit); // might be able to get away with <=, but prefer to be conservative
     }
 
-    public USSDMenu userGroupMenu(User userForSession, String promptMessage, String path, boolean optionNewGroup)
+    public USSDMenu userGroupMenu(User sessionUser, String promptMessage, String path, boolean optionNewGroup)
             throws URISyntaxException {
 
         // todo: some way to handle pagination if user has many groups -- USSD can only handle five options on a menu ...
         // todo: also, lousy user experience if too many -- should sort by last accessed & most accessed (some combo)
 
-        List<Group> groupsPartOf = userForSession.getGroupsPartOf();
+        List<Group> groupsPartOf = sessionUser.getGroupsPartOf();
         USSDMenu menuBuild = new USSDMenu(promptMessage);
-        String unnamedPrefix = "Group created on ", dateFormat = "%1$TD";
-        String formedUrl = path + GROUPID_URL;
+        final String dateFormat = "%1$TD";
+        final String formedUrl = path + GROUPID_URL;
 
         for (Group groupForMenu : groupsPartOf) {
             String groupName = (groupForMenu.hasName()) ? groupForMenu.getGroupName() :
-                    (unnamedPrefix + String.format("%1$TD", groupForMenu.getCreatedDateTime()));
+                    getMessage(GROUP_KEY, "unnamed", "label", String.format(dateFormat, groupForMenu.getCreatedDateTime()), sessionUser);
             menuBuild.addMenuOption(formedUrl + groupForMenu.getId(), groupName);
         }
 
         if (optionNewGroup)
-            menuBuild.addMenuOption(formedUrl + "0", "Create a new group");
+            menuBuild.addMenuOption(formedUrl + "0", getMessage(GROUP_KEY, "create", PROMPT, sessionUser));
 
         return menuBuild;
     }
@@ -126,14 +126,10 @@ public class USSDController {
     Request noGroupError = new Request("Sorry! Something went wrong finding the group.", new ArrayList<Option>());
     Request exitScreen = new Request("Thanks! We're done.", new ArrayList<Option>());
 
-    protected static final Map<String, String> optionsHomeExit = ImmutableMap.<String, String>builder().
-            put("start", "Go back to the main menu").
-            put("exit", "Exit GrassRoot").build();
-
     protected Map<String, String> optionsHomeExit(User sessionUser) {
         return ImmutableMap.<String, String>builder().
                 put("start", getMessage(START_KEY, sessionUser)).
-                put("exit", getMessage("exit", sessionUser)).build();
+                put("exit", getMessage("exit.option", sessionUser)).build();
     }
 
     // functions to smooth internationalization

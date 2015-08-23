@@ -29,9 +29,8 @@ import za.org.grassroot.webapp.GrassRootWebApplicationConfig;
 
 import javax.transaction.Transactional;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.logging.Logger;
 
 import static junit.framework.Assert.assertNotNull;
 import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
@@ -50,6 +49,8 @@ public class AatApiTestControllerTest {
 
     @Value("${local.server.port}")
     int port;
+
+    private Logger log = Logger.getLogger(getClass().getCanonicalName());
 
     private RestTemplate template = new TestRestTemplate();
     private UriComponentsBuilder base = UriComponentsBuilder.newInstance().scheme("http").host("localhost");
@@ -276,14 +277,14 @@ public class AatApiTestControllerTest {
 
         // doing the first two separately so that the userId and groupId can be extracted
         List<UriComponentsBuilder> allUssdUri = new ArrayList<>();
-        List<ResponseEntity<String>> responseEntities = new ArrayList<>();
+        LinkedHashMap<URI, ResponseEntity<String>> urlResponses = new LinkedHashMap<>();
 
         final URI createUserUri = testPhoneUri("start").build().toUri();
         final URI createGroupUri = testPhoneUri(mtgPath + "/group").
                 queryParam(freeTextParam, String.join(" ", testPhones)).build().toUri();
 
-        responseEntities.add(template.getForEntity(createUserUri, String.class));
-        responseEntities.add(template.getForEntity(createGroupUri, String.class));
+        urlResponses.put(createUserUri, template.getForEntity(createUserUri, String.class));
+        urlResponses.put(createGroupUri, template.getForEntity(createGroupUri, String.class));
 
         User userCreated = userManager.findByInputNumber(testPhone);
         Group groupCreated = groupManager.getLastCreatedGroup(userCreated);
@@ -306,8 +307,9 @@ public class AatApiTestControllerTest {
         allUssdUri.add(testPhoneUri("user/start"));
         allUssdUri.add(testPhoneUri("user/name"));
 
-        for (UriComponentsBuilder uriToExecute : allUssdUri)
-            responseEntities.add(template.getForEntity(uriToExecute.build().toUri(), String.class));
+        for (UriComponentsBuilder uriToExecute : allUssdUri) {
+            urlResponses.put(uriToExecute.build().toUri(), template.getForEntity(uriToExecute.build().toUri(), String.class));
+        }
 
         final String menuTooLongResponse = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>" +
                 "<request>" +
@@ -315,9 +317,10 @@ public class AatApiTestControllerTest {
                 "   <options/>" +
                 "</request>";
 
-        for (ResponseEntity<String> responseEntity : responseEntities) {
-            assertThat(responseEntity.getStatusCode(), is(OK));
-            assertXMLNotEqual(menuTooLongResponse, responseEntity.getBody());
+        for (Map.Entry<URI, ResponseEntity<String>> urlResponse : urlResponses.entrySet()) {
+            System.out.println("URL: " + urlResponse.getKey().toString() + "\n STATUS: " + urlResponse.getValue().getStatusCode().toString());
+            assertThat(urlResponse.getValue().getStatusCode(), is(OK));
+            assertXMLNotEqual(menuTooLongResponse, urlResponse.getValue().getBody());
         }
 
 

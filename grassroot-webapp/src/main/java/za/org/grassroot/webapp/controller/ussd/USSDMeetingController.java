@@ -55,11 +55,10 @@ public class USSDMeetingController extends USSDController {
 
         if (sessionUser.getGroupsPartOf().isEmpty()) {
             thisMenu.setFreeText(true);
-            thisMenu.setPromptMessage("Okay, we'll set up a meeting. Please enter the phone numbers of the people to invite." +
-                                              " You can enter multiple numbers separated by a space or comma.");
+            thisMenu.setPromptMessage(getMessage(MTG_KEY, START_KEY, PROMPT + ".new-group", sessionUser));
             thisMenu.setNextURI(MTG_MENUS + keyNext);
         } else {
-            String promptMessage = "Do you want to call a meeting of an existing group, or create a new one?";
+            String promptMessage = getMessage(MTG_KEY, START_KEY, PROMPT + ".has-group", sessionUser);
             thisMenu = userGroupMenu(sessionUser, promptMessage, MTG_MENUS + keyNext, true);
         }
 
@@ -86,16 +85,16 @@ public class USSDMeetingController extends USSDController {
 
         if (groupId != null) {
             if (groupId == 0) {
-                thisMenu.setPromptMessage("Okay. We'll create a new group for this meeting. Please enter the numbers for it.");
+                thisMenu.setPromptMessage(getMessage(MTG_KEY, keyGroup, PROMPT + ".new-group", sessionUser));
                 thisMenu.setNextURI(MTG_MENUS + keyGroup);
             } else {
                 groupToMessage = groupManager.loadGroup(groupId);
-                thisMenu.setPromptMessage("Okay, please enter the date for the meeting.");
+                thisMenu.setPromptMessage(getMessage(MTG_KEY, keyGroup, PROMPT + ".next", sessionUser));
                 thisMenu.setNextURI(MTG_MENUS + keyNext + GROUPID_URL + groupToMessage.getId());
             }
         } else {
             groupToMessage = groupManager.createNewGroup(sessionUser, userResponse);
-            thisMenu.setPromptMessage("Okay, we just created a group with those numbers. What day do you want the meeting?");
+            thisMenu.setPromptMessage(getMessage(MTG_KEY, keyGroup, PROMPT + ".next2", sessionUser));
             thisMenu.setNextURI(MTG_MENUS + keyNext + GROUPID_URL + groupToMessage.getId());
         }
         return menuBuilder(thisMenu);
@@ -113,7 +112,12 @@ public class USSDMeetingController extends USSDController {
 
         // todo: make groupId not required and check for it in passing, in case we shuffle the sequence
         String keyNext = nextMenuKey(keyDate);
-        USSDMenu thisMenu = new USSDMenu("Okay. What day do you want the meeting?", MTG_MENUS + keyNext + GROUPID_URL + groupId);
+        User sessionUser = userManager.findByInputNumber(inputNumber);
+        if (groupId != null) { Group sessionGroup = groupManager.loadGroup(groupId); }
+
+        String promptMessage = getMessage(MTG_KEY, keyDate, PROMPT, sessionUser);
+
+        USSDMenu thisMenu = new USSDMenu(promptMessage, MTG_MENUS + keyNext + GROUPID_URL + groupId);
         return menuBuilder(thisMenu);
 
     }
@@ -125,7 +129,12 @@ public class USSDMeetingController extends USSDController {
                            @RequestParam(value=TEXT_PARAM, required=true) String meetingDate) throws URISyntaxException {
 
         String keyNext = nextMenuKey(keyTime);
-        return menuBuilder(new USSDMenu("Okay. What time?", MTG_MENUS + keyNext + GROUPID_URL + groupId + "&date=" + meetingDate));
+        User sessionUser = userManager.findByInputNumber(inputNumber);
+        if (groupId != null) { Group sessionGroup = groupManager.loadGroup(groupId); }
+
+        String promptMessage = getMessage(MTG_KEY, keyTime, PROMPT, sessionUser);
+
+        return menuBuilder(new USSDMenu(promptMessage, MTG_MENUS + keyNext + GROUPID_URL + groupId + "&date=" + meetingDate));
 
     }
 
@@ -138,9 +147,13 @@ public class USSDMeetingController extends USSDController {
 
         // todo: add a lookup of group default places
 
-        String returnMessage = "Done. What place?";
         String keyNext = nextMenuKey(keyPlace);
-        return menuBuilder(new USSDMenu(returnMessage, MTG_MENUS + keyNext + GROUPID_URL + groupId + "&date="
+        User sessionUser = userManager.findByInputNumber(inputNumber);
+        if (groupId != null) { Group sessionGroup = groupManager.loadGroup(groupId); }
+
+        String promptMessage = getMessage(MTG_KEY, keyPlace, PROMPT, sessionUser);
+
+        return menuBuilder(new USSDMenu(promptMessage, MTG_MENUS + keyNext + GROUPID_URL + groupId + "&date="
                 + meetingDate + "&time=" + meetingTime));
 
     }
@@ -158,8 +171,8 @@ public class USSDMeetingController extends USSDController {
         // todo: split up the URI into multiple if it gets >2k chars (will be an issue when have 20+ person groups)
         // todo: add shortcode for RSVP reply
 
-        User userSending = new User();
-        try { userSending = userManager.findByInputNumber(inputNumber); }
+        User sessionUser = new User();
+        try { sessionUser = userManager.findByInputNumber(inputNumber); }
         catch (Exception e) { return noUserError; }
 
         Group groupToMessage = groupManager.loadGroup(groupId);
@@ -167,7 +180,7 @@ public class USSDMeetingController extends USSDController {
 
         String groupName = (groupToMessage.hasName()) ? ("of group, " + groupToMessage.getGroupName() + ", ") : "";
 
-        String msgText = "From " + userSending.getName("") + ": Meeting called " + groupName + "on " + meetingDate
+        String msgText = "From " + sessionUser.getName("") + ": Meeting called " + groupName + "on " + meetingDate
                 + ", at time " + meetingTime + " and place " + meetingPlace;
 
         System.out.println(msgText);
@@ -184,7 +197,6 @@ public class USSDMeetingController extends USSDController {
         String messageResult = sendGroupSMS.getForObject(sendMsgURI.build().toUri(), String.class);
         System.out.println(messageResult);
 
-        String returnMessage = "Done! We sent the message.";
-        return menuBuilder(new USSDMenu(returnMessage, optionsHomeExit));
+        return menuBuilder(new USSDMenu(getMessage(MTG_KEY, keySend, PROMPT, sessionUser), optionsHomeExit(sessionUser)));
     }
 }

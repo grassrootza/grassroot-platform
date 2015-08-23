@@ -90,7 +90,8 @@ public class USSDHomeController extends USSDController {
         sessionUser.setDisplayName(userName);
         sessionUser = userManager.save(sessionUser);
 
-        return menuBuilder(welcomeMenu("Thanks " + userName + ". What do you want to do?", sessionUser));
+        return menuBuilder(welcomeMenu(getMessage(HOME_KEY, START_KEY, PROMPT + "-rename-do", sessionUser.getName(""),
+                                                  sessionUser), sessionUser));
     }
 
     @RequestMapping(value = USSD_BASE + keyGroupNameStart)
@@ -106,7 +107,9 @@ public class USSDHomeController extends USSDController {
         groupToRename.setGroupName(groupName);
         groupToRename = groupManager.saveGroup(groupToRename);
 
-        return menuBuilder(welcomeMenu("Thanks! Now what do you want to do?", sessionUser));
+        // return menuBuilder(welcomeMenu("Thanks! Now what do you want to do?", sessionUser));
+        return menuBuilder(welcomeMenu(getMessage(HOME_KEY, START_KEY, PROMPT + "-group-done", sessionUser.getName(""),
+                                                  sessionUser), sessionUser));
 
     }
 
@@ -120,9 +123,9 @@ public class USSDHomeController extends USSDController {
 
     @RequestMapping(value = USSD_BASE + "exit")
     @ResponseBody
-    public Request exitScreen() throws URISyntaxException {
-        String exitMessage = "Thanks for using GrassRoot. We hope we were useful.";
-        return new Request(exitMessage, new ArrayList<Option>());
+    public Request exitScreen(@RequestParam(value=PHONE_PARAM) String inputNumber) throws URISyntaxException {
+        String exitMessage = getMessage("exit." + PROMPT, userManager.loadOrSaveUser(inputNumber));
+        return menuBuilder(new USSDMenu(exitMessage)); // todo: check if methods can handle empty list of options
     }
 
     @RequestMapping(value = USSD_BASE + "test_question")
