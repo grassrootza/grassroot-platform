@@ -8,10 +8,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.services.GroupManagementService;
-import za.org.grassroot.services.GroupManager;
-import za.org.grassroot.services.UserManagementService;
-import za.org.grassroot.services.UserManager;
+import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Option;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -33,6 +30,9 @@ public class USSDController {
     GroupManagementService groupManager;
 
     @Autowired
+    EventManagementService eventManager;
+
+    @Autowired
     MessageSource messageSource;
 
     protected final String baseURI = "http://meeting-organizer.herokuapp.com/ussd/";
@@ -44,7 +44,8 @@ public class USSDController {
     protected static final String USSD_BASE = "/ussd/", MTG_MENUS = "mtg/", USER_MENUS = "user/", GROUP_MENUS = "group/";
     protected static final String VOTE_MENUS = "vote", LOG_MENUS = "log", U404="error"; // leaving off '/' for now, until built
     protected static final String PHONE_PARAM = "msisdn", TEXT_PARAM = "request", GROUP_PARAM = "groupId", EVENT_PARAM = "eventId";
-    protected static final String START_KEY = "start", GROUPID_URL = ("?" + GROUP_PARAM + "="), DO_SUFFIX = "-do";
+    protected static final String START_KEY = "start", GROUPID_URL = ("?" + GROUP_PARAM + "="),
+            EVENTID_URL = ("?" + EVENT_PARAM + "="), PASSED_FIELD = "menukey", DO_SUFFIX = "-do";
 
     // Constants used in i18n and message handling
     protected static final String HOME_KEY = "home", MTG_KEY = "mtg", USER_KEY = "user", GROUP_KEY = "group", VOTE_KEY = "vote", LOG_KEY = "log";
@@ -101,11 +102,12 @@ public class USSDController {
 
         // todo: some way to handle pagination if user has many groups -- USSD can only handle five options on a menu ...
         // todo: also, lousy user experience if too many -- should sort by last accessed & most accessed (some combo)
+        // todo: switch to using URIComponentsBuilder instead of string joining the parameters
 
         List<Group> groupsPartOf = sessionUser.getGroupsPartOf();
         USSDMenu menuBuild = new USSDMenu(promptMessage);
         final String dateFormat = "%1$TD";
-        final String formedUrl = path + GROUPID_URL;
+        final String formedUrl = (!path.contains("?")) ? (path + GROUPID_URL) : (path + "&" + GROUP_PARAM + "=");
 
         for (Group groupForMenu : groupsPartOf) {
             String groupName = (groupForMenu.hasName()) ? groupForMenu.getGroupName() :

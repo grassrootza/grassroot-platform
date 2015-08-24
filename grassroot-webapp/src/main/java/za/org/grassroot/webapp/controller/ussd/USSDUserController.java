@@ -90,7 +90,7 @@ public class USSDUserController extends USSDController {
 
         USSDMenu thisMenu = new USSDMenu(getMessage(USER_KEY, keyLanguage, PROMPT, sessionUser));
         thisMenu.addMenuOption(USER_MENUS + keyLanguage + DO_SUFFIX + "?language=en", "English");
-        thisMenu.addMenuOption(USER_MENUS + keyLanguage + DO_SUFFIX + "?language=zu", "isiZulu");
+        thisMenu.addMenuOption(USER_MENUS + keyLanguage + DO_SUFFIX + "?language=zu_ZA", "isiZulu");
 
         return menuBuilder(thisMenu);
     }
