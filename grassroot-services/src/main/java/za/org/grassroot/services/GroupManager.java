@@ -45,7 +45,13 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public Group createNewGroup(User creatingUser, String phoneNumbers) {
+    public Group addGroupMember(Group currentGroup, User newMember) {
+        currentGroup.addMember(newMember);
+        return groupRepository.save(currentGroup);
+    }
+
+    @Override
+    public Group createNewGroup(User creatingUser, List<String> phoneNumbers) {
 
         // todo: consider some way to check if group "exists", needs a solid "equals" logic
         // todo: defaulting to using Lists as Collection type for many-many, but that's an amateur decision ...
@@ -55,17 +61,46 @@ public class GroupManager implements GroupManagementService {
         groupToCreate.setCreatedByUser(creatingUser);
         groupToCreate.setGroupName(""); // column not-null, so use blank string as default
 
-        List<User> usersToCreateGroup = userManager.getUsersFromNumbers(phoneNumbers);
-        usersToCreateGroup.add(creatingUser); // So that later actions pick up whoever created group
-        groupToCreate.setGroupMembers(usersToCreateGroup);
+        List<User> groupMembers = userManager.getUsersFromNumbers(phoneNumbers);
+        groupMembers.add(creatingUser);
+        groupToCreate.setGroupMembers(groupMembers);
 
         return groupRepository.save(groupToCreate);
 
     }
 
     @Override
+    public Group addNumbersToGroup(Long groupId, List<String> phoneNumbers) {
+
+        Group groupToExpand = loadGroup(groupId);
+        List<User> groupNewMembers = userManager.getUsersFromNumbers(phoneNumbers);
+
+        for (User newMember : groupNewMembers)
+            groupToExpand.addMember(newMember);
+
+        return groupRepository.save(groupToExpand);
+
+    }
+
+    /*
+    Methods to implement finding last group and prompting to rename if unnamed. May make this a little more complex
+    in future (e.g., check not just last created group, but any unnamed created groups above X users, or so on). Hence
+    a little duplication / redundancy for now.
+     */
+    @Override
     public Group getLastCreatedGroup(User creatingUser) {
         return groupRepository.findFirstByCreatedByUserOrderByIdDesc(creatingUser);
+    }
+
+    @Override
+    public boolean needsToRenameGroup(User sessionUser) {
+        Group lastCreatedGroup = getLastCreatedGroup(sessionUser);
+        return (lastCreatedGroup != null && !lastCreatedGroup.hasName());
+    }
+
+    @Override
+    public Long groupToRename(User sessionUser) {
+        return getLastCreatedGroup(sessionUser).getId();
     }
 
     @Override

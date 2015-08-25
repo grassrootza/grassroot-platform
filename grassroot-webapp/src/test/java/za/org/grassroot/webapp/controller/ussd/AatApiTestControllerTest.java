@@ -136,7 +136,6 @@ public class AatApiTestControllerTest {
 
         System.out.println(base.toUriString());
 
-        // assertThat(userManager.getAllUsers().size(), is(2)); // size of repository behaving a little strangely
         User userCreated = userManager.findByInputNumber(onceOffPhone);
         assertNotNull(userCreated.getId());
         assertNotNull(userCreated.getCreatedDateTime());
@@ -182,14 +181,14 @@ public class AatApiTestControllerTest {
         assertThat(userManager.findByInputNumber(testPhone).getName(""), is(testDisplayName));
 
         // final test is that on next access to system the name comes up
+        // removing this test for now because the prompt to rename a group now comes up, without a name, so would have
+        // to either break stand-alone integrity of the tests or alter UX for sake of tests.
 
-        assertThat(responseEntities.get(2).getBody(), containsString(testDisplayName)); // just checking contains name, not exact format
+        // assertThat(responseEntities.get(2).getBody(), containsString(testDisplayName)); // just checking contains name, not exact format
 
     }
 
     // @author luke : Test to make sure that a user entering a set of phone numbers creates a group properly
-
-    // todo: if test database is clean at each test, should be able to assertThat group count is 1 ...
 
     @Test
     public void groupCreate() throws Exception {

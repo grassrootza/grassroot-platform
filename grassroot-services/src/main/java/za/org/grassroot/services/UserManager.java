@@ -121,7 +121,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public User loadOrSaveUser(String inputNumber) {
         String phoneNumber = convertPhoneNumber(inputNumber);
-        if (userRepository.findByPhoneNumber(phoneNumber).isEmpty()) {
+        if (!userExist(phoneNumber)) {
             User sessionUser = new User();
             sessionUser.setPhoneNumber(phoneNumber);
             return userRepository.save(sessionUser);
@@ -136,26 +136,19 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public List<User> getUsersFromNumbers(String listOfNumbers) {
-        List<User> usersToReturn = new ArrayList<User>();
+    public List<User> getUsersFromNumbers(List<String> listOfNumbers) {
 
-        // todo: make less strong assumptions that users are perfectly well behaved ...
-        // todo - aakil - also consider asking for a , or something easily entered from keypad # or *
-        //                if the number is pasted from contacts it might have spaces in it.
-
-        listOfNumbers = listOfNumbers.replace("\"", ""); // in case the response is passed with quotes around it
-        List<String> splitNumbers = Arrays.asList(listOfNumbers.split(" "));
         List<User> usersToAdd = new ArrayList<User>();
 
-        for (String inputNumber : splitNumbers) {
+        for (String inputNumber : listOfNumbers) {
             String phoneNumber = UserManager.convertPhoneNumber(inputNumber);
-            if (userRepository.findByPhoneNumber(phoneNumber).isEmpty()) {
+            if (!userExist(phoneNumber)) {
                 User userToCreate = new User();
                 userToCreate.setPhoneNumber(phoneNumber);
-                userRepository.save(userToCreate); // removing in deployment, so don't swamp Heroku DB with crud
+                userRepository.save(userToCreate);
                 usersToAdd.add(userToCreate);
             } else {
-                usersToAdd.add(userRepository.findByPhoneNumber(phoneNumber).iterator().next());
+                usersToAdd.add(findByInputNumber(inputNumber));
             }
         }
         return usersToAdd;
@@ -166,12 +159,17 @@ public class UserManager implements UserManagementService, UserDetailsService {
         return userRepository.existsByPhoneNumber(phoneNumber);
     }
 
+    @Override
+    public boolean needsToRenameSelf(User sessionUser) {
+        return sessionUser.needsToRenameSelf(5); // 5 min gap as placeholder for now, to make more a session count if possible
+    }
+
     /**
      * Moving some functions from the controller classes here, to handle phone number strings given by users
      * todo: Move the country code definition into a properties file ?
      */
 
-    public static String convertPhoneNumber(String inputString) {
+    public static String convertPhoneNumber(String inputString) throws InvalidPhoneNumber {
 
         try {
             PhoneNumberUtil phoneNumberUtil = PhoneNumberUtil.getInstance();
@@ -189,8 +187,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     }
 
-
-    public static String invertPhoneNumber(String storedNumber) {
+    public static String invertPhoneNumber(String storedNumber) throws InvalidPhoneNumber {
 
         // todo: handle error if number has gotten into database in incorrect format
         // todo: make this much faster, e.g., use a simple regex / split function?
@@ -209,7 +206,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
         return String.join(" ", Arrays.asList(prefix, midnumbers, finalnumbers));
     }
-
 
     public void setPasswordEncoder(final PasswordEncoder passwordEncoder) {
         this.passwordEncoder = passwordEncoder;

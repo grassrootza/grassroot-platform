@@ -24,10 +24,10 @@ public interface UserManagementService {
 
     User findByInputNumber(String inputNumber);
 
-    List<User> getUsersFromNumbers(String listOfNumbers);
+    List<User> getUsersFromNumbers(List<String> listOfNumbers);
 
     public boolean userExist(String phoneNumber);
 
-
+    public boolean needsToRenameSelf(User sessionUser);
 
 }

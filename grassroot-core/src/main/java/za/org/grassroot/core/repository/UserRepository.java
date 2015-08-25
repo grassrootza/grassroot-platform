@@ -11,7 +11,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     List<User> findByPhoneNumber(String phoneNumber);
 
-
     User findByUsername(String username);
     /*
     See if the phone number exists, before adding it

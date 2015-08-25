@@ -94,7 +94,7 @@ public class USSDMeetingController extends USSDController {
         // todo: work around the kludge below which fixes the next menu as keyDate (points to more fundamental flaw in chain)
 
         if (groupId == null) { // case 1, a group of numbers entered, so next menu is add something to event
-            groupToInvite = groupManager.createNewGroup(sessionUser, userResponse);
+            groupToInvite = groupManager.createNewGroup(sessionUser, splitPhoneNumbers(userResponse));
             meetingToCreate = eventManager.setGroup(eventId, groupToInvite.getId());
             thisMenu.setPromptMessage(getMessage(MTG_KEY, keyGroup, PROMPT + ".next2", sessionUser));
             thisMenu.setNextURI(MTG_MENUS + keyNext + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + keyDate);

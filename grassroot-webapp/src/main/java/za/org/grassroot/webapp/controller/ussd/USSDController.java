@@ -35,6 +35,10 @@ public class USSDController {
     @Autowired
     MessageSource messageSource;
 
+    /**
+     * SECTION: Constants used throughout the code
+     */
+
     protected final String baseURI = "http://meeting-organizer.herokuapp.com/ussd/";
 
     // adopting a convention to capitalize constant strings that are used across all controllers
@@ -54,6 +58,11 @@ public class USSDController {
     protected final String smsHost = "xml2sms.gsm.co.za";
     protected final String smsUsername = System.getenv("SMSUSER");
     protected final String smsPassword = System.getenv("SMSPASS");
+
+
+    /**
+     * SECTION: Menu building methods
+     */
 
     protected List<Option> createMenu(Map<String, String> menuOptions) throws URISyntaxException {
         List<Option> menuToBuild = new ArrayList<>();
@@ -97,7 +106,11 @@ public class USSDController {
         return (menuToCheck.getMenuCharLength(enumLength) < characterLimit); // might be able to get away with <=, but prefer to be conservative
     }
 
-    public USSDMenu userGroupMenu(User sessionUser, String promptMessage, String path, boolean optionNewGroup)
+    /**
+     * SECTION: Auxiliary methods used in creating, sorting, displaying groups in USSD menus / from USSD input
+     */
+
+    protected USSDMenu userGroupMenu(User sessionUser, String promptMessage, String path, boolean optionNewGroup)
             throws URISyntaxException {
 
         // todo: some way to handle pagination if user has many groups -- USSD can only handle five options on a menu ...
@@ -116,12 +129,32 @@ public class USSDController {
         }
 
         if (optionNewGroup)
-            menuBuild.addMenuOption(formedUrl + "0", getMessage(GROUP_KEY, "create", PROMPT, sessionUser));
+            menuBuild.addMenuOption(formedUrl + "0", getMessage(GROUP_KEY, "create", "option", sessionUser));
 
         return menuBuild;
     }
 
-    // some default menus used often, as instances and methods (for localization)
+    /*
+     note: luke -- I've moved processing the string into separate phone numbers here, because it's actually a problem
+     only for the USSD module. on the web application, and/or the android app, we have a form with validation logic,
+     and separate text boxes for each of the numbers, so we get a tidy list of phone number strings
+      */
+
+    protected List<String> splitPhoneNumbers(String userResponse) throws InvalidPhoneNumber {
+
+        // todo: make less strong assumptions that users are perfectly well behaved ...
+        // todo - aakil - also consider asking for a , or something easily entered from keypad # or *
+        //                if the number is pasted from contacts it might have spaces in it
+
+        userResponse = userResponse.replace("\"", ""); // in case the response is passed with quotes around it
+        List<String> splitNumbers = Arrays.asList(userResponse.split(" "));
+
+        return splitNumbers;
+    }
+
+    /**
+     * SECTION: i18n methods, as well some default menus used often
+     */
 
     Request tooLongError = new Request("Error! Menu is too long.", new ArrayList<Option>());
     Request noUserError = new Request("Error! Couldn't find you as a user.", new ArrayList<Option>());
@@ -134,7 +167,6 @@ public class USSDController {
                 put("exit", getMessage("exit.option", sessionUser)).build();
     }
 
-    // functions to smooth internationalization
     protected String getMessage(String section, String menuKey, String messageLocation, User sessionUser) {
         final String messageKey = "ussd." + section + "." + menuKey + "." + messageLocation;
         return messageSource.getMessage(messageKey, null, new Locale(getLanguage(sessionUser)));
