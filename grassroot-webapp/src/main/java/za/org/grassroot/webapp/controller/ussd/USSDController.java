@@ -116,10 +116,6 @@ public class USSDController {
     protected USSDMenu userGroupMenu(User sessionUser, String promptMessage, String path, boolean optionNewGroup)
             throws URISyntaxException {
 
-        // todo: some way to handle pagination if user has many groups -- USSD can only handle five options on a menu ...
-        // todo: also, lousy user experience if too many -- should sort by last accessed & most accessed (some combo)
-        // todo: switch to using URIComponentsBuilder instead of string joining the parameters
-
         List<Group> groupsPartOf = sessionUser.getGroupsPartOf();
         USSDMenu menuBuild = new USSDMenu(promptMessage);
         final String dateFormat = "%1$TD";
@@ -137,11 +133,61 @@ public class USSDController {
         return menuBuild;
     }
 
+    // todo: remove the version above, for the below, once tested properly
+
+    protected USSDMenu userGroupMenu(User sessionUser, String promptMessage, String existingPath, String newPath)
+            throws URISyntaxException {
+
+        // todo: some way to handle pagination if user has many groups -- USSD can only handle five options on a menu ...
+        // todo: also, lousy user experience if too many -- should sort by last accessed & most accessed (some combo)
+        // todo: switch to using URIComponentsBuilder instead of string joining the parameters
+
+        List<Group> groupsPartOf = sessionUser.getGroupsPartOf();
+        USSDMenu menuBuild = new USSDMenu(promptMessage);
+        final String dateFormat = "%1$TD";
+        final String formedUrl = (!existingPath.contains("?")) ? (existingPath + GROUPID_URL) : (existingPath + "&" + GROUP_PARAM + "=");
+
+        for (Group groupForMenu : groupsPartOf) {
+            String groupName = (groupForMenu.hasName()) ? groupForMenu.getGroupName() :
+                    getMessage(GROUP_KEY, "unnamed", "label", String.format(dateFormat, groupForMenu.getCreatedDateTime()), sessionUser);
+            menuBuild.addMenuOption(formedUrl + groupForMenu.getId(), groupName);
+        }
+
+        if (newPath != null)
+            menuBuild.addMenuOption(newPath, getMessage(GROUP_KEY, "create", "option", sessionUser));
+
+        return menuBuild;
+    }
+
     /*
+     Methods to enter a loop of entering a group, handling input, and exiting again--will be used in several controllers
      note: by luke -- I've moved processing the string into separate phone numbers here, because it's actually a problem
      only for the USSD module. on the web application, and/or the android app, we have a form with validation logic,
      and separate text boxes for each of the numbers, so we get a tidy list of phone number strings
       */
+
+    protected USSDMenu processGroupInput(Long groupId, String userInput, String sectionKey, String menuKey,
+                                         String promptKey, String returnUri, User sessionUser) {
+
+        USSDMenu thisMenu = new USSDMenu("");
+        thisMenu.setFreeText(true);
+
+        Map<String, List<String>> enteredNumbers = splitPhoneNumbers(userInput, " ");
+
+        List<String> errorNumbers = enteredNumbers.get("error");
+
+        if (errorNumbers.size() == 0) {
+            thisMenu.setPromptMessage(getMessage(sectionKey, menuKey + DO_SUFFIX, PROMPT + "." + promptKey, sessionUser));
+        } else {
+            // assemble the error menu
+            String listErrors = String.join(", ", errorNumbers);
+            String promptMessage = getMessage(sectionKey, menuKey + DO_SUFFIX, PROMPT_ERROR, listErrors, sessionUser);
+            thisMenu.setPromptMessage(promptMessage);
+        }
+
+        thisMenu.setNextURI(returnUri  + GROUPID_URL + groupId); // loop back to group menu
+        return thisMenu;
+    }
 
     protected Map<String, List<String>> splitPhoneNumbers(String userResponse, String delimiter) {
 
