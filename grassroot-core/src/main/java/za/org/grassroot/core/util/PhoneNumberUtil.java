@@ -3,9 +3,15 @@ package za.org.grassroot.core.util;
 import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.Phonenumber;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * @author Lesetse Kimwaga
+ * todo: use a different name so we don't have to include the full path of the Google libraries?
  */
+
 public class PhoneNumberUtil {
 
     public static String convertPhoneNumber(String inputString) {
@@ -22,6 +28,6 @@ public class PhoneNumberUtil {
         } catch (NumberParseException e) {
             throw new RuntimeException("Could not format phone number '" + inputString + "'");
         }
-
     }
+
 }

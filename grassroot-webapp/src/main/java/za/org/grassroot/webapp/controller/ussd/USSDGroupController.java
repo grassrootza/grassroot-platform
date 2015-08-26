@@ -67,11 +67,10 @@ public class USSDGroupController extends USSDController {
         String groupParam = GROUPID_URL + groupId;
         String menuKey = GROUP_KEY + "." + keyMenu + "." + OPTION;
 
-        // listMenu.addMenuOption(GROUP_MENUS + keyListGroup + groupParam, getMessage(menuKey + keyListGroup, sessionUser));
         listMenu.addMenuOption(GROUP_MENUS + keyRenameGroup + groupParam, getMessage(menuKey + keyRenameGroup, sessionUser));
         listMenu.addMenuOption(GROUP_MENUS + keyAddNumber + groupParam, getMessage(menuKey + keyAddNumber, sessionUser));
         listMenu.addMenuOption(GROUP_MENUS + keyUnsubscribe + groupParam, getMessage(menuKey + keyUnsubscribe, sessionUser));
-        listMenu.addMenuOption(GROUP_MENUS + keyCreateGroup + groupParam, getMessage(menuKey + keyCreateGroup, sessionUser));
+        // listMenu.addMenuOption(GROUP_MENUS + keyListGroup + groupParam, getMessage(menuKey + keyListGroup, sessionUser));
         // listMenu.addMenuOption(GROUP_MENUS + keySecondMenu , getMessage(menuKey + MORE, sessionUser));
 
         System.out.println("Menu length: " + listMenu.getMenuCharLength());
@@ -105,26 +104,41 @@ public class USSDGroupController extends USSDController {
         Locale language = new Locale(getLanguage(sessionUser));
         USSDMenu thisMenu = new USSDMenu("");
         thisMenu.setFreeText(true);
-        List<String> inputNumbers;
 
-        if (userResponse.trim().equals("0")) {
+        if (userResponse.trim().equals("0")) { // stop asking for numbers and go on to naming the group
             thisMenu.setPromptMessage(getMessage(GROUP_KEY, keyCreateGroup + DO_SUFFIX, PROMPT + ".done", language));
             thisMenu.setNextURI(GROUP_MENUS + keyRenameGroup + DO_SUFFIX + GROUPID_URL + groupId); // reusing the rename function
         } else {
-            try { inputNumbers = splitPhoneNumbers(userResponse); }
-            catch (InvalidPhoneNumber e) { return tooLongError; }
-            if (groupId == null) {
-                Group createdGroup = groupManager.createNewGroup(sessionUser, inputNumbers);
-                thisMenu.setPromptMessage(getMessage(GROUP_KEY, keyCreateGroup + DO_SUFFIX, PROMPT + ".created", language));
-                thisMenu.setNextURI(GROUP_MENUS + keyCreateGroup + DO_SUFFIX + GROUPID_URL + createdGroup.getId());
-            } else {
-                groupManager.addNumbersToGroup(groupId, inputNumbers);
-                thisMenu.setPromptMessage(getMessage(GROUP_KEY, keyCreateGroup + DO_SUFFIX, PROMPT + ".added", language));
-                thisMenu.setNextURI(GROUP_MENUS + keyCreateGroup + DO_SUFFIX + GROUPID_URL + groupId);
+            Map<String, List<String>> splitPhoneNumbers = splitPhoneNumbers(userResponse, " ");
+            if (groupId == null) { // creating a new group, process numbers and ask for more
+                Group createdGroup = groupManager.createNewGroup(sessionUser, splitPhoneNumbers.get("valid"));
+                thisMenu = numberEntryPrompt(createdGroup.getId(), "created", sessionUser, splitPhoneNumbers.get("error"));
+            } else { // adding to a group, process numbers and ask to fix errors or to stop
+                groupManager.addNumbersToGroup(groupId, splitPhoneNumbers.get("valid"));
+                thisMenu = numberEntryPrompt(groupId, "added", sessionUser, splitPhoneNumbers.get("error"));
             }
         }
 
         return menuBuilder(thisMenu);
+
+    }
+
+    public USSDMenu numberEntryPrompt(Long groupId, String promptKey, User sessionUser, List<String> errorNumbers) {
+
+        USSDMenu thisMenu = new USSDMenu("");
+        thisMenu.setFreeText(true);
+
+        if (errorNumbers.size() == 0) {
+            thisMenu.setPromptMessage(getMessage(GROUP_KEY, keyCreateGroup + DO_SUFFIX, PROMPT + "." + promptKey, sessionUser));
+        } else {
+            // assemble the error menu
+            String listErrors = String.join(", ", errorNumbers);
+            String promptMessage = getMessage(GROUP_KEY, keyCreateGroup + DO_SUFFIX, PROMPT_ERROR, listErrors, sessionUser);
+            thisMenu.setPromptMessage(promptMessage);
+        }
+
+        thisMenu.setNextURI(GROUP_MENUS + keyCreateGroup + DO_SUFFIX + GROUPID_URL + groupId); // loop back to group menu
+        return thisMenu;
 
     }
 
@@ -215,7 +229,7 @@ public class USSDGroupController extends USSDController {
 
     @RequestMapping(value = USSD_BASE + GROUP_MENUS + keyAddNumber + DO_SUFFIX)
     @ResponseBody
-    public Request addNummberToGroup(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+    public Request addNumberToGroup(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
                                      @RequestParam(value=GROUP_PARAM, required=true) Long groupId,
                                      @RequestParam(value=TEXT_PARAM, required=true) String numberToAdd) throws URISyntaxException {
 
@@ -305,7 +319,7 @@ public class USSDGroupController extends USSDController {
             groupManager.deleteGroup(sessionGroup);
             returnMessage = getMessage(GROUP_KEY, keyDelGroup, PROMPT + ".success", sessionUser);
         } catch (Exception e) {
-            returnMessage = getMessage(GROUP_KEY, keyDelGroup, PROMPT + ".error", sessionUser);
+            returnMessage = getMessage(GROUP_KEY, keyDelGroup, PROMPT_ERROR, sessionUser);
         }
 
         return menuBuilder(new USSDMenu(returnMessage, optionsHomeExit(sessionUser)));

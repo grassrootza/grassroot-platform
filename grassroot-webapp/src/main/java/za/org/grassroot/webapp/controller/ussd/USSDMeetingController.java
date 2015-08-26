@@ -27,14 +27,14 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 public class USSDMeetingController extends USSDController {
 
     /**
-     * The meeting organizer menus
+     * Meeting organizer menus
      * todo: Various forms of validation and checking throughout
      * todo: Think of a way to pull together the common method set up stuff (try to load user, get next key)
      * todo: Make the prompts also follow the sequence somehow (via a map of some sort, likely)
      * todo: Replace "meeting" as the event "name" with a meeting subject
      */
 
-    private static final String keyGroup = "group", keyDate = "date", keyTime = "time", keyPlace = "place", keySend = "send";
+    private static final String keyGroup = "group", keySubject="subject", keyDate = "date", keyTime = "time", keyPlace = "place", keySend = "send";
     private static final String mtgPath = USSD_BASE +MTG_MENUS, meetingName = "Meeting"; // this is what needs to be replaced
 
     private static final List<String> menuSequence = Arrays.asList(START_KEY, keyGroup, keyTime, keyPlace, keySend);
@@ -68,8 +68,9 @@ public class USSDMeetingController extends USSDController {
         (1) the user had no groups before, and was asked to enter a set of numbers to create a group
         (2) the user had other groups, but selected "create new group" on the previous menu
         (3) the user selected a group on the previous menu, and so we proceed to ask for the next piece of information
-     todo: add in phone number checking and validation in here, as well as a loop to ask for extra numbers
      */
+
+    // todo: add in phone number checking and validation in here, as well as a loop to ask for extra numbers
 
     @RequestMapping(value = mtgPath + keyGroup)
     @ResponseBody
@@ -94,7 +95,7 @@ public class USSDMeetingController extends USSDController {
         // todo: work around the kludge below which fixes the next menu as keyDate (points to more fundamental flaw in chain)
 
         if (groupId == null) { // case 1, a group of numbers entered, so next menu is add something to event
-            groupToInvite = groupManager.createNewGroup(sessionUser, splitPhoneNumbers(userResponse));
+            groupToInvite = groupManager.createNewGroup(sessionUser, splitPhoneNumbers(userResponse, " ").get("valid"));
             meetingToCreate = eventManager.setGroup(eventId, groupToInvite.getId());
             thisMenu.setPromptMessage(getMessage(MTG_KEY, keyGroup, PROMPT + ".next2", sessionUser));
             thisMenu.setNextURI(MTG_MENUS + keyNext + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + keyDate);
@@ -119,6 +120,22 @@ public class USSDMeetingController extends USSDController {
     Though even then, may be able to collapse them -- but then need to access which URL within method
      */
 
+    @RequestMapping(value = mtgPath + keySubject)
+    @ResponseBody
+    public Request getSubject(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                              @RequestParam(value=EVENT_PARAM, required=true) Long eventId,
+                              @RequestParam(value=PASSED_FIELD, required=true) String passedValueKey,
+                              @RequestParam(value=TEXT_PARAM, required = true) String passedValue) throws URISyntaxException {
+
+        String keyNext = nextMenuKey(keySubject); // skipped for the moment, like keyDate
+        User sessionUser = userManager.findByInputNumber(inputNumber);
+        Event meetingToCreate = updateEvent(eventId, passedValueKey, passedValue);
+        String promptMessage = getMessage(MTG_KEY, keySubject, PROMPT, sessionUser);
+
+        USSDMenu thisMenu = new USSDMenu(promptMessage, MTG_MENUS + keyNext + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + keySubject);
+        return menuBuilder(thisMenu);
+
+    }
 
     @RequestMapping(value = mtgPath + keyDate)
     @ResponseBody
@@ -227,6 +244,9 @@ public class USSDMeetingController extends USSDController {
     private Event updateEvent(Long eventId, String lastMenuKey, String passedValue) {
         Event eventToReturn;
         switch(lastMenuKey) {
+            case keySubject:
+                eventToReturn = eventManager.setSubject(eventId, passedValue);
+                break;
             case keyDate:
                 eventToReturn = eventManager.setDay(eventId, passedValue);
                 break;

@@ -1,6 +1,9 @@
 package za.org.grassroot.webapp.controller.ussd;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.i18n.phonenumbers.NumberParseException;
+import com.google.i18n.phonenumbers.PhoneNumberUtil;
+import com.google.i18n.phonenumbers.Phonenumber;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.web.servlet.LocaleResolver;
@@ -53,7 +56,7 @@ public class USSDController {
 
     // Constants used in i18n and message handling
     protected static final String HOME_KEY = "home", MTG_KEY = "mtg", USER_KEY = "user", GROUP_KEY = "group", VOTE_KEY = "vote", LOG_KEY = "log";
-    protected static final String PROMPT = "prompt", OPTION = "options.", MORE = "more";
+    protected static final String PROMPT = "prompt", PROMPT_ERROR = "prompt.error", OPTION = "options.", MORE = "more";
 
     protected final String smsHost = "xml2sms.gsm.co.za";
     protected final String smsUsername = System.getenv("SMSUSER");
@@ -135,21 +138,41 @@ public class USSDController {
     }
 
     /*
-     note: luke -- I've moved processing the string into separate phone numbers here, because it's actually a problem
+     note: by luke -- I've moved processing the string into separate phone numbers here, because it's actually a problem
      only for the USSD module. on the web application, and/or the android app, we have a form with validation logic,
      and separate text boxes for each of the numbers, so we get a tidy list of phone number strings
       */
 
-    protected List<String> splitPhoneNumbers(String userResponse) throws InvalidPhoneNumber {
+    protected Map<String, List<String>> splitPhoneNumbers(String userResponse, String delimiter) {
 
-        // todo: make less strong assumptions that users are perfectly well behaved ...
+        // todo: figure out if a more efficient way to return the valid / error split than a map of lists
+        // todo: leave the delimiter flexible
         // todo - aakil - also consider asking for a , or something easily entered from keypad # or *
         //                if the number is pasted from contacts it might have spaces in it
 
         userResponse = userResponse.replace("\"", ""); // in case the response is passed with quotes around it
-        List<String> splitNumbers = Arrays.asList(userResponse.split(" "));
 
-        return splitNumbers;
+        Map<String, List<String>> returnMap = new HashMap<>();
+        List<String> validNumbers = new ArrayList<>();
+        List<String> errorNumbers = new ArrayList<>();
+
+        PhoneNumberUtil phoneNumberUtil = PhoneNumberUtil.getInstance();
+
+        for (String inputNumber : Arrays.asList(userResponse.split(delimiter))) {
+            try {
+                Phonenumber.PhoneNumber phoneNumber = phoneNumberUtil.parse(inputNumber.trim(), "ZA");
+                if (phoneNumberUtil.isValidNumber(phoneNumber))
+                    validNumbers.add(inputNumber);
+                else
+                    errorNumbers.add(inputNumber);
+            } catch (NumberParseException e) {
+                errorNumbers.add(inputNumber);
+            }
+        }
+
+        returnMap.put("valid", validNumbers);
+        returnMap.put("error", errorNumbers);
+        return returnMap;
     }
 
     /**
