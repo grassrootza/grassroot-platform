@@ -48,6 +48,13 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
+    public Event setSubject(Long eventId, String subject) {
+        Event eventToUpdate = eventRepository.findOne(eventId);
+        eventToUpdate.setName(subject);
+        return eventRepository.save(eventToUpdate);
+    }
+
+    @Override
     public Event setGroup(Long eventId, Long groupId) {
         // todo: check if there isn't a quicker way to do this than running these queries (could get expensive if many events & groups?)
         Event eventToUpdate = eventRepository.findOne(eventId);

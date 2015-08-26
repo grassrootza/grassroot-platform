@@ -330,7 +330,8 @@ public class AatApiTestControllerTest {
         // leaving out most of the free text menus, as highly unlikely to be overlength
 
         allUssdUri.add(testPhoneUri("mtg/start"));
-        allUssdUri.add(testPhoneUri("mtg/group").queryParam(eventParam, eventId).queryParam("groupId", groupId));
+        allUssdUri.add(testPhoneUri("mtg/group").queryParam(eventParam, eventId).
+                queryParam("groupId", groupId).queryParam("request", "0"));
         allUssdUri.add(testPhoneUri("mtg/group").queryParam(eventParam, eventId).queryParam("request", onceOffPhone));
         allUssdUri.add(testPhoneUri("mtg/start")); // just to check length of two-group menu
 

@@ -17,6 +17,8 @@ public interface EventManagementService {
 
     public Event getLastCreatedEvent(User creatingUser);
 
+    public Event setSubject(Long eventId, String subject);
+
     public Event setGroup(Long eventId, Long groupId);
 
     public Event setLocation(Long eventId, String location);

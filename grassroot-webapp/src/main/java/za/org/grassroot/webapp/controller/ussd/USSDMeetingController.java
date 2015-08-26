@@ -27,17 +27,17 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 public class USSDMeetingController extends USSDController {
 
     /**
-     * The meeting organizer menus
+     * Meeting organizer menus
      * todo: Various forms of validation and checking throughout
      * todo: Think of a way to pull together the common method set up stuff (try to load user, get next key)
      * todo: Make the prompts also follow the sequence somehow (via a map of some sort, likely)
      * todo: Replace "meeting" as the event "name" with a meeting subject
      */
 
-    private static final String keyGroup = "group", keyDate = "date", keyTime = "time", keyPlace = "place", keySend = "send";
-    private static final String mtgPath = USSD_BASE +MTG_MENUS, meetingName = "Meeting"; // this is what needs to be replaced
+    private static final String keyGroup = "group", keySubject="subject", keyDate = "date", keyTime = "time", keyPlace = "place", keySend = "send";
+    private static final String mtgPath = USSD_BASE +MTG_MENUS;
 
-    private static final List<String> menuSequence = Arrays.asList(START_KEY, keyGroup, keyTime, keyPlace, keySend);
+    private static final List<String> menuSequence = Arrays.asList(START_KEY, keySubject, keyTime, keyPlace, keySend);
 
     private String nextMenuKey(String currentMenuKey) {
         return menuSequence.get(menuSequence.indexOf(currentMenuKey) + 1);
@@ -51,14 +51,36 @@ public class USSDMeetingController extends USSDController {
     public Request meetingOrg(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber) throws URISyntaxException {
 
         User sessionUser;
-
         try { sessionUser = userManager.findByInputNumber(inputNumber); }
         catch (NoSuchElementException e) { return noUserError; }
 
-        Event meetingToCreate = eventManager.createEvent(meetingName, sessionUser);
-        USSDMenu thisMenu = askForGroup(sessionUser, meetingToCreate.getId(), nextMenuKey(START_KEY));
+        // initialize event to be filled out in subsequent menus
+        Event meetingToCreate = eventManager.createEvent("", sessionUser);
 
-        return menuBuilder(thisMenu);
+        return menuBuilder(askForGroup(sessionUser, meetingToCreate.getId(), nextMenuKey(START_KEY), keyGroup));
+    }
+
+    private USSDMenu askForGroup(User sessionUser, Long eventId, String keyNext, String keyCreate) throws URISyntaxException {
+
+        USSDMenu groupMenu = new USSDMenu("");
+
+        if (sessionUser.getGroupsPartOf().isEmpty()) {
+            // User is not part of any groups, so just ask for them to enter some numbers
+            groupMenu.setFreeText(true);
+            groupMenu.setPromptMessage(getMessage(MTG_KEY, START_KEY, PROMPT + ".new-group", sessionUser));
+            groupMenu.setNextURI(MTG_MENUS + keyCreate + EVENTID_URL + eventId);
+
+        } else {
+
+            // User is part of some groups, so list them, with the option to create a new one
+            String promptMessage = getMessage(MTG_KEY, START_KEY, PROMPT + ".has-group", sessionUser);
+            String existingGroupUri = MTG_MENUS + keyNext + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + keyGroup;
+            String newGroupUri = MTG_MENUS + keyCreate + EVENTID_URL + eventId;
+            groupMenu = userGroupMenu(sessionUser, promptMessage, existingGroupUri, newGroupUri, TEXT_PARAM);
+
+        }
+
+        return groupMenu;
     }
 
     /*
@@ -67,48 +89,69 @@ public class USSDMeetingController extends USSDController {
     There are three cases for the user having arrived here:
         (1) the user had no groups before, and was asked to enter a set of numbers to create a group
         (2) the user had other groups, but selected "create new group" on the previous menu
-        (3) the user selected a group on the previous menu, and so we proceed to ask for the next piece of information
-     todo: add in phone number checking and validation in here, as well as a loop to ask for extra numbers
+        (3) the user has entered some numbers, and is being asked for more
      */
 
     @RequestMapping(value = mtgPath + keyGroup)
     @ResponseBody
-    public Request saveNumbers(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+    public Request createGroup(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
                                @RequestParam(value=EVENT_PARAM, required=true) Long eventId,
                                @RequestParam(value=GROUP_PARAM, required=false) Long groupId,
                                @RequestParam(value=TEXT_PARAM, required=false) String userResponse) throws URISyntaxException {
 
-        String keyNext = nextMenuKey(keyGroup);
-
         User sessionUser;
-        Group groupToInvite;
+        String keyNext = nextMenuKey(START_KEY);
+        Event meetingToCreate = eventManager.loadEvent(eventId);
 
         try { sessionUser = userManager.findByInputNumber(inputNumber); }
         catch (NoSuchElementException e) { return noUserError; }
 
-        Event meetingToCreate = eventManager.loadEvent(eventId);
+        USSDMenu thisMenu = new USSDMenu("");
+        thisMenu.setFreeText(true);
+
+        if (userResponse.trim().equals("0")) {
+            // stop asking for numbers, set the event's group, and prompt for and pass whatever is next in the sequence
+            meetingToCreate = updateEvent(eventId, keyGroup, "" + groupId);
+            thisMenu.setPromptMessage(getMessage(MTG_KEY, keyNext, PROMPT, sessionUser));
+            thisMenu.setNextURI(MTG_MENUS + nextMenuKey(keyNext) + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + keyNext);
+        } else {
+            // process & validate the user's responses, and create a new group or add to the one we're building
+
+            Map<String, List<String>> splitPhoneNumbers = splitPhoneNumbers(userResponse, " ");
+            if (groupId == null) {
+                Group createdGroup = groupManager.createNewGroup(sessionUser, splitPhoneNumbers.get(VALID));
+                String returnUri = MTG_MENUS + keyGroup + EVENTID_URL + eventId + "&groupId=" + createdGroup.getId();
+                thisMenu = numberEntryPrompt(returnUri, MTG_KEY, sessionUser, true, splitPhoneNumbers.get(ERROR));
+            } else {
+                groupManager.addNumbersToGroup(groupId, splitPhoneNumbers.get(VALID));
+                String returnUri = MTG_MENUS + keyGroup + EVENTID_URL + eventId + "&groupId=" + groupId;
+                thisMenu = numberEntryPrompt(returnUri, MTG_KEY, sessionUser, false, splitPhoneNumbers.get(ERROR));
+            }
+        }
+
+        return menuBuilder(thisMenu);
+
+    }
+
+    public USSDMenu numberEntryPrompt(String returnUri, String sectionKey, User sessionUser, boolean newGroup,
+                                      List<String> errorNumbers) {
 
         USSDMenu thisMenu = new USSDMenu("");
         thisMenu.setFreeText(true);
 
-        // todo: work around the kludge below which fixes the next menu as keyDate (points to more fundamental flaw in chain)
+        String promptKey = (newGroup) ? "created" : "added";
 
-        if (groupId == null) { // case 1, a group of numbers entered, so next menu is add something to event
-            groupToInvite = groupManager.createNewGroup(sessionUser, splitPhoneNumbers(userResponse));
-            meetingToCreate = eventManager.setGroup(eventId, groupToInvite.getId());
-            thisMenu.setPromptMessage(getMessage(MTG_KEY, keyGroup, PROMPT + ".next2", sessionUser));
-            thisMenu.setNextURI(MTG_MENUS + keyNext + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + keyDate);
-        } else if (groupId == 0) { // case 2, "create a new group" selected, so next menu is cycling back to this one
-            thisMenu.setPromptMessage(getMessage(MTG_KEY, keyGroup, PROMPT + ".new-group", sessionUser));
-            thisMenu.setNextURI(MTG_MENUS + keyGroup + EVENTID_URL + eventId);
-        } else { // case 3, an existing group selected, so ask for and pass forward the field requested
-            groupToInvite = groupManager.loadGroup(groupId);
-            meetingToCreate = eventManager.setGroup(eventId, groupToInvite.getId());
-            thisMenu.setPromptMessage(getMessage(MTG_KEY, keyGroup, PROMPT + ".next", sessionUser));
-            thisMenu.setNextURI(MTG_MENUS + keyNext + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + keyDate);
+        if (errorNumbers.size() == 0) {
+            thisMenu.setPromptMessage(getMessage(sectionKey, keyGroup, PROMPT + "." + promptKey, sessionUser));
+        } else {
+            // assemble the error menu
+            String listErrors = String.join(", ", errorNumbers);
+            String promptMessage = getMessage(sectionKey, keyGroup, PROMPT_ERROR, listErrors, sessionUser);
+            thisMenu.setPromptMessage(promptMessage);
         }
 
-        return menuBuilder(thisMenu);
+        thisMenu.setNextURI(returnUri);
+        return thisMenu;
 
     }
 
@@ -119,6 +162,24 @@ public class USSDMeetingController extends USSDController {
     Though even then, may be able to collapse them -- but then need to access which URL within method
      */
 
+    // todo change GROUP_PARAM to TEXT_PARAM in the parameter mapping once fix the upstream method
+
+    @RequestMapping(value = mtgPath + keySubject)
+    @ResponseBody
+    public Request getSubject(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                              @RequestParam(value=EVENT_PARAM, required=true) Long eventId,
+                              @RequestParam(value=PASSED_FIELD, required=true) String passedValueKey,
+                              @RequestParam(value=TEXT_PARAM, required = true) String passedValue) throws URISyntaxException {
+
+        String keyNext = nextMenuKey(keySubject); // skipped for the moment, like keyDate
+        User sessionUser = userManager.findByInputNumber(inputNumber);
+        Event meetingToCreate = updateEvent(eventId, passedValueKey, passedValue);
+        String promptMessage = getMessage(MTG_KEY, keySubject, PROMPT, sessionUser);
+
+        USSDMenu thisMenu = new USSDMenu(promptMessage, MTG_MENUS + keyNext + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + keySubject);
+        return menuBuilder(thisMenu);
+
+    }
 
     @RequestMapping(value = mtgPath + keyDate)
     @ResponseBody
@@ -199,7 +260,7 @@ public class USSDMeetingController extends USSDController {
 
         String groupName = (groupToMessage.hasName()) ? ("of group, " + groupToMessage.getGroupName() + ", ") : "";
 
-        String msgText = "From " + sessionUser.getName("") + ": Meeting called " + groupName + "on " + meetingToSend.getDayOfEvent()
+        String msgText = "From " + sessionUser.getName("") + ": Meeting called " + groupName + "about " + meetingToSend.getName()
                 + ", at time " + meetingToSend.getTimeOfEvent() + " and place " + meetingToSend.getEventLocation();
 
         System.out.println(msgText);
@@ -227,6 +288,9 @@ public class USSDMeetingController extends USSDController {
     private Event updateEvent(Long eventId, String lastMenuKey, String passedValue) {
         Event eventToReturn;
         switch(lastMenuKey) {
+            case keySubject:
+                eventToReturn = eventManager.setSubject(eventId, passedValue);
+                break;
             case keyDate:
                 eventToReturn = eventManager.setDay(eventId, passedValue);
                 break;
@@ -245,17 +309,6 @@ public class USSDMeetingController extends USSDController {
         return eventToReturn;
     }
 
-    private USSDMenu askForGroup(User sessionUser, Long eventId, String keyNext) throws URISyntaxException {
-        USSDMenu groupMenu = new USSDMenu("");
-        if (sessionUser.getGroupsPartOf().isEmpty()) {
-            groupMenu.setFreeText(true);
-            groupMenu.setPromptMessage(getMessage(MTG_KEY, START_KEY, PROMPT + ".new-group", sessionUser));
-            groupMenu.setNextURI(MTG_MENUS + keyNext + EVENTID_URL + eventId);
-        } else {
-            String promptMessage = getMessage(MTG_KEY, START_KEY, PROMPT + ".has-group", sessionUser);
-            groupMenu = userGroupMenu(sessionUser, promptMessage, MTG_MENUS + keyNext + EVENTID_URL + eventId, true);
-        }
-        return groupMenu;
-    }
+
 
 }
