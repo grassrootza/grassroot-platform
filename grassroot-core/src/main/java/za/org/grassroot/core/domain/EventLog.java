@@ -11,6 +11,8 @@ package za.org.grassroot.core.domain;
  * todo - aakil - add logic to trigger sending of notification when minimum data saved and user(s) added - @observer??
  */
 
+import za.org.grassroot.core.enums.EventLogType;
+
 import javax.persistence.*;
 import java.sql.Timestamp;
 import java.util.Calendar;
@@ -34,9 +36,8 @@ public class EventLog {
     @ManyToOne
     private Event event;
 
-    @Basic
-    @Column
-    private int type;
+    @Enumerated
+    private EventLogType eventLogType;
 
     @Basic
     @Column
@@ -60,10 +61,10 @@ public class EventLog {
     public EventLog() {
     }
 
-    public EventLog(User user, Event event, int type, String message) {
+    public EventLog(User user, Event event, EventLogType eventLogType, String message) {
         this.user = user;
         this.event = event;
-        this.type = type;
+        this.eventLogType = eventLogType;
         this.message = message;
     }
 
@@ -99,12 +100,12 @@ public class EventLog {
         this.event = event;
     }
 
-    public int getType() {
-        return type;
+    public EventLogType getEventLogType() {
+        return eventLogType;
     }
 
-    public void setType(int type) {
-        this.type = type;
+    public void setEventLogType(EventLogType eventLogType) {
+        this.eventLogType = eventLogType;
     }
 
     public String getMessage() {
@@ -122,7 +123,7 @@ public class EventLog {
                 ", createdDateTime=" + createdDateTime +
                 ", user=" + user +
                 ", event=" + event +
-                ", type=" + type +
+                ", eventLogType=" + eventLogType +
                 ", message='" + message + '\'' +
                 '}';
     }
