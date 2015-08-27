@@ -38,6 +38,7 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 public class USSDHomeController extends USSDController {
 
     private static final String keyRenameStart = "rename-start", keyGroupNameStart = "group-start";
+    private static final int hashPosition = 9;
 
     public USSDMenu welcomeMenu(String opening, User sessionUser) throws URISyntaxException {
 
@@ -57,10 +58,41 @@ public class USSDHomeController extends USSDController {
 
     @RequestMapping(value = USSD_BASE + START_KEY)
     @ResponseBody
-    public Request startMenu(@RequestParam(value=PHONE_PARAM) String inputNumber) throws URISyntaxException {
+    public Request startMenu(@RequestParam(value=PHONE_PARAM) String inputNumber,
+                             @RequestParam(value=TEXT_PARAM, required=false) String enteredUSSD) throws URISyntaxException {
+
+        USSDMenu openingMenu;
+        User sessionUser = userManager.loadOrSaveUser(inputNumber);
+
+        if (!codeHasTrailingDigits(enteredUSSD)) {
+            openingMenu = defaultStartMenu(sessionUser);
+        } else {
+            String trailingDigits = enteredUSSD.substring(hashPosition + 1, enteredUSSD.length() - 1);
+            System.out.println("Trailing string is: " + trailingDigits);
+            System.out.println("The split strings: " + codePassedDigits(trailingDigits));
+            openingMenu = new USSDMenu("You entered some other digits!", START_KEY);
+        }
+
+        return (checkMenuLength(openingMenu, true)) ? menuBuilder(openingMenu) : tooLongError;
+
+    }
+
+    private boolean codeHasTrailingDigits(String enteredUSSD) {
+        return !(enteredUSSD == null || enteredUSSD.indexOf("#") == hashPosition);
+    }
+
+    private List<Integer> codePassedDigits(String enteredUSSD) {
+        List<String> splitCodes = Arrays.asList(enteredUSSD.split("\\*"));
+        List<Integer> listOfCodes = new ArrayList<>();
+
+        for (String code : splitCodes) listOfCodes.add(Integer.parseInt(code));
+
+        return listOfCodes;
+    }
+
+    private USSDMenu defaultStartMenu(User sessionUser) throws URISyntaxException {
 
         USSDMenu startMenu = new USSDMenu("");
-        User sessionUser = userManager.loadOrSaveUser(inputNumber);
 
         if (userManager.needsToRenameSelf(sessionUser)) {
             startMenu.setPromptMessage(getMessage(HOME_KEY, START_KEY, PROMPT + "-rename", sessionUser));
@@ -77,7 +109,7 @@ public class USSDHomeController extends USSDController {
             startMenu = welcomeMenu(welcomeMessage, sessionUser);
         }
 
-        return (checkMenuLength(startMenu, true)) ? menuBuilder(startMenu) : tooLongError;
+        return startMenu;
 
     }
 

@@ -119,8 +119,13 @@ public class USSDMeetingController extends USSDController {
 
             Map<String, List<String>> splitPhoneNumbers = splitPhoneNumbers(userResponse, " ");
             if (groupId == null) {
-                Group createdGroup = groupManager.createNewGroup(sessionUser, splitPhoneNumbers.get(VALID));
-                String returnUri = MTG_MENUS + keyGroup + EVENTID_URL + eventId + "&groupId=" + createdGroup.getId();
+                String returnUri;
+                if (splitPhoneNumbers.get(VALID).isEmpty()) { // avoid creating detritus groups if no valid numbers & user hangs up
+                    returnUri = MTG_MENUS + keyGroup + EVENTID_URL + eventId;
+                } else {
+                    Group createdGroup = groupManager.createNewGroup(sessionUser, splitPhoneNumbers.get(VALID));
+                    returnUri = MTG_MENUS + keyGroup + EVENTID_URL + eventId + "&groupId=" + createdGroup.getId();
+                }
                 thisMenu = numberEntryPrompt(returnUri, MTG_KEY, sessionUser, true, splitPhoneNumbers.get(ERROR));
             } else {
                 groupManager.addNumbersToGroup(groupId, splitPhoneNumbers.get(VALID));
@@ -181,25 +186,6 @@ public class USSDMeetingController extends USSDController {
 
     }
 
-    @RequestMapping(value = mtgPath + keyDate)
-    @ResponseBody
-    public Request getDate(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
-                           @RequestParam(value=EVENT_PARAM, required=true) Long eventId,
-                           @RequestParam(value=PASSED_FIELD, required=true) String passedValueKey,
-                           @RequestParam(value=TEXT_PARAM, required = true) String passedValue) throws URISyntaxException {
-
-        // todo: create some default options for the next 3 days, for date
-
-        String keyNext = nextMenuKey(keyDate);
-        User sessionUser = userManager.findByInputNumber(inputNumber);
-        Event meetingToCreate = updateEvent(eventId, passedValueKey, passedValue);
-        String promptMessage = getMessage(MTG_KEY, keyDate, PROMPT, sessionUser);
-
-        USSDMenu thisMenu = new USSDMenu(promptMessage, MTG_MENUS + keyNext + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + keyDate);
-        return menuBuilder(thisMenu);
-
-    }
-
     @RequestMapping(value = mtgPath + keyTime)
     @ResponseBody
     public Request getTime(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
@@ -210,6 +196,11 @@ public class USSDMeetingController extends USSDController {
         String keyNext = nextMenuKey(keyTime);
         User sessionUser = userManager.findByInputNumber(inputNumber);
         Event meetingToCreate = updateEvent(eventId, passedValueKey, passedValue);
+
+        /*
+        Inserting logic to parse whatever came back and, if it can be parsed, set the timestamp accordingly.
+         */
+
         String promptMessage = getMessage(MTG_KEY, keyTime, PROMPT, sessionUser);
 
         return menuBuilder(new USSDMenu(promptMessage, MTG_MENUS + keyNext + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + keyTime));
