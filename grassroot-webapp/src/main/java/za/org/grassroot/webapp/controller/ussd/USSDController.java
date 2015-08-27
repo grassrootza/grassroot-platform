@@ -7,6 +7,7 @@ import com.google.i18n.phonenumbers.Phonenumber;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.web.servlet.LocaleResolver;
+import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GroupRepository;
@@ -56,7 +57,7 @@ public class USSDController {
 
     // Constants used in i18n and message handling
     protected static final String HOME_KEY = "home", MTG_KEY = "mtg", USER_KEY = "user", GROUP_KEY = "group", VOTE_KEY = "vote", LOG_KEY = "log";
-    protected static final String PROMPT = "prompt", PROMPT_ERROR = "prompt.error", OPTION = "options.", MORE = "more";
+    protected static final String PROMPT = "prompt", PROMPT_ERROR = "prompt.error", OPTION = "options.", VALID="valid", ERROR="error";
 
     protected final String smsHost = "xml2sms.gsm.co.za";
     protected final String smsUsername = System.getenv("SMSUSER");
@@ -135,26 +136,32 @@ public class USSDController {
 
     // todo: remove the version above, for the below, once tested properly
 
-    protected USSDMenu userGroupMenu(User sessionUser, String promptMessage, String existingPath, String newPath)
+    protected USSDMenu userGroupMenu(User sessionUser, String promptMessage, String existingPath, String newUri, String groupParam)
             throws URISyntaxException {
 
         // todo: some way to handle pagination if user has many groups -- USSD can only handle five options on a menu ...
         // todo: also, lousy user experience if too many -- should sort by last accessed & most accessed (some combo)
         // todo: switch to using URIComponentsBuilder instead of string joining the parameters
 
-        List<Group> groupsPartOf = sessionUser.getGroupsPartOf();
         USSDMenu menuBuild = new USSDMenu(promptMessage);
+        List<Group> groupsPartOf = sessionUser.getGroupsPartOf();
         final String dateFormat = "%1$TD";
-        final String formedUrl = (!existingPath.contains("?")) ? (existingPath + GROUPID_URL) : (existingPath + "&" + GROUP_PARAM + "=");
 
-        for (Group groupForMenu : groupsPartOf) {
-            String groupName = (groupForMenu.hasName()) ? groupForMenu.getGroupName() :
-                    getMessage(GROUP_KEY, "unnamed", "label", String.format(dateFormat, groupForMenu.getCreatedDateTime()), sessionUser);
-            menuBuild.addMenuOption(formedUrl + groupForMenu.getId(), groupName);
+        final String formedUrl = (!existingPath.contains("?")) ?
+                (existingPath + GROUPID_URL) :
+                (existingPath + "&" + groupParam + "=");
+
+        for (Group groupToList : groupsPartOf) {
+
+            String groupName = (groupToList.hasName()) ?
+                    groupToList.getGroupName() :
+                    getMessage(GROUP_KEY, "unnamed", "label", String.format(dateFormat, groupToList.getCreatedDateTime()), sessionUser);
+
+            menuBuild.addMenuOption(formedUrl + groupToList.getId(), groupName);
         }
 
-        if (newPath != null)
-            menuBuild.addMenuOption(newPath, getMessage(GROUP_KEY, "create", "option", sessionUser));
+        if (newUri != null)
+            menuBuild.addMenuOption(newUri, getMessage(GROUP_KEY, "create", "option", sessionUser));
 
         return menuBuild;
     }
