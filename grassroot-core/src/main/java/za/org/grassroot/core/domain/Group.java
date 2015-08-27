@@ -11,6 +11,7 @@ import lombok.ToString;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
@@ -74,6 +75,9 @@ public class Group {
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinTable(name = "group_user_membership", joinColumns = @JoinColumn(name = "group_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
     public List<User> getGroupMembers() {
+        if (groupMembers == null) {
+            groupMembers = new ArrayList<>();
+        }
         return groupMembers;
     }
 
