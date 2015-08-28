@@ -24,7 +24,7 @@ public interface UserManagementService {
 
     User findByInputNumber(String inputNumber);
 
-    List<User> getUsersFromNumbers(String listOfNumbers);
+    List<User> getUsersFromNumbers(List<String> listOfNumbers);
 
     boolean userExist(String phoneNumber);
 
@@ -33,5 +33,6 @@ public interface UserManagementService {
     User resetUserPassword(String username, String newPassword, String token);
 
     User fetchUserByUsername(String username);
+
 
 }

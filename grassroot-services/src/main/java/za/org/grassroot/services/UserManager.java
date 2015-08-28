@@ -189,7 +189,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
      * todo: Move the country code definition into a properties file ?
      */
 
-    public static String convertPhoneNumber(String inputString) throws InvalidPhoneNumber {
+    public static String convertPhoneNumber(String inputString) throws InvalidPhoneNumberException {
 
         try {
             PhoneNumberUtil phoneNumberUtil = PhoneNumberUtil.getInstance();
@@ -207,7 +207,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     }
 
-    public static String invertPhoneNumber(String storedNumber) throws InvalidPhoneNumber {
+    public static String invertPhoneNumber(String storedNumber) throws InvalidPhoneNumberException {
 
         // todo: handle error if number has gotten into database in incorrect format
         // todo: make this much faster, e.g., use a simple regex / split function?
