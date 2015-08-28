@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.servlet.view.RedirectView;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.UserExistsException;
 import za.org.grassroot.services.UserManagementService;
@@ -40,16 +42,17 @@ public class UserSignUpController extends BaseController {
 
     @RequestMapping(value = "/signup", method = RequestMethod.POST)
     public ModelAndView register(Model model, @Valid @ModelAttribute("userRegistration") UserRegistration userRegistration,
-                                 BindingResult bindingResult, HttpServletRequest request) {
+                                 BindingResult bindingResult, HttpServletRequest request, RedirectAttributes redirectAttributes) {
         try {
             if (bindingResult.hasErrors()) {
                 model.addAttribute("userRegistration", userRegistration);
-
                 return new ModelAndView("signup", model.asMap());
             }
+
             User user = userManagementService.createUserWebProfile(userRegistration.getUser());
-            addMessage(model, MessageType.SUCCESS, "user.creation.successful", request);
-            return new ModelAndView("redirect:/login");
+
+            addMessage(redirectAttributes, MessageType.SUCCESS, "user.creation.successful", request);
+            return new ModelAndView( new RedirectView("/login"));
         }
         catch (UserExistsException userException)
         {

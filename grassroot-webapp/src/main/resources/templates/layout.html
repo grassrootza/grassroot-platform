@@ -9,11 +9,16 @@
   <!--<meta name="_csrf" value="dummy" th:value="${_csrf.token}"/>-->
 
   <link rel="shortcut icon" type="image/x-icon" th:href="@{/images/favicon.ico}"/>
+  <link rel="stylesheet" type="text/css" th:href="@{/css/snackbar.min.css}" />
   <link rel="stylesheet" type="text/css" th:href="@{/css/bootstrap.min.css}" />
   <link rel="stylesheet" type="text/css" th:href="@{/css/material-fullpalette.min.css}" />
   <link rel="stylesheet" type="text/css" th:href="@{/css/ripples.min.css}" />
   <link rel="stylesheet" type="text/css" th:href="@{/css/grassroot.css}" />
   <link rel="stylesheet" type="text/css" th:href="@{/css/intl-tel-input.css}" />
+  <link rel="stylesheet" type="text/css" th:href="@{/css/jquery.dropdown.css}" />
+  <link rel="stylesheet" type="text/css" th:href="@{/css/jquery.steps.css}" />
+
+
 
   <script th:inline="javascript">
         var baseUrl = /*[[@{/}]]*/ '../static/';
@@ -49,15 +54,15 @@
             </ul>
 
             <ul sec:authorize="isAnonymous()" class="nav navbar-nav navbar-right">
-              <li sec:authorize="isAnonymous()" class=""><a href="javascript:void(0)" th:href="@{/signup}"><span class="badge">Sign Up</span></a></li>
               <li sec:authorize="isAnonymous()" class=""><a href="javascript:void(0)" th:href="@{/home}">Login</a></li>
+              <li sec:authorize="isAnonymous()" class=""><a href="javascript:void(0)" th:href="@{/signup}"><span class="badge">Sign Up</span></a></li>
             </ul>
 
             <ul sec:authorize="isFullyAuthenticated()" class="nav navbar-nav navbar-right">
               <li class="dropdown">
                 <a href="javascript:void(0)" data-target="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false">My Profile <b class="caret"></b><div class="ripple-wrapper"></div></a>
                 <ul class="dropdown-menu">
-                  <li><a href="javascript:void(0)">Profile</a></li>
+                  <li><a href="javascript:void(0)" th:href="@{/user-profile}" >Profile</a></li>
                   <li><a href="javascript:void(0)">Settings</a></li>
                   <li class="divider"></li>
                   <li><a href="javascript:void(0)"  class="user-logout" id="user-logout" th:href="@{/logout}">Logout</a></li>
@@ -88,19 +93,26 @@
     </div>
     <div class="container-fluid" layout:fragment="top-content"></div>
 
+    <div class="row">
+      <div>
+        <span  id="grassRootTooltip" data-toggle="snackbar" data-content="This is my awesome snackbar!" layout:fragment="tooltip"></span>
+      </div>
+    </div>
+
+
     <div layout:fragment="messages" class="container-fluid">
       <div layout:fragment="alert">
-        <div th:if="${errorMessage}" class="alert alert-warning alert-dismissible col-lg-6" role="alert">
+        <div th:if="${errorMessage}" class="alert alert-warning alert-dismissible col-lg-8" role="alert">
           <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
           <p th:text="${errorMessage}"></p>
         </div>
 
-        <div th:if="${infoMessage != null}" class="alert alert-info alert-dismissible col-lg-6" role="alert">
+        <div th:if="${infoMessage != null}" class="alert alert-info alert-dismissible col-lg-8" role="alert">
           <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
           <p th:text="${infoMessage}"></p>
         </div>
 
-        <div th:if="${successMessage != null}" class="alert alert-success alert-dismissible col-lg-6" role="alert">
+        <div th:if="${successMessage != null}" class="alert alert-success alert-dismissible col-lg-8" role="alert">
           <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
           <p th:text="${successMessage}"></p>
         </div>
@@ -144,6 +156,14 @@
   <script th:src="@{/js/ripples.min.js}"></script>
   <script th:src="@{/js/intl-tel-input.min.js}"></script>
   <script th:src="@{/js/intl-tel-input-utils.js}"></script>
+  <script th:src="@{/js/snackbar.min.js}"></script>
+  <script th:src="@{/js/moment.min.js}"></script>
+  <script th:src="@{/js/jquery.dropdown.js}"></script>
+  <script th:src="@{/js/handlebars-v3.0.3.js}"></script>
+  <script th:src="@{/js/jquery.validate.min.js}"></script>
+  <script th:src="@{/js/additional-methods.min.js}"></script>
+  <script th:src="@{/js/jquery.steps.min.js}"></script>
+  <script th:src="@{/js/selectize.standalone.min.js}"></script>
   <script>
     $.material.init();
   </script>

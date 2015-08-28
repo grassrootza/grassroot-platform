@@ -62,6 +62,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
                         .authorizeRequests()
                         .antMatchers("/signup").permitAll()
+                        .antMatchers("/accounts/recovery").permitAll()
+                        .antMatchers("/accounts/recovery/success").permitAll()
+                        .antMatchers("/grass-root-verification/*").permitAll()
                         .antMatchers("/home").fullyAuthenticated()
                         .anyRequest()
                         .fullyAuthenticated();

@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.Optional;
 
@@ -20,17 +21,14 @@ public class SigninController {
     private static final Logger logger = LoggerFactory.getLogger(LoginController.class);
 
 
-//    @RequestMapping(value = "/logon", method = RequestMethod.GET)
-//    public ModelAndView getLoginPage(@RequestParam Optional<String> error) {
-//        logger.debug("Getting login page, error={}", error);
-//
-//        return new ModelAndView("signin", "error", error);
-//    }
+
     @RequestMapping(value = "/login", method = RequestMethod.GET)
     public ModelAndView getLoginPage(@RequestParam (required = false) String error, Model model) {
         logger.debug("Getting login page, error={}", error);
 
-        return new ModelAndView("signin", "error", error);
+        model.addAttribute("error", error);
+
+        return new ModelAndView("signin", model.asMap());
     }
 
     @RequestMapping(value = "/signin", method = RequestMethod.GET)

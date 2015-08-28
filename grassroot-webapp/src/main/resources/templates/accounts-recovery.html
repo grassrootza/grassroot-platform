@@ -1,0 +1,175 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+    <title th:text="#{app.name}"></title>
+
+</head>
+<body>
+
+
+<div layout:fragment="header">
+    <h2>Account Recovery</h2>
+</div>
+<div layout:fragment="overview">
+    <p>Password Reset</p>
+</div>
+
+<div layout:fragment="content">
+    <div layout:fragment="messages"></div>
+    <div class="well">
+
+
+        <form  th:object="${userAccountRecovery}" th:action="@{/accounts/recovery}"  method="post" id="accountRecoveryForm" autocomplete="off">
+
+            <div id="wizard" class="recovery">
+                <h2 th:text="#{signin.username}">GrassRoot ID</h2>
+                <section>
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <p th:text="#{user.account.recovery.password.reset.message}">User your Mobile Phone
+                                Number (GrassRoot ID) to reset your password.</p>
+                        </div>
+                    </div>
+
+
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="form-group">
+                                <label class="control-label" for="username" th:text="#{signin.username}">GrassRoot
+                                    ID</label>
+
+                                <input  th:field="*{username}" id="mobileNumber" class="form-control required" placeholder="27721234567"/>
+                                <input type="hidden" id="username" class="form-control"
+                                       placeholder="Mobile Number"/>
+
+                            </div>
+                        </div>
+                    </div>
+
+                </section>
+
+                <h2>New Password</h2>
+                <section>
+                    <div class="row col-lg-4">
+                        <div class="form-group">
+                            <label class="control-label" for="newPassword">Password</label>
+                            <input   th:field="*{newPassword}"  id="newPassword" name="newPassword" type="password" class="form-control required" placeholder=""/>
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label" for="passwordConfirm">Confirm Password</label>
+                            <input th:field="*{passwordConfirm}" id="passwordConfirm" name="passwordConfirm" type="password" class="form-control required" placeholder=""/>
+
+                        </div>
+                    </div>
+                </section>
+
+
+                <h2>Verification</h2>
+                <section>
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <p>Verification Code has been sent to you mobile number. Please enter the code for verification.</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-4">
+                            <div class="form-group">
+                                <label class="control-label" for="verificationCode">Verification Code</label>
+
+                                <div class="">
+                                    <input th:field="*{verificationCode}" id="verificationCode" class="form-control required" placeholder="12345"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-4">
+                            <!--<button id="sendVerification" class="btn btn-primary">Resend Code</button>-->
+                            <a  id="sendVerification" class="btn btn-primary">Resend Code</a>
+                            </div>
+                        </div>
+                </section>
+            </div>
+
+        </form>
+    </div>
+
+
+</div>
+
+
+<div class="header-container" layout:fragment="script-container">
+    <script>
+        $(document).ready(function () {
+
+
+//            $("#mobileNumber").intlTelInput({
+//                onlyCountries: ["za"],
+//                utilsScript: "../js/intl-tel-input-utils.js" // just for formatting/placeholders etc
+//            });
+
+            var form = $("#accountRecoveryForm");
+
+            form.validate({
+//                errorPlacement: function errorPlacement(error, element) { element.before(error); },
+                rules: {
+
+                    newPassword:{
+                        required:true,
+                        minlength: 5
+                    },
+                    passwordConfirm: {
+                        required: true,
+                        equalTo: "#newPassword",
+                        minlength: 5
+
+                    }
+                }
+            });
+
+            $("#wizard").steps({
+                headerTag: "h2",
+                bodyTag: "section",
+                transitionEffect: "slideLeft",
+                forceMoveForward: true,
+                onStepChanging: function (event, currentIndex, newIndex) {
+                    form.validate().settings.ignore = ":hidden";
+                    return form.valid();
+                },
+                onStepChanged: function (event, currentIndex, priorIndex) {
+
+                    if(priorIndex==1)
+                    {
+                        $.ajax({ url:"/grass-root-verification/" + $("#mobileNumber").val()})
+                    }
+                },
+                onFinishing: function (event, currentIndex) {
+                    form.validate().settings.ignore = ":hidden";
+                    return form.valid();
+                },
+                onFinished: function (event, currentIndex) {
+
+                    form.submit();
+                }
+            });
+
+            $( "#sendVerification" ).click(function(event) {
+
+                event.preventDefault();
+
+                $.ajax({
+                    url: "/grass-root-verification/" + $("#mobileNumber").val(),
+                    context: document.body
+                }).done(function() {
+                    $.snackbar({content: "Verification Code sent"});
+                });
+            });
+
+        });
+    </script>
+</div>
+
+
+</body>
+</html>

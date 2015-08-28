@@ -1,16 +1,57 @@
-<!DOCTYPE html>
-<html lang="en">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
 <head>
-    <meta charset="UTF-8">
-    <title></title>
+    <title>GrassRoot - User Profile</title>
 </head>
 <body>
-<div>
-    <strong>Welcome <strong>{{phoneNumber}}</strong> </strong>
+
+<div layout:fragment="header">
+    <h2>My Profile</h2>
 </div>
-<div>
+<div layout:fragment="overview"></div>
+
+<div layout:fragment="content">
+    <div layout:fragment="messages"></div>
+    <div class="well">
+
+        <div class="center-block">
+            <div class="center-block" style="width: 400px">
+                <div class="row">
+                    <div class="col-md-4">
+                        <span><strong>Name</strong></span>
+                    </div>
+                    <div class="col-md-6">
+                        <span th:text="${currentUserProfile.firstName}"></span> &nbsp;<span th:text="${currentUserProfile.lastName}"></span>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <span><strong>Phone Number</strong></span>
+                    </div>
+                    <div class="col-md-6">
+                        <span th:text="${currentUserProfile.phoneNumber}"></span>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <span><strong>Member Since</strong></span>
+                    </div>
+                    <div class="col-md-6">
+                         <span th:text="${#calendars.format(currentUserProfile.createdDateTime,'dd MMMM yyyy')}"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<div class="header-container" layout:fragment="script-container">
+
+</div>
 
 
-</div>
 </body>
 </html>

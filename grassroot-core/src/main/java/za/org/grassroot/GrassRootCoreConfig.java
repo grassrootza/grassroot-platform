@@ -1,4 +1,4 @@
-package za.org.grassroot.core;
+package za.org.grassroot;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,7 +9,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
  * @author Lesetse Kimwaga
  */
 @Configuration
-public class CoreConfig {
+public class GrassRootCoreConfig {
 
     @Bean
     public PasswordEncoder getPasswordEncoder()
