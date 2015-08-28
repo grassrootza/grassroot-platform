@@ -62,14 +62,14 @@ public class USSDHomeController extends USSDController {
         USSDMenu startMenu = new USSDMenu("");
         User sessionUser = userManager.loadOrSaveUser(inputNumber);
 
-        if (sessionUser.needsToRenameSelf(10)) {
+        if (userManager.needsToRenameSelf(sessionUser)) {
             startMenu.setPromptMessage(getMessage(HOME_KEY, START_KEY, PROMPT + "-rename", sessionUser));
             startMenu.setFreeText(true);
             startMenu.setNextURI(keyRenameStart);
-        } else if (sessionUser.needsToRenameGroup() != null) {
+        } else if (groupManager.needsToRenameGroup(sessionUser)) {
             startMenu.setPromptMessage(getMessage(HOME_KEY, START_KEY, PROMPT + "-group-rename", sessionUser));
             startMenu.setFreeText(true);
-            startMenu.setNextURI(keyGroupNameStart + GROUPID_URL + sessionUser.needsToRenameGroup().getId());
+            startMenu.setNextURI(keyGroupNameStart + GROUPID_URL + groupManager.groupToRename(sessionUser));
         } else {
             String welcomeMessage = sessionUser.hasName() ?
                     getMessage(HOME_KEY, START_KEY, PROMPT + "-named", sessionUser.getName(""), sessionUser) :
@@ -108,7 +108,7 @@ public class USSDHomeController extends USSDController {
         groupToRename = groupManager.saveGroup(groupToRename);
 
         // return menuBuilder(welcomeMenu("Thanks! Now what do you want to do?", sessionUser));
-        return menuBuilder(welcomeMenu(getMessage(HOME_KEY, START_KEY, PROMPT + "-group-done", sessionUser.getName(""),
+        return menuBuilder(welcomeMenu(getMessage(HOME_KEY, START_KEY, PROMPT + "-group-do", sessionUser.getName(""),
                                                   sessionUser), sessionUser));
 
     }

@@ -16,6 +16,7 @@ import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
 
+import java.util.Arrays;
 import java.util.logging.Logger;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -46,7 +47,7 @@ public class EventManagementServiceTest {
     public void shouldSaveEventWithNameUserAndGroup() {
 
         User userProfile = userManagementService.createUserProfile(new User("111222333", "aap1"));
-        Group group = groupManagementService.createNewGroup(userProfile, "111222444 111222555");
+        Group group = groupManagementService.createNewGroup(userProfile, Arrays.asList("111222444", "111222555"));
         Event event = eventManagementService.createEvent("Drink till you drop", userProfile, group);
         log.info(event.toString());
         Assert.assertEquals("Drink till you drop",event.getName());

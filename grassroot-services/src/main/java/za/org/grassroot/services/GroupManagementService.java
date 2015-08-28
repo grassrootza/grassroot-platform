@@ -16,9 +16,17 @@ public interface GroupManagementService {
 
     void deleteGroup(Group groupToDelete);
 
-    Group createNewGroup(User creatingUser, String phoneNumbers);
+    Group addGroupMember(Group currentGroup, User newMember);
+
+    Group createNewGroup(User creatingUser, List<String> phoneNumbers);
+
+    Group addNumbersToGroup(Long groupId, List<String> phoneNumbers);
 
     Group getLastCreatedGroup(User creatingUser);
+
+    boolean needsToRenameGroup(User sessionUser);
+
+    Long groupToRename(User sessionUser);
 
     List<Group> getCreatedGroups(User creatingUser);
 

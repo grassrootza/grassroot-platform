@@ -29,6 +29,13 @@ public class Event {
     could also have been called description but as group has a name, kept it the same
      */
     private String name;
+    /*
+    for various reasons at present we want to be able to store date and time as strings without being forced to
+    parse and convert into a timestamp -- might move these into a Meeting sub-class, or handle in controller, but
+    doing it this way for now. to clean up.
+     */
+    private String dayOfEvent;
+    private String timeOfEvent;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -76,6 +83,16 @@ public class Event {
         this.name = name;
     }
 
+    @Column
+    public String getDayOfEvent() { return dayOfEvent; }
+
+    public void setDayOfEvent(String dayOfEvent) { this.dayOfEvent = dayOfEvent; }
+
+    @Column
+    public String getTimeOfEvent() { return timeOfEvent; }
+
+    public void setTimeOfEvent(String timeOfEvent) { this.timeOfEvent = timeOfEvent; }
+
     @PreUpdate
     @PrePersist
     public void updateTimeStamps() {
@@ -94,12 +111,19 @@ public class Event {
         this.name = name;
         this.createdByUser = createdByUser;
         this.appliesToGroup = appliesToGroup;
+        this.eventLocation=""; // otherwise we get null violations
+    }
+
+    public Event(String name, User createdByUser) {
+        this.name = name;
+        this.createdByUser = createdByUser;
+        this.eventLocation=""; // otherwise we get null violations
     }
 
     public Event() {
     }
 
-
+    // todo: stop this causing a stack overflow whenever it is called
     @Override
     public String toString() {
         return "Event{" +
@@ -110,6 +134,8 @@ public class Event {
                 ", createdByUser=" + createdByUser +
                 ", appliesToGroup=" + appliesToGroup +
                 ", name='" + name + '\'' +
+                ", dayOfEvent=" + dayOfEvent + '\'' +
+                ", timeOfEvent=" + timeOfEvent +'\'' +
                 '}';
     }
 }

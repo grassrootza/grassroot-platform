@@ -28,6 +28,8 @@ public interface UserManagementService {
 
     boolean userExist(String phoneNumber);
 
+    boolean needsToRenameSelf(User sessionUser);
+    
     User resetUserPassword(String username, String newPassword, String token);
 
     User fetchUserByUsername(String username);

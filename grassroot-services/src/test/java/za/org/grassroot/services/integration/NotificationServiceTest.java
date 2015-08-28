@@ -23,10 +23,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Logger;
 
 /**
@@ -35,7 +32,7 @@ import java.util.logging.Logger;
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = GrassRootServicesConfig.class)
 @Transactional
-public class NotificationSeviceTest {
+public class NotificationServiceTest {
 
     private Logger log = Logger.getLogger(getClass().getCanonicalName());
 
@@ -75,7 +72,7 @@ public class NotificationSeviceTest {
     @Test
     public void shouldGiveEnglishMeetingMessage() {
         User user = userRepository.save(new User("7777777"));
-        Group group = groupManagementService.createNewGroup(user,"0828888888 0829999999");
+        Group group = groupManagementService.createNewGroup(user, Arrays.asList("0828888888", "0829999999"));
         Event event = eventRepository.save(new Event("Drink till you drop",user,group));
         String message = meetingNotificationService.createMeetingNotificationMessage(user,event);
         Assert.assertEquals("You are invited to the Drink till you drop meeting by 7777777", message);

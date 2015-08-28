@@ -11,6 +11,7 @@ import lombok.ToString;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
@@ -74,6 +75,9 @@ public class Group {
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinTable(name = "group_user_membership", joinColumns = @JoinColumn(name = "group_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
     public List<User> getGroupMembers() {
+        if (groupMembers == null) {
+            groupMembers = new ArrayList<>();
+        }
         return groupMembers;
     }
 
@@ -99,24 +103,6 @@ public class Group {
         }
     }
 
-    /**
-     * Adding some auxiliary methods for checking if blank name, coping with blank names, etc.
-     */
-
-    public boolean hasName() {
-        return (groupName != null && groupName.trim().length() != 0);
-    }
-
-    public String getName(String unnamedPrefix) {
-        if (hasName()) {
-            return groupName;
-        } else if (unnamedPrefix.trim().length() == 0) {
-            return "Unnamed group (" + groupMembers.size() + " members)";
-        } else {
-            return unnamedPrefix;
-        }
-    }
-
     /*
     Constructors
      */
@@ -133,6 +119,33 @@ public class Group {
         this.groupName = groupName;
         this.createdByUser = createdByUser;
         this.parent = parent;
+    }
+
+    /*
+    Adding & removing members
+     */
+
+    public Group addMember(User newMember) {
+        this.groupMembers.add(newMember);
+        return this;
+    }
+
+    /*
+     * Auxiliary methods for checking if blank name, coping with blank names, etc.
+     */
+
+    public boolean hasName() {
+        return (groupName != null && groupName.trim().length() != 0);
+    }
+
+    public String getName(String unnamedPrefix) {
+        if (hasName()) {
+            return groupName;
+        } else if (unnamedPrefix.trim().length() == 0) {
+            return "Unnamed group (" + groupMembers.size() + " members)";
+        } else {
+            return unnamedPrefix;
+        }
     }
 
 }
