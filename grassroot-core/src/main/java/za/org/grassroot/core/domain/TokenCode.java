@@ -1,9 +1,6 @@
 package za.org.grassroot.core.domain;
 
-import javax.persistence.Column;
-import javax.persistence.MappedSuperclass;
-import javax.persistence.PrePersist;
-import javax.persistence.PreUpdate;
+import javax.persistence.*;
 import java.sql.Timestamp;
 import java.util.Calendar;
 

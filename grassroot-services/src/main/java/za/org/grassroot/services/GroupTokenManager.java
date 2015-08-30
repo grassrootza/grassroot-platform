@@ -9,11 +9,9 @@ import za.org.grassroot.core.domain.GroupTokenCode;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.GroupTokenCodeRepository;
-import za.org.grassroot.core.repository.UserRepository;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.Calendar;
 import java.util.Random;
 
 /**
@@ -86,20 +84,20 @@ public class GroupTokenManager implements GroupTokenService {
     @Override
     public Long getGroupIdFromToken(String code) {
         GroupTokenCode groupToken = groupTokenCodeRepository.findByCode(code);
-        return groupToken.getRelevantGroup().getId();
+        return groupToken.getGroup().getId();
     }
 
     @Override
     public Group getGroupFromToken(String code) {
         GroupTokenCode groupToken = groupTokenCodeRepository.findByCode(code);
-        return groupToken.getRelevantGroup();
+        return groupToken.getGroup();
     }
 
     @Override
     public boolean doesGroupCodeMatch(String code, Long groupId) {
         // todo: check that the token has not expired yet
         GroupTokenCode groupToken = groupTokenCodeRepository.findByCode(code);
-        return (groupToken != null && groupId == groupToken.getRelevantGroup().getId());
+        return (groupToken != null && groupId == groupToken.getGroup().getId());
     }
 
     @Override

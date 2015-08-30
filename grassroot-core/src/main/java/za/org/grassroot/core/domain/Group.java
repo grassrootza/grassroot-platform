@@ -20,13 +20,13 @@ import java.util.List;
 @EqualsAndHashCode
 @ToString
 public class Group {
-    private String groupName;
-    private Long id;
+    private String    groupName;
+    private Long      id;
     private Timestamp createdDateTime;
-    private User createdByUser;
+    private User      createdByUser;
 
     private List<User> groupMembers;
-    private Group parent;
+    private Group      parent;
 
     private GroupTokenCode groupTokenCode;
 
@@ -97,11 +97,16 @@ public class Group {
         this.parent = parent;
     }
 
-    @OneToOne
-    @JoinColumn(name = "token")
-    public GroupTokenCode getGroupTokenCode() { return getGroupTokenCode(); }
 
-    public void setGroupTokenCode(GroupTokenCode groupTokenCode) { this.groupTokenCode = groupTokenCode; }
+    @OneToOne
+    @PrimaryKeyJoinColumn
+    public GroupTokenCode getGroupTokenCode() {
+        return this.groupTokenCode;
+    }
+
+    public void setGroupTokenCode(GroupTokenCode groupTokenCode) {
+        this.groupTokenCode = groupTokenCode;
+    }
 
     @PreUpdate
     @PrePersist
