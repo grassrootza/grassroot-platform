@@ -214,10 +214,12 @@ public class USSDController {
         for (String inputNumber : Arrays.asList(userResponse.split(delimiter))) {
             try {
                 Phonenumber.PhoneNumber phoneNumber = phoneNumberUtil.parse(inputNumber.trim(), "ZA");
-                if (phoneNumberUtil.isValidNumber(phoneNumber))
-                    validNumbers.add(inputNumber);
-                else
+                if (!phoneNumberUtil.isValidNumber(phoneNumber))
                     errorNumbers.add(inputNumber);
+                else if (inputNumber.length() < 10) // the util is accepting numbers that are too short, hence adding this
+                    errorNumbers.add(inputNumber);
+                else
+                    validNumbers.add(inputNumber);
             } catch (NumberParseException e) {
                 errorNumbers.add(inputNumber);
             }

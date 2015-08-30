@@ -66,7 +66,10 @@ public class PasswordTokenManager implements PasswordTokenService {
             return generateVerificationCode(user);
 
         } else {
-            return null;
+            user = userRepository.findByPhoneNumber(username).iterator().next();
+            user.setUsername(user.getPhoneNumber());
+            user = userRepository.save(user);
+            return generateVerificationCode(user);
             //throw new InvalidPasswordTokenAccessException("User '" + username + "' does no exist.");
         }
 
