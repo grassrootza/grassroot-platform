@@ -1,12 +1,15 @@
 package za.org.grassroot.webapp.controller.ussd;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.GroupTokenCode;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.services.GroupTokenService;
 import za.org.grassroot.services.InvalidPhoneNumberException;
 import za.org.grassroot.services.UserManager;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
@@ -28,13 +31,14 @@ public class USSDGroupController extends USSDController {
 
     /**
      * Starting the group management menu flow here
-     * todo: Add in validation and checking that group is valid, and user can call a meeting on it
      * todo: Add in extracting names and numbers from groups without names so users know what group it is
-     * todo: Stub out remaining menus
      */
 
+    @Autowired
+    GroupTokenService groupTokenManager;
+
     private static final String keyMenu = "menu", keyCreateGroup = "create", keyListGroup = "list", keyRenameGroup = "rename",
-            keyAddNumber = "addnumber", keyUnsubscribe = "unsubscribe", keySecondMenu = "menu2", keyDelGroup = "delete";
+            keyAddNumber = "addnumber", keyUnsubscribe = "unsubscribe", keyGroupToken = "token", keyDelGroup = "delete";
 
     @RequestMapping(value = USSD_BASE + GROUP_MENUS + START_KEY)
     @ResponseBody
@@ -294,6 +298,22 @@ public class USSDGroupController extends USSDController {
         String returnMessage = getMessage(GROUP_KEY, keyUnsubscribe + DO_SUFFIX, PROMPT, sessionUser);
 
         return menuBuilder(new USSDMenu(returnMessage, optionsHomeExit(sessionUser)));
+
+    }
+
+    @RequestMapping(value = USSD_BASE + GROUP_MENUS + keyGroupToken)
+    @ResponseBody
+    public Request groupToken(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                              @RequestParam(value=GROUP_PARAM, required=true) Long groupId) throws URISyntaxException {
+
+        User sessionUser = new User();
+        try { sessionUser = userManager.findByInputNumber(inputNumber); }
+        catch (NoSuchElementException e) { return noUserError; }
+
+        GroupTokenCode newGroupToken = groupTokenManager.generateGroupCode(groupId, inputNumber);
+
+        USSDMenu returnMessage = new USSDMenu("Token created! Use this code: " + newGroupToken.getCode(), optionsHomeExit(sessionUser));
+        return menuBuilder(returnMessage);
 
     }
 

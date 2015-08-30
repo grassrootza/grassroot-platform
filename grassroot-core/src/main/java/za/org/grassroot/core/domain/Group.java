@@ -28,6 +28,8 @@ public class Group {
     private List<User> groupMembers;
     private Group parent;
 
+    private GroupTokenCode groupTokenCode;
+
     @Basic
     @Column(name = "name", nullable = false, length = 50)
     public String getGroupName() {
@@ -94,6 +96,12 @@ public class Group {
     public void setParent(Group parent) {
         this.parent = parent;
     }
+
+    @OneToOne
+    @JoinColumn(name = "token")
+    public GroupTokenCode getGroupTokenCode() { return getGroupTokenCode(); }
+
+    public void setGroupTokenCode(GroupTokenCode groupTokenCode) { this.groupTokenCode = groupTokenCode; }
 
     @PreUpdate
     @PrePersist
