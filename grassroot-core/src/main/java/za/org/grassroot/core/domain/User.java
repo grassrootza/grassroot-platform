@@ -216,7 +216,6 @@ public class User implements UserDetails {
     }
 
     @Version
-    @Column ( name = "enti")
     public Integer getVersion() {
         return version;
     }
