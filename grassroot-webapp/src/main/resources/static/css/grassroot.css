@@ -4,6 +4,37 @@
     padding-bottom: 20px;
 }
 
+.add-group-preview {
+    /*display: inline-block;*/
+    padding: 46px 46px 46px 248px;
+    /*margin: 10px;*/
+    /*background: #D5D5D5;*/
+    /* border-radius: 3px; */
+    cursor: pointer;
+    border: 1px solid #f0f0f0;
+    /*background-color: #f9f9f9;*/
+    /*width: 228px;*/
+}
+
+.add-group{
+    margin-left: 30px;
+}
+
+.add-meeting{
+    margin-left: 50px;
+}
+
+
+.user-profile-container{
+    width: 400px;padding: 100px 10px 100px 10px;
+ }
+
+.basic-separator {
+    border-bottom: 1px solid rgba(0,0,0,.1);
+    margin-bottom: 10px;
+    margin-top: 10px;
+    width: calc(100% - 20px);
+}
 
 .cover-container {
     margin-right: auto;
@@ -74,4 +105,36 @@
     .cover-container {
         width: 700px;
     }
+}
+
+.grass-icon-md-48
+{
+    font-size: 48px;
+    color: #009688;
+}
+
+
+.material-icons {
+    font-family: 'Material Icons';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;  /* Preferred icon size */
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    line-height: 1;
+    text-transform: none;
+    letter-spacing: normal;
+    word-wrap: normal;
+
+    /* Support for all WebKit browsers. */
+    -webkit-font-smoothing: antialiased;
+    /* Support for Safari and Chrome. */
+    text-rendering: optimizeLegibility;
+
+    /* Support for Firefox. */
+    -moz-osx-font-smoothing: grayscale;
+
+    /* Support for IE. */
+    font-feature-settings: 'liga';
 }

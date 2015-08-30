@@ -114,14 +114,14 @@ public class UserAccountsRecoveryController extends BaseController {
                 sendMsgURI.path("send/").queryParam("username", System.getenv("SMSUSER")).queryParam("password", System.getenv("SMSPASS"));
 
                 sendMsgURI.queryParam("number", verificationTokenCode.getUsername());
-                sendMsgURI.queryParam("message", verificationTokenCode.getCode());
+                sendMsgURI.queryParam("message", String.join("Your GrassRoot verification code is: ", verificationTokenCode.getCode()));
 
                 String messageResult = sendGroupSMS.getForObject(sendMsgURI.build().toUri(), String.class);
                 log.debug("SMS Send result: {}", messageResult);
             }
             else
             {
-                log.warn("Did not  message to '{}'. No system messaging configuration found.", verificationTokenCode.getUsername());
+                log.warn("Did not send verification message. No system messaging configuration found.");
             }
         } catch (Exception exception) {
             log.error("Could not send token message", exception);

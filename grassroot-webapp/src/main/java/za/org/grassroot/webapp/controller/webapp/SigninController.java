@@ -20,8 +20,6 @@ public class SigninController {
 
     private static final Logger logger = LoggerFactory.getLogger(LoginController.class);
 
-
-
     @RequestMapping(value = "/login", method = RequestMethod.GET)
     public ModelAndView getLoginPage(@RequestParam (required = false) String error, Model model) {
         logger.debug("Getting login page, error={}", error);
@@ -31,17 +29,4 @@ public class SigninController {
         return new ModelAndView("signin", model.asMap());
     }
 
-    @RequestMapping(value = "/signin", method = RequestMethod.GET)
-    public ModelAndView getSignnPage(@RequestParam(required = false) String error) {
-        logger.debug("Getting login page, error={}", error);
-
-        return new ModelAndView("signin", "error", error);
-    }
-
-    // Login form with error
-    @RequestMapping("/signin-error")
-    public String loginError(Model model) {
-        model.addAttribute("loginError", true);
-        return "signin";
-    }
 }

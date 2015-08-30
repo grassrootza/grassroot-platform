@@ -48,7 +48,7 @@
           <div class="navbar-collapse collapse navbar-responsive-collapse">
             <ul class="nav navbar-nav">
 
-              <li sec:authorize="isFullyAuthenticated()" class="active"><a href="javascript:void(0)">Start Meeting Group</a></li>
+              <li sec:authorize="isFullyAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/groups/start-group}">Start Meeting Group</a></li>
 
 
             </ul>

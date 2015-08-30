@@ -4,9 +4,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.MessageSourceAccessor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.services.UserManagementService;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
@@ -19,18 +25,16 @@ import java.util.Locale;
 @Controller
 public class BaseController {
 
-    public static final String MESSAGES_KEY = "successMessages";
+    public static final String MESSAGES_KEY        = "successMessages";
     public static final String ERRORS_MESSAGES_KEY = "errors";
 
-    public  enum  MessageType
-    {
-        INFO("infoMessage"),SUCCESS("successMessage"),ERROR("errorMessage");
+    public enum MessageType {
+        INFO("infoMessage"), SUCCESS("successMessage"), ERROR("errorMessage");
 
         private String messageKey;
 
-        MessageType(String messageKey)
-        {
-           this.messageKey = messageKey;
+        MessageType(String messageKey) {
+            this.messageKey = messageKey;
         }
 
         public String getMessageKey() {
@@ -43,6 +47,16 @@ public class BaseController {
 
     @Autowired
     private MessageSourceAccessor messageSourceAccessor;
+
+    @Autowired
+    protected UserManagementService userManagementService;
+
+
+    protected User getUserProfile() {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return userManagementService.fetchUserByUsername(authentication.getName());
+    }
 
     public String getMessage(String id) {
         Locale locale = LocaleContextHolder.getLocale();
@@ -73,16 +87,39 @@ public class BaseController {
     }
 
 
-    public  void addMessage(Model model, MessageType messageType, String messageKey, HttpServletRequest request)
-    {
+    /**
+     *
+     * @param model
+     * @param messageType
+     * @param messageKey
+     * @param request
+     */
+    public void addMessage(Model model, MessageType messageType, String messageKey, HttpServletRequest request) {
         model.addAttribute(messageType.getMessageKey(), getText(messageKey, request.getLocale()));
     }
 
-    public  void addMessage(RedirectAttributes redirectAttributes, MessageType messageType, String messageKey, HttpServletRequest request)
-    {
-        redirectAttributes.addFlashAttribute(messageType.getMessageKey(), getText(messageKey,request.getLocale()));
+    /**
+     *
+     * @param redirectAttributes
+     * @param messageType
+     * @param messageKey
+     * @param request
+     */
+    public void addMessage(RedirectAttributes redirectAttributes, MessageType messageType, String messageKey, HttpServletRequest request) {
+        redirectAttributes.addFlashAttribute(messageType.getMessageKey(), getText(messageKey, request.getLocale()));
     }
 
+    /**
+     *
+     * @param redirectAttributes
+     * @param messageType
+     * @param messageKey
+     * @param arguments
+     * @param request
+     */
+    public void addMessage(RedirectAttributes redirectAttributes, MessageType messageType, String messageKey,Object [] arguments, HttpServletRequest request) {
+        redirectAttributes.addFlashAttribute(messageType.getMessageKey(), getText(messageKey, arguments, request.getLocale()));
+    }
 
 
     /**
@@ -108,7 +145,7 @@ public class BaseController {
      * @return
      */
     public String getText(String msgKey, String arg, Locale locale) {
-        return getText(msgKey, new Object[] { arg }, locale);
+        return getText(msgKey, new Object[]{arg}, locale);
     }
 
     /**

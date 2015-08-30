@@ -22,10 +22,12 @@ public class VerificationTokenCode extends BaseEntity {
     public VerificationTokenCode(String username,String code) {
         this.code = code;
         this.username = username;
+        updateTimeStamp();
     }
 
     public VerificationTokenCode withCode(String code) {
         this.code = code;
+        updateTimeStamp();
         return this;
     }
 
@@ -35,6 +37,7 @@ public class VerificationTokenCode extends BaseEntity {
 
     public void setCode(String code) {
         this.code = code;
+        updateTimeStamp();
     }
 
     public String getUsername() {
@@ -65,11 +68,17 @@ public class VerificationTokenCode extends BaseEntity {
 
     @PreUpdate
     @PrePersist
-    public void updateTimeStamps() {
+    public void addTimeStamp() {
         if (createdDateTime == null) {
             createdDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis());
         }
     }
+
+    public void updateTimeStamp() {
+            this.createdDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis());
+    }
+
+
 
     public  void incrementTokenAttempts()
     {

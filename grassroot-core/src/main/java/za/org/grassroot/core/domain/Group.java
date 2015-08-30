@@ -20,12 +20,12 @@ import java.util.List;
 @EqualsAndHashCode
 @ToString
 public class Group {
-    private String groupName;
-    private Long id;
+    private String    groupName;
+    private Long      id;
     private Timestamp createdDateTime;
-    private User createdByUser;
+    private User      createdByUser;
 
-    private List<User> groupMembers;
+    private List<User> groupMembers = new ArrayList<>();
     private Group parent;
 
     @Basic

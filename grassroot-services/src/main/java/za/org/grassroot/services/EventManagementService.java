@@ -1,8 +1,12 @@
 package za.org.grassroot.services;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+
+import java.util.List;
 
 /**
  * @author Lesetse Kimwaga
@@ -26,5 +30,7 @@ public interface EventManagementService {
     public Event setDay(Long eventId, String day);
 
     public Event setTime(Long eventId, String time);
+
+    List<Event> findByAppliesToGroup(Group appliesToGroup );
 
 }
