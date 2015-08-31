@@ -25,9 +25,6 @@ public class PasswordTokenManager implements PasswordTokenService {
     public static final int TOKEN_LIFE_SPAN_MINUTES = 10;
     private Logger log = LoggerFactory.getLogger(PasswordTokenManager.class);
 
-    private final SimpleDateFormat expirationTimeFormat = new SimpleDateFormat("yyyyMMddHHmm");
-    private final int expirationTimeTokenLength = expirationTimeFormat.toPattern().length();
-
     @Autowired
     private PasswordEncoder passwordTokenEncoder;
     @Autowired
@@ -66,11 +63,13 @@ public class PasswordTokenManager implements PasswordTokenService {
             return generateVerificationCode(user);
 
         } else {
-            user = userRepository.findByPhoneNumber(username).iterator().next();
-            user.setUsername(user.getPhoneNumber());
-            user = userRepository.save(user);
-            return generateVerificationCode(user);
+//            user = userRepository.findByPhoneNumber(username).iterator().next();
+//            user.setUsername(user.getPhoneNumber());
+//            user = userRepository.save(user);
+//            return generateVerificationCode(user);
             //throw new InvalidPasswordTokenAccessException("User '" + username + "' does no exist.");
+            log.warn("User '{}' with a non existing account found. Cannot create token.", username);
+            return  null; //We should not create a token for a non existing user. Otherwise Users will be created within an incorrect process
         }
 
     }

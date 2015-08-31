@@ -12,22 +12,21 @@ import java.util.Set;
  */
 @Entity
 @Table(name = "role")
+@Inheritance(strategy = InheritanceType.JOINED)
 public class Role extends BaseEntity implements GrantedAuthority {
 
-    @Column(name = "role_name", length = 50)
-    private String name;
 
-    @OneToMany(fetch = FetchType.EAGER)
-    @JoinTable(name = "role_permissions",
-            joinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id")},
-            inverseJoinColumns = {@JoinColumn(name = "permission_id", referencedColumnName = "id")}
-    )
+    private String name;
     private Set<Permission> permissions = new HashSet<>();
+
+    public Role() {
+    }
 
     public Role(String name) {
         this.name = name;
     }
 
+    @Column(name = "role_name", length = 50)
     public String getName() {
         return name;
     }
@@ -37,6 +36,11 @@ public class Role extends BaseEntity implements GrantedAuthority {
     }
 
 
+    @OneToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "role_permissions",
+            joinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id")},
+            inverseJoinColumns = {@JoinColumn(name = "permission_id", referencedColumnName = "id")}
+    )
     public Set<Permission> getPermissions() {
         return permissions;
     }
@@ -80,6 +84,7 @@ public class Role extends BaseEntity implements GrantedAuthority {
     }
 
     @Override
+    @Transient
     public String getAuthority() {
         return getName();
     }

@@ -168,7 +168,6 @@ public class USSDMeetingController extends USSDController {
      */
 
     // todo change GROUP_PARAM to TEXT_PARAM in the parameter mapping once fix the upstream method
-
     @RequestMapping(value = mtgPath + keySubject)
     @ResponseBody
     public Request getSubject(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
