@@ -6,6 +6,7 @@ import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
@@ -74,7 +75,12 @@ public class BaseController {
 
     public  void addMessage(Model model, MessageType messageType, String messageKey, HttpServletRequest request)
     {
-        model.addAttribute(messageType.getMessageKey(), getText(messageKey,request.getLocale()));
+        model.addAttribute(messageType.getMessageKey(), getText(messageKey, request.getLocale()));
+    }
+
+    public  void addMessage(RedirectAttributes redirectAttributes, MessageType messageType, String messageKey, HttpServletRequest request)
+    {
+        redirectAttributes.addFlashAttribute(messageType.getMessageKey(), getText(messageKey,request.getLocale()));
     }
 
 

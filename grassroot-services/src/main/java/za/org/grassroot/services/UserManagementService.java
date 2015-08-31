@@ -16,7 +16,7 @@ public interface UserManagementService {
 
     List<User> getAllUsers();
 
-    public Page<User> getDeploymentLog(Integer pageNumber);
+    Page<User> getDeploymentLog(Integer pageNumber);
 
     User save(User userToSave);
 
@@ -26,8 +26,13 @@ public interface UserManagementService {
 
     List<User> getUsersFromNumbers(List<String> listOfNumbers);
 
-    public boolean userExist(String phoneNumber);
+    boolean userExist(String phoneNumber);
 
-    public boolean needsToRenameSelf(User sessionUser);
+    boolean needsToRenameSelf(User sessionUser);
+    
+    User resetUserPassword(String username, String newPassword, String token);
+
+    User fetchUserByUsername(String username);
+
 
 }

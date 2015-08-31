@@ -43,6 +43,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private PasswordTokenService passwordTokenService;
+
     @Override
     public User createUserProfile(User userProfile) {
         return userRepository.save(userProfile);
@@ -57,11 +60,10 @@ public class UserManager implements UserManagementService, UserDetailsService {
         String phoneNumber = convertPhoneNumber(userProfile.getPhoneNumber());
 
         userProfile.setPhoneNumber(phoneNumber);
-        userProfile.setUsername( phoneNumber);
-        userProfile.setDisplayName(String.join(userProfile.getFirstName()," ", userProfile.getLastName()));
+        userProfile.setUsername(phoneNumber);
+        userProfile.setDisplayName(String.join(userProfile.getFirstName(), " ", userProfile.getLastName()));
 
-        if(userExist(userProfile.getPhoneNumber()))
-        {
+        if (userExist(userProfile.getPhoneNumber())) {
             throw new UserExistsException("User '" + userProfile.getUsername() + "' already exists!");
         }
 
@@ -96,8 +98,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
-        if(StringUtils.isEmpty(username))
-        {
+        if (StringUtils.isEmpty(username)) {
             throw new UsernameNotFoundException("Username not found.");
         }
 
@@ -124,6 +125,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         if (!userExist(phoneNumber)) {
             User sessionUser = new User();
             sessionUser.setPhoneNumber(phoneNumber);
+            sessionUser.setUsername(phoneNumber);
             return userRepository.save(sessionUser);
         } else {
             return userRepository.findByPhoneNumber(phoneNumber).iterator().next();
@@ -164,12 +166,30 @@ public class UserManager implements UserManagementService, UserDetailsService {
         return sessionUser.needsToRenameSelf(5); // 5 min gap as placeholder for now, to make more a session count if possible
     }
 
+    @Override
+    public User resetUserPassword(String username, String newPassword, String token) {
+
+        User user = userRepository.findByUsername(username);
+
+        if (passwordTokenService.isVerificationCodeValid(user, token)) {
+            String encodedPassword = passwordEncoder.encode(newPassword);
+            user.setPassword(encodedPassword);
+            user = userRepository.save(user);
+        }
+        return user;
+    }
+
+    @Override
+    public User fetchUserByUsername(String username) {
+        return userRepository.findByUsername(username);
+    }
+
     /**
      * Moving some functions from the controller classes here, to handle phone number strings given by users
      * todo: Move the country code definition into a properties file ?
      */
 
-    public static String convertPhoneNumber(String inputString) throws InvalidPhoneNumber {
+    public static String convertPhoneNumber(String inputString) throws InvalidPhoneNumberException {
 
         try {
             PhoneNumberUtil phoneNumberUtil = PhoneNumberUtil.getInstance();
@@ -178,16 +198,16 @@ public class UserManager implements UserManagementService, UserDetailsService {
             if (phoneNumberUtil.isValidNumber(phoneNumber)) {
                 return phoneNumberUtil.format(phoneNumber, PhoneNumberUtil.PhoneNumberFormat.E164).replace("+", "");
             } else {
-                throw new InvalidPhoneNumber("Could not format phone number '" + inputString + "'");
+                throw new InvalidPhoneNumberException("Could not format phone number '" + inputString + "'");
             }
 
         } catch (NumberParseException e) {
-            throw new InvalidPhoneNumber("Could not format phone number '" + inputString + "'");
+            throw new InvalidPhoneNumberException("Could not format phone number '" + inputString + "'");
         }
 
     }
 
-    public static String invertPhoneNumber(String storedNumber) throws InvalidPhoneNumber {
+    public static String invertPhoneNumber(String storedNumber) throws InvalidPhoneNumberException {
 
         // todo: handle error if number has gotten into database in incorrect format
         // todo: make this much faster, e.g., use a simple regex / split function?
