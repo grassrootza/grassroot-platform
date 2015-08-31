@@ -29,6 +29,8 @@ public class Group implements Serializable {
     private List<User> groupMembers = new ArrayList<>();
     private Group parent;
 
+    private GroupTokenCode groupTokenCode;
+
     @Basic
     @Column(name = "name", nullable = false, length = 50)
     public String getGroupName() {
@@ -96,8 +98,15 @@ public class Group implements Serializable {
         this.parent = parent;
     }
 
+    @OneToOne
+    @PrimaryKeyJoinColumn
+    public GroupTokenCode getGroupTokenCode() {
+        return this.groupTokenCode;
+    }
 
-
+    public void setGroupTokenCode(GroupTokenCode groupTokenCode) {
+        this.groupTokenCode = groupTokenCode;
+    }
 
     @PreUpdate
     @PrePersist

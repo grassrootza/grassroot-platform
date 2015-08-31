@@ -9,10 +9,8 @@ import java.util.Calendar;
  */
 @Entity
 @Table(name = "verification_token_code")
-public class VerificationTokenCode extends BaseEntity {
+public class VerificationTokenCode extends TokenCode {
 
-    private String code;
-    private java.sql.Timestamp createdDateTime;
     private String username;
     private int tokenAccessAttempts = 1;
 
@@ -22,21 +20,6 @@ public class VerificationTokenCode extends BaseEntity {
     public VerificationTokenCode(String username,String code) {
         this.code = code;
         this.username = username;
-        updateTimeStamp();
-    }
-
-    public VerificationTokenCode withCode(String code) {
-        this.code = code;
-        updateTimeStamp();
-        return this;
-    }
-
-    public String getCode() {
-        return code;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
         updateTimeStamp();
     }
 
@@ -57,28 +40,9 @@ public class VerificationTokenCode extends BaseEntity {
         this.tokenAccessAttempts = tokenAccessAttempts;
     }
 
-    @Column(name = "creation_date")
-    public Timestamp getCreatedDateTime() {
-        return createdDateTime;
-    }
-
-    public void setCreatedDateTime(Timestamp createdDateTime) {
-        this.createdDateTime = createdDateTime;
-    }
-
-    @PreUpdate
-    @PrePersist
-    public void addTimeStamp() {
-        if (createdDateTime == null) {
-            createdDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis());
-        }
-    }
-
     public void updateTimeStamp() {
             this.createdDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis());
     }
-
-
 
     public  void incrementTokenAttempts()
     {

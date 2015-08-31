@@ -3,6 +3,7 @@ package za.org.grassroot.core.domain;
 import com.google.common.base.Objects;
 
 import javax.persistence.*;
+import java.io.Serializable;
 
 /**
  * @author Lesetse Kimwaga
@@ -10,10 +11,11 @@ import javax.persistence.*;
 @MappedSuperclass
 public abstract class BaseEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+
     protected Long id;
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column( name = "id")
     public Long getId() {
         return id;

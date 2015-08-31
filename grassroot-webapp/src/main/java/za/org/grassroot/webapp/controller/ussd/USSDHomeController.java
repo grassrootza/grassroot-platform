@@ -15,7 +15,9 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.GroupTokenCode;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.services.GroupTokenService;
 import za.org.grassroot.services.UserManager;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Option;
@@ -36,6 +38,10 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 @RequestMapping(method = GET, produces = MediaType.APPLICATION_XML_VALUE)
 @RestController
 public class USSDHomeController extends USSDController {
+
+    @Autowired
+    GroupTokenService groupTokenManager;
+
 
     private static final String keyRenameStart = "rename-start", keyGroupNameStart = "group-start";
     private static final int hashPosition = 9;
@@ -68,12 +74,30 @@ public class USSDHomeController extends USSDController {
             openingMenu = defaultStartMenu(sessionUser);
         } else {
             String trailingDigits = enteredUSSD.substring(hashPosition + 1, enteredUSSD.length() - 1);
-            System.out.println("Trailing string is: " + trailingDigits);
-            System.out.println("The split strings: " + codePassedDigits(trailingDigits));
-            openingMenu = new USSDMenu("You entered some other digits!", START_KEY);
+            openingMenu = processTrailingDigits(trailingDigits, sessionUser);
         }
 
         return (checkMenuLength(openingMenu, true)) ? menuBuilder(openingMenu) : tooLongError;
+
+    }
+
+    private USSDMenu processTrailingDigits(String trailingDigits, User sessionUser) throws URISyntaxException {
+
+        USSDMenu returnMenu;
+
+        if (groupTokenManager.doesGroupCodeExist(trailingDigits)) {
+            // todo: basic validation, checking, etc.
+            Group groupToJoin = groupTokenManager.getGroupFromToken(trailingDigits);
+            groupManager.addGroupMember(groupToJoin, sessionUser);
+            String prompt = (groupToJoin.hasName()) ?
+                    getMessage(HOME_KEY, START_KEY, PROMPT + ".group.token.named", groupToJoin.getGroupName(), sessionUser) :
+                    getMessage(HOME_KEY, START_KEY, PROMPT + ".group.token.unnamed", sessionUser);
+            returnMenu = welcomeMenu(prompt, sessionUser);
+        } else {
+            returnMenu = welcomeMenu(getMessage(HOME_KEY, START_KEY, PROMPT + ".unknown.request", sessionUser), sessionUser);
+        }
+
+        return returnMenu;
 
     }
 
