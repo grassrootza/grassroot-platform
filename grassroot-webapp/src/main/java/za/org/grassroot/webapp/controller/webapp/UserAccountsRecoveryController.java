@@ -49,7 +49,7 @@ public class UserAccountsRecoveryController extends BaseController {
     @RequestMapping(value = "/accounts/recovery", method = RequestMethod.GET)
     public ModelAndView index(Model model) {
         model.addAttribute("userAccountRecovery", new UserAccountRecovery());
-        return new ModelAndView("accounts-recovery", model.asMap());
+        return new ModelAndView("accounts/recovery", model.asMap());
     }
 
 
@@ -76,7 +76,7 @@ public class UserAccountsRecoveryController extends BaseController {
         if (bindingResult.hasErrors()) {
             model.addAttribute("userAccountRecovery", userAccountRecovery);
             addMessage(model, MessageType.ERROR, "user.account.recovery.error", request);
-            return new ModelAndView("accounts-recovery", model.asMap());
+            return new ModelAndView("accounts/recovery", model.asMap());
         }
         userManagementService.resetUserPassword(userAccountRecovery.getUsername(), userAccountRecovery.getNewPassword(),
                 userAccountRecovery.getVerificationCode());
@@ -95,7 +95,7 @@ public class UserAccountsRecoveryController extends BaseController {
         } else {
             new ModelAndView(new RedirectView("/login"));
         }
-        return new ModelAndView("accounts-recovery-success", model.asMap());
+        return new ModelAndView("accounts/recovery-success", model.asMap());
 
     }
 

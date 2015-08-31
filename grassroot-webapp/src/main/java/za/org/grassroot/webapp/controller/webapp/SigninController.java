@@ -18,7 +18,7 @@ import java.util.Optional;
 @Controller
 public class SigninController {
 
-    private static final Logger logger = LoggerFactory.getLogger(LoginController.class);
+    private static final Logger logger = LoggerFactory.getLogger(SigninController.class);
 
     @RequestMapping(value = "/login", method = RequestMethod.GET)
     public ModelAndView getLoginPage(@RequestParam (required = false) String error, Model model) {

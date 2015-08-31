@@ -28,7 +28,7 @@ public class GroupController extends BaseController {
     @RequestMapping("/groups/start-group")
     public String startGroupIndex(Model model) {
         model.addAttribute("group", new Group());
-        return "group-create";
+        return "group/create";
     }
 
     @RequestMapping(value = "/groups/start-group", method = RequestMethod.POST)
@@ -40,7 +40,7 @@ public class GroupController extends BaseController {
             {
                 model.addAttribute("group", group);
                 addMessage(model, MessageType.ERROR, "group.creation.error.message", request);
-                return "group-create";
+                return "group/create";
             }
 
             User groupCreator = getUserProfile();
@@ -54,7 +54,7 @@ public class GroupController extends BaseController {
         }catch (Exception e)
         {
             addMessage(model,MessageType.ERROR,"group.creation.error.message",request);
-            return "group-create";
+            return "group/create";
         }
 
     }
