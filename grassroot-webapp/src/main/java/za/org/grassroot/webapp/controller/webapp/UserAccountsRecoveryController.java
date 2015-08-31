@@ -33,7 +33,7 @@ public class UserAccountsRecoveryController extends BaseController {
     private Logger log = org.slf4j.LoggerFactory.getLogger(UserAccountsRecoveryController.class);
 
     @Autowired
-    private PasswordTokenService passwordTokenService;
+    private PasswordTokenService  passwordTokenService;
     @Autowired
     private UserManagementService userManagementService;
 
@@ -59,10 +59,15 @@ public class UserAccountsRecoveryController extends BaseController {
     String getTime(@PathVariable("grassRootID") String grassRootID) {
 
         /******************************************************************************************
-         * DUE TO SECURITY: NEVER EVER send token back to Web Client! Must be sent to Mobile Phone.
+         * DUE TO SECURITY CONCERNS: NEVER EVER send token back to Web Client! Must be sent to Mobile Phone.
          ******************************************************************************************/
 
-       VerificationTokenCode verificationTokenCode  = passwordTokenService.generateVerificationCode(grassRootID);
+        VerificationTokenCode verificationTokenCode = null;
+        try {
+            verificationTokenCode = passwordTokenService.generateVerificationCode(grassRootID);
+        } catch (Exception e) {
+            log.error("Could not generate verification token for {}", grassRootID);
+        }
         temporaryTokenSend(verificationTokenCode);
         return null;
     }
@@ -99,11 +104,9 @@ public class UserAccountsRecoveryController extends BaseController {
 
     }
 
-    /***
-     *
-     * @todo This piece of code is temporary and will be moved to messaging
-     *
+    /**
      * @param verificationTokenCode
+     * @todo This piece of code is temporary and will be moved to messaging
      */
     private void temporaryTokenSend(VerificationTokenCode verificationTokenCode) {
         try {
@@ -118,9 +121,7 @@ public class UserAccountsRecoveryController extends BaseController {
 
                 String messageResult = sendGroupSMS.getForObject(sendMsgURI.build().toUri(), String.class);
                 log.debug("SMS Send result: {}", messageResult);
-            }
-            else
-            {
+            } else {
                 log.warn("Did not send verification message. No system messaging configuration found.");
             }
         } catch (Exception exception) {

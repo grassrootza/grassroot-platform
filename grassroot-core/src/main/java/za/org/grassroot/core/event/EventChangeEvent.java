@@ -31,7 +31,7 @@ public class EventChangeEvent extends ApplicationEvent {
     public String toString() {
         return "ChangeEvent{" +
                 "type='" + type + '\'' +
-                ",event='" + this.getSource().toString() + '\'' +
+//                ",event='" + getSource().toString() + '\'' +
                 '}';
     }
 }
