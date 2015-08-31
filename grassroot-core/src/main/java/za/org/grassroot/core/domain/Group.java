@@ -10,6 +10,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -18,8 +19,8 @@ import java.util.List;
 @Entity
 @Table(name = "group_profile") // quoting table name in case "group" is a reserved keyword
 @EqualsAndHashCode
-@ToString
-public class Group {
+//@ToString
+public class Group implements Serializable {
     private String    groupName;
     private Long      id;
     private Timestamp createdDateTime;
@@ -95,6 +96,9 @@ public class Group {
         this.parent = parent;
     }
 
+
+
+
     @PreUpdate
     @PrePersist
     public void updateTimeStamps() {
@@ -148,4 +152,16 @@ public class Group {
         }
     }
 
+    @Override
+    public String toString() {
+        return "Group{" +
+                "groupName='" + groupName + '\'' +
+                ", id=" + id +
+                ", createdDateTime=" + createdDateTime +
+                ", createdByUser=" + createdByUser +
+//                ", groupMembers=" + groupMembers +
+                ", parent=" + parent +
+//                ", eventsApplied=" + eventsApplied +
+                '}';
+    }
 }

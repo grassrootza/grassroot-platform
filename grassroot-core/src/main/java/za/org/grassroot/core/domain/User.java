@@ -22,7 +22,7 @@ import java.util.*;
 @Entity
 @Table(name = "user_profile")  //table name needs to be quoted in SQL because 'user' is a reserved keyword
 @EqualsAndHashCode
-@ToString
+//@ToString
 public class User implements UserDetails {
 
     private String firstName;
@@ -307,5 +307,26 @@ public class User implements UserDetails {
         this.phoneNumber = phoneNumber;
         this.displayName = displayName;
         this.languageCode = "en";
+    }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", phoneNumber='" + phoneNumber + '\'' +
+                ", displayName='" + displayName + '\'' +
+                ", languageCode='" + languageCode + '\'' +
+                ", id=" + id +
+                ", createdDateTime=" + createdDateTime +
+//                ", groupsPartOf=" + groupsPartOf +
+                ", username='" + username + '\'' +
+                ", password='" + password + '\'' +
+                ", enabled=" + enabled +
+//                ", roles=" + roles +
+                ", version=" + version +
+//                ", groupsCreated=" + groupsCreated +
+//                ", eventsCreated=" + eventsCreated +
+                '}';
     }
 }
