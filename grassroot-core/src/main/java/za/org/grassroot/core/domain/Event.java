@@ -11,13 +11,21 @@ package za.org.grassroot.core.domain;
  * todo - aakil - add logic to trigger sending of notification when minimum data saved and user(s) added - @observer??
  */
 
+
+import org.apache.commons.lang3.SerializationUtils;
+import za.org.grassroot.core.enums.EventChangeType;
+import za.org.grassroot.core.event.EventChangeEvent;
+import za.org.grassroot.core.util.ContextHelper;
+
 import javax.persistence.*;
+import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.Calendar;
 
+
 @Entity
 @Table(name="event")
-public class Event {
+public class Event implements Serializable {
     private String eventLocation;
     private Long id;
     private Timestamp createdDateTime;
@@ -25,6 +33,8 @@ public class Event {
 
     private User createdByUser;
     private Group appliesToGroup;
+    private boolean canceled;
+
     /*
     could also have been called description but as group has a name, kept it the same
      */
@@ -93,12 +103,86 @@ public class Event {
 
     public void setTimeOfEvent(String timeOfEvent) { this.timeOfEvent = timeOfEvent; }
 
+    @Column
+    public boolean isCanceled() {
+        return canceled;
+    }
+
+    public void setCanceled(boolean canceled) {
+        this.canceled = canceled;
+    }
+
     @PreUpdate
     @PrePersist
     public void updateTimeStamps() {
         if (createdDateTime == null) {
             createdDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis());
         }
+    }
+
+    @PostPersist
+    @PostUpdate
+    public void notifyChange() {
+        System.out.println("notifyChange...previous..." + previousEvent);
+        if (previousEvent != null) {
+            if (!previousEvent.minimumDataAvailable() && this.minimumDataAvailable() && !canceled) {
+                // let's start sending out the notifications
+                EventChangeEvent ce = new EventChangeEvent(this, EventChangeType.EVENT_ADDED.toString());
+                ContextHelper.getPublisher().publishEvent(ce);
+                System.out.println("notifyChange...raised...event..." + EventChangeType.EVENT_ADDED.toString());
+
+
+
+            }
+            if (previousEvent.minimumDataAvailable() && this.minimumDataAvailable() && !canceled) {
+                // let's send out a change notification
+                //todo but first see if something actually changed
+                EventChangeEvent ce = new EventChangeEvent(this,EventChangeType.EVENT_CHANGED.toString());
+                ContextHelper.getPublisher().publishEvent(ce);
+                System.out.println("notifyChange...raised...event..." + EventChangeType.EVENT_CHANGED.toString());
+
+            }
+            if (!previousEvent.isCanceled() && canceled) {
+                // ok send out cancelation notifications
+                EventChangeEvent ce = new EventChangeEvent(this,EventChangeType.EVENT_CANCELLED.toString());
+                ContextHelper.getPublisher().publishEvent(ce);
+                System.out.println("notifyChange...raised...event..." + EventChangeType.EVENT_CANCELLED.toString());
+
+            }
+
+        } else {
+            System.out.println("notifyChange...check for minimumdata no previous..." );
+
+            if (minimumDataAvailable() && !canceled) {
+                // let's start sending out the notifications
+                System.out.println("notifyChange...send-new-notifications...sent");
+
+            }
+
+        }
+    }
+
+    @Transient
+    public boolean minimumDataAvailable() {
+        boolean minimum = true;
+        System.out.println("minimumDataAvailable..." + this.toString());
+        if (name == null || name.trim().equals("")) minimum = false;
+        if (eventLocation == null || eventLocation.trim().equals("")) minimum = false;
+        if (appliesToGroup == null ) minimum = false;
+        if (createdByUser == null) minimum = false;
+        if (dayOfEvent == null || dayOfEvent.trim().equals("")) minimum = false;
+        if (timeOfEvent == null || timeOfEvent.trim().equals("")) minimum = false;
+        System.out.println("minimumDataAvailable...returning..." + minimum);
+
+        return minimum;
+    }
+
+    @Transient
+    private Event previousEvent;
+
+    @PostLoad
+    public void saveState() {
+        this.previousEvent = SerializationUtils.clone(this);
     }
 
 
