@@ -16,10 +16,19 @@ import java.util.Calendar;
 @Inheritance(strategy = InheritanceType.JOINED)
 public class GroupTokenCode extends TokenCode {
 
-    private User  creatingUser;
     private Group group;
+    // private User creatingUser;
 
     private static final int DAY_MILLIS = 24 * 60 * 60 * 60 * 1000;
+
+    @OneToOne(mappedBy="groupTokenCode")
+    @PrimaryKeyJoinColumn
+    public Group getGroup() { return group; }
+
+    public void setGroup(Group group) { this.group = group; }
+
+    // public User getCreatingUser() { return creatingUser; }
+    // public void setCreatingUser(User creatingUser) { this.creatingUser = creatingUser; }
 
     public GroupTokenCode() {
     }
@@ -27,13 +36,13 @@ public class GroupTokenCode extends TokenCode {
     public GroupTokenCode(Group group, User creatingUser, String code) {
         this.code = code;
         this.group = group;
-        this.creatingUser = creatingUser;
+        // this.creatingUser = creatingUser;
     }
 
     @Transient
     public GroupTokenCode withCodeExpiry(String code, Group relevantGroup, User creatingUser, Timestamp codeExpiry) {
         this.code = code;
-        this.creatingUser = creatingUser;
+        // this.creatingUser = creatingUser;
         this.expiryDateTime = codeExpiry;
         return this;
     }
@@ -44,14 +53,4 @@ public class GroupTokenCode extends TokenCode {
         this.expiryDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis() + expiryDays * DAY_MILLIS);
         return this;
     }
-
-    @OneToOne(mappedBy="groupTokenCode")
-    @PrimaryKeyJoinColumn
-    public Group getGroup() { return group; }
-
-    public void setGroup(Group group) { this.group = group; }
-
-    public User getCreatingUser() { return creatingUser; }
-
-    public void setCreatingUser(User creatingUser) { this.creatingUser = creatingUser; }
 }

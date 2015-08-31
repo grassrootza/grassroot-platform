@@ -106,10 +106,11 @@ public class GroupTokenManager implements GroupTokenService {
         // if (!doesGroupCodeMatch(code, groupId)) { return false; }
 
         GroupTokenCode groupTokenCode = groupTokenCodeRepository.findByCode(code);
-        if (!creatingUser.equals(groupTokenCode.getCreatingUser())) { return false; }
+        // if (!creatingUser.equals(groupTokenCode.getCreatingUser())) { return false; }
 
         groupTokenCode.setCode(null); // maybe better to delete the entity?
         groupTokenCodeRepository.save(groupTokenCode);
         return true;
     }
+
 }

@@ -11,7 +11,7 @@ import java.util.List;
  */
 public interface GroupTokenCodeRepository extends CrudRepository<GroupTokenCode, Long> {
 
-    List<GroupTokenCode> findByGroup(Group relevantGroup);
+    GroupTokenCode findByGroup(Group relevantGroup);
 
     GroupTokenCode findByCode(String code);
 

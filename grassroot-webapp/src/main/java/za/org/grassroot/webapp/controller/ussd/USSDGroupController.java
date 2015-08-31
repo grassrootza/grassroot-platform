@@ -72,6 +72,7 @@ public class USSDGroupController extends USSDController {
         String menuKey = GROUP_KEY + "." + keyMenu + "." + OPTION;
 
         listMenu.addMenuOption(GROUP_MENUS + keyRenameGroup + groupParam, getMessage(menuKey + keyRenameGroup, sessionUser));
+        listMenu.addMenuOption(GROUP_MENUS + keyGroupToken + groupParam, getMessage(menuKey + keyGroupToken, sessionUser));
         listMenu.addMenuOption(GROUP_MENUS + keyAddNumber + groupParam, getMessage(menuKey + keyAddNumber, sessionUser));
         listMenu.addMenuOption(GROUP_MENUS + keyUnsubscribe + groupParam, getMessage(menuKey + keyUnsubscribe, sessionUser));
         // listMenu.addMenuOption(GROUP_MENUS + keyListGroup + groupParam, getMessage(menuKey + keyListGroup, sessionUser));
@@ -143,6 +144,59 @@ public class USSDGroupController extends USSDController {
 
         thisMenu.setNextURI(GROUP_MENUS + keyCreateGroup + DO_SUFFIX + GROUPID_URL + groupId); // loop back to group menu
         return thisMenu;
+
+    }
+
+    @RequestMapping(value = USSD_BASE + GROUP_MENUS + keyGroupToken)
+    @ResponseBody
+    public Request groupToken(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                              @RequestParam(value=GROUP_PARAM, required=true) Long groupId) throws URISyntaxException {
+
+        // todo: validate that this user has permission to create a token for this group
+        // todo: check that there is not already a group token valid & open
+
+        User sessionUser;
+        try { sessionUser = userManager.findByInputNumber(inputNumber); }
+        catch (NoSuchElementException e) { return noUserError; }
+
+        USSDMenu daysMenu = new USSDMenu("Okay, we'll create a token. How many days do you want it to be valid?");
+        String daysUrl = GROUP_MENUS + keyGroupToken + DO_SUFFIX + GROUPID_URL + groupId + "&days=";
+
+        for (int i = 1; i <= 5; i++) {
+            daysMenu.addMenuOption(daysUrl + i, i + " days");
+        }
+
+        return menuBuilder(daysMenu);
+
+    }
+
+    @RequestMapping(value = USSD_BASE + GROUP_MENUS + keyGroupToken + "-" + PROMPT)
+    @ResponseBody
+    public Request groupTokenFreeForm(@RequestParam(value=PHONE_PARAM, required = true) String inputNumber,
+                                      @RequestParam(value=GROUP_PARAM, required = true) Long groupId) throws URISyntaxException {
+
+        // todo: build this
+        String errorMessage = messageSource.getMessage("ussd.error", null, new Locale("en"));
+        return new Request(errorMessage, new ArrayList<Option>());
+
+    }
+
+    @RequestMapping(value = USSD_BASE + GROUP_MENUS + keyGroupToken + DO_SUFFIX)
+    @ResponseBody
+    public Request createToken(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                               @RequestParam(value=GROUP_PARAM, required=true) Long groupId,
+                               @RequestParam(value="days", required=true) Integer daysValid) throws URISyntaxException {
+
+        User sessionUser;
+        try { sessionUser = userManager.findByInputNumber(inputNumber); }
+        catch (NoSuchElementException e) { return noUserError; }
+
+        Group sessionGroup = groupManager.loadGroup(groupId);
+
+        GroupTokenCode newGroupToken = groupTokenManager.generateGroupCode(sessionGroup, sessionUser, daysValid);
+
+        USSDMenu returnMessage = new USSDMenu("Token created! Use this code: " + newGroupToken.getCode(), optionsHomeExit(sessionUser));
+        return menuBuilder(returnMessage);
 
     }
 
@@ -301,21 +355,7 @@ public class USSDGroupController extends USSDController {
 
     }
 
-    @RequestMapping(value = USSD_BASE + GROUP_MENUS + keyGroupToken)
-    @ResponseBody
-    public Request groupToken(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
-                              @RequestParam(value=GROUP_PARAM, required=true) Long groupId) throws URISyntaxException {
 
-        User sessionUser = new User();
-        try { sessionUser = userManager.findByInputNumber(inputNumber); }
-        catch (NoSuchElementException e) { return noUserError; }
-
-        GroupTokenCode newGroupToken = groupTokenManager.generateGroupCode(groupId, inputNumber);
-
-        USSDMenu returnMessage = new USSDMenu("Token created! Use this code: " + newGroupToken.getCode(), optionsHomeExit(sessionUser));
-        return menuBuilder(returnMessage);
-
-    }
 
     @RequestMapping(value = USSD_BASE + GROUP_MENUS + keyDelGroup)
     @ResponseBody

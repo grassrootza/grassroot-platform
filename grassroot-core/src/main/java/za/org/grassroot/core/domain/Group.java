@@ -97,7 +97,6 @@ public class Group {
         this.parent = parent;
     }
 
-
     @OneToOne
     @PrimaryKeyJoinColumn
     public GroupTokenCode getGroupTokenCode() {

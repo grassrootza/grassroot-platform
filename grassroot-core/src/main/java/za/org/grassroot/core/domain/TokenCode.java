@@ -12,7 +12,7 @@ import java.util.Calendar;
 public abstract class TokenCode extends BaseEntity {
 
     protected String code;
-    protected java.sql.Timestamp createdDateTime;
+    protected Timestamp createdDateTime;
     protected Timestamp expiryDateTime;
 
     public TokenCode() {
