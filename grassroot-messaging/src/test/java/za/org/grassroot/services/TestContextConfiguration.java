@@ -1,4 +1,4 @@
-package za.org.grassroot;
+package za.org.grassroot.services;
 
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
