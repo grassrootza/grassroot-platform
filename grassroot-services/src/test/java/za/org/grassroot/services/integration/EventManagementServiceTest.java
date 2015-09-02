@@ -1,12 +1,13 @@
 package za.org.grassroot.services.integration;
 
 import junit.framework.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.OutputCapture;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.GrassRootServicesConfig;
 import za.org.grassroot.core.domain.Event;
@@ -19,9 +20,6 @@ import za.org.grassroot.services.UserManagementService;
 import java.util.Arrays;
 import java.util.logging.Logger;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-
 /**
  * @author Lesetse Kimwaga
  */
@@ -31,6 +29,9 @@ import static org.hamcrest.Matchers.equalTo;
 @Transactional
 public class EventManagementServiceTest {
 
+   // @Rule
+   // public OutputCapture capture = new OutputCapture();
+    
     private Logger log = Logger.getLogger(getClass().getCanonicalName());
 
 
@@ -57,14 +58,42 @@ public class EventManagementServiceTest {
 
     @Test
     public void shouldSaveEventWithMinimumDataAndTriggerNotifications() {
-
+        log.info("shouldSaveEventWithMinimumDataAndTriggerNotifications...starting...");
         User userProfile = userManagementService.createUserProfile(new User("111222555", "aap1"));
         Group group = groupManagementService.createNewGroup(userProfile, Arrays.asList("111222666", "111222777"));
         Event event = eventManagementService.createEvent("Tell me about it", userProfile, group);
         event = eventManagementService.setLocation(event.getId(), "Lekker place");
         event = eventManagementService.setDay(event.getId(),"31");
         event = eventManagementService.setTime(event.getId(),"7pm");
-        log.info("shouldSaveEventWithMinimumDataAndTriggerNotifications..." + event.toString());
+        log.info("shouldSaveEventWithMinimumDataAndTriggerNotifications...done..." + event.toString());
 
     }
+
+    @Test
+    public void shouldTriggerAddAndChangeNotifications() {
+        log.info("shouldTriggerAddAndChangeNotifications...starting...");
+        User userProfile = userManagementService.createUserProfile(new User("111222556", "aap1"));
+        Group group = groupManagementService.createNewGroup(userProfile, Arrays.asList("111222667", "111222778"));
+        Event event = eventManagementService.createEvent("Tell me about it 2", userProfile, group);
+        event = eventManagementService.setLocation(event.getId(), "Lekker place 2");
+        event = eventManagementService.setDay(event.getId(),"31");
+        event = eventManagementService.setTime(event.getId(),"7pm");
+        event = eventManagementService.setLocation(event.getId(),"New lekker place");
+        log.info("shouldTriggerAddAndChangeNotifications...done..." + event.toString());
+
+    }
+    @Test
+    public void shouldTriggerAddAndCancelNotifications() {
+        log.info("shouldTriggerAddAndCancelNotifications...starting...");
+        User userProfile = userManagementService.createUserProfile(new User("111222556", "aap1"));
+        Group group = groupManagementService.createNewGroup(userProfile, Arrays.asList("111222667", "111222778"));
+        Event event = eventManagementService.createEvent("Tell me about it 2", userProfile, group);
+        event = eventManagementService.setLocation(event.getId(), "Lekker place 2");
+        event = eventManagementService.setDay(event.getId(), "31");
+        event = eventManagementService.setTime(event.getId(), "7pm");
+        event = eventManagementService.cancelEvent(event.getId());
+        log.info("shouldTriggerAddAndCancelNotifications...done..." + event.toString());
+
+    }
+
 }

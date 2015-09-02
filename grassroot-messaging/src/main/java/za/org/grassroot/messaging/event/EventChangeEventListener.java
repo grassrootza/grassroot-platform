@@ -24,8 +24,8 @@ public class EventChangeEventListener implements ApplicationListener<EventChange
 
     @Override
     public void onApplicationEvent(EventChangeEvent eventChangeEvent) {
-        log.info(eventChangeEvent.toString());
-        genericJmsTemplateProducerService.sendWithNoReply(eventChangeEvent.getType(),eventChangeEvent.getSource());
+        log.info("onApplicationEvent..." + eventChangeEvent.toString());
+        genericJmsTemplateProducerService.sendWithNoReply(eventChangeEvent.getType(), eventChangeEvent.getSource());
 
     }
 }

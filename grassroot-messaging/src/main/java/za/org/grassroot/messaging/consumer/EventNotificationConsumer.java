@@ -28,7 +28,7 @@ public class EventNotificationConsumer {
     @JmsListener(destination = "event-added", containerFactory = "messagingJmsContainerFactory",
             concurrency = "5")
     public void sendNewEventNotifications(EventChangeEvent message) {
-        log.info("sendNewEventNotifications <" + message.toString() + ">");
+        log.info("sendNewEventNotifications... <" + message.toString() + ">");
         testingInMemoryMessageStore.add(message);
 
     }
@@ -36,7 +36,7 @@ public class EventNotificationConsumer {
     @JmsListener(destination = "event-changed", containerFactory = "messagingJmsContainerFactory",
             concurrency = "3")
     public void sendChangedEventNotifications(EventChangeEvent message) {
-        log.info("sendChangedEventNotifications <" + message.toString() + ">");
+        log.info("sendChangedEventNotifications... <" + message.toString() + ">");
         testingInMemoryMessageStore.add(message);
 
     }
@@ -44,7 +44,7 @@ public class EventNotificationConsumer {
     @JmsListener(destination = "event-cancelled", containerFactory = "messagingJmsContainerFactory",
             concurrency = "1")
     public void sendCancelledEventNotifications(EventChangeEvent message) {
-        log.info("sendCancelledEventNotifications <" + message.toString() + ">");
+        log.info("sendCancelledEventNotifications... <" + message.toString() + ">");
         testingInMemoryMessageStore.add(message);
     }
 
