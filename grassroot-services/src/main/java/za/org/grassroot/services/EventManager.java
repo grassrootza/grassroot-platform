@@ -1,5 +1,6 @@
 package za.org.grassroot.services;
 
+import org.apache.commons.lang3.SerializationUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -7,15 +8,23 @@ import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.EventChangeType;
+import za.org.grassroot.core.event.EventChangeEvent;
 import za.org.grassroot.core.repository.EventRepository;
+import za.org.grassroot.core.util.ContextHelper;
 
+import javax.persistence.Transient;
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
  * Created by aakilomar on 8/20/15.
  */
 @Component
 public class EventManager implements EventManagementService {
+
+    private Logger log = Logger.getLogger(getClass().getCanonicalName());
+
 
     @Autowired
     EventRepository  eventRepository;
@@ -54,45 +63,110 @@ public class EventManager implements EventManagementService {
     @Override
     public Event setSubject(Long eventId, String subject) {
         Event eventToUpdate = eventRepository.findOne(eventId);
+        Event beforeEvent = SerializationUtils.clone(eventToUpdate);
         eventToUpdate.setName(subject);
-        return eventRepository.save(eventToUpdate);
+        return saveandCheckChanges(beforeEvent, eventToUpdate);
     }
 
     @Override
     public Event setGroup(Long eventId, Long groupId) {
         // todo: check if there isn't a quicker way to do this than running these queries (could get expensive if many events & groups?)
         Event eventToUpdate = eventRepository.findOne(eventId);
+        Event beforeEvent = SerializationUtils.clone(eventToUpdate);
+
         if (eventToUpdate.getAppliesToGroup() != null && eventToUpdate.getAppliesToGroup().getId() == groupId) {
             return eventToUpdate;
         } else {
             eventToUpdate.setAppliesToGroup(groupManager.loadGroup(groupId));
-            return eventRepository.save(eventToUpdate);
+            return saveandCheckChanges(beforeEvent, eventToUpdate);
         }
     }
 
     @Override
     public Event setLocation(Long eventId, String location) {
+        log.info("setLocation...");
         Event eventToUpdate = eventRepository.findOne(eventId);
+        Event beforeEvent = SerializationUtils.clone(eventToUpdate);
         eventToUpdate.setEventLocation(location);
-        return eventRepository.save(eventToUpdate);
+        return saveandCheckChanges(beforeEvent, eventToUpdate);
     }
 
     @Override
     public Event setDay(Long eventId, String day) {
         Event eventToUpdate = eventRepository.findOne(eventId);
+        Event beforeEvent = SerializationUtils.clone(eventToUpdate);
         eventToUpdate.setDayOfEvent(day);
-        return eventRepository.save(eventToUpdate);
+        return saveandCheckChanges(beforeEvent,eventToUpdate);
     }
 
     @Override
     public Event setTime(Long eventId, String time) {
         Event eventToUpdate = eventRepository.findOne(eventId);
+        Event beforeEvent = SerializationUtils.clone(eventToUpdate);
         eventToUpdate.setTimeOfEvent(time);
-        return eventRepository.save(eventToUpdate);
+        return saveandCheckChanges(beforeEvent,eventToUpdate);
+    }
+
+    @Override
+    public Event cancelEvent(Long eventId) {
+        Event eventToUpdate = eventRepository.findOne(eventId);
+        Event beforeEvent = SerializationUtils.clone(eventToUpdate);
+        eventToUpdate.setCanceled(true);
+        return saveandCheckChanges(beforeEvent,eventToUpdate);
     }
 
     @Override
     public List<Event> findByAppliesToGroup(Group group) {
         return eventRepository.findByAppliesToGroup(group);
     }
+
+    private Event saveandCheckChanges(Event beforeEvent, Event changedEvent) {
+
+        log.info("saveandCheckChanges...starting");
+        Event savedEvent = eventRepository.save(changedEvent);
+        log.info("saveandCheckChanges..." + savedEvent.toString());
+        /*
+        Check if we need to send meeting notifications
+         */
+
+            if (!minimumDataAvailable(beforeEvent) && minimumDataAvailable(savedEvent) && !savedEvent.isCanceled()) {
+                // let's start sending out the notifications
+                EventChangeEvent ce = new EventChangeEvent(savedEvent, EventChangeType.EVENT_ADDED.toString());
+                ContextHelper.getPublisher().publishEvent(ce);
+                log.info("notifyChange...raised...event..." + EventChangeType.EVENT_ADDED.toString());
+
+            }
+            if (minimumDataAvailable(beforeEvent) && minimumDataAvailable(savedEvent) && !savedEvent.isCanceled()) {
+                // let's send out a change notification
+                //todo but first see if something actually changed
+                EventChangeEvent ce = new EventChangeEvent(savedEvent,EventChangeType.EVENT_CHANGED.toString());
+                ContextHelper.getPublisher().publishEvent(ce);
+                log.info("notifyChange...raised...event..." + EventChangeType.EVENT_CHANGED.toString());
+
+            }
+            if (!beforeEvent.isCanceled() && savedEvent.isCanceled()) {
+                // ok send out cancelation notifications
+                EventChangeEvent ce = new EventChangeEvent(savedEvent,EventChangeType.EVENT_CANCELLED.toString());
+                ContextHelper.getPublisher().publishEvent(ce);
+                log.info("notifyChange...raised...event..." + EventChangeType.EVENT_CANCELLED.toString());
+
+            }
+
+        return savedEvent;
+    }
+
+    private boolean minimumDataAvailable(Event event) {
+        boolean minimum = true;
+        log.info("minimumDataAvailable..." + event.toString());
+        if (event.getName() == null || event.getName().trim().equals("")) minimum = false;
+        if (event.getEventLocation() == null || event.getEventLocation().trim().equals("")) minimum = false;
+        if (event.getAppliesToGroup() == null ) minimum = false;
+        if (event.getCreatedByUser() == null) minimum = false;
+        if (event.getDayOfEvent() == null || event.getDayOfEvent().trim().equals("")) minimum = false;
+        if (event.getTimeOfEvent() == null || event.getTimeOfEvent().trim().equals("")) minimum = false;
+        log.info("minimumDataAvailable...returning..." + minimum);
+
+        return minimum;
+    }
+
 }

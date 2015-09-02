@@ -31,6 +31,8 @@ public interface EventManagementService {
 
     public Event setTime(Long eventId, String time);
 
+    public Event cancelEvent(Long eventId);
+
     List<Event> findByAppliesToGroup(Group appliesToGroup );
 
 }
