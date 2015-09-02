@@ -8,14 +8,8 @@ package za.org.grassroot.core.domain;
  * Major todo: Construct logic for equals (non-trivial, as same group may have two events at same time ...)
  * Other: All todo's as for User class
  * todo - aakil - add event duration
- * todo - aakil - add logic to trigger sending of notification when minimum data saved and user(s) added - @observer??
  */
 
-
-import org.apache.commons.lang3.SerializationUtils;
-import za.org.grassroot.core.enums.EventChangeType;
-import za.org.grassroot.core.event.EventChangeEvent;
-import za.org.grassroot.core.util.ContextHelper;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -120,72 +114,6 @@ public class Event implements Serializable {
         }
     }
 
-    @PostPersist
-    @PostUpdate
-    public void notifyChange() {
-        System.out.println("notifyChange...previous..." + previousEvent);
-        if (previousEvent != null) {
-            if (!previousEvent.minimumDataAvailable() && this.minimumDataAvailable() && !canceled) {
-                // let's start sending out the notifications
-                EventChangeEvent ce = new EventChangeEvent(this, EventChangeType.EVENT_ADDED.toString());
-                ContextHelper.getPublisher().publishEvent(ce);
-                System.out.println("notifyChange...raised...event..." + EventChangeType.EVENT_ADDED.toString());
-
-
-
-            }
-            if (previousEvent.minimumDataAvailable() && this.minimumDataAvailable() && !canceled) {
-                // let's send out a change notification
-                //todo but first see if something actually changed
-                EventChangeEvent ce = new EventChangeEvent(this,EventChangeType.EVENT_CHANGED.toString());
-                ContextHelper.getPublisher().publishEvent(ce);
-                System.out.println("notifyChange...raised...event..." + EventChangeType.EVENT_CHANGED.toString());
-
-            }
-            if (!previousEvent.isCanceled() && canceled) {
-                // ok send out cancelation notifications
-                EventChangeEvent ce = new EventChangeEvent(this,EventChangeType.EVENT_CANCELLED.toString());
-                ContextHelper.getPublisher().publishEvent(ce);
-                System.out.println("notifyChange...raised...event..." + EventChangeType.EVENT_CANCELLED.toString());
-
-            }
-
-        } else {
-            System.out.println("notifyChange...check for minimumdata no previous..." );
-
-            if (minimumDataAvailable() && !canceled) {
-                // let's start sending out the notifications
-                System.out.println("notifyChange...send-new-notifications...sent");
-
-            }
-
-        }
-    }
-
-    @Transient
-    public boolean minimumDataAvailable() {
-        boolean minimum = true;
-        System.out.println("minimumDataAvailable..." + this.toString());
-        if (name == null || name.trim().equals("")) minimum = false;
-        if (eventLocation == null || eventLocation.trim().equals("")) minimum = false;
-        if (appliesToGroup == null ) minimum = false;
-        if (createdByUser == null) minimum = false;
-        if (dayOfEvent == null || dayOfEvent.trim().equals("")) minimum = false;
-        if (timeOfEvent == null || timeOfEvent.trim().equals("")) minimum = false;
-        System.out.println("minimumDataAvailable...returning..." + minimum);
-
-        return minimum;
-    }
-
-    @Transient
-    private Event previousEvent;
-
-    @PostLoad
-    public void saveState() {
-        this.previousEvent = SerializationUtils.clone(this);
-    }
-
-
 
     /*
     Constructors
@@ -207,7 +135,6 @@ public class Event implements Serializable {
     public Event() {
     }
 
-    // todo: stop this causing a stack overflow whenever it is called
     @Override
     public String toString() {
         return "Event{" +
@@ -216,7 +143,7 @@ public class Event implements Serializable {
                 ", createdDateTime=" + createdDateTime +
                 ", eventStartDateTime=" + eventStartDateTime +
                 ", createdByUser=" + createdByUser +
-                ", appliesToGroup=" + appliesToGroup +
+ //               ", appliesToGroup=" + appliesToGroup +
                 ", name='" + name + '\'' +
                 ", dayOfEvent=" + dayOfEvent + '\'' +
                 ", timeOfEvent=" + timeOfEvent +'\'' +
