@@ -131,7 +131,8 @@ public class AatApiTestControllerTest {
     @Test
     public void userStart() throws Exception {
 
-        final URI requestUri = base.path("ussd/start").queryParam(phoneParam, onceOffPhone).build().toUri();
+        final URI requestUri = base.path("ussd/start").queryParam(phoneParam, onceOffPhone)
+                .queryParam("request", "*120*1994#").build().toUri();
         ResponseEntity<String> response = template.getForEntity(requestUri, String.class);
 
         System.out.println(base.toUriString());

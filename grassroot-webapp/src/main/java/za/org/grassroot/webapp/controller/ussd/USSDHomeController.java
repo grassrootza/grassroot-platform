@@ -104,7 +104,7 @@ public class USSDHomeController extends USSDController {
     }
 
     private boolean codeHasTrailingDigits(String enteredUSSD) {
-        return (enteredUSSD != null && enteredUSSD.length() > hashPosition);
+        return (enteredUSSD != null && enteredUSSD.length() > hashPosition + 1);
     }
 
     private List<Integer> codePassedDigits(String enteredUSSD) {
