@@ -85,6 +85,8 @@ public class USSDHomeController extends USSDController {
 
         USSDMenu returnMenu;
 
+        // todo: a switch logic for token ranges
+
         if (groupTokenManager.doesGroupCodeExist(trailingDigits)) {
             // todo: basic validation, checking, etc.
             Group groupToJoin = groupTokenManager.getGroupFromToken(trailingDigits);
@@ -102,7 +104,7 @@ public class USSDHomeController extends USSDController {
     }
 
     private boolean codeHasTrailingDigits(String enteredUSSD) {
-        return !(enteredUSSD == null || enteredUSSD.indexOf("#") == hashPosition);
+        return (enteredUSSD != null && enteredUSSD.length() > hashPosition);
     }
 
     private List<Integer> codePassedDigits(String enteredUSSD) {
