@@ -39,6 +39,7 @@ public class USSDGroupController extends USSDController {
 
     private static final String keyMenu = "menu", keyCreateGroup = "create", keyListGroup = "list", keyRenameGroup = "rename",
             keyAddNumber = "addnumber", keyUnsubscribe = "unsubscribe", keyGroupToken = "token", keyDelGroup = "delete";
+    private static final String grpBase = USSD_BASE + GROUP_MENUS;
 
     @RequestMapping(value = USSD_BASE + GROUP_MENUS + START_KEY)
     @ResponseBody
@@ -159,25 +160,25 @@ public class USSDGroupController extends USSDController {
         try { sessionUser = userManager.findByInputNumber(inputNumber); }
         catch (NoSuchElementException e) { return noUserError; }
 
-        USSDMenu daysMenu = new USSDMenu("Okay, we'll create a token. How many days do you want it to be valid?");
-        String daysUrl = GROUP_MENUS + keyGroupToken + DO_SUFFIX + GROUPID_URL + groupId + "&days=";
+        USSDMenu tokenMenu = new USSDMenu("");
 
-        for (int i = 1; i <= 5; i++) {
-            daysMenu.addMenuOption(daysUrl + i, i + " days");
+        if (groupTokenManager.doesGroupCodeExist(groupId)) {
+            String tokenCode = groupManager.loadGroup(groupId).getGroupTokenCode().getCode();
+            tokenMenu.setPromptMessage(getMessage(GROUP_KEY, keyGroupToken, PROMPT + ".exists", tokenCode, sessionUser));
+            tokenMenu.addMenuOption(GROUP_MENUS + keyGroupToken + "-extend" + GROUPID_URL + groupId + TOKEN_URL + tokenCode,
+                                    getMessage(GROUP_KEY, keyGroupToken, OPTION + "extend", sessionUser));
+            tokenMenu.addMenuOption(GROUP_MENUS + keyGroupToken + "-close" + GROUPID_URL + groupId + TOKEN_URL + tokenCode,
+                                    getMessage(GROUP_KEY, keyGroupToken, OPTION + "close", sessionUser));
+        } else {
+            String daySuffix = getMessage(GROUP_KEY, keyGroupToken, OPTION + "days", sessionUser);
+            tokenMenu.setPromptMessage(getMessage(GROUP_KEY, keyGroupToken, PROMPT, sessionUser));
+            String daysUrl = GROUP_MENUS + keyGroupToken + DO_SUFFIX + GROUPID_URL + groupId + "&days=";
+            for (int i = 1; i <= 5; i++) {
+                tokenMenu.addMenuOption(daysUrl + i, i + daySuffix);
+            }
         }
 
-        return menuBuilder(daysMenu);
-
-    }
-
-    @RequestMapping(value = USSD_BASE + GROUP_MENUS + keyGroupToken + "-" + PROMPT)
-    @ResponseBody
-    public Request groupTokenFreeForm(@RequestParam(value=PHONE_PARAM, required = true) String inputNumber,
-                                      @RequestParam(value=GROUP_PARAM, required = true) Long groupId) throws URISyntaxException {
-
-        // todo: build this
-        String errorMessage = messageSource.getMessage("ussd.error", null, new Locale("en"));
-        return new Request(errorMessage, new ArrayList<Option>());
+        return menuBuilder(tokenMenu);
 
     }
 
@@ -192,11 +193,68 @@ public class USSDGroupController extends USSDController {
         catch (NoSuchElementException e) { return noUserError; }
 
         Group sessionGroup = groupManager.loadGroup(groupId);
-
         GroupTokenCode newGroupToken = groupTokenManager.generateGroupCode(sessionGroup, sessionUser, daysValid);
 
-        USSDMenu returnMessage = new USSDMenu("Token created! Use this code: " + newGroupToken.getCode(), optionsHomeExit(sessionUser));
+        USSDMenu returnMessage = new USSDMenu(getMessage(GROUP_KEY, keyGroupToken, "created", newGroupToken.getCode(), sessionUser),
+                                              optionsHomeExit(sessionUser));
+
         return menuBuilder(returnMessage);
+
+    }
+
+    @RequestMapping(value = USSD_BASE + GROUP_MENUS + keyGroupToken + "-extend")
+    @ResponseBody
+    public Request extendToken(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                               @RequestParam(value=GROUP_PARAM, required=true) Long groupId,
+                               @RequestParam(value=TOKEN_PARAM, required=true) String code,
+                               @RequestParam(value="days", required=false) Integer daysValid) throws URISyntaxException {
+
+        User sessionUser = userManager.findByInputNumber(inputNumber);
+        USSDMenu promptMenu = new USSDMenu("");
+        String thisUri = GROUP_MENUS + keyGroupToken + "_extend" + GROUPID_URL + groupId;
+
+        if (daysValid == null) {
+            promptMenu.setPromptMessage(getMessage(GROUP_KEY, keyGroupToken, PROMPT + ".extend", sessionUser));
+            promptMenu.addMenuOption(GROUP_MENUS + keyMenu + GROUPID_URL + groupId,
+                                     getMessage(GROUP_KEY, keyGroupToken, OPTION + "extend.none", sessionUser));
+            String daySuffix = getMessage(GROUP_KEY, keyGroupToken, OPTION + "days", sessionUser);
+            for (int i = 1; i <= 3; i++)
+                promptMenu.addMenuOption(thisUri + "&days=" + i, i + daySuffix);
+
+        } else {
+            GroupTokenCode extendedToken = groupTokenManager.extendGroupCode(code, daysValid);
+            String date = extendedToken.getExpiryDateTime().toLocalDateTime().toString();
+            promptMenu = new USSDMenu(getMessage(GROUP_KEY, keyGroupToken, PROMPT + ".extend.done", date, sessionUser),
+                                        optionsHomeExit(sessionUser));
+        }
+
+        return menuBuilder(promptMenu);
+
+    }
+
+
+    @RequestMapping(value = USSD_BASE + GROUP_MENUS + keyGroupToken + "-close")
+    @ResponseBody
+    public Request extendToken(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                               @RequestParam(value=GROUP_PARAM, required=true) Long groupId,
+                               @RequestParam(value=TOKEN_PARAM, required=true) String code,
+                               @RequestParam(value="confirmed", required=false) String confirmed) throws URISyntaxException {
+
+        // todo: check the token and group match, and that the user has token admin rights
+        User sessionUser = userManager.findByInputNumber(inputNumber);
+        USSDMenu thisMenu = new USSDMenu("");
+
+        if (confirmed != null && confirmed.equals("true")) {
+            // todo: error handling here (bad token, etc., also, security)
+            groupTokenManager.invalidateGroupToken(groupId, sessionUser, code);
+            thisMenu = new USSDMenu(getMessage(GROUP_KEY, keyGroupToken, PROMPT + ".close-done", sessionUser), optionsHomeExit(sessionUser));
+        } else {
+            String beginUri = GROUP_MENUS + keyGroupToken, endUri = GROUPID_URL + groupId + "&" + TOKEN_PARAM + "=" + code;
+            thisMenu = new USSDMenu(getMessage(GROUP_KEY, keyGroupToken, PROMPT + ".close", sessionUser),
+                                    optionsYesNo(sessionUser, beginUri + "extend" + endUri, beginUri + endUri));
+        }
+
+        return menuBuilder(thisMenu);
 
     }
 

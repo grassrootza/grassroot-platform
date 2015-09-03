@@ -11,6 +11,7 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.GroupTokenCodeRepository;
 
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Random;
 
@@ -71,6 +72,16 @@ public class GroupTokenManager implements GroupTokenService {
         return newGroupToken;
     }
 
+    @Override
+    public GroupTokenCode extendGroupCode(String code, Integer daysValid) {
+        // todo: flush the table regularly so codes don't repeat, and add a unique key to the table
+        GroupTokenCode groupToken = groupTokenCodeRepository.findByCode(code);
+        LocalDateTime extendedDateTime = groupToken.getExpiryDateTime().toLocalDateTime().plusDays(daysValid);
+        groupToken.setExpiryDateTime(Timestamp.valueOf(extendedDateTime));
+        groupToken = groupTokenCodeRepository.save(groupToken);
+        return groupToken;
+    }
+
     /*
     Given how often we may check if the user has passed a group code, need a very fast / pared down query to check if
     the token exists and find its group.
@@ -79,6 +90,13 @@ public class GroupTokenManager implements GroupTokenService {
     public boolean doesGroupCodeExist(String code) {
         GroupTokenCode returnedCode = groupTokenCodeRepository.findByCode(code);
         return (returnedCode != null);
+    }
+
+    @Override
+    public boolean doesGroupCodeExist(Long groupId) {
+        Group groupToCheck = groupRepository.findOne(groupId);
+        GroupTokenCode returnedCode = groupToCheck.getGroupTokenCode();
+        return (returnedCode != null && returnedCode.getExpiryDateTime().after(Timestamp.valueOf(LocalDateTime.now())));
     }
 
     @Override

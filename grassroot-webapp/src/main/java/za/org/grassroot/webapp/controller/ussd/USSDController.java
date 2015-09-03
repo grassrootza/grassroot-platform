@@ -51,9 +51,9 @@ public class USSDController {
     // Constants used in URL mapping and message handling
     protected static final String USSD_BASE = "/ussd/", MTG_MENUS = "mtg/", USER_MENUS = "user/", GROUP_MENUS = "group/";
     protected static final String VOTE_MENUS = "vote", LOG_MENUS = "log", U404="error"; // leaving off '/' for now, until built
-    protected static final String PHONE_PARAM = "msisdn", TEXT_PARAM = "request", GROUP_PARAM = "groupId", EVENT_PARAM = "eventId";
-    protected static final String START_KEY = "start", GROUPID_URL = ("?" + GROUP_PARAM + "="),
-            EVENTID_URL = ("?" + EVENT_PARAM + "="), PASSED_FIELD = "menukey", DO_SUFFIX = "-do";
+    protected static final String PHONE_PARAM = "msisdn", TEXT_PARAM = "request", GROUP_PARAM = "groupId", EVENT_PARAM = "eventId", TOKEN_PARAM="token";
+    protected static final String START_KEY = "start", PASSED_FIELD = "menukey", YESNO_FIELD = "confirmed",
+            GROUPID_URL = ("?" + GROUP_PARAM + "="), EVENTID_URL = ("?" + EVENT_PARAM + "="), TOKEN_URL = ("&" + TOKEN_PARAM + "="), DO_SUFFIX = "-do";
 
     // Constants used in i18n and message handling
     protected static final String HOME_KEY = "home", MTG_KEY = "mtg", USER_KEY = "user", GROUP_KEY = "group", VOTE_KEY = "vote", LOG_KEY = "log";
@@ -232,6 +232,7 @@ public class USSDController {
 
     /**
      * SECTION: i18n methods, as well some default menus used often
+     * todo: replace these error messages, especially the 'no user' error
      */
 
     Request tooLongError = new Request("Error! Menu is too long.", new ArrayList<Option>());
@@ -243,6 +244,12 @@ public class USSDController {
         return ImmutableMap.<String, String>builder().
                 put("start", getMessage(START_KEY, sessionUser)).
                 put("exit", getMessage("exit.option", sessionUser)).build();
+    }
+
+    protected Map<String, String> optionsYesNo(User sessionUser, String yesUri, String noUri) {
+        return ImmutableMap.<String, String>builder().
+                put(yesUri + "&" + YESNO_FIELD + "=yes", getMessage(OPTION + "yes", sessionUser)).
+                put(noUri + "&" + YESNO_FIELD + "=no", getMessage(OPTION + "no", sessionUser)).build();
     }
 
     protected String getMessage(String section, String menuKey, String messageLocation, User sessionUser) {

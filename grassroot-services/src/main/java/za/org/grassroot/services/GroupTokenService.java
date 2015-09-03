@@ -21,7 +21,11 @@ public interface GroupTokenService {
 
     GroupTokenCode generateGroupCode(Group group, User creatingUser, LocalDateTime expiryDateTime);
 
+    GroupTokenCode extendGroupCode(String code, Integer daysValid);
+
     boolean doesGroupCodeExist(String code);
+
+    boolean doesGroupCodeExist(Long groupId);
 
     Long getGroupIdFromToken(String code);
 
