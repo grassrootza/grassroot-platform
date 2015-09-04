@@ -110,7 +110,7 @@ public class USSDGroupController extends USSDController {
 
         if (userResponse.trim().equals("0")) { // stop asking for numbers and go on to naming the group
             thisMenu.setPromptMessage(getMessage(GROUP_KEY, keyCreateGroup + DO_SUFFIX, PROMPT + ".done", language));
-            thisMenu.setNextURI(GROUP_MENUS + keyRenameGroup + DO_SUFFIX + GROUPID_URL + groupId); // reusing the rename function
+            thisMenu.setNextURI(GROUP_MENUS + keyRenameGroup + DO_SUFFIX + GROUPID_URL + groupId + "&newgroup=1"); // reusing the rename function
         } else {
             Map<String, List<String>> splitPhoneNumbers = splitPhoneNumbers(userResponse, " ");
             if (groupId == null) { // creating a new group, process numbers and ask for more
@@ -258,7 +258,8 @@ public class USSDGroupController extends USSDController {
     @RequestMapping(value = USSD_BASE + GROUP_MENUS + keyRenameGroup)
     @ResponseBody
     public Request renamePrompt(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
-                                @RequestParam(value=GROUP_PARAM, required=true) Long groupId) throws URISyntaxException {
+                                @RequestParam(value=GROUP_PARAM, required=true) Long groupId,
+                                @RequestParam(value="newgroup", required=false) Integer newGroup) throws URISyntaxException {
 
         // todo: make sure to check if user calling this is part of group (later: permissions logic)
 
@@ -274,7 +275,9 @@ public class USSDGroupController extends USSDController {
         else
             promptMessage = getMessage(GROUP_KEY, keyRenameGroup, PROMPT + "2", groupToRename.getGroupName(), sessionUser);
 
-        return menuBuilder(new USSDMenu(promptMessage, GROUP_MENUS + keyRenameGroup + DO_SUFFIX + GROUPID_URL + groupId));
+        String newGroupPassed = (newGroup == null) ? "" : ("&newgroup=" + newGroup);
+
+        return menuBuilder(new USSDMenu(promptMessage, GROUP_MENUS + keyRenameGroup + DO_SUFFIX + GROUPID_URL + groupId + newGroupPassed));
 
     }
 
@@ -282,7 +285,8 @@ public class USSDGroupController extends USSDController {
     @ResponseBody
     public Request renameGroup(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
                                @RequestParam(value=GROUP_PARAM, required=true) Long groupId,
-                               @RequestParam(value=TEXT_PARAM, required=true) String newName) throws URISyntaxException {
+                               @RequestParam(value=TEXT_PARAM, required=true) String newName,
+                               @RequestParam(value="newgroup", required=false) Integer newGroup) throws URISyntaxException {
 
         // todo: make sure to check if user calling this is part of group (later: permissions logic)
 
@@ -294,8 +298,18 @@ public class USSDGroupController extends USSDController {
         groupToRename.setGroupName(newName);
         groupManager.saveGroup(groupToRename);
 
-        return menuBuilder(new USSDMenu(getMessage(GROUP_KEY, keyRenameGroup + DO_SUFFIX, PROMPT, newName, sessionUser),
-                                        optionsHomeExit(sessionUser)));
+        USSDMenu thisMenu;
+
+        if (newGroup == null || newGroup != 1) {
+            thisMenu = new USSDMenu(getMessage(GROUP_KEY, keyRenameGroup + DO_SUFFIX, PROMPT, newName, sessionUser),
+                         optionsHomeExit(sessionUser));
+        } else {
+            thisMenu = new USSDMenu("Thanks, group named. Do you want to create a join code for it?");
+            thisMenu.addMenuOption(GROUP_MENUS + keyGroupToken + GROUPID_URL + groupId, "Yes");
+            thisMenu.addMenuOption(START_KEY, "No, take me back to the start");
+        }
+
+        return menuBuilder(thisMenu);
 
     }
 

@@ -2,6 +2,7 @@ package za.org.grassroot.core.domain;
 
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.Calendar;
 
@@ -14,7 +15,7 @@ import java.util.Calendar;
 @Entity
 @Table(name = "group_token_code")
 @Inheritance(strategy = InheritanceType.JOINED)
-public class GroupTokenCode extends TokenCode {
+public class GroupTokenCode extends TokenCode implements Serializable {
 
     private Group group;
     // private User creatingUser;

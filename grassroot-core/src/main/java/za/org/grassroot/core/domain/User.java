@@ -253,6 +253,9 @@ public class User implements UserDetails {
         }
     }
 
+    // can't call this the more natural getName, or any variant, or Spring's getter handling throws a fit
+    public String displayName() { return getName(""); }
+
     public Group needsToRenameGroup() {
         // todo: for speed reasons, probably need a SQL query to do this, rather than this loop, but using a loop for now
         if (groupsCreated == null || groupsCreated.size() == 0) return null;
