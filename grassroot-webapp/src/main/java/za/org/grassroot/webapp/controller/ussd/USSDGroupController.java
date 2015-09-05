@@ -10,13 +10,10 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.GroupTokenCode;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.GroupTokenService;
-import za.org.grassroot.services.InvalidPhoneNumberException;
 import za.org.grassroot.services.UserManager;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
-import za.org.grassroot.webapp.model.ussd.AAT.Option;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 
@@ -162,7 +159,7 @@ public class USSDGroupController extends USSDController {
 
         USSDMenu tokenMenu = new USSDMenu("");
 
-        if (groupTokenManager.doesGroupCodeExist(groupId)) {
+        if (groupTokenManager.doesGroupCodeExistByGroupId(groupId)) {
             String tokenCode = groupManager.loadGroup(groupId).getGroupTokenCode().getCode();
             tokenMenu.setPromptMessage(getMessage(GROUP_KEY, keyGroupToken, PROMPT + ".exists", tokenCode, sessionUser));
             tokenMenu.addMenuOption(GROUP_MENUS + keyGroupToken + "-extend" + GROUPID_URL + groupId + TOKEN_URL + tokenCode,

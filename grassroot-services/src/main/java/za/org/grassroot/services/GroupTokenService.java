@@ -25,7 +25,7 @@ public interface GroupTokenService {
 
     boolean doesGroupCodeExist(String code);
 
-    boolean doesGroupCodeExist(Long groupId);
+    boolean doesGroupCodeExistByGroupId(Long groupId);
 
     Long getGroupIdFromToken(String code);
 

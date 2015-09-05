@@ -93,7 +93,7 @@ public class GroupTokenManager implements GroupTokenService {
     }
 
     @Override
-    public boolean doesGroupCodeExist(Long groupId) {
+    public boolean doesGroupCodeExistByGroupId(Long groupId) {
         Group groupToCheck = groupRepository.findOne(groupId);
         GroupTokenCode returnedCode = groupToCheck.getGroupTokenCode();
         return (returnedCode != null && returnedCode.getExpiryDateTime().after(Timestamp.valueOf(LocalDateTime.now())));
