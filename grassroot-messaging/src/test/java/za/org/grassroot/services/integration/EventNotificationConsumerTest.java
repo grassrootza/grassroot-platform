@@ -1,3 +1,4 @@
+/*
 package za.org.grassroot.services.integration;
 
 import org.junit.Before;
@@ -40,55 +41,56 @@ import static java.util.concurrent.TimeUnit.*;
 /**
  * @author Lesetse Kimwaga
  */
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {TestContextConfiguration.class, GrassRootCoreConfig.class})
-@Transactional
-public class EventNotificationConsumerTest {
+//@RunWith(SpringJUnit4ClassRunner.class)
+//@ContextConfiguration(classes = {TestContextConfiguration.class, GrassRootCoreConfig.class})
+//@Transactional
+//public class EventNotificationConsumerTest {
+//
+//    private Logger log = LoggerFactory.getLogger(EventNotificationConsumerTest.class);
+//    @Autowired
+//    private ApplicationContext applicationContext;
+//
+//    @Autowired
+//    private EventNotificationConsumer eventNotificationConsumer;
+//
+//    @Autowired
+//    private  JmsTemplate jmsTemplate;
+//
+//    @Before
+//    public void setUp() throws Exception {
+//        // Clean out any ActiveMQ data from a previous run
+//        FileSystemUtils.deleteRecursively(new File("activemq-data"));
+//
+//    }
+//
+//   @Test
+//    public void testName() throws Exception {
+//
+//        Event event = new Event();
+//        event.setName("JMS Check");
+//        event.setCreatedDateTime(new Timestamp(System.currentTimeMillis()));
+//
+//        EventChangeEvent eventChangeEvent = new EventChangeEvent(event);
+//        eventChangeEvent.setType(Event.class.getCanonicalName());
+//
+//        // Send a message
+//        MessageCreator messageCreator = new MessageCreator() {
+//            @Override
+//            public Message createMessage(Session session) throws JMSException {
+//                return session.createObjectMessage(eventChangeEvent);
+//            }
+//        };
+//
+//        jmsTemplate.send("event-added", messageCreator);
+//
+//         await().atMost(5, SECONDS).until(() -> assertThat(eventNotificationConsumer.getTestingInMemoryMessageStore(), is(not(empty()))));
+//
+//        *//*****************************************************************************
+//         * The following test case should fail: We really expect something on the queue
+//         *****************************************************************************//*
+//        //await().atMost(5, SECONDS).until(() -> assertThat(eventNotificationConsumer.getTestingInMemoryMessageStore(),hasSize(equalTo(0))));
+//
+//
+//    }
+//}
 
-    private Logger log = LoggerFactory.getLogger(EventNotificationConsumerTest.class);
-    @Autowired
-    private ApplicationContext applicationContext;
-
-    @Autowired
-    private EventNotificationConsumer eventNotificationConsumer;
-
-    @Autowired
-    private  JmsTemplate jmsTemplate;
-
-    @Before
-    public void setUp() throws Exception {
-        // Clean out any ActiveMQ data from a previous run
-        FileSystemUtils.deleteRecursively(new File("activemq-data"));
-
-    }
-
-    @Test
-    public void testName() throws Exception {
-
-        Event event = new Event();
-        event.setName("JMS Check");
-        event.setCreatedDateTime(new Timestamp(System.currentTimeMillis()));
-
-        EventChangeEvent eventChangeEvent = new EventChangeEvent(event);
-        eventChangeEvent.setType(Event.class.getCanonicalName());
-
-        // Send a message
-        MessageCreator messageCreator = new MessageCreator() {
-            @Override
-            public Message createMessage(Session session) throws JMSException {
-                return session.createObjectMessage(eventChangeEvent);
-            }
-        };
-
-        jmsTemplate.send("event-added", messageCreator);
-
-         await().atMost(5, SECONDS).until(() -> assertThat(eventNotificationConsumer.getTestingInMemoryMessageStore(), is(not(empty()))));
-
-        /*****************************************************************************
-         * The following test case should fail: We really expect something on the queue
-         *****************************************************************************/
-        //await().atMost(5, SECONDS).until(() -> assertThat(eventNotificationConsumer.getTestingInMemoryMessageStore(),hasSize(equalTo(0))));
-
-
-    }
-}

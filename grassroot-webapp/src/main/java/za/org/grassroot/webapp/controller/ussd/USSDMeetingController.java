@@ -10,6 +10,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
@@ -135,7 +136,7 @@ public class USSDMeetingController extends USSDController {
             }
         } else {
             // process & validate the user's responses, and create a new group or add to the one we're building
-            Map<String, List<String>> splitPhoneNumbers = splitPhoneNumbers(userResponse, " ");
+            Map<String, List<String>> splitPhoneNumbers = PhoneNumberUtil.splitPhoneNumbers(userResponse, " ");
             if (groupId == null) {
                 String returnUri;
                 if (splitPhoneNumbers.get(VALID).isEmpty()) { // avoid creating detritus groups if no valid numbers & user hangs up

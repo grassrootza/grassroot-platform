@@ -16,6 +16,8 @@ public interface UserManagementService {
 
     List<User> getAllUsers();
 
+    User getUserById(Long userId);
+
     Page<User> getDeploymentLog(Integer pageNumber);
 
     User save(User userToSave);

@@ -51,6 +51,10 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
+    public Group createNewGroup(Long creatingUserId, List<String> phoneNumbers) {
+        return createNewGroup(userManager.getUserById(creatingUserId),phoneNumbers);
+    }
+        @Override
     public Group createNewGroup(User creatingUser, List<String> phoneNumbers) {
 
         // todo: consider some way to check if group "exists", needs a solid "equals" logic
@@ -108,4 +112,8 @@ public class GroupManager implements GroupManagementService {
         return groupRepository.findByCreatedByUser(creatingUser);
     }
 
+    @Override
+    public Group getGroupById(Long groupId) {
+        return groupRepository.findOne(groupId);
+    }
 }

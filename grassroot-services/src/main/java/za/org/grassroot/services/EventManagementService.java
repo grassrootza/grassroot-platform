@@ -15,7 +15,11 @@ public interface EventManagementService {
 
     public Event createEvent(String name, User createdByUser, Group group);
 
+    public Event createEvent(String name, Long createdByUserId, Long groupId);
+
     public Event createEvent(String name, User createdByUser);
+
+    public Event createEvent(String name, Long createdByUserId);
 
     public Event loadEvent(Long eventId);
 

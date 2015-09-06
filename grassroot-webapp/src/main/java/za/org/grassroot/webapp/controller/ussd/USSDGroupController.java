@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.GroupTokenCode;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.GroupTokenService;
 import za.org.grassroot.services.UserManager;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
@@ -112,7 +113,7 @@ public class USSDGroupController extends USSDController {
             thisMenu.setPromptMessage(getMessage(GROUP_KEY, keyCreateGroup + DO_SUFFIX, PROMPT + ".done", language));
             thisMenu.setNextURI(GROUP_MENUS + keyRenameGroup + DO_SUFFIX + GROUPID_URL + groupId + "&newgroup=1"); // reusing the rename function
         } else {
-            Map<String, List<String>> splitPhoneNumbers = splitPhoneNumbers(userResponse, " ");
+            Map<String, List<String>> splitPhoneNumbers = PhoneNumberUtil.splitPhoneNumbers(userResponse, " ");
             if (groupId == null) { // creating a new group, process numbers and ask for more
                 Group createdGroup = groupManager.createNewGroup(sessionUser, splitPhoneNumbers.get("valid"));
                 thisMenu = numberEntryPrompt(createdGroup.getId(), "created", sessionUser, splitPhoneNumbers.get("error"));

@@ -89,6 +89,11 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
+    public User getUserById(Long userId) {
+        return userRepository.findOne(userId);
+    }
+
+    @Override
     public Page<User> getDeploymentLog(Integer pageNumber) {
 
         PageRequest request = new PageRequest(pageNumber - 1, PAGE_SIZE, Sort.Direction.DESC);

@@ -36,6 +36,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/static/**")
                 .antMatchers("/public/**")
                 .antMatchers("/i18n/**")
+                .antMatchers("/api/**")
                 .antMatchers("/ussd/**")
                 .antMatchers("/web/**")
                 .antMatchers("/test/**")

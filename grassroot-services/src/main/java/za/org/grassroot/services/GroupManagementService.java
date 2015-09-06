@@ -20,6 +20,8 @@ public interface GroupManagementService {
 
     Group createNewGroup(User creatingUser, List<String> phoneNumbers);
 
+    Group createNewGroup(Long creatingUserId, List<String> phoneNumbers);
+
     Group addNumbersToGroup(Long groupId, List<String> phoneNumbers);
 
     Group getLastCreatedGroup(User creatingUser);
@@ -30,4 +32,5 @@ public interface GroupManagementService {
 
     List<Group> getCreatedGroups(User creatingUser);
 
+    Group getGroupById(Long groupId);
 }

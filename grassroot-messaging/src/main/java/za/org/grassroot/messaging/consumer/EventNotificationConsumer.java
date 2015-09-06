@@ -3,6 +3,8 @@ package za.org.grassroot.messaging.consumer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
+import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventChangeType;
 import za.org.grassroot.core.event.EventChangeEvent;
 
@@ -22,39 +24,31 @@ public class EventNotificationConsumer {
 
     private Logger log = Logger.getLogger(getClass().getCanonicalName());
 
-    private List<Object> testingInMemoryMessageStore = new ArrayList<>();
 
-
+    //TODO recursive call for hierarchy
     @JmsListener(destination = "event-added", containerFactory = "messagingJmsContainerFactory",
             concurrency = "5")
-    public void sendNewEventNotifications(EventChangeEvent message) {
-        log.info("sendNewEventNotifications... <" + message.toString() + ">");
-        testingInMemoryMessageStore.add(message);
-
+    public void sendNewEventNotifications(Event event) {
+        log.info("sendNewEventNotifications... <" + event.toString() + ">");
+        for (User user : event.getAppliesToGroup().getGroupMembers()) {
+            log.info("sendNewEventNotifications...send message to..." + user.getPhoneNumber());
+        }
     }
 
     @JmsListener(destination = "event-changed", containerFactory = "messagingJmsContainerFactory",
             concurrency = "3")
-    public void sendChangedEventNotifications(EventChangeEvent message) {
-        log.info("sendChangedEventNotifications... <" + message.toString() + ">");
-        testingInMemoryMessageStore.add(message);
+    public void sendChangedEventNotifications(Event event) {
+        log.info("sendChangedEventNotifications... <" + event.toString() + ">");
 
     }
 
     @JmsListener(destination = "event-cancelled", containerFactory = "messagingJmsContainerFactory",
             concurrency = "1")
-    public void sendCancelledEventNotifications(EventChangeEvent message) {
-        log.info("sendCancelledEventNotifications... <" + message.toString() + ">");
-        testingInMemoryMessageStore.add(message);
+    public void sendCancelledEventNotifications(Event event) {
+        log.info("sendCancelledEventNotifications... <" + event.toString() + ">");
     }
 
-    /**
-     * Strictly for testing This is fake Repository
-     * @return
-     */
-    public List<Object> getTestingInMemoryMessageStore() {
-        return testingInMemoryMessageStore;
-    }
+
 
 }
 

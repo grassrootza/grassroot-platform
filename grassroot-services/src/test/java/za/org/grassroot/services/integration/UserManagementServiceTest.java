@@ -1,5 +1,6 @@
 package za.org.grassroot.services.integration;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,5 +39,11 @@ public class UserManagementServiceTest {
         assertThat(userProfile.getDisplayName(), equalTo("Grass Root"));
 
 
+    }
+
+    @Test
+    public void shouldLoadOrSave() {
+        User user = userManagementService.loadOrSaveUser("0826607135");
+        Assert.assertNotEquals(Long.parseLong("0"),Long.parseLong(user.getId().toString()));
     }
 }

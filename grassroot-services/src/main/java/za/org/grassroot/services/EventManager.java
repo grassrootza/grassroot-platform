@@ -2,18 +2,13 @@ package za.org.grassroot.services;
 
 import org.apache.commons.lang3.SerializationUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.enums.EventChangeType;
-import za.org.grassroot.core.event.EventChangeEvent;
 import za.org.grassroot.core.repository.EventRepository;
-import za.org.grassroot.core.util.ContextHelper;
+import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 
-import javax.persistence.Transient;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -32,6 +27,12 @@ public class EventManager implements EventManagementService {
     @Autowired
     GroupManagementService groupManager;
 
+    @Autowired
+    UserManagementService userManagementService;
+
+    @Autowired
+    GenericJmsTemplateProducerService jmsTemplateProducerService;
+
     /*
     This createEvent method is used primarily by the USSD interface, where we do not have all the information yet.
     At this stage we would have created the user, group and asked the Name of the Event
@@ -41,6 +42,12 @@ public class EventManager implements EventManagementService {
         return eventRepository.save(new Event(name,createdByUser,appliesToGroup));
     }
 
+    @Override
+    public Event createEvent(String name, Long createdByUserId, Long appliesToGroupId) {
+        return createEvent(name, userManagementService.getUserById(createdByUserId),
+                groupManager.getGroupById(appliesToGroupId));
+    }
+
     /*
     Depending on the menu flow in the USSD interface, we might not know the group at a point when we want to create
     the event, hence generating this method and the one that follows
@@ -48,6 +55,11 @@ public class EventManager implements EventManagementService {
     @Override
     public Event createEvent(String name, User createdByUser) {
         return eventRepository.save(new Event(name, createdByUser));
+    }
+
+    @Override
+    public Event createEvent(String name, Long createdByUserId) {
+        return createEvent(name, userManagementService.getUserById(createdByUserId));
     }
 
     @Override
@@ -130,25 +142,19 @@ public class EventManager implements EventManagementService {
          */
 
             if (!minimumDataAvailable(beforeEvent) && minimumDataAvailable(savedEvent) && !savedEvent.isCanceled()) {
-                // let's start sending out the notifications
-                EventChangeEvent ce = new EventChangeEvent(savedEvent, EventChangeType.EVENT_ADDED.toString());
-                ContextHelper.getPublisher().publishEvent(ce);
-                log.info("notifyChange...raised...event..." + EventChangeType.EVENT_ADDED.toString());
-
+                jmsTemplateProducerService.sendWithNoReply("event-added",savedEvent);
+                log.info("queued to event-added");
             }
             if (minimumDataAvailable(beforeEvent) && minimumDataAvailable(savedEvent) && !savedEvent.isCanceled()) {
                 // let's send out a change notification
                 //todo but first see if something actually changed
-                EventChangeEvent ce = new EventChangeEvent(savedEvent,EventChangeType.EVENT_CHANGED.toString());
-                ContextHelper.getPublisher().publishEvent(ce);
-                log.info("notifyChange...raised...event..." + EventChangeType.EVENT_CHANGED.toString());
-
+                jmsTemplateProducerService.sendWithNoReply("event-changed",savedEvent);
+                log.info("queued to event-changed");
             }
             if (!beforeEvent.isCanceled() && savedEvent.isCanceled()) {
                 // ok send out cancelation notifications
-                EventChangeEvent ce = new EventChangeEvent(savedEvent,EventChangeType.EVENT_CANCELLED.toString());
-                ContextHelper.getPublisher().publishEvent(ce);
-                log.info("notifyChange...raised...event..." + EventChangeType.EVENT_CANCELLED.toString());
+                jmsTemplateProducerService.sendWithNoReply("event-cancelled", savedEvent);
+                log.info("queued to event-cancelled");
 
             }
 

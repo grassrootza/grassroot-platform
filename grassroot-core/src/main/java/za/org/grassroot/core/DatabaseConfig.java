@@ -22,6 +22,7 @@ public abstract class DatabaseConfig {
         dataSource.setMinIdle(8);
         dataSource.setTestOnBorrow(false);
         dataSource.setTestOnReturn(false);
+
     }
 
 
