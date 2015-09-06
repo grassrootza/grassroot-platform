@@ -9,6 +9,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -117,6 +118,14 @@ public class EventManager implements EventManagementService {
         Event beforeEvent = SerializationUtils.clone(eventToUpdate);
         eventToUpdate.setTimeOfEvent(time);
         return saveandCheckChanges(beforeEvent,eventToUpdate);
+    }
+
+    @Override
+    public Event setEventTimestamp(Long eventId, Timestamp eventDateTime) {
+        Event eventToUpdate = eventRepository.findOne(eventId);
+        Event beforeEvent = SerializationUtils.clone(eventToUpdate);
+        eventToUpdate.setEventStartDateTime(eventDateTime);
+        return saveandCheckChanges(beforeEvent, eventToUpdate);
     }
 
     @Override

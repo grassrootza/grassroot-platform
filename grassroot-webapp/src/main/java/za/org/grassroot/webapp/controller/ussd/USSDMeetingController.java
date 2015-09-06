@@ -1,5 +1,7 @@
 package za.org.grassroot.webapp.controller.ussd;
 
+import com.joestelmach.natty.DateGroup;
+import com.joestelmach.natty.Parser;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -15,7 +17,11 @@ import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
 import java.net.URISyntaxException;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
+import java.util.logging.Logger;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
@@ -34,6 +40,8 @@ public class USSDMeetingController extends USSDController {
      * todo: Make the prompts also follow the sequence somehow (via a map of some sort, likely)
      * todo: Replace "meeting" as the event "name" with a meeting subject
      */
+
+    private Logger log = java.util.logging.Logger.getLogger(getClass().getCanonicalName());
 
     private static final String keyNewGroup = "newgroup", keyGroup = "group", keySubject="subject", keyDate = "date",
             keyTime = "time", keyPlace = "place", keySend = "send";
@@ -217,7 +225,19 @@ public class USSDMeetingController extends USSDController {
 
         /*
         Inserting logic to parse whatever came back and, if it can be parsed, set the timestamp accordingly.
+        todo: a lot of error handling and looking through the tree to make sure this is right.
+        todo: in the next menu, ask if this is right, and, if not, option to come back
+        todo: make sure the timezone is being set properly
          */
+        Parser parser = new Parser();
+        DateGroup firstDateGroup = parser.parse(passedValue).iterator().next();
+        if (firstDateGroup != null) {
+            Date parsedDate = firstDateGroup.getDates().iterator().next();
+            // LocalDateTime parsedDateTime = parsedDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+            meetingToCreate.setEventStartDateTime(Timestamp.from(parsedDate.toInstant()));
+            System.out.println("Date time processed: " + meetingToCreate.getCreatedDateTime().toString());
+            eventManager.setEventTimestamp(eventId, Timestamp.from(parsedDate.toInstant()));
+        }
 
         String promptMessage = getMessage(MTG_KEY, keyTime, PROMPT, sessionUser);
 
@@ -287,7 +307,7 @@ public class USSDMeetingController extends USSDController {
         }
 
         String messageResult = sendGroupSMS.getForObject(sendMsgURI.build().toUri(), String.class);
-        System.out.println(messageResult);
+        log.info(messageResult);
 
         return menuBuilder(new USSDMenu(getMessage(MTG_KEY, keySend, PROMPT, sessionUser), optionsHomeExit(sessionUser)));
     }

@@ -6,6 +6,8 @@ import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -34,6 +36,8 @@ public interface EventManagementService {
     public Event setDay(Long eventId, String day);
 
     public Event setTime(Long eventId, String time);
+
+    public Event setEventTimestamp(Long eventId, Timestamp eventDateTime);
 
     public Event cancelEvent(Long eventId);
 
