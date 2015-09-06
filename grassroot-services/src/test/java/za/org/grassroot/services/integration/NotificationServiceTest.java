@@ -74,8 +74,10 @@ public class NotificationServiceTest {
         User user = userRepository.save(new User("7777777"));
         Group group = groupManagementService.createNewGroup(user, Arrays.asList("0828888888", "0829999999"));
         Event event = eventRepository.save(new Event("Drink till you drop",user,group));
+        event.setEventLocation("Ellispark");
         String message = meetingNotificationService.createMeetingNotificationMessage(user,event);
-        Assert.assertEquals("You are invited to the Drink till you drop meeting by 7777777", message);
+        log.info("shouldGiveEnglishMeetingMessage..." + message);
+        Assert.assertEquals("You are invited to the Drink till you drop meeting at Ellispark by 7777777", message);
     }
 
     private String writeTempFile(String data) {
