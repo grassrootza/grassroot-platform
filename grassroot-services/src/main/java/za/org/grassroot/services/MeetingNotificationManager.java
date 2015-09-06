@@ -37,13 +37,25 @@ public class MeetingNotificationManager implements MeetingNotificationService {
     @Override
     public String createMeetingNotificationMessage(User user, Event event) {
         Map<String,Object> map = new HashMap<>();
-        //TODO store the user prefered language as a locale string ie en_ZA, af_ZA etc...
+        //TODO rework this so that different language templates can be used
         //     and pass it to the getMessage function as a Locale from the User entity
-        map.put("meetinginvite",applicationContext.getMessage("meeting.invite", null, Locale.ENGLISH));
-        map.put("meetingmeeting",applicationContext.getMessage("meeting.meeting", null, Locale.ENGLISH));
-        map.put("meetingby",applicationContext.getMessage("meeting.by", null, Locale.ENGLISH));
+        Locale locale = getUserLocale(user);
+        map.put("meetinginvite", applicationContext.getMessage("meeting.invite", null, locale));
+        map.put("meetingmeeting",applicationContext.getMessage("meeting.meeting", null, locale));
+        map.put("meetingby",applicationContext.getMessage("meeting.by", null, locale));
+        map.put("meetingat",applicationContext.getMessage("meeting.at", null,  locale));
         map.put("eventname",event.getName());
-        map.put("username",(user.getDisplayName() == null) ? user.getPhoneNumber() : user.getDisplayName());
+        map.put("location",event.getEventLocation());
+        map.put("username", (event.getCreatedByUser().getDisplayName() == null) ? event.getCreatedByUser().getPhoneNumber() : event.getCreatedByUser().getDisplayName());
         return createMessageUsingVelocity("meeting-notification.vm",map);
+    }
+
+    private Locale getUserLocale(User user) {
+        if (user.getLanguageCode() == null || user.getLanguageCode().trim().equals("")) {
+            return Locale.ENGLISH;
+        } else {
+            return new Locale(user.getLanguageCode());
+        }
+
     }
 }

@@ -1,6 +1,7 @@
 package za.org.grassroot.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.domain.User;
@@ -13,6 +14,7 @@ import java.util.logging.Logger;
 /**
  * Created by aakilomar on 8/26/15.
  */
+@Component
 public class EventLogManager implements EventLogManagementService {
 
     private Logger log = Logger.getLogger(getClass().getCanonicalName());

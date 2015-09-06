@@ -17,7 +17,7 @@ import org.springframework.util.FileSystemUtils;
 import za.org.grassroot.GrassRootCoreConfig;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.event.EventChangeEvent;
-import za.org.grassroot.messaging.consumer.EventNotificationConsumer;
+import EventNotificationConsumer;
 import za.org.grassroot.services.TestContextConfiguration;
 
 import javax.jms.JMSException;

@@ -10,27 +10,37 @@ import java.util.List;
  */
 public interface GroupManagementService {
 
-    Group loadGroup(Long groupId);
+    public Group loadGroup(Long groupId);
 
-    Group saveGroup(Group groupToSave);
+    public Group saveGroup(Group groupToSave);
 
-    void deleteGroup(Group groupToDelete);
+    public void deleteGroup(Group groupToDelete);
 
-    Group addGroupMember(Group currentGroup, User newMember);
+    public Group addGroupMember(Group currentGroup, User newMember);
 
-    Group createNewGroup(User creatingUser, List<String> phoneNumbers);
+    public Group addGroupMember(Long currentGroupId, Long newMemberId);
 
-    Group createNewGroup(Long creatingUserId, List<String> phoneNumbers);
+    public Group createNewGroup(User creatingUser, List<String> phoneNumbers);
 
-    Group addNumbersToGroup(Long groupId, List<String> phoneNumbers);
+    public Group createNewGroup(Long creatingUserId, List<String> phoneNumbers);
 
-    Group getLastCreatedGroup(User creatingUser);
+    public Group addNumbersToGroup(Long groupId, List<String> phoneNumbers);
 
-    boolean needsToRenameGroup(User sessionUser);
+    public Group getLastCreatedGroup(User creatingUser);
 
-    Long groupToRename(User sessionUser);
+    public boolean needsToRenameGroup(User sessionUser);
 
-    List<Group> getCreatedGroups(User creatingUser);
+    public Long groupToRename(User sessionUser);
 
-    Group getGroupById(Long groupId);
+    public List<Group> getCreatedGroups(User creatingUser);
+
+    public Group getGroupById(Long groupId);
+
+    public Group createSubGroup(User createdByUser, Group group, String subGroupName);
+
+    public Group createSubGroup(Long createdByUserId, Long groupId, String subGroupName);
+
+    public List<User> getAllUsersInGroupAndSubGroups(Long groupId);
+
+    public List<User> getAllUsersInGroupAndSubGroups(Group group);
 }

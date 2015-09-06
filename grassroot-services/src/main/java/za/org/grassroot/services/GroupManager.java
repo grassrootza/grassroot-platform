@@ -6,7 +6,9 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GroupRepository;
 
+import javax.jws.soap.SOAPBinding;
 import javax.transaction.Transactional;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -44,6 +46,11 @@ public class GroupManager implements GroupManagementService {
         groupRepository.delete(groupToDelete);
     }
 
+    //todo aakil send event notification to new group member
+    @Override
+    public Group addGroupMember(Long currentGroupId, Long newMemberId) {
+        return addGroupMember(getGroupById(currentGroupId),userManager.getUserById(newMemberId));
+    }
     @Override
     public Group addGroupMember(Group currentGroup, User newMember) {
         currentGroup.addMember(newMember);
@@ -73,6 +80,7 @@ public class GroupManager implements GroupManagementService {
 
     }
 
+    //todo aakil send event notification to new group member
     @Override
     public Group addNumbersToGroup(Long groupId, List<String> phoneNumbers) {
 
@@ -115,5 +123,39 @@ public class GroupManager implements GroupManagementService {
     @Override
     public Group getGroupById(Long groupId) {
         return groupRepository.findOne(groupId);
+    }
+
+    /*
+    returns the new sub-group
+     */
+    public Group createSubGroup(Long createdByUserId, Long groupId, String subGroupName) {
+        return createSubGroup(userManager.getUserById(createdByUserId), loadGroup(groupId),subGroupName);
+    }
+
+    public Group createSubGroup(User createdByUser, Group group, String subGroupName) {
+        return groupRepository.save(new Group(subGroupName,createdByUser,group));
+    }
+
+    @Override
+    public List<User> getAllUsersInGroupAndSubGroups(Long groupId) {
+        return getAllUsersInGroupAndSubGroups(loadGroup(groupId));
+    }
+
+    @Override
+    public List<User> getAllUsersInGroupAndSubGroups(Group group) {
+        List<User> userList = new ArrayList<User>();
+        recursiveUserAdd(group,userList);
+        return userList;
+    }
+
+    private void recursiveUserAdd(Group parentGroup, List<User> userList ) {
+
+        for (Group childGroup : groupRepository.findByParent(parentGroup)) {
+            recursiveUserAdd(childGroup,userList);
+        }
+
+        // add all the users at this level
+        userList.addAll(parentGroup.getGroupMembers());
+
     }
 }
