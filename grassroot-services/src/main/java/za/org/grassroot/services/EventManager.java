@@ -9,6 +9,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -104,19 +105,19 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
-    public Event setDay(Long eventId, String day) {
+    public Event setDateTimeString(Long eventId, String dateTimeString) {
         Event eventToUpdate = eventRepository.findOne(eventId);
         Event beforeEvent = SerializationUtils.clone(eventToUpdate);
-        eventToUpdate.setDayOfEvent(day);
+        eventToUpdate.setDateTimeString(dateTimeString);
         return saveandCheckChanges(beforeEvent,eventToUpdate);
     }
 
     @Override
-    public Event setTime(Long eventId, String time) {
+    public Event setEventTimestamp(Long eventId, Timestamp eventDateTime) {
         Event eventToUpdate = eventRepository.findOne(eventId);
         Event beforeEvent = SerializationUtils.clone(eventToUpdate);
-        eventToUpdate.setTimeOfEvent(time);
-        return saveandCheckChanges(beforeEvent,eventToUpdate);
+        eventToUpdate.setEventStartDateTime(eventDateTime);
+        return saveandCheckChanges(beforeEvent, eventToUpdate);
     }
 
     @Override
@@ -168,8 +169,7 @@ public class EventManager implements EventManagementService {
         if (event.getEventLocation() == null || event.getEventLocation().trim().equals("")) minimum = false;
         if (event.getAppliesToGroup() == null ) minimum = false;
         if (event.getCreatedByUser() == null) minimum = false;
-        if (event.getDayOfEvent() == null || event.getDayOfEvent().trim().equals("")) minimum = false;
-        if (event.getTimeOfEvent() == null || event.getTimeOfEvent().trim().equals("")) minimum = false;
+        if (event.getDateTimeString() == null || event.getDateTimeString().trim().equals("")) minimum = false;
         log.info("minimumDataAvailable...returning..." + minimum);
 
         return minimum;

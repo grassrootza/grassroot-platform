@@ -38,8 +38,7 @@ public class Event implements Serializable {
     parse and convert into a timestamp -- might move these into a Meeting sub-class, or handle in controller, but
     doing it this way for now. to clean up.
      */
-    private String dayOfEvent;
-    private String timeOfEvent;
+    private String dateTimeString;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -88,14 +87,9 @@ public class Event implements Serializable {
     }
 
     @Column
-    public String getDayOfEvent() { return dayOfEvent; }
+    public String getDateTimeString() { return dateTimeString; }
 
-    public void setDayOfEvent(String dayOfEvent) { this.dayOfEvent = dayOfEvent; }
-
-    @Column
-    public String getTimeOfEvent() { return timeOfEvent; }
-
-    public void setTimeOfEvent(String timeOfEvent) { this.timeOfEvent = timeOfEvent; }
+    public void setDateTimeString(String dateTimeString) { this.dateTimeString = dateTimeString; }
 
     @Column
     public boolean isCanceled() {
@@ -145,8 +139,7 @@ public class Event implements Serializable {
                 ", createdByUser=" + createdByUser +
  //               ", appliesToGroup=" + appliesToGroup +
                 ", name='" + name + '\'' +
-                ", dayOfEvent=" + dayOfEvent + '\'' +
-                ", timeOfEvent=" + timeOfEvent +'\'' +
+                ", dateTimeString=" + dateTimeString +'\'' +
                 '}';
     }
 }

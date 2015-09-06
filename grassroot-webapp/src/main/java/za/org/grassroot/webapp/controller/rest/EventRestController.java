@@ -47,14 +47,14 @@ public class EventRestController {
 
     }
 
-    @RequestMapping(value = "/setday/{eventId}/{day}", method = RequestMethod.POST)
+    /* @RequestMapping(value = "/setday/{eventId}/{day}", method = RequestMethod.POST)
     public EventDTO setDay(@PathVariable("eventId") Long eventId,@PathVariable("day") String day) {
         return new EventDTO(eventManagementService.setDay(eventId, day));
-    }
+    }*/
 
     @RequestMapping(value = "/settime/{eventId}/{time}", method = RequestMethod.POST)
     public EventDTO setTime(@PathVariable("eventId") Long eventId,@PathVariable("time") String time) {
-        return new EventDTO(eventManagementService.setTime(eventId,time));
+        return new EventDTO(eventManagementService.setDateTimeString(eventId,time));
     }
 
 

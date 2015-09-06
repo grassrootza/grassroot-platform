@@ -12,6 +12,8 @@ public interface GroupManagementService {
 
     public Group loadGroup(Long groupId);
 
+    public List<Group> getGroupsFromUser(User sessionUser);
+
     public Group saveGroup(Group groupToSave);
 
     public void deleteGroup(Group groupToDelete);

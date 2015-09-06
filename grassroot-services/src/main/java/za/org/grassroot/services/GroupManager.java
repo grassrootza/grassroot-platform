@@ -37,6 +37,12 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
+    public List<Group> getGroupsFromUser(User sessionUser) {
+        // todo: add pagination
+        return sessionUser.getGroupsPartOf();
+    }
+
+    @Override
     public Group saveGroup(Group groupToSave) {
         return groupRepository.save(groupToSave);
     }
@@ -61,7 +67,8 @@ public class GroupManager implements GroupManagementService {
     public Group createNewGroup(Long creatingUserId, List<String> phoneNumbers) {
         return createNewGroup(userManager.getUserById(creatingUserId),phoneNumbers);
     }
-        @Override
+
+    @Override
     public Group createNewGroup(User creatingUser, List<String> phoneNumbers) {
 
         // todo: consider some way to check if group "exists", needs a solid "equals" logic
