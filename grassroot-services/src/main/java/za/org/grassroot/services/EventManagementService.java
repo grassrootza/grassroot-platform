@@ -33,9 +33,7 @@ public interface EventManagementService {
 
     public Event setLocation(Long eventId, String location);
 
-    public Event setDay(Long eventId, String day);
-
-    public Event setTime(Long eventId, String time);
+    public Event setDateTimeString(Long eventId, String dateTimeString);
 
     public Event setEventTimestamp(Long eventId, Timestamp eventDateTime);
 

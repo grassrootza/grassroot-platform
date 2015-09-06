@@ -63,8 +63,7 @@ public class EventManagementServiceTest {
         Group group = groupManagementService.createNewGroup(userProfile, Arrays.asList("111222666", "111222777"));
         Event event = eventManagementService.createEvent("Tell me about it", userProfile, group);
         event = eventManagementService.setLocation(event.getId(), "Lekker place");
-        event = eventManagementService.setDay(event.getId(),"31");
-        event = eventManagementService.setTime(event.getId(),"7pm");
+        event = eventManagementService.setDateTimeString(event.getId(),"31st 7pm");
         log.info("shouldSaveEventWithMinimumDataAndTriggerNotifications...done..." + event.toString());
 
     }
@@ -76,8 +75,7 @@ public class EventManagementServiceTest {
         Group group = groupManagementService.createNewGroup(userProfile, Arrays.asList("111222667", "111222778"));
         Event event = eventManagementService.createEvent("Tell me about it 2", userProfile, group);
         event = eventManagementService.setLocation(event.getId(), "Lekker place 2");
-        event = eventManagementService.setDay(event.getId(),"31");
-        event = eventManagementService.setTime(event.getId(),"7pm");
+        event = eventManagementService.setDateTimeString(event.getId(),"31st 7pm");
         event = eventManagementService.setLocation(event.getId(),"New lekker place");
         log.info("shouldTriggerAddAndChangeNotifications...done..." + event.toString());
 
@@ -89,8 +87,7 @@ public class EventManagementServiceTest {
         Group group = groupManagementService.createNewGroup(userProfile, Arrays.asList("111222667", "111222778"));
         Event event = eventManagementService.createEvent("Tell me about it 2", userProfile, group);
         event = eventManagementService.setLocation(event.getId(), "Lekker place 2");
-        event = eventManagementService.setDay(event.getId(), "31");
-        event = eventManagementService.setTime(event.getId(), "7pm");
+        event = eventManagementService.setDateTimeString(event.getId(), "31 7pm");
         event = eventManagementService.cancelEvent(event.getId());
         log.info("shouldTriggerAddAndCancelNotifications...done..." + event.toString());
 

@@ -42,9 +42,8 @@ public class USSDHomeController extends USSDController {
     @Autowired
     GroupTokenService groupTokenManager;
 
-
     private static final String keyRenameStart = "rename-start", keyGroupNameStart = "group-start";
-    private static final int hashPosition = 9;
+    private static final int hashPosition = Integer.valueOf(System.getenv("USSD_CODE_LENGTH"));
 
     public USSDMenu welcomeMenu(String opening, User sessionUser) throws URISyntaxException {
 

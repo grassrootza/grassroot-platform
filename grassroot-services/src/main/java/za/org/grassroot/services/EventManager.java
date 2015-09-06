@@ -105,18 +105,10 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
-    public Event setDay(Long eventId, String day) {
+    public Event setDateTimeString(Long eventId, String dateTimeString) {
         Event eventToUpdate = eventRepository.findOne(eventId);
         Event beforeEvent = SerializationUtils.clone(eventToUpdate);
-        eventToUpdate.setDayOfEvent(day);
-        return saveandCheckChanges(beforeEvent,eventToUpdate);
-    }
-
-    @Override
-    public Event setTime(Long eventId, String time) {
-        Event eventToUpdate = eventRepository.findOne(eventId);
-        Event beforeEvent = SerializationUtils.clone(eventToUpdate);
-        eventToUpdate.setTimeOfEvent(time);
+        eventToUpdate.setDateTimeString(dateTimeString);
         return saveandCheckChanges(beforeEvent,eventToUpdate);
     }
 
@@ -177,8 +169,7 @@ public class EventManager implements EventManagementService {
         if (event.getEventLocation() == null || event.getEventLocation().trim().equals("")) minimum = false;
         if (event.getAppliesToGroup() == null ) minimum = false;
         if (event.getCreatedByUser() == null) minimum = false;
-        if (event.getDayOfEvent() == null || event.getDayOfEvent().trim().equals("")) minimum = false;
-        if (event.getTimeOfEvent() == null || event.getTimeOfEvent().trim().equals("")) minimum = false;
+        if (event.getDateTimeString() == null || event.getDateTimeString().trim().equals("")) minimum = false;
         log.info("minimumDataAvailable...returning..." + minimum);
 
         return minimum;

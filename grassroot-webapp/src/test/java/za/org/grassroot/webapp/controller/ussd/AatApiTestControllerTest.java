@@ -146,15 +146,15 @@ public class AatApiTestControllerTest {
                 "<request>" +
                 "    <headertext>Hi! Welcome to GrassRoot. What will you do?</headertext>" +
                 "    <options>" +
-                "        <option command=\"1\" order=\"1\" callback=\"http://meeting-organizer.herokuapp.com/ussd/mtg/start\"" +
+                "        <option command=\"1\" order=\"1\" callback=\"http://localhost:8080/ussd/mtg/start\"" +
                 "                display=\"true\">Call a meeting</option>\n" +
-                "        <option command=\"2\" order=\"2\" callback=\"http://meeting-organizer.herokuapp.com/ussd/vote\"" +
+                "        <option command=\"2\" order=\"2\" callback=\"http://localhost:8080/ussd/vote\"" +
                 "                display=\"true\">Take a vote</option>\n" +
-                "        <option command=\"3\" order=\"3\" callback=\"http://meeting-organizer.herokuapp.com/ussd/log\"" +
+                "        <option command=\"3\" order=\"3\" callback=\"http://localhost:8080/ussd/log\"" +
                 "                display=\"true\">Record an action</option>\n" +
-                "        <option command=\"4\" order=\"4\" callback=\"http://meeting-organizer.herokuapp.com/ussd/group/start\"" +
+                "        <option command=\"4\" order=\"4\" callback=\"http://localhost:8080/ussd/group/start\"" +
                 "                display=\"true\">Manage groups</option>\n" +
-                "        <option command=\"5\" order=\"5\" callback=\"http://meeting-organizer.herokuapp.com/ussd/user/start\"" +
+                "        <option command=\"5\" order=\"5\" callback=\"http://localhost:8080/ussd/user/start\"" +
                 "                display=\"true\">Change profile</option>\n" +
                 "    </options>" +
                 "</request>";
@@ -269,8 +269,7 @@ public class AatApiTestControllerTest {
         urlResponses.putAll(uriExecute(testPhoneUri(mtgPath + "group").queryParam(eventParam, eventId).
                 queryParam(freeTextParam, String.join(" ", testPhones)).build().toUri()));
 
-        urlResponses.putAll(uriExecute(testMtgParam(eventId, "date", "Saturday", "time")));
-        urlResponses.putAll(uriExecute(testMtgParam(eventId, "time", "9am", "place")));
+        urlResponses.putAll(uriExecute(testMtgParam(eventId, "time", "Saturday 9am", "place")));
         // responseEntities.add(testMtgParam(eventId, "place", "home", "send")); // add in when safe to do so w/out lots SMSs
 
         for (Map.Entry<URI, ResponseEntity<String>> urlResponse : urlResponses.entrySet()) {
@@ -290,16 +289,8 @@ public class AatApiTestControllerTest {
 
         assertThat(eventToTest.getId(), is(eventId));
 
-        // On the controller, the subsequent string is assembled perfectly, but here we just gell null pointers, not sure why
-        String msgText = "From " + userCreated.getName("") + ": Meeting called on " + eventToTest.getDayOfEvent()
-                + ", at time " + eventToTest.getTimeOfEvent() + " and place " + eventToTest.getEventLocation();
-
-        System.out.println("MESSAGE: " + msgText);
-
-        // System.out.println("EVENT TOSTRING: " + eventToTest.toString()); // Note: this causes a stack overflow
-        // assertThat(eventToTest.getTimeOfEvent(), is("9am")); // for some reason this is failing, no idea why, works in rest
-        // assertThat(eventToTest.getDayOfEvent(), is("Saturday")); // for some reason this is failing, no idea why, works in rest
-        // assertThat(eventToTest.getEventLocation(), is("home")); to include once can do messaging
+        // assertThat(eventToTest.getDateTimeString(), is("Saturday 9am")); // for some reason this is failing, no idea why, works in rest
+        // assertThat(eventToTest.getEventLocation(), is("home")); // to include once can do messaging
     }
 
     // set of automatic tests to make sure the standard menus aren't too long

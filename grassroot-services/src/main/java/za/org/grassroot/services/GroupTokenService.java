@@ -25,11 +25,7 @@ public interface GroupTokenService {
 
     boolean doesGroupCodeExist(String code);
 
-<<<<<<< HEAD
     boolean doesGroupCodeExistByGroupId(Long groupId);
-=======
-    boolean doesGroupCodeExist(Long groupId);
->>>>>>> 32667c0... Further fixes to the token logic and building token menus
 
     Long getGroupIdFromToken(String code);
 

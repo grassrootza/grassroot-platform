@@ -43,8 +43,6 @@ public class USSDController {
      * SECTION: Constants used throughout the code
      */
 
-    protected final String baseURI = "http://meeting-organizer.herokuapp.com/ussd/";
-
     // adopting a convention to capitalize constant strings that are used across all controllers
     // todo: more elegant way of handling "." and "/" difference btw URL mapping and message (but note @RequestMapping can't take a method)
 
@@ -62,6 +60,9 @@ public class USSDController {
     protected final String smsHost = "xml2sms.gsm.co.za";
     protected final String smsUsername = System.getenv("SMSUSER");
     protected final String smsPassword = System.getenv("SMSPASS");
+
+    // protected final String baseURI = "http://meeting-organizer.herokuapp.com/ussd/";
+    protected final String baseURI = System.getenv("APP_URL") + USSD_BASE;
 
 
     /**

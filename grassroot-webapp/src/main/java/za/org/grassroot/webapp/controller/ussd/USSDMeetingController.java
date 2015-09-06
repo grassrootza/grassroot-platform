@@ -43,11 +43,11 @@ public class USSDMeetingController extends USSDController {
 
     private Logger log = java.util.logging.Logger.getLogger(getClass().getCanonicalName());
 
-    private static final String keyNewGroup = "newgroup", keyGroup = "group", keySubject="subject", keyDate = "date",
+    private static final String keyNewGroup = "newgroup", keyGroup = "group", keySubject="subject",
             keyTime = "time", keyPlace = "place", keySend = "send";
     private static final String mtgPath = USSD_BASE +MTG_MENUS;
 
-    private static final List<String> menuSequence = Arrays.asList(START_KEY, keySubject, keyTime, keyPlace, keySend);
+    private static final List<String> menuSequence = Arrays.asList(START_KEY, keySubject, keyPlace, keyTime, keySend);
 
     private String nextMenuKey(String currentMenuKey) {
         return menuSequence.get(menuSequence.indexOf(currentMenuKey) + 1);
@@ -222,23 +222,6 @@ public class USSDMeetingController extends USSDController {
         String keyNext = nextMenuKey(keyTime);
         User sessionUser = userManager.findByInputNumber(inputNumber);
         Event meetingToCreate = updateEvent(eventId, passedValueKey, passedValue);
-
-        /*
-        Inserting logic to parse whatever came back and, if it can be parsed, set the timestamp accordingly.
-        todo: a lot of error handling and looking through the tree to make sure this is right.
-        todo: in the next menu, ask if this is right, and, if not, option to come back
-        todo: make sure the timezone is being set properly
-         */
-        Parser parser = new Parser();
-        DateGroup firstDateGroup = parser.parse(passedValue).iterator().next();
-        if (firstDateGroup != null) {
-            Date parsedDate = firstDateGroup.getDates().iterator().next();
-            // LocalDateTime parsedDateTime = parsedDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-            meetingToCreate.setEventStartDateTime(Timestamp.from(parsedDate.toInstant()));
-            System.out.println("Date time processed: " + meetingToCreate.getCreatedDateTime().toString());
-            eventManager.setEventTimestamp(eventId, Timestamp.from(parsedDate.toInstant()));
-        }
-
         String promptMessage = getMessage(MTG_KEY, keyTime, PROMPT, sessionUser);
 
         return menuBuilder(new USSDMenu(promptMessage, MTG_MENUS + keyNext + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + keyTime));
@@ -291,7 +274,7 @@ public class USSDMeetingController extends USSDController {
                 sessionUser.getName(""),
                 meetingToSend.getName(),
                 meetingToSend.getEventLocation(),
-                meetingToSend.getTimeOfEvent()
+                meetingToSend.getDateTimeString()
         };
 
         String msgText = getMessage(MTG_KEY, keySend, "template", msgParams, sessionUser);
@@ -323,11 +306,9 @@ public class USSDMeetingController extends USSDController {
             case keySubject:
                 eventToReturn = eventManager.setSubject(eventId, passedValue);
                 break;
-            case keyDate:
-                eventToReturn = eventManager.setDay(eventId, passedValue);
-                break;
             case keyTime:
-                eventToReturn = eventManager.setTime(eventId, passedValue);
+                eventToReturn = eventManager.setDateTimeString(eventId, passedValue);
+                eventToReturn = eventManager.setEventTimestamp(eventId, Timestamp.valueOf(parseDateTime(passedValue)));
                 break;
             case keyPlace:
                 eventToReturn = eventManager.setLocation(eventId, passedValue);
@@ -339,6 +320,33 @@ public class USSDMeetingController extends USSDController {
                 eventToReturn = eventManager.loadEvent(eventId);
         }
         return eventToReturn;
+    }
+
+    /*
+        Inserting method to parse date time user input and, if it can be parsed, set the timestamp accordingly.
+        todo: a lot of error handling and looking through the tree to make sure this is right.
+        todo: come up with a more sensible default if the parsing fails, rather than current time
+        todo: work on handling methods / customize the util library to handle local languages
+        todo: in the next menu, ask if this is right, and, if not, option to come back
+        todo: make sure the timezone is being set properly
+         */
+
+    public LocalDateTime parseDateTime(String passedValue) {
+
+        LocalDateTime parsedDateTime;
+
+        Parser parser = new Parser();
+        DateGroup firstDateGroup = parser.parse(passedValue).iterator().next();
+        if (firstDateGroup != null) {
+            Date parsedDate = firstDateGroup.getDates().iterator().next();
+            parsedDateTime = parsedDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+            System.out.println("Date time processed: " + parsedDateTime.toString());
+        } else {
+            parsedDateTime = LocalDateTime.now();
+        }
+
+        return parsedDateTime;
+
     }
 
 
