@@ -7,7 +7,8 @@ package za.org.grassroot.core.domain;
  */
 
 import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import org.apache.commons.collections4.FactoryUtils;
+import org.apache.commons.collections4.list.LazyList;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -26,7 +27,7 @@ public class Group implements Serializable {
     private Timestamp createdDateTime;
     private User      createdByUser;
 
-    private List<User> groupMembers = new ArrayList<>();
+    private List<User> groupMembers = LazyList.lazyList(new ArrayList<>(), FactoryUtils.instantiateFactory(User.class));
     private Group parent;
 
     private GroupTokenCode groupTokenCode;

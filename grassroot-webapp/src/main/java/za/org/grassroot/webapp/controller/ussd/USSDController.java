@@ -6,6 +6,7 @@ import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.Phonenumber;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
+import org.springframework.data.domain.Page;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.domain.Group;
@@ -56,6 +57,9 @@ public class USSDController {
     // Constants used in i18n and message handling
     protected static final String HOME_KEY = "home", MTG_KEY = "mtg", USER_KEY = "user", GROUP_KEY = "group", VOTE_KEY = "vote", LOG_KEY = "log";
     protected static final String PROMPT = "prompt", PROMPT_ERROR = "prompt.error", OPTION = "options.", VALID="valid", ERROR="error";
+
+    // Constants used in pagination of groups
+    protected static final Integer PAGE_LENGTH = 3;
 
     protected final String smsHost = "xml2sms.gsm.co.za";
     protected final String smsUsername = System.getenv("SMSUSER");
@@ -108,6 +112,9 @@ public class USSDController {
         Integer enumLength = ("1. ").length();
         Integer characterLimit = firstMenu ? 140 : 160;
 
+        // todo: replace with a logger
+        System.out.println("Length of menu: " + menuToCheck.getMenuCharLength(enumLength));
+
         return (menuToCheck.getMenuCharLength(enumLength) < characterLimit); // might be able to get away with <=, but prefer to be conservative
     }
 
@@ -118,7 +125,9 @@ public class USSDController {
     protected USSDMenu userGroupMenu(User sessionUser, String promptMessage, String path, boolean optionNewGroup)
             throws URISyntaxException {
 
-        List<Group> groupsPartOf = sessionUser.getGroupsPartOf();
+        // todo: create a better sorting logic
+        List<Group> groupsPartOf = groupManager.getPaginatedGroups(sessionUser, 0, PAGE_LENGTH);
+
         USSDMenu menuBuild = new USSDMenu(promptMessage);
         final String dateFormat = "%1$TD";
         final String formedUrl = (!path.contains("?")) ? (path + GROUPID_URL) : (path + "&" + GROUP_PARAM + "=");
@@ -140,12 +149,12 @@ public class USSDController {
     protected USSDMenu userGroupMenu(User sessionUser, String promptMessage, String existingPath, String newUri, String groupParam)
             throws URISyntaxException {
 
-        // todo: some way to handle pagination if user has many groups -- USSD can only handle five options on a menu ...
-        // todo: also, lousy user experience if too many -- should sort by last accessed & most accessed (some combo)
+        // todo: extend pagination, to allow for multiple pages, and/or better sorting (last accessed & most accessed)
+        // todo: change the dateformat to something more readable and/or shorter
         // todo: switch to using URIComponentsBuilder instead of string joining the parameters
 
         USSDMenu menuBuild = new USSDMenu(promptMessage);
-        List<Group> groupsPartOf = sessionUser.getGroupsPartOf();
+        List<Group> groupsPartOf = groupManager.getPaginatedGroups(sessionUser, 0, PAGE_LENGTH);
         final String dateFormat = "%1$TD";
 
         final String formedUrl = (!existingPath.contains("?")) ?

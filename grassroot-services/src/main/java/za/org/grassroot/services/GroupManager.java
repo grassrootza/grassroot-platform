@@ -1,6 +1,8 @@
 package za.org.grassroot.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
@@ -125,6 +127,17 @@ public class GroupManager implements GroupManagementService {
     @Override
     public List<Group> getCreatedGroups(User creatingUser) {
         return groupRepository.findByCreatedByUser(creatingUser);
+    }
+
+    @Override
+    public List<Group> getGroupsPartOf(User sessionUser) {
+        return groupRepository.findByGroupMembers(sessionUser);
+    }
+
+    @Override
+    public List<Group> getPaginatedGroups(User sessionUser, int pageNumber, int pageSize) {
+        Page<Group> pageOfGroups = groupRepository.findByGroupMembers(sessionUser, new PageRequest(pageNumber, pageSize));
+        return pageOfGroups.getContent();
     }
 
     @Override

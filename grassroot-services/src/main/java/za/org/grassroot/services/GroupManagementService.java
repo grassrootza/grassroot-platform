@@ -36,6 +36,10 @@ public interface GroupManagementService {
 
     public List<Group> getCreatedGroups(User creatingUser);
 
+    public List<Group> getGroupsPartOf(User sessionUser);
+
+    public List<Group> getPaginatedGroups(User sessionUser, int pageNumber, int pageSize);
+
     public Group getGroupById(Long groupId);
 
     public Group createSubGroup(User createdByUser, Group group, String subGroupName);

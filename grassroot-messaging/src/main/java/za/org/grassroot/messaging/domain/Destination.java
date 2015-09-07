@@ -1,5 +1,6 @@
 package za.org.grassroot.messaging.domain;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -24,6 +25,8 @@ public class Destination {
         this.toAddresses = toAddresses;
     }
 
+    public void addToAddress(String toAddress) { this.toAddresses.add(toAddress); }
+
     public Destination withToAddresses(String... toAddresses) {
         if (getToAddresses() == null) setToAddresses(new java.util.ArrayList<String>(toAddresses.length));
         for (String value : toAddresses) {
@@ -31,4 +34,13 @@ public class Destination {
         }
         return this;
     }
+
+    /*
+    Constructors
+     */
+
+    public Destination() {
+        toAddresses = new ArrayList<>();
+    }
+
 }

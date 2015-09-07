@@ -13,6 +13,7 @@ import za.org.grassroot.core.repository.GroupTokenCodeRepository;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Calendar;
 import java.util.Random;
 
 /**
@@ -96,7 +97,8 @@ public class GroupTokenManager implements GroupTokenService {
     public boolean doesGroupCodeExistByGroupId(Long groupId) {
         Group groupToCheck = groupRepository.findOne(groupId);
         GroupTokenCode returnedCode = groupToCheck.getGroupTokenCode();
-        return (returnedCode != null && returnedCode.getExpiryDateTime().after(Timestamp.valueOf(LocalDateTime.now())));
+        return (returnedCode != null &&
+                returnedCode.getExpiryDateTime().after(new Timestamp(Calendar.getInstance().getTimeInMillis())));
     }
 
     @Override

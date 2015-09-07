@@ -13,6 +13,10 @@ import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.PhoneNumberUtil;
+import za.org.grassroot.messaging.domain.Destination;
+import za.org.grassroot.messaging.domain.Message;
+import za.org.grassroot.messaging.domain.MessageProtocol;
+import za.org.grassroot.messaging.domain.MessagePublishRequest;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
@@ -267,8 +271,7 @@ public class USSDMeetingController extends USSDController {
         catch (Exception e) { return noUserError; }
 
         Event meetingToSend = updateEvent(eventId, passedValueKey, passedValue);
-        Group groupToMessage = meetingToSend.getAppliesToGroup();
-        List<User> usersToMessage = groupToMessage.getGroupMembers();
+        List<User> usersToMessage = meetingToSend.getAppliesToGroup().getGroupMembers();
 
         String[] msgParams = new String[]{
                 sessionUser.getName(""),
@@ -280,6 +283,10 @@ public class USSDMeetingController extends USSDController {
         String msgText = getMessage(MTG_KEY, keySend, "template", msgParams, sessionUser);
         System.out.println(msgText);
 
+        MessagePublishRequest meetingMessageRequest = new MessagePublishRequest();
+        Message meetingMessage = new Message("messageId", msgText); // todo: set an actual messageId, when we have them
+        Destination meetingRecipients = new Destination();
+
         RestTemplate sendGroupSMS = new RestTemplate();
         UriComponentsBuilder sendMsgURI = UriComponentsBuilder.newInstance().scheme("https").host(smsHost);
         sendMsgURI.path("send/").queryParam("username", smsUsername).queryParam("password", smsPassword);
@@ -287,10 +294,15 @@ public class USSDMeetingController extends USSDController {
         for (int i = 1; i <= usersToMessage.size(); i++) {
             sendMsgURI.queryParam("number" + i, usersToMessage.get(i-1).getPhoneNumber());
             sendMsgURI.queryParam("message" + i, msgText);
+            meetingRecipients.addToAddress(usersToMessage.get(i-1).getPhoneNumber());
         }
 
         String messageResult = sendGroupSMS.getForObject(sendMsgURI.build().toUri(), String.class);
         log.info(messageResult);
+
+        meetingMessageRequest.setMessageProtocol(MessageProtocol.SMS);
+        meetingMessageRequest.setMessage(meetingMessage);
+        meetingMessageRequest.setDestination(meetingRecipients);
 
         return menuBuilder(new USSDMenu(getMessage(MTG_KEY, keySend, PROMPT, sessionUser), optionsHomeExit(sessionUser)));
     }

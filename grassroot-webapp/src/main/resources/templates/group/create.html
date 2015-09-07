@@ -34,10 +34,10 @@
                     <tbody>
                         <tr th:each="member, iterStat: *{groupMembers}">
                             <td>
-                                <input type="text" th:field="*{groupMembers[__${iterStat.index}__].displayName" class="form-control" placeholder="Member's name"/>
+                                <input type="text" th:field="*{groupMembers[__${iterStat.index}__].displayName}" class="form-control" placeholder="Member's name"/>
                             </td>
                             <td>
-                                <input type="text" th:field="*{groupMembers[__${iterStat.index}__].getPhoneNumber()" class="form-control" placeholder="Phone number"/>
+                                <input type="text" th:field="*{groupMembers[__${iterStat.index}__].phoneNumber}" class="form-control" placeholder="Phone number"/>
                             </td>
                         </tr>
                     </tbody>

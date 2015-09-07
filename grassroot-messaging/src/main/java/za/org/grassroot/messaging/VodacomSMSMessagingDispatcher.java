@@ -18,9 +18,9 @@ public class VodacomSMSMessagingDispatcher {
 
     private Logger log = LoggerFactory.getLogger(VodacomSMSMessagingDispatcher.class);
 
-    private String smsGatewayHost;
-    private String smsGatewayUsername;
-    private String smsGatewayPassword;
+    private String smsGatewayHost = "xml2sms.gsm.co.za";
+    private String smsGatewayUsername = System.getenv("SMSUSER");
+    private String smsGatewayPassword = System.getenv("SMSPASS");
 
     public void sendMessage(MessagePublishRequest messagePublishRequest)
     {
@@ -36,7 +36,6 @@ public class VodacomSMSMessagingDispatcher {
 
             gatewayURI.queryParam(String.join("number", String.valueOf(index)), phoneNumbers.get(index - 1));
             gatewayURI.queryParam(String.join("message", String.valueOf(index), messagePublishRequest.getMessage().getBody()));
-
 
             //@todo process response message
 
