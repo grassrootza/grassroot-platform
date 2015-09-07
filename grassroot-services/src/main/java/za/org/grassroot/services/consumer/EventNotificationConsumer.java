@@ -61,6 +61,15 @@ public class EventNotificationConsumer {
             concurrency = "3")
     public void sendChangedEventNotifications(Event event) {
         log.info("sendChangedEventNotifications... <" + event.toString() + ">");
+        for (User user : groupManagementService.getAllUsersInGroupAndSubGroups(event.getAppliesToGroup())) {
+            //generate message based on user language
+            String message = meetingNotificationService.createChangeMeetingNotificationMessage(user,event);
+            if (!eventLogManagementService.changeNotificationSentToUser(event, user, message)) {
+                //todo aakil send the sms
+                log.info("sendNewEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
+                eventLogManagementService.createEventLog(EventLogType.EventChange,event,user,message);
+            }
+        }
 
     }
 
@@ -68,6 +77,16 @@ public class EventNotificationConsumer {
             concurrency = "1")
     public void sendCancelledEventNotifications(Event event) {
         log.info("sendCancelledEventNotifications... <" + event.toString() + ">");
+        for (User user : groupManagementService.getAllUsersInGroupAndSubGroups(event.getAppliesToGroup())) {
+            //generate message based on user language
+            String message = meetingNotificationService.createCancelMeetingNotificationMessage(user,event);
+            if (!eventLogManagementService.cancelNotificationSentToUser(event,user)) {
+                //todo aakil send the sms
+                log.info("sendNewEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
+                eventLogManagementService.createEventLog(EventLogType.EventCancelled,event,user,message);
+            }
+        }
+
     }
 
 

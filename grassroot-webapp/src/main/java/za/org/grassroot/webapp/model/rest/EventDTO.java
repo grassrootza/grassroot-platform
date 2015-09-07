@@ -13,12 +13,14 @@ public class EventDTO {
     private String name;
     private String location;
     private Date date;
+    private boolean cancelled;
 
     public EventDTO(Event event) {
         this.id = event.getId();
         this.name = event.getName();
         this.location = event.getEventLocation();
         this.date = event.getEventStartDateTime();
+        this.cancelled = event.isCanceled();
     }
 
     public Long getId() {
@@ -53,6 +55,14 @@ public class EventDTO {
         this.date = date;
     }
 
+    public boolean isCancelled() {
+        return cancelled;
+    }
+
+    public void setCancelled(boolean cancelled) {
+        this.cancelled = cancelled;
+    }
+
     @Override
     public String toString() {
         return "EventDTO{" +
@@ -60,6 +70,7 @@ public class EventDTO {
                 ", name='" + name + '\'' +
                 ", location='" + location + '\'' +
                 ", date=" + date +
+                ", cancelled=" + cancelled +
                 '}';
     }
 }

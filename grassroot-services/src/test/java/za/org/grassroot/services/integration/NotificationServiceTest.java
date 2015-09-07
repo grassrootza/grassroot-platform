@@ -80,6 +80,28 @@ public class NotificationServiceTest {
         Assert.assertEquals("You are invited to the Drink till you drop meeting at Ellispark by 7777777", message);
     }
 
+    @Test
+    public void shouldGiveEnglishChangeMeetingMessage() {
+        User user = userRepository.save(new User("7777777"));
+        Group group = groupManagementService.createNewGroup(user, Arrays.asList("0828888888", "0829999999"));
+        Event event = eventRepository.save(new Event("Drink till you drop",user,group));
+        event.setEventLocation("Ellispark");
+        String message = meetingNotificationService.createChangeMeetingNotificationMessage(user, event);
+        log.info("shouldGiveEnglishMeetingMessage..." + message);
+        Assert.assertEquals("The meeting Drink till you drop has changed at Ellispark by 7777777", message);
+    }
+
+    @Test
+    public void shouldGiveEnglishCancelMeetingMessage() {
+        User user = userRepository.save(new User("7777777"));
+        Group group = groupManagementService.createNewGroup(user, Arrays.asList("0828888888", "0829999999"));
+        Event event = eventRepository.save(new Event("Drink till you drop",user,group));
+        event.setEventLocation("Ellispark");
+        String message = meetingNotificationService.createCancelMeetingNotificationMessage(user,event);
+        log.info("shouldGiveEnglishMeetingMessage..." + message);
+        Assert.assertEquals("The meeting Drink till you drop has been cancelled", message);
+    }
+
     private String writeTempFile(String data) {
         String filename = "";
         try{
