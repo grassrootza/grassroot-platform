@@ -6,5 +6,7 @@ package za.org.grassroot.core.enums;
 public enum EventLogType {
     EventNotification,
     EventReminder,
+    EventChange,
+    EventCancelled,
     EventMinutes
 }

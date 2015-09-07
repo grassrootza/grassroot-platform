@@ -33,6 +33,16 @@ public class EventLogManager implements EventLogManagementService {
     }
 
     @Override
+    public boolean changeNotificationSentToUser(Event event, User user, String message) {
+        return eventLogRepository.changeNotificationSent(event,user,message);
+    }
+
+    @Override
+    public boolean cancelNotificationSentToUser(Event event, User user) {
+        return eventLogRepository.cancelNotificationSent(event,user);
+    }
+
+    @Override
     public boolean reminderSentToUser(Event event, User user) {
         return eventLogRepository.reminderSent(event,user);
     }

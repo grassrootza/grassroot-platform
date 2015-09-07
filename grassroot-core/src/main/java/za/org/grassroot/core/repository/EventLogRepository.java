@@ -20,6 +20,12 @@ public interface EventLogRepository extends JpaRepository<EventLog, Long> {
     @Query("SELECT CASE WHEN COUNT(e) > 0 THEN 'true' ELSE 'false' END FROM EventLog e WHERE e.event = ?1 and e.user = ?2 and e.eventLogType = za.org.grassroot.core.enums.EventLogType.EventNotification")
     public Boolean notificationSent(Event event, User user);
 
+    @Query("SELECT CASE WHEN COUNT(e) > 0 THEN 'true' ELSE 'false' END FROM EventLog e WHERE e.event = ?1 and e.user = ?2 and e.eventLogType = za.org.grassroot.core.enums.EventLogType.EventChange and e.message = ?3")
+    public Boolean changeNotificationSent(Event event, User user, String message);
+
+    @Query("SELECT CASE WHEN COUNT(e) > 0 THEN 'true' ELSE 'false' END FROM EventLog e WHERE e.event = ?1 and e.user = ?2 and e.eventLogType = za.org.grassroot.core.enums.EventLogType.EventCancelled")
+    public Boolean cancelNotificationSent(Event event, User user);
+
     /*
 See if the reminder was already sent before sending it
 */

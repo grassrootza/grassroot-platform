@@ -57,5 +57,9 @@ public class EventRestController {
         return new EventDTO(eventManagementService.setDateTimeString(eventId,time));
     }
 
+    @RequestMapping(value = "/cancel/{eventId}", method = RequestMethod.POST)
+    public EventDTO cancel(@PathVariable("eventId") Long eventId) {
+        return new EventDTO(eventManagementService.cancelEvent(eventId));
+    }
 
 }

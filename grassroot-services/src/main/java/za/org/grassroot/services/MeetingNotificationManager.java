@@ -50,6 +50,38 @@ public class MeetingNotificationManager implements MeetingNotificationService {
         return createMessageUsingVelocity("meeting-notification.vm",map);
     }
 
+    @Override
+    public String createChangeMeetingNotificationMessage(User user, Event event) {
+        Map<String,Object> map = new HashMap<>();
+        //TODO rework this so that different language templates can be used
+        //     and pass it to the getMessage function as a Locale from the User entity
+        Locale locale = getUserLocale(user);
+        map.put("meetingchange", applicationContext.getMessage("meeting.change", null, locale));
+        map.put("meetingthemeeting",applicationContext.getMessage("meeting.themeeting", null, locale));
+        map.put("meetingby",applicationContext.getMessage("meeting.by", null, locale));
+        map.put("meetingat",applicationContext.getMessage("meeting.at", null,  locale));
+        map.put("eventname",event.getName());
+        map.put("location",event.getEventLocation());
+        map.put("username", (event.getCreatedByUser().getDisplayName() == null) ? event.getCreatedByUser().getPhoneNumber() : event.getCreatedByUser().getDisplayName());
+        return createMessageUsingVelocity("meeting-change-notification.vm",map);
+    }
+
+    @Override
+    public String createCancelMeetingNotificationMessage(User user, Event event) {
+        Map<String,Object> map = new HashMap<>();
+        //TODO rework this so that different language templates can be used
+        //     and pass it to the getMessage function as a Locale from the User entity
+        Locale locale = getUserLocale(user);
+        map.put("meetingcancel", applicationContext.getMessage("meeting.cancel", null, locale));
+        map.put("meetingthemeeting",applicationContext.getMessage("meeting.themeeting", null, locale));
+        map.put("meetingby",applicationContext.getMessage("meeting.by", null, locale));
+        map.put("meetingat",applicationContext.getMessage("meeting.at", null,  locale));
+        map.put("eventname",event.getName());
+        map.put("location",event.getEventLocation());
+        map.put("username", (event.getCreatedByUser().getDisplayName() == null) ? event.getCreatedByUser().getPhoneNumber() : event.getCreatedByUser().getDisplayName());
+        return createMessageUsingVelocity("meeting-cancel-notification.vm",map);
+    }
+
     private Locale getUserLocale(User user) {
         if (user.getLanguageCode() == null || user.getLanguageCode().trim().equals("")) {
             return Locale.ENGLISH;

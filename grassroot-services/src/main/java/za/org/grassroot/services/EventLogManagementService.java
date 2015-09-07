@@ -17,6 +17,10 @@ public interface EventLogManagementService {
 
     public boolean notificationSentToUser(Event event, User user);
 
+    public boolean changeNotificationSentToUser(Event event, User user, String message);
+
+    public boolean cancelNotificationSentToUser(Event event, User user);
+
     public boolean reminderSentToUser(Event event, User user);
 
     public List<EventLog> getMinutesForEvent(Event event);
