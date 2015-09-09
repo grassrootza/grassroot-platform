@@ -13,6 +13,7 @@ import za.org.grassroot.core.domain.Group;
 
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.GroupManagementService;
+import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
@@ -24,6 +25,9 @@ import java.util.List;
  */
 @Controller
 public class GroupController extends BaseController {
+
+    @Autowired
+    UserManagementService userManagementService;
 
     @Autowired
     GroupManagementService groupManagementService;
@@ -51,7 +55,7 @@ public class GroupController extends BaseController {
     {
         try {
 
-            if(bindingResult.hasErrors()) {
+            if (bindingResult.hasErrors()) {
                 model.addAttribute("group", group);
                 addMessage(model, MessageType.ERROR, "group.creation.error.message", request);
                 return "group/create";
@@ -60,6 +64,8 @@ public class GroupController extends BaseController {
             User groupCreator = getUserProfile();
             group.setCreatedByUser(groupCreator);
             group.addMember(groupCreator);
+
+            group.getGroupMembers().forEach(userManagementService::reformatPhoneNumber); // this should do saves on all
 
             Group saveGroup = groupManagementService.saveGroup(group);
 

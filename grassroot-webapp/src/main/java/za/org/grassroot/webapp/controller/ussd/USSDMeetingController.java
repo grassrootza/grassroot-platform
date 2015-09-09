@@ -4,6 +4,7 @@ import com.joestelmach.natty.DateGroup;
 import com.joestelmach.natty.Parser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -17,6 +18,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.services.MessageSendingService;
 import za.org.grassroot.integration.domain.MessageProtocol;
+import za.org.grassroot.integration.services.SmsSendingService;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
@@ -36,7 +38,11 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 @RestController
 public class USSDMeetingController extends USSDController {
 
+    @Autowired
     MessageSendingService messageService;
+
+    @Autowired
+    SmsSendingService smsService;
 
     /**
      * Meeting organizer menus
@@ -289,7 +295,8 @@ public class USSDMeetingController extends USSDController {
         sendMsgURI.path("send/").queryParam("username", smsUsername).queryParam("password", smsPassword); */
 
         for (int i = 1; i <= usersToMessage.size(); i++) {
-            messageService.sendMessage(msgText, usersToMessage.get(i-1).getPhoneNumber(), MessageProtocol.SMS);
+            MessageProtocol protocol = MessageProtocol.SMS;
+            messageService.sendMessage(msgText, usersToMessage.get(i - 1).getPhoneNumber(), protocol);
         }
 
         // todo: use responses (from integration or from elsewhere, to display errors if numbers wrong

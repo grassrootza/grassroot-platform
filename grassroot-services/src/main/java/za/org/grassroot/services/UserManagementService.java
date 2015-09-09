@@ -26,6 +26,8 @@ public interface UserManagementService {
 
     User findByInputNumber(String inputNumber);
 
+    User reformatPhoneNumber(User sessionUser);
+
     List<User> getUsersFromNumbers(List<String> listOfNumbers);
 
     boolean userExist(String phoneNumber);

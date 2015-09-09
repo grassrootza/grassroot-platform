@@ -143,6 +143,13 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
+    public User reformatPhoneNumber(User sessionUser) {
+        String correctedPhoneNumber = convertPhoneNumber(sessionUser.getPhoneNumber());
+        sessionUser.setPhoneNumber(correctedPhoneNumber);
+        return userRepository.save(sessionUser);
+    }
+
+    @Override
     public List<User> getUsersFromNumbers(List<String> listOfNumbers) {
 
         List<User> usersToAdd = new ArrayList<User>();

@@ -1,5 +1,6 @@
 package za.org.grassroot.integration.services;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.integration.domain.MessageProtocol;
 
@@ -9,6 +10,7 @@ import za.org.grassroot.integration.domain.MessageProtocol;
 @Service
 public class MessageSendingManager implements MessageSendingService {
 
+    @Autowired
     private SmsSendingService smsSender;
 
     @Override
@@ -17,13 +19,17 @@ public class MessageSendingManager implements MessageSendingService {
         // todo: replace with an object
         String messageResponse;
 
-        switch (messageProtocol) {
-            case SMS:
-                messageResponse = smsSender.sendSMS(message, destination);
-                break;
-            default:
-                messageResponse = smsSender.sendSMS(message, destination);
-                break;
+        if (messageProtocol != null) {
+            switch (messageProtocol) {
+                case SMS:
+                    messageResponse = smsSender.sendSMS(message, destination);
+                    break;
+                default:
+                    messageResponse = smsSender.sendSMS(message, destination);
+                    break;
+            }
+        } else {
+            messageResponse = smsSender.sendSMS(message, destination);
         }
 
         return messageResponse;
