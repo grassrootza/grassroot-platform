@@ -4,6 +4,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.MediaType;
@@ -39,6 +41,8 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 @RestController
 public class USSDHomeController extends USSDController {
 
+    Logger log = LoggerFactory.getLogger(getClass());
+
     @Autowired
     GroupTokenService groupTokenManager;
 
@@ -55,8 +59,6 @@ public class USSDHomeController extends USSDController {
         homeMenu.addMenuOption(LOG_MENUS, getMessage(HOME_KEY, START_KEY, OPTION + LOG_KEY, menuLang));
         homeMenu.addMenuOption(GROUP_MENUS + START_KEY, getMessage(HOME_KEY, START_KEY, OPTION + GROUP_KEY, menuLang));
         homeMenu.addMenuOption(USER_MENUS + START_KEY, getMessage(HOME_KEY, START_KEY, OPTION + USER_KEY, menuLang));
-
-        System.out.println("Menu size: " + homeMenu.getMenuCharLength());
 
         return homeMenu;
     }

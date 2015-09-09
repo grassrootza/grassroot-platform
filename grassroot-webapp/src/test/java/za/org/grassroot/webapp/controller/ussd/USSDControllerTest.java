@@ -9,6 +9,8 @@ import org.custommonkey.xmlunit.XMLUnit;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.SpringApplicationConfiguration;
@@ -29,7 +31,6 @@ import za.org.grassroot.webapp.GrassRootWebApplicationConfig;
 import javax.transaction.Transactional;
 import java.net.URI;
 import java.util.*;
-import java.util.logging.Logger;
 
 import static junit.framework.Assert.assertNotNull;
 import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
@@ -44,58 +45,68 @@ import static org.springframework.http.HttpStatus.OK;
 @SpringApplicationConfiguration(classes = {GrassRootWebApplicationConfig.class})
 @WebIntegrationTest(randomPort = true)
 @Transactional
-public class AatApiTestControllerTest {
+public class USSDControllerTest {
 
     @Value("${local.server.port}")
     int port;
 
-    private Logger log = Logger.getLogger(getClass().getCanonicalName());
+    protected Logger log = LoggerFactory.getLogger(USSDController.class);
 
-    private RestTemplate template = new TestRestTemplate();
-    private UriComponentsBuilder base = UriComponentsBuilder.newInstance().scheme("http").host("localhost");
+    protected RestTemplate template = new TestRestTemplate();
+    protected UriComponentsBuilder base = UriComponentsBuilder.newInstance().scheme("http").host("localhost");
 
     // Common parameters for assembling the USSD urls
-    private final String ussdPath = "ussd/";
-    private final String mtgPath = "mtg/";
-    private final String userPath = "user/";
+    protected final String ussdPath = "ussd/";
+    protected final String mtgPath = "mtg/";
+    protected final String userPath = "user/";
 
     // Common parameters used for assembling the USSD service calls
-    private final String phoneParam = "msisdn";
-    private final String freeTextParam = "request";
-    private final String eventParam = "eventId";
+    protected final String phoneParam = "msisdn";
+    protected final String freeTextParam = "request";
+    protected final String eventParam = "eventId";
 
     // Some strings used throughout tests
-    private final String testPhone = "27815550000"; // todo: make sure this isn't an actual number
-    private final String onceOffPhone= "27805550000"; // slightly different ot main testPhone so rename doesn't break XML checks if renamed already
-    private final String testDisplayName = "TestPhone1";
-    private final List<String> testPhones = Arrays.asList("0825550000", "0835550000", "0845550000"); // todo: as above
-    private final Integer testGroupSize = testPhones.size() + 1; // includes creating user
+    protected final String testPhone = "27815550000"; // todo: make sure this isn't an actual number
+    protected final String onceOffPhone= "27805550000"; // slightly different ot main testPhone so rename doesn't break XML checks if renamed already
+    protected final String testDisplayName = "TestPhone1";
+    protected final List<String> testPhones = Arrays.asList("0825550000", "0835550000", "0845550000"); // todo: as above
+    protected final Integer testGroupSize = testPhones.size() + 1; // includes creating user
 
     @Autowired
-    UserManagementService userManager;
+    protected UserManagementService userManager;
 
     @Autowired
-    GroupManagementService groupManager;
+    protected GroupManagementService groupManager;
 
     @Autowired
-    EventManagementService eventManager;
+    protected EventManagementService eventManager;
 
-    private UriComponentsBuilder assembleTestURI(String urlEnding) {
+    protected UriComponentsBuilder assembleTestURI(String urlEnding) {
         UriComponentsBuilder baseUri = UriComponentsBuilder.fromUri(base.build().toUri())
                 .path(ussdPath + urlEnding);
         return baseUri;
     }
 
-    private UriComponentsBuilder testPhoneUri(String urlEnding) {
+    protected UriComponentsBuilder testPhoneUri(String urlEnding) {
         return assembleTestURI(urlEnding).queryParam(phoneParam, testPhone);
     }
 
-    private List<ResponseEntity<String>> executeQueries(List<URI> urisToExecute) {
+    protected List<ResponseEntity<String>> executeQueries(List<URI> urisToExecute) {
         List<ResponseEntity<String>> responseEntities = new ArrayList<>();
         for (URI uriToExecute : urisToExecute) {
             responseEntities.add(template.getForEntity(uriToExecute, String.class));
         }
         return responseEntities;
+    }
+
+    protected ResponseEntity<String> executeQuery(URI uriToExecute) {
+        return template.getForEntity(uriToExecute, String.class);
+    }
+
+    protected URI testMtgParam(Long eventId, String parameter, String value, String urlEnding) {
+        URI uriToExecute = testPhoneUri(mtgPath + urlEnding).queryParam(eventParam, eventId).
+                queryParam("menukey", parameter).queryParam(freeTextParam, value).build().toUri();
+        return uriToExecute;
     }
 
     @Before
@@ -208,7 +219,7 @@ public class AatApiTestControllerTest {
         for (ResponseEntity<String> responseEntity : responseEntities)
             assertThat(responseEntity.getStatusCode(), is(OK));
 
-        System.out.println("URI STRING: " + createGroupUri.toString());
+        log.info("URI STRING: " + createGroupUri.toString());
 
         /**
          * this (test below) now fails again, with the meetingCreate method below added, which is troubling
@@ -220,7 +231,7 @@ public class AatApiTestControllerTest {
 
         // assertThat(userManager.getAllUsers().size(), is(testGroupSize));
 
-        System.out.println("NUMBER OF USERS:" + userManager.getAllUsers().size());
+        log.info("NUMBER OF USERS:" + userManager.getAllUsers().size());
 
         User userCreated = userManager.findByInputNumber(testPhone);
         Group groupCreated = groupManager.getLastCreatedGroup(userCreated);
@@ -237,22 +248,6 @@ public class AatApiTestControllerTest {
                 assertTrue(testPhones.contains(User.invertPhoneNumber(groupMember.getPhoneNumber(), "")));
         }
 
-    }
-
-    // todo: once we have the event model and repository, switch to checking the event repository
-    // todo: once the messaging layer is properly separated out, check the message that's compiled
-    // todo: there really should be better ways to do this iterating through URIs, but Java seems to want to make it ugly
-
-    private LinkedHashMap<URI, ResponseEntity<String>> uriExecute(URI uriToExecute) {
-        LinkedHashMap<URI, ResponseEntity<String>> stupidMap = new LinkedHashMap<>();
-        stupidMap.put(uriToExecute, template.getForEntity(uriToExecute, String.class));
-        return stupidMap;
-    }
-
-    private URI testMtgParam(Long eventId, String parameter, String value, String urlEnding) {
-        URI uriToExecute = testPhoneUri(mtgPath + urlEnding).queryParam(eventParam, eventId).
-                queryParam("menukey", parameter).queryParam(freeTextParam, value).build().toUri();
-        return uriToExecute;
     }
 
     @Test
@@ -291,6 +286,16 @@ public class AatApiTestControllerTest {
 
         // assertThat(eventToTest.getDateTimeString(), is("Saturday 9am")); // for some reason this is failing, no idea why, works in rest
         // assertThat(eventToTest.getEventLocation(), is("home")); // to include once can do messaging
+    }
+
+    // todo: once we have the event model and repository, switch to checking the event repository
+    // todo: once the messaging layer is properly separated out, check the message that's compiled
+    // todo: there really should be better ways to do this iterating through URIs, but Java seems to want to make it ugly
+
+    protected LinkedHashMap<URI, ResponseEntity<String>> uriExecute(URI uriToExecute) {
+        LinkedHashMap<URI, ResponseEntity<String>> hashMap = new LinkedHashMap<>();
+        hashMap.put(uriToExecute, template.getForEntity(uriToExecute, String.class));
+        return hashMap;
     }
 
     // set of automatic tests to make sure the standard menus aren't too long

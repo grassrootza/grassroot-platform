@@ -18,18 +18,12 @@ import java.util.Calendar;
 public class GroupTokenCode extends TokenCode implements Serializable {
 
     private Group group;
-    // private User creatingUser;
 
-    private static final int DAY_MILLIS = 24 * 60 * 60 * 60 * 1000;
-
-    @OneToOne(mappedBy="groupTokenCode")
-    @PrimaryKeyJoinColumn
+    @OneToOne(mappedBy="groupTokenCode", cascade = CascadeType.ALL)
+    @PrimaryKeyJoinColumn(name="group_id")
     public Group getGroup() { return group; }
 
     public void setGroup(Group group) { this.group = group; }
-
-    // public User getCreatingUser() { return creatingUser; }
-    // public void setCreatingUser(User creatingUser) { this.creatingUser = creatingUser; }
 
     public GroupTokenCode() {
     }
@@ -50,6 +44,7 @@ public class GroupTokenCode extends TokenCode implements Serializable {
 
     @Transient
     public GroupTokenCode withCodeExpiryDays(String code, Integer expiryDays) {
+        final int DAY_MILLIS = 24 * 60 * 60 * 60 * 1000;
         this.code = code;
         this.expiryDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis() + expiryDays * DAY_MILLIS);
         return this;

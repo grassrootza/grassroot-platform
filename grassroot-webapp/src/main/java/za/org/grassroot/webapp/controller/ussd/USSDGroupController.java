@@ -1,5 +1,7 @@
 package za.org.grassroot.webapp.controller.ussd;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,6 +33,8 @@ public class USSDGroupController extends USSDController {
      * Starting the group management menu flow here
      * todo: Add in extracting names and numbers from groups without names so users know what group it is
      */
+
+    Logger log = LoggerFactory.getLogger(this.getClass());
 
     @Autowired
     GroupTokenService groupTokenManager;
@@ -76,8 +80,6 @@ public class USSDGroupController extends USSDController {
         listMenu.addMenuOption(GROUP_MENUS + keyUnsubscribe + groupParam, getMessage(menuKey + keyUnsubscribe, sessionUser));
         // listMenu.addMenuOption(GROUP_MENUS + keyListGroup + groupParam, getMessage(menuKey + keyListGroup, sessionUser));
         // listMenu.addMenuOption(GROUP_MENUS + keySecondMenu , getMessage(menuKey + MORE, sessionUser));
-
-        System.out.println("Menu length: " + listMenu.getMenuCharLength());
 
         return menuBuilder(listMenu);
 

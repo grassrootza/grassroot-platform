@@ -23,6 +23,8 @@ public interface GroupTokenService {
 
     GroupTokenCode extendGroupCode(String code, Integer daysValid);
 
+    GroupTokenCode getTokenFromGroup(Group group);
+
     boolean doesGroupCodeExist(String code);
 
     boolean doesGroupCodeExistByGroupId(Long groupId);

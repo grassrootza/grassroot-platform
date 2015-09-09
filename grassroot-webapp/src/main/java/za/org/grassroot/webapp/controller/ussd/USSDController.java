@@ -4,6 +4,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.Phonenumber;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.data.domain.Page;
@@ -27,6 +29,8 @@ import java.util.*;
  * todo: Expand -- a lot -- the various methods needed to handle phone number inputs
  */
 public class USSDController {
+
+    private Logger log = LoggerFactory.getLogger(getClass());
 
     @Autowired
     UserManagementService userManager;
@@ -113,7 +117,7 @@ public class USSDController {
         Integer characterLimit = firstMenu ? 140 : 160;
 
         // todo: replace with a logger
-        System.out.println("Length of menu: " + menuToCheck.getMenuCharLength(enumLength));
+        log.info("Length of menu: " + menuToCheck.getMenuCharLength(enumLength));
 
         return (menuToCheck.getMenuCharLength(enumLength) < characterLimit); // might be able to get away with <=, but prefer to be conservative
     }

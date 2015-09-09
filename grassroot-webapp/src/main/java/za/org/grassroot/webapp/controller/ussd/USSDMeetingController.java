@@ -2,6 +2,8 @@ package za.org.grassroot.webapp.controller.ussd;
 
 import com.joestelmach.natty.DateGroup;
 import com.joestelmach.natty.Parser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -13,10 +15,8 @@ import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.PhoneNumberUtil;
-import za.org.grassroot.messaging.domain.Destination;
-import za.org.grassroot.messaging.domain.Message;
-import za.org.grassroot.messaging.domain.MessageProtocol;
-import za.org.grassroot.messaging.domain.MessagePublishRequest;
+import za.org.grassroot.integration.services.MessageSendingService;
+import za.org.grassroot.integration.domain.MessageProtocol;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
@@ -25,7 +25,6 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
-import java.util.logging.Logger;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
@@ -37,6 +36,8 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 @RestController
 public class USSDMeetingController extends USSDController {
 
+    MessageSendingService messageService;
+
     /**
      * Meeting organizer menus
      * todo: Various forms of validation and checking throughout
@@ -45,7 +46,7 @@ public class USSDMeetingController extends USSDController {
      * todo: Replace "meeting" as the event "name" with a meeting subject
      */
 
-    private Logger log = java.util.logging.Logger.getLogger(getClass().getCanonicalName());
+    private Logger log = LoggerFactory.getLogger(getClass());
 
     private static final String keyNewGroup = "newgroup", keyGroup = "group", keySubject="subject",
             keyTime = "time", keyPlace = "place", keySend = "send";
@@ -281,28 +282,17 @@ public class USSDMeetingController extends USSDController {
         };
 
         String msgText = getMessage(MTG_KEY, keySend, "template", msgParams, sessionUser);
-        System.out.println(msgText);
+        log.info("Message text: " + msgText);
 
-        MessagePublishRequest meetingMessageRequest = new MessagePublishRequest();
-        Message meetingMessage = new Message("messageId", msgText); // todo: set an actual messageId, when we have them
-        Destination meetingRecipients = new Destination();
-
-        RestTemplate sendGroupSMS = new RestTemplate();
+        /* RestTemplate sendGroupSMS = new RestTemplate();
         UriComponentsBuilder sendMsgURI = UriComponentsBuilder.newInstance().scheme("https").host(smsHost);
-        sendMsgURI.path("send/").queryParam("username", smsUsername).queryParam("password", smsPassword);
+        sendMsgURI.path("send/").queryParam("username", smsUsername).queryParam("password", smsPassword); */
 
         for (int i = 1; i <= usersToMessage.size(); i++) {
-            sendMsgURI.queryParam("number" + i, usersToMessage.get(i-1).getPhoneNumber());
-            sendMsgURI.queryParam("message" + i, msgText);
-            meetingRecipients.addToAddress(usersToMessage.get(i-1).getPhoneNumber());
+            messageService.sendMessage(msgText, usersToMessage.get(i-1).getPhoneNumber(), MessageProtocol.SMS);
         }
 
-        String messageResult = sendGroupSMS.getForObject(sendMsgURI.build().toUri(), String.class);
-        log.info(messageResult);
-
-        meetingMessageRequest.setMessageProtocol(MessageProtocol.SMS);
-        meetingMessageRequest.setMessage(meetingMessage);
-        meetingMessageRequest.setDestination(meetingRecipients);
+        // todo: use responses (from integration or from elsewhere, to display errors if numbers wrong
 
         return menuBuilder(new USSDMenu(getMessage(MTG_KEY, keySend, PROMPT, sessionUser), optionsHomeExit(sessionUser)));
     }
@@ -352,7 +342,7 @@ public class USSDMeetingController extends USSDController {
         if (firstDateGroup != null) {
             Date parsedDate = firstDateGroup.getDates().iterator().next();
             parsedDateTime = parsedDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-            System.out.println("Date time processed: " + parsedDateTime.toString());
+            log.info("Date time processed: " + parsedDateTime.toString());
         } else {
             parsedDateTime = LocalDateTime.now();
         }

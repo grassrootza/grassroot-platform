@@ -48,7 +48,9 @@ public class GroupTokenManager implements GroupTokenService {
 
         String code = String.valueOf(1000 + new Random().nextInt(9999));
         GroupTokenCode newToken = new GroupTokenCode(group, creatingUser, code);
+        group.setGroupTokenCode(newToken);
         newToken = groupTokenCodeRepository.save(newToken);
+        group = groupRepository.save(group);
         return newToken;
     }
 
@@ -57,10 +59,14 @@ public class GroupTokenManager implements GroupTokenService {
 
         // todo: implement Java 8 LocalDateTime properly in domain (replacing / augmenting Timestamp)
 
+        log.info("Creating a group token code via USSD menu call");
         GroupTokenCode newGroupToken = generateGroupCode(group, creatingUser);
         LocalDateTime expiryDateTime = LocalDateTime.now().plusDays(numberOfDays);
         newGroupToken.setExpiryDateTime(Timestamp.valueOf(expiryDateTime));
+        group.setGroupTokenCode(newGroupToken);
         newGroupToken = groupTokenCodeRepository.save(newGroupToken);
+        group = groupRepository.save(group);
+        log.info("Group token code as saved: " + group.getGroupTokenCode().getCode());
         return newGroupToken;
 
     }
@@ -70,6 +76,7 @@ public class GroupTokenManager implements GroupTokenService {
         GroupTokenCode newGroupToken = generateGroupCode(group, creatingUser);
         newGroupToken.setExpiryDateTime(Timestamp.valueOf(expiryDateTime));
         newGroupToken = groupTokenCodeRepository.save(newGroupToken);
+        group = groupRepository.save(group);
         return newGroupToken;
     }
 
@@ -81,6 +88,11 @@ public class GroupTokenManager implements GroupTokenService {
         groupToken.setExpiryDateTime(Timestamp.valueOf(extendedDateTime));
         groupToken = groupTokenCodeRepository.save(groupToken);
         return groupToken;
+    }
+
+    @Override
+    public GroupTokenCode getTokenFromGroup(Group group) {
+        return groupTokenCodeRepository.findByGroup(group);
     }
 
     /*
@@ -95,10 +107,22 @@ public class GroupTokenManager implements GroupTokenService {
 
     @Override
     public boolean doesGroupCodeExistByGroupId(Long groupId) {
+
+        boolean codeExists = false;
+
+        log.debug("Checking for token on group .." + groupId);
         Group groupToCheck = groupRepository.findOne(groupId);
+        if (groupToCheck != null) { log.debug("Found the group, with name: " + groupToCheck.getName("")); }
+
         GroupTokenCode returnedCode = groupToCheck.getGroupTokenCode();
-        return (returnedCode != null &&
-                returnedCode.getExpiryDateTime().after(new Timestamp(Calendar.getInstance().getTimeInMillis())));
+        if (returnedCode != null) {
+            log.debug("The token exists, attached to the group, with code: " + returnedCode.getCode());
+            log.debug("The token has an expiry date of: " + returnedCode.getExpiryDateTime().toString());
+            log.debug("The time right now on the system calendar is: " + Calendar.getInstance().toString());
+            codeExists = returnedCode.getExpiryDateTime().after(new Timestamp(Calendar.getInstance().getTimeInMillis()));
+        }
+
+        return codeExists;
     }
 
     @Override

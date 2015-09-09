@@ -99,8 +99,8 @@ public class Group implements Serializable {
         this.parent = parent;
     }
 
-    @OneToOne
-    @PrimaryKeyJoinColumn
+    @OneToOne(cascade = CascadeType.ALL)
+    @PrimaryKeyJoinColumn(name="group_token_id")
     public GroupTokenCode getGroupTokenCode() {
         return this.groupTokenCode;
     }
