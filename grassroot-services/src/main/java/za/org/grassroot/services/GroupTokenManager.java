@@ -1,4 +1,4 @@
-package za.org.grassroot.services;
+/* package za.org.grassroot.services;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,18 +14,18 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Calendar;
+import java.util.Objects;
 import java.util.Random;
 
 /**
  * Created by luke on 2015/08/30.
  */
-@Service
+
+/*@Service
 public class GroupTokenManager implements GroupTokenService {
 
     private Logger log = LoggerFactory.getLogger(GroupTokenManager.class);
 
-    @Autowired
-    GroupTokenCodeRepository groupTokenCodeRepository;
     @Autowired
     GroupRepository groupRepository;
     @Autowired
@@ -48,8 +48,8 @@ public class GroupTokenManager implements GroupTokenService {
 
         String code = String.valueOf(1000 + new Random().nextInt(9999));
         GroupTokenCode newToken = new GroupTokenCode(group, creatingUser, code);
-        group.setGroupTokenCode(newToken);
-        newToken = groupTokenCodeRepository.save(newToken);
+        // group.setGroupTokenCode(newToken);
+        // newToken = groupTokenCodeRepository.save(newToken);
         group = groupRepository.save(group);
         return newToken;
     }
@@ -63,10 +63,10 @@ public class GroupTokenManager implements GroupTokenService {
         GroupTokenCode newGroupToken = generateGroupCode(group, creatingUser);
         LocalDateTime expiryDateTime = LocalDateTime.now().plusDays(numberOfDays);
         newGroupToken.setExpiryDateTime(Timestamp.valueOf(expiryDateTime));
-        group.setGroupTokenCode(newGroupToken);
-        newGroupToken = groupTokenCodeRepository.save(newGroupToken);
+        // group.setGroupTokenCode(newGroupToken);
+        // newGroupToken = groupTokenCodeRepository.save(newGroupToken);
         group = groupRepository.save(group);
-        log.info("Group token code as saved: " + group.getGroupTokenCode().getCode());
+        // log.info("Group token code as saved: " + group.getGroupTokenCode().getCode());
         return newGroupToken;
 
     }
@@ -75,7 +75,7 @@ public class GroupTokenManager implements GroupTokenService {
     public GroupTokenCode generateGroupCode(Group group, User creatingUser, LocalDateTime expiryDateTime) {
         GroupTokenCode newGroupToken = generateGroupCode(group, creatingUser);
         newGroupToken.setExpiryDateTime(Timestamp.valueOf(expiryDateTime));
-        newGroupToken = groupTokenCodeRepository.save(newGroupToken);
+        // newGroupToken = groupTokenCodeRepository.save(newGroupToken);
         group = groupRepository.save(group);
         return newGroupToken;
     }
@@ -86,7 +86,7 @@ public class GroupTokenManager implements GroupTokenService {
         GroupTokenCode groupToken = groupTokenCodeRepository.findByCode(code);
         LocalDateTime extendedDateTime = groupToken.getExpiryDateTime().toLocalDateTime().plusDays(daysValid);
         groupToken.setExpiryDateTime(Timestamp.valueOf(extendedDateTime));
-        groupToken = groupTokenCodeRepository.save(groupToken);
+        // groupToken = groupTokenCodeRepository.save(groupToken);
         return groupToken;
     }
 
@@ -99,7 +99,7 @@ public class GroupTokenManager implements GroupTokenService {
     Given how often we may check if the user has passed a group code, need a very fast / pared down query to check if
     the token exists and find its group.
      */
-    @Override
+/*    @Override
     public boolean doesGroupCodeExist(String code) {
         GroupTokenCode returnedCode = groupTokenCodeRepository.findByCode(code);
         return (returnedCode != null);
@@ -114,7 +114,7 @@ public class GroupTokenManager implements GroupTokenService {
         Group groupToCheck = groupRepository.findOne(groupId);
         if (groupToCheck != null) { log.debug("Found the group, with name: " + groupToCheck.getName("")); }
 
-        GroupTokenCode returnedCode = groupToCheck.getGroupTokenCode();
+        GroupTokenCode returnedCode = groupTokenCodeRepository.findByGroup(groupToCheck);
         if (returnedCode != null) {
             log.debug("The token exists, attached to the group, with code: " + returnedCode.getCode());
             log.debug("The token has an expiry date of: " + returnedCode.getExpiryDateTime().toString());
@@ -141,7 +141,7 @@ public class GroupTokenManager implements GroupTokenService {
     public boolean doesGroupCodeMatch(String code, Long groupId) {
         // todo: check that the token has not expired yet
         GroupTokenCode groupToken = groupTokenCodeRepository.findByCode(code);
-        return (groupToken != null && groupId == groupToken.getGroup().getId());
+        return (groupToken != null && groupId.equals(groupToken.getGroup().getId()));
     }
 
     @Override
@@ -153,8 +153,8 @@ public class GroupTokenManager implements GroupTokenService {
         // if (!creatingUser.equals(groupTokenCode.getCreatingUser())) { return false; }
 
         groupTokenCode.setCode(null); // maybe better to delete the entity?
-        groupTokenCodeRepository.save(groupTokenCode);
+        // groupTokenCodeRepository.save(groupTokenCode);
         return true;
     }
 
-}
+} */

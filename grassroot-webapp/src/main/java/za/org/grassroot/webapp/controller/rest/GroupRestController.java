@@ -34,7 +34,7 @@ public class GroupRestController {
 
     @RequestMapping(value = "/add/{userid}/{phonenumbers}", method = RequestMethod.POST)
     public GroupDTO add(@PathVariable("userid") Long userid,@PathVariable("phonenumbers") String phoneNumbers) {
-        return new GroupDTO(groupManagementService.createNewGroup(userid,PhoneNumberUtil.splitPhoneNumbers(phoneNumbers, " ").get("valid")));
+        return new GroupDTO(groupManagementService.createNewGroup(userid,PhoneNumberUtil.splitPhoneNumbers(phoneNumbers).get("valid")));
     }
 
     @RequestMapping(value = "/add/subgroup/{userId}/{groupId}/{subGroupName}",

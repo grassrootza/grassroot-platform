@@ -29,6 +29,9 @@ public interface GroupRepository extends PagingAndSortingRepository<Group, Long>
     Find all the groups that a user is part of, with pagination
      */
     List<Group> findByGroupMembers(User sessionUser);
-
     Page<Group> findByGroupMembers(User sessionUser, Pageable pageable);
+    /*
+    Find a group by a code
+     */
+    Group findByGroupTokenCode(String groupTokenCode);
 }

@@ -28,9 +28,10 @@ public class Group implements Serializable {
     private User      createdByUser;
 
     private List<User> groupMembers = LazyList.lazyList(new ArrayList<>(), FactoryUtils.instantiateFactory(User.class));
-    private Group parent;
+    private Group       parent;
 
-    private GroupTokenCode groupTokenCode;
+    private String      groupTokenCode;
+    private Timestamp   tokenExpiryDateTime;
 
     @Basic
     @Column(name = "name", nullable = false, length = 50)
@@ -99,15 +100,17 @@ public class Group implements Serializable {
         this.parent = parent;
     }
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @PrimaryKeyJoinColumn(name="group_token_id")
-    public GroupTokenCode getGroupTokenCode() {
-        return this.groupTokenCode;
-    }
+    @Basic
+    @Column(name = "group_token_code", nullable = true, insertable = true, updatable = true, unique = true)
+    public String getGroupTokenCode() { return groupTokenCode; }
 
-    public void setGroupTokenCode(GroupTokenCode groupTokenCode) {
-        this.groupTokenCode = groupTokenCode;
-    }
+    public void setGroupTokenCode(String groupTokenCode) { this.groupTokenCode = groupTokenCode; }
+
+    @Basic
+    @Column(name = "token_code_expiry", nullable = true, insertable = true, updatable = true)
+    public Timestamp getTokenExpiryDateTime() { return tokenExpiryDateTime; }
+
+    public void setTokenExpiryDateTime(Timestamp tokenExpiryDateTime) { this.tokenExpiryDateTime = tokenExpiryDateTime; }
 
     @PreUpdate
     @PrePersist

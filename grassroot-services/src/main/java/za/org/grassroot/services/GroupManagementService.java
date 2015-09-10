@@ -3,6 +3,7 @@ package za.org.grassroot.services;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 
+import java.sql.Timestamp;
 import java.util.List;
 
 /**
@@ -41,6 +42,22 @@ public interface GroupManagementService {
     public List<Group> getPaginatedGroups(User sessionUser, int pageNumber, int pageSize);
 
     public Group getGroupById(Long groupId);
+
+    public Group getGroupByToken(String groupToken);
+
+    public Group generateGroupToken(Group group, Integer daysValid);
+
+    public Group generateGroupToken(Long groupId, Integer daysValid);
+
+    public Group extendGroupToken(Group group, Integer daysExtension);
+
+    public Group invalidateGroupToken(Group group);
+
+    public Group invalidateGroupToken(Long groupId);
+
+    public boolean groupHasValidToken(Group group);
+
+    public boolean tokenExists(String groupToken);
 
     public Group createSubGroup(User createdByUser, Group group, String subGroupName);
 

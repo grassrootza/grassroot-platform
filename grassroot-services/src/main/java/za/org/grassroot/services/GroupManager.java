@@ -1,5 +1,7 @@
 package za.org.grassroot.services;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -10,8 +12,11 @@ import za.org.grassroot.core.repository.GroupRepository;
 
 import javax.jws.soap.SOAPBinding;
 import javax.transaction.Transactional;
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Random;
 
 /**
  * @author luke on 2015/08/14.
@@ -21,6 +26,8 @@ import java.util.List;
 @Service
 @Transactional
 public class GroupManager implements GroupManagementService {
+
+    Logger log = LoggerFactory.getLogger(GroupManager.class);
 
     @Autowired
     GroupRepository groupRepository;
@@ -57,7 +64,7 @@ public class GroupManager implements GroupManagementService {
     //todo aakil send event notification to new group member
     @Override
     public Group addGroupMember(Long currentGroupId, Long newMemberId) {
-        return addGroupMember(getGroupById(currentGroupId),userManager.getUserById(newMemberId));
+        return addGroupMember(getGroupById(currentGroupId), userManager.getUserById(newMemberId));
     }
     @Override
     public Group addGroupMember(Group currentGroup, User newMember) {
@@ -67,7 +74,7 @@ public class GroupManager implements GroupManagementService {
 
     @Override
     public Group createNewGroup(Long creatingUserId, List<String> phoneNumbers) {
-        return createNewGroup(userManager.getUserById(creatingUserId),phoneNumbers);
+        return createNewGroup(userManager.getUserById(creatingUserId), phoneNumbers);
     }
 
     @Override
@@ -143,6 +150,80 @@ public class GroupManager implements GroupManagementService {
     @Override
     public Group getGroupById(Long groupId) {
         return groupRepository.findOne(groupId);
+    }
+
+    @Override
+    public Group getGroupByToken(String groupToken) {
+        return groupRepository.findByGroupTokenCode(groupToken);
+    }
+
+    @Override
+    public Group generateGroupToken(Group group, Integer daysValid) {
+        // todo: checks for whether the code already exists, and/or existing validity of group
+
+        log.info("Generating a new group token, for group: " + group.getId());
+
+        Integer daysMillis = 24 * 60 * 60 * 1000;
+        Timestamp expiryDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis() + daysValid * daysMillis);
+
+        group.setGroupTokenCode(generateCodeString());
+        group.setTokenExpiryDateTime(expiryDateTime);
+
+        log.info("Group code generated: " + group.getGroupTokenCode());
+
+        group = groupRepository.save(group);
+
+        log.info("Group code after save: " + group.getGroupTokenCode());
+
+        return group;
+    }
+
+    @Override
+    public Group generateGroupToken(Long groupId, Integer daysValid) {
+        return generateGroupToken(loadGroup(groupId), daysValid);
+    }
+
+    @Override
+    public Group extendGroupToken(Group group, Integer daysExtension) {
+        Integer daysMillis = 24 * 60 * 60 * 1000; // need to put this somewhere else so not copying & pasting
+        Timestamp newExpiryDateTime = new Timestamp(group.getTokenExpiryDateTime().getTime() + daysExtension * daysMillis);
+        group.setTokenExpiryDateTime(newExpiryDateTime);
+        return groupRepository.save(group);
+    }
+
+    @Override
+    public Group invalidateGroupToken(Group group) {
+        group.setTokenExpiryDateTime(new Timestamp(Calendar.getInstance().getTimeInMillis()));
+        group.setGroupTokenCode(null); // alternately, set it to ""
+        return groupRepository.save(group);
+    }
+
+    @Override
+    public Group invalidateGroupToken(Long groupId) {
+        return invalidateGroupToken(loadGroup(groupId));
+    }
+
+    @Override
+    public boolean groupHasValidToken(Group group) {
+
+        boolean codeExists = group.getGroupTokenCode() != null && group.getGroupTokenCode().trim() != "";
+        boolean codeValid = group.getTokenExpiryDateTime() != null &&
+                group.getTokenExpiryDateTime().after(new Timestamp(Calendar.getInstance().getTimeInMillis()));
+
+        return codeExists && codeValid;
+
+    }
+
+    @Override
+    public boolean tokenExists(String groupToken) {
+        // separating this from getGroupByToken because in time we will want to hone its performance, a lot
+        // todo: find a way to make this very, very fast--in some use cases, will be triggered by 10k+ users within seconds
+        return (groupRepository.findByGroupTokenCode(groupToken) == null);
+    }
+
+    private String generateCodeString() {
+        // todo: implement a unique code generating algorithm that actually makes sense
+        return String.valueOf(1000 + new Random().nextInt(9999));
     }
 
     /*

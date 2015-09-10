@@ -1,20 +1,12 @@
 package za.org.grassroot.webapp.controller.ussd;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.i18n.phonenumbers.NumberParseException;
-import com.google.i18n.phonenumbers.PhoneNumberUtil;
-import com.google.i18n.phonenumbers.Phonenumber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
-import org.springframework.data.domain.Page;
-import org.springframework.web.servlet.LocaleResolver;
-import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Option;
@@ -193,7 +185,7 @@ public class USSDController {
         USSDMenu thisMenu = new USSDMenu("");
         thisMenu.setFreeText(true);
 
-        Map<String, List<String>> enteredNumbers = za.org.grassroot.core.util.PhoneNumberUtil.splitPhoneNumbers(userInput, " ");
+        Map<String, List<String>> enteredNumbers = za.org.grassroot.core.util.PhoneNumberUtil.splitPhoneNumbers(userInput);
 
         List<String> errorNumbers = enteredNumbers.get("error");
 

@@ -1,4 +1,4 @@
-package za.org.grassroot.services;
+/* package za.org.grassroot.services;
 
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.GroupTokenCode;
@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * Created by luke on 2015/08/30.
  */
-public interface GroupTokenService {
+/* public interface GroupTokenService {
 
     GroupTokenCode generateGroupCode(Long groupId, String inputNumber);
 
@@ -37,4 +37,4 @@ public interface GroupTokenService {
 
     boolean invalidateGroupToken(Long groupId, User creatingUser, String code);
 
-}
+}*/

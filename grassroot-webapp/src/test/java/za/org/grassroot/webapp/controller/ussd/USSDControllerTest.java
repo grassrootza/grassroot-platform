@@ -50,7 +50,7 @@ public class USSDControllerTest {
     @Value("${local.server.port}")
     int port;
 
-    protected Logger log = LoggerFactory.getLogger(USSDController.class);
+    protected Logger log = LoggerFactory.getLogger(USSDControllerTest.class);
 
     protected RestTemplate template = new TestRestTemplate();
     protected UriComponentsBuilder base = UriComponentsBuilder.newInstance().scheme("http").host("localhost");

@@ -2,17 +2,14 @@ package za.org.grassroot.webapp.controller.ussd;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.GroupTokenCode;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.PhoneNumberUtil;
-import za.org.grassroot.services.GroupTokenService;
 import za.org.grassroot.services.UserManager;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -35,9 +32,6 @@ public class USSDGroupController extends USSDController {
      */
 
     Logger log = LoggerFactory.getLogger(this.getClass());
-
-    @Autowired
-    GroupTokenService groupTokenManager;
 
     private static final String keyMenu = "menu", keyCreateGroup = "create", keyListGroup = "list", keyRenameGroup = "rename",
             keyAddNumber = "addnumber", keyUnsubscribe = "unsubscribe", keyGroupToken = "token", keyDelGroup = "delete";
@@ -115,7 +109,8 @@ public class USSDGroupController extends USSDController {
             thisMenu.setPromptMessage(getMessage(GROUP_KEY, keyCreateGroup + DO_SUFFIX, PROMPT + ".done", language));
             thisMenu.setNextURI(GROUP_MENUS + keyRenameGroup + DO_SUFFIX + GROUPID_URL + groupId + "&newgroup=1"); // reusing the rename function
         } else {
-            Map<String, List<String>> splitPhoneNumbers = PhoneNumberUtil.splitPhoneNumbers(userResponse, " ");
+            Map<String, List<String>> splitPhoneNumbers = PhoneNumberUtil.splitPhoneNumbers(userResponse);
+            PhoneNumberUtil.splitPhoneNumbers(userResponse);
             if (groupId == null) { // creating a new group, process numbers and ask for more
                 Group createdGroup = groupManager.createNewGroup(sessionUser, splitPhoneNumbers.get("valid"));
                 thisMenu = numberEntryPrompt(createdGroup.getId(), "created", sessionUser, splitPhoneNumbers.get("error"));
@@ -160,10 +155,12 @@ public class USSDGroupController extends USSDController {
         try { sessionUser = userManager.findByInputNumber(inputNumber); }
         catch (NoSuchElementException e) { return noUserError; }
 
+        Group sessionGroup = groupManager.loadGroup(groupId);
+
         USSDMenu tokenMenu = new USSDMenu("");
 
-        if (groupTokenManager.doesGroupCodeExistByGroupId(groupId)) {
-            String tokenCode = groupManager.loadGroup(groupId).getGroupTokenCode().getCode();
+        if (groupManager.groupHasValidToken(sessionGroup)) {
+            String tokenCode = sessionGroup.getGroupTokenCode();
             tokenMenu.setPromptMessage(getMessage(GROUP_KEY, keyGroupToken, PROMPT + ".exists", tokenCode, sessionUser));
             tokenMenu.addMenuOption(GROUP_MENUS + keyGroupToken + "-extend" + GROUPID_URL + groupId + TOKEN_URL + tokenCode,
                                     getMessage(GROUP_KEY, keyGroupToken, OPTION + "extend", sessionUser));
@@ -192,10 +189,10 @@ public class USSDGroupController extends USSDController {
         try { sessionUser = userManager.findByInputNumber(inputNumber); }
         catch (NoSuchElementException e) { return noUserError; }
 
-        Group sessionGroup = groupManager.loadGroup(groupId);
-        GroupTokenCode newGroupToken = groupTokenManager.generateGroupCode(sessionGroup, sessionUser, daysValid);
+        Group sessionGroup = groupManager.generateGroupToken(groupId, daysValid);
 
-        USSDMenu returnMessage = new USSDMenu(getMessage(GROUP_KEY, keyGroupToken, "created", newGroupToken.getCode(), sessionUser),
+        USSDMenu returnMessage = new USSDMenu(getMessage(GROUP_KEY, keyGroupToken, "created",
+                                                         sessionGroup.getGroupTokenCode(), sessionUser),
                                               optionsHomeExit(sessionUser));
 
         return menuBuilder(returnMessage);
@@ -210,6 +207,7 @@ public class USSDGroupController extends USSDController {
                                @RequestParam(value="days", required=false) Integer daysValid) throws URISyntaxException {
 
         User sessionUser = userManager.findByInputNumber(inputNumber);
+        Group sessionGroup = groupManager.loadGroup(groupId);
         USSDMenu promptMenu = new USSDMenu("");
         String thisUri = GROUP_MENUS + keyGroupToken + "_extend" + GROUPID_URL + groupId;
 
@@ -220,10 +218,9 @@ public class USSDGroupController extends USSDController {
             String daySuffix = getMessage(GROUP_KEY, keyGroupToken, OPTION + "days", sessionUser);
             for (int i = 1; i <= 3; i++)
                 promptMenu.addMenuOption(thisUri + "&days=" + i, i + daySuffix);
-
         } else {
-            GroupTokenCode extendedToken = groupTokenManager.extendGroupCode(code, daysValid);
-            String date = extendedToken.getExpiryDateTime().toLocalDateTime().toString();
+            sessionGroup = groupManager.extendGroupToken(sessionGroup, daysValid);
+            String date = sessionGroup.getTokenExpiryDateTime().toLocalDateTime().toString();
             promptMenu = new USSDMenu(getMessage(GROUP_KEY, keyGroupToken, PROMPT + ".extend.done", date, sessionUser),
                                         optionsHomeExit(sessionUser));
         }
@@ -242,11 +239,11 @@ public class USSDGroupController extends USSDController {
 
         // todo: check the token and group match, and that the user has token admin rights
         User sessionUser = userManager.findByInputNumber(inputNumber);
-        USSDMenu thisMenu = new USSDMenu("");
+        USSDMenu thisMenu;
 
         if (confirmed != null && confirmed.equals("true")) {
             // todo: error handling here (bad token, etc., also, security)
-            groupTokenManager.invalidateGroupToken(groupId, sessionUser, code);
+            groupManager.invalidateGroupToken(groupId);
             thisMenu = new USSDMenu(getMessage(GROUP_KEY, keyGroupToken, PROMPT + ".close-done", sessionUser), optionsHomeExit(sessionUser));
         } else {
             String beginUri = GROUP_MENUS + keyGroupToken, endUri = GROUPID_URL + groupId + "&" + TOKEN_PARAM + "=" + code;

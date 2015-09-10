@@ -4,6 +4,8 @@ import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.Phonenumber;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author Lesetse Kimwaga
@@ -28,14 +30,18 @@ public class PhoneNumberUtil {
         }
     }
 
-    public static Map<String, List<String>> splitPhoneNumbers(String userResponse, String delimiter) {
 
-        // todo: figure out if a more efficient way to return the valid / error split than a map of lists
-        // todo: leave the delimiter flexible
-        // todo - aakil - also consider asking for a , or something easily entered from keypad # or *
-        //                if the number is pasted from contacts it might have spaces in it
+
+    public static Map<String, List<String>> splitPhoneNumbers(String userResponse) {
+
+        // todo - aakil - if the number is pasted from contacts it might have spaces in it
+        // todo: figure out if possible to have a 00 as delimiter, or just to seperate by 10 digits
+        // todo: generally, take the next step from "any delimiter" to "any logical pattern" for bunching numbers
 
         userResponse = userResponse.replace("\"", ""); // in case the response is passed with quotes around it
+
+        Pattern nonNumericPattern = Pattern.compile("\\d+");
+        Matcher numberMatch = nonNumericPattern.matcher(userResponse);
 
         Map<String, List<String>> returnMap = new HashMap<>();
         List<String> validNumbers = new ArrayList<>();
@@ -43,7 +49,8 @@ public class PhoneNumberUtil {
 
         com.google.i18n.phonenumbers.PhoneNumberUtil phoneNumberUtil = com.google.i18n.phonenumbers.PhoneNumberUtil.getInstance();
 
-        for (String inputNumber : Arrays.asList(userResponse.split(delimiter))) {
+        while (numberMatch.find()) {
+            String inputNumber = numberMatch.group();
             try {
                 Phonenumber.PhoneNumber phoneNumber = phoneNumberUtil.parse(inputNumber.trim(), "ZA");
                 if (!phoneNumberUtil.isValidNumber(phoneNumber))

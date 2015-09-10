@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * Created by luke on 2015/08/30.
  */
-public interface GroupTokenCodeRepository extends CrudRepository<GroupTokenCode, Long> {
+public interface GroupTokenCodeRepository {
 
     GroupTokenCode findByGroup(Group relevantGroup);
 

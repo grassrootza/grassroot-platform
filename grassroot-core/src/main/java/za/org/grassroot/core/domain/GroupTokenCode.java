@@ -12,9 +12,6 @@ import java.util.Calendar;
  * However, principal connection is to group.
  * todo: switch to using UserId, to accelerate lookups? methods/queries in here may be among the most used in application
  */
-@Entity
-@Table(name = "group_token_code")
-@Inheritance(strategy = InheritanceType.JOINED)
 public class GroupTokenCode extends TokenCode implements Serializable {
 
     private Group group;

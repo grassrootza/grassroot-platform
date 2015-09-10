@@ -6,26 +6,17 @@ import java.util.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.GroupTokenCode;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.services.GroupTokenService;
-import za.org.grassroot.services.UserManager;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Option;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
-import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.repository.UserRepository;
 
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
@@ -42,9 +33,6 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 public class USSDHomeController extends USSDController {
 
     Logger log = LoggerFactory.getLogger(getClass());
-
-    @Autowired
-    GroupTokenService groupTokenManager;
 
     private static final String keyRenameStart = "rename-start", keyGroupNameStart = "group-start";
     private static final int hashPosition = Integer.valueOf(System.getenv("USSD_CODE_LENGTH"));
@@ -88,9 +76,9 @@ public class USSDHomeController extends USSDController {
 
         // todo: a switch logic for token ranges
 
-        if (groupTokenManager.doesGroupCodeExist(trailingDigits)) {
+        if (groupManager.tokenExists(trailingDigits)) {
             // todo: basic validation, checking, etc.
-            Group groupToJoin = groupTokenManager.getGroupFromToken(trailingDigits);
+            Group groupToJoin = groupManager.getGroupByToken(trailingDigits);
             groupManager.addGroupMember(groupToJoin, sessionUser);
             String prompt = (groupToJoin.hasName()) ?
                     getMessage(HOME_KEY, START_KEY, PROMPT + ".group.token.named", groupToJoin.getGroupName(), sessionUser) :
