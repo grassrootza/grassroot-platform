@@ -7,31 +7,140 @@
 <body>
 
 <div layout:fragment="header">
-    <h2>View a Group</h2>
+  <h2>View a Group</h2>
 </div>
 <div layout:fragment="overview">View Group and invite members</div>
 
 <div layout:fragment="content">
-    <div layout:fragment="messages"></div>
-    <div class="well">
+  <div layout:fragment="messages"></div>
+  <!-- First, buttons for common actions -->
+  <!-- todo: make these a fragment, as we'll probably use a lot -->
 
-        <h2 th:text="${group.groupName}">Group</h2>
-        <table>
-            <thead>
-            <th>Member</th>
-            <td>Phone number</td>
-            </thead>
-            <tbody>
-            <tr th:each="member : ${group.groupMembers}">
-                <td><span th:text="${member.displayName}"></span></td>
-                <td><span th:text="${member.phoneNumber}"></span></td>
-            </tr>
-            </tbody>
-        </table>
-
-
-
+  <div class="well">
+    <div class="row">
+      <div class="col-md-3">
+        <a href="" th:href="@{/group/create(parent=${group.id})}"><button class="btn btn-primary">Create a sub-group</button></a>
+      </div>
+      <div class="col-md-3">
+        <a href="" th:href="@{/meeting/create(groupId=${group.id})}"><button class="btn btn-primary">Call a meeting</button></a>
+      </div>
+      <div class="col-md-3">
+        <a href="" th:href="@{/action/create(groupId=${group.id})}"><button class="btn btn-primary">Record an action</button></a>
+      </div>
+      <div class="col-md-3">
+        <a href="" th:href="@{/vote/create(groupId=${group.id})}"><button class="btn btn-primary">Take a vote</button></a>
+      </div>
     </div>
+  </div>
+
+  <!-- list any upcoming meetings, votes, or logs -->
+  <!-- todo: use event type to distinguish / classify among them -->
+  <!-- todo: find a more elegant way to avoid null pointer problems on list.isEmpty -->
+
+<div th:if="${not #lists.isEmpty(groupEvents)}">
+    <div class="well">
+      <div class="row">
+        <div class="col-md-12">
+          <h2>Upcoming events</h2>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12">
+          <div th:each="event, iterStat : ${groupEvents}" class="bs-component">
+            <div class="list-group">
+              <div class="list-group-item">
+                <div class="row-content">
+                  <h4 class="list-group-item">
+                    <!-- todo: redirect this based on the event type -->
+                    <a href="" th:href="{@/meeting/view(eventId=${event.id})}"><span th:text="${event.name}"></span></a>
+                  </h4>
+                  <p class="list=group-time-text">Scheduled for <span th:text="${#calendars.format(event.getEventStartDateTime(),'dd MMMM yyyy')}">11 September 2015</span></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Major todo: add in user permissions about changing names & groups &c. -->
+  <div class="well">
+    <h2 th:text="${group.groupName}">Group</h2>
+    <table>
+      <thead>
+      <th>Member</th>
+      <td>Phone number</td>
+      </thead>
+      <tbody>
+      <tr th:each="member : ${group.groupMembers}">
+        <td><span th:text="${member.displayName}"></span></td>
+        <td><span th:text="${member.phoneNumber}"></span></td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- todo: add button that will get all users from subgroups too and display them in one list -->
+
+  <!-- Some final auxiliary options & things, like creating a token, adding members, etc. -->
+  <!-- todo: check if there is a token already, and, if so, just display it, and change 'create token' to 'invalidate' -->
+  <!-- todo: as above, check for user permissions -->
+
+  <div class="well">
+    <div class="row">
+      <div class="col-md-3">
+        <a href="" th:href="@{/group/token(groupId=${group.id})}">
+          <button class="btn btn-primary">Create a group token</button>
+        </a>
+      </div>
+      <div class="col-md-3">
+        <a href="" th:href="@{/group/add(groupId=${group.id})}">
+          <button class="btn btn-primary">Add members to the group</button>
+        </a>
+      </div>
+      <div class="col-md-3">
+        <a href="" th:href="@{/group/remove(groupId=${group.id})}">
+          <button class="btn btn-primary">Remove members from the group</button>
+        </a>
+      </div>
+      <div class="col-md-3">
+        <a href="" th:href="@{/group/rename(groupId=${group.id})}">
+          <button class="btn btn-primary">Rename the group</button>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- list subgroups -->
+  <!-- todo: create a fragment to display a list of groups, to be used in a bunch of places -->
+  <div th:if="${not #lists.isEmpty(subGroups)}">
+    <div class="well">
+      <div class="row">
+        <div class="col-md-12">
+          <h2>Subgroups</h2>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12">
+          <div th:each="subgroup, iterStat : ${subGroups}" class="bs-component">
+            <div class="list-group">
+              <div class="list-group-item">
+                <div class="row-content">
+                  <h4  class="list-group-item-heading">
+                    <a th:href="@{/group/view(groupId=${subgroup.id})}"><span th:text="${subgroup.groupName}"></span></a>
+                  </h4>
+                  <div class="least-content"><span th:text="${subgroup.getGroupMembers().size()}"></span> Members</div>
+                  <p class="list-group-item-text">Est. <span th:text="${#calendars.format(subgroup.getCreatedDateTime(),'dd MMMM yyyy')}">13 May 2011</span></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 </body>

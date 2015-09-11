@@ -35,6 +35,7 @@ public class User implements UserDetails {
     private List<Group> groupsPartOf;
     private String username;
     private String password;
+    private boolean webProfile = false;
     private boolean enabled = true;
     private Set<Role> roles;
     private Integer version;
@@ -147,6 +148,11 @@ public class User implements UserDetails {
     public void setPassword(String password) {
         this.password = password;
     }
+
+    @Column(name = "web")
+    public boolean getWebProfile() { return webProfile; }
+
+    public void setWebProfile(boolean webProfile) { this.webProfile = webProfile; }
 
     @Column(name = "enabled")
     public boolean getEnabled() {

@@ -17,6 +17,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.view.RedirectView;
 import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.domain.VerificationTokenCode;
+import za.org.grassroot.integration.services.SmsSendingService;
 import za.org.grassroot.services.PasswordTokenService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
@@ -36,6 +37,8 @@ public class UserAccountsRecoveryController extends BaseController {
     private PasswordTokenService  passwordTokenService;
     @Autowired
     private UserManagementService userManagementService;
+    @Autowired
+    private SmsSendingService smsSendingService;
 
     @Autowired
     @Qualifier("userAccountRecoveryValidator")
@@ -106,20 +109,17 @@ public class UserAccountsRecoveryController extends BaseController {
 
     /**
      * @param verificationTokenCode
-     * @todo This piece of code is temporary and will be moved to messaging
+     * @todo Add a "isSMSSendingConfigured" method to message integration
      */
     private void temporaryTokenSend(VerificationTokenCode verificationTokenCode) {
         try {
 
             if (verificationTokenCode != null && System.getenv("SMSUSER") != null && System.getenv("SMSPASS") != null) {
-                RestTemplate sendGroupSMS = new RestTemplate();
-                UriComponentsBuilder sendMsgURI = UriComponentsBuilder.newInstance().scheme("https").host("xml2sms.gsm.co.za");
-                sendMsgURI.path("send/").queryParam("username", System.getenv("SMSUSER")).queryParam("password", System.getenv("SMSPASS"));
 
-                sendMsgURI.queryParam("number", verificationTokenCode.getUsername());
-                sendMsgURI.queryParam("message", String.join("Your GrassRoot verification code is: ", verificationTokenCode.getCode()));
+                String messageResult = smsSendingService.sendSMS(
+                        String.join("Your GrassRoot verification code is: ", verificationTokenCode.getCode()),
+                        verificationTokenCode.getUsername());
 
-                String messageResult = sendGroupSMS.getForObject(sendMsgURI.build().toUri(), String.class);
                 log.debug("SMS Send result: {}", messageResult);
             } else {
                 log.warn("Did not send verification message. No system messaging configuration found.");

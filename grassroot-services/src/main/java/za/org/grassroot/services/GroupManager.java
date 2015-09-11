@@ -148,6 +148,11 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
+    public List<Group> getSubGroups(Group group) {
+        return groupRepository.findByParent(group);
+    }
+
+    @Override
     public Group getGroupById(Long groupId) {
         return groupRepository.findOne(groupId);
     }

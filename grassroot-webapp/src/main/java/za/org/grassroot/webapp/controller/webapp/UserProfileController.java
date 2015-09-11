@@ -25,9 +25,9 @@ public class UserProfileController extends BaseController {
 
     @ModelAttribute("currentUserProfile")
     public User getCurrentUser(Authentication authentication) {
-        return (authentication == null) ? null : userManagementService.fetchUserByUsername(((UserDetails)authentication.getPrincipal()).getUsername());
+        return (authentication == null) ? null :
+                userManagementService.fetchUserByUsername(((UserDetails)authentication.getPrincipal()).getUsername());
     }
-
 
     @RequestMapping(value = "/user-profile", method = RequestMethod.GET)
     public String index()

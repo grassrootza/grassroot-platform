@@ -41,7 +41,7 @@ public class HomeController extends BaseController{
         User user = userManagementService.fetchUserByUsername(userDetails.getUsername());
 
         model.addAttribute("userGroups", user.getGroupsPartOf());
-        model.addAttribute("userGroupEvents", getConsolidatedGroupEvents(user.getGroupsPartOf() ));
+        // model.addAttribute("userGroupEvents", getConsolidatedGroupEvents(user.getGroupsPartOf() ));
 
         return "home";
     }

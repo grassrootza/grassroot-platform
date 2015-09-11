@@ -41,6 +41,8 @@ public interface GroupManagementService {
 
     public List<Group> getPaginatedGroups(User sessionUser, int pageNumber, int pageSize);
 
+    public List<Group> getSubGroups(Group group);
+
     public Group getGroupById(Long groupId);
 
     public Group getGroupByToken(String groupToken);

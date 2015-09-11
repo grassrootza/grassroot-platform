@@ -8,7 +8,7 @@ import java.util.Calendar;
  * Created by luke on 2015/08/30.
  */
 
-@MappedSuperclass
+/* @MappedSuperclass
 public abstract class TokenCode extends BaseEntity {
 
     protected String code;
@@ -56,4 +56,4 @@ public abstract class TokenCode extends BaseEntity {
         }
     }
 
-}
+} */

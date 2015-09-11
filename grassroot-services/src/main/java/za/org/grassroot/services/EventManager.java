@@ -6,10 +6,13 @@ import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -40,13 +43,13 @@ public class EventManager implements EventManagementService {
      */
     @Override
     public Event createEvent(String name, User createdByUser, Group appliesToGroup) {
-        return eventRepository.save(new Event(name,createdByUser,appliesToGroup));
+        return eventRepository.save(new Event(name, createdByUser, appliesToGroup));
     }
 
     @Override
     public Event createEvent(String name, Long createdByUserId, Long appliesToGroupId) {
         return createEvent(name, userManagementService.getUserById(createdByUserId),
-                groupManager.getGroupById(appliesToGroupId));
+                           groupManager.getGroupById(appliesToGroupId));
     }
 
     /*
@@ -59,8 +62,8 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
-    public Event createEvent(String name, Long createdByUserId) {
-        return createEvent(name, userManagementService.getUserById(createdByUserId));
+    public Event createMeeting(User createdByUser) {
+        return eventRepository.save(new Event(createdByUser, EventType.Meeting));
     }
 
     @Override
@@ -121,6 +124,16 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
+    public Event updateEvent(Event eventToUpdate) {
+        // generic update for use from the web, where we get a bunch of changes applied at once
+
+        Event beforeEvent = loadEvent(eventToUpdate.getId());
+        eventToUpdate = fillOutEvent(eventToUpdate, beforeEvent);
+        return saveandCheckChanges(beforeEvent, eventToUpdate);
+
+    }
+
+    @Override
     public Event cancelEvent(Long eventId) {
         Event eventToUpdate = eventRepository.findOne(eventId);
         Event beforeEvent = SerializationUtils.clone(eventToUpdate);
@@ -131,6 +144,22 @@ public class EventManager implements EventManagementService {
     @Override
     public List<Event> findByAppliesToGroup(Group group) {
         return eventRepository.findByAppliesToGroup(group);
+    }
+
+    @Override
+    public List<Event> getUpcomingEvents(Group group) {
+
+        // todo: rather implement this in the repository I think, by a suitable method
+        List<Event> allEvents = findByAppliesToGroup(group);
+        List<Event> comingEvents = new ArrayList<>();
+
+        for (Event event : allEvents) {
+            if (event.getEventStartDateTime().after(new Timestamp(Calendar.getInstance().getTimeInMillis()))) {
+                comingEvents.add(event);
+            }
+        }
+
+        return comingEvents;
     }
 
     private Event saveandCheckChanges(Event beforeEvent, Event changedEvent) {
@@ -164,15 +193,50 @@ public class EventManager implements EventManagementService {
 
     private boolean minimumDataAvailable(Event event) {
         boolean minimum = true;
-        log.info("minimumDataAvailable..." + event.toString());
+        // log.info("minimumDataAvailable..." + event.toString());
         if (event.getName() == null || event.getName().trim().equals("")) minimum = false;
         if (event.getEventLocation() == null || event.getEventLocation().trim().equals("")) minimum = false;
         if (event.getAppliesToGroup() == null ) minimum = false;
         if (event.getCreatedByUser() == null) minimum = false;
         if (event.getDateTimeString() == null || event.getDateTimeString().trim().equals("")) minimum = false;
-        log.info("minimumDataAvailable...returning..." + minimum);
+        // log.info("minimumDataAvailable...returning..." + minimum);
 
         return minimum;
+    }
+
+    private Event fillOutEvent(Event passedEvent, Event savedEvent) {
+
+        // todo throw a proper exception if the two events don't have matching IDs
+
+        if (passedEvent.getId() != savedEvent.getId()) {
+            return null;
+        }
+
+        if (passedEvent.getName() == null && savedEvent.getName() != null) passedEvent.setName(savedEvent.getName());
+
+        if (passedEvent.getEventLocation() == null && savedEvent.getEventLocation() != null)
+            passedEvent.setEventLocation(savedEvent.getEventLocation());
+
+        if (passedEvent.getAppliesToGroup() == null && savedEvent.getAppliesToGroup() != null)
+            passedEvent.setAppliesToGroup(savedEvent.getAppliesToGroup());
+
+        if (passedEvent.getCreatedByUser() == null && savedEvent.getCreatedByUser() != null)
+            passedEvent.setCreatedByUser(savedEvent.getCreatedByUser());
+
+        if (passedEvent.getCreatedDateTime() == null && savedEvent.getCreatedDateTime() != null)
+            passedEvent.setCreatedDateTime(savedEvent.getCreatedDateTime());
+
+        if (passedEvent.getEventStartDateTime() == null && savedEvent.getEventStartDateTime() != null)
+            passedEvent.setEventStartDateTime(savedEvent.getEventStartDateTime());
+
+        if (passedEvent.getEventType() == null && savedEvent.getEventType() != null)
+            passedEvent.setEventType(savedEvent.getEventType());
+
+        if (passedEvent.getDateTimeString() == null && savedEvent.getDateTimeString() != null)
+            passedEvent.setDateTimeString(savedEvent.getDateTimeString());
+
+        return passedEvent;
+
     }
 
 }

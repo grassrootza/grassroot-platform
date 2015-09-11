@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.EventType;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -21,7 +22,7 @@ public interface EventManagementService {
 
     public Event createEvent(String name, User createdByUser);
 
-    public Event createEvent(String name, Long createdByUserId);
+    public Event createMeeting(User createdByUser);
 
     public Event loadEvent(Long eventId);
 
@@ -37,8 +38,12 @@ public interface EventManagementService {
 
     public Event setEventTimestamp(Long eventId, Timestamp eventDateTime);
 
+    public Event updateEvent(Event eventToUpdate);
+
     public Event cancelEvent(Long eventId);
 
-    List<Event> findByAppliesToGroup(Group appliesToGroup );
+    List<Event> findByAppliesToGroup(Group appliesToGroup);
+
+    List<Event> getUpcomingEvents(Group group);
 
 }

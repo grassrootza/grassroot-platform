@@ -52,7 +52,7 @@ public class UserSignUpController extends BaseController {
             User user = userManagementService.createUserWebProfile(userRegistration.getUser());
 
             addMessage(redirectAttributes, MessageType.SUCCESS, "user.creation.successful", request);
-            return new ModelAndView( new RedirectView("/login"));
+            return new ModelAndView(new RedirectView("/signin"));
         }
         catch (UserExistsException userException)
         {

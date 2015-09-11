@@ -25,7 +25,7 @@ import java.util.Map;
  * to do: should probably abstract out some idea of menus
  */
 
-@Controller
+/* @Controller
 public class WebController {
 
     UserManager userManager;
@@ -223,7 +223,7 @@ public class WebController {
 
     /**
      * Start auxilliary functions here. All should be moved to service layer.
-     */
+
 
     public List<HashMap<String,String>> getUserListFromGroup(Group groupToDisplay) {
 
@@ -259,4 +259,4 @@ public class WebController {
 
         return groupList;
     }
-}
+} */

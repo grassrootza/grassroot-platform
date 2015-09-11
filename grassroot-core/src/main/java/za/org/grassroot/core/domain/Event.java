@@ -3,13 +3,12 @@ package za.org.grassroot.core.domain;
 /**
  * Created by luke on 2015/07/16.
  *
- * Major todo: Add relationship to user who created event
- * Major todo: Add relationship to group that is participating in event
  * Major todo: Construct logic for equals (non-trivial, as same group may have two events at same time ...)
- * Other: All todo's as for User class
  * todo - aakil - add event duration
  */
 
+
+import za.org.grassroot.core.enums.EventType;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -28,6 +27,8 @@ public class Event implements Serializable {
     private User createdByUser;
     private Group appliesToGroup;
     private boolean canceled;
+
+    private EventType eventType;
 
     /*
     could also have been called description but as group has a name, kept it the same
@@ -100,6 +101,11 @@ public class Event implements Serializable {
         this.canceled = canceled;
     }
 
+    @Enumerated
+    public EventType getEventType() { return eventType; }
+
+    public void setEventType(EventType eventType) { this.eventType = eventType; }
+
     @PreUpdate
     @PrePersist
     public void updateTimeStamps() {
@@ -111,6 +117,7 @@ public class Event implements Serializable {
 
     /*
     Constructors
+    Note: for the moment, until we build the use cases for other event types, defaulting all to meeting
      */
 
     public Event(String name, User createdByUser, Group appliesToGroup) {
@@ -118,12 +125,19 @@ public class Event implements Serializable {
         this.createdByUser = createdByUser;
         this.appliesToGroup = appliesToGroup;
         this.eventLocation=""; // otherwise we get null violations
+        this.eventType = EventType.Meeting;
     }
 
     public Event(String name, User createdByUser) {
         this.name = name;
         this.createdByUser = createdByUser;
         this.eventLocation=""; // otherwise we get null violations
+        this.eventType = EventType.Meeting;
+    }
+
+    public Event(User createdByUser, EventType eventType) {
+        this.createdByUser = createdByUser;
+        this.eventType = eventType;
     }
 
     public Event() {

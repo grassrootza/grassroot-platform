@@ -46,7 +46,7 @@ public class BaseController {
     private MessageSource messageSource;
 
     @Autowired
-    private MessageSourceAccessor messageSourceAccessor;
+    protected MessageSourceAccessor messageSourceAccessor; // making it protected just briefly, for SMS send
 
     @Autowired
     protected UserManagementService userManagementService;
@@ -60,7 +60,7 @@ public class BaseController {
 
     public String getMessage(String id) {
         Locale locale = LocaleContextHolder.getLocale();
-        return messageSource.getMessage(id, null, locale);
+        return messageSource.getMessage("web." + id, null, locale);
     }
 
 
@@ -132,7 +132,7 @@ public class BaseController {
      * @return
      */
     public String getText(String msgKey, Locale locale) {
-        return messageSourceAccessor.getMessage(msgKey, locale);
+        return messageSourceAccessor.getMessage("web." + msgKey, locale);
     }
 
     /**
@@ -145,7 +145,7 @@ public class BaseController {
      * @return
      */
     public String getText(String msgKey, String arg, Locale locale) {
-        return getText(msgKey, new Object[]{arg}, locale);
+        return getText("web." + msgKey, new Object[]{arg}, locale);
     }
 
     /**
@@ -157,6 +157,6 @@ public class BaseController {
      * @return
      */
     public String getText(String msgKey, Object[] args, Locale locale) {
-        return messageSourceAccessor.getMessage(msgKey, args, locale);
+        return messageSourceAccessor.getMessage("web." + msgKey, args, locale);
     }
 }

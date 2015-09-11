@@ -9,12 +9,25 @@ import java.util.Calendar;
  */
 @Entity
 @Table(name = "verification_token_code")
-public class VerificationTokenCode extends TokenCode {
+public class VerificationTokenCode extends BaseEntity {
 
     private String username;
+
+    protected String code;
+    protected Timestamp createdDateTime;
+    protected Timestamp expiryDateTime;
+
     private int tokenAccessAttempts = 1;
 
     public VerificationTokenCode() {
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
     }
 
     public VerificationTokenCode(String username,String code) {
@@ -30,6 +43,20 @@ public class VerificationTokenCode extends TokenCode {
     public void setUsername(String username) {
         this.username = username;
     }
+
+    @Column(name = "creation_date")
+    public Timestamp getCreatedDateTime() {
+        return createdDateTime;
+    }
+
+    public void setCreatedDateTime(Timestamp createdDateTime) {
+        this.createdDateTime = createdDateTime;
+    }
+
+    @Column(name = "expiry_date")
+    public Timestamp getExpiryDateTime() { return expiryDateTime; }
+
+    public void setExpiryDateTime(Timestamp expiryDateTime) { this.expiryDateTime = expiryDateTime; }
 
     @Column(name = "token_access_attempts")
     public int getTokenAccessAttempts() {
@@ -47,5 +74,16 @@ public class VerificationTokenCode extends TokenCode {
     public  void incrementTokenAttempts()
     {
        this.tokenAccessAttempts = tokenAccessAttempts + 1;
+    }
+
+    @PreUpdate
+    @PrePersist
+    public void addTimeStamps() {
+        if (createdDateTime == null) {
+            createdDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis());
+        }
+        if (expiryDateTime == null) {
+            expiryDateTime = new Timestamp(createdDateTime.getTime() + 5 * 60 * 1000); // default is token lasts 5 mins
+        }
     }
 }

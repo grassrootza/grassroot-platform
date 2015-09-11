@@ -1,0 +1,62 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+  <title>GrassRoot - Call a meeting</title>
+</head>
+<body>
+
+<div layout:fragment="header">
+  <h2>Call a meeting</h2>
+</div>
+<div layout:fragment="overview">Call a meeting by specifying subject, time, place</div>
+
+<div layout:fragment="content">
+  <div layout:fragment="messages"></div>
+  <div class="well">
+    <form th:object="${meeting}" th:action="@{/meeting/create}" method="post" autocomplete="off" class="form-horizontal">
+      <input th:field="*{id}" type="hidden" /><!-- todo: figure out if a better way to pass this across -->
+      <div class="form-group">
+        <label for="group" class="col-md-2 control-label">Meeting group</label>
+        <div th:switch="${groupId}" class="col-md-4">
+          <div th:case="0" class="col-md-4">
+            <select th:field="*{appliesToGroup}" id="group">
+              <option th:each="group: ${userGroups}"
+                      th:value="${group}"
+                      th:text="#{${group.groupName}}">Groupname</option>
+            </select>
+          </div>
+          <div th:case="*" class="col-md-4">
+            <span th:text="${group.groupName}" id="group">Group name</span>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="name" class="col-md-2 control-label">Meeting subject</label>
+        <div class="col-md-4">
+          <input th:field="*{name}" type="text" class="form-control" id="name" placeholder="The topic of the meeting" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="location" class="col-md-2 control-label">Meeting location</label>
+        <div class="col-md-4">
+          <input th:field="*{eventLocation}" type="text" class="form-control" id="location" placeholder="Where the meeting will happen"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="date-time" class="col-md-2 control-label">Meeting day</label>
+        <div class="col-md-4">
+          <input th:field="*{dateTimeString}" type="text" class="form-control" id="date-time"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="col-md-8">
+          <button type="submit" class="btn btn-primary">Call meeting</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+</body>
+</html>

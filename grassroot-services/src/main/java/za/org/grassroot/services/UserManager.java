@@ -57,24 +57,44 @@ public class UserManager implements UserManagementService, UserDetailsService {
         Assert.notNull(userProfile, "User is required");
         Assert.hasText(userProfile.getPhoneNumber(), "User phone number is required");
 
+        User userToSave;
         String phoneNumber = convertPhoneNumber(userProfile.getPhoneNumber());
 
-        userProfile.setPhoneNumber(phoneNumber);
-        userProfile.setUsername(phoneNumber);
-        userProfile.setDisplayName(String.join(userProfile.getFirstName(), " ", userProfile.getLastName()));
+        if (userExist(phoneNumber)) {
 
-        if (userExist(userProfile.getPhoneNumber())) {
-            throw new UserExistsException("User '" + userProfile.getUsername() + "' already exists!");
+            System.out.println("The user exists, and their web profile is set to: " + userProfile.getWebProfile());
+
+            User userToUpdate = loadOrSaveUser(phoneNumber);
+            if (userToUpdate.getWebProfile() == true) {
+                System.out.println("This user has a web profile already");
+                throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a web profile!");
+            }
+            if (!userToUpdate.hasName()) {
+                userToUpdate.setDisplayName(userProfile.getFirstName() + " " + userProfile.getLastName());
+            }
+
+            userToUpdate.setUsername(phoneNumber);
+            userToUpdate.setWebProfile(true);
+            userToSave = userToUpdate;
+
+        } else {
+
+            userProfile.setPhoneNumber(phoneNumber);
+            userProfile.setUsername(phoneNumber);
+            userProfile.setDisplayName(String.join(userProfile.getFirstName(), " ", userProfile.getLastName()));
+            userProfile.setWebProfile(true);
+
+            userToSave = userProfile;
         }
 
         if (passwordEncoder != null) {
-            userProfile.setPassword(passwordEncoder.encode(userProfile.getPassword()));
+            userToSave.setPassword(passwordEncoder.encode(userProfile.getPassword()));
         } else {
             log.warn("PasswordEncoder not set, skipping password encryption...");
         }
 
         try {
-            return userRepository.save(userProfile);
+            return userRepository.save(userToSave);
         } catch (final Exception e) {
             e.printStackTrace();
             log.warn(e.getMessage());
