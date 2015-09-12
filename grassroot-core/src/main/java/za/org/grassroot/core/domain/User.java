@@ -25,23 +25,23 @@ import java.util.*;
 //@ToString
 public class User implements UserDetails {
 
-    private String firstName;
-    private String lastName;
-    private String phoneNumber;
-    private String displayName;
-    private String languageCode;
-    private Long id;
-    private Timestamp createdDateTime;
+    private String      firstName;
+    private String      lastName;
+    private String      phoneNumber;
+    private String      displayName;
+    private String      languageCode;
+    private Long        id;
+    private Timestamp   createdDateTime;
     private List<Group> groupsPartOf;
-    private String username;
-    private String password;
-    private boolean webProfile = false;
-    private boolean enabled = true;
-    private Set<Role> roles;
+    private String      username;
+    private String      password;
+    private boolean   webProfile = false;
+    private boolean   enabled    = true;
+    private Set<Role> roles      = new HashSet<>();
     private Integer version;
 
 
-    @Column( name = "first_name")
+    @Column(name = "first_name")
     public String getFirstName() {
         return firstName;
     }
@@ -50,7 +50,7 @@ public class User implements UserDetails {
         this.firstName = firstName;
     }
 
-    @Column( name = "last_name")
+    @Column(name = "last_name")
     public String getLastName() {
         return lastName;
     }
@@ -80,10 +80,14 @@ public class User implements UserDetails {
     }
 
     @Basic
-    @Column(name = "language_code", nullable = true, length=10)
-    public String getLanguageCode() { return languageCode; }
+    @Column(name = "language_code", nullable = true, length = 10)
+    public String getLanguageCode() {
+        return languageCode;
+    }
 
-    public void setLanguageCode (String languageCode) { this.languageCode = languageCode; }
+    public void setLanguageCode(String languageCode) {
+        this.languageCode = languageCode;
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
