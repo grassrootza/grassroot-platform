@@ -41,7 +41,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/web/**")
                 .antMatchers("/test/**")
                 .antMatchers("/console/**")
-//                .antMatchers("/signup")
                 .antMatchers("/404")
                 .antMatchers("/500");
 
@@ -80,12 +79,4 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .passwordEncoder(passwordEncoder);
     }
 
-//    @Autowired
-//    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
-//        auth
-//                .inMemoryAuthentication()
-//                .withUser("user").password("password").roles("USER");
-//
-//
-//    }
 }

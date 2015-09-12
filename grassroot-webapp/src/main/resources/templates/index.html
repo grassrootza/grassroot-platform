@@ -1,41 +1,42 @@
 <html
         xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-        layout:decorator="layout">
+        layout:decorator="layout"
+        xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>GrassRoot - Home</title>
 </head>
 <body>
 
-  <div layout:fragment="header"></div>
-  <div layout:fragment="overview"></div>
+<div layout:fragment="header"></div>
+<div layout:fragment="overview"></div>
 
-  <div layout:fragment="content">
+<div layout:fragment="content">
 
-      <div class="jumbotron">
-          <div class="cover-container">
-              <div class="inner cover">
-                  <h1 class="cover-heading text-center">The GrassRoot Platform</h1>
-                  <p class="lead text-center">A NATION SELF-ORGANIZING</p>
-                  <p class="lead text-center text-muted" style="font-style: italic;">*120*1994#</p>
-                  <p class="lead text-center" >
-                      <a href="http://www.grassroot.org.za" target="_blank" class="btn btn-lg btn-primary">Learn more</a>
-                  </p>
-              </div>
-              <div class = "row">
-                  <div class="col-md-6">
-                  <p class="lead text-center">
-                      <a href="/signin" class="btn btn-lg btn-primary">Sign in</a>
-                  </p>
-                  </div>
-                  <div class="col-md-6">
-                      <a href="/signup" class="btn btn-lg btn-primary">Sign up</a>
-                  </div>
-              </div>
+    <div class="jumbotron">
+        <div class="cover-container">
+            <div class="inner cover">
+                <h1 class="cover-heading text-center">The GrassRoot Platform</h1>
 
-          </div>
-      </div>
+                <p class="lead text-center">A NATION SELF-ORGANIZING</p>
 
-  </div>
+                <p class="lead text-center text-muted" style="font-style: italic;">*120*1994#</p>
+
+                <p class="lead text-center">
+                    <a href="http://www.grassroot.org.za" target="_blank" class="btn btn-lg btn-primary">Learn more</a>
+                </p>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <p class="lead text-center">
+                        <a th:href="@{/login}" href="" class="btn btn-lg btn-primary">Sign in</a>
+                        <a th:href="@{/signup}" href="" class="btn btn-lg btn-primary">Sign up</a>
+                    </p></div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
 
 </body>
 </html>

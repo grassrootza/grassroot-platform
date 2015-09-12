@@ -52,7 +52,7 @@ public class UserRegistration {
         user.setPassword(password);
     }
 
-    @NotBlank(message = "{user.registration.validation.username.required}}")
+    @NotBlank(message = "{user.registration.validation.username.required}")
     public String getUsername() {
         return user.getUsername();
     }

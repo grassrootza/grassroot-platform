@@ -2,7 +2,7 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorator="layout">
 <head>
-    <title th:text="#{app.name} +' - ' + #{signin.title}"></title>
+    <title th:text="#{web.app.name} +' - ' + #{web.signin.title}"></title>
     <style>
         .card-signin {
            /* margin: 100px auto 25px;*/
@@ -24,13 +24,13 @@
                     <form id="signin-form" class="form-horizontal" th:action="@{/login}"  method="post">
 
                         <fieldset>
-                            <legend th:text="#{signin.title}"></legend>
+                            <legend th:text="#{web.signin.title}"></legend>
                         </fieldset>
                         <div th:class="${error}? '  alert alert-danger alert-dismissable' : ' hide'">
                             <p th:if="${error}">Invalid GrassRoot ID or password. Please try again. <span th:text="${error}"></span></p>
                         </div>
                         <div class="form-group">
-                            <label for="username" class="col-lg-2 control-label" th:text="#{signin.username}">User Name</label>
+                            <label for="username" class="col-lg-2 control-label" th:text="#{web.signin.username}">User Name</label>
 
                             <div class="col-lg-10">
                                 <input type="text" class="form-control" id="mobile-number" name="mobile-number" placeholder="Mobile Number"/>
@@ -81,14 +81,11 @@
 <div class="header-container" layout:fragment="script-container">
     <script>
         $(document).ready(function () {
-            //$("#mobile-number").intlTelInput();
 
             $("#mobile-number").intlTelInput({
                 onlyCountries: ["za"],
-                utilsScript: "../js/intl-tel-input-utils.js" // just for formatting/placeholders etc
+                utilsScript: "../js/intl-tel-input-utils.js"
             });
-
-
 
             $( "#signin" ).click(function() {
 
