@@ -1,15 +1,15 @@
 package za.org.grassroot.services.integration;
 
 import junit.framework.Assert;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.OutputCapture;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.GrassRootServicesConfig;
+import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
@@ -27,6 +27,7 @@ import java.util.logging.Logger;
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = {GrassRootServicesConfig.class})
 @Transactional
+@ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
 public class EventManagementServiceTest {
 
    // @Rule

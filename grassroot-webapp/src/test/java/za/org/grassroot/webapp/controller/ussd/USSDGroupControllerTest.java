@@ -1,18 +1,18 @@
 package za.org.grassroot.webapp.controller.ussd;
 
 import org.custommonkey.xmlunit.XMLUnit;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.boot.test.WebIntegrationTest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.GroupManagementService;
@@ -29,8 +29,6 @@ import static org.junit.Assert.assertThat;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.springframework.http.HttpStatus.OK;
-
 
 
 /**
@@ -40,6 +38,7 @@ import static org.springframework.http.HttpStatus.OK;
 @SpringApplicationConfiguration(classes = {GrassRootWebApplicationConfig.class})
 @WebIntegrationTest(randomPort = true)
 @Transactional
+@ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
 public class USSDGroupControllerTest extends USSDAbstractTest {
 
     private Logger log = LoggerFactory.getLogger(USSDGroupControllerTest.class);

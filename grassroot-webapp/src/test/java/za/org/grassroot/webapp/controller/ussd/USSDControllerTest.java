@@ -17,9 +17,11 @@ import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.boot.test.TestRestTemplate;
 import org.springframework.boot.test.WebIntegrationTest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
@@ -35,7 +37,6 @@ import java.util.*;
 import static junit.framework.Assert.assertNotNull;
 import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
 import static org.custommonkey.xmlunit.XMLAssert.assertXMLNotEqual;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -45,6 +46,7 @@ import static org.springframework.http.HttpStatus.OK;
 @SpringApplicationConfiguration(classes = {GrassRootWebApplicationConfig.class})
 @WebIntegrationTest(randomPort = true)
 @Transactional
+@ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
 public class USSDControllerTest {
 
     @Value("${local.server.port}")

@@ -29,21 +29,24 @@ public class GrassRootApplication extends SpringApplication {
     protected void configureProfiles(ConfigurableEnvironment environment, String[] args) {
         super.configureProfiles(environment, args);
 
-        boolean standaloneProfileActive = environment.acceptsProfiles(GrassRootApplicationProfiles.STANDALONE);
-        boolean cloudHerokuProfileActive = environment.acceptsProfiles(GrassRootApplicationProfiles.CLOUDHEROKU);
+        int numberActive = 0;
 
-        if (standaloneProfileActive && cloudHerokuProfileActive) {
+        if (environment.acceptsProfiles(GrassRootApplicationProfiles.INMEMORY)) numberActive++;
+        if (environment.acceptsProfiles(GrassRootApplicationProfiles.CLOUDHEROKU)) numberActive++;
+        if (environment.acceptsProfiles(GrassRootApplicationProfiles.LOCAL_PG)) numberActive++;
+
+        if (numberActive > 1) {
             throw new IllegalStateException(format("Only one of the following profiles may be specified: [%s]",
-                    arrayToCommaDelimitedString(new String[] {GrassRootApplicationProfiles.CLOUDHEROKU, GrassRootApplicationProfiles.STANDALONE })));
+                    arrayToCommaDelimitedString(new String[] {GrassRootApplicationProfiles.CLOUDHEROKU, GrassRootApplicationProfiles.INMEMORY, GrassRootApplicationProfiles.LOCAL_PG })));
         }
 
-        if (standaloneProfileActive || cloudHerokuProfileActive) {
+        if (numberActive == 1) {
             logger.info("Activating because one  profiles have been specified.");
 
         }
         else {
             logger.info("The default 'standalone' profile is active because no other profiles have been specified.");
-            environment.addActiveProfile(GrassRootApplicationProfiles.STANDALONE);
+            environment.addActiveProfile(GrassRootApplicationProfiles.INMEMORY);
         }
     }
 }

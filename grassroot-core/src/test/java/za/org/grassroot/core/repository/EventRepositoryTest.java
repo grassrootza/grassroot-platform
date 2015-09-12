@@ -4,15 +4,14 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import za.org.grassroot.TestContextConfiguration;
+import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.repository.EventRepository;
-import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.repository.UserRepository;
 
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
@@ -26,6 +25,7 @@ import static org.junit.Assert.assertThat;
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = TestContextConfiguration.class)
 @Transactional
+@ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
 public class EventRepositoryTest {
 
     @Autowired

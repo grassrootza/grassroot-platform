@@ -4,16 +4,21 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
 import javax.sql.DataSource;
+import java.util.logging.Logger;
 
 /**
  * @author Lesetse Kimwaga
  */
 @Configuration
-@Profile(GrassRootApplicationProfiles.STANDALONE)
+@Profile(GrassRootApplicationProfiles.INMEMORY)
 public class StandaloneDatabaseConfig extends DatabaseConfig {
+
+    private Logger log = Logger.getLogger(getClass().getCanonicalName());
+
 
     @Override
     public DataSource dataSource() {
+        log.info("Running with DEFAULT profile");
         org.apache.tomcat.jdbc.pool.DataSource dataSource = new org.apache.tomcat.jdbc.pool.DataSource();
 
         dataSource.setDriverClassName("org.h2.Driver");

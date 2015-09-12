@@ -6,11 +6,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.Repeat;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.GrassRootServicesConfig;
 import za.org.grassroot.GrassRootCoreConfig;
+import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.services.PasswordTokenManager;
@@ -22,6 +24,7 @@ import za.org.grassroot.services.UserManagementService;
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = {GrassRootServicesConfig.class, GrassRootCoreConfig.class})
 @Transactional
+@ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
 public class PasswordTokenManagerTest {
 
     private Logger log = LoggerFactory.getLogger(PasswordTokenManagerTest.class);
