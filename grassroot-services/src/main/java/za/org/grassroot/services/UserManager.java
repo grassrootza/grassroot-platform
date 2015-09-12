@@ -81,7 +81,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
             userProfile.setPhoneNumber(phoneNumber);
             userProfile.setUsername(phoneNumber);
-            userProfile.setDisplayName(String.join(userProfile.getFirstName(), " ", userProfile.getLastName()));
+            // for some reason String.join was not inserting the space properly, so changing to a straight concatenation;
+            userProfile.setDisplayName(userProfile.getFirstName() + " " + userProfile.getLastName());
             userProfile.setWebProfile(true);
 
             userToSave = userProfile;

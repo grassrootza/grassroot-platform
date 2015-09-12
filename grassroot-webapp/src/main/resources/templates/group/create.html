@@ -9,19 +9,23 @@
 <div layout:fragment="header">
     <h2>Start a Group</h2>
 </div>
-<div layout:fragment="overview">Start a Meeting Group and invite members</div>
+<div layout:fragment="overview">Create a new group and add members</div>
 
 <div layout:fragment="content">
     <div layout:fragment="messages"></div>
     <div class="well">
 
-        <form  th:object="${group}" th:action="@{/group/create}" method="post" autocomplete="off" class="form-horizontal">
+        <form  th:object="${group}" th:action="@{/group/create}" method="post" autocomplete="on" class="form-horizontal">
             <div class="form-group">
                 <label for="groupName" class="col-lg-2 control-label">Group Name</label>
 
                 <div class="col-lg-4">
                     <input th:field="*{groupName}" type="text" class="form-control" id="groupName" placeholder="Group Name"/>
                 </div>
+            </div>
+            <div th:if="${hasParent}" class="form-group">
+                <input name="parentId" type="hidden" th:value="${parentGroup.id}" />
+                <p>Sub-group of: <span th:text="${parentGroup.groupName}">Parent group</span></p>
             </div>
             <div class="form-group col-lg-10 col-lg-offset-2">
                 <table class="table col-md-8" id="member-input">

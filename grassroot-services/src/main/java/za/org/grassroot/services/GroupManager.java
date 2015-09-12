@@ -68,8 +68,13 @@ public class GroupManager implements GroupManagementService {
     }
     @Override
     public Group addGroupMember(Group currentGroup, User newMember) {
-        currentGroup.addMember(newMember);
-        return groupRepository.save(currentGroup);
+        // todo: just make sure this works as planned, if user has persisted in interim (e.g., maybe call repo?).
+        if (currentGroup.getGroupMembers().contains(newMember)) {
+            return currentGroup;
+        } else {
+            currentGroup.addMember(newMember);
+            return groupRepository.save(currentGroup);
+        }
     }
 
     @Override
@@ -223,7 +228,8 @@ public class GroupManager implements GroupManagementService {
     public boolean tokenExists(String groupToken) {
         // separating this from getGroupByToken because in time we will want to hone its performance, a lot
         // todo: find a way to make this very, very fast--in some use cases, will be triggered by 10k+ users within seconds
-        return (groupRepository.findByGroupTokenCode(groupToken) == null);
+        log.info("Looking for this token ... " + groupToken);
+        return (groupRepository.findByGroupTokenCode(groupToken) != null);
     }
 
     private String generateCodeString() {

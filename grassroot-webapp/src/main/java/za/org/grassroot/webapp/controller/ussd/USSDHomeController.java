@@ -76,8 +76,11 @@ public class USSDHomeController extends USSDController {
 
         // todo: a switch logic for token ranges
 
+        System.out.println("Processing trailing digits ..." + trailingDigits);
+
         if (groupManager.tokenExists(trailingDigits)) {
             // todo: basic validation, checking, etc.
+            System.out.println("Found a token with these trailing digits ...");
             Group groupToJoin = groupManager.getGroupByToken(trailingDigits);
             groupManager.addGroupMember(groupToJoin, sessionUser);
             String prompt = (groupToJoin.hasName()) ?
@@ -85,6 +88,7 @@ public class USSDHomeController extends USSDController {
                     getMessage(HOME_KEY, START_KEY, PROMPT + ".group.token.unnamed", sessionUser);
             returnMenu = welcomeMenu(prompt, sessionUser);
         } else {
+            System.out.println("Whoops, couldn't find the code");
             returnMenu = welcomeMenu(getMessage(HOME_KEY, START_KEY, PROMPT + ".unknown.request", sessionUser), sessionUser);
         }
 
