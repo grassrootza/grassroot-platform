@@ -21,6 +21,7 @@ import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
+import za.org.grassroot.webapp.model.web.GroupCreator;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
@@ -55,36 +56,38 @@ public class GroupController extends BaseController {
     @RequestMapping("/group/create")
     public String startGroupIndex(Model model, @RequestParam(value="parent", required=false) Long parentId) {
 
-        Group newGroup = new Group();
-        model.addAttribute("hasParent", false);
+        GroupCreator groupCreator;
 
         if (parentId != null && groupManagementService.loadGroup(parentId) != null) {
             Group parent = groupManagementService.loadGroup(parentId);
-            model.addAttribute("parentGroup", groupManagementService.loadGroup(parentId));
-            model.addAttribute("hasParent", true);
+            groupCreator = new GroupCreator(parent);
+        } else {
+            groupCreator = new GroupCreator();
         }
 
-        model.addAttribute("group", newGroup);
+        groupCreator.addMember(getUserProfile()); // to remove ambiguity about group creator being part of group
+
+        model.addAttribute("groupCreator", groupCreator);
         return "group/create";
     }
 
     @RequestMapping(value = "/group/create", method = RequestMethod.POST)
-    public String createGroup(Model model, @ModelAttribute("group") Group group, BindingResult bindingResult,
+    public String createGroup(Model model, @ModelAttribute("groupCreator") GroupCreator groupCreator, BindingResult bindingResult,
                               HttpServletRequest request, RedirectAttributes redirectAttributes )
     {
         try {
 
-            User groupCreator = getUserProfile();
-            Group groupToSave = new Group(group.getGroupName(), groupCreator);
-            groupToSave.addMember(groupCreator);
+            User userCreator = getUserProfile();
+            Group groupToSave = new Group(groupCreator.getGroupName(), userCreator);
+            // groupToSave.addMember(groupCreator); so if creator removes themselves, they don't get messages
 
             if (bindingResult.hasErrors()) {
-                model.addAttribute("group", group);
+                model.addAttribute("group", groupCreator);
                 addMessage(model, MessageType.ERROR, "group.creation.error", request);
                 return "group/create";
             }
 
-            for (User addedUser : group.getGroupMembers()) {
+            for (User addedUser : groupCreator.getAddedMembers()) {
                 if (addedUser.getPhoneNumber() != null && !addedUser.getPhoneNumber().trim().equals("")) {
                     User memberToAdd = userManagementService.loadOrSaveUser(addedUser.getPhoneNumber());
                     if (!memberToAdd.hasName() && addedUser.getDisplayName() != null) {
@@ -95,10 +98,9 @@ public class GroupController extends BaseController {
                 }
             }
 
-            // Getting the parent from the HttpRequest, since using it
-            String parentId = request.getParameter("parentId");
-            if (parentId != null && !parentId.equals("0")) {
-                Group parentGroup = groupManagementService.loadGroup(Long.parseLong(parentId));
+            // Getting the parent from the HttpRequest, since putting it in signature creates a mess, and not a group attr.
+            if (groupCreator.getHasParent()) {
+                Group parentGroup = groupManagementService.loadGroup(groupCreator.getParentId());
                 log.info("This is a sub-group! Of: " + parentGroup.getGroupName());
                 groupToSave.setParent(parentGroup);
             }
@@ -106,21 +108,28 @@ public class GroupController extends BaseController {
             log.info("About to try saving the new group ..." + groupToSave.toString());
             Group savedGroup = groupManagementService.saveGroup(groupToSave);
 
+            // Seeing if we should create a token -- to switch this to using property-editor
+            if (groupCreator.getGenerateToken()) {
+                log.info("Generating a join code for the newly created group");
+                savedGroup = groupManagementService.generateGroupToken(savedGroup, groupCreator.getTokenDaysValid());
+            }
+
             addMessage(redirectAttributes,MessageType.SUCCESS,"group.creation.success",new Object[]{savedGroup.getGroupName()},request);
-            return "redirect:/home";
+            redirectAttributes.addAttribute("group", savedGroup);
+            return "redirect:group/view";
 
         } catch (Exception e)  {
+            log.error("Exception thrown: " + e.toString());
             addMessage(model,MessageType.ERROR,"group.creation.error",request);
             return "group/create";
         }
-
     }
 
     @RequestMapping(value = "/group/create", params={"addMember"})
-    public String addMember(Model model, @ModelAttribute("group") Group group, BindingResult bindingResult) {
-        List<User> groupMembers = group.getGroupMembers();
+    public String addMember(Model model, @ModelAttribute("groupCreator") Group groupCreator, BindingResult bindingResult) {
+        List<User> groupMembers = groupCreator.getGroupMembers();
         groupMembers.add(new User());
-        group.setGroupMembers(groupMembers);
+        groupCreator.setGroupMembers(groupMembers);
         return "group/create";
     }
 

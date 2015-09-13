@@ -2,66 +2,76 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorator="layout">
 <head>
-    <title>GrassRoot - Create Group</title>
+  <title>GrassRoot - Create Group</title>
 </head>
 <body>
 
 <div layout:fragment="header">
-    <h2>Start a Group</h2>
+  <h2>Start a Group</h2>
 </div>
 <div layout:fragment="overview">Create a new group and add members</div>
 
 <div layout:fragment="content">
-    <div layout:fragment="messages"></div>
-    <div class="well">
+  <div layout:fragment="messages"></div>
+  <div class="well">
 
-        <form  th:object="${group}" th:action="@{/group/create}" method="post" autocomplete="on" class="form-horizontal">
-            <div class="form-group">
-                <label for="groupName" class="col-lg-2 control-label">Group Name</label>
+    <form  th:object="${groupCreator}" th:action="@{/group/create}" method="post" autocomplete="on" class="form-horizontal">
+      <div class="form-group">
+        <label for="groupName" class="col-lg-2 control-label">Group Name</label>
+        <div class="col-lg-4">
+          <input th:field="*{groupName}" type="text" class="form-control" id="groupName" placeholder="Group Name"/>
+        </div>
+      </div>
+      <div th:if="${hasParent}" class="form-group">
+        <input name="parentId" type="hidden" th:value="${parentId}"/>
+        <p>Sub-group of: <span th:text="${parentName}">Parent group</span></p>
+      </div>
+      <div class="form-group col-lg-10 col-lg-offset-2">
+        <table class="table col-md-8" id="member-input">
+          <thead>
+          <tr>
+            <th>Name</th>
+            <th>Phone</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="member, iterStat: *{addedMembers}">
+            <td>
+              <input type="text" th:field="*{addedMembers[__${iterStat.index}__].displayName}" class="form-control" placeholder="Member's name"/>
+            </td>
+            <td>
+              <input type="text" th:field="*{addedMembers[__${iterStat.index}__].phoneNumber}" class="form-control" placeholder="Phone number"/>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="form-group">
+        <div class="col-lg-4">
+          <button type="submit" name="addMember" class="btn btn-default">
+            <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+            Add another member</button>
+        </div>
+        <div class="col-lg-8">
+          <label for="generateToken" class="col-lg-4 control-label">Create a joining code?</label>
+          <div class="col-lg-4">
+            <input th:checked="${generateToken}" type="checkbox" class="form-control" id="generateToken" name="generateToken"/>
+          </div>
+          <!-- todo: make select box dynamic, so it only shows up if the user ticks the button -->
+          <div class="col-lg-4">
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="col-lg-8">
+          <a th:href="@{/home}" role="button" class="btn btn-default">Cancel</a>
+          <button type="submit" class="btn btn-primary">Create Group</button>
+        </div>
+      </div>
 
-                <div class="col-lg-4">
-                    <input th:field="*{groupName}" type="text" class="form-control" id="groupName" placeholder="Group Name"/>
-                </div>
-            </div>
-            <div th:if="${hasParent}" class="form-group">
-                <input name="parentId" type="hidden" th:value="${parentGroup.id}" />
-                <p>Sub-group of: <span th:text="${parentGroup.groupName}">Parent group</span></p>
-            </div>
-            <div class="form-group col-lg-10 col-lg-offset-2">
-                <table class="table col-md-8" id="member-input">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Phone</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr th:each="member, iterStat: *{groupMembers}">
-                            <td>
-                                <input type="text" th:field="*{groupMembers[__${iterStat.index}__].displayName}" class="form-control" placeholder="Member's name"/>
-                            </td>
-                            <td>
-                                <input type="text" th:field="*{groupMembers[__${iterStat.index}__].phoneNumber}" class="form-control" placeholder="Phone number"/>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="form-group">
-                <div class="col-lg-4">
-                    <button type="submit" name="addMember" class="btn btn-default">
-                        <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
-                        Another member</button>
-                </div>
-                <div class="col-lg-8">
-                    <!--<button class="btn btn-default">Cancel<div class="ripple-wrapper"></div></button>-->
-                    <button type="submit" class="btn btn-primary">Create Group</button>
-                </div>
-            </div>
-        </form>
+    </form>
 
-
-    </div>
+  </div>
 </div>
 
 <!-- <div class="header-container" layout:fragment="script-container">

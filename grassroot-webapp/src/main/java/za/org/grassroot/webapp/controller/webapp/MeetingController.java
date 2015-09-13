@@ -1,5 +1,7 @@
 package za.org.grassroot.webapp.controller.webapp;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -18,6 +20,9 @@ import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
+import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
 
@@ -26,6 +31,8 @@ import java.util.Locale;
  */
 @Controller
 public class MeetingController extends BaseController {
+
+    Logger log = LoggerFactory.getLogger(MeetingController.class);
 
     @Autowired
     UserManagementService userManagementService;
@@ -66,7 +73,20 @@ public class MeetingController extends BaseController {
         // todo: add error handling and validation
         // todo: check that we have all the needed information and/or add a confirmation screen
 
-        System.out.println("The event passed back to us: " + meeting.toString());
+        String receivedFormat = "yyyy-MM-dd HH:mm";
+        DateFormat input = new SimpleDateFormat(receivedFormat);
+        String outputFormat="E d MMM HH:mm";
+        DateFormat output = new SimpleDateFormat(outputFormat);
+
+        String dateTimeRaw = meeting.getDateTimeString() + ":00";
+        Timestamp meetingDateTime = Timestamp.valueOf(dateTimeRaw);
+        meeting.setEventStartDateTime(meetingDateTime);
+        meeting.setDateTimeString(output.format(meetingDateTime));
+
+        log.info("The timestamp is: " + meeting.getEventStartDateTime().toString());
+        log.info("The string is: " + meeting.getDateTimeString());
+
+        log.info("The event passed back to us: " + meeting.toString());
         meeting = eventManagementService.updateEvent(meeting);
         System.out.println("Meeting currently: " + meeting.toString());
 
