@@ -1,7 +1,17 @@
-DROP TABLE customer;
-DROP TABLE group_ancestor;
-DROP TABLE group_structure;
-DROP SEQUENCE hibernate_sequence;
-DROP TABLE person;
-DROP TABLE tree;
-
+DROP TABLE group_user_membership;
+DROP TABLE event_log;
+DROP TABLE event;
+DROP TABLE group_profile CASCADE;
+DROP TABLE permission CASCADE;
+DROP TABLE role CASCADE;
+DROP TABLE role_permissions CASCADE;
+DROP TABLE user_profile CASCADE;
+DROP TABLE user_roles CASCADE;
+DROP TABLE verification_token_code;
+--DROP SEQUENCE verification_token_code_id_seq;
+--DROP SEQUENCE event_id_seq;
+--DROP SEQUENCE event_log_id_seq;
+--DROP SEQUENCE group_profile_id_seq;
+--DROP SEQUENCE permission_id_seq;
+--DROP SEQUENCE role_id_seq;
+--DROP SEQUENCE user_profile_id_seq;
