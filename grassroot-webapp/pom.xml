@@ -16,7 +16,9 @@
 
     <properties>
         <hibernate-validator.version>5.2.1.Final</hibernate-validator.version>
+        <!--<main.basedir>${basedir}/../..</main.basedir>-->
     </properties>
+
 
 
     <dependencies>
@@ -116,7 +118,10 @@
             <artifactId>natty</artifactId>
             <version>0.11</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.liquibase</groupId>
+            <artifactId>liquibase-core</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
