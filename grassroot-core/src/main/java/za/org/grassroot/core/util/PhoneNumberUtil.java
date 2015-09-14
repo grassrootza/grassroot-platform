@@ -30,6 +30,29 @@ public class PhoneNumberUtil {
         }
     }
 
+    // moving this here from User object, better placed here
+
+    public static String invertPhoneNumber(String storedNumber, String joinString) {
+
+        // todo: handle error if number has gotten into database in incorrect format
+        // todo: make this much faster, e.g., use a simple regex / split function?
+
+        List<String> numComponents = new ArrayList<>();
+        String prefix = String.join("", Arrays.asList("0", storedNumber.substring(2, 4)));
+        String midnumbers, finalnumbers;
+
+        try {
+            midnumbers = storedNumber.substring(4, 7);
+            finalnumbers = storedNumber.substring(7, 11);
+        } catch (Exception e) { // in case the string doesn't have enough digits ...
+            midnumbers = storedNumber.substring(4);
+            finalnumbers = "";
+        }
+
+        return String.join(joinString, Arrays.asList(prefix, midnumbers, finalnumbers));
+
+    }
+
 
 
     public static Map<String, List<String>> splitPhoneNumbers(String userResponse) {

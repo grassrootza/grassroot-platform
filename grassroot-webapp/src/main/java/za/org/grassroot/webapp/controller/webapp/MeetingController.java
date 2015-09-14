@@ -66,9 +66,10 @@ public class MeetingController extends BaseController {
 
     }
 
+    // todo: add a field to Event entity about including subgroups (after liquibase commit)
     @RequestMapping(value = "/meeting/create", method = RequestMethod.POST)
     public String createMeeting(Model model, @ModelAttribute("meeting") Event meeting, BindingResult bindingResult,
-                                HttpServletRequest request, RedirectAttributes redirectAttributes) {
+                                @RequestParam(value="subgroups", required=false) boolean subgroups, HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
         // todo: add error handling and validation
         // todo: check that we have all the needed information and/or add a confirmation screen
@@ -92,7 +93,13 @@ public class MeetingController extends BaseController {
 
         // todo: need a way to get the response of sending meeting
 
-        List<User> usersToMessage = meeting.getAppliesToGroup().getGroupMembers();
+        List<User> usersToMessage;
+
+        if (subgroups) {
+            usersToMessage = groupManagementService.getAllUsersInGroupAndSubGroups(meeting.getAppliesToGroup());
+        } else {
+            usersToMessage = meeting.getAppliesToGroup().getGroupMembers();
+        }
 
         String[] msgParams = new String[]{
                 getUserProfile().getDisplayName(),

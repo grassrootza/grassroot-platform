@@ -66,7 +66,7 @@
                   <div class="list-group-item">
                     <div class="row-content">
                       <h4  class="list-group-item-heading">
-                        <a th:href="@{/group/view(groupId=${group.id})}"><span th:text="${group.groupName}"></span></a>
+                        <a th:href="@{/group/view(groupId=${group.id})}"><span th:text="${group.getName('')}"></span></a>
                       </h4>
                       <div class="least-content"><span th:text="${group.getGroupMembers().size()}"></span> Members</div>
                       <p class="list-group-item-text">Est. <span th:text="${#calendars.format(group.getCreatedDateTime(),'dd MMMM yyyy')}">13 May 2011</span></p>

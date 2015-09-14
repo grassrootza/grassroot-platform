@@ -7,12 +7,77 @@
 <body>
 
 <div layout:fragment="header">
-  <h2>View a Group</h2>
+  <h2>Group: <span  th:text="${group.groupName}">Group</span></h2>
 </div>
 <div layout:fragment="overview">View Group and invite members</div>
 
 <div layout:fragment="content">
   <div layout:fragment="messages"></div>
+
+  <!-- list any upcoming meetings, votes, or logs -->
+  <!-- todo: use event type to distinguish / classify among them -->
+  <!-- todo: find a more elegant way to avoid null pointer problems on list.isEmpty -->
+
+<div th:if="${not #lists.isEmpty(groupEvents)}">
+  <div class="well">
+    <div class="row">
+      <div class="col-md-12">
+        <h2>Upcoming events</h2>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <div th:each="event, iterStat : ${groupEvents}" class="bs-component">
+          <div class="list-group">
+            <div class="list-group-item">
+              <div class="row-content">
+                <h4 class="list-group-item">
+                  <!-- todo: redirect this based on the event type -->
+                  <a href="" th:href="@{/meeting/view(eventId=${event.id})}"><span th:text="${event.name}"></span></a>
+                </h4>
+                <p class="list=group-time-text">Scheduled for <span th:text="${#calendars.format(event.getEventStartDateTime(),'dd MMMM yyyy')}">11 September 2015</span></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <!-- Major todo: add in user permissions about changing names & groups &c. -->
+  <div class="well">
+    <div class="row">
+      <h2>Group members</h2>
+    </div>
+    <div class="row">
+      <table class="table table-striped">
+        <thead>
+        <th>Member</th>
+        <td>Phone number</td>
+        </thead>
+        <tbody>
+        <tr th:each="member : ${group.groupMembers}">
+          <td><span th:text="${member.displayName}"></span></td>
+          <td><span th:text="${member.phoneNumber}"></span></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="row" th:switch="${openToken}">
+      <div th:case="true">
+        Group join code: *120*1994*<span th:text="${group.groupTokenCode}"></span>#
+        <a href="" th:href="@{token(groupId=${group.id},action=extend)}"><button class="btn-info">Extend code</button></a>
+        <a href="" th:href="@{token(groupId=${group.id},action=close)}"><button class="btn-danger">Close this code</button></a>
+      </div>
+      <div th:case="false">
+        <a href="" th:href="@{/group/token(groupId=${group.id})}"><button>Create a new join code ('token')</button></a>
+      </div>
+    </div>
+  </div>
+
+  <!-- todo: add button that will get all users from subgroups too and display them in one list -->
+
   <!-- First, buttons for common actions -->
   <!-- todo: make these a fragment, as we'll probably use a lot -->
 
@@ -32,59 +97,6 @@
       </div>
     </div>
   </div>
-
-  <!-- list any upcoming meetings, votes, or logs -->
-  <!-- todo: use event type to distinguish / classify among them -->
-  <!-- todo: find a more elegant way to avoid null pointer problems on list.isEmpty -->
-
-<div th:if="${not #lists.isEmpty(groupEvents)}">
-    <div class="well">
-      <div class="row">
-        <div class="col-md-12">
-          <h2>Upcoming events</h2>
-        </div>
-      </div>
-      <div class="row">
-        <div class="col-md-12">
-          <div th:each="event, iterStat : ${groupEvents}" class="bs-component">
-            <div class="list-group">
-              <div class="list-group-item">
-                <div class="row-content">
-                  <h4 class="list-group-item">
-                    <!-- todo: redirect this based on the event type -->
-                    <a href="" th:href="{@/meeting/view(eventId=${event.id})}"><span th:text="${event.name}"></span></a>
-                  </h4>
-                  <p class="list=group-time-text">Scheduled for <span th:text="${#calendars.format(event.getEventStartDateTime(),'dd MMMM yyyy')}">11 September 2015</span></p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Major todo: add in user permissions about changing names & groups &c. -->
-  <div class="well">
-    <h2 th:text="${group.groupName}">Group</h2>
-    <table>
-      <thead>
-      <th>Member</th>
-      <td>Phone number</td>
-      </thead>
-      <tbody>
-      <tr th:each="member : ${group.groupMembers}">
-        <td><span th:text="${member.displayName}"></span></td>
-        <td><span th:text="${member.phoneNumber}"></span></td>
-      </tr>
-      </tbody>
-    </table>
-    <div th:if="${group.groupTokenCode}">
-      <p>Group join code: *120*1994*<span th:text="${group.groupTokenCode}"></span>#</p>
-    </div>
-  </div>
-
-  <!-- todo: add button that will get all users from subgroups too and display them in one list -->
 
   <!-- Some final auxiliary options & things, like creating a token, adding members, etc. -->
   <!-- todo: check if there is a token already, and, if so, just display it, and change 'create token' to 'invalidate' -->

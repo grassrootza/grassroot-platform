@@ -154,7 +154,7 @@ public class EventManager implements EventManagementService {
         List<Event> comingEvents = new ArrayList<>();
 
         for (Event event : allEvents) {
-            if (event.getEventStartDateTime().after(new Timestamp(Calendar.getInstance().getTimeInMillis()))) {
+            if (event != null && event.getEventStartDateTime().after(new Timestamp(Calendar.getInstance().getTimeInMillis()))) {
                 comingEvents.add(event);
             }
         }

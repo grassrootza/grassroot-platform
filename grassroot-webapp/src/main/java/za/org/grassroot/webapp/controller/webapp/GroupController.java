@@ -47,9 +47,12 @@ public class GroupController extends BaseController {
     @RequestMapping("/group/view")
     public String viewGroupIndex(Model model, @RequestParam("groupId") Long groupId) {
         Group group = groupManagementService.loadGroup(groupId);
+
         model.addAttribute("group", group);
         model.addAttribute("groupEvents", eventManagementService.getUpcomingEvents(group));
         model.addAttribute("subGroups", groupManagementService.getSubGroups(group));
+        model.addAttribute("openToken", groupManagementService.groupHasValidToken(group));
+
         return "group/view";
     }
 
@@ -78,8 +81,10 @@ public class GroupController extends BaseController {
         try {
 
             User userCreator = getUserProfile();
-            Group groupToSave = new Group(groupCreator.getGroupName(), userCreator);
-            // groupToSave.addMember(groupCreator); so if creator removes themselves, they don't get messages
+            Group groupToSave = new Group("", userCreator);
+            groupToSave.setGroupName(groupCreator.getGroupName());
+
+            // groupToSave.addMember(groupCreator); // not doing this - so if creator removes themselves, they don't get messages
 
             if (bindingResult.hasErrors()) {
                 model.addAttribute("group", groupCreator);
@@ -115,8 +120,8 @@ public class GroupController extends BaseController {
             }
 
             addMessage(redirectAttributes,MessageType.SUCCESS,"group.creation.success",new Object[]{savedGroup.getGroupName()},request);
-            redirectAttributes.addAttribute("group", savedGroup);
-            return "redirect:group/view";
+            redirectAttributes.addAttribute("groupId", savedGroup.getId());
+            return "redirect:view";
 
         } catch (Exception e)  {
             log.error("Exception thrown: " + e.toString());
@@ -126,10 +131,10 @@ public class GroupController extends BaseController {
     }
 
     @RequestMapping(value = "/group/create", params={"addMember"})
-    public String addMember(Model model, @ModelAttribute("groupCreator") Group groupCreator, BindingResult bindingResult) {
-        List<User> groupMembers = groupCreator.getGroupMembers();
+    public String addMember(Model model, @ModelAttribute("groupCreator") GroupCreator groupCreator, BindingResult bindingResult) {
+        List<User> groupMembers = groupCreator.getAddedMembers();
         groupMembers.add(new User());
-        groupCreator.setGroupMembers(groupMembers);
+        groupCreator.setAddedMembers(groupMembers);
         return "group/create";
     }
 
@@ -144,30 +149,48 @@ public class GroupController extends BaseController {
     } */
 
     @RequestMapping(value = "/group/token")
-    public String groupToken(Model model, @RequestParam("groupId") Long groupId) {
+    public String groupToken(Model model, @RequestParam("groupId") Long groupId,
+                             @RequestParam(value="action", required=false) String action) {
 
         Group group = groupManagementService.loadGroup(groupId);
         model.addAttribute("group", group);
 
         if (groupManagementService.groupHasValidToken(group)) {
-            return "group/existing_token";
+            if (action.equals("close")) {
+                return "group/close_token";
+            } else {
+                return "group/extend_token";
+            }
         } else {
             return "group/new_token";
         }
-
     }
 
     @RequestMapping(value = "/group/token", method = RequestMethod.POST)
-    public String createGroupToken(Model model, @RequestParam("daysValid") Integer daysValid, @RequestParam("groupId") Long groupId,
+    public String createGroupToken(Model model, @RequestParam("groupId") Long groupId, @RequestParam("action") String action,
+                                   @RequestParam(value="days", required=false) Integer days,
                                    HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
         Group group = groupManagementService.loadGroup(groupId);
-        group = groupManagementService.generateGroupToken(group, daysValid);
 
-        System.out.println("New token created with value: " + group.getGroupTokenCode());
+        switch (action) {
+            case "create":
+                group = groupManagementService.generateGroupToken(group, days);
+                log.info("New token created with value: " + group.getGroupTokenCode());
+                addMessage(redirectAttributes, MessageType.SUCCESS, "group.token.creation.success",
+                           new Object[]{group.getGroupTokenCode()}, request);
+                break;
+            case "extend":
+                group = groupManagementService.extendGroupToken(group, days);
+                log.info("Token extended until: " + group.getTokenExpiryDateTime().toString());
+                break;
+            case "close":
+                group = groupManagementService.invalidateGroupToken(group);
+                log.info("Token closed!");
+                break;
+        }
 
-        addMessage(redirectAttributes,MessageType.SUCCESS,"group.token.creation.success",
-                   new Object[]{group.getGroupTokenCode()},request);
+        redirectAttributes.addAttribute("groupId", group.getId());
         return "redirect:/group/view";
 
     }
@@ -175,6 +198,7 @@ public class GroupController extends BaseController {
     @RequestMapping(value = "group/token_modify", method = RequestMethod.POST)
     public String modifyGroupToken(Model model, @RequestParam("groupId") Long groupId,
                                    @RequestParam("actionToTake") String actionToTake, BindingResult bindingResult) {
+
 
         return "redirect:/group/view";
     }

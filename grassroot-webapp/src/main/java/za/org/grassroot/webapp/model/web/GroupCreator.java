@@ -4,6 +4,7 @@ import org.apache.commons.collections4.FactoryUtils;
 import org.apache.commons.collections4.list.LazyList;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -61,8 +62,20 @@ public class GroupCreator {
 
     public List<User> getAddedMembers() { return addedMembers; }
 
-    public void setAddedMembers(List<User> addedMembers) { this.addedMembers = addedMembers; }
-    public void addMember(User newMember) { this.addedMembers.add(newMember); }
+    public void setAddedMembers(List<User> addedMembers) {
+        // as below, this is clumsy for now, but will put into a custom converter later
+        for (User userToAdd : addedMembers) {
+           this.addMember(userToAdd);
+        }
+    }
+
+    public void addMember(User newMember) {
+        // this is very clumsy for now, custom converter better, but no time at present
+        if (!addedMembers.contains(newMember)) {
+            newMember.setPhoneNumber(PhoneNumberUtil.invertPhoneNumber(newMember.getPhoneNumber(), ""));
+            this.addedMembers.add(newMember);
+        }
+    }
 
     /* Constructors
     One for a group without a parent, one for a group with a parent

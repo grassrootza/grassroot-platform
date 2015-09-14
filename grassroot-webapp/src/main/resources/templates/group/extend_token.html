@@ -1,0 +1,48 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+  <title>GrassRoot - Manage a join code</title>
+</head>
+<body>
+
+<div layout:fragment="header">
+  <h2>Extend a token</h2>
+</div>
+
+<div layout:fragment="overview">Extend the period of validity of a group token</div>
+
+<div layout:fragment="content">
+  <div layout:fragment="messages"></div>
+  <div class="well">
+    <div class="row">
+      <div class="col-lg-12">
+        <p>This token has the code: *120*1994*<span th:text="${group.groupTokenCode}"></span>#. It expires on
+        <span th:text="${group.tokenExpiryDateTime}">date</span></p>
+      </div>
+    </div>
+    <form th:action="@{/group/token}" method="post" class="form-horizontal">
+      <input type="hidden" name="groupId" th:value="${group.id}" />
+      <input type="hidden" name="action" value="extend" />
+      <div class="row">
+        <div class="form-group">
+          <label for="daysExtension" class="col-lg-2 control-label">How long do you want to extend it for?</label>
+          <div class="col-lg-4">
+            <select name="days" id="daysExtension">
+              <div th:include="fragments :: daySelector"></div>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="form-group col-lg-12">
+          <button type="submit" class="btn btn-primary">Submit</button>
+          <a href="" th:href="@{/group/view(groupId=${group.id})}"><button class="btn btn-link" role="link">Cancel</button></a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+</body>
+</html>

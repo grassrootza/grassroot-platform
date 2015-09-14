@@ -6,8 +6,9 @@
 </head>
 <body>
 
-<div layout:fragment="header">
-  <h2>Start a Group</h2>
+<div layout:fragment="header" th:switch="${groupCreator.hasParent}">
+  <h2 th:case="false">Start a new group</h2>
+  <h2 th:case="true">Start a subgroup of: <span th:text="${groupCreator.parentName}">parent</span></h2>
 </div>
 <div layout:fragment="overview">Create a new group and add members</div>
 
@@ -16,15 +17,15 @@
   <div class="well">
 
     <form  th:object="${groupCreator}" th:action="@{/group/create}" method="post" autocomplete="on" class="form-horizontal">
+      <div th:if="*{hasParent}">
+        <input th:field="*{parentId}" type="hidden" th:value="*{parentId}"/>
+        <input th:field="*{hasParent}" type="hidden" th:value="*{hasParent}"/>
+      </div>
       <div class="form-group">
         <label for="groupName" class="col-lg-2 control-label">Group Name</label>
         <div class="col-lg-4">
           <input th:field="*{groupName}" type="text" class="form-control" id="groupName" placeholder="Group Name"/>
         </div>
-      </div>
-      <div th:if="${hasParent}" class="form-group">
-        <input name="parentId" type="hidden" th:value="${parentId}"/>
-        <p>Sub-group of: <span th:text="${parentName}">Parent group</span></p>
       </div>
       <div class="form-group col-lg-10 col-lg-offset-2">
         <table class="table col-md-8" id="member-input">
@@ -58,8 +59,10 @@
             <input th:checked="${generateToken}" type="checkbox" class="form-control" id="generateToken" name="generateToken"/>
           </div>
           <!-- todo: make select box dynamic, so it only shows up if the user ticks the button -->
-          <div class="col-lg-4">
-          </div>
+          <label for="tokenDaysValid">How long should it stay open?</label>
+          <select th:field="*{tokenDaysValid}" id="tokenDaysValid">
+            <div class="col-lg-4" th:include="fragments :: daySelector"></div>
+          </select>
         </div>
       </div>
       <div class="form-group">

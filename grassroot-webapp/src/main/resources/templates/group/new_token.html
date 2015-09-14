@@ -19,14 +19,14 @@
   <div class="well">
     <form th:action="@{/group/token}" method="post" autocomplete="off" class="form-horizontal">
       <input type="hidden" name="groupId" th:value="${group.id}" />
+      <input type="hidden" name="action" value="create" />
       <div class="form-group">
         <label for="daysValid" class="col-md-2 control-label">Number of days it should be valid</label>
         <!-- todo : put actual dates in the drop down, alongside the number of days (and "day" vs "days") -->
         <!-- todo : make this a fragment so can reuse it in group creation, etc -->
         <div class="col-md-4">
-          <select name="daysValid" id="daysValid">
-            <option th:each="i : ${#numbers.sequence(1, 5)}"
-                    th:value="${i}"><span th:text="${i}">1</span> days</option>
+          <select name="days" id="daysValid">
+            <div th:include="fragments :: daySelector"></div>
           </select>
         </div>
       </div>
