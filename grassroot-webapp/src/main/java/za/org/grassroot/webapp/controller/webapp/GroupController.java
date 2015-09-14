@@ -131,22 +131,25 @@ public class GroupController extends BaseController {
     }
 
     @RequestMapping(value = "/group/create", params={"addMember"})
-    public String addMember(Model model, @ModelAttribute("groupCreator") GroupCreator groupCreator, BindingResult bindingResult) {
+    public String addMember(Model model, @ModelAttribute("groupCreator") GroupCreator groupCreator) {
         List<User> groupMembers = groupCreator.getAddedMembers();
         groupMembers.add(new User());
         groupCreator.setAddedMembers(groupMembers);
         return "group/create";
     }
 
-    /*
+
     @RequestMapping(value = "/group/create", params={"removeMember"})
-    public String removeMember(Model model, @ModelAttribute("group") Group group, BindingResult bindingResult) {
-        List<User> groupMembers = group.getGroupMembers();
-        groupMembers.add(new User());
+    public String removeMember(Model model, @ModelAttribute("groupCreator") GroupCreator groupCreator,
+                               @RequestParam("removeMember") Integer memberId) {
+
+        log.info("Member ID obtained: " + memberId);
+        List<User> groupMembers = groupCreator.getAddedMembers();
+        groupMembers.remove(memberId.intValue());
         System.out.println("Number of users should be: " + groupMembers.size());
-        group.setGroupMembers(groupMembers);
+        groupCreator.setAddedMembers(groupMembers);
         return "group/create";
-    } */
+    }
 
     @RequestMapping(value = "/group/token")
     public String groupToken(Model model, @RequestParam("groupId") Long groupId,

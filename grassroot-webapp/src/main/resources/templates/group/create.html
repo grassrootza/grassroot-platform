@@ -33,6 +33,7 @@
           <tr>
             <th>Name</th>
             <th>Phone</th>
+            <th></th>
           </tr>
           </thead>
           <tbody>
@@ -42,6 +43,12 @@
             </td>
             <td>
               <input type="text" th:field="*{addedMembers[__${iterStat.index}__].phoneNumber}" class="form-control" placeholder="Phone number"/>
+            </td>
+            <td>
+              <button type="submit" name="removeMember" class="btn btn-default" aria-label="Remove"
+                      th:value="${iterStat.index}">
+                <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+              </button>
             </td>
           </tr>
           </tbody>

@@ -13,5 +13,18 @@
             th:value="${i}"><span th:text="${i}">1</span> days</option>
 </div>
 
+<div th:fragment="dateTimeInput">
+  <script>
+
+  $( document ).ready(function() {
+    $( "#datepicker" ).simpleMask({
+      nextInput : true,
+      'mask': ['####-##-## ##:##','####-##-## ##:##']
+      });
+  });
+
+</script>
+</div>
+
 </body>
 </html>

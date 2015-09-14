@@ -154,7 +154,8 @@ public class EventManager implements EventManagementService {
         List<Event> comingEvents = new ArrayList<>();
 
         for (Event event : allEvents) {
-            if (event != null && event.getEventStartDateTime().after(new Timestamp(Calendar.getInstance().getTimeInMillis()))) {
+            if (event != null && event.getEventStartDateTime() != null &&
+                    event.getEventStartDateTime().after(new Timestamp(Calendar.getInstance().getTimeInMillis()))) {
                 comingEvents.add(event);
             }
         }
@@ -199,7 +200,7 @@ public class EventManager implements EventManagementService {
         if (event.getAppliesToGroup() == null ) minimum = false;
         if (event.getCreatedByUser() == null) minimum = false;
         if (event.getDateTimeString() == null || event.getDateTimeString().trim().equals("")) minimum = false;
-        // log.info("minimumDataAvailable...returning..." + minimum);
+        log.info("minimumDataAvailable...returning..." + minimum);
 
         return minimum;
     }

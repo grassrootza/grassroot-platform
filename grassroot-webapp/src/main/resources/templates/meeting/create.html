@@ -4,9 +4,7 @@
 <head>
   <title>GrassRoot - Call a meeting</title>
   <script src="//code.jquery.com/jquery-1.9.1.js"></script>
-  <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
   <link rel="stylesheet" href="/resources/demos/style.css"/>
-  <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css"/>
 
   <!-- Using the jQuery UI datepicker, because it seems a bit more supported and robust than various Bootstrap plugins,
 albeit on a cursory glance -->
@@ -61,9 +59,11 @@ albeit on a cursory glance -->
         </div>
       </div>
       <div class="form-group">
-        <label for="datepicker" class="col-md-2 control-label">Meeting date and time</label>
-        <div class="col-md-4">
-          <input th:field="*{dateTimeString}" type="text" class="form-control" id="datepicker" placeholder="YYYY-MM-DD HH:MM"/>
+        <div th:fragment="date-picker">
+          <label for="datepicker" class="col-md-2 control-label">Meeting date and time</label>
+          <div class="col-md-4">
+            <input th:field="*{dateTimeString}" type="text" class="form-control" id="datepicker" placeholder="YYYY-MM-DD HH:MM"/>
+          </div>
         </div>
       </div>
       <!-- Was an attempt to use combodate (http://vitalets.github.io/combodate/) for this, but didn't work -->

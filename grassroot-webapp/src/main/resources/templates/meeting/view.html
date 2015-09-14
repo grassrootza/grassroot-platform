@@ -1,0 +1,66 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+  <title>GrassRoot - View Meeting</title>
+  <div th:include="fragments :: dateTimeInput"></div>
+</head>
+<body>
+
+<div layout:fragment="header">
+  <h2>Meeting: <span  th:text="${meeting.name}">Meeting</span></h2>
+</div>
+<div layout:fragment="overview">Meeting details and change or cancellation requests</div>
+
+<div layout:fragment="content">
+  <div layout:fragment="messages"></div>
+
+  <div class="well">
+    <div class="row">
+      Meeting scheduled for <span th:value="${meeting.dateTimeString}">date and time</span>.
+      So far, <span th:value="${meeting.appliesToGroup.groupMembers.size()}"> members have been invited.</span>
+    </div>
+    <div class="row">
+      Update this meeting:
+    </div>
+    <div class="row">
+      <form th:action="@{/meeting/modify}" th:object="${meeting}" method="post">
+        <input type="hidden" th:field="*{id}" th:value="${meeting.id}" />
+        <div class="row form-group">
+          <label for="meetingName" class="col-lg-2 control-label">Subject:</label>
+          <div class="col-lg-6">
+            <input type="text" id="meetingName" th:field="*{name}" th:value="${meeting.name}" />
+          </div>
+        </div>
+        <div class="row form-group">
+          <label for="location" class="col-lg-2 control-label">Location:</label>
+          <div class="col-lg-6">
+            <input type="text" id="location" th:field="*{eventLocation}" th:value="${meeting.eventLocation}" />
+          </div>
+        </div>
+        <div class="row form-group">
+          <label for="datepicker" class="col-lg-2 control-label">Date and time:</label>
+          <div class="col-lg-6">
+            <input th:name="modifyDateTime" type="text" class="form-control" id="datepicker" th:value="${meeting.eventStartDateTime}" />
+          </div>
+        </div>
+        <div class="row form-group">
+          <!-- todo: add a confirmation screen for cancellation and update -->
+          <div class="col-lg-4">
+            <button type="submit" name="modify" class="btn btn-primary">Change this meeting</button>
+          </div>
+          <div class="col-lg-4">
+            <button type="submit" name="reminder" class="btn btn-warning">Send a reminder</button>
+          </div>
+          <div class="col-lg-4">
+            <button type="submit" name="cancel" class="btn btn-danger">Cancel this meeting</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

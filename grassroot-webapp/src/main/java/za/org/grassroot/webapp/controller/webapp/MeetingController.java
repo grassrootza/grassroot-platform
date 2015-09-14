@@ -47,6 +47,14 @@ public class MeetingController extends BaseController {
     @Autowired
     SmsSendingService smsSendingService;
 
+    @RequestMapping("/meeting/view")
+    public String viewMeetingDetails(Model model, @RequestParam("eventId") Long eventId) {
+
+        model.addAttribute("meeting", eventManagementService.loadEvent(eventId));
+        return "meeting/view";
+
+    }
+
     @RequestMapping("/meeting/create")
     public String createMeetingIndex(Model model, @RequestParam(value="groupId", required=false) Long groupId) {
 
@@ -93,7 +101,7 @@ public class MeetingController extends BaseController {
 
         // todo: need a way to get the response of sending meeting
 
-        List<User> usersToMessage;
+        /* List<User> usersToMessage;
 
         if (subgroups) {
             usersToMessage = groupManagementService.getAllUsersInGroupAndSubGroups(meeting.getAppliesToGroup());
@@ -112,10 +120,45 @@ public class MeetingController extends BaseController {
 
         for (int i = 1; i <= usersToMessage.size(); i++) {
             smsSendingService.sendSMS(msgText, usersToMessage.get(i - 1).getPhoneNumber());
-        }
+        }*/
 
         addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.creation.success", request);
         return "redirect:/home";
+
+    }
+
+    @RequestMapping(value = "/meeting/modify", method=RequestMethod.POST, params={"modify"})
+    public String changeMeeting(Model model, @ModelAttribute("meeting") Event meeting,
+                                BindingResult bindingResult, HttpServletRequest request) {
+
+        log.info("Meeting we are passed: " + meeting);
+        eventManagementService.updateEvent(meeting);
+        model.addAttribute("meeting", meeting);
+        addMessage(model, MessageType.SUCCESS, "meeting.update.success", request);
+        return "meeting/view";
+
+    }
+
+    @RequestMapping(value = "/meeting/modify", method=RequestMethod.POST, params={"cancel"})
+    public String cancelMeeting(Model model, @ModelAttribute("meeting") Event meeting, BindingResult bindingResult,
+                                RedirectAttributes redirectAttributes, HttpServletRequest request) {
+
+        log.info("Meeting that is about to be cancelled: " + meeting.toString());
+        eventManagementService.cancelEvent(meeting.getId());
+        addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.cancel.success", request);
+        return "redirect:/home";
+
+    }
+
+    @RequestMapping(value = "/meeting/modify", method=RequestMethod.POST, params={"reminder"})
+    public String sendReminder(Model model, @ModelAttribute("meeting") Event meeting, RedirectAttributes redirectAttributes,
+                               HttpServletRequest request) {
+
+        // we need a method in eventManagementService to force a reminder
+
+        eventManagementService.updateEvent(meeting);
+        addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.reminder.success", request);
+        return "redirect:/hom";
 
     }
 
