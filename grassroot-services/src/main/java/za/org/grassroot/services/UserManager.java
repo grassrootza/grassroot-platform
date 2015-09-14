@@ -69,9 +69,13 @@ public class UserManager implements UserManagementService, UserDetailsService {
                 System.out.println("This user has a web profile already");
                 throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a web profile!");
             }
+
             if (!userToUpdate.hasName()) {
                 userToUpdate.setDisplayName(userProfile.getFirstName() + " " + userProfile.getLastName());
             }
+
+            userToUpdate.setFirstName(userProfile.getFirstName());
+            userToUpdate.setLastName(userProfile.getLastName());
 
             userToUpdate.setUsername(phoneNumber);
             userToUpdate.setWebProfile(true);
