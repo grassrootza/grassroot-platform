@@ -9,6 +9,8 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventChangeType;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.event.EventChangeEvent;
+import za.org.grassroot.integration.domain.MessageProtocol;
+import za.org.grassroot.integration.services.MessageSendingService;
 import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupManagementService;
@@ -36,6 +38,8 @@ public class EventNotificationConsumer {
     @Autowired
     MeetingNotificationService meetingNotificationService;
 
+    @Autowired
+    MessageSendingService messageSendingService;
     //@Autowired
     //EventManagementService eventManagementService;
 
@@ -50,8 +54,8 @@ public class EventNotificationConsumer {
             //generate message based on user language
             String message = meetingNotificationService.createMeetingNotificationMessage(user,event);
             if (!eventLogManagementService.notificationSentToUser(event,user)) {
-                //todo aakil send the sms
                 log.info("sendNewEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
+                messageSendingService.sendMessage(message,user.getPhoneNumber(), MessageProtocol.SMS);
                 eventLogManagementService.createEventLog(EventLogType.EventNotification,event,user,message);
             }
         }
@@ -65,8 +69,8 @@ public class EventNotificationConsumer {
             //generate message based on user language
             String message = meetingNotificationService.createChangeMeetingNotificationMessage(user,event);
             if (!eventLogManagementService.changeNotificationSentToUser(event, user, message)) {
-                //todo aakil send the sms
                 log.info("sendNewEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
+                messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
                 eventLogManagementService.createEventLog(EventLogType.EventChange,event,user,message);
             }
         }
@@ -81,8 +85,8 @@ public class EventNotificationConsumer {
             //generate message based on user language
             String message = meetingNotificationService.createCancelMeetingNotificationMessage(user,event);
             if (!eventLogManagementService.cancelNotificationSentToUser(event,user)) {
-                //todo aakil send the sms
                 log.info("sendNewEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
+                messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
                 eventLogManagementService.createEventLog(EventLogType.EventCancelled,event,user,message);
             }
         }
