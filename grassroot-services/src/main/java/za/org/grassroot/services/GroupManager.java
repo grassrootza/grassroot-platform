@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.services.util.TokenGeneratorService;
 
 import javax.jws.soap.SOAPBinding;
 import javax.transaction.Transactional;
@@ -35,6 +36,9 @@ public class GroupManager implements GroupManagementService {
     @Autowired
     UserManagementService userManager;
 
+    @Autowired
+    TokenGeneratorService tokenGeneratorService;
+
     /**
      * Have not yet created methods analogous to those in UserManager, as not sure if necessary
      * For the moment, using this to expose some basic group services for the application interfaces
@@ -60,6 +64,7 @@ public class GroupManager implements GroupManagementService {
     public void deleteGroup(Group groupToDelete) {
         groupRepository.delete(groupToDelete);
     }
+
 
     //todo aakil send event notification to new group member
     @Override
@@ -234,7 +239,8 @@ public class GroupManager implements GroupManagementService {
 
     private String generateCodeString() {
         // todo: implement a unique code generating algorithm that actually makes sense
-        return String.valueOf(1000 + new Random().nextInt(9999));
+        //return String.valueOf(1000 + new Random().nextInt(9999));
+        return String.valueOf(tokenGeneratorService.getNextToken());
     }
 
     /*

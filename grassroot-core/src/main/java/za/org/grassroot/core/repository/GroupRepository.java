@@ -5,13 +5,15 @@ package za.org.grassroot.core.repository;
  */
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 
 import java.util.List;
 
-public interface GroupRepository extends PagingAndSortingRepository<Group, Long> {
+public interface GroupRepository extends JpaRepository<Group, Long> {
     /*
     Find all the groups created by a specific user
      */
@@ -34,4 +36,11 @@ public interface GroupRepository extends PagingAndSortingRepository<Group, Long>
     Find a group by a code
      */
     Group findByGroupTokenCode(String groupTokenCode);
+
+    /*
+    Find the max(groupTokenCode) in table
+    N.B. remove this when we stop using integer values
+     */
+    @Query(value = "SELECT COALESCE(MAX(CAST(group_token_code as INTEGER)),123) FROM group_profile g", nativeQuery = true)
+    int getMaxTokenValue();
 }

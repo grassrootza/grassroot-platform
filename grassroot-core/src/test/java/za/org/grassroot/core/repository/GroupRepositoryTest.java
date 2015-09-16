@@ -141,6 +141,11 @@ public class GroupRepositoryTest {
 //        }
     }
 
+    @Test
+    public void shouldGetMaxToken() {
+        log.info(String.valueOf(groupRepository.getMaxTokenValue()));
+    }
+
 }
 
 

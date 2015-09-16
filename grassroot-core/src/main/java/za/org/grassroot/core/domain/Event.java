@@ -40,6 +40,10 @@ public class Event implements Serializable {
     doing it this way for now. to clean up.
      */
     private String dateTimeString;
+    /*
+    used to determine if notifications should be sent only to the group linked to the event, or any subgroups as well
+     */
+    private boolean includeSubGroups;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -106,6 +110,15 @@ public class Event implements Serializable {
 
     public void setEventType(EventType eventType) { this.eventType = eventType; }
 
+    @Column(name = "includesubgroups")
+    public boolean isIncludeSubGroups() {
+        return includeSubGroups;
+    }
+
+    public void setIncludeSubGroups(boolean includeSubGroups) {
+        this.includeSubGroups = includeSubGroups;
+    }
+
     @PreUpdate
     @PrePersist
     public void updateTimeStamps() {
@@ -154,6 +167,8 @@ public class Event implements Serializable {
  //               ", appliesToGroup=" + appliesToGroup +
                 ", name='" + name + '\'' +
                 ", dateTimeString=" + dateTimeString +'\'' +
+                ", includeSubGroups=" + includeSubGroups +'\'' +
+
                 '}';
     }
 }

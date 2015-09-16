@@ -17,7 +17,7 @@ CREATE TABLE event (
 );
 
 
-ALTER TABLE event OWNER TO rmqtjvxbcjvalc;
+--ALTER TABLE event OWNER TO rmqtjvxbcjvalc;
 
 --
 -- Name: event_id_seq; Type: SEQUENCE; Schema: public; Owner: rmqtjvxbcjvalc
@@ -31,7 +31,7 @@ CREATE SEQUENCE event_id_seq
     CACHE 1;
 
 
-ALTER TABLE event_id_seq OWNER TO rmqtjvxbcjvalc;
+--ALTER TABLE event_id_seq OWNER TO rmqtjvxbcjvalc;
 
 --
 -- Name: event_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: rmqtjvxbcjvalc
@@ -54,7 +54,7 @@ CREATE TABLE event_log (
 );
 
 
-ALTER TABLE event_log OWNER TO rmqtjvxbcjvalc;
+--ALTER TABLE event_log OWNER TO rmqtjvxbcjvalc;
 
 --
 -- Name: event_log_id_seq; Type: SEQUENCE; Schema: public; Owner: rmqtjvxbcjvalc
@@ -68,7 +68,7 @@ CREATE SEQUENCE event_log_id_seq
     CACHE 1;
 
 
-ALTER TABLE event_log_id_seq OWNER TO rmqtjvxbcjvalc;
+--ALTER TABLE event_log_id_seq OWNER TO rmqtjvxbcjvalc;
 
 --
 -- Name: event_log_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: rmqtjvxbcjvalc
@@ -92,7 +92,7 @@ CREATE TABLE group_profile (
 );
 
 
-ALTER TABLE group_profile OWNER TO rmqtjvxbcjvalc;
+--ALTER TABLE group_profile OWNER TO rmqtjvxbcjvalc;
 
 --
 -- Name: group_profile_id_seq; Type: SEQUENCE; Schema: public; Owner: rmqtjvxbcjvalc
@@ -106,7 +106,7 @@ CREATE SEQUENCE group_profile_id_seq
     CACHE 1;
 
 
-ALTER TABLE group_profile_id_seq OWNER TO rmqtjvxbcjvalc;
+--ALTER TABLE group_profile_id_seq OWNER TO rmqtjvxbcjvalc;
 
 --
 -- Name: group_profile_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: rmqtjvxbcjvalc
@@ -125,7 +125,7 @@ CREATE TABLE group_user_membership (
 );
 
 
-ALTER TABLE group_user_membership OWNER TO rmqtjvxbcjvalc;
+--ALTER TABLE group_user_membership OWNER TO rmqtjvxbcjvalc;
 
 --
 -- Name: permission; Type: TABLE; Schema: public; Owner: rmqtjvxbcjvalc; Tablespace: 
@@ -137,7 +137,7 @@ CREATE TABLE permission (
 );
 
 
-ALTER TABLE permission OWNER TO rmqtjvxbcjvalc;
+--ALTER TABLE permission OWNER TO rmqtjvxbcjvalc;
 
 --
 -- Name: permission_id_seq; Type: SEQUENCE; Schema: public; Owner: rmqtjvxbcjvalc
@@ -151,7 +151,7 @@ CREATE SEQUENCE permission_id_seq
     CACHE 1;
 
 
-ALTER TABLE permission_id_seq OWNER TO rmqtjvxbcjvalc;
+--ALTER TABLE permission_id_seq OWNER TO rmqtjvxbcjvalc;
 
 --
 -- Name: permission_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: rmqtjvxbcjvalc
@@ -170,7 +170,7 @@ CREATE TABLE role (
 );
 
 
-ALTER TABLE role OWNER TO rmqtjvxbcjvalc;
+--ALTER TABLE role OWNER TO rmqtjvxbcjvalc;
 
 --
 -- Name: role_id_seq; Type: SEQUENCE; Schema: public; Owner: rmqtjvxbcjvalc
@@ -184,7 +184,7 @@ CREATE SEQUENCE role_id_seq
     CACHE 1;
 
 
-ALTER TABLE role_id_seq OWNER TO rmqtjvxbcjvalc;
+--ALTER TABLE role_id_seq OWNER TO rmqtjvxbcjvalc;
 
 --
 -- Name: role_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: rmqtjvxbcjvalc
@@ -203,7 +203,7 @@ CREATE TABLE role_permissions (
 );
 
 
-ALTER TABLE role_permissions OWNER TO rmqtjvxbcjvalc;
+--ALTER TABLE role_permissions OWNER TO rmqtjvxbcjvalc;
 
 --
 -- Name: user_profile; Type: TABLE; Schema: public; Owner: rmqtjvxbcjvalc; Tablespace: 
@@ -225,7 +225,7 @@ CREATE TABLE user_profile (
 );
 
 
-ALTER TABLE user_profile OWNER TO rmqtjvxbcjvalc;
+--ALTER TABLE user_profile OWNER TO rmqtjvxbcjvalc;
 
 --
 -- Name: user_profile_id_seq; Type: SEQUENCE; Schema: public; Owner: rmqtjvxbcjvalc
@@ -239,7 +239,7 @@ CREATE SEQUENCE user_profile_id_seq
     CACHE 1;
 
 
-ALTER TABLE user_profile_id_seq OWNER TO rmqtjvxbcjvalc;
+--ALTER TABLE user_profile_id_seq OWNER TO rmqtjvxbcjvalc;
 
 --
 -- Name: user_profile_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: rmqtjvxbcjvalc
@@ -258,7 +258,7 @@ CREATE TABLE user_roles (
 );
 
 
-ALTER TABLE user_roles OWNER TO rmqtjvxbcjvalc;
+--ALTER TABLE user_roles OWNER TO rmqtjvxbcjvalc;
 
 --
 -- Name: verification_token_code; Type: TABLE; Schema: public; Owner: rmqtjvxbcjvalc; Tablespace: 
@@ -274,7 +274,7 @@ CREATE TABLE verification_token_code (
 );
 
 
-ALTER TABLE verification_token_code OWNER TO rmqtjvxbcjvalc;
+--ALTER TABLE verification_token_code OWNER TO rmqtjvxbcjvalc;
 
 --
 -- Name: verification_token_code_id_seq; Type: SEQUENCE; Schema: public; Owner: rmqtjvxbcjvalc
@@ -288,7 +288,7 @@ CREATE SEQUENCE verification_token_code_id_seq
     CACHE 1;
 
 
-ALTER TABLE verification_token_code_id_seq OWNER TO rmqtjvxbcjvalc;
+--ALTER TABLE verification_token_code_id_seq OWNER TO rmqtjvxbcjvalc;
 
 --
 -- Name: verification_token_code_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: rmqtjvxbcjvalc
