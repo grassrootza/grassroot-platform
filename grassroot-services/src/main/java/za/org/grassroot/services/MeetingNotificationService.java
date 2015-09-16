@@ -10,7 +10,6 @@ import java.util.Map;
  */
 public interface MeetingNotificationService {
 
-    public String createMessageUsingVelocity(String template, Map<String, Object> model);
     public String createMeetingNotificationMessage(User user, Event event);
     public String createChangeMeetingNotificationMessage(User user, Event event);
     public String createCancelMeetingNotificationMessage(User user, Event event);

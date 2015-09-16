@@ -1,5 +1,7 @@
 package za.org.grassroot.webapp.controller.webapp;
 
+import org.apache.commons.collections4.FactoryUtils;
+import org.apache.commons.collections4.list.LazyList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 
 import za.org.grassroot.core.domain.User;
@@ -20,8 +21,7 @@ import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
-import za.org.grassroot.webapp.model.ussd.AAT.Request;
-import za.org.grassroot.webapp.model.web.GroupCreator;
+import za.org.grassroot.webapp.model.web.GroupWrapper;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
@@ -59,13 +59,13 @@ public class GroupController extends BaseController {
     @RequestMapping("/group/create")
     public String startGroupIndex(Model model, @RequestParam(value="parent", required=false) Long parentId) {
 
-        GroupCreator groupCreator;
+        GroupWrapper groupCreator;
 
         if (parentId != null && groupManagementService.loadGroup(parentId) != null) {
             Group parent = groupManagementService.loadGroup(parentId);
-            groupCreator = new GroupCreator(parent);
+            groupCreator = new GroupWrapper(parent);
         } else {
-            groupCreator = new GroupCreator();
+            groupCreator = new GroupWrapper();
         }
 
         groupCreator.addMember(getUserProfile()); // to remove ambiguity about group creator being part of group
@@ -75,7 +75,7 @@ public class GroupController extends BaseController {
     }
 
     @RequestMapping(value = "/group/create", method = RequestMethod.POST)
-    public String createGroup(Model model, @ModelAttribute("groupCreator") GroupCreator groupCreator, BindingResult bindingResult,
+    public String createGroup(Model model, @ModelAttribute("groupCreator") GroupWrapper groupCreator, BindingResult bindingResult,
                               HttpServletRequest request, RedirectAttributes redirectAttributes )
     {
         try {
@@ -87,7 +87,7 @@ public class GroupController extends BaseController {
             // groupToSave.addMember(groupCreator); // not doing this - so if creator removes themselves, they don't get messages
 
             if (bindingResult.hasErrors()) {
-                model.addAttribute("group", groupCreator);
+                model.addAttribute("groupCreator", groupCreator);
                 addMessage(model, MessageType.ERROR, "group.creation.error", request);
                 return "group/create";
             }
@@ -131,42 +131,175 @@ public class GroupController extends BaseController {
     }
 
     @RequestMapping(value = "/group/create", params={"addMember"})
-    public String addMember(Model model, @ModelAttribute("groupCreator") GroupCreator groupCreator) {
-        List<User> groupMembers = groupCreator.getAddedMembers();
-        groupMembers.add(new User());
-        groupCreator.setAddedMembers(groupMembers);
+    public String addMember(Model model, @ModelAttribute("groupCreator") GroupWrapper groupCreator) {
+        groupCreator.setAddedMembers(addMember(groupCreator));
         return "group/create";
     }
 
 
     @RequestMapping(value = "/group/create", params={"removeMember"})
-    public String removeMember(Model model, @ModelAttribute("groupCreator") GroupCreator groupCreator,
+    public String removeMember(Model model, @ModelAttribute("groupCreator") GroupWrapper groupCreator,
                                @RequestParam("removeMember") Integer memberId) {
 
-        log.info("Member ID obtained: " + memberId);
-        List<User> groupMembers = groupCreator.getAddedMembers();
-        groupMembers.remove(memberId.intValue());
-        System.out.println("Number of users should be: " + groupMembers.size());
-        groupCreator.setAddedMembers(groupMembers);
+        groupCreator.setAddedMembers(removeMember(groupCreator, memberId));
         return "group/create";
     }
 
-    @RequestMapping(value = "/group/token")
-    public String groupToken(Model model, @RequestParam("groupId") Long groupId,
-                             @RequestParam(value="action", required=false) String action) {
+    /*
+    Methods for handling group modification
+    Major todo: permissions, throughout
+    todo: refactor GroupWrapper as GroupWrapper
+     */
+
+    @RequestMapping(value = "/group/modify", method = RequestMethod.POST, params={"group_modify"})
+    public String modifyGroup(Model model, @RequestParam("groupId") Long groupId) {
+
+        Group group = groupManagementService.loadGroup(groupId);
+        log.info("Okay, modifying this group: " + group.toString());
+
+        GroupWrapper groupModifier = new GroupWrapper();
+        groupModifier.populate(group);
+
+        log.info("The GroupWrapper now contains: " + groupModifier.getGroup().toString());
+
+        model.addAttribute("groupModifier", groupModifier);
+        return "group/modify";
+
+    }
+
+    @RequestMapping(value = "/group/modify", params={"addMember"})
+    public String addMemberModify(Model model, @ModelAttribute("groupModifier") GroupWrapper groupModifier) {
+        // todo: check permissions
+        groupModifier.setAddedMembers(addMember(groupModifier));
+        return "group/modify";
+    }
+
+
+    @RequestMapping(value = "/group/modify", params={"removeMember"})
+    public String removeMemberModify(Model model, @ModelAttribute("groupModifier") GroupWrapper groupModifier,
+                               @RequestParam("removeMember") Integer memberId) {
+
+        // todo: set permissions
+        groupModifier.setAddedMembers(removeMember(groupModifier, memberId));
+        return "group/modify";
+    }
+
+
+    @RequestMapping(value = "/group/modify", method = RequestMethod.POST)
+    public String modifyGroupDo(Model model, @ModelAttribute("groupModifier") GroupWrapper groupModifier,
+                                BindingResult bindingResult, HttpServletRequest request, RedirectAttributes redirectAttributes) {
+
+        try {
+
+            if (bindingResult.hasErrors()) {
+                model.addAttribute("groupModifier", groupModifier);
+                addMessage(model, MessageType.ERROR, "group.creation.error", request);
+                return "group/create";
+            }
+
+            // todo: put in various different kinds of error handling
+            // todo: work out a low-cost way to check which, if any, of the fields have changed
+
+            log.info("We've been passed this group to modify: " + groupModifier.getGroup());
+
+            Group groupToUpdate = groupManagementService.loadGroup(groupModifier.getGroup().getId());
+            groupToUpdate.setGroupName(groupModifier.getGroupName());
+
+            log.info("About to alter users on this group: " + groupToUpdate.toString());
+
+            // this is a bit brute force, to remove members we wipe the slate clean, but alternate is to do this
+            // when the user clicks 'remove', and then it's going to get messy with persistence & repo calls
+            // still, there may be a better way to do this -- a quick & fast way to check if a user in groupToUpdate's
+            // list is not in the new list (but, careful about changed objects, what equals does, excess database calls)
+
+            groupToUpdate.setGroupMembers(LazyList.lazyList(new ArrayList<>(), FactoryUtils.instantiateFactory(User.class)));
+
+            for (User userToUpdate : groupModifier.getAddedMembers()) {
+                groupToUpdate = addMemberGroup(groupToUpdate, userToUpdate, true);
+            }
+
+            Group savedGroup = groupManagementService.saveGroup(groupToUpdate);
+
+            addMessage(redirectAttributes,MessageType.SUCCESS,"group.update.success",new Object[]{savedGroup.getGroupName()},request);
+            redirectAttributes.addAttribute("groupId", savedGroup.getId());
+            return "redirect:view";
+
+        } catch (Exception e)  {
+            log.error("Exception thrown: " + e.toString());
+            addMessage(model,MessageType.ERROR,"group.creation.error",request);
+            return "group/modify";
+        }
+    }
+
+    /*
+    Helper methods for handling user addition and updating
+     */
+
+    private Group addMemberGroup(Group group, User member, boolean overwrite) {
+
+        if (member.getPhoneNumber() != null && !member.getPhoneNumber().trim().equals("")) {
+            User memberToAdd = userManagementService.loadOrSaveUser(member.getPhoneNumber());
+            if (member.getDisplayName() != null && (overwrite || !memberToAdd.hasName())) {
+                memberToAdd.setDisplayName(member.getDisplayName());
+                memberToAdd = userManagementService.save(memberToAdd);
+            }
+
+            // todo: allow phone number change, so mistakes can be corrected, but close this off soon (find a UX solution)
+            if (overwrite) {
+                memberToAdd.setPhoneNumber(PhoneNumberUtil.convertPhoneNumber(member.getPhoneNumber()));
+            }
+
+            group.addMember(memberToAdd);
+
+        }
+
+        return group;
+
+    }
+
+    private List<User> addMember(GroupWrapper groupWrapper) {
+
+        List<User> groupMembers = groupWrapper.getAddedMembers();
+        groupMembers.add(new User());
+        return groupMembers;
+
+    }
+
+    private List<User> removeMember(GroupWrapper groupWrapper, Integer memberId) {
+
+        List<User> groupMembers = groupWrapper.getAddedMembers();
+        groupMembers.remove(memberId.intValue());
+        System.out.println("Number of users should be: " + groupMembers.size());
+        return groupMembers;
+
+    }
+
+    /*
+    Methods for handling join tokens
+     */
+
+    @RequestMapping(value = "/group/modify", method = RequestMethod.POST, params={"token_create"})
+    public String newToken(Model model, @RequestParam("groupId") Long groupId) {
 
         Group group = groupManagementService.loadGroup(groupId);
         model.addAttribute("group", group);
+        return "group/new_token";
+    }
 
-        if (groupManagementService.groupHasValidToken(group)) {
-            if (action.equals("close")) {
-                return "group/close_token";
-            } else {
-                return "group/extend_token";
-            }
-        } else {
-            return "group/new_token";
-        }
+    @RequestMapping(value = "/group/modify", method = RequestMethod.POST, params={"token_extend"})
+    public String extendToken(Model model, @RequestParam("groupId") Long groupId) {
+
+        Group group = groupManagementService.loadGroup(groupId);
+        model.addAttribute("group", group);
+        return "group/extend_token";
+    }
+
+    @RequestMapping(value = "/group/modify", method = RequestMethod.POST, params={"token_cancel"})
+    public String cancelToken(Model model, @RequestParam("groupId") Long groupId) {
+
+        Group group = groupManagementService.loadGroup(groupId);
+        model.addAttribute("group", group);
+        return "group/close_token";
     }
 
     @RequestMapping(value = "/group/token", method = RequestMethod.POST)

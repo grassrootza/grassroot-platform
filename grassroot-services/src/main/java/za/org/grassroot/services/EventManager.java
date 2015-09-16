@@ -165,20 +165,25 @@ public class EventManager implements EventManagementService {
 
     private Event saveandCheckChanges(Event beforeEvent, Event changedEvent) {
 
-        log.info("saveandCheckChanges...starting");
+        log.info("saveandCheckChanges...starting ... with before event .. " + beforeEvent.toString());
+
+        // need to set this befoer saving the changed event, or the getters in minimuDataAvailable get confused
+        boolean priorEventComplete = minimumDataAvailable(beforeEvent);
         Event savedEvent = eventRepository.save(changedEvent);
+
         log.info("saveandCheckChanges..." + savedEvent.toString());
+
         /*
         Check if we need to send meeting notifications
          */
 
-            if (!minimumDataAvailable(beforeEvent) && minimumDataAvailable(savedEvent) && !savedEvent.isCanceled()) {
+            if (!priorEventComplete && minimumDataAvailable(savedEvent) && !savedEvent.isCanceled()) {
                 jmsTemplateProducerService.sendWithNoReply("event-added",savedEvent);
                 log.info("queued to event-added");
             }
-            if (minimumDataAvailable(beforeEvent) && minimumDataAvailable(savedEvent) && !savedEvent.isCanceled()) {
+            if (priorEventComplete && minimumDataAvailable(savedEvent) && !savedEvent.isCanceled()) {
                 // let's send out a change notification
-                //todo but first see if something actually changed
+                // todo but first see if something actually changed
                 jmsTemplateProducerService.sendWithNoReply("event-changed",savedEvent);
                 log.info("queued to event-changed");
             }
@@ -194,7 +199,7 @@ public class EventManager implements EventManagementService {
 
     private boolean minimumDataAvailable(Event event) {
         boolean minimum = true;
-        // log.info("minimumDataAvailable..." + event.toString());
+        log.info("minimumDataAvailable..." + event.toString());
         if (event.getName() == null || event.getName().trim().equals("")) minimum = false;
         if (event.getEventLocation() == null || event.getEventLocation().trim().equals("")) minimum = false;
         if (event.getAppliesToGroup() == null ) minimum = false;

@@ -143,7 +143,10 @@ public class Group implements Serializable {
      */
 
     public Group addMember(User newMember) {
-        this.groupMembers.add(newMember);
+        // might alternately put this check in service layer, but leaving it here for now, as sometimes we want to do
+        // the check and add without calling the repository
+        if (!this.groupMembers.contains(newMember))
+            this.groupMembers.add(newMember);
         return this;
     }
 

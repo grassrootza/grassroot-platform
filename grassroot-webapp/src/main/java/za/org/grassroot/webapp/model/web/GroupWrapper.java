@@ -15,7 +15,7 @@ import java.util.List;
  * everything to be in the same class in order to work okay.
  */
 
-public class GroupCreator {
+public class GroupWrapper {
 
     Group group;
     String groupName;
@@ -81,12 +81,12 @@ public class GroupCreator {
     One for a group without a parent, one for a group with a parent
      */
 
-    public GroupCreator() {
+    public GroupWrapper() {
         this.group = new Group();
         this.generateToken = false;
     }
 
-    public GroupCreator(Group parentGroup) {
+    public GroupWrapper(Group parentGroup) {
         this.group = new Group();
 
         // todo: make sure we never pass a null parent
@@ -96,6 +96,28 @@ public class GroupCreator {
         this.parentId = parentGroup.getId();
         this.parentName = parentGroup.getGroupName();
         this.addedMembers.addAll(parentGroup.getGroupMembers());
+    }
+
+    /*
+    Helper method for quickly populating one, for the group modification
+     */
+
+    public void populate(Group groupToModify) {
+
+        // no need to do anything about the token -- handled separately
+
+        this.group = groupToModify;
+        this.groupName = group.getGroupName();
+        this.parentGroup = group.getParent();
+
+        if (parentGroup != null) {
+            this.hasParent = true;
+            this.parentId = parentGroup.getId();
+            this.parentName = parentGroup.getGroupName();
+        }
+
+        this.addedMembers.addAll(groupToModify.getGroupMembers());
+
     }
 
 }

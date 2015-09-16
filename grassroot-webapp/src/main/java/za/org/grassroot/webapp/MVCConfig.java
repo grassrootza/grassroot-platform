@@ -148,7 +148,7 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
     @Bean
     public LocaleResolver localeResolver() {
         SessionLocaleResolver sessionLocaleResolver = new SessionLocaleResolver();
-        sessionLocaleResolver.setDefaultLocale(Locale.US);
+        sessionLocaleResolver.setDefaultLocale(Locale.UK); //defaulting back to proper English, not American
         return sessionLocaleResolver;
     }
 

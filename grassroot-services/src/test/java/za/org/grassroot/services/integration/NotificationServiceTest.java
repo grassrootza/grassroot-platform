@@ -27,6 +27,9 @@ import java.io.IOException;
 import java.util.*;
 import java.util.logging.Logger;
 
+import static junit.framework.Assert.*;
+import static junit.framework.Assert.assertTrue;
+
 /**
  * Created by aakilomar on 8/24/15.
  */
@@ -56,52 +59,56 @@ public class NotificationServiceTest {
     //TODO this test as well as the corresponding test welcome.vm should be removed
     //     this is only useful now to test application configuration
     @Test
-    public void shouldCallTemplateEngine() {
-        String template = "welcome.vm";
-        Map<String,Object> map = new HashMap<>();
-        map.put("time", new Date());
-        map.put("message","lekker my china");
-        String message = meetingNotificationService.createMessageUsingVelocity("welcome.vm",map);
-        Assert.assertEquals(true, message.contains("Message: lekker my china"));
+    public void shouldGetMessageTemplate() {
+        String template = "welcome.test";
+        String[] msgObjects = new String[]{
+                new Date().toString(),
+                "Is this working?"
+        };
+        String message = applicationContext.getMessage(template, msgObjects, Locale.ENGLISH);
+        assertTrue(message.contains("Message: Is this working?"));
     }
 
     @Test
     public void shouldGiveEnglishMessageForMeetingInvite() {
-        String message = applicationContext.getMessage("meeting.invite",null, Locale.ENGLISH);
-        Assert.assertEquals("You are invited to the",message);
+        String message = applicationContext.getMessage("sms.mtg.send.new",null, Locale.ENGLISH);
+        assertEquals("GrassRoot : {0} has called a meeting about {1}, at {2}, on {3}", message);
     }
 
     @Test
     public void shouldGiveEnglishMeetingMessage() {
-        User user = userRepository.save(new User("7777777"));
+        User user = userRepository.save(new User("27817770000"));
         Group group = groupManagementService.createNewGroup(user, Arrays.asList("0828888888", "0829999999"));
-        Event event = eventRepository.save(new Event("Drink till you drop",user,group));
+        Event event = eventRepository.save(new Event("Drink till you drop", user, group));
         event.setEventLocation("Ellispark");
         String message = meetingNotificationService.createMeetingNotificationMessage(user,event);
         log.info("shouldGiveEnglishMeetingMessage..." + message);
-        Assert.assertEquals("You are invited to the Drink till you drop meeting at Ellispark by 7777777", message);
+        assertEquals("GrassRoot : 081 777 0000 has called a meeting about Drink till you drop, at Ellispark, on null",
+                     message);
     }
 
     @Test
     public void shouldGiveEnglishChangeMeetingMessage() {
-        User user = userRepository.save(new User("7777777"));
+        User user = userRepository.save(new User("27817770000"));
         Group group = groupManagementService.createNewGroup(user, Arrays.asList("0828888888", "0829999999"));
         Event event = eventRepository.save(new Event("Drink till you drop",user,group));
         event.setEventLocation("Ellispark");
         String message = meetingNotificationService.createChangeMeetingNotificationMessage(user, event);
         log.info("shouldGiveEnglishMeetingMessage..." + message);
-        Assert.assertEquals("The meeting Drink till you drop has changed at Ellispark by 7777777", message);
+        assertEquals("081 777 0000 : The meeting about Drink till you drop has changed, it will now be at Ellispark, on null",
+                     message);
     }
 
     @Test
     public void shouldGiveEnglishCancelMeetingMessage() {
-        User user = userRepository.save(new User("7777777"));
+        User user = userRepository.save(new User("27817770000"));
         Group group = groupManagementService.createNewGroup(user, Arrays.asList("0828888888", "0829999999"));
         Event event = eventRepository.save(new Event("Drink till you drop",user,group));
         event.setEventLocation("Ellispark");
         String message = meetingNotificationService.createCancelMeetingNotificationMessage(user,event);
         log.info("shouldGiveEnglishMeetingMessage..." + message);
-        Assert.assertEquals("The meeting Drink till you drop has been cancelled", message);
+        assertEquals("GrassRoot : 081 777 0000 has cancelled the meeting about Drink till you drop, at Ellispark, on null",
+                     message);
     }
 
     private String writeTempFile(String data) {

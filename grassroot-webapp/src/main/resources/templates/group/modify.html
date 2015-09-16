@@ -1,0 +1,79 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+  <title>GrassRoot - Modify Group</title>
+</head>
+<body>
+
+<!-- Todo: for now, all, or almost all, elements are open, so this looks like create group, but need to adjust that in
+future to close that off (need a way that mistakes can be corrected, but not to abuse) -->
+
+<div layout:fragment="header">
+  <h2>Modifying the group: <span th:text="${groupModifier.groupName}">group</span></h2>
+</div>
+<div layout:fragment="overview">Add and remove members for a group</div>
+
+<div layout:fragment="content">
+  <div layout:fragment="messages"></div>
+  <div class="well">
+
+    <form  th:object="${groupModifier}" th:action="@{/group/modify}" method="post" autocomplete="on" class="form-horizontal">
+      <input type="hidden" th:field="*{group.id}" th:value="${groupModifier.group.id}" />
+      <div th:if="*{hasParent}">
+        <input th:field="*{parentId}" type="hidden" th:value="${parentId}"/>
+        <input th:field="*{hasParent}" type="hidden" th:value="${hasParent}"/>
+      </div>
+      <div class="form-group">
+        <label for="groupName" class="col-lg-2 control-label">Group Name</label>
+        <div class="col-lg-4">
+          <input th:field="*{groupName}" type="text" class="form-control" id="groupName" th:value="${groupName}"/>
+        </div>
+      </div>
+      <div class="form-group col-lg-10 col-lg-offset-2">
+        <table class="table col-md-8" id="member-input">
+          <thead>
+          <tr>
+            <th>Name</th>
+            <th>Phone</th>
+            <th></th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="member, iterStat: *{addedMembers}">
+            <td>
+              <input type="text" th:field="*{addedMembers[__${iterStat.index}__].displayName}" class="form-control" th:value="${member.displayName}"/>
+            </td>
+            <td>
+              <input type="text" th:field="*{addedMembers[__${iterStat.index}__].phoneNumber}" class="form-control" th:value="${member.phoneNumber}"/>
+            </td>
+            <td>
+              <button type="submit" name="removeMember" class="btn btn-default" aria-label="Remove"
+                      th:value="${iterStat.index}">
+                <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+              </button>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="form-group">
+        <div class="col-lg-4">
+          <button type="submit" name="addMember" class="btn btn-default">
+            <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+            Add another member</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="col-lg-8">
+          <a th:href="@{view(groupId=${groupModifier.group.id})}" role="button" class="btn btn-default">Cancel</a>
+          <button type="submit" class="btn btn-primary">Submit Group</button>
+        </div>
+      </div>
+
+    </form>
+
+  </div>
+</div>
+</body>
+</html>

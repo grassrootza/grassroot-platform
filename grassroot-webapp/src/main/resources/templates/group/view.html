@@ -64,16 +64,23 @@
         </tbody>
       </table>
     </div>
-    <div class="row" th:switch="${openToken}">
-      <div th:case="true">
-        Group join code: *120*1994*<span th:text="${group.groupTokenCode}"></span>#
-        <a href="" th:href="@{token(groupId=${group.id},action=extend)}"><button class="btn-info">Extend code</button></a>
-        <a href="" th:href="@{token(groupId=${group.id},action=close)}"><button class="btn-danger">Close this code</button></a>
+    <form th:action="@{modify}" method="post">
+      <input type="hidden" name="groupId" th:value="${group.id}" />
+      <div class="row" th:switch="${openToken}">
+        <div th:case="true">
+          <p class="text-strong">Group join code: *120*1994*<span th:text="${group.groupTokenCode}"></span>#</p>
+          <button type="submit" name="token_extend" class="btn btn-primary">Extend code</button>
+          <button type="submit" name="token_cancel" class="btn btn-danger">Close this code</button>
+        </div>
+        <div th:case="false">
+          <button type="submit" name="token_create" class="btn btn-success">Create a new join code ('token')</button>
+        </div>
       </div>
-      <div th:case="false">
-        <a href="" th:href="@{/group/token(groupId=${group.id})}"><button>Create a new join code ('token')</button></a>
+      <div class="row">
+        <!-- Major todo: look up user's permissions before they can do this ... -->
+          <button type="submit" name="group_modify" class="btn btn-primary">Add and modify group members</button>
       </div>
-    </div>
+    </form>
   </div>
 
   <!-- todo: add button that will get all users from subgroups too and display them in one list -->
@@ -94,35 +101,6 @@
       </div>
       <div class="col-md-3">
         <a href="" th:href="@{/vote/create(groupId=${group.id})}"><button class="btn btn-primary">Take a vote</button></a>
-      </div>
-    </div>
-  </div>
-
-  <!-- Some final auxiliary options & things, like creating a token, adding members, etc. -->
-  <!-- todo: check if there is a token already, and, if so, just display it, and change 'create token' to 'invalidate' -->
-  <!-- todo: as above, check for user permissions -->
-
-  <div class="well">
-    <div class="row">
-      <div class="col-md-3">
-        <a href="" th:href="@{/group/token(groupId=${group.id})}">
-          <button class="btn btn-primary">Create a group token</button>
-        </a>
-      </div>
-      <div class="col-md-3">
-        <a href="" th:href="@{/group/add(groupId=${group.id})}">
-          <button class="btn btn-primary">Add members to the group</button>
-        </a>
-      </div>
-      <div class="col-md-3">
-        <a href="" th:href="@{/group/remove(groupId=${group.id})}">
-          <button class="btn btn-primary">Remove members from the group</button>
-        </a>
-      </div>
-      <div class="col-md-3">
-        <a href="" th:href="@{/group/rename(groupId=${group.id})}">
-          <button class="btn btn-primary">Rename the group</button>
-        </a>
       </div>
     </div>
   </div>

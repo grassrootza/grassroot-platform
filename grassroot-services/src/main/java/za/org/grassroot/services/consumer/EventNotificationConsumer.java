@@ -49,7 +49,9 @@ public class EventNotificationConsumer {
     @JmsListener(destination = "event-added", containerFactory = "messagingJmsContainerFactory",
             concurrency = "5")
     public void sendNewEventNotifications(Event event) {
+
         log.info("sendNewEventNotifications... <" + event.toString() + ">");
+
         for (User user : groupManagementService.getAllUsersInGroupAndSubGroups(event.getAppliesToGroup())) {
             //generate message based on user language
             String message = meetingNotificationService.createMeetingNotificationMessage(user,event);
