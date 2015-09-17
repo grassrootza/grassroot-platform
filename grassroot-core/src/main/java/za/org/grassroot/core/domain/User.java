@@ -264,6 +264,7 @@ public class User implements UserDetails {
     }
 
     // can't call this the more natural getName, or any variant, or Spring's getter handling throws a fit
+    //todo @luke there is also a displayName field in this object ???? confuuuuusing. - aakil
     public String displayName() { return getName(""); }
 
     public Group needsToRenameGroup() {

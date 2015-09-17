@@ -41,15 +41,26 @@ public class EventManager implements EventManagementService {
     This createEvent method is used primarily by the USSD interface, where we do not have all the information yet.
     At this stage we would have created the user, group and asked the Name of the Event
      */
+
+    @Override
+    public Event createEvent(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups) {
+        return eventRepository.save(new Event(name, createdByUser, appliesToGroup,includeSubGroups));
+    }
+
     @Override
     public Event createEvent(String name, User createdByUser, Group appliesToGroup) {
-        return eventRepository.save(new Event(name, createdByUser, appliesToGroup));
+        return  createEvent(name, createdByUser, appliesToGroup, false);
+    }
+
+    @Override
+    public Event createEvent(String name, Long createdByUserId, Long appliesToGroupId, boolean includeSubGroups) {
+        return createEvent(name, userManagementService.getUserById(createdByUserId),
+                           groupManager.getGroupById(appliesToGroupId),includeSubGroups);
     }
 
     @Override
     public Event createEvent(String name, Long createdByUserId, Long appliesToGroupId) {
-        return createEvent(name, userManagementService.getUserById(createdByUserId),
-                           groupManager.getGroupById(appliesToGroupId));
+        return createEvent(name, createdByUserId, appliesToGroupId, false);
     }
 
     /*
@@ -187,7 +198,7 @@ public class EventManager implements EventManagementService {
                 jmsTemplateProducerService.sendWithNoReply("event-changed",savedEvent);
                 log.info("queued to event-changed");
             }
-            if (!beforeEvent.isCanceled() && savedEvent.isCanceled()) {
+            if (priorEventComplete && !beforeEvent.isCanceled() && savedEvent.isCanceled()) {
                 // ok send out cancelation notifications
                 jmsTemplateProducerService.sendWithNoReply("event-cancelled", savedEvent);
                 log.info("queued to event-cancelled");

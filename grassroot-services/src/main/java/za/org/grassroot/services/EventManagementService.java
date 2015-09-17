@@ -16,7 +16,11 @@ import java.util.List;
  */
 public interface EventManagementService {
 
+    Event createEvent(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups);
+
     public Event createEvent(String name, User createdByUser, Group group);
+
+    Event createEvent(String name, Long createdByUserId, Long appliesToGroupId, boolean includeSubGroups);
 
     public Event createEvent(String name, Long createdByUserId, Long groupId);
 

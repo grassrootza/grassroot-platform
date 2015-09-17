@@ -133,6 +133,15 @@ public class Event implements Serializable {
     Note: for the moment, until we build the use cases for other event types, defaulting all to meeting
      */
 
+    public Event(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups) {
+        this.name = name;
+        this.createdByUser = createdByUser;
+        this.appliesToGroup = appliesToGroup;
+        this.eventLocation=""; // otherwise we get null violations
+        this.eventType = EventType.Meeting;
+        this.includeSubGroups = includeSubGroups;
+    }
+
     public Event(String name, User createdByUser, Group appliesToGroup) {
         this.name = name;
         this.createdByUser = createdByUser;

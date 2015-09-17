@@ -37,7 +37,14 @@ public class EventRestController {
     @RequestMapping(value = "/add/{userId}/{groupId}/{name}", method = RequestMethod.POST)
     public EventDTO add(@PathVariable("userId") Long userId,@PathVariable("groupId") Long groupId,
                      @PathVariable("name") String name) {
-        return new EventDTO(eventManagementService.createEvent(name,userId,groupId));
+        return addAndSetSubGroups(userId,groupId,name,false);
+
+    }
+
+    @RequestMapping(value = "/add/{userId}/{groupId}/{name}/{includeSubGroups}", method = RequestMethod.POST)
+    public EventDTO addAndSetSubGroups(@PathVariable("userId") Long userId,@PathVariable("groupId") Long groupId,
+                        @PathVariable("name") String name, @PathVariable("includeSubGroups") boolean includeSubGroups) {
+        return new EventDTO(eventManagementService.createEvent(name,userId,groupId,includeSubGroups));
 
     }
 

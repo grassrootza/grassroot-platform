@@ -74,7 +74,6 @@ public class MeetingController extends BaseController {
 
     }
 
-    // todo: add a field to Event entity about including subgroups (after liquibase commit)
     @RequestMapping(value = "/meeting/create", method = RequestMethod.POST)
     public String createMeeting(Model model, @ModelAttribute("meeting") Event meeting, BindingResult bindingResult,
                                 @RequestParam(value="subgroups", required=false) boolean subgroups, HttpServletRequest request, RedirectAttributes redirectAttributes) {

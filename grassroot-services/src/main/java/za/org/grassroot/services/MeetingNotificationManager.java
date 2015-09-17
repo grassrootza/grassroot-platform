@@ -58,7 +58,7 @@ public class MeetingNotificationManager implements MeetingNotificationService {
     private String[] populateFields(User user, Event event) {
 
         String[] eventVariables = new String[]{
-                user.displayName(),
+                event.getCreatedByUser().displayName(),
                 event.getName(),
                 event.getEventLocation(),
                 event.getDateTimeString()

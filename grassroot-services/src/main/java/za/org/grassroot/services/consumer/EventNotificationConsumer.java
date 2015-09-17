@@ -52,7 +52,7 @@ public class EventNotificationConsumer {
 
         log.info("sendNewEventNotifications... <" + event.toString() + ">");
 
-        for (User user : groupManagementService.getAllUsersInGroupAndSubGroups(event.getAppliesToGroup())) {
+        for (User user : getAllUsersForGroup(event)) {
             //generate message based on user language
             String message = meetingNotificationService.createMeetingNotificationMessage(user,event);
             if (!eventLogManagementService.notificationSentToUser(event,user)) {
@@ -67,7 +67,7 @@ public class EventNotificationConsumer {
             concurrency = "3")
     public void sendChangedEventNotifications(Event event) {
         log.info("sendChangedEventNotifications... <" + event.toString() + ">");
-        for (User user : groupManagementService.getAllUsersInGroupAndSubGroups(event.getAppliesToGroup())) {
+        for (User user : getAllUsersForGroup(event)) {
             //generate message based on user language
             String message = meetingNotificationService.createChangeMeetingNotificationMessage(user,event);
             if (!eventLogManagementService.changeNotificationSentToUser(event, user, message)) {
@@ -83,7 +83,7 @@ public class EventNotificationConsumer {
             concurrency = "1")
     public void sendCancelledEventNotifications(Event event) {
         log.info("sendCancelledEventNotifications... <" + event.toString() + ">");
-        for (User user : groupManagementService.getAllUsersInGroupAndSubGroups(event.getAppliesToGroup())) {
+        for (User user : getAllUsersForGroup(event)) {
             //generate message based on user language
             String message = meetingNotificationService.createCancelMeetingNotificationMessage(user,event);
             if (!eventLogManagementService.cancelNotificationSentToUser(event,user)) {
@@ -93,6 +93,14 @@ public class EventNotificationConsumer {
             }
         }
 
+    }
+
+    private List<User> getAllUsersForGroup(Event event) {
+        if (event.isIncludeSubGroups()) {
+            return groupManagementService.getAllUsersInGroupAndSubGroups(event.getAppliesToGroup());
+        } else {
+            return event.getAppliesToGroup().getGroupMembers();
+        }
     }
 
 
