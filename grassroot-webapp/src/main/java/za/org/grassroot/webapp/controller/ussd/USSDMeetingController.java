@@ -275,8 +275,11 @@ public class USSDMeetingController extends USSDController {
         try { sessionUser = userManager.findByInputNumber(inputNumber); }
         catch (Exception e) { return noUserError; }
 
+        // todo: use responses (from integration or from elsewhere, to display errors if numbers wrong
+
         Event meetingToSend = updateEvent(eventId, passedValueKey, passedValue);
-        List<User> usersToMessage = meetingToSend.getAppliesToGroup().getGroupMembers();
+
+        /* List<User> usersToMessage = meetingToSend.getAppliesToGroup().getGroupMembers();
 
         String[] msgParams = new String[]{
                 sessionUser.getName(""),
@@ -288,16 +291,11 @@ public class USSDMeetingController extends USSDController {
         String msgText = getMessage(MTG_KEY, keySend, "template", msgParams, sessionUser);
         log.info("Message text: " + msgText);
 
-        /* RestTemplate sendGroupSMS = new RestTemplate();
-        UriComponentsBuilder sendMsgURI = UriComponentsBuilder.newInstance().scheme("https").host(smsHost);
-        sendMsgURI.path("send/").queryParam("username", smsUsername).queryParam("password", smsPassword); */
-
         for (int i = 1; i <= usersToMessage.size(); i++) {
             MessageProtocol protocol = MessageProtocol.SMS;
             messageService.sendMessage(msgText, usersToMessage.get(i - 1).getPhoneNumber(), protocol);
-        }
+        } */
 
-        // todo: use responses (from integration or from elsewhere, to display errors if numbers wrong
 
         return menuBuilder(new USSDMenu(getMessage(MTG_KEY, keySend, PROMPT, sessionUser), optionsHomeExit(sessionUser)));
     }
@@ -314,6 +312,7 @@ public class USSDMeetingController extends USSDController {
                 eventToReturn = eventManager.setSubject(eventId, passedValue);
                 break;
             case keyTime:
+                // todo: make sure we confirm date/time that's parsed, and/or set it null, so the message still sends
                 eventToReturn = eventManager.setDateTimeString(eventId, passedValue);
                 eventToReturn = eventManager.setEventTimestamp(eventId, Timestamp.valueOf(parseDateTime(passedValue)));
                 break;
