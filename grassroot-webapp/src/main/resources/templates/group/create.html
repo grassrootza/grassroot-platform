@@ -42,7 +42,11 @@
               <input type="text" th:field="*{addedMembers[__${iterStat.index}__].displayName}" class="form-control" placeholder="Member's name"/>
             </td>
             <td>
-              <input type="text" th:field="*{addedMembers[__${iterStat.index}__].phoneNumber}" class="form-control" placeholder="Phone number"/>
+              <div class="form-group" th:class="${#fields.hasErrors('addedMembers[__${iterStat.index}__].phoneNumber')}? has-error">
+                <!-- todo: format / mask this as on sign-in page -->
+                <input type="text" th:field="*{addedMembers[__${iterStat.index}__].phoneNumber}" class="form-control" th:errorclass="error" placeholder="Phone number"/>
+                <span th:if="${#fields.hasErrors('addedMembers[__${iterStat.index}__].phoneNumber')}" class="alert has-error">Error!</span>
+              </div>
             </td>
             <td>
               <button type="submit" name="removeMember" class="btn btn-default" aria-label="Remove"
@@ -84,30 +88,18 @@
   </div>
 </div>
 
-<!-- <div class="header-container" layout:fragment="script-container">
+<div class="header-container" layout:fragment="script-container">
     <script>
 
         $(document).ready(function() {
 
-
-            $counter = 2;
-            $( "#add-row" ).click(function() {
-                console.log("CLICKED THE BUTTON!");
-
-                $counter++;
-                $append_string = '<tr><td><input type="text" class="form-control" placeholder="Member name"/></td>' +
-                      '<td><input type="text" class="form-control" placeholder="Phone Number"/></td></tr>';
-
-                $("#member-input").append($append_string);
-
-                // $("#member-input").append("<tr><td><input type='text' class='form-control' name='member_phone_" + $counter + "' /></td>"
-                //    + "<td><input type='text' class='form-control' name='member_name_" + $counter + "' /></td></tr>");
-
-            });
-        });
+            // todo: some validation here
+            // $( '#addMember' ).click(function() {
+            // add in some means of validation
+            // });
 
     </script>
 
-</div> -->
+</div>
 </body>
 </html>

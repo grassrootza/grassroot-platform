@@ -5,13 +5,14 @@ import org.apache.commons.collections4.list.LazyList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.validation.Validator;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.WebDataBinder;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Group;
 
@@ -22,6 +23,8 @@ import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
+import za.org.grassroot.webapp.validation.GroupWrapperValidator;
+import za.org.grassroot.webapp.validation.UserValidator;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
@@ -43,6 +46,20 @@ public class GroupController extends BaseController {
 
     @Autowired
     EventManagementService eventManagementService;
+
+    @Autowired
+    @Qualifier("groupWrapperValidator")
+    private Validator groupWrapperValidator;
+
+    /*
+    Binding validators to model attributes. We could just user groupWrapper for both Creator and Modifier, but in the
+    future we may need to handle differently, and the redundant code is minimal, so am making two calls
+     */
+    @InitBinder("groupCreator")
+    private void initCreatorBinder(WebDataBinder binder) { binder.setValidator(groupWrapperValidator); }
+
+    @InitBinder("groupModifier")
+    private void initModifierBinder(WebDataBinder binder) { binder.setValidator(groupWrapperValidator); }
 
     @RequestMapping("/group/view")
     public String viewGroupIndex(Model model, @RequestParam("groupId") Long groupId) {
@@ -75,8 +92,8 @@ public class GroupController extends BaseController {
     }
 
     @RequestMapping(value = "/group/create", method = RequestMethod.POST)
-    public String createGroup(Model model, @ModelAttribute("groupCreator") GroupWrapper groupCreator, BindingResult bindingResult,
-                              HttpServletRequest request, RedirectAttributes redirectAttributes )
+    public String createGroup(Model model, @ModelAttribute("groupCreator") @Validated GroupWrapper groupCreator,
+                              BindingResult bindingResult, HttpServletRequest request, RedirectAttributes redirectAttributes)
     {
         try {
 
@@ -131,8 +148,14 @@ public class GroupController extends BaseController {
     }
 
     @RequestMapping(value = "/group/create", params={"addMember"})
-    public String addMember(Model model, @ModelAttribute("groupCreator") GroupWrapper groupCreator) {
-        groupCreator.setAddedMembers(addMember(groupCreator));
+    public String addMember(Model model, @ModelAttribute("groupCreator") @Validated GroupWrapper groupCreator,
+                            BindingResult bindingResult, HttpServletRequest request) {
+        if (bindingResult.hasErrors()) {
+            // print out the error
+            addMessage(model, MessageType.ERROR, "user.enter.error.phoneNumber.invalid", request);
+        } else {
+            groupCreator.setAddedMembers(addMember(groupCreator));
+        }
         return "group/create";
     }
 
@@ -148,7 +171,6 @@ public class GroupController extends BaseController {
     /*
     Methods for handling group modification
     Major todo: permissions, throughout
-    todo: refactor GroupWrapper as GroupWrapper
      */
 
     @RequestMapping(value = "/group/modify", method = RequestMethod.POST, params={"group_modify"})
@@ -168,9 +190,14 @@ public class GroupController extends BaseController {
     }
 
     @RequestMapping(value = "/group/modify", params={"addMember"})
-    public String addMemberModify(Model model, @ModelAttribute("groupModifier") GroupWrapper groupModifier) {
+    public String addMemberModify(Model model, @ModelAttribute("groupModifier") @Validated GroupWrapper groupModifier,
+                                  BindingResult bindingResult, HttpServletRequest request) {
         // todo: check permissions
-        groupModifier.setAddedMembers(addMember(groupModifier));
+        if (bindingResult.hasErrors()) {
+            addMessage(model, MessageType.ERROR, "user.enter.error.phoneNumber.invalid", request);
+        } else {
+            groupModifier.setAddedMembers(addMember(groupModifier));
+        }
         return "group/modify";
     }
 
@@ -179,22 +206,22 @@ public class GroupController extends BaseController {
     public String removeMemberModify(Model model, @ModelAttribute("groupModifier") GroupWrapper groupModifier,
                                @RequestParam("removeMember") Integer memberId) {
 
-        // todo: set permissions
+        // todo: check permissions (either in validator or in service layer)
         groupModifier.setAddedMembers(removeMember(groupModifier, memberId));
         return "group/modify";
     }
 
 
     @RequestMapping(value = "/group/modify", method = RequestMethod.POST)
-    public String modifyGroupDo(Model model, @ModelAttribute("groupModifier") GroupWrapper groupModifier,
+    public String modifyGroupDo(Model model, @ModelAttribute("groupModifier") @Validated GroupWrapper groupModifier,
                                 BindingResult bindingResult, HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
         try {
 
             if (bindingResult.hasErrors()) {
                 model.addAttribute("groupModifier", groupModifier);
-                addMessage(model, MessageType.ERROR, "group.creation.error", request);
-                return "group/create";
+                addMessage(model, MessageType.ERROR, "group.modification.error", request);
+                return "group/modify";
             }
 
             // todo: put in various different kinds of error handling

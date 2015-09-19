@@ -165,7 +165,7 @@ public class EventManager implements EventManagementService {
         List<Event> comingEvents = new ArrayList<>();
 
         for (Event event : allEvents) {
-            if (event != null && event.getEventStartDateTime() != null &&
+            if (event != null && !event.isCanceled() && event.getEventStartDateTime() != null &&
                     event.getEventStartDateTime().after(new Timestamp(Calendar.getInstance().getTimeInMillis()))) {
                 comingEvents.add(event);
             }
@@ -227,6 +227,9 @@ public class EventManager implements EventManagementService {
         return minimum;
     }
 
+    /*
+    Method to take a partially filled out event, from the web application, and add in a series of fields at once
+     */
     private Event fillOutEvent(Event passedEvent, Event savedEvent) {
 
         // todo throw a proper exception if the two events don't have matching IDs
@@ -257,6 +260,10 @@ public class EventManager implements EventManagementService {
 
         if (passedEvent.getDateTimeString() == null && savedEvent.getDateTimeString() != null)
             passedEvent.setDateTimeString(savedEvent.getDateTimeString());
+
+        // todo: think through this -- may make it impossible to switch off include subgroups
+        if (!passedEvent.isIncludeSubGroups() && savedEvent.isIncludeSubGroups())
+            passedEvent.setIncludeSubGroups(savedEvent.isIncludeSubGroups());
 
         return passedEvent;
 

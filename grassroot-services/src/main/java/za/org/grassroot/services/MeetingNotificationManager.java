@@ -34,7 +34,6 @@ public class MeetingNotificationManager implements MeetingNotificationService {
         // TODO fix the locale resolver in config
         // TODO think if there's a simple way to work out which variable has changed and only send that
         Locale locale = getUserLocale(user);
-
         return applicationContext.getMessage("sms.mtg.send.change", populateFields(user, event), locale);
     }
 
@@ -42,7 +41,6 @@ public class MeetingNotificationManager implements MeetingNotificationService {
     public String createCancelMeetingNotificationMessage(User user, Event event) {
         //TODO fix the locale resolver in config
         Locale locale = getUserLocale(user);
-
         return applicationContext.getMessage("sms.mtg.send.cancel", populateFields(user, event), locale);
     }
 
@@ -57,7 +55,10 @@ public class MeetingNotificationManager implements MeetingNotificationService {
 
     private String[] populateFields(User user, Event event) {
 
+        String salutation = (event.getAppliesToGroup().hasName()) ? event.getAppliesToGroup().getGroupName() : "GrassRoot";
+
         String[] eventVariables = new String[]{
+                salutation,
                 event.getCreatedByUser().displayName(),
                 event.getName(),
                 event.getEventLocation(),

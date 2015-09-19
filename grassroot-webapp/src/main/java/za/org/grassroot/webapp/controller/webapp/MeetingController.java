@@ -58,18 +58,23 @@ public class MeetingController extends BaseController {
     @RequestMapping("/meeting/create")
     public String createMeetingIndex(Model model, @RequestParam(value="groupId", required=false) Long groupId) {
 
+        boolean groupSpecified;
         User sessionUser = getUserProfile();
         Event meeting = eventManagementService.createMeeting(sessionUser);
+
         if (groupId != null) {
+            System.out.println("Came here from a group");
             model.addAttribute("group", groupManagementService.loadGroup(groupId));
             meeting = eventManagementService.setGroup(meeting.getId(), groupId);
+            groupSpecified = true;
         } else {
+            System.out.println("No group selected, pass the list of possible");
             model.addAttribute("userGroups", groupManagementService.getGroupsPartOf(sessionUser)); // todo: or just use user.getGroupsPartOf?
-            groupId = 0L;
+            groupSpecified = false;
         }
         model.addAttribute("meeting", meeting);
-        model.addAttribute("groupId", groupId); // slightly redundant, but use it to tell Thymeleaf what to do
-        System.out.println("Meeting that we are passing: " + meeting.toString());
+        model.addAttribute("groupSpecified", groupSpecified); // slightly redundant, but use it to tell Thymeleaf what to do
+        log.info("Meeting that we are passing: " + meeting.toString());
         return "meeting/create";
 
     }
@@ -99,27 +104,6 @@ public class MeetingController extends BaseController {
         System.out.println("Meeting currently: " + meeting.toString());
 
         // todo: need a way to get the response of sending meeting
-
-        /* List<User> usersToMessage;
-
-        if (subgroups) {
-            usersToMessage = groupManagementService.getAllUsersInGroupAndSubGroups(meeting.getAppliesToGroup());
-        } else {
-            usersToMessage = meeting.getAppliesToGroup().getGroupMembers();
-        }
-
-        String[] msgParams = new String[]{
-                getUserProfile().getDisplayName(),
-                meeting.getName(),
-                meeting.getEventLocation(),
-                meeting.getDateTimeString()
-        };
-
-        String msgText = messageSourceAccessor.getMessage("ussd.mtg.send.template", msgParams, new Locale("en"));
-
-        for (int i = 1; i <= usersToMessage.size(); i++) {
-            smsSendingService.sendSMS(msgText, usersToMessage.get(i - 1).getPhoneNumber());
-        }*/
 
         addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.creation.success", request);
         return "redirect:/home";

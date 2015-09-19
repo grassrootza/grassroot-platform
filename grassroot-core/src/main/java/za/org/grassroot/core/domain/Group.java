@@ -33,9 +33,6 @@ public class Group implements Serializable {
     private String      groupTokenCode;
     private Timestamp   tokenExpiryDateTime;
 
-    // adding a field so people can disable viewing a group in USSD (could be at user-group level, but over-complicating)
-    // private boolean     displayInUSSD;
-
     @Basic
     @Column(name = "name", nullable = false, length = 50)
     public String getGroupName() {
@@ -114,12 +111,6 @@ public class Group implements Serializable {
     public Timestamp getTokenExpiryDateTime() { return tokenExpiryDateTime; }
 
     public void setTokenExpiryDateTime(Timestamp tokenExpiryDateTime) { this.tokenExpiryDateTime = tokenExpiryDateTime; }
-
-    /* @Basic
-    @Column(name = "display_in_ussd")
-    public boolean getDisplayInUSSD() { return displayInUSSD; }
-
-    public void setDisplayInUSSD(boolean displayInUSSD) { this.displayInUSSD = displayInUSSD; } */
 
     @PreUpdate
     @PrePersist

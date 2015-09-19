@@ -77,6 +77,8 @@ public class PasswordTokenManager implements PasswordTokenService {
     @Override
     public boolean isVerificationCodeValid(User user, String code) {
 
+        log.info("Trying to match this code (" + code + ") to this user: " + user);
+
         if (user == null || StringUtils.isEmpty(code)) {
             return false;
         }

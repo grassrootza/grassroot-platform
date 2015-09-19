@@ -92,5 +92,25 @@ public class PhoneNumberUtil {
         return returnMap;
     }
 
+    /*
+    Helper function especially for web input where we can use validators to check and return
+     */
+
+    public static boolean testInputNumber(String inputNumber) {
+
+        boolean isNumberValid = true;
+        com.google.i18n.phonenumbers.PhoneNumberUtil phoneNumberUtil = com.google.i18n.phonenumbers.PhoneNumberUtil.getInstance();
+
+        try {
+            Phonenumber.PhoneNumber phoneNumber = phoneNumberUtil.parse(inputNumber.trim(), "ZA");
+            isNumberValid = (phoneNumberUtil.isValidNumber(phoneNumber) && inputNumber.length() >= 10);
+        } catch (NumberParseException e) {
+            isNumberValid = false;
+        }
+
+        return isNumberValid;
+
+    }
+
 
 }

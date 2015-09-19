@@ -72,7 +72,7 @@ public class NotificationServiceTest {
     @Test
     public void shouldGiveEnglishMessageForMeetingInvite() {
         String message = applicationContext.getMessage("sms.mtg.send.new",null, Locale.ENGLISH);
-        assertEquals("GrassRoot : {0} has called a meeting about {1}, at {2}, on {3}", message);
+        assertEquals("{0} : {1} has called a meeting about {2}, at {3}, on {4}", message);
     }
 
     @Test
@@ -95,7 +95,7 @@ public class NotificationServiceTest {
         event.setEventLocation("Ellispark");
         String message = meetingNotificationService.createChangeMeetingNotificationMessage(user, event);
         log.info("shouldGiveEnglishMeetingMessage..." + message);
-        assertEquals("081 777 0000 : The meeting about Drink till you drop has changed, it will now be at Ellispark, on null",
+        assertEquals("GrassRoot : 081 777 0000 has changed the meeting about Drink till you drop, it will now be at Ellispark, on null",
                      message);
     }
 

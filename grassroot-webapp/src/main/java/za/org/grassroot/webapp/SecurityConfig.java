@@ -68,6 +68,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                         .antMatchers("/home").fullyAuthenticated()
                         .anyRequest()
                         .fullyAuthenticated();
+                        /*.and()
+                                .requiresChannel()
+                                .anyRequest()
+                                .requiresSecure();*/
 
 
     }
