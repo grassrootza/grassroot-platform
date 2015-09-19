@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.services.MessageSendingService;
 import za.org.grassroot.integration.domain.MessageProtocol;
@@ -314,7 +315,7 @@ public class USSDMeetingController extends USSDController {
             case keyTime:
                 // todo: make sure we confirm date/time that's parsed, and/or set it null, so the message still sends
                 eventToReturn = eventManager.setDateTimeString(eventId, passedValue);
-                eventToReturn = eventManager.setEventTimestamp(eventId, Timestamp.valueOf(parseDateTime(passedValue)));
+                eventToReturn = eventManager.setEventTimestamp(eventId, Timestamp.valueOf(DateTimeUtil.parseDateTime(passedValue)));
                 break;
             case keyPlace:
                 eventToReturn = eventManager.setLocation(eventId, passedValue);
@@ -328,32 +329,6 @@ public class USSDMeetingController extends USSDController {
         return eventToReturn;
     }
 
-    /*
-        Inserting method to parse date time user input and, if it can be parsed, set the timestamp accordingly.
-        todo: a lot of error handling and looking through the tree to make sure this is right.
-        todo: come up with a more sensible default if the parsing fails, rather than current time
-        todo: work on handling methods / customize the util library to handle local languages
-        todo: in the next menu, ask if this is right, and, if not, option to come back
-        todo: make sure the timezone is being set properly
-         */
-
-    public LocalDateTime parseDateTime(String passedValue) {
-
-        LocalDateTime parsedDateTime;
-
-        Parser parser = new Parser();
-        DateGroup firstDateGroup = parser.parse(passedValue).iterator().next();
-        if (firstDateGroup != null) {
-            Date parsedDate = firstDateGroup.getDates().iterator().next();
-            parsedDateTime = parsedDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-            log.info("Date time processed: " + parsedDateTime.toString());
-        } else {
-            parsedDateTime = LocalDateTime.now();
-        }
-
-        return parsedDateTime;
-
-    }
 
 
 

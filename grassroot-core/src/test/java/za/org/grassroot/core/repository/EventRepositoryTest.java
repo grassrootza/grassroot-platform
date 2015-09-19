@@ -15,11 +15,11 @@ import za.org.grassroot.core.domain.User;
 
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
+import java.util.Date;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -77,5 +77,30 @@ public class EventRepositoryTest {
         assertThat(eventFromDb.getCreatedByUser().getPhoneNumber(), is("55555"));
         assertThat(eventFromDb.getEventStartDateTime(), is(testStartDateTime));
     }
+
+    @Test
+    public void testMinimumEqual() {
+        Event e1 = new Event();
+        Event e2 = new Event();
+        assertEquals(true,e1.minimumEquals(e2));
+        e1.setEventLocation("location");
+        assertEquals(false, e1.minimumEquals(e2));
+        e2.setEventLocation(e1.getEventLocation());
+        assertEquals(true, e1.minimumEquals(e2));
+        e1.setName("name");
+        assertEquals(false, e1.minimumEquals(e2));
+        e2.setName(e1.getName());
+        assertEquals(true, e1.minimumEquals(e2));
+        e1.setDateTimeString("31th 7pm");
+        assertEquals(false, e1.minimumEquals(e2));
+        e2.setDateTimeString(e1.getDateTimeString());
+        assertEquals(true, e1.minimumEquals(e2));
+        e1.setEventStartDateTime(new Timestamp(new Date().getTime()));
+        assertEquals(false, e1.minimumEquals(e2));
+        e2.setEventStartDateTime(e1.getEventStartDateTime());
+        assertEquals(true, e1.minimumEquals(e2));
+
+    }
+
 
 }

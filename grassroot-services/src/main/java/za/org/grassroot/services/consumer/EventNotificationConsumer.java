@@ -50,7 +50,7 @@ public class EventNotificationConsumer {
             concurrency = "5")
     public void sendNewEventNotifications(Event event) {
 
-        log.info("sendNewEventNotifications... <" + event.toString() + ">");
+        log.finest("sendNewEventNotifications... <" + event.toString() + ">");
 
         for (User user : getAllUsersForGroup(event)) {
             //generate message based on user language
@@ -66,12 +66,12 @@ public class EventNotificationConsumer {
     @JmsListener(destination = "event-changed", containerFactory = "messagingJmsContainerFactory",
             concurrency = "3")
     public void sendChangedEventNotifications(Event event) {
-        log.info("sendChangedEventNotifications... <" + event.toString() + ">");
+        log.finest("sendChangedEventNotifications... <" + event.toString() + ">");
         for (User user : getAllUsersForGroup(event)) {
             //generate message based on user language
             String message = meetingNotificationService.createChangeMeetingNotificationMessage(user,event);
             if (!eventLogManagementService.changeNotificationSentToUser(event, user, message)) {
-                log.info("sendNewEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
+                log.info("sendChangedEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
                 messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
                 eventLogManagementService.createEventLog(EventLogType.EventChange,event,user,message);
             }
@@ -82,12 +82,12 @@ public class EventNotificationConsumer {
     @JmsListener(destination = "event-cancelled", containerFactory = "messagingJmsContainerFactory",
             concurrency = "1")
     public void sendCancelledEventNotifications(Event event) {
-        log.info("sendCancelledEventNotifications... <" + event.toString() + ">");
+        log.finest("sendCancelledEventNotifications... <" + event.toString() + ">");
         for (User user : getAllUsersForGroup(event)) {
             //generate message based on user language
             String message = meetingNotificationService.createCancelMeetingNotificationMessage(user,event);
             if (!eventLogManagementService.cancelNotificationSentToUser(event,user)) {
-                log.info("sendNewEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
+                log.info("sendCancelledEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
                 messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
                 eventLogManagementService.createEventLog(EventLogType.EventCancelled,event,user,message);
             }

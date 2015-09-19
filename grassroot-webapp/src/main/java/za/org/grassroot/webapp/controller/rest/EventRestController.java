@@ -7,9 +7,11 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.repository.EventRepository;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.webapp.model.rest.EventDTO;
 
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -61,6 +63,8 @@ public class EventRestController {
 
     @RequestMapping(value = "/settime/{eventId}/{time}", method = RequestMethod.POST)
     public EventDTO setTime(@PathVariable("eventId") Long eventId,@PathVariable("time") String time) {
+        //TODO this is very inefficient and should be refactored, it is just how Luke implemented it currently for USSD
+        eventManagementService.setEventTimestamp(eventId, Timestamp.valueOf(DateTimeUtil.parseDateTime(time)));
         return new EventDTO(eventManagementService.setDateTimeString(eventId,time));
     }
 

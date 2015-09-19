@@ -165,6 +165,68 @@ public class Event implements Serializable {
     public Event() {
     }
 
+    public boolean minimumEquals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Event event = (Event) o;
+
+        if (dateTimeString != null ? !dateTimeString.equals(event.dateTimeString) : event.dateTimeString != null)
+            return false;
+        if (eventLocation != null ? !eventLocation.equals(event.eventLocation) : event.eventLocation != null)
+            return false;
+        if (eventStartDateTime != null ? !eventStartDateTime.equals(event.eventStartDateTime) : event.eventStartDateTime != null)
+            return false;
+        if (name != null ? !name.equals(event.name) : event.name != null) return false;
+
+        return true;
+
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Event event = (Event) o;
+
+        if (canceled != event.canceled) return false;
+        if (includeSubGroups != event.includeSubGroups) return false;
+        if (appliesToGroup != null ? !appliesToGroup.equals(event.appliesToGroup) : event.appliesToGroup != null)
+            return false;
+        if (createdByUser != null ? !createdByUser.equals(event.createdByUser) : event.createdByUser != null)
+            return false;
+        if (createdDateTime != null ? !createdDateTime.equals(event.createdDateTime) : event.createdDateTime != null)
+            return false;
+        if (dateTimeString != null ? !dateTimeString.equals(event.dateTimeString) : event.dateTimeString != null)
+            return false;
+        if (eventLocation != null ? !eventLocation.equals(event.eventLocation) : event.eventLocation != null)
+            return false;
+        if (eventStartDateTime != null ? !eventStartDateTime.equals(event.eventStartDateTime) : event.eventStartDateTime != null)
+            return false;
+        if (eventType != event.eventType) return false;
+        if (id != null ? !id.equals(event.id) : event.id != null) return false;
+        if (name != null ? !name.equals(event.name) : event.name != null) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = eventLocation != null ? eventLocation.hashCode() : 0;
+        result = 31 * result + (id != null ? id.hashCode() : 0);
+        result = 31 * result + (createdDateTime != null ? createdDateTime.hashCode() : 0);
+        result = 31 * result + (eventStartDateTime != null ? eventStartDateTime.hashCode() : 0);
+        result = 31 * result + (createdByUser != null ? createdByUser.hashCode() : 0);
+        result = 31 * result + (appliesToGroup != null ? appliesToGroup.hashCode() : 0);
+        result = 31 * result + (canceled ? 1 : 0);
+        result = 31 * result + (eventType != null ? eventType.hashCode() : 0);
+        result = 31 * result + (name != null ? name.hashCode() : 0);
+        result = 31 * result + (dateTimeString != null ? dateTimeString.hashCode() : 0);
+        result = 31 * result + (includeSubGroups ? 1 : 0);
+        return result;
+    }
+
     @Override
     public String toString() {
         return "Event{" +

@@ -15,6 +15,9 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventLogType;
 
 import javax.transaction.Transactional;
+import java.sql.Timestamp;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -138,4 +141,5 @@ public class EventLogRepositoryTest {
         assertEquals("item 1",list.get(0).getMessage());
 
     }
+
 }

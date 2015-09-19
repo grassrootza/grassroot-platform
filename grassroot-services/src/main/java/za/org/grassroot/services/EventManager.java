@@ -193,10 +193,15 @@ public class EventManager implements EventManagementService {
                 log.info("queued to event-added");
             }
             if (priorEventComplete && minimumDataAvailable(savedEvent) && !savedEvent.isCanceled()) {
-                // let's send out a change notification
-                // todo but first see if something actually changed
-                jmsTemplateProducerService.sendWithNoReply("event-changed",savedEvent);
-                log.info("queued to event-changed");
+                // let's send out a change notification if something changed in minimum required values
+                if (!savedEvent.minimumEquals(beforeEvent)) {
+                    jmsTemplateProducerService.sendWithNoReply("event-changed",savedEvent);
+                    log.info("queued to event-changed");
+
+                } else {
+                    log.info("NOT queued to event-changed as minimum required values did not change...");
+
+                }
             }
             if (priorEventComplete && !beforeEvent.isCanceled() && savedEvent.isCanceled()) {
                 // ok send out cancelation notifications
