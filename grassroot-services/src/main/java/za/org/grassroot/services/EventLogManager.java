@@ -81,7 +81,7 @@ public class EventLogManager implements EventLogManagementService {
     }
     @Override
     public EventLog rsvpForEvent(Long eventId, String phoneNumber, EventRSVPResponse rsvpResponse) {
-        return rsvpForEvent(eventRepository.findOne(eventId), userRepository.findByPhoneNumber(phoneNumber).get(0), rsvpResponse);
+        return rsvpForEvent(eventRepository.findOne(eventId), userRepository.findByPhoneNumber(phoneNumber), rsvpResponse);
     }
 
     @Override

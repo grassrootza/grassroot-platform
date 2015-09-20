@@ -39,6 +39,7 @@ public class User implements UserDetails {
     private boolean   enabled    = true;
     private Set<Role> roles      = new HashSet<>();
     private Integer version;
+    private String lastUssdMenu;
 
 
     @Column(name = "first_name")
@@ -180,6 +181,11 @@ public class User implements UserDetails {
         this.roles = roles;
     }
 
+    @Column(name = "lastUssdMenu")
+    public String getLastUssdMenu() { return lastUssdMenu; }
+
+    public void setLastUssdMenu(String ussdMenu) { this.lastUssdMenu = lastUssdMenu; }
+
     @Transient
     public Set<Permission> getPermissions() {
         Set<Permission> perms = new HashSet<Permission>();
@@ -264,8 +270,8 @@ public class User implements UserDetails {
     }
 
     // can't call this the more natural getName, or any variant, or Spring's getter handling throws a fit
-    //todo @luke there is also a displayName field in this object ???? confuuuuusing. - aakil
-    public String displayName() { return getName(""); }
+    // refactoring to avoid confusion with property displayName -- point is this returns name, or phone number if no name
+    public String nameToDisplay() { return getName(""); }
 
     public Group needsToRenameGroup() {
         // todo: for speed reasons, probably need a SQL query to do this, rather than this loop, but using a loop for now

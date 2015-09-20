@@ -249,9 +249,9 @@ public class Event implements Serializable {
                 ", createdDateTime=" + createdDateTime +
                 ", eventStartDateTime=" + eventStartDateTime +
                 ", createdByUser=" + createdByUser +
- //               ", appliesToGroup=" + appliesToGroup +
+                ", appliesToGroup=" + appliesToGroup +
                 ", name='" + name + '\'' +
-                ", dateTimeString=" + dateTimeString +'\'' +
+                ", dateTimeString=\'" + dateTimeString +'\'' +
                 ", includeSubGroups=" + includeSubGroups +'\'' +
 
                 '}';

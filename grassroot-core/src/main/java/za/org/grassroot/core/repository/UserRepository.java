@@ -10,7 +10,11 @@ import java.util.List;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    List<User> findByPhoneNumber(String phoneNumber);
+    /*
+    Since phoneNumbers are unique, replacing the prior method, which returned a list of Users, with this, for efficiency
+    Note: can now no longer rely on NoSuchElement exceptions to catch 'no such user', probably should now do ourselves
+     */
+    User findByPhoneNumber(String phoneNumber);
 
     User findByUsername(String username);
     /*

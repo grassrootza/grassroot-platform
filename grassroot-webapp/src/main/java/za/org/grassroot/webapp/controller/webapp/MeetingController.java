@@ -3,6 +3,7 @@ package za.org.grassroot.webapp.controller.webapp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.integration.services.SmsSendingService;
 import za.org.grassroot.services.EventManagementService;
@@ -23,8 +25,10 @@ import javax.servlet.http.HttpServletRequest;
 import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * Created by luke on 2015/09/11.
@@ -136,6 +140,54 @@ public class MeetingController extends BaseController {
         eventManagementService.updateEvent(meeting);
         addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.reminder.success", request);
         return "redirect:/home";
+
+    }
+
+    // Major todo: make this secured against the user's role as 'admin' on an institutional account
+    // @Secured()
+    @RequestMapping(value = "/meeting/free")
+    public String sendFreeForm(Model model, @RequestParam(value="groupId", required=false) Long groupId) {
+
+        boolean groupSpecified;
+        User sessionUser = getUserProfile();
+
+        if (groupId != null) {
+            System.out.println("Came here from a group");
+            model.addAttribute("group", groupManagementService.loadGroup(groupId));
+            groupSpecified = true;
+        } else {
+            System.out.println("No group selected, pass the list of possible");
+            model.addAttribute("userGroups", groupManagementService.getGroupsPartOf(sessionUser)); // todo: or just use user.getGroupsPartOf?
+            groupSpecified = false;
+        }
+        model.addAttribute("groupSpecified", groupSpecified); // slightly redundant, but use it to tell Thymeleaf what to do
+        return "meeting/free";
+    }
+
+    @RequestMapping(value = "/meeting/free", method = RequestMethod.POST)
+    public String sendFreeMsg(Model model, HttpServletRequest request, @RequestParam(value="groupId") Long groupId,
+                              @RequestParam(value="message") String message, @RequestParam(value="includeSubGroups", required=false) boolean includeSubgroups) {
+
+        Group group = groupManagementService.loadGroup(groupId);
+
+        List<User> usersToMessage = (!includeSubgroups) ?  group.getGroupMembers() :
+                groupManagementService.getAllUsersInGroupAndSubGroups(groupId);
+
+        // removing duplicates ...
+        Set<User> usersSet = new HashSet<>();
+        usersSet.addAll(usersToMessage);
+        usersToMessage.clear();
+        usersToMessage.addAll(usersSet);
+
+        for (User user : usersToMessage) {
+            smsSendingService.sendSMS(group.getName("") + ": " + message, user.getPhoneNumber());
+        }
+
+        log.info("We just sent a message to " + usersToMessage.size() + " members");
+
+        model.addAttribute("groupId");
+        addMessage(model, MessageType.SUCCESS, "sms.message.sent", request);
+        return "/home";
 
     }
 

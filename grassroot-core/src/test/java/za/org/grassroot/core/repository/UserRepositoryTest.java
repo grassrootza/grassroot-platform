@@ -100,13 +100,14 @@ public class UserRepositoryTest {
         assertNull(userToCreate.getCreatedDateTime());
         User savedUser = userRepository.save(userToCreate);
         Assert.assertNotEquals(Long.valueOf(0), savedUser.getId());
-        User foundUser = userRepository.findByPhoneNumber("54321").iterator().next();
+        User foundUser = userRepository.findByPhoneNumber("54321");
         assertEquals(savedUser.getPhoneNumber(), foundUser.getPhoneNumber());
     }
 
-    @Test(expected = NoSuchElementException.class)
+    @Test
     public void shouldNotFindPhoneNumber() throws Exception {
-        User dbUser = userRepository.findByPhoneNumber("99999999999").iterator().next();
+        User dbUser = userRepository.findByPhoneNumber("99999999999");
+        assertNull(dbUser);
     }
 
     @Test

@@ -6,6 +6,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.jms.annotation.EnableJms;
@@ -21,29 +22,32 @@ import java.util.Locale;
  * @author Lesetse Kimwaga
  */
 
-@EnableAutoConfiguration
 @Configuration
 @ComponentScan("za.org.grassroot")
 @EntityScan
+@EnableAutoConfiguration
 @EnableJpaRepositories
 @EnableJms
 public class GrassRootServicesConfig extends WebMvcConfigurerAdapter {
 
     @Bean
-    public MessageSource messageSource() {
-        ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
-        messageSource.setBasename("messages");
-        return messageSource;
+    public ResourceBundleMessageSource messageSource() {
+        ResourceBundleMessageSource source = new ResourceBundleMessageSource();
+        source.setBasename("messages");
+        return source;
     }
 
-    /* @Bean
+    @Bean
+    public MessageSourceAccessor getMessageSourceAccessor() { return new MessageSourceAccessor(messageSource()); }
+
+    @Bean
     public LocaleResolver localeResolver() {
         SessionLocaleResolver sessionLocaleResolver = new SessionLocaleResolver();
         sessionLocaleResolver.setDefaultLocale(Locale.ENGLISH);
         return sessionLocaleResolver;
     }
 
-    @Bean
+    /* @Bean
     public LocaleChangeInterceptor localeChangeInterceptor() {
         LocaleChangeInterceptor LocaleChangeInterceptor = new LocaleChangeInterceptor();
         LocaleChangeInterceptor.setParamName("language");

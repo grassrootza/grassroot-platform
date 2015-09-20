@@ -63,12 +63,16 @@ public class GroupController extends BaseController {
 
     @RequestMapping("/group/view")
     public String viewGroupIndex(Model model, @RequestParam("groupId") Long groupId) {
+
+        // todo: all sorts of user/group permission checking
         Group group = groupManagementService.loadGroup(groupId);
 
         model.addAttribute("group", group);
+        model.addAttribute("hasParent", (group.getParent() != null));
         model.addAttribute("groupEvents", eventManagementService.getUpcomingEvents(group));
         model.addAttribute("subGroups", groupManagementService.getSubGroups(group));
         model.addAttribute("openToken", groupManagementService.groupHasValidToken(group));
+        model.addAttribute("canDeleteGroup", groupManagementService.canUserDeleteGroup(getUserProfile(), group));
 
         return "group/view";
     }
@@ -258,6 +262,8 @@ public class GroupController extends BaseController {
         }
     }
 
+
+
     /*
     Helper methods for handling user addition and updating
      */
@@ -359,12 +365,80 @@ public class GroupController extends BaseController {
 
     }
 
-    @RequestMapping(value = "group/token_modify", method = RequestMethod.POST)
-    public String modifyGroupToken(Model model, @RequestParam("groupId") Long groupId,
-                                   @RequestParam("actionToTake") String actionToTake, BindingResult bindingResult) {
+    /*
+    Methods for handling group linking to a parent (as observing that users often create group first, link later)
+     */
 
+    @RequestMapping(value="/group/modify", params={"link_parent"})
+    public String listPossibleParents(Model model, @RequestParam("groupId") Long groupId,
+                                      HttpServletRequest request, RedirectAttributes redirectAttributes) {
+        // todo: check permissions, handle exceptions (in fact, on view group page), etc.
+        log.info("Looking for possible parents of group with ID: " + groupId);
 
-        return "redirect:/group/view";
+        List<Group> possibleParents = groupManagementService.getGroupsFromUser(getUserProfile());
+
+        Group group = groupManagementService.loadGroup(groupId);
+
+        // Major todo: do the "remove children" recursively to be really sure
+        possibleParents.remove(groupManagementService.loadGroup(groupId));
+        possibleParents.removeAll(groupManagementService.getSubGroups(group));
+
+        if (!possibleParents.isEmpty()) {
+            log.info("The group has some possible parents");
+            model.addAttribute("groupId", groupId);
+            model.addAttribute("possibleParents", possibleParents);
+            return "group/link";
+        } else {
+            // add an error message
+            log.info("The group does not have possible parents");
+            addMessage(model, MessageType.ERROR, "group.parents.none", request);
+            redirectAttributes.addAttribute("groupId", groupId);
+            return "redirect:view";
+        }
     }
+
+    @RequestMapping(value="/group/link", method=RequestMethod.POST)
+    public String linkToParent(Model model, @RequestParam("groupId") Long groupId, @RequestParam("parentId") Long parentId,
+                               RedirectAttributes redirectAttributes, HttpServletRequest request) {
+
+        // todo: permissions, exceptions, etc.
+        // todo: check if need to send a request to parent for permission to bind
+
+        Group group = groupManagementService.loadGroup(groupId);
+        Group parent = groupManagementService.loadGroup(parentId);
+
+        group.setParent(parent);
+        groupManagementService.saveGroup(group);
+
+        // addMessage(model, MessageType.SUCCESS, "group.parent.success", request);
+        addMessage(redirectAttributes, MessageType.SUCCESS, "group.parent.success", request);
+        redirectAttributes.addAttribute("groupId", groupId);
+        return "redirect:view";
+
+    }
+
+
+    /*
+    Simple method to delete a group, if it was recently created and this is the creating user
+    todo: implement the simpler "unsubscribe me from this group" button & method
+     */
+    @RequestMapping(value = "group/modify", params={"group_delete"})
+    public String deleteGroup(Model model, @RequestParam("groupId") Long groupId,
+                              HttpServletRequest request, RedirectAttributes redirectAttributes) {
+
+        Group group = groupManagementService.loadGroup(groupId);
+
+        if (groupManagementService.canUserDeleteGroup(getUserProfile(), group)) {
+            groupManagementService.deleteGroup(group);
+            addMessage(redirectAttributes, MessageType.SUCCESS, "group.delete.success", request);
+            return "redirect:/home";
+        } else {
+            addMessage(model, MessageType.ERROR, "group.delete.error", request);
+            model.addAttribute("groupId", groupId);
+            return "group/view";
+        }
+
+    }
+
 
 }

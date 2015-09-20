@@ -158,13 +158,31 @@ public class UserManager implements UserManagementService, UserDetailsService {
             sessionUser.setUsername(phoneNumber);
             return userRepository.save(sessionUser);
         } else {
-            return userRepository.findByPhoneNumber(phoneNumber).iterator().next();
+            return userRepository.findByPhoneNumber(phoneNumber);
         }
     }
 
+    /**
+     * Methods to keep track also of where a user is in the ussd menu flow, so can return them to that spot if time out
+     */
+    public User loadOrSaveUser(String inputNumber, String currentUssdMenu) {
+        User sessionUser = loadOrSaveUser(inputNumber);
+        sessionUser.setLastUssdMenu(currentUssdMenu);
+        return userRepository.save(sessionUser);
+    }
+
     @Override
-    public User findByInputNumber(String inputNumber) throws NoSuchElementException {
-        return userRepository.findByPhoneNumber(convertPhoneNumber(inputNumber)).iterator().next();
+    public User findByInputNumber(String inputNumber) throws NoSuchUserException {
+        User sessionUser = userRepository.findByPhoneNumber(convertPhoneNumber(inputNumber));
+        if (sessionUser == null) throw new NoSuchUserException("Could not find user with phone number: " + inputNumber);
+        return sessionUser;
+    }
+
+    @Override
+    public User findByInputNumber(String inputNumber, String currentUssdMenu) throws NoSuchUserException {
+        User sessionUser = userRepository.findByPhoneNumber(convertPhoneNumber(inputNumber));
+        sessionUser.setLastUssdMenu(currentUssdMenu);
+        return userRepository.save(sessionUser);
     }
 
     @Override
@@ -221,9 +239,15 @@ public class UserManager implements UserManagementService, UserDetailsService {
         return userRepository.findByUsername(username);
     }
 
+    @Override
+    public String getLastUssdMenu(User sessionUser) {
+        return (sessionUser.getLastUssdMenu() == null) ? "" : sessionUser.getLastUssdMenu();
+    }
+
     /**
      * Moving some functions from the controller classes here, to handle phone number strings given by users
      * todo: Move the country code definition into a properties file ?
+     * todo: call these from the (Grassroot) PhoneNumberUtil class instead of here? In general need to clean up phone # handling
      */
 
     public static String convertPhoneNumber(String inputString) throws InvalidPhoneNumberException {

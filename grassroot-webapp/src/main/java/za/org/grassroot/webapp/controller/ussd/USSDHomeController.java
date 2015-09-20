@@ -59,15 +59,42 @@ public class USSDHomeController extends USSDController {
         USSDMenu openingMenu;
         User sessionUser = userManager.loadOrSaveUser(inputNumber);
 
-        if (!codeHasTrailingDigits(enteredUSSD)) {
-            openingMenu = defaultStartMenu(sessionUser);
-        } else {
+        /*
+        Adding some complex logic here to check for one of these things:
+        (1) The user has appended a joining code, so we need to add them to a group
+        (2) The user was in the middle of something (e.g., adding numbers), and might want to continue
+        (3) The user has an outstanding RSVP request for a meeting
+        (4) The user has not named themselves, or a prior group
+        These will be processed in order, as below
+        TODO: take a hard look at all this code to make it is as efficient as possible, given frequency of calling it
+        and the need to make it highly efficient
+         */
+
+        if (codeHasTrailingDigits(enteredUSSD)) {
             String trailingDigits = enteredUSSD.substring(hashPosition + 1, enteredUSSD.length() - 1);
             openingMenu = processTrailingDigits(trailingDigits, sessionUser);
+        } else if (userInterrupted(sessionUser)) {
+            // todo: figure out a way to redirect to that menu
+            openingMenu = defaultStartMenu(sessionUser);
+        } else if (userResponseNeeded(sessionUser)) {
+            // todo: ask for RSVP
+            openingMenu = defaultStartMenu(sessionUser);
+        } else {
+            openingMenu = defaultStartMenu(sessionUser);
         }
 
         return (checkMenuLength(openingMenu, true)) ? menuBuilder(openingMenu) : tooLongError;
 
+    }
+
+    private boolean userInterrupted(User sessionUser) {
+        String lastMenu = userManager.getLastUssdMenu(sessionUser);
+        return lastMenu == "interrupted menu";
+    }
+
+    private boolean userResponseNeeded(User sessionUser) {
+        // todo: check if they have an RSVP, or anything else, outstanding
+        return false;
     }
 
     private USSDMenu processTrailingDigits(String trailingDigits, User sessionUser) throws URISyntaxException {
@@ -138,11 +165,15 @@ public class USSDHomeController extends USSDController {
                                   @RequestParam(value=TEXT_PARAM) String userName) throws URISyntaxException {
 
         User sessionUser = userManager.loadOrSaveUser(inputNumber);
-        sessionUser.setDisplayName(userName);
-        sessionUser = userManager.save(sessionUser);
-
-        return menuBuilder(welcomeMenu(getMessage(HOME_KEY, START_KEY, PROMPT + "-rename-do", sessionUser.getName(""),
-                                                  sessionUser), sessionUser));
+        String welcomeMessage;
+        if (userName.equals("0") || userName.trim().equals("")) {
+            welcomeMessage = getMessage(HOME_KEY, START_KEY, PROMPT, sessionUser);
+        } else {
+            sessionUser.setDisplayName(userName);
+            sessionUser = userManager.save(sessionUser);
+            welcomeMessage = getMessage(HOME_KEY, START_KEY, PROMPT + "-rename-do", sessionUser.nameToDisplay(), sessionUser);
+        }
+        return menuBuilder(welcomeMenu(welcomeMessage, sessionUser));
     }
 
     @RequestMapping(value = USSD_BASE + keyGroupNameStart)
@@ -154,13 +185,17 @@ public class USSDHomeController extends USSDController {
         // todo: use permission model to check if user can actually do this
 
         User sessionUser = userManager.loadOrSaveUser(inputNumber);
-        Group groupToRename = groupManager.loadGroup(groupId);
-        groupToRename.setGroupName(groupName);
-        groupToRename = groupManager.saveGroup(groupToRename);
+        String welcomeMessage;
+        if (groupName.equals("0") || groupName.trim().equals("")) {
+            welcomeMessage = getMessage(HOME_KEY, START_KEY, PROMPT, sessionUser);
+        } else {
+            Group groupToRename = groupManager.loadGroup(groupId);
+            groupToRename.setGroupName(groupName);
+            groupToRename = groupManager.saveGroup(groupToRename);
+            welcomeMessage = getMessage(HOME_KEY, START_KEY, PROMPT + "-group-do", sessionUser.nameToDisplay(), sessionUser);
+        }
 
-        // return menuBuilder(welcomeMenu("Thanks! Now what do you want to do?", sessionUser));
-        return menuBuilder(welcomeMenu(getMessage(HOME_KEY, START_KEY, PROMPT + "-group-do", sessionUser.getName(""),
-                                                  sessionUser), sessionUser));
+        return menuBuilder(welcomeMenu(welcomeMessage, sessionUser));
 
     }
 

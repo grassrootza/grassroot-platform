@@ -2,6 +2,8 @@ package za.org.grassroot.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.MessageSource;
+import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.stereotype.Component;
 import org.springframework.ui.velocity.VelocityEngineUtils;
 import za.org.grassroot.core.domain.Event;
@@ -22,11 +24,18 @@ public class MeetingNotificationManager implements MeetingNotificationService {
     @Autowired
     ApplicationContext applicationContext;
 
+    @Autowired
+    MessageSource messageSource;
+
+    @Autowired
+    MessageSourceAccessor messageSourceAccessor;
+
     @Override
     public String createMeetingNotificationMessage(User user, Event event) {
         //TODO fix the locale resolver in config
         Locale locale = getUserLocale(user);
-        return applicationContext.getMessage("sms.mtg.send.new", populateFields(user, event), locale);
+        log.info("Trying to get meeting location from " + messageSource.toString());
+        return messageSourceAccessor.getMessage("sms.mtg.send.new", populateFields(user, event), locale);
     }
 
     @Override
@@ -59,7 +68,7 @@ public class MeetingNotificationManager implements MeetingNotificationService {
 
         String[] eventVariables = new String[]{
                 salutation,
-                event.getCreatedByUser().displayName(),
+                event.getCreatedByUser().nameToDisplay(),
                 event.getName(),
                 event.getEventLocation(),
                 event.getDateTimeString()

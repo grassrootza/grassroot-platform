@@ -266,6 +266,16 @@ public class GroupManager implements GroupManagementService {
         return userList;
     }
 
+    @Override
+    public boolean canUserDeleteGroup(User user, Group group) {
+        // todo: Integrate with permission checking -- for now, just checking if group created by user in last 24 hours
+        // todo: the time checking would be so much easier if we use Joda or Java 8 DateTime ...
+        boolean createdByUser = (group.getCreatedByUser() == user);
+        Timestamp oneDayAgo = new Timestamp(Calendar.getInstance().getTimeInMillis() - (24 * 60 * 60 * 1000));
+        boolean groupCreatedInLastDay = (group.getCreatedDateTime().after(oneDayAgo));
+        return (createdByUser && groupCreatedInLastDay);
+    }
+
     private void recursiveUserAdd(Group parentGroup, List<User> userList ) {
 
         for (Group childGroup : groupRepository.findByParent(parentGroup)) {

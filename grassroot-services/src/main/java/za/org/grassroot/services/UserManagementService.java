@@ -24,7 +24,11 @@ public interface UserManagementService {
 
     User loadOrSaveUser(String inputNumber);
 
-    User findByInputNumber(String inputNumber);
+    User loadOrSaveUser(String inputNumber, String currentUssdMenu);
+
+    User findByInputNumber(String inputNumber) throws NoSuchUserException;
+
+    User findByInputNumber(String inputNumber, String currentUssdMenu) throws NoSuchUserException;
 
     User reformatPhoneNumber(User sessionUser);
 
@@ -37,6 +41,8 @@ public interface UserManagementService {
     User resetUserPassword(String username, String newPassword, String token);
 
     User fetchUserByUsername(String username);
+
+    String getLastUssdMenu(User sessionUser);
 
 
 }
