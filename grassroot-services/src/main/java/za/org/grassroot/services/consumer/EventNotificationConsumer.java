@@ -70,7 +70,8 @@ public class EventNotificationConsumer {
         for (User user : getAllUsersForGroup(event)) {
             //generate message based on user language
             String message = meetingNotificationService.createChangeMeetingNotificationMessage(user,event);
-            if (!eventLogManagementService.changeNotificationSentToUser(event, user, message)) {
+            if (!eventLogManagementService.changeNotificationSentToUser(event, user, message)
+                    && !eventLogManagementService.userRsvpNoForEvent(event,user)) {
                 log.info("sendChangedEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
                 messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
                 eventLogManagementService.createEventLog(EventLogType.EventChange,event,user,message);
@@ -86,7 +87,8 @@ public class EventNotificationConsumer {
         for (User user : getAllUsersForGroup(event)) {
             //generate message based on user language
             String message = meetingNotificationService.createCancelMeetingNotificationMessage(user,event);
-            if (!eventLogManagementService.cancelNotificationSentToUser(event,user)) {
+            if (!eventLogManagementService.cancelNotificationSentToUser(event,user)
+                    && !eventLogManagementService.userRsvpNoForEvent(event,user)) {
                 log.info("sendCancelledEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
                 messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
                 eventLogManagementService.createEventLog(EventLogType.EventCancelled,event,user,message);

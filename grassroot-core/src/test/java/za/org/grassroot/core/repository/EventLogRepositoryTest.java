@@ -13,6 +13,7 @@ import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventLogType;
+import za.org.grassroot.core.enums.EventRSVPResponse;
 
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
@@ -139,6 +140,25 @@ public class EventLogRepositoryTest {
         List<EventLog> list = eventLogRepository.findByEventLogTypeAndEventOrderByIdAsc(EventLogType.EventMinutes, event);
         assertEquals(2, list.size());
         assertEquals("item 1",list.get(0).getMessage());
+
+    }
+
+    @Test
+    public void shouldReturnThatUserRSVPNo() {
+        User user = userRepository.save(new User("0121234567"));
+        Group group = groupRepository.save(new Group("RSVP group",user));
+        Event event = eventRepository.save(new Event("répondez s'il vous plaît",user,group));
+        EventLog eventLog = eventLogRepository.save(new EventLog(user,event,EventLogType.EventRSVP, EventRSVPResponse.NO.toString()));
+        assertEquals(true,eventLogRepository.rsvpNoForEvent(event,user));
+
+    }
+    @Test
+    public void shouldReturnFalseForRSVPNo() {
+        User user = userRepository.save(new User("0121234577"));
+        Group group = groupRepository.save(new Group("RSVP group 2",user));
+        Event event = eventRepository.save(new Event("répondez s'il vous plaît duo",user,group));
+        EventLog eventLog = eventLogRepository.save(new EventLog(user,event,EventLogType.EventRSVP, "#$*&^#& off"));
+        assertEquals(false,eventLogRepository.rsvpNoForEvent(event,user));
 
     }
 

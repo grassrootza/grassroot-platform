@@ -9,13 +9,19 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
+import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.EventLog;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.EventLogType;
+import za.org.grassroot.core.enums.EventRSVPResponse;
 
 /**
  * @author Lesetse Kimwaga
  */
 import javax.transaction.Transactional;
 
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.logging.Logger;
 
@@ -33,6 +39,16 @@ public class UserRepositoryTest {
 
     @Autowired
     UserRepository userRepository;
+
+    @Autowired
+    GroupRepository groupRepository;
+
+    @Autowired
+    EventRepository eventRepository;
+
+    @Autowired
+    EventLogRepository eventLogRepository;
+
 
     @Test
     public void shouldSaveAndRetrieveUserData() throws Exception {
@@ -102,6 +118,34 @@ public class UserRepositoryTest {
     public void shouldExist() {
         userRepository.save(new User("4444444"));
         assertEquals(true, userRepository.existsByPhoneNumber("4444444"));
+    }
+
+    @Test
+    public void shouldReturnUserThatRSVPYes() {
+        User u1 = userRepository.save(new User("0821234560"));
+        User u2 = userRepository.save(new User("0821234561"));
+        Group group = groupRepository.save(new Group("rsvp yes",u1));
+        group.getGroupMembers().add(u2);
+        group = groupRepository.save(group);
+        Event event = eventRepository.save(new Event("rsvp event",u1,group,true));
+        EventLog eventLog = eventLogRepository.save(new EventLog(u1,event, EventLogType.EventRSVP, EventRSVPResponse.YES.toString()));
+        List<User> list = userRepository.findUsersThatRSVPYesForEvent(event);
+        log.info("list.size..." + list.size() + "...first user..." + list.get(0).getPhoneNumber());
+        assertEquals(u1.getPhoneNumber(),list.get(0).getPhoneNumber());
+    }
+    @Test
+    public void shouldReturnUserThatRSVPNo() {
+        User u1 = userRepository.save(new User("0821234570"));
+        User u2 = userRepository.save(new User("0821234571"));
+        Group group = groupRepository.save(new Group("rsvp yes",u1));
+        group.getGroupMembers().add(u2);
+        group = groupRepository.save(group);
+        Event event = eventRepository.save(new Event("rsvp event",u1,group,true));
+        EventLog eventLog = eventLogRepository.save(new EventLog(u1,event, EventLogType.EventRSVP, EventRSVPResponse.YES.toString()));
+        EventLog eventLog2 = eventLogRepository.save(new EventLog(u2,event, EventLogType.EventRSVP, EventRSVPResponse.NO.toString()));
+
+        List<User> list = userRepository.findUsersThatRSVPNoForEvent(event);
+        assertEquals(u2.getPhoneNumber(),list.get(0).getPhoneNumber());
     }
 
 }

@@ -45,6 +45,11 @@ public class Event implements Serializable {
      */
     private boolean includeSubGroups;
 
+    /*
+    used to calculate when a reminder must be sent, before the eventStartTime
+     */
+    private int reminderMinutes;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="id", nullable = false)
@@ -117,6 +122,15 @@ public class Event implements Serializable {
 
     public void setIncludeSubGroups(boolean includeSubGroups) {
         this.includeSubGroups = includeSubGroups;
+    }
+
+    @Column(name = "reminderminutes")
+    public int getReminderMinutes() {
+        return reminderMinutes;
+    }
+
+    public void setReminderMinutes(int reminderMinutes) {
+        this.reminderMinutes = reminderMinutes;
     }
 
     @PreUpdate

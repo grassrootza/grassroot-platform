@@ -5,6 +5,7 @@ import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventLogType;
+import za.org.grassroot.core.enums.EventRSVPResponse;
 
 import java.util.List;
 
@@ -25,4 +26,13 @@ public interface EventLogManagementService {
 
     public List<EventLog> getMinutesForEvent(Event event);
 
+    EventLog rsvpForEvent(Long eventId, Long userId, String strRsvpResponse);
+
+    EventLog rsvpForEvent(Long eventId, Long userId, EventRSVPResponse rsvpResponse);
+
+    EventLog rsvpForEvent(Long eventId, String phoneNumber, EventRSVPResponse rsvpResponse);
+
+    EventLog rsvpForEvent(Event event, User user, EventRSVPResponse rsvpResponse);
+
+    boolean userRsvpNoForEvent(Event event, User user);
 }

@@ -8,6 +8,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.EventRepository;
+import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 
 import java.sql.Timestamp;
@@ -27,6 +28,9 @@ public class EventManager implements EventManagementService {
 
     @Autowired
     EventRepository  eventRepository;
+
+    @Autowired
+    UserRepository userRepository;
 
     @Autowired
     GroupManagementService groupManager;
@@ -161,6 +165,7 @@ public class EventManager implements EventManagementService {
     public List<Event> getUpcomingEvents(Group group) {
 
         // todo: rather implement this in the repository I think, by a suitable method
+        // todo - aakil agree this event will kill us when we have 1000's of events
         List<Event> allEvents = findByAppliesToGroup(group);
         List<Event> comingEvents = new ArrayList<>();
 
@@ -172,6 +177,16 @@ public class EventManager implements EventManagementService {
         }
 
         return comingEvents;
+    }
+
+    @Override
+    public List<User> getListOfUsersThatRSVPYesForEvent(Event event) {
+        return userRepository.findUsersThatRSVPYesForEvent(event);
+    }
+
+    @Override
+    public List<User> getListOfUsersThatRSVPNoForEvent(Event event) {
+        return userRepository.findUsersThatRSVPNoForEvent(event);
     }
 
     private Event saveandCheckChanges(Event beforeEvent, Event changedEvent) {
