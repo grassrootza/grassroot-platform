@@ -117,7 +117,7 @@ public class UserAccountsRecoveryController extends BaseController {
             if (verificationTokenCode != null && System.getenv("SMSUSER") != null && System.getenv("SMSPASS") != null) {
 
                 String messageResult = smsSendingService.sendSMS(
-                        String.join("Your GrassRoot verification code is: ", verificationTokenCode.getCode()),
+                        "Your GrassRoot verification code is: " + verificationTokenCode.getCode(),
                         verificationTokenCode.getUsername());
 
                 log.debug("SMS Send result: {}", messageResult);

@@ -2,7 +2,7 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorator="layout">
 <head>
-    <title th:text="#{app.name}"></title>
+    <title th:text="#{web.app.name}"></title>
 
 </head>
 <body>
@@ -23,11 +23,11 @@
         <form  th:object="${userAccountRecovery}" th:action="@{/accounts/recovery}"  method="post" id="accountRecoveryForm" autocomplete="off">
 
             <div id="wizard" class="recovery">
-                <h2 th:text="#{signin.username}">GrassRoot ID</h2>
+                <h2 th:text="#{web.signin.username}">GrassRoot ID</h2>
                 <section>
                     <div class="row">
                         <div class="col-lg-6">
-                            <p th:text="#{user.account.recovery.password.reset.message}">User your Mobile Phone
+                            <p th:text="#{web.user.account.recovery.password.reset.message}">User your Mobile Phone
                                 Number (GrassRoot ID) to reset your password.</p>
                         </div>
                     </div>

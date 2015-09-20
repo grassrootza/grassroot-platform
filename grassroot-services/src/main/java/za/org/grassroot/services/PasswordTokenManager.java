@@ -13,6 +13,7 @@ import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.repository.VerificationTokenCodeRepository;
 
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Random;
 
@@ -47,8 +48,11 @@ public class PasswordTokenManager implements PasswordTokenService {
 
         } else {
             verificationTokenCode.setCode(code);
+            verificationTokenCode.updateTimeStamp();
             verificationTokenCode.incrementTokenAttempts();
         }
+
+        verificationTokenCode.setExpiryDateTime( getExpiryDateFromNow() );
         verificationTokenCode = verificationTokenCodeRepository.save(verificationTokenCode);
 
         return verificationTokenCode;
@@ -63,11 +67,6 @@ public class PasswordTokenManager implements PasswordTokenService {
             return generateVerificationCode(user);
 
         } else {
-//            user = userRepository.findByPhoneNumber(username).iterator().next();
-//            user.setUsername(user.getPhoneNumber());
-//            user = userRepository.save(user);
-//            return generateVerificationCode(user);
-            //throw new InvalidPasswordTokenAccessException("User '" + username + "' does no exist.");
             log.warn("User '{}' with a non existing account found. Cannot create token.", username);
             return  null; //We should not create a token for a non existing user. Otherwise Users will be created within an incorrect process
         }
@@ -108,6 +107,11 @@ public class PasswordTokenManager implements PasswordTokenService {
             verificationTokenCode.setCode(null);
             verificationTokenCodeRepository.save(verificationTokenCode);
         }
+    }
+
+    private Timestamp getExpiryDateFromNow()
+    {
+        return  new Timestamp( DateTime.now().plusMinutes(TOKEN_LIFE_SPAN_MINUTES).toDate().getTime());
     }
 
 }

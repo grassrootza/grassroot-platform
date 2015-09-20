@@ -18,6 +18,11 @@ import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.services.PasswordTokenManager;
 import za.org.grassroot.services.UserManagementService;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+
 /**
  * @author Lesetse Kimwaga
  */
@@ -37,12 +42,42 @@ public class PasswordTokenManagerTest {
 
     @Test
     @Repeat(5)
-    public void testName() throws Exception {
+    public void testGenerateVerificationCode() throws Exception {
 
         User user = userManagementService.createUserProfile(new User("27700000"));
 
         VerificationTokenCode verificationTokenCode = passwordTokenManager.generateVerificationCode(user);
 
         log.info("Generated Code: {}",verificationTokenCode);
+    }
+
+
+    @Test
+    public void testGenerateVerificationCode2() throws Exception {
+
+        User user = userManagementService.createUserProfile(new User("27700000"));
+
+        VerificationTokenCode verificationTokenCode = passwordTokenManager.generateVerificationCode(user);
+
+
+        assertThat(passwordTokenManager.isVerificationCodeValid(user.getUsername(), verificationTokenCode.getCode()),
+                is(true));
+
+                log.info("Generated Code: {}", verificationTokenCode);
+    }
+
+
+    @Test
+    public void testGenerateVerificationCode3() throws Exception {
+
+        User user = userManagementService.loadOrSaveUser("0729177903") ;
+
+        VerificationTokenCode verificationTokenCode = passwordTokenManager.generateVerificationCode(user);
+
+
+        assertThat(passwordTokenManager.isVerificationCodeValid(user.getUsername(), verificationTokenCode.getCode()),
+                is(true));
+
+        log.info("Generated Code: {}", verificationTokenCode);
     }
 }
