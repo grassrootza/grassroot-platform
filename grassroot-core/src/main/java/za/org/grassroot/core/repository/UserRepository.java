@@ -3,6 +3,7 @@ package za.org.grassroot.core.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
+import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.User;
 
 import java.util.List;
@@ -19,10 +20,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
     public Boolean existsByPhoneNumber(String phoneNumber);
 
 
+    @Query("select u from User u, EventLog el, Event e where e = ?1 and el.event = e and u = el.user and el.eventLogType = za.org.grassroot.core.enums.EventLogType.EventRSVP and el.message = 'Yes'")
+    List<User> findUsersThatRSVPYesForEvent(Event event);
+
+    @Query("select u from User u, EventLog el, Event e where e = ?1 and el.event = e and u = el.user and el.eventLogType = za.org.grassroot.core.enums.EventLogType.EventRSVP and el.message = 'No'")
+    List<User> findUsersThatRSVPNoForEvent(Event event);
 
 
-    //TODO get all users linked to a group
-    //TODO get all users linked to a group hierarchy, remember to remove duplicates at service level
 
 
 }

@@ -50,4 +50,7 @@ public interface EventManagementService {
 
     List<Event> getUpcomingEvents(Group group);
 
+    List<User> getListOfUsersThatRSVPYesForEvent(Event event);
+
+    List<User> getListOfUsersThatRSVPNoForEvent(Event event);
 }
