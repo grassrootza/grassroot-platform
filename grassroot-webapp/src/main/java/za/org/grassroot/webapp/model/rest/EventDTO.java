@@ -1,6 +1,9 @@
 package za.org.grassroot.webapp.model.rest;
 
 import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.EventLog;
+import za.org.grassroot.core.enums.EventLogType;
+import za.org.grassroot.core.enums.EventRSVPResponse;
 
 import java.util.Date;
 
@@ -14,6 +17,7 @@ public class EventDTO {
     private String location;
     private Date date;
     private boolean cancelled;
+    private String rsvp;
 
     public EventDTO(Event event) {
         this.id = event.getId();
@@ -23,6 +27,18 @@ public class EventDTO {
         this.cancelled = event.isCanceled();
     }
 
+    public EventDTO(EventLog eventLog) {
+        this.id = eventLog.getEvent().getId();
+        this.name = eventLog.getEvent().getName();
+        this.location = eventLog.getEvent().getEventLocation();
+        this.date = eventLog.getEvent().getEventStartDateTime();
+        this.cancelled = eventLog.getEvent().isCanceled();
+        if (eventLog.getEventLogType() == EventLogType.EventRSVP) {
+            this.rsvp = eventLog.getMessage();
+        } else {
+            this.rsvp = EventRSVPResponse.NO_RESPONSE.toString();
+        }
+    }
     public Long getId() {
         return id;
     }

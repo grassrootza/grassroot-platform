@@ -30,6 +30,8 @@ public class EventRestController {
     @Autowired
     EventManagementService eventManagementService;
 
+
+
     @RequestMapping(value = "/list", method = RequestMethod.GET)
     public List<Event> list() {
         return (List<Event>) eventRepository.findAll();
@@ -72,5 +74,8 @@ public class EventRestController {
     public EventDTO cancel(@PathVariable("eventId") Long eventId) {
         return new EventDTO(eventManagementService.cancelEvent(eventId));
     }
+
+
+
 
 }

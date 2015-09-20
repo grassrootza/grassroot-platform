@@ -33,4 +33,14 @@ See if the reminder was already sent before sending it
     public Boolean reminderSent(Event event, User user);
 
     List<EventLog> findByEventLogTypeAndEventOrderByIdAsc(EventLogType eventLogType, Event event);
+
+    //todo list of users that rsvp.yes for event
+
+    /*
+    check if user rsvp.no for event, so we do not send more messages
+     */
+    @Query("SELECT CASE WHEN COUNT(e) > 0 THEN 'true' ELSE 'false' END FROM EventLog e WHERE e.event = ?1 and e.user = ?2 and e.eventLogType = za.org.grassroot.core.enums.EventLogType.EventRSVP and e.message = 'No'")
+    public Boolean rsvpNoForEvent(Event event, User user);
+
+
 }

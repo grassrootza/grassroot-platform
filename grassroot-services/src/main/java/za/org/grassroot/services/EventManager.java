@@ -161,6 +161,7 @@ public class EventManager implements EventManagementService {
     public List<Event> getUpcomingEvents(Group group) {
 
         // todo: rather implement this in the repository I think, by a suitable method
+        // todo - aakil agree this event will kill us when we have 1000's of events
         List<Event> allEvents = findByAppliesToGroup(group);
         List<Event> comingEvents = new ArrayList<>();
 
@@ -173,6 +174,7 @@ public class EventManager implements EventManagementService {
 
         return comingEvents;
     }
+
 
     private Event saveandCheckChanges(Event beforeEvent, Event changedEvent) {
 
