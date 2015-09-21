@@ -34,15 +34,14 @@ public interface EventLogRepository extends JpaRepository<EventLog, Long> {
 
     List<EventLog> findByEventLogTypeAndEventOrderByIdAsc(EventLogType eventLogType, Event event);
 
-
-    //todo rsvp totals for event
-
-    //todo query to see if user has outstanding rsvp?
+    @Query(value = "SELECT sum(CASE WHEN message = 'Yes' THEN 1 ELSE 0 END) AS yes, sum(CASE WHEN message = 'No' THEN 1 ELSE 0 END) AS no, sum(CASE WHEN message = 'Maybe' THEN 1 ELSE 0 END) AS maybe, sum(CASE WHEN message = 'Invalid RSVP' THEN 1 ELSE 0 END) AS invalid,(select count(*) from group_user_membership gu where gu.group_id = ?2) as numberofusers FROM event_log el, group_user_membership gu WHERE el.event_id = ?1 AND gu.group_id = ?2 AND el.user_id = gu.user_id AND el.event_log_type = 5",nativeQuery = true)
+    public List<Object[]> rsvpTotalsForEventAndGroup(Long eventId, Long groupId);
     /*
     check if user rsvp.no for event, so we do not send more messages
      */
     @Query("SELECT CASE WHEN COUNT(e) > 0 THEN 'true' ELSE 'false' END FROM EventLog e WHERE e.event = ?1 and e.user = ?2 and e.eventLogType = za.org.grassroot.core.enums.EventLogType.EventRSVP and e.message = 'No'")
     public Boolean rsvpNoForEvent(Event event, User user);
 
+    //todo query to see if user has outstanding rsvp?
 
 }

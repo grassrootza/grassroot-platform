@@ -5,11 +5,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.EventLog;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.EventRepository;
+import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 
 import javax.jws.soap.SOAPBinding;
@@ -32,6 +35,9 @@ public class EventLogManager implements EventLogManagementService {
 
     @Autowired
     UserRepository userRepository;
+
+    @Autowired
+    GroupRepository groupRepository;
 
 
     @Override
@@ -88,4 +94,31 @@ public class EventLogManager implements EventLogManagementService {
         return eventLogRepository.rsvpNoForEvent(event,user);
     }
 
+    @Override
+    public RSVPTotalsDTO getRSVPTotalsForEvent(Long eventId) {
+        return getRSVPTotalsForEvent(eventRepository.findOne(eventId));
+    }
+
+    @Override
+    public RSVPTotalsDTO getRSVPTotalsForEvent(Event event) {
+        if (!event.isIncludeSubGroups()) {
+            return new RSVPTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(),event.getAppliesToGroup().getId()));
+        }
+        // get the totals recursively
+        RSVPTotalsDTO totals = new RSVPTotalsDTO();
+        recursiveTotalsAdd(event,event.getAppliesToGroup(),totals);
+        log.info("getRSVPTotalsForEvent...returning..." + totals.toString());
+        return totals;
+    }
+
+    private void recursiveTotalsAdd(Event event, Group parentGroup, RSVPTotalsDTO rsvpTotalsDTO ) {
+
+        for (Group childGroup : groupRepository.findByParent(parentGroup)) {
+            recursiveTotalsAdd(event, childGroup, rsvpTotalsDTO);
+        }
+
+        // add all the totals at this level
+        rsvpTotalsDTO.add(new RSVPTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), parentGroup.getId())));
+
+    }
 }

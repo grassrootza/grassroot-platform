@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.EventLogManagementService;
@@ -39,5 +40,9 @@ public class EventLogRestController {
 
     }
 
+    @RequestMapping(value = "/rsvp/totals/{eventId}", method = RequestMethod.POST)
+    public RSVPTotalsDTO rsvpTotals(@PathVariable("eventId") Long eventId) {
+        return eventLogManagementService.getRSVPTotalsForEvent(eventId);
 
+    }
 }

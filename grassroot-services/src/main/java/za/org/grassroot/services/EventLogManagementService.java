@@ -4,6 +4,7 @@ import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 
@@ -35,4 +36,8 @@ public interface EventLogManagementService {
     EventLog rsvpForEvent(Event event, User user, EventRSVPResponse rsvpResponse);
 
     boolean userRsvpNoForEvent(Event event, User user);
+
+    RSVPTotalsDTO getRSVPTotalsForEvent(Long eventId);
+
+    RSVPTotalsDTO getRSVPTotalsForEvent(Event event);
 }
