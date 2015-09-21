@@ -274,6 +274,7 @@ public class GroupController extends BaseController {
             // todo: allow phone number change, so mistakes can be corrected, but close this off soon (find a UX solution)
             if (overwrite) {
                 memberToAdd.setPhoneNumber(PhoneNumberUtil.convertPhoneNumber(member.getPhoneNumber()));
+                memberToAdd.setUsername( memberToAdd.getPhoneNumber());
             }
 
             group.addMember(memberToAdd);
