@@ -116,12 +116,8 @@
 .wizard > .steps .current a:hover,
 .wizard > .steps .current a:active
 {
-    /*background: #2184be;*/
-    /*color: #fff;*/
-
-    background-color: #4caf50;
-    color:  #fff;
-
+    background: #2184be;
+    color: #fff;
     cursor: default;
 }
 
@@ -129,9 +125,7 @@
 .wizard > .steps .done a:hover,
 .wizard > .steps .done a:active
 {
-   /* background: #9dc8e2;*/
-    background: rgba(76, 175, 80, 0.42);
-
+    background: #9dc8e2;
     color: #fff;
     /*background: rgba(0, 150, 130, 0.46);*/
 
@@ -282,31 +276,41 @@
 .wizard > .actions a:hover,
 .wizard > .actions a:active
 {
-    /*background: #2184be;*/
-    /*color: #fff;*/
-
-    background-color: #009688;
-    color: rgba(255,255,255,.84);
 
 
-    /*display: block;*/
-    /*padding: 0.5em 1em;*/
-    /*text-decoration: none;*/
-    /*-webkit-border-radius: 5px;*/
-    /*-moz-border-radius: 5px;*/
-    /*border-radius: 5px;*/
+    /* .btn-lg*/
+    padding: 10px 16px;
+    font-size: 18px;
+    line-height: 1.3333333;
+    border-radius: 6px;
 
-    position: relative;
-    padding: 8px 30px;
-    border: 0;
-    margin: 10px 1px;
+    /* .btn-primary */
+    color: #fff;
+    background-color: #337ab7;
+    border-color: #2e6da4;
+
+    /* btn*/
+
+    display: inline-block;
+    /*padding: 6px 12px;*/
+    margin-bottom: 0;
+    /*font-size: 14px;*/
+    font-weight: 400;
+    /*line-height: 1.42857143;*/
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    -ms-touch-action: manipulation;
+    touch-action: manipulation;
     cursor: pointer;
-    border-radius: 2px;
-    text-transform: uppercase;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    background-image: none;
+    /*border: 1px solid transparent;*/
+    /*border-radius: 4px;*/
     text-decoration: none;
-
-    transition: background-color .2s ease,box-shadow .28s cubic-bezier(.4,0,.2,1);
-    outline: none!important;
 }
 
 .wizard > .actions .disabled a,

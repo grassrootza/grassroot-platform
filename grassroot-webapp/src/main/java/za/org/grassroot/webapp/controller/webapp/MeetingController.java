@@ -86,15 +86,9 @@ public class MeetingController extends BaseController {
         // todo: add error handling and validation
         // todo: check that we have all the needed information and/or add a confirmation screen
 
-        String receivedFormat = "yyyy-MM-dd HH:mm";
-        DateFormat input = new SimpleDateFormat(receivedFormat);
-        String outputFormat="E d MMM HH:mm";
-        DateFormat output = new SimpleDateFormat(outputFormat);
 
-        String dateTimeRaw = meeting.getDateTimeString() + ":00";
-        Timestamp meetingDateTime = Timestamp.valueOf(dateTimeRaw);
-        meeting.setEventStartDateTime(meetingDateTime);
-        meeting.setDateTimeString(output.format(meetingDateTime));
+        // todo: put this data transformation else where:Maybe Wrapper?
+        meeting.setDateTimeString(new SimpleDateFormat("E d MMM HH:mm").format(meeting.getEventStartDateTime()));
 
         log.info("The timestamp is: " + meeting.getEventStartDateTime().toString());
         log.info("The string is: " + meeting.getDateTimeString());
@@ -141,7 +135,7 @@ public class MeetingController extends BaseController {
 
         eventManagementService.updateEvent(meeting);
         addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.reminder.success", request);
-        return "redirect:/hom";
+        return "redirect:/home";
 
     }
 

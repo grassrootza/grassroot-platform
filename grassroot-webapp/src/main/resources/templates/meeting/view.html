@@ -3,7 +3,6 @@
       layout:decorator="layout">
 <head>
   <title>GrassRoot - View Meeting</title>
-  <div th:include="fragments :: dateTimeInput"></div>
 </head>
 <body>
 
@@ -41,7 +40,13 @@
         <div class="row form-group">
           <label for="datepicker" class="col-lg-2 control-label">Date and time:</label>
           <div class="col-lg-6">
-            <input th:name="modifyDateTime" type="text" class="form-control" id="datepicker" th:value="${meeting.eventStartDateTime}" />
+            <div class="input-group date" id="datepicker">
+              <input th:name="modifyDateTime" th:value="${meeting.eventStartDateTime}" type="text" class="form-control" />
+                    <span class="input-group-addon">
+                        <span class="glyphicon glyphicon-calendar"></span>
+                    </span>
+            </div>
+
           </div>
         </div>
         <div class="row form-group">
@@ -59,6 +64,26 @@
       </form>
     </div>
   </div>
+
+</div>
+
+<div class="header-container" layout:fragment="script-container">
+  <script>
+
+    $(document).ready(function() {
+
+      $('#datepicker').datetimepicker({
+        format: 'DD/MM/YYYY h:mm A',
+        widgetPositioning: {
+          horizontal: 'right'
+        },
+        sideBySide:true,
+        minDate: new Date(),
+        maxDate: new Date()
+      });
+
+    });
+  </script>
 
 </div>
 

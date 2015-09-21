@@ -3,19 +3,9 @@
       layout:decorator="layout">
 <head>
   <title>GrassRoot - Call a meeting</title>
-  <script src="//code.jquery.com/jquery-1.9.1.js"></script>
-  <link rel="stylesheet" href="/resources/demos/style.css"/>
-
-  <!-- Using the jQuery UI datepicker, because it seems a bit more supported and robust than various Bootstrap plugins,
-albeit on a cursory glance -->
 <script>
 
-  $( document ).ready(function() {
-    $( "#datepicker" ).simpleMask({
-      nextInput : true,
-      'mask': ['####-##-## ##:##','####-##-## ##:##']
-      });
-  });
+
 
 </script>
 </head>
@@ -62,17 +52,16 @@ albeit on a cursory glance -->
         <div th:fragment="date-picker">
           <label for="datepicker" class="col-md-2 control-label">Meeting date and time</label>
           <div class="col-md-4">
-            <input th:field="*{dateTimeString}" type="text" class="form-control" id="datepicker" placeholder="YYYY-MM-DD HH:MM"/>
+            <div class="input-group date" id="datepicker">
+              <input th:field="*{eventStartDateTime}" type="text" class="form-control" />
+                    <span class="input-group-addon">
+                        <span class="glyphicon glyphicon-calendar"></span>
+                    </span>
+            </div>
           </div>
         </div>
       </div>
-      <!-- Was an attempt to use combodate (http://vitalets.github.io/combodate/) for this, but didn't work -->
-      <!-- <div class="form-group">
-        <label for="time" class="col-md-2 control-label">Meeting time</label>
-        <div class="col-md-4">
-          <input id="time" data-format="DD-MM-YYYY h:mm a" data-template="DD / MM / YYYY hh : mm a" name="datetime" value="21-12-2012 8:30 pm" type="text" />
-        </div>
-      </div> -->
+
       <div class="form-group">
         <label for="subgroups" class="col-md-2 control-label">Include sub-groups?</label>
         <div class="col-md-4">
@@ -87,6 +76,25 @@ albeit on a cursory glance -->
       </div>
     </form>
   </div>
+</div>
+
+<div class="header-container" layout:fragment="script-container">
+  <script>
+
+    $(document).ready(function() {
+
+      $('#datepicker').datetimepicker({
+        format: 'DD/MM/YYYY h:mm A',
+        widgetPositioning: {
+          horizontal: 'right'
+        },
+        sideBySide:true,
+        minDate: new Date()
+      });
+
+    });
+  </script>
+
 </div>
 
 </body>
