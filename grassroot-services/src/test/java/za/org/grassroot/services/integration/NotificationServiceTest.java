@@ -4,7 +4,9 @@ import junit.framework.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -45,7 +47,8 @@ public class NotificationServiceTest {
     MeetingNotificationService meetingNotificationService;
 
     @Autowired
-    ApplicationContext applicationContext;
+    @Qualifier("servicesMessageSourceAccessor")
+    MessageSourceAccessor messageSourceAccessor;
 
     @Autowired
     UserRepository userRepository;
@@ -65,26 +68,26 @@ public class NotificationServiceTest {
                 new Date().toString(),
                 "Is this working?"
         };
-        String message = applicationContext.getMessage(template, msgObjects, Locale.ENGLISH);
+        String message = messageSourceAccessor.getMessage(template, msgObjects, Locale.ENGLISH);
         assertTrue(message.contains("Message: Is this working?"));
     }
 
     @Test
     public void shouldGiveEnglishMessageForMeetingInvite() {
-        String message = applicationContext.getMessage("sms.mtg.send.new",null, Locale.ENGLISH);
-        assertEquals("{0} : {1} has called a meeting about {2}, at {3}, on {4}", message);
+        String message = messageSourceAccessor.getMessage("sms.mtg.send.new", new Object[]{"GrassRoot", "Thabo", "Activism", "The Square", "15 October 2PM"}, Locale.ENGLISH);
+
     }
 
     @Test
     public void shouldGiveEnglishMeetingMessage() {
-        User user = userRepository.save(new User("27817770000"));
+        User  user  = userRepository.save(new User("27817770000"));
         Group group = groupManagementService.createNewGroup(user, Arrays.asList("0828888888", "0829999999"));
         Event event = eventRepository.save(new Event("Drink till you drop", user, group));
         event.setEventLocation("Ellispark");
-        String message = meetingNotificationService.createMeetingNotificationMessage(user,event);
+        String message = meetingNotificationService.createMeetingNotificationMessage(user, event);
         log.info("shouldGiveEnglishMeetingMessage..." + message);
         assertEquals("GrassRoot : 081 777 0000 has called a meeting about Drink till you drop, at Ellispark, on null",
-                     message);
+                message);
     }
 
     @Test

@@ -1,6 +1,7 @@
 package za.org.grassroot.webapp.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.MessageSourceAccessor;
@@ -48,9 +49,11 @@ public class BaseController {
     }
 
     @Autowired
+    @Qualifier("messageSource")
     private MessageSource messageSource;
 
     @Autowired
+    @Qualifier("messageSourceAccessor")
     protected MessageSourceAccessor messageSourceAccessor; // making it protected just briefly, for SMS send
 
     @Autowired

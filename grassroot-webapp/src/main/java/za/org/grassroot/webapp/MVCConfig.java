@@ -132,14 +132,14 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
 //    }
 
 
-    @Bean
+    @Bean (name = "messageSource")
     public ResourceBundleMessageSource messageSource() {
         ResourceBundleMessageSource source = new ResourceBundleMessageSource();
         source.setBasename("messages");
         return source;
     }
 
-    @Bean
+    @Bean ( name = "messageSourceAccessor")
     public MessageSourceAccessor getMessageSourceAccessor()
     {
         return  new MessageSourceAccessor(messageSource());

@@ -41,7 +41,6 @@ public class UserManagementServiceTest {
 
         assertThat(userProfile.getDisplayName(), equalTo("Grass Root"));
 
-
     }
 
     @Test

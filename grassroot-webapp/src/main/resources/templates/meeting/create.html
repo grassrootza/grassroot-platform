@@ -24,8 +24,8 @@
       <div class="form-group">
         <label for="group" class="col-md-2 control-label">Meeting group</label>
         <div th:switch="${groupSpecified}" class="col-md-4">
-          <div th:case="false" class="col-md-4">
-            <select th:field="*{appliesToGroup}" id="group">
+          <div th:case="false" class="">
+            <select th:field="*{appliesToGroup}" id="group" class="form-control">
               <option th:each="group: ${userGroups}"
                       th:value="${group}"
                       th:text="${group.groupName}">Groupname</option>
@@ -67,6 +67,7 @@
         <div class="col-md-4">
           <input th:field="*{includeSubGroups}" type="checkbox" id="subgroups" class="form-control"/>
         </div>
+
       </div>
 
       <div class="form-group">

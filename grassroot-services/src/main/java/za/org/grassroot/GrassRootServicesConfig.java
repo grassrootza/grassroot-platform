@@ -28,31 +28,18 @@ import java.util.Locale;
 @EnableAutoConfiguration
 @EnableJpaRepositories
 @EnableJms
-public class GrassRootServicesConfig extends WebMvcConfigurerAdapter {
+public class GrassRootServicesConfig  {
 
-    @Bean
+    @Bean( name = "servicesMessageSource")
     public ResourceBundleMessageSource messageSource() {
         ResourceBundleMessageSource source = new ResourceBundleMessageSource();
-        source.setBasename("messages");
+        source.setBasename("notification-messages/messages");
         return source;
     }
 
-    @Bean
+    @Bean ( name = "servicesMessageSourceAccessor")
     public MessageSourceAccessor getMessageSourceAccessor() { return new MessageSourceAccessor(messageSource()); }
 
-    @Bean
-    public LocaleResolver localeResolver() {
-        SessionLocaleResolver sessionLocaleResolver = new SessionLocaleResolver();
-        sessionLocaleResolver.setDefaultLocale(Locale.ENGLISH);
-        return sessionLocaleResolver;
-    }
-
-    /* @Bean
-    public LocaleChangeInterceptor localeChangeInterceptor() {
-        LocaleChangeInterceptor LocaleChangeInterceptor = new LocaleChangeInterceptor();
-        LocaleChangeInterceptor.setParamName("language");
-        return LocaleChangeInterceptor;
-    }*/
 
 
 }

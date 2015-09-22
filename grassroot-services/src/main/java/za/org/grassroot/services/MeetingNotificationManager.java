@@ -1,6 +1,7 @@
 package za.org.grassroot.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
 import org.springframework.context.support.MessageSourceAccessor;
@@ -22,12 +23,11 @@ public class MeetingNotificationManager implements MeetingNotificationService {
     private Logger log = Logger.getLogger(getClass().getCanonicalName());
 
     @Autowired
-    ApplicationContext applicationContext;
-
-    @Autowired
+    @Qualifier("servicesMessageSource")
     MessageSource messageSource;
 
     @Autowired
+    @Qualifier("servicesMessageSourceAccessor")
     MessageSourceAccessor messageSourceAccessor;
 
     @Override
@@ -43,14 +43,14 @@ public class MeetingNotificationManager implements MeetingNotificationService {
         // TODO fix the locale resolver in config
         // TODO think if there's a simple way to work out which variable has changed and only send that
         Locale locale = getUserLocale(user);
-        return applicationContext.getMessage("sms.mtg.send.change", populateFields(user, event), locale);
+        return messageSourceAccessor.getMessage("sms.mtg.send.change", populateFields(user, event), locale);
     }
 
     @Override
     public String createCancelMeetingNotificationMessage(User user, Event event) {
         //TODO fix the locale resolver in config
         Locale locale = getUserLocale(user);
-        return applicationContext.getMessage("sms.mtg.send.cancel", populateFields(user, event), locale);
+        return messageSourceAccessor.getMessage("sms.mtg.send.cancel", populateFields(user, event), locale);
     }
 
     private Locale getUserLocale(User user) {
