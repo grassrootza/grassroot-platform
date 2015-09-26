@@ -38,6 +38,7 @@ public class SmsSendingManager implements SmsSendingService {
         //@todo process response message
 
         String messageResult = restTemplate.getForObject(gatewayURI.build().toUri(), String.class);
+        log.info("SMS...result..." + messageResult);
         return messageResult;
 
     }

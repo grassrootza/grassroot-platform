@@ -198,6 +198,22 @@ public class Event implements Serializable {
     }
 
     @Override
+    public String toString() {
+        return "Event{" +
+                "eventLocation='" + eventLocation + '\'' +
+                ", id=" + id +
+                ", createdDateTime=" + createdDateTime +
+                ", eventStartDateTime=" + eventStartDateTime +
+                ", createdByUser=" + createdByUser +
+                ", appliesToGroup=" + appliesToGroup +
+                ", name='" + name + '\'' +
+                ", dateTimeString=\'" + dateTimeString +'\'' +
+                ", includeSubGroups=" + includeSubGroups +'\'' +
+
+                '}';
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -206,6 +222,7 @@ public class Event implements Serializable {
 
         if (canceled != event.canceled) return false;
         if (includeSubGroups != event.includeSubGroups) return false;
+        if (reminderMinutes != event.reminderMinutes) return false;
         if (appliesToGroup != null ? !appliesToGroup.equals(event.appliesToGroup) : event.appliesToGroup != null)
             return false;
         if (createdByUser != null ? !createdByUser.equals(event.createdByUser) : event.createdByUser != null)
@@ -238,22 +255,7 @@ public class Event implements Serializable {
         result = 31 * result + (name != null ? name.hashCode() : 0);
         result = 31 * result + (dateTimeString != null ? dateTimeString.hashCode() : 0);
         result = 31 * result + (includeSubGroups ? 1 : 0);
+        result = 31 * result + reminderMinutes;
         return result;
-    }
-
-    @Override
-    public String toString() {
-        return "Event{" +
-                "eventLocation='" + eventLocation + '\'' +
-                ", id=" + id +
-                ", createdDateTime=" + createdDateTime +
-                ", eventStartDateTime=" + eventStartDateTime +
-                ", createdByUser=" + createdByUser +
-                ", appliesToGroup=" + appliesToGroup +
-                ", name='" + name + '\'' +
-                ", dateTimeString=\'" + dateTimeString +'\'' +
-                ", includeSubGroups=" + includeSubGroups +'\'' +
-
-                '}';
     }
 }
