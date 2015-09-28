@@ -7,6 +7,7 @@ import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 
+import java.util.Date;
 import java.util.List;
 
 public interface EventRepository extends CrudRepository<Event, Long> {
@@ -22,5 +23,7 @@ public interface EventRepository extends CrudRepository<Event, Long> {
 
 
     List<Event> findByAppliesToGroup(Group group);
+
+    List<Event> findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(Group group, Date startTime, boolean cancelled);
 
 }

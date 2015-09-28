@@ -15,7 +15,9 @@ import za.org.grassroot.core.domain.User;
 
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
@@ -102,5 +104,31 @@ public class EventRepositoryTest {
 
     }
 
+    @Test
+    public void shouldReturnEventsForGroupAfterDate() {
+        User user = userRepository.save(new User("0827654321"));
+        Group group = groupRepository.save(new Group("events for group test",user));
+        Event pastEvent = eventRepository.save(new Event("past event",user,group,false));
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.MINUTE, -10);
+        Date pastDate = cal.getTime();
+        cal.add(Calendar.MINUTE,20);
+        Date futureDate = cal.getTime();
+        pastEvent.setEventStartDateTime(new Timestamp(pastDate.getTime()));
+        pastEvent = eventRepository.save(pastEvent);
+        Event futureEvent = eventRepository.save(new Event("future event",user,group,false));
+        futureEvent.setEventStartDateTime(new Timestamp(futureDate.getTime()));
+        futureEvent = eventRepository.save(futureEvent);
+        // cancelled event
+        Event futureEventCan = eventRepository.save(new Event("future event cancelled",user,group,false));
+        futureEventCan.setEventStartDateTime(new Timestamp(futureDate.getTime()));
+        futureEventCan.setCanceled(true);
+        futureEventCan = eventRepository.save(futureEventCan);
+
+        //
+        List<Event> list = eventRepository.findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(group, new Date(), false);
+        assertEquals(1,list.size());
+        assertEquals("future event", list.get(0).getName());
+    }
 
 }

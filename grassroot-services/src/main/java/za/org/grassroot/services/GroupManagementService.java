@@ -69,6 +69,8 @@ public interface GroupManagementService {
 
     public List<User> getAllUsersInGroupAndSubGroups(Group group);
 
+    List<Group> getAllParentGroups(Group group);
+
     public boolean canUserDeleteGroup(User user, Group group);
 
 }

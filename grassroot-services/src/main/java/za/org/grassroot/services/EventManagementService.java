@@ -9,6 +9,7 @@ import za.org.grassroot.core.enums.EventType;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -47,6 +48,8 @@ public interface EventManagementService {
     public Event cancelEvent(Long eventId);
 
     List<Event> findByAppliesToGroup(Group appliesToGroup);
+
+    List<Event> findByAppliesToGroupAndStartingAfter(Group group, Date date);
 
     List<Event> getUpcomingEvents(Group group);
 

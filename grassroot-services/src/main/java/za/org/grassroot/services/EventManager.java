@@ -14,6 +14,7 @@ import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -162,21 +163,14 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
+    public List<Event> findByAppliesToGroupAndStartingAfter(Group group, Date date) {
+        return eventRepository.findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(group,date,false);
+    }
+
+    @Override
     public List<Event> getUpcomingEvents(Group group) {
 
-        // todo: rather implement this in the repository I think, by a suitable method
-        // todo - aakil agree this event will kill us when we have 1000's of events
-        List<Event> allEvents = findByAppliesToGroup(group);
-        List<Event> comingEvents = new ArrayList<>();
-
-        for (Event event : allEvents) {
-            if (event != null && !event.isCanceled() && event.getEventStartDateTime() != null &&
-                    event.getEventStartDateTime().after(new Timestamp(Calendar.getInstance().getTimeInMillis()))) {
-                comingEvents.add(event);
-            }
-        }
-
-        return comingEvents;
+        return findByAppliesToGroupAndStartingAfter(group,new Date());
     }
 
     @Override

@@ -8,7 +8,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.NewGroupMember;
+import za.org.grassroot.core.enums.EventChangeType;
 import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.util.TokenGeneratorService;
 
 import javax.jws.soap.SOAPBinding;
@@ -39,6 +42,9 @@ public class GroupManager implements GroupManagementService {
     @Autowired
     TokenGeneratorService tokenGeneratorService;
 
+    @Autowired
+    GenericJmsTemplateProducerService jmsTemplateProducerService;
+
     /**
      * Have not yet created methods analogous to those in UserManager, as not sure if necessary
      * For the moment, using this to expose some basic group services for the application interfaces
@@ -66,18 +72,19 @@ public class GroupManager implements GroupManagementService {
     }
 
 
-    //todo aakil send event notification to new group member
     @Override
     public Group addGroupMember(Long currentGroupId, Long newMemberId) {
         return addGroupMember(getGroupById(currentGroupId), userManager.getUserById(newMemberId));
     }
     @Override
     public Group addGroupMember(Group currentGroup, User newMember) {
+
         // todo: just make sure this works as planned, if user has persisted in interim (e.g., maybe call repo?).
         if (currentGroup.getGroupMembers().contains(newMember)) {
             return currentGroup;
         } else {
             currentGroup.addMember(newMember);
+            jmsTemplateProducerService.sendWithNoReply(EventChangeType.USER_ADDED.toString(),new NewGroupMember(currentGroup,newMember));
             return groupRepository.save(currentGroup);
         }
     }
@@ -106,15 +113,16 @@ public class GroupManager implements GroupManagementService {
 
     }
 
-    //todo aakil send event notification to new group member
     @Override
     public Group addNumbersToGroup(Long groupId, List<String> phoneNumbers) {
 
         Group groupToExpand = loadGroup(groupId);
         List<User> groupNewMembers = userManager.getUsersFromNumbers(phoneNumbers);
 
-        for (User newMember : groupNewMembers)
+        for (User newMember : groupNewMembers) {
             groupToExpand.addMember(newMember);
+            jmsTemplateProducerService.sendWithNoReply(EventChangeType.USER_ADDED.toString(),new NewGroupMember(groupToExpand,newMember));
+        }
 
         return groupRepository.save(groupToExpand);
 
@@ -267,6 +275,14 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
+    public List<Group> getAllParentGroups(Group group) {
+        List<Group> parentGroups = new ArrayList<Group>();
+        recursiveParentGroups(group,parentGroups);
+        return parentGroups;
+    }
+
+
+    @Override
     public boolean canUserDeleteGroup(User user, Group group) {
         // todo: Integrate with permission checking -- for now, just checking if group created by user in last 24 hours
         // todo: the time checking would be so much easier if we use Joda or Java 8 DateTime ...
@@ -286,4 +302,13 @@ public class GroupManager implements GroupManagementService {
         userList.addAll(parentGroup.getGroupMembers());
 
     }
+
+    private void recursiveParentGroups(Group childGroup, List<Group> parentGroups) {
+        if (childGroup.getParent() != null && childGroup.getParent().getId() != 0) {
+            recursiveParentGroups(childGroup.getParent(),parentGroups);
+        }
+        // add the current group as there are no more parents
+        parentGroups.add(childGroup);
+    }
+
 }

@@ -5,7 +5,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.NewGroupMember;
 import za.org.grassroot.core.enums.EventChangeType;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.event.EventChangeEvent;
@@ -40,8 +42,9 @@ public class EventNotificationConsumer {
 
     @Autowired
     MessageSendingService messageSendingService;
-    //@Autowired
-    //EventManagementService eventManagementService;
+
+    @Autowired
+    EventManagementService eventManagementService;
 
     @Autowired
     EventLogManagementService eventLogManagementService;
@@ -53,15 +56,10 @@ public class EventNotificationConsumer {
         log.finest("sendNewEventNotifications... <" + event.toString() + ">");
 
         for (User user : getAllUsersForGroup(event)) {
-            //generate message based on user language
-            String message = meetingNotificationService.createMeetingNotificationMessage(user,event);
-            if (!eventLogManagementService.notificationSentToUser(event,user)) {
-                log.info("sendNewEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
-                messageSendingService.sendMessage(message,user.getPhoneNumber(), MessageProtocol.SMS);
-                eventLogManagementService.createEventLog(EventLogType.EventNotification,event,user,message);
-            }
+            sendNewMeetingMessage(user,event);
         }
     }
+
 
     @JmsListener(destination = "event-changed", containerFactory = "messagingJmsContainerFactory",
             concurrency = "3")
@@ -96,6 +94,39 @@ public class EventNotificationConsumer {
         }
 
     }
+    @JmsListener(destination = "user-added", containerFactory = "messagingJmsContainerFactory",
+            concurrency = "3")
+    public void groupUserAdded(NewGroupMember newGroupMember) {
+        log.info("groupUserAdded...<" + newGroupMember.toString());
+
+        // check for events on this group level
+        List<Event> upComingEvents = eventManagementService.getUpcomingEvents(newGroupMember.getGroup());
+        if (upComingEvents != null) {
+            for (Event upComingEvent : upComingEvents) {
+                sendNewMeetingMessage(newGroupMember.getNewMember(),upComingEvent);
+            }
+        }
+
+        // climb the tree and check events at each level if subgroups are included
+        List<Group> parentGroups = groupManagementService.getAllParentGroups(newGroupMember.getGroup());
+
+        if (parentGroups != null) {
+            for (Group parentGroup : parentGroups) {
+                upComingEvents = eventManagementService.getUpcomingEvents(parentGroup);
+                if (upComingEvents != null) {
+                    for (Event upComingEvent : upComingEvents) {
+                        if (upComingEvent.isIncludeSubGroups()) {
+                            sendNewMeetingMessage(newGroupMember.getNewMember(),upComingEvent);
+                        }
+                    }
+                }
+
+            }
+        }
+
+    }
+
+
 
     private List<User> getAllUsersForGroup(Event event) {
         if (event.isIncludeSubGroups()) {
@@ -105,6 +136,16 @@ public class EventNotificationConsumer {
         }
     }
 
+    private void sendNewMeetingMessage(User user, Event event) {
+        //generate message based on user language
+        String message = meetingNotificationService.createMeetingNotificationMessage(user,event);
+        if (!eventLogManagementService.notificationSentToUser(event,user)) {
+            log.info("sendNewEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
+            messageSendingService.sendMessage(message,user.getPhoneNumber(), MessageProtocol.SMS);
+            eventLogManagementService.createEventLog(EventLogType.EventNotification,event,user,message);
+        }
+
+    }
 
 
 }
