@@ -281,6 +281,18 @@ public class GroupManager implements GroupManagementService {
         return parentGroups;
     }
 
+    /*
+    Pass in the group you are linking to the linkedToGroup so that the method can
+    check if the linked group is already a parent in the linkedToGroup in order to avoid looping
+    when going up or down the hierarchy
+     */
+    @Override
+    public boolean isGroupAlsoParent(Group group, Group linkedToGroup) {
+        for (Group g : getAllParentGroups(linkedToGroup)) {
+            if (g.getId() == group.getId()) return true;
+        }
+        return false;
+    }
 
     @Override
     public boolean canUserDeleteGroup(User user, Group group) {

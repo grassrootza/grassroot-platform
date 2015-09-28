@@ -71,6 +71,13 @@ public interface GroupManagementService {
 
     List<Group> getAllParentGroups(Group group);
 
+    /*
+    Pass in the group you are linking to the linkedToGroup so that the method can
+    check if the linked group is already a parent in the linkedToGroup in order to avoid looping
+    when going up or down the hierarchy
+     */
+    boolean isGroupAlsoParent(Group group, Group linkedToGroup);
+
     public boolean canUserDeleteGroup(User user, Group group);
 
 }
