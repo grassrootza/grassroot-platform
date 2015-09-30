@@ -56,4 +56,10 @@ public interface EventManagementService {
     List<User> getListOfUsersThatRSVPYesForEvent(Event event);
 
     List<User> getListOfUsersThatRSVPNoForEvent(Event event);
+
+    List<Event> getOutstandingRSVPForUser(Long userId);
+
+    List<Event> getOutstandingRSVPForUser(User user);
+
+    List<Event> getUpcomingEventsForGroupAndParentGroups(Group group);
 }

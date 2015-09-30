@@ -320,6 +320,7 @@ public class GroupManager implements GroupManagementService {
             recursiveParentGroups(childGroup.getParent(),parentGroups);
         }
         // add the current group as there are no more parents
+        // todo aakil this adds the group even if it had no parents??? is this a problem, rethink
         parentGroups.add(childGroup);
     }
 

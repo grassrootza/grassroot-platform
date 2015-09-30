@@ -42,6 +42,8 @@ public class EventManager implements EventManagementService {
     @Autowired
     GenericJmsTemplateProducerService jmsTemplateProducerService;
 
+    @Autowired
+    EventLogManagementService eventLogManagementService;
     /*
     This createEvent method is used primarily by the USSD interface, where we do not have all the information yet.
     At this stage we would have created the user, group and asked the Name of the Event
@@ -182,6 +184,65 @@ public class EventManager implements EventManagementService {
     public List<User> getListOfUsersThatRSVPNoForEvent(Event event) {
         return userRepository.findUsersThatRSVPNoForEvent(event);
     }
+
+    @Override
+    public List<Event> getOutstandingRSVPForUser(Long userId) {
+        return getOutstandingRSVPForUser(userRepository.findOne(userId));
+    }
+    @Override
+    public List<Event> getOutstandingRSVPForUser(User user) {
+        log.info("getOutstandingRSVPForUser..." + user.getId());
+        List<Event> outstandingRSVPs = new ArrayList<Event>();
+        List<Group> groups = groupManager.getGroupsPartOf(user);
+        if (groups != null) {
+            for (Group group : groups) {
+                List<Event> upcomingEvents = getUpcomingEventsForGroupAndParentGroups(group);
+                if (upcomingEvents != null) {
+                    for (Event event : upcomingEvents) {
+                        if (event.isRsvpRequired()) {
+                            if (!eventLogManagementService.userRsvpForEvent(event,user)) {
+                                outstandingRSVPs.add(event);
+                                log.info("getOutstandingRSVPForUser...rsvpRequired..." + user.getId() + "...event..." + event.getId());
+                            } else {
+                                log.info("getOutstandingRSVPForUser...rsvp NOT Required..." + user.getId() + "...event..." + event.getId());
+
+                            }
+                        }
+                    }
+                }
+
+            }
+        }
+
+        return outstandingRSVPs;
+    }
+    @Override
+    public List<Event> getUpcomingEventsForGroupAndParentGroups(Group group) {
+        // check for events on this group level
+        List<Event> upComingEvents = getUpcomingEvents(group);
+        if (upComingEvents == null) {
+            upComingEvents = new ArrayList<Event>();
+        }
+
+        // climb the tree and check events at each level if subgroups are included
+        List<Group> parentGroups = groupManager.getAllParentGroups(group);
+
+        if (parentGroups != null) {
+            for (Group parentGroup : parentGroups) {
+                List<Event> parentEvents = getUpcomingEvents(parentGroup);
+                if (parentEvents != null) {
+                    for (Event upComingEvent : parentEvents) {
+                        if (upComingEvent.isIncludeSubGroups()) {
+                            upComingEvents.add(upComingEvent);
+                        }
+                    }
+                }
+
+            }
+        }
+        return upComingEvents;
+    }
+
 
     private Event saveandCheckChanges(Event beforeEvent, Event changedEvent) {
 

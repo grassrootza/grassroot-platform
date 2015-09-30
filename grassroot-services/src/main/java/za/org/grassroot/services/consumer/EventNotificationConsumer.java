@@ -100,27 +100,10 @@ public class EventNotificationConsumer {
         log.info("groupUserAdded...<" + newGroupMember.toString());
 
         // check for events on this group level
-        List<Event> upComingEvents = eventManagementService.getUpcomingEvents(newGroupMember.getGroup());
+        List<Event> upComingEvents = eventManagementService.getUpcomingEventsForGroupAndParentGroups(newGroupMember.getGroup());
         if (upComingEvents != null) {
             for (Event upComingEvent : upComingEvents) {
                 sendNewMeetingMessage(newGroupMember.getNewMember(),upComingEvent);
-            }
-        }
-
-        // climb the tree and check events at each level if subgroups are included
-        List<Group> parentGroups = groupManagementService.getAllParentGroups(newGroupMember.getGroup());
-
-        if (parentGroups != null) {
-            for (Group parentGroup : parentGroups) {
-                upComingEvents = eventManagementService.getUpcomingEvents(parentGroup);
-                if (upComingEvents != null) {
-                    for (Event upComingEvent : upComingEvents) {
-                        if (upComingEvent.isIncludeSubGroups()) {
-                            sendNewMeetingMessage(newGroupMember.getNewMember(),upComingEvent);
-                        }
-                    }
-                }
-
             }
         }
 

@@ -37,6 +37,8 @@ public interface EventLogManagementService {
 
     boolean userRsvpNoForEvent(Event event, User user);
 
+    boolean userRsvpForEvent(Event event, User user);
+
     RSVPTotalsDTO getRSVPTotalsForEvent(Long eventId);
 
     RSVPTotalsDTO getRSVPTotalsForEvent(Event event);

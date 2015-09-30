@@ -95,6 +95,11 @@ public class EventLogManager implements EventLogManagementService {
     }
 
     @Override
+    public boolean userRsvpForEvent(Event event, User user) {
+        return eventLogRepository.userRsvpForEvent(event,user);
+    }
+
+    @Override
     public RSVPTotalsDTO getRSVPTotalsForEvent(Long eventId) {
         return getRSVPTotalsForEvent(eventRepository.findOne(eventId));
     }

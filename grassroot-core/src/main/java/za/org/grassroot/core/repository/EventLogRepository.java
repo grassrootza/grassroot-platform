@@ -42,6 +42,8 @@ public interface EventLogRepository extends JpaRepository<EventLog, Long> {
     @Query("SELECT CASE WHEN COUNT(e) > 0 THEN 'true' ELSE 'false' END FROM EventLog e WHERE e.event = ?1 and e.user = ?2 and e.eventLogType = za.org.grassroot.core.enums.EventLogType.EventRSVP and e.message = 'No'")
     public Boolean rsvpNoForEvent(Event event, User user);
 
-    //todo query to see if user has outstanding rsvp?
+    @Query("SELECT CASE WHEN COUNT(e) > 0 THEN 'true' ELSE 'false' END FROM EventLog e WHERE e.event = ?1 and e.user = ?2 and e.eventLogType = za.org.grassroot.core.enums.EventLogType.EventRSVP")
+    public Boolean userRsvpForEvent(Event event, User user);
+
 
 }
