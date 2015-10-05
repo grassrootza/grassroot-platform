@@ -18,14 +18,14 @@
   <div layout:fragment="messages"></div>
   <div class="well">
     <form th:action="@{/group/link}" method="post" autocomplete="off" class="form-horizontal">
-      <input type="hidden" name="groupId" th:value="${groupId}" />
+      <input type="hidden" name="groupId" th:value="${group.getId()}" />
       <div class="form-group">
-        <label for="parentGroup" class="col-md-2 control-label">Select the parent group:</label>
+        <label class="col-md-2 control-label">Select the parent group:</label>
         <div class="col-md-4">
           <select name="parentId" id="parentGroup">
             <option th:each="parent : ${possibleParents}"
-                    th:value="${parent.id}"
-                    th:text="${parent.groupName}">Parentname</option>
+                    th:value="${parent.getId()}"
+                    th:text="${parent.groupName}">Another parent</option>
           </select>
         </div>
       </div>

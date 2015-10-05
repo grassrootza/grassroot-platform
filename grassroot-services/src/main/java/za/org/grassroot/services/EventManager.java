@@ -264,10 +264,10 @@ public class EventManager implements EventManagementService {
             }
             if (priorEventComplete && minimumDataAvailable(savedEvent) && !savedEvent.isCanceled()) {
                 // let's send out a change notification if something changed in minimum required values
+                // todo: this seems to be malfunctioning because beforeEvent becomes confused.
                 if (!savedEvent.minimumEquals(beforeEvent)) {
                     jmsTemplateProducerService.sendWithNoReply("event-changed",savedEvent);
                     log.info("queued to event-changed");
-
                 } else {
                     log.info("NOT queued to event-changed as minimum required values did not change...");
 

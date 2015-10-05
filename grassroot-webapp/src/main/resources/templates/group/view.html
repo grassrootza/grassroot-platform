@@ -8,6 +8,7 @@
 
 <div layout:fragment="header">
   <h2>Group: <span  th:text="${group.groupName}">Group</span></h2>
+  <div th:if="${hasParent}"><h3>This group has a parent. Its name is <span th:value="${group.parent.groupName}">parent</span></h3></div>
 </div>
 <div layout:fragment="overview">View Group and invite members</div>
 
@@ -85,12 +86,7 @@
         <div th:if="${canDeleteGroup}" class="col-lg-4">
           <button type="submit" name="group_delete" class="btn btn-warning">Delete group (only within 24 hours)</button>
         </div> -->
-        <div class="col-lg-4" th:switch="${hasParent}">
-          <div th:case="true">This group has a parent. Its name is <span th:value="${group.parent.groupName}">parent</span></div>
-          <div th:case="false">
-            <button type="submit" name="link_parent" class="btn btn-info">Link this group to a parent</button></div>
-        </div>
-      </div>
+    </div>
     </form>
   </div>
 
@@ -114,6 +110,12 @@
         <a href="" th:href="@{/vote/create(groupId=${group.id})}"><button class="btn btn-primary">Take a vote</button></a>
       </div>
     </div>
+  </div>
+
+  <div class="well" th:if="${not hasParent}">
+    <div class="row"><div class="col-md-12">
+      <a href="" th:href="@{/group/parent(groupId=${group.id})}"><button class="btn btn-info">Link this group to a parent</button></a>
+    </div></div>
   </div>
 
   <!-- list subgroups -->
@@ -144,8 +146,8 @@
       </div>
     </div>
   </div>
-
 </div>
+
 
 </body>
 </html>

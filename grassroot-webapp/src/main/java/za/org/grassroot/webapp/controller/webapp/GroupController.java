@@ -369,7 +369,7 @@ public class GroupController extends BaseController {
     Methods for handling group linking to a parent (as observing that users often create group first, link later)
      */
 
-    @RequestMapping(value="/group/modify", params={"link_parent"})
+    @RequestMapping(value="/group/parent")
     public String listPossibleParents(Model model, @RequestParam("groupId") Long groupId,
                                       HttpServletRequest request, RedirectAttributes redirectAttributes) {
         // todo: check permissions, handle exceptions (in fact, on view group page), etc.
@@ -384,10 +384,11 @@ public class GroupController extends BaseController {
         possibleParents.removeAll(groupManagementService.getSubGroups(group));
 
         if (!possibleParents.isEmpty()) {
-            log.info("The group has some possible parents");
-            model.addAttribute("groupId", groupId);
+            log.info("The group (with ID " + groupId + ") has some possible parents, in fact this many: " + possibleParents.size());
+            model.addAttribute("group", group);
             model.addAttribute("possibleParents", possibleParents);
-            return "group/link";
+            log.info("And here is the model: " + model.toString());
+            return "group/parent";
         } else {
             // add an error message
             log.info("The group does not have possible parents");
