@@ -415,8 +415,7 @@ public class USSDGroupController extends USSDController {
         // todo: add error and exception handling, as well as validation and checking (e.g., if user in group, etc)
         // todo: check if the list in the user is updated too ...
 
-        sessionGroup.getGroupMembers().remove(sessionUser);
-        sessionGroup = groupManager.saveGroup(sessionGroup);
+        groupManager.removeGroupMember(sessionGroup, sessionUser);
 
         String returnMessage = getMessage(GROUP_KEY, keyUnsubscribe + DO_SUFFIX, PROMPT, sessionUser);
 

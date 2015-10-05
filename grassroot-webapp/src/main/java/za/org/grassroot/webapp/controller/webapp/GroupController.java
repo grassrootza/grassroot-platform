@@ -77,6 +77,10 @@ public class GroupController extends BaseController {
         return "group/view";
     }
 
+    /*
+    Group creation methods
+     */
+
     @RequestMapping("/group/create")
     public String startGroupIndex(Model model, @RequestParam(value="parent", required=false) Long parentId) {
 
@@ -262,8 +266,6 @@ public class GroupController extends BaseController {
         }
     }
 
-
-
     /*
     Helper methods for handling user addition and updating
      */
@@ -420,6 +422,7 @@ public class GroupController extends BaseController {
 
 
     /*
+    Methods to handle group deletion and group unsubscribe
     Simple method to delete a group, if it was recently created and this is the creating user
     todo: implement the simpler "unsubscribe me from this group" button & method
      */
@@ -439,6 +442,35 @@ public class GroupController extends BaseController {
             return "group/view";
         }
 
+    }
+
+    @RequestMapping(value = "group/unsubscribe")
+    public String unsubscribeGroup(Model model, @RequestParam("groupId") Long groupId) {
+
+        Group group = groupManagementService.loadGroup(groupId);
+
+        // todo: check if the user is part of the group
+        model.addAttribute("group", group);
+        return "group/unsubscribe_confirm";
+
+    }
+
+    @RequestMapping(value = "group/unsubscribe", method = RequestMethod.POST)
+    public String unsubGroup(Model model, @RequestParam("groupId") Long groupId, @RequestParam("confirm_field") String confirmText,
+                             HttpServletRequest request, RedirectAttributes redirectAttributes) {
+
+        // todo: again, check the user is part of the group and/or do error handling
+        Group group = groupManagementService.loadGroup(groupId);
+        User user = getUserProfile();
+
+        if (groupManagementService.isUserInGroup(group, user) && confirmText.toLowerCase().equals("unsubscribe")) {
+            groupManagementService.removeGroupMember(group, user);
+            addMessage(redirectAttributes, MessageType.SUCCESS, "group.unsubscribe.success", request);
+        } else {
+            addMessage(redirectAttributes, MessageType.ERROR, "group.unsubscribe.error", request);
+        }
+
+        return "redirect:/home";
     }
 
 

@@ -62,6 +62,12 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
+    public boolean isUserInGroup(Group group, User user) {
+        // at some point may want to make this more efficient than getter method
+        return group.getGroupMembers().contains(user);
+    }
+
+    @Override
     public Group saveGroup(Group groupToSave) {
         return groupRepository.save(groupToSave);
     }
@@ -76,6 +82,14 @@ public class GroupManager implements GroupManagementService {
     public Group addGroupMember(Long currentGroupId, Long newMemberId) {
         return addGroupMember(getGroupById(currentGroupId), userManager.getUserById(newMemberId));
     }
+
+    @Override
+    public Group removeGroupMember(Group group, User user) {
+        // todo: error handling
+        group.getGroupMembers().remove(user);
+        return saveGroup(group);
+    }
+
     @Override
     public Group addGroupMember(Group currentGroup, User newMember) {
 

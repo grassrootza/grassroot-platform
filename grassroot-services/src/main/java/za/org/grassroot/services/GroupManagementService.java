@@ -15,6 +15,8 @@ public interface GroupManagementService {
 
     public List<Group> getGroupsFromUser(User sessionUser);
 
+    public boolean isUserInGroup(Group group, User user);
+
     public Group saveGroup(Group groupToSave);
 
     public void deleteGroup(Group groupToDelete);
@@ -22,6 +24,8 @@ public interface GroupManagementService {
     public Group addGroupMember(Group currentGroup, User newMember);
 
     public Group addGroupMember(Long currentGroupId, Long newMemberId);
+
+    public Group removeGroupMember(Group group, User user);
 
     public Group createNewGroup(User creatingUser, List<String> phoneNumbers);
 
