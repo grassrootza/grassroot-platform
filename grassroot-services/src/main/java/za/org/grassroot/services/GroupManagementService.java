@@ -76,11 +76,11 @@ public interface GroupManagementService {
     List<Group> getAllParentGroups(Group group);
 
     /*
-    Pass in the group you are linking to the linkedToGroup so that the method can
-    check if the linked group is already a parent in the linkedToGroup in order to avoid looping
-    when going up or down the hierarchy
+    Pass in the group you want to make a child as the 'possibleChildGroup', and the desired parent
+    as the 'possibleParentGroup', and this will return true if the possible child is already in the parent chain
+     of the possible parent, i.e., if it will create an infinite loop
      */
-    boolean isGroupAlsoParent(Group group, Group linkedToGroup);
+    boolean isGroupAlsoParent(Group possibleChildGroup, Group possibleParentGroup);
 
     public boolean canUserDeleteGroup(User user, Group group);
 

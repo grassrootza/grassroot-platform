@@ -18,6 +18,8 @@
     <div class="row">
       Meeting scheduled for <span th:value="${meeting.dateTimeString}">date and time</span>.
       So far, <span th:value="${meeting.appliesToGroup.groupMembers.size()}"> members have been invited.</span>
+      <div th:if="${meeting.rsvpRequired}">Members have been asked to respond if they will be attending, and so far
+        <span th:value="${rsvpYesTotal}">X</span> people have said 'yes'.</div>
     </div>
     <div class="row">
       Update this meeting:
@@ -46,7 +48,6 @@
                         <span class="glyphicon glyphicon-calendar"></span>
                     </span>
             </div>
-
           </div>
         </div>
         <div class="row form-group">
@@ -64,6 +65,29 @@
       </form>
     </div>
   </div>
+
+  <div th:if="${meeting.rsvpRequired}" class="well">
+    <div class="row list-group">
+      <h2>RSVP responses so far:</h2>
+    </div>
+    <div class="row list-group-item">
+      <table class="table table-striped">
+        <thead>
+        <th>Member name</th>
+        <th>Phone number</th>
+        <th>Response</th>
+        </thead>
+        <tbody>
+        <tr th:each="response : ${rsvpResponses.entrySet()}">
+          <td><span th:text="${response.key.nameToDisplay()}">Member name</span></td>
+          <td><span th:text="${response.key.phoneNumber}">Phone number</span></td>
+          <td><span th:text="${response.value}">Response</span></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
 
 </div>
 

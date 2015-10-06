@@ -185,6 +185,12 @@ public class Event implements Serializable {
         this.eventType = EventType.Meeting;
     }
 
+    public Event(User createdByUser, EventType eventType, boolean rsvpRequired) {
+        this.createdByUser = createdByUser;
+        this.eventType = eventType;
+        this.rsvpRequired = rsvpRequired;
+    }
+
     public Event(String name, User createdByUser) {
         this.name = name;
         this.createdByUser = createdByUser;
@@ -229,6 +235,7 @@ public class Event implements Serializable {
                 ", appliesToGroup=" + appliesToGroup +
                 ", name='" + name + '\'' +
                 ", dateTimeString=\'" + dateTimeString +'\'' +
+                ", rsvpRequired=\'" + rsvpRequired + '\'' +
                 ", includeSubGroups=" + includeSubGroups +'\'' +
 
                 '}';

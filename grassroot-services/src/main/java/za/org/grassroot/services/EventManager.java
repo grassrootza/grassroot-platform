@@ -6,16 +6,14 @@ import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Logger;
 
 /**
@@ -45,13 +43,19 @@ public class EventManager implements EventManagementService {
     @Autowired
     EventLogManagementService eventLogManagementService;
     /*
-    This createEvent method is used primarily by the USSD interface, where we do not have all the information yet.
-    At this stage we would have created the user, group and asked the Name of the Event
+    Variety of createEvent methods with different signatures caters to USSD menus in particular, so can create event
+    with varying degrees of information. Am defaulting to a meeting requires an RSVP, since that will be most cases.
      */
 
     @Override
+    public Event createEvent(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups, boolean rsvpRequired) {
+        return eventRepository.save(new Event(name, createdByUser, appliesToGroup, includeSubGroups, rsvpRequired));
+    }
+
+    @Override
     public Event createEvent(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups) {
-        return eventRepository.save(new Event(name, createdByUser, appliesToGroup,includeSubGroups));
+        // return eventRepository.save(new Event(name, createdByUser, appliesToGroup,includeSubGroups));
+        return createEvent(name, createdByUser, appliesToGroup, includeSubGroups, true);
     }
 
     @Override
@@ -71,7 +75,7 @@ public class EventManager implements EventManagementService {
     }
 
     /*
-    Depending on the menu flow in the USSD interface, we might not know the group at a point when we want to create
+    Depending on the user flow in the USSD/web interface, we might not know the group at a point when we want to create
     the event, hence generating this method and the one that follows
      */
     @Override
@@ -81,7 +85,7 @@ public class EventManager implements EventManagementService {
 
     @Override
     public Event createMeeting(User createdByUser) {
-        return eventRepository.save(new Event(createdByUser, EventType.Meeting));
+        return eventRepository.save(new Event(createdByUser, EventType.Meeting, true)); // defaulting rsvpRequired to true
     }
 
     @Override
@@ -186,17 +190,37 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
+    public Map<User, EventRSVPResponse> getRSVPResponses(Event event) {
+        // todo: there is almost certainly a faster/better way to do this
+        Map<User, EventRSVPResponse> rsvpResponses = new LinkedHashMap<>();
+
+        for (User user : event.getAppliesToGroup().getGroupMembers())
+            rsvpResponses.put(user, EventRSVPResponse.NO_RESPONSE);
+
+        for (User user : getListOfUsersThatRSVPYesForEvent(event))
+            rsvpResponses.replace(user, EventRSVPResponse.YES);
+
+        for (User user : getListOfUsersThatRSVPNoForEvent(event))
+            rsvpResponses.replace(user, EventRSVPResponse.NO);
+
+        return rsvpResponses;
+    }
+
+    @Override
     public List<Event> getOutstandingRSVPForUser(Long userId) {
         return getOutstandingRSVPForUser(userRepository.findOne(userId));
     }
     @Override
     public List<Event> getOutstandingRSVPForUser(User user) {
+        // todo: we will probably use something like this at application load for every user that comes in via USSD
+        // todo: so just wondering if we may want to do the below via a single query in one of the repositories?
         log.info("getOutstandingRSVPForUser..." + user.getId());
         List<Event> outstandingRSVPs = new ArrayList<Event>();
         List<Group> groups = groupManager.getGroupsPartOf(user);
         if (groups != null) {
             for (Group group : groups) {
                 List<Event> upcomingEvents = getUpcomingEventsForGroupAndParentGroups(group);
+                log.info("getOustandingRSVPForUser ... checking " + upcomingEvents.size() + " events");
                 if (upcomingEvents != null) {
                     for (Event event : upcomingEvents) {
                         if (event.isRsvpRequired()) {
@@ -216,6 +240,7 @@ public class EventManager implements EventManagementService {
 
         return outstandingRSVPs;
     }
+
     @Override
     public List<Event> getUpcomingEventsForGroupAndParentGroups(Group group) {
         // check for events on this group level
@@ -248,7 +273,7 @@ public class EventManager implements EventManagementService {
 
         log.info("saveandCheckChanges...starting ... with before event .. " + beforeEvent.toString());
 
-        // need to set this befoer saving the changed event, or the getters in minimuDataAvailable get confused
+        // need to set this before saving the changed event, or the getters in minimuDataAvailable get confused
         boolean priorEventComplete = minimumDataAvailable(beforeEvent);
         Event savedEvent = eventRepository.save(changedEvent);
 
@@ -331,9 +356,11 @@ public class EventManager implements EventManagementService {
         if (passedEvent.getDateTimeString() == null && savedEvent.getDateTimeString() != null)
             passedEvent.setDateTimeString(savedEvent.getDateTimeString());
 
-        // todo: think through this -- may make it impossible to switch off include subgroups
-        if (!passedEvent.isIncludeSubGroups() && savedEvent.isIncludeSubGroups())
-            passedEvent.setIncludeSubGroups(savedEvent.isIncludeSubGroups());
+        /*
+        We do not touch the two boolean fields, rsvpRequired and includeSubGroups, since those are set by
+        default in the constructors, and if passedEvent has them set to something different to savedEvent,
+         that means the user changed them, and hence they should be preserved. To test this.
+         */
 
         return passedEvent;
 

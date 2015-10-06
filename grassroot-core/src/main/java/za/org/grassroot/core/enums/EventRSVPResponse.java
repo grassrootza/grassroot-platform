@@ -6,7 +6,7 @@ package za.org.grassroot.core.enums;
 public enum EventRSVPResponse {
     YES ("Yes"),
     NO ("No"),
-    NO_RESPONSE ("No RSVP"),
+    NO_RESPONSE ("No response yet"),
     INVALID_RESPONSE ("Invalid RSVP"),
     MAYBE ("Maybe");
 

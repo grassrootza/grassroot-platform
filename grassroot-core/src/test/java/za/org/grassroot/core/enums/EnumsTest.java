@@ -39,7 +39,7 @@ public class EnumsTest {
         assertEquals("Maybe",EventRSVPResponse.MAYBE.toString());
         assertEquals("No",EventRSVPResponse.NO.toString());
         assertEquals("No",EventRSVPResponse.fromString("no").toString());
-        assertEquals("No RSVP",EventRSVPResponse.NO_RESPONSE.toString());
+        assertEquals("No response yet",EventRSVPResponse.NO_RESPONSE.toString());
         assertEquals("Invalid RSVP",EventRSVPResponse.fromString("").toString());
         assertEquals("Invalid RSVP",EventRSVPResponse.fromString("any junk").toString());
 

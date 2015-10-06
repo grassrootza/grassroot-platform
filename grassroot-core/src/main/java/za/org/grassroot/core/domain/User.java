@@ -111,7 +111,6 @@ public class User implements UserDetails {
         this.createdDateTime = createdDateTime;
     }
 
-    // todo: finish wiring this up so that the groupToRename logic works
     @OneToMany(mappedBy = "user")
     private List<Group> groupsCreated;
 

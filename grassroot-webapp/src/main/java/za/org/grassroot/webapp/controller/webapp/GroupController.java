@@ -379,15 +379,19 @@ public class GroupController extends BaseController {
 
         List<Group> possibleParents = groupManagementService.getGroupsFromUser(getUserProfile());
 
-        Group group = groupManagementService.loadGroup(groupId);
+        Group groupToMakeChild = groupManagementService.loadGroup(groupId);
 
-        // Major todo: do the "remove children" recursively to be really sure
+        // todo: maybe collapse this into a simple map, on a refactor
         possibleParents.remove(groupManagementService.loadGroup(groupId));
-        possibleParents.removeAll(groupManagementService.getSubGroups(group));
+        for (Group possibleParent : possibleParents) {
+            if (groupManagementService.isGroupAlsoParent(groupToMakeChild, possibleParent)) {
+                possibleParents.remove(possibleParent);
+            }
+        }
 
         if (!possibleParents.isEmpty()) {
             log.info("The group (with ID " + groupId + ") has some possible parents, in fact this many: " + possibleParents.size());
-            model.addAttribute("group", group);
+            model.addAttribute("group", groupToMakeChild);
             model.addAttribute("possibleParents", possibleParents);
             log.info("And here is the model: " + model.toString());
             return "group/parent";

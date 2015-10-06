@@ -34,13 +34,12 @@ public class MeetingNotificationManager implements MeetingNotificationService {
     public String createMeetingNotificationMessage(User user, Event event) {
         //TODO fix the locale resolver in config
         Locale locale = getUserLocale(user);
-        log.info("Trying to get meeting location from " + messageSource.toString());
-        return messageSourceAccessor.getMessage("sms.mtg.send.new", populateFields(user, event), locale);
+        String messageKey = event.isRsvpRequired() ? "sms.mtg.send.new.rsvp" : "sms.mtg.send.new";
+        return messageSourceAccessor.getMessage(messageKey, populateFields(user, event), locale);
     }
 
     @Override
     public String createChangeMeetingNotificationMessage(User user, Event event) {
-        // TODO fix the locale resolver in config
         // TODO think if there's a simple way to work out which variable has changed and only send that
         Locale locale = getUserLocale(user);
         return messageSourceAccessor.getMessage("sms.mtg.send.change", populateFields(user, event), locale);
@@ -48,7 +47,6 @@ public class MeetingNotificationManager implements MeetingNotificationService {
 
     @Override
     public String createCancelMeetingNotificationMessage(User user, Event event) {
-        //TODO fix the locale resolver in config
         Locale locale = getUserLocale(user);
         return messageSourceAccessor.getMessage("sms.mtg.send.cancel", populateFields(user, event), locale);
     }

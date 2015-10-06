@@ -296,14 +296,14 @@ public class GroupManager implements GroupManagementService {
     }
 
     /*
-    Pass in the group you are linking to the linkedToGroup so that the method can
-    check if the linked group is already a parent in the linkedToGroup in order to avoid looping
-    when going up or down the hierarchy
+    The method checks whether the
      */
     @Override
-    public boolean isGroupAlsoParent(Group group, Group linkedToGroup) {
-        for (Group g : getAllParentGroups(linkedToGroup)) {
-            if (g.getId() == group.getId()) return true;
+    public boolean isGroupAlsoParent(Group possibleChildGroup, Group possibleParentGroup) {
+        for (Group g : getAllParentGroups(possibleParentGroup)) {
+            // if this returns true, then the group being passed as child is already in the parent chain of the desired
+            // parent, which will create an infinite loop, hence prevent it
+            if (g.getId() == possibleChildGroup.getId()) return true;
         }
         return false;
     }
