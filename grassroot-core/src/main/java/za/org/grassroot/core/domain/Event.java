@@ -196,6 +196,7 @@ public class Event implements Serializable {
         this.createdByUser = createdByUser;
         this.eventLocation=""; // otherwise we get null violations
         this.eventType = EventType.Meeting;
+        this.rsvpRequired = true; // this is our default
     }
 
     public Event(User createdByUser, EventType eventType) {

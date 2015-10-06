@@ -63,7 +63,7 @@ public class MeetingController extends BaseController {
         model.addAttribute("rsvpResponses", eventManagementService.getRSVPResponses(meeting));
 
         log.info("Number of yes RSVPd: " + eventManagementService.getListOfUsersThatRSVPYesForEvent(meeting).size());
-        log.info("Size of response map: " + eventManagementService.getRSVPResponses(meeting));
+        log.info("Size of response map: " + eventManagementService.getRSVPResponses(meeting).size());
 
         return "meeting/view";
     }

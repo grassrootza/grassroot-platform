@@ -46,6 +46,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Autowired
     private PasswordTokenService passwordTokenService;
 
+    @Autowired
+    private EventManagementService eventManagementService;
+
     @Override
     public User createUserProfile(User userProfile) {
         return userRepository.save(userProfile);
@@ -219,6 +222,12 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public boolean needsToRenameSelf(User sessionUser) {
         return sessionUser.needsToRenameSelf(5); // 5 min gap as placeholder for now, to make more a session count if possible
+    }
+
+    @Override
+    public boolean needsToRSVP(User sessionUser) {
+        // todo: as noted elsewhere, probably want to optimize this quite aggressively
+        return !(eventManagementService.getOutstandingRSVPForUser(sessionUser).size() == 0);
     }
 
     @Override
