@@ -1,0 +1,2 @@
+-- manually drop the index as it will not drop from the script
+--DROP INDEX idx_event_start_date_time on event;
