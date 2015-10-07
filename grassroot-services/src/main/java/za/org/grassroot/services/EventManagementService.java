@@ -5,17 +5,21 @@ import org.springframework.data.domain.Pageable;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Lesetse Kimwaga
  */
 public interface EventManagementService {
+
+    Event createEvent(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups, boolean rsvpRequired);
 
     Event createEvent(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups);
 
@@ -56,6 +60,8 @@ public interface EventManagementService {
     List<User> getListOfUsersThatRSVPYesForEvent(Event event);
 
     List<User> getListOfUsersThatRSVPNoForEvent(Event event);
+
+    Map<User, EventRSVPResponse> getRSVPResponses(Event event);
 
     List<Event> getOutstandingRSVPForUser(Long userId);
 

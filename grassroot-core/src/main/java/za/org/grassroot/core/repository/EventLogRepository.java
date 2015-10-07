@@ -45,5 +45,11 @@ public interface EventLogRepository extends JpaRepository<EventLog, Long> {
     @Query("SELECT CASE WHEN COUNT(e) > 0 THEN 'true' ELSE 'false' END FROM EventLog e WHERE e.event = ?1 and e.user = ?2 and e.eventLogType = za.org.grassroot.core.enums.EventLogType.EventRSVP")
     public Boolean userRsvpForEvent(Event event, User user);
 
+    /*
+    Probably a good idea to write a query that returns all the eventLogs which apply to a given user and for which they have
+    not RSVP'd yet ... for now, at a basic level, just calling the whole list, ordered ID descending (most recent first)
+     */
+
+    List<EventLog> findByUserOrderByIdDesc(User user);
 
 }

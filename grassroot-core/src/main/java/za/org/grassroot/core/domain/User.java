@@ -111,7 +111,6 @@ public class User implements UserDetails {
         this.createdDateTime = createdDateTime;
     }
 
-    // todo: finish wiring this up so that the groupToRename logic works
     @OneToMany(mappedBy = "user")
     private List<Group> groupsCreated;
 
@@ -194,7 +193,7 @@ public class User implements UserDetails {
     @Column(name = "lastUssdMenu")
     public String getLastUssdMenu() { return lastUssdMenu; }
 
-    public void setLastUssdMenu(String ussdMenu) { this.lastUssdMenu = lastUssdMenu; }
+    public void setLastUssdMenu(String lastUssdMenu) { this.lastUssdMenu = lastUssdMenu; }
 
     @Transient
     public Set<Permission> getPermissions() {
@@ -359,4 +358,30 @@ public class User implements UserDetails {
 //                ", eventsCreated=" + eventsCreated +
                 '}';
     }
+
+    /**
+     * Override equals and hashCode methods, may need in future (since Lombok ones require everything equal, vs just
+     * the unique fields).
+
+    @Override
+    public int hashCode() {
+        int result = phoneNumber != null ? phoneNumber.hashCode() : 0;
+        result = 31 * result + (id != null ? id.hashCode() : 0);
+        // result = 31 * result + (createdDateTime != null ? createdDateTime.hashCode() : 0);
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) { return true; }
+        if (o == null || getClass() != o.getClass()) { return false; }
+
+        final User user = (User) o;
+
+        if (id != null ? !id.equals(user.id) : user.id != null) { return false; }
+        if (phoneNumber != null ? !phoneNumber.equals(user.phoneNumber) : user.phoneNumber != null) { return false; }
+
+        return true;
+
+    }*/
 }

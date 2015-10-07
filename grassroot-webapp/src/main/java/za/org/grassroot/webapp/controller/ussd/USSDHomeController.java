@@ -1,20 +1,27 @@
 package za.org.grassroot.webapp.controller.ussd;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.util.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
+import za.org.grassroot.webapp.enums.UssdOpeningPrompt;
 import za.org.grassroot.webapp.model.ussd.AAT.Option;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
@@ -32,9 +39,13 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 @RestController
 public class USSDHomeController extends USSDController {
 
+
+    @Autowired
+    EventLogManagementService eventLogManagementService;
+
     Logger log = LoggerFactory.getLogger(getClass());
 
-    private static final String keyRenameStart = "rename-start", keyGroupNameStart = "group-start";
+    private static final String keyRsvp = "rsvp", keyRenameStart = "rename-start", keyGroupNameStart = "group-start";
     private static final int hashPosition = Integer.valueOf(System.getenv("USSD_CODE_LENGTH"));
 
     public USSDMenu welcomeMenu(String opening, User sessionUser) throws URISyntaxException {
@@ -75,10 +86,9 @@ public class USSDHomeController extends USSDController {
             openingMenu = processTrailingDigits(trailingDigits, sessionUser);
         } else if (userInterrupted(sessionUser)) {
             // todo: figure out a way to redirect to that menu
-            openingMenu = defaultStartMenu(sessionUser);
+            openingMenu = interruptedPrompt(sessionUser);
         } else if (userResponseNeeded(sessionUser)) {
-            // todo: ask for RSVP
-            openingMenu = defaultStartMenu(sessionUser);
+            openingMenu = requestUserResponse(sessionUser);
         } else {
             openingMenu = defaultStartMenu(sessionUser);
         }
@@ -87,14 +97,51 @@ public class USSDHomeController extends USSDController {
 
     }
 
+    /*
+    Method to go straight to start menu, over-riding prior interruptions, and/or any responses, etc.
+     */
+    @RequestMapping(value = USSD_BASE + START_KEY + "_force")
+    @ResponseBody
+    public Request forceStartMenu(@RequestParam(value=PHONE_PARAM) String inputNumber) throws URISyntaxException {
+
+        return menuBuilder(defaultStartMenu(userManager.loadOrSaveUser(inputNumber)));
+
+    }
+
+    private USSDMenu interruptedPrompt(User sessionUser) {
+
+        log.info("The user was interrupted somewhere ...");
+        String returnUrl;
+
+        try { returnUrl = URLEncoder.encode(sessionUser.getLastUssdMenu(), "UTF-8"); }
+        catch (Exception e) { returnUrl = sessionUser.getLastUssdMenu(); }
+
+        USSDMenu promptMenu = new USSDMenu(getMessage(HOME_KEY, START_KEY, PROMPT + "-interrupted", sessionUser));
+        promptMenu.addMenuOption(returnUrl, getMessage(HOME_KEY, START_KEY, "interrupted.resume", sessionUser));
+        promptMenu.addMenuOption(START_KEY + "_force", getMessage(HOME_KEY, START_KEY, "interrupted.start", sessionUser));
+        return promptMenu;
+
+    }
+
     private boolean userInterrupted(User sessionUser) {
         String lastMenu = userManager.getLastUssdMenu(sessionUser);
-        return lastMenu == "interrupted menu";
+        return (lastMenu != null && !lastMenu.trim().equals(""));
     }
 
     private boolean userResponseNeeded(User sessionUser) {
-        // todo: check if they have an RSVP, or anything else, outstanding
+        // as other 'start menu' responses (votes etc) added, will insert them
+        if (userManager.needsToRSVP(sessionUser)) return true;
         return false;
+    }
+
+    private UssdOpeningPrompt neededResponse(User sessionUser) {
+
+        if (userManager.needsToRSVP(sessionUser)) return UssdOpeningPrompt.MTG_RSVP;
+        if (userManager.needsToRenameSelf(sessionUser)) return UssdOpeningPrompt.RENAME_SELF;
+        if (groupManager.needsToRenameGroup(sessionUser)) return UssdOpeningPrompt.NAME_GROUP;
+
+        return UssdOpeningPrompt.NONE;
+
     }
 
     private USSDMenu processTrailingDigits(String trailingDigits, User sessionUser) throws URISyntaxException {
@@ -107,7 +154,7 @@ public class USSDHomeController extends USSDController {
 
         if (groupManager.tokenExists(trailingDigits)) {
             // todo: basic validation, checking, etc.
-            System.out.println("Found a token with these trailing digits ...");
+            log.info("Found a token with these trailing digits ...");
             Group groupToJoin = groupManager.getGroupByToken(trailingDigits);
             groupManager.addGroupMember(groupToJoin, sessionUser);
             String prompt = (groupToJoin.hasName()) ?
@@ -138,24 +185,71 @@ public class USSDHomeController extends USSDController {
 
     private USSDMenu defaultStartMenu(User sessionUser) throws URISyntaxException {
 
+        String welcomeMessage = sessionUser.hasName() ? getMessage(HOME_KEY, START_KEY, PROMPT + "-named", sessionUser.getName(""), sessionUser) :
+                    getMessage(HOME_KEY, START_KEY, PROMPT, sessionUser);
+        return welcomeMenu(welcomeMessage, sessionUser);
+
+    }
+
+    private USSDMenu requestUserResponse(User sessionUser) throws URISyntaxException {
+
         USSDMenu startMenu = new USSDMenu("");
 
-        if (userManager.needsToRenameSelf(sessionUser)) {
-            startMenu.setPromptMessage(getMessage(HOME_KEY, START_KEY, PROMPT + "-rename", sessionUser));
-            startMenu.setFreeText(true);
-            startMenu.setNextURI(keyRenameStart);
-        } else if (groupManager.needsToRenameGroup(sessionUser)) {
-            startMenu.setPromptMessage(getMessage(HOME_KEY, START_KEY, PROMPT + "-group-rename", sessionUser));
-            startMenu.setFreeText(true);
-            startMenu.setNextURI(keyGroupNameStart + GROUPID_URL + groupManager.groupToRename(sessionUser));
-        } else {
-            String welcomeMessage = sessionUser.hasName() ?
-                    getMessage(HOME_KEY, START_KEY, PROMPT + "-named", sessionUser.getName(""), sessionUser) :
-                    getMessage(HOME_KEY, START_KEY, PROMPT, sessionUser);
-            startMenu = welcomeMenu(welcomeMessage, sessionUser);
+        switch (neededResponse(sessionUser)) {
+            case MTG_RSVP:
+                Event meeting = eventManager.getOutstandingRSVPForUser(sessionUser).get(0);
+
+                // todo: maybe move this into a method in services, to avoid lots of getters
+                String[] meetingDetails = new String[] {
+                        meeting.getCreatedByUser().nameToDisplay(),
+                        meeting.getAppliesToGroup().getName(""),
+                        meeting.getName(),
+                        meeting.getDateTimeString()
+                };
+
+                // todo: check if this is going to be too long before returning it
+                String defaultPrompt = getMessage(HOME_KEY, START_KEY, PROMPT + "-" + keyRsvp, meetingDetails, sessionUser);
+
+                String optionUri = keyRsvp + EVENTID_URL + meeting.getId();
+                startMenu.setPromptMessage(defaultPrompt);
+                startMenu.setMenuOptions(new LinkedHashMap<>(optionsYesNo(sessionUser, optionUri, optionUri)));
+                break;
+            case RENAME_SELF:
+                startMenu.setPromptMessage(getMessage(HOME_KEY, START_KEY, PROMPT + "-rename", sessionUser));
+                startMenu.setFreeText(true);
+                startMenu.setNextURI(keyRenameStart);
+                break;
+            case NAME_GROUP:
+                startMenu.setPromptMessage(getMessage(HOME_KEY, START_KEY, PROMPT + "-group-rename", sessionUser));
+                startMenu.setFreeText(true);
+                startMenu.setNextURI(keyGroupNameStart + GROUPID_URL + groupManager.groupToRename(sessionUser));
+                break;
+            case NONE:
+                startMenu = defaultStartMenu(sessionUser);
         }
 
         return startMenu;
+
+    }
+
+    @RequestMapping(value = USSD_BASE + keyRsvp)
+    @ResponseBody
+    public Request rsvpAndWelcome(@RequestParam(value=PHONE_PARAM) String inputNumber,
+                                  @RequestParam(value=EVENT_PARAM) Long eventId,
+                                  @RequestParam(value="confirmed") String attending) throws URISyntaxException {
+
+        String welcomeKey;
+        User sessionUser = userManager.loadOrSaveUser(inputNumber);
+
+        if (attending.equals("yes")) {
+            eventLogManagementService.rsvpForEvent(eventId, inputNumber, EventRSVPResponse.YES);
+            welcomeKey = String.join(".", Arrays.asList(HOME_KEY, START_KEY, PROMPT, "rsvp-yes"));
+        } else {
+            eventLogManagementService.rsvpForEvent(eventId, inputNumber, EventRSVPResponse.NO);
+            welcomeKey = String.join(".", Arrays.asList(HOME_KEY, START_KEY, PROMPT + "rsvp-no"));
+        }
+
+        return menuBuilder(new USSDMenu(getMessage(welcomeKey, sessionUser), optionsHomeExit(sessionUser)));
 
     }
 

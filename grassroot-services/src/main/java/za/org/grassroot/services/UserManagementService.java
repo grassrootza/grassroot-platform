@@ -26,6 +26,8 @@ public interface UserManagementService {
 
     User loadOrSaveUser(String inputNumber, String currentUssdMenu);
 
+    public User loadOrSaveUser(User passedUser);
+
     User findByInputNumber(String inputNumber) throws NoSuchUserException;
 
     User findByInputNumber(String inputNumber, String currentUssdMenu) throws NoSuchUserException;
@@ -37,6 +39,8 @@ public interface UserManagementService {
     boolean userExist(String phoneNumber);
 
     boolean needsToRenameSelf(User sessionUser);
+
+    boolean needsToRSVP(User sessionUser);
     
     User resetUserPassword(String username, String newPassword, String token);
 

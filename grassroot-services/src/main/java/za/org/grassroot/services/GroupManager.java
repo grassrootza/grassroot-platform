@@ -91,6 +91,32 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
+    public Group addRemoveGroupMembers(Group group, List<User> revisedUserList) {
+
+        List<User> originalUsers = new ArrayList<>(group.getGroupMembers());
+
+        log.info("These are the original users: " + originalUsers);
+
+        // for some reason, the list remove function isn't working on these users, hence have to do this hard way
+
+        for (User user : originalUsers) {
+            if (!revisedUserList.contains(user)) {
+                log.info("Removing a member: " + user);
+                removeGroupMember(group, user);
+            }
+        }
+
+        for (User user : revisedUserList) {
+            if (!originalUsers.contains(user)) {
+                log.info("Adding a member: " + user);
+                addGroupMember(group, user);
+            }
+        }
+
+        return groupRepository.save(group);
+    }
+
+    @Override
     public Group addGroupMember(Group currentGroup, User newMember) {
 
         // todo: just make sure this works as planned, if user has persisted in interim (e.g., maybe call repo?).
@@ -296,14 +322,14 @@ public class GroupManager implements GroupManagementService {
     }
 
     /*
-    Pass in the group you are linking to the linkedToGroup so that the method can
-    check if the linked group is already a parent in the linkedToGroup in order to avoid looping
-    when going up or down the hierarchy
+    The method checks whether the
      */
     @Override
-    public boolean isGroupAlsoParent(Group group, Group linkedToGroup) {
-        for (Group g : getAllParentGroups(linkedToGroup)) {
-            if (g.getId() == group.getId()) return true;
+    public boolean isGroupAlsoParent(Group possibleChildGroup, Group possibleParentGroup) {
+        for (Group g : getAllParentGroups(possibleParentGroup)) {
+            // if this returns true, then the group being passed as child is already in the parent chain of the desired
+            // parent, which will create an infinite loop, hence prevent it
+            if (g.getId() == possibleChildGroup.getId()) return true;
         }
         return false;
     }

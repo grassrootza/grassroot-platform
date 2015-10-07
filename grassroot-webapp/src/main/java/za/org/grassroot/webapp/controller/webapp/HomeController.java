@@ -41,7 +41,10 @@ public class HomeController extends BaseController{
         User user = userManagementService.fetchUserByUsername(userDetails.getUsername());
 
         model.addAttribute("userGroups", user.getGroupsPartOf());
-        // model.addAttribute("userGroupEvents", getConsolidatedGroupEvents(user.getGroupsPartOf() ));
+
+        // get lists of outstanding RSVPs and, in time, votes and logbook entries
+        List<Event> meetingsToRsvp = eventManagementService.getOutstandingRSVPForUser(user);
+        model.addAttribute("meetingRsvps", meetingsToRsvp);
 
         return "home";
     }
@@ -54,9 +57,9 @@ public class HomeController extends BaseController{
             if(!events.isEmpty())
             {
                 groupEvents.addAll(events);
-
             }
         }
         return groupEvents;
     }
+
 }

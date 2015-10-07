@@ -15,7 +15,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.integration.services.SmsSendingService;
+import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
@@ -39,13 +41,13 @@ public class MeetingController extends BaseController {
     Logger log = LoggerFactory.getLogger(MeetingController.class);
 
     @Autowired
-    UserManagementService userManagementService;
-
-    @Autowired
     GroupManagementService groupManagementService;
 
     @Autowired
     EventManagementService eventManagementService;
+
+    @Autowired
+    EventLogManagementService eventLogManagementService;
 
     // temporary, just to make sure the SMS sends, will later leave this to service layer
     @Autowired
@@ -54,9 +56,16 @@ public class MeetingController extends BaseController {
     @RequestMapping("/meeting/view")
     public String viewMeetingDetails(Model model, @RequestParam("eventId") Long eventId) {
 
-        model.addAttribute("meeting", eventManagementService.loadEvent(eventId));
-        return "meeting/view";
+        Event meeting = eventManagementService.loadEvent(eventId);
 
+        model.addAttribute("meeting", meeting);
+        model.addAttribute("rsvpYesTotal", eventManagementService.getListOfUsersThatRSVPYesForEvent(meeting).size());
+        model.addAttribute("rsvpResponses", eventManagementService.getRSVPResponses(meeting));
+
+        log.info("Number of yes RSVPd: " + eventManagementService.getListOfUsersThatRSVPYesForEvent(meeting).size());
+        log.info("Size of response map: " + eventManagementService.getRSVPResponses(meeting).size());
+
+        return "meeting/view";
     }
 
     @RequestMapping("/meeting/create")
@@ -67,12 +76,12 @@ public class MeetingController extends BaseController {
         Event meeting = eventManagementService.createMeeting(sessionUser);
 
         if (groupId != null) {
-            System.out.println("Came here from a group");
+            log.info("Came here from a group");
             model.addAttribute("group", groupManagementService.loadGroup(groupId));
             meeting = eventManagementService.setGroup(meeting.getId(), groupId);
             groupSpecified = true;
         } else {
-            System.out.println("No group selected, pass the list of possible");
+            log.info("No group selected, pass the list of possible");
             model.addAttribute("userGroups", groupManagementService.getGroupsPartOf(sessionUser)); // todo: or just use user.getGroupsPartOf?
             groupSpecified = false;
         }
@@ -190,5 +199,38 @@ public class MeetingController extends BaseController {
         return "/home";
 
     }
+
+    /*
+    These are to handle RSVPs that come in via the web application
+    If it's a 'yes', we add it as such; it it's a 'no, we just need to make sure the service layer excludes the user
+     from reminders and cancellations, but does include them on change notices (in case that changes RSVP ...).
+     */
+    @RequestMapping(value = "/meeting/rsvp", method = RequestMethod.POST, params={"yes"})
+    public String rsvpYes(Model model, @RequestParam(value="eventId") Long eventId, HttpServletRequest request) {
+
+        Event event = eventManagementService.loadEvent(eventId);
+        User user = getUserProfile();
+
+        eventLogManagementService.rsvpForEvent(event, user, EventRSVPResponse.YES);
+
+        model.addAttribute("meeting", event);
+        addMessage(model, MessageType.SUCCESS, "meeting.rsvp.yes", request);
+
+        return "meeting/view";
+    }
+
+    @RequestMapping(value = "/meeting/rsvp", method = RequestMethod.POST, params={"no"})
+    public String rsvpNo(Model model, @RequestParam(value="eventId") Long eventId,
+                          HttpServletRequest request, RedirectAttributes redirectAttributes) {
+
+        Event event = eventManagementService.loadEvent(eventId);
+        User user = getUserProfile();
+
+        eventLogManagementService.rsvpForEvent(event, user, EventRSVPResponse.NO);
+
+        addMessage(redirectAttributes, MessageType.ERROR, "meeting.rsvp.no", request);
+        return "/home";
+    }
+
 
 }

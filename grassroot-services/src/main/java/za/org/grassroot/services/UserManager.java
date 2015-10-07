@@ -13,7 +13,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -23,7 +22,6 @@ import za.org.grassroot.core.repository.UserRepository;
 
 import javax.transaction.Transactional;
 import java.util.*;
-import java.util.regex.Pattern;
 
 /**
  * @author Lesetse Kimwaga
@@ -45,6 +43,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Autowired
     private PasswordTokenService passwordTokenService;
+
+    @Autowired
+    private EventManagementService eventManagementService;
 
     @Override
     public User createUserProfile(User userProfile) {
@@ -167,8 +168,38 @@ public class UserManager implements UserManagementService, UserDetailsService {
      */
     public User loadOrSaveUser(String inputNumber, String currentUssdMenu) {
         User sessionUser = loadOrSaveUser(inputNumber);
+        log.info("USSD menu passed to services: " + currentUssdMenu);
         sessionUser.setLastUssdMenu(currentUssdMenu);
-        return userRepository.save(sessionUser);
+        sessionUser = userRepository.save(sessionUser);
+        log.info("USSD menu stored: " + sessionUser.getLastUssdMenu());
+        return sessionUser;
+    }
+
+    /**
+     * Method used in web application, which takes a half-formed user from Thymeleaf (or whatever view technology) and
+     * first checks if a user with that phone number exists, and what information we do/don't have, then updates accordingy
+     */
+    @Override
+    public User loadOrSaveUser(User passedUser) {
+
+        // principal requirement is a non-zero phone number
+        if (passedUser.getPhoneNumber() != null && !passedUser.getPhoneNumber().trim().equals("")) {
+            // if we have a phone number, use it to either load a user or create one
+            User loadedUser = loadOrSaveUser(passedUser.getPhoneNumber());
+
+            // if the user doesn't have a name, but we do have one from the passed user, set the name accordingly
+            if (!loadedUser.hasName() && passedUser.getDisplayName() != null) {
+                loadedUser.setDisplayName(passedUser.getDisplayName());
+                loadedUser = save(loadedUser);
+            }
+
+            // todo: fill out other data
+
+            return userRepository.save(loadedUser);
+
+        }
+
+        return null;
     }
 
     @Override
@@ -219,6 +250,12 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public boolean needsToRenameSelf(User sessionUser) {
         return sessionUser.needsToRenameSelf(5); // 5 min gap as placeholder for now, to make more a session count if possible
+    }
+
+    @Override
+    public boolean needsToRSVP(User sessionUser) {
+        // todo: as noted elsewhere, probably want to optimize this quite aggressively
+        return !(eventManagementService.getOutstandingRSVPForUser(sessionUser).size() == 0);
     }
 
     @Override
