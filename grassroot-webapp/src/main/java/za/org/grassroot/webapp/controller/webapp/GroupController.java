@@ -233,29 +233,26 @@ public class GroupController extends BaseController {
             }
 
             // todo: put in various different kinds of error handling
-            // todo: work out a low-cost way to check which, if any, of the fields have changed
-
-            log.info("We've been passed this group to modify: " + groupModifier.getGroup());
 
             Group groupToUpdate = groupManagementService.loadGroup(groupModifier.getGroup().getId());
-            groupToUpdate.setGroupName(groupModifier.getGroupName());
+            groupToUpdate.setGroupName(groupModifier.getGroupName()); // todo: replace this with a service layer call
 
-            log.info("About to alter users on this group: " + groupToUpdate.toString());
+            // we have to do a work around of thymeleaf here, which obliterates all the data that we don't create hidden
+            // fields to store, so that the users we get back only have display names, id's and phone numbers
+            // hence we need to construct a list of fleshed out user objects, and then pass that to service layer
 
-            // this is a bit brute force, to remove members we wipe the slate clean, but alternate is to do this
-            // when the user clicks 'remove', and then it's going to get messy with persistence & repo calls
-            // still, there may be a better way to do this -- a quick & fast way to check if a user in groupToUpdate's
-            // list is not in the new list (but, careful about changed objects, what equals does, excess database calls)
+            List<User> storedUsers = new ArrayList<>();
 
-            groupToUpdate.setGroupMembers(LazyList.lazyList(new ArrayList<>(), FactoryUtils.instantiateFactory(User.class)));
-
-            for (User userToUpdate : groupModifier.getAddedMembers()) {
-                groupToUpdate = addMemberGroup(groupToUpdate, userToUpdate, true);
+            for (User userToAdd : groupModifier.getAddedMembers()) {
+                User storedUser = userManagementService.loadOrSaveUser(userToAdd);
+                storedUsers.add(storedUser);
             }
 
-            Group savedGroup = groupManagementService.saveGroup(groupToUpdate);
+            log.info("These are the users passed from the store: " + storedUsers);
 
-            addMessage(redirectAttributes,MessageType.SUCCESS,"group.update.success",new Object[]{savedGroup.getGroupName()},request);
+            Group savedGroup = groupManagementService.addRemoveGroupMembers(groupToUpdate, storedUsers);
+
+            addMessage(redirectAttributes, MessageType.SUCCESS, "group.update.success", new Object[]{savedGroup.getGroupName()}, request);
             redirectAttributes.addAttribute("groupId", savedGroup.getId());
             return "redirect:view";
 
@@ -377,15 +374,21 @@ public class GroupController extends BaseController {
         // todo: check permissions, handle exceptions (in fact, on view group page), etc.
         log.info("Looking for possible parents of group with ID: " + groupId);
 
-        List<Group> possibleParents = groupManagementService.getGroupsFromUser(getUserProfile());
-
         Group groupToMakeChild = groupManagementService.loadGroup(groupId);
 
-        // todo: maybe collapse this into a simple map, on a refactor
-        possibleParents.remove(groupManagementService.loadGroup(groupId));
-        for (Group possibleParent : possibleParents) {
+        List<Group> userGroups = groupManagementService.getGroupsFromUser(getUserProfile());
+        userGroups.remove(groupToMakeChild);
+        List<Group> possibleParents = new ArrayList<>(userGroups);
+
+        for (Group possibleParent : userGroups) {
+            log.info("Checking if this group can be a parent ..." + possibleParent.getGroupName());
             if (groupManagementService.isGroupAlsoParent(groupToMakeChild, possibleParent)) {
+                log.info("Whoops, this group: " + groupToMakeChild.getGroupName() + " is in the parent tree of the group: " +
+                        possibleParent.getGroupName());
                 possibleParents.remove(possibleParent);
+            } else {
+                log.info("Safe ... this group: " + groupToMakeChild.getGroupName() + " is not in the parent tree of the group: " +
+                        possibleParent.getGroupName());
             }
         }
 
@@ -393,7 +396,6 @@ public class GroupController extends BaseController {
             log.info("The group (with ID " + groupId + ") has some possible parents, in fact this many: " + possibleParents.size());
             model.addAttribute("group", groupToMakeChild);
             model.addAttribute("possibleParents", possibleParents);
-            log.info("And here is the model: " + model.toString());
             return "group/parent";
         } else {
             // add an error message

@@ -1,7 +1,9 @@
 package za.org.grassroot.webapp.controller.ussd;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.util.*;
 
 import org.slf4j.Logger;
@@ -84,7 +86,7 @@ public class USSDHomeController extends USSDController {
             openingMenu = processTrailingDigits(trailingDigits, sessionUser);
         } else if (userInterrupted(sessionUser)) {
             // todo: figure out a way to redirect to that menu
-            openingMenu = defaultStartMenu(sessionUser);
+            openingMenu = interruptedPrompt(sessionUser);
         } else if (userResponseNeeded(sessionUser)) {
             openingMenu = requestUserResponse(sessionUser);
         } else {
@@ -95,9 +97,35 @@ public class USSDHomeController extends USSDController {
 
     }
 
+    /*
+    Method to go straight to start menu, over-riding prior interruptions, and/or any responses, etc.
+     */
+    @RequestMapping(value = USSD_BASE + START_KEY + "_force")
+    @ResponseBody
+    public Request forceStartMenu(@RequestParam(value=PHONE_PARAM) String inputNumber) throws URISyntaxException {
+
+        return menuBuilder(defaultStartMenu(userManager.loadOrSaveUser(inputNumber)));
+
+    }
+
+    private USSDMenu interruptedPrompt(User sessionUser) {
+
+        log.info("The user was interrupted somewhere ...");
+        String returnUrl;
+
+        try { returnUrl = URLEncoder.encode(sessionUser.getLastUssdMenu(), "UTF-8"); }
+        catch (Exception e) { returnUrl = sessionUser.getLastUssdMenu(); }
+
+        USSDMenu promptMenu = new USSDMenu(getMessage(HOME_KEY, START_KEY, PROMPT + "-interrupted", sessionUser));
+        promptMenu.addMenuOption(returnUrl, getMessage(HOME_KEY, START_KEY, "interrupted.resume", sessionUser));
+        promptMenu.addMenuOption(START_KEY + "_force", getMessage(HOME_KEY, START_KEY, "interrupted.start", sessionUser));
+        return promptMenu;
+
+    }
+
     private boolean userInterrupted(User sessionUser) {
         String lastMenu = userManager.getLastUssdMenu(sessionUser);
-        return lastMenu == "interrupted menu";
+        return (lastMenu != null && !lastMenu.trim().equals(""));
     }
 
     private boolean userResponseNeeded(User sessionUser) {

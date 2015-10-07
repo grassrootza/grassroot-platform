@@ -91,6 +91,32 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
+    public Group addRemoveGroupMembers(Group group, List<User> revisedUserList) {
+
+        List<User> originalUsers = new ArrayList<>(group.getGroupMembers());
+
+        log.info("These are the original users: " + originalUsers);
+
+        // for some reason, the list remove function isn't working on these users, hence have to do this hard way
+
+        for (User user : originalUsers) {
+            if (!revisedUserList.contains(user)) {
+                log.info("Removing a member: " + user);
+                removeGroupMember(group, user);
+            }
+        }
+
+        for (User user : revisedUserList) {
+            if (!originalUsers.contains(user)) {
+                log.info("Adding a member: " + user);
+                addGroupMember(group, user);
+            }
+        }
+
+        return groupRepository.save(group);
+    }
+
+    @Override
     public Group addGroupMember(Group currentGroup, User newMember) {
 
         // todo: just make sure this works as planned, if user has persisted in interim (e.g., maybe call repo?).

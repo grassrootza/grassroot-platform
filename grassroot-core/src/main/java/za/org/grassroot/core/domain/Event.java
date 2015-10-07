@@ -228,7 +228,8 @@ public class Event implements Serializable {
     @Override
     public String toString() {
         return "Event{" +
-                "eventLocation='" + eventLocation + '\'' +
+                "eventName='" + name + '\'' +
+                ", eventLocation='" + eventLocation + '\'' +
                 ", id=" + id +
                 ", createdDateTime=" + createdDateTime +
                 ", eventStartDateTime=" + eventStartDateTime +

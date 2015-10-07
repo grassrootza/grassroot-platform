@@ -27,6 +27,8 @@ public interface GroupManagementService {
 
     public Group removeGroupMember(Group group, User user);
 
+    public Group addRemoveGroupMembers(Group group, List<User> revisedUserList);
+
     public Group createNewGroup(User creatingUser, List<String> phoneNumbers);
 
     public Group createNewGroup(Long creatingUserId, List<String> phoneNumbers);
