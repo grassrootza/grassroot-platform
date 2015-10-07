@@ -181,6 +181,16 @@ public class User implements UserDetails {
         this.roles = roles;
     }
 
+    public  void addRole(Role role)
+    {
+       this.roles.add(role);
+    }
+
+    public  void addRole(Set<Role> roles)
+    {
+        this.roles.addAll(roles);
+    }
+
     @Column(name = "lastUssdMenu")
     public String getLastUssdMenu() { return lastUssdMenu; }
 

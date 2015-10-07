@@ -1,7 +1,10 @@
 package za.org.grassroot.core.domain;
 
+import com.google.common.base.CharMatcher;
+import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.util.Assert;
 
 import javax.persistence.*;
 import java.util.HashSet;
@@ -15,15 +18,40 @@ import java.util.Set;
 @Inheritance(strategy = InheritanceType.JOINED)
 public class Role extends BaseEntity implements GrantedAuthority {
 
+    public static final String ROLE_NAME_SEPARATOR = "_";
+    public static final String ROLE_NAME_PREFIX    = "ROLE";
+    public static final String GROUP_ID_PREFIX     = "GROUP_ID";
+
+    public enum RoleType {STANDARD, GROUP}
 
     private String name;
+    private Long   groupReferenceId;
+    private String groupReferenceName;
+    private RoleType roleType;
+
     private Set<Permission> permissions = new HashSet<>();
 
+
     public Role() {
+        this.roleType = RoleType.STANDARD;
     }
 
     public Role(String name) {
         this.name = name;
+        this.roleType = RoleType.STANDARD;
+    }
+
+
+    public Role(String name, Long groupReferenceId, String groupReferenceName) {
+
+        Assert.notNull(name);
+        Assert.notNull(groupReferenceId);
+        Assert.notNull(groupReferenceName);
+
+        this.name = name;
+        this.groupReferenceId = groupReferenceId;
+        this.groupReferenceName = formatGroupNameReference(groupReferenceName);
+        this.roleType = RoleType.GROUP;
     }
 
     @Column(name = "role_name", length = 50)
@@ -45,22 +73,56 @@ public class Role extends BaseEntity implements GrantedAuthority {
         return permissions;
     }
 
-    public void setPermissions(Set<Permission> permissions)
-    {
+    public void setPermissions(Set<Permission> permissions) {
         this.permissions = permissions;
     }
 
+    @Column(name = "group_reference_id")
+    public Long getGroupReferenceId() {
+        return groupReferenceId;
+    }
+
+    @Column(name = "group_reference_name")
+    public String getGroupReferenceName() {
+        return groupReferenceName;
+    }
+
+    @Column(name = "role_type")
+    public RoleType getRoleType() {
+        return roleType;
+    }
+
+    public void setGroupReferenceId(Long groupReferenceId) {
+        this.groupReferenceId = groupReferenceId;
+    }
+
+    public void setGroupReferenceName(String groupReferenceName) {
+        this.groupReferenceName = formatGroupNameReference(groupReferenceName);
+    }
+
+    public void setRoleType(RoleType roleType) {
+        this.roleType = roleType;
+    }
+//~=================================================================================================================
+
+
+    private String formatGroupNameReference(String groupName) {
+        if (groupName != null) {
+            return CharMatcher.JAVA_LETTER_OR_DIGIT.retainFrom(groupName);
+        }
+        return "";
+    }
+
     @Transient
-    public  void addPermission(Permission permission)
-    {
+    public void addPermission(Permission permission) {
         this.permissions.add(permission);
     }
 
     @Override
     public String toString() {
-        return String.format("%s(id=%d, name='%s')",
-                this.getClass().getSimpleName(),
-                this.getId(), this.getName());
+
+        return getAuthority();
+
     }
 
     @Override
@@ -72,20 +134,30 @@ public class Role extends BaseEntity implements GrantedAuthority {
 
         if (o instanceof Role) {
             final Role other = (Role) o;
-            return Objects.equal(getId(), other.getId())
-                    && Objects.equal(getName(), other.getName());
+            return Objects.equal(getAuthority(), other.getAuthority());
         }
         return false;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(getId(), getName());
+        return Objects.hashCode(getAuthority());
     }
 
     @Override
     @Transient
     public String getAuthority() {
-        return getName();
+
+        switch (roleType) {
+
+            case GROUP:
+                return Joiner.on(ROLE_NAME_SEPARATOR).join(RoleType.GROUP.name(),
+                        ROLE_NAME_PREFIX, getName(), GROUP_ID_PREFIX, getGroupReferenceId());
+            default:
+                return Joiner.on(ROLE_NAME_SEPARATOR).join(RoleType.STANDARD.name(),
+                        ROLE_NAME_PREFIX, getName());
+        }
     }
+
+
 }

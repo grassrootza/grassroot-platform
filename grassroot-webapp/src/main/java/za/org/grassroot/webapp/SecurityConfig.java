@@ -61,7 +61,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                     .and()
 
                         .authorizeRequests()
-                        .antMatchers("/signup").permitAll()
+                        .antMatchers("/signup").hasAnyAuthority("ROLE_GROUP_MANAGER","ROLE_GROUP_MEMBER")
                         .antMatchers("/accounts/recovery").permitAll()
                         .antMatchers("/accounts/recovery/success").permitAll()
                         .antMatchers("/grass-root-verification/*").permitAll()
