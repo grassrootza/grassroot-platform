@@ -107,7 +107,7 @@ public class EventLogManager implements EventLogManagementService {
     @Override
     public RSVPTotalsDTO getRSVPTotalsForEvent(Event event) {
         if (!event.isIncludeSubGroups()) {
-            return new RSVPTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(),event.getAppliesToGroup().getId()));
+            return new RSVPTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(),event.getAppliesToGroup().getId(),event.getCreatedByUser().getId()));
         }
         // get the totals recursively
         RSVPTotalsDTO totals = new RSVPTotalsDTO();
@@ -123,7 +123,7 @@ public class EventLogManager implements EventLogManagementService {
         }
 
         // add all the totals at this level
-        rsvpTotalsDTO.add(new RSVPTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), parentGroup.getId())));
+        rsvpTotalsDTO.add(new RSVPTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), parentGroup.getId(),event.getCreatedByUser().getId())));
 
     }
 }

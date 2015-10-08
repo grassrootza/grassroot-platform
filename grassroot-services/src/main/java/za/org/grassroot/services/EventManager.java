@@ -224,7 +224,7 @@ public class EventManager implements EventManagementService {
                 log.info("getOustandingRSVPForUser ... checking " + upcomingEvents.size() + " events");
                 if (upcomingEvents != null) {
                     for (Event event : upcomingEvents) {
-                        if (event.isRsvpRequired()) {
+                        if (event.isRsvpRequired() && event.getCreatedByUser().getId() != user.getId()) {
                             if (!eventLogManagementService.userRsvpForEvent(event,user)) {
                                 outstandingRSVPs.add(event);
                                 log.info("getOutstandingRSVPForUser...rsvpRequired..." + user.getId() + "...event..." + event.getId());

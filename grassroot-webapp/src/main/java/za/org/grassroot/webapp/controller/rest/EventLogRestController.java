@@ -45,4 +45,6 @@ public class EventLogRestController {
         return eventLogManagementService.getRSVPTotalsForEvent(eventId);
 
     }
+
+
 }
