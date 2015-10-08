@@ -9,34 +9,32 @@
 <div layout:fragment="header">
   <h2>Meeting: <span  th:text="${meeting.name}">Meeting</span></h2>
 </div>
-<div layout:fragment="overview">View meeting details and RSVP status</div>
+<div layout:fragment="overview">Meeting details and change or cancellation requests</div>
 
 <div layout:fragment="content">
   <div layout:fragment="messages"></div>
 
   <div class="well">
     <div class="row">
-      Meeting scheduled for <span th:text="${meeting.dateTimeString}">date and time</span>.
-      So far, <span th:text="${meeting.appliesToGroup.groupMembers.size()}">X</span> members have been invited.
-      <div th:if="${meeting.rsvpRequired}">Members have been asked to respond if they will be attending, and so far
-        <span th:text="${rsvpYesTotal}">X</span> people have said 'yes'.</div>
-    </div>
-    <div class="row">
-      Meeting details:
+      <span th:text="${meeting.appliesToGroup.groupMembers.size()}">X</span> members have been invited.
+      <span th:if="${meeting.rsvpRequired}">So far, <span th:text="${rsvpYesTotal}">X</span> people have said 'yes'.</span>
     </div>
     <div class="row">
       <form th:action="@{/meeting/modify}" th:object="${meeting}" method="post">
         <input type="hidden" th:field="*{id}" th:value="${meeting.id}" />
+        <!-- Note: for now, we are not allowing modifications of RSVP and subgroup, to avoid clutter, given limited use case -->
+        <input type="hidden" th:field="*{rsvpRequired}" th:value="${meeting.rsvpRequired}" />
+        <input type="hidden" th:field="*{includeSubGroups}" th:value="${meeting.includeSubGroups}" />
         <div class="row form-group">
           <label for="meetingName" class="col-lg-2 control-label">Subject:</label>
           <div class="col-lg-6">
-            <input type="text" id="meetingName" th:value="${meeting.name}" readonly="readonly"/>
+            <input type="text" id="meetingName" th:field="*{name}" th:value="${meeting.name}" />
           </div>
         </div>
         <div class="row form-group">
           <label for="location" class="col-lg-2 control-label">Location:</label>
           <div class="col-lg-6">
-            <input type="text" id="location" th:value="${meeting.eventLocation}" readonly="readonly"/>
+            <input type="text" id="location" th:field="*{eventLocation}" th:value="${meeting.eventLocation}" />
           </div>
         </div>
         <div class="row form-group">
@@ -53,41 +51,18 @@
         <div class="row form-group">
           <!-- todo: add a confirmation screen for cancellation and update -->
           <div class="col-lg-4">
-            <button type="submit" name="change" class="btn btn-primary">Change this meeting</button>
+            <button type="submit" name="modify" class="btn btn-primary">Change this meeting</button>
           </div>
           <div class="col-lg-4">
             <button type="submit" name="reminder" class="btn btn-warning">Send a reminder</button>
           </div>
-          <!-- <div class="col-lg-4">
+          <div class="col-lg-4">
             <button type="submit" name="cancel" class="btn btn-danger">Cancel this meeting</button>
-          </div>-->
+          </div>
         </div>
       </form>
     </div>
   </div>
-
-  <div th:if="${meeting.rsvpRequired}" class="well">
-    <div class="row list-group">
-      <h2>RSVP responses so far:</h2>
-    </div>
-    <div class="row list-group-item">
-      <table class="table table-striped">
-        <thead>
-        <th>Member name</th>
-        <th>Phone number</th>
-        <th>Response</th>
-        </thead>
-        <tbody>
-        <tr th:each="response : ${rsvpResponses}">
-          <td><span th:text="${response.key.nameToDisplay()}">Member name</span></td>
-          <td><span th:text="${response.key.phoneNumber}">Phone number</span></td>
-          <td><span th:text="${response.value}">Response</span></td>
-        </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
 
 </div>
 
@@ -102,8 +77,7 @@
           horizontal: 'right'
         },
         sideBySide:true,
-        minDate: new Date(),
-        maxDate: new Date()
+        minDate: new Date()
       });
 
     });

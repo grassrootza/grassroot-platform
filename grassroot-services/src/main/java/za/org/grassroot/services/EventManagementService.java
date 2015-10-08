@@ -68,4 +68,6 @@ public interface EventManagementService {
     List<Event> getOutstandingRSVPForUser(User user);
 
     List<Event> getUpcomingEventsForGroupAndParentGroups(Group group);
+
+    String[] populateNotificationFields(Event event);
 }

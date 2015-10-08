@@ -85,7 +85,6 @@ public class USSDHomeController extends USSDController {
             String trailingDigits = enteredUSSD.substring(hashPosition + 1, enteredUSSD.length() - 1);
             openingMenu = processTrailingDigits(trailingDigits, sessionUser);
         } else if (userInterrupted(sessionUser)) {
-            // todo: figure out a way to redirect to that menu
             openingMenu = interruptedPrompt(sessionUser);
         } else if (userResponseNeeded(sessionUser)) {
             openingMenu = requestUserResponse(sessionUser);
@@ -198,17 +197,12 @@ public class USSDHomeController extends USSDController {
         switch (neededResponse(sessionUser)) {
             case MTG_RSVP:
                 Event meeting = eventManager.getOutstandingRSVPForUser(sessionUser).get(0);
+                String[] meetingDetails = eventManager.populateNotificationFields(meeting);
 
-                // todo: maybe move this into a method in services, to avoid lots of getters
-                String[] meetingDetails = new String[] {
-                        meeting.getCreatedByUser().nameToDisplay(),
-                        meeting.getAppliesToGroup().getName(""),
-                        meeting.getName(),
-                        meeting.getDateTimeString()
-                };
-
-                // todo: check if this is going to be too long before returning it
+                // if the composed message is longer than 120 characters, we are going to go over, so return a shortened message
                 String defaultPrompt = getMessage(HOME_KEY, START_KEY, PROMPT + "-" + keyRsvp, meetingDetails, sessionUser);
+                if (defaultPrompt.length() > 120)
+                    defaultPrompt = getMessage(HOME_KEY, START_KEY, PROMPT + "-" + keyRsvp + ".short", meetingDetails, sessionUser);
 
                 String optionUri = keyRsvp + EVENTID_URL + meeting.getId();
                 startMenu.setPromptMessage(defaultPrompt);
@@ -246,7 +240,7 @@ public class USSDHomeController extends USSDController {
             welcomeKey = String.join(".", Arrays.asList(HOME_KEY, START_KEY, PROMPT, "rsvp-yes"));
         } else {
             eventLogManagementService.rsvpForEvent(eventId, inputNumber, EventRSVPResponse.NO);
-            welcomeKey = String.join(".", Arrays.asList(HOME_KEY, START_KEY, PROMPT + "rsvp-no"));
+            welcomeKey = String.join(".", Arrays.asList(HOME_KEY, START_KEY, PROMPT, "rsvp-no"));
         }
 
         return menuBuilder(new USSDMenu(getMessage(welcomeKey, sessionUser), optionsHomeExit(sessionUser)));

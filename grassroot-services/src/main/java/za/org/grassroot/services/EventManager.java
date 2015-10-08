@@ -269,6 +269,17 @@ public class EventManager implements EventManagementService {
         return upComingEvents;
     }
 
+    @Override
+    public String[] populateNotificationFields(Event event) {
+        return new String[]{
+                event.getAppliesToGroup().getName(""),
+                event.getCreatedByUser().nameToDisplay(),
+                event.getName(),
+                event.getDateTimeString(),
+                event.getEventLocation()
+        };
+    }
+
 
     private Event saveandCheckChanges(Event beforeEvent, Event changedEvent) {
 
