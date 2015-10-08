@@ -117,6 +117,12 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
+    public Group createNewGroup(User creatingUser, String groupName) {
+        Group group = new Group(groupName, creatingUser);
+        return groupRepository.save(group);
+    }
+
+    @Override
     public Group addGroupMember(Group currentGroup, User newMember) {
 
         // todo: just make sure this works as planned, if user has persisted in interim (e.g., maybe call repo?).
@@ -187,6 +193,17 @@ public class GroupManager implements GroupManagementService {
     @Override
     public Long groupToRename(User sessionUser) {
         return getLastCreatedGroup(sessionUser).getId();
+    }
+
+    @Override
+    public Group renameGroup(Group group, String newGroupName) {
+        // only bother if the name has changed (in some instances, web app may call this without actual name change)
+        if (!group.getGroupName().equals(newGroupName)) {
+            group.setGroupName(newGroupName);
+            return groupRepository.save(group);
+        } else {
+            return group;
+        }
     }
 
     @Override
@@ -319,6 +336,18 @@ public class GroupManager implements GroupManagementService {
         List<Group> parentGroups = new ArrayList<Group>();
         recursiveParentGroups(group,parentGroups);
         return parentGroups;
+    }
+
+    @Override
+    public boolean hasParent(Group group) {
+        return group.getParent() != null;
+    }
+
+    @Override
+    public Group linkSubGroup(Group child, Group parent) {
+        // todo: error checking, for one more barrier against infintite loops
+        child.setParent(parent);
+        return groupRepository.save(child);
     }
 
     /*

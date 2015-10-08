@@ -115,6 +115,12 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
+    public Integer getUserCount() {
+        // todo: switch this to a count query in repository, though, won't be called often, so not urgent
+        return getAllUsers().size();
+    }
+
+    @Override
     public User getUserById(Long userId) {
         return userRepository.findOne(userId);
     }
@@ -214,6 +220,19 @@ public class UserManager implements UserManagementService, UserDetailsService {
         User sessionUser = userRepository.findByPhoneNumber(convertPhoneNumber(inputNumber));
         sessionUser.setLastUssdMenu(currentUssdMenu);
         return userRepository.save(sessionUser);
+    }
+
+    @Override
+    public List<User> searchByInputNumber(String inputNumber) {
+        // might have just a fragment of phone number, which will make convertPhoneNumber throw an exception
+        // so need to just do something on prefix
+        String phoneNumber = convertPhoneNumber(inputNumber);
+        return userRepository.findByPhoneNumberContaining(phoneNumber);
+    }
+
+    @Override
+    public List<User> searchByDisplayName(String displayName) {
+        return userRepository.findByDisplayNameContaining(displayName);
     }
 
     @Override
@@ -323,6 +342,21 @@ public class UserManager implements UserManagementService, UserDetailsService {
         }
 
         return String.join(" ", Arrays.asList(prefix, midnumbers, finalnumbers));
+    }
+
+    public static String convertPhoneNumberFragment(String inputString) throws InvalidPhoneNumberException {
+
+        try {
+
+            // hopefully this throws only if really badly formatted, not just too few digits
+            PhoneNumberUtil phoneNumberUtil = PhoneNumberUtil.getInstance();
+            Phonenumber.PhoneNumber phoneNumber = phoneNumberUtil.parse(inputString.trim(), "ZA");
+            return phoneNumber.toString();
+
+        } catch (NumberParseException e) {
+            throw new InvalidPhoneNumberException("Could not format phone number '" + inputString + "'");
+        }
+
     }
 
     public void setPasswordEncoder(final PasswordEncoder passwordEncoder) {

@@ -50,7 +50,15 @@ public class Event implements Serializable {
      */
     private int reminderMinutes;
 
+    /*
+    Used for meetings, to note if an RSVP is necessary
+     */
     private boolean rsvpRequired;
+
+    /*
+    Used to determine if a recipient should have the option to forward an invite, vote, etc., when they receive it
+     */
+    private boolean relayable;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -144,6 +152,11 @@ public class Event implements Serializable {
         this.rsvpRequired = rsvpRequired;
     }
 
+    @Column(name = "can_relay")
+    public boolean isRelayable() { return relayable; }
+
+    public void setRelayable(boolean relayable) { this.relayable = relayable; }
+
     @PreUpdate
     @PrePersist
     public void updateTimeStamps() {
@@ -157,6 +170,18 @@ public class Event implements Serializable {
     Constructors
     Note: for the moment, until we build the use cases for other event types, defaulting all to meeting
      */
+
+
+    public Event(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups, boolean rsvpRequired, boolean relayable){
+        this.name = name;
+        this.createdByUser = createdByUser;
+        this.appliesToGroup = appliesToGroup;
+        this.eventLocation=""; // otherwise we get null violations
+        this.eventType = EventType.Meeting;
+        this.includeSubGroups = includeSubGroups;
+        this.rsvpRequired = rsvpRequired;
+        this.relayable = relayable;
+    }
 
     public Event(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups,boolean rsvpRequired) {
         this.name = name;

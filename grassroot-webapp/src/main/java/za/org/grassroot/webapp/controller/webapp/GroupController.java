@@ -1,7 +1,5 @@
 package za.org.grassroot.webapp.controller.webapp;
 
-import org.apache.commons.collections4.FactoryUtils;
-import org.apache.commons.collections4.list.LazyList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,7 +66,7 @@ public class GroupController extends BaseController {
         Group group = groupManagementService.loadGroup(groupId);
 
         model.addAttribute("group", group);
-        model.addAttribute("hasParent", (group.getParent() != null));
+        model.addAttribute("hasParent", groupManagementService.hasParent(group));
         model.addAttribute("groupEvents", eventManagementService.getUpcomingEvents(group));
         model.addAttribute("subGroups", groupManagementService.getSubGroups(group));
         model.addAttribute("openToken", groupManagementService.groupHasValidToken(group));
@@ -105,17 +103,14 @@ public class GroupController extends BaseController {
     {
         try {
 
-            User userCreator = getUserProfile();
-            Group groupToSave = new Group("", userCreator);
-            groupToSave.setGroupName(groupCreator.getGroupName());
-
-            // groupToSave.addMember(groupCreator); // not doing this - so if creator removes themselves, they don't get messages
-
             if (bindingResult.hasErrors()) {
                 model.addAttribute("groupCreator", groupCreator);
                 addMessage(model, MessageType.ERROR, "group.creation.error", request);
                 return "group/create";
             }
+
+            User userCreator = getUserProfile();
+            Group groupToSave = groupManagementService.createNewGroup(userCreator, groupCreator.getGroupName());
 
             for (User addedUser : groupCreator.getAddedMembers()) {
                 if (addedUser.getPhoneNumber() != null && !addedUser.getPhoneNumber().trim().equals("")) {
@@ -124,7 +119,7 @@ public class GroupController extends BaseController {
                         memberToAdd.setDisplayName(addedUser.getDisplayName());
                         memberToAdd = userManagementService.save(memberToAdd);
                     }
-                    groupToSave.addMember(memberToAdd);
+                    groupManagementService.addGroupMember(groupToSave, memberToAdd);
                 }
             }
 
@@ -132,20 +127,19 @@ public class GroupController extends BaseController {
             if (groupCreator.getHasParent()) {
                 Group parentGroup = groupManagementService.loadGroup(groupCreator.getParentId());
                 log.info("This is a sub-group! Of: " + parentGroup.getGroupName());
-                groupToSave.setParent(parentGroup);
+                groupToSave = groupManagementService.linkSubGroup(groupToSave, parentGroup);
             }
-
-            log.info("About to try saving the new group ..." + groupToSave.toString());
-            Group savedGroup = groupManagementService.saveGroup(groupToSave);
 
             // Seeing if we should create a token -- to switch this to using property-editor
             if (groupCreator.getGenerateToken()) {
                 log.info("Generating a join code for the newly created group");
-                savedGroup = groupManagementService.generateGroupToken(savedGroup, groupCreator.getTokenDaysValid());
+                groupToSave = groupManagementService.generateGroupToken(groupToSave, groupCreator.getTokenDaysValid());
             }
 
-            addMessage(redirectAttributes,MessageType.SUCCESS,"group.creation.success",new Object[]{savedGroup.getGroupName()},request);
-            redirectAttributes.addAttribute("groupId", savedGroup.getId());
+            log.info("Completed storing the new group ..." + groupToSave.toString());
+
+            addMessage(redirectAttributes,MessageType.SUCCESS,"group.creation.success",new Object[]{groupToSave.getGroupName()},request);
+            redirectAttributes.addAttribute("groupId", groupToSave.getId());
             return "redirect:view";
 
         } catch (Exception e)  {
@@ -235,22 +229,22 @@ public class GroupController extends BaseController {
             // todo: put in various different kinds of error handling
 
             Group groupToUpdate = groupManagementService.loadGroup(groupModifier.getGroup().getId());
-            groupToUpdate.setGroupName(groupModifier.getGroupName()); // todo: replace this with a service layer call
+            groupToUpdate = groupManagementService.renameGroup(groupToUpdate, groupModifier.getGroupName());
 
             // we have to do a work around of thymeleaf here, which obliterates all the data that we don't create hidden
             // fields to store, so that the users we get back only have display names, id's and phone numbers
             // hence we need to construct a list of fleshed out user objects, and then pass that to service layer
 
-            List<User> storedUsers = new ArrayList<>();
+            List<User> updatedUserList = new ArrayList<>();
 
             for (User userToAdd : groupModifier.getAddedMembers()) {
                 User storedUser = userManagementService.loadOrSaveUser(userToAdd);
-                storedUsers.add(storedUser);
+                updatedUserList.add(storedUser);
             }
 
-            log.info("These are the users passed from the store: " + storedUsers);
+            log.info("These are the users passed from the store: " + updatedUserList);
 
-            Group savedGroup = groupManagementService.addRemoveGroupMembers(groupToUpdate, storedUsers);
+            Group savedGroup = groupManagementService.addRemoveGroupMembers(groupToUpdate, updatedUserList);
 
             addMessage(redirectAttributes, MessageType.SUCCESS, "group.update.success", new Object[]{savedGroup.getGroupName()}, request);
             redirectAttributes.addAttribute("groupId", savedGroup.getId());
@@ -267,7 +261,7 @@ public class GroupController extends BaseController {
     Helper methods for handling user addition and updating
      */
 
-    private Group addMemberGroup(Group group, User member, boolean overwrite) {
+    /* private Group addMemberGroup(Group group, User member, boolean overwrite) {
 
         if (member.getPhoneNumber() != null && !member.getPhoneNumber().trim().equals("")) {
             User memberToAdd = userManagementService.loadOrSaveUser(member.getPhoneNumber());
@@ -288,7 +282,7 @@ public class GroupController extends BaseController {
 
         return group;
 
-    }
+    } */
 
     private List<User> addMember(GroupWrapper groupWrapper) {
 
@@ -400,7 +394,7 @@ public class GroupController extends BaseController {
         } else {
             // add an error message
             log.info("The group does not have possible parents");
-            addMessage(model, MessageType.ERROR, "group.parents.none", request);
+            addMessage(redirectAttributes, MessageType.ERROR, "group.parents.none", request);
             redirectAttributes.addAttribute("groupId", groupId);
             return "redirect:view";
         }
@@ -416,8 +410,7 @@ public class GroupController extends BaseController {
         Group group = groupManagementService.loadGroup(groupId);
         Group parent = groupManagementService.loadGroup(parentId);
 
-        group.setParent(parent);
-        groupManagementService.saveGroup(group);
+        group = groupManagementService.linkSubGroup(group, parent);
 
         // addMessage(model, MessageType.SUCCESS, "group.parent.success", request);
         addMessage(redirectAttributes, MessageType.SUCCESS, "group.parent.success", request);

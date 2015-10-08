@@ -1,0 +1,52 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+    <title>GrassRoot Platform</title>
+
+    <meta property="og:title" content="grassroot.org.za"/>
+    <meta property="og:image" content="/img/grass.png"/>
+    <meta property="og:description" content="The GrassRoot Platform."/>
+</head>
+
+<body>
+
+<div layout:fragment="header">
+    <!--<h2 th:text="#{home.welcome.message}">welcome headline</h2>-->
+</div>
+<div layout:fragment="overview"></div>
+
+<div layout:fragment="content">
+    <!-- Central text header -->
+  <div class="well">
+    <div class="row">
+      <h1>GrassRoot Internal Admin Console</h1>
+      <!-- Insert user's name -->
+      <h2 th:text="#{web.home.welcome(${currentUser.firstName})}">Welcome back to GrassRoot, Luke</h2>
+    </div>
+  </div>
+
+  <!-- To insert search box for groups, events, etc, once many users -->
+
+  <!-- Row of buttons to take common actions -->
+
+  <div class="well">
+    <div class="row">
+      <div class="col-md-3">
+        <a href="" th:href="@{users/home}"><button class="btn btn-primary">Users</button></a>
+      </div>
+      <div class="col-md-3">
+        <a href="" th:href="@{groups/home}"><button class="btn btn-primary">Groups and accounts</button></a>
+      </div>
+      <div class="col-md-3">
+        <a href="" th:href="@{events/home}"><button class="btn btn-primary">Event logs</button></a>
+      </div>
+      <div class="col-md-3">
+        <a href="" th:href="@{stats/home}"><button class="btn btn-primary">System stats</button></a>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
