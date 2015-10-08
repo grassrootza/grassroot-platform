@@ -13,6 +13,7 @@ import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 
+import javax.persistence.EntityManager;
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.logging.Logger;
@@ -43,6 +44,10 @@ public class EventManager implements EventManagementService {
 
     @Autowired
     EventLogManagementService eventLogManagementService;
+
+    @Autowired
+    EntityManager entityManager;
+
     /*
     Variety of createEvent methods with different signatures caters to USSD menus in particular, so can create event
     with varying degrees of information. Am defaulting to a meeting requires an RSVP, since that will be most cases.
@@ -221,7 +226,7 @@ public class EventManager implements EventManagementService {
         if (groups != null) {
             for (Group group : groups) {
                 List<Event> upcomingEvents = getUpcomingEventsForGroupAndParentGroups(group);
-                log.info("getOustandingRSVPForUser ... checking " + upcomingEvents.size() + " events");
+                //log.info("getOustandingRSVPForUser ... checking " + upcomingEvents.size() + " events");
                 if (upcomingEvents != null) {
                     for (Event event : upcomingEvents) {
                         if (event.isRsvpRequired() && event.getCreatedByUser().getId() != user.getId()) {
@@ -238,6 +243,7 @@ public class EventManager implements EventManagementService {
 
             }
         }
+        log.info("getOutstandingRSVPForUser..." + user.getId() + "...returning..." + outstandingRSVPs.size());
 
         return outstandingRSVPs;
     }
@@ -285,11 +291,11 @@ public class EventManager implements EventManagementService {
 
         log.info("saveandCheckChanges...starting ... with before event .. " + beforeEvent.toString());
 
-        // need to set this before saving the changed event, or the getters in minimuDataAvailable get confused
+        entityManager.detach(beforeEvent);
         boolean priorEventComplete = minimumDataAvailable(beforeEvent);
         Event savedEvent = eventRepository.save(changedEvent);
 
-        log.info("saveandCheckChanges..." + savedEvent.toString());
+        log.info("saveandCheckChanges...savedEvent..." + savedEvent.toString());
 
         /*
         Check if we need to send meeting notifications
@@ -301,7 +307,7 @@ public class EventManager implements EventManagementService {
             }
             if (priorEventComplete && minimumDataAvailable(savedEvent) && !savedEvent.isCanceled()) {
                 // let's send out a change notification if something changed in minimum required values
-                // todo: this seems to be malfunctioning because beforeEvent becomes confused.
+
                 if (!savedEvent.minimumEquals(beforeEvent)) {
                     boolean startTimeChanged = false;
                     if (!beforeEvent.getEventStartDateTime().equals(savedEvent.getEventStartDateTime())) startTimeChanged = true;
