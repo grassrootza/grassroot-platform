@@ -2,6 +2,8 @@ package za.org.grassroot.core.util;
 
 import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.Phonenumber;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -13,6 +15,8 @@ import java.util.regex.Pattern;
  */
 
 public class PhoneNumberUtil {
+
+    private static final Logger log = LoggerFactory.getLogger(PhoneNumberUtil.class);
 
     public static String convertPhoneNumber(String inputString) {
         try {
@@ -53,6 +57,10 @@ public class PhoneNumberUtil {
 
     }
 
+    public static String invertPhoneNumber(String storedNumber) {
+        return invertPhoneNumber(storedNumber, "");
+    }
+
 
 
     public static Map<String, List<String>> splitPhoneNumbers(String userResponse) {
@@ -91,6 +99,27 @@ public class PhoneNumberUtil {
         returnMap.put("error", errorNumbers);
         return returnMap;
     }
+
+    public static String convertPhoneNumberFragment(String inputString) {
+
+        /* Small helper method called from admin web app, so that admin user can enter a fragment of a natural number
+        such as '081' and that can be used in the search. Note, can't use Google PhoneNumberUtil here because it can't
+        handle short strings, so doing this slightly manually. At some point we'll need to make not just this but the
+        whole complex of methods around this much more complex.
+         */
+
+        String convertedFragment;
+        int countryCode = com.google.i18n.phonenumbers.PhoneNumberUtil.getInstance().getCountryCodeForRegion("ZA");
+
+        if (inputString.charAt(0) == '0')
+            convertedFragment = inputString.replaceFirst("0", String.valueOf(countryCode));
+        else
+            convertedFragment = inputString;
+
+        return convertedFragment;
+
+    }
+
 
     /*
     Helper function especially for web input where we can use validators to check and return

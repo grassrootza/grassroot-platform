@@ -69,5 +69,18 @@ public interface EventManagementService {
 
     List<Event> getUpcomingEventsForGroupAndParentGroups(Group group);
 
+    List<Event> getUpcomingEventsUserCreated(User requestingUser);
+
+    List<Event> getUpcomingEvents(User requestingUser);
+
+    boolean hasUpcomingEvents(User requestingUser);
+
     String[] populateNotificationFields(Event event);
+
+    Map<String, String> getEventDescription(Event event);
+
+    Map<String, String> getEventDescription(Long eventId);
+
+    int getNumberInvitees(Event event);
+
 }

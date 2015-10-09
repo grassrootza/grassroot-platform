@@ -109,15 +109,19 @@ public class USSDHomeController extends USSDController {
 
     private USSDMenu interruptedPrompt(User sessionUser) {
 
-        log.info("The user was interrupted somewhere ...");
-        String returnUrl;
+        String returnUrl = sessionUser.getLastUssdMenu();
+        log.info("The user was interrupted somewhere ...Here's the URL: " + returnUrl);
 
-        try { returnUrl = URLEncoder.encode(sessionUser.getLastUssdMenu(), "UTF-8"); }
-        catch (Exception e) { returnUrl = sessionUser.getLastUssdMenu(); }
+        // try { returnUrl = URLEncoder.encode(sessionUser.getLastUssdMenu(), "UTF-8"); }
+        // catch (Exception e) { returnUrl = sessionUser.getLastUssdMenu(); }
 
         USSDMenu promptMenu = new USSDMenu(getMessage(HOME_KEY, START_KEY, PROMPT + "-interrupted", sessionUser));
         promptMenu.addMenuOption(returnUrl, getMessage(HOME_KEY, START_KEY, "interrupted.resume", sessionUser));
         promptMenu.addMenuOption(START_KEY + "_force", getMessage(HOME_KEY, START_KEY, "interrupted.start", sessionUser));
+
+        // set the user's "last USSD menu" back to null, so avoids them always coming back here
+        sessionUser = userManager.resetLastUssdMenu(sessionUser);
+
         return promptMenu;
 
     }
@@ -298,6 +302,7 @@ public class USSDHomeController extends USSDController {
     @RequestMapping(value = USSD_BASE + "exit")
     @ResponseBody
     public Request exitScreen(@RequestParam(value=PHONE_PARAM) String inputNumber) throws URISyntaxException {
+        userManager.resetLastUssdMenu(userManager.loadOrSaveUser(inputNumber));
         String exitMessage = getMessage("exit." + PROMPT, userManager.loadOrSaveUser(inputNumber));
         return menuBuilder(new USSDMenu(exitMessage)); // todo: check if methods can handle empty list of options
     }

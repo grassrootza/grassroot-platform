@@ -276,6 +276,30 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
+    public List<Event> getUpcomingEventsUserCreated(User requestingUser) {
+        return eventRepository.findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(requestingUser, new Date(), false);
+    }
+
+    @Override
+    public List<Event> getUpcomingEvents(User requestingUser) {
+        // todo: at some point we will need this to be efficient ... for now, doing a very slow kludge, and going to avoid using the method
+
+        List<Event> upcomingEvents = new ArrayList<>();
+
+        for (Group group : requestingUser.getGroupsPartOf()) {
+            upcomingEvents.addAll(getUpcomingEvents(group));
+        }
+
+        return upcomingEvents;
+    }
+
+    @Override
+    public boolean hasUpcomingEvents(User requestingUser) {
+        // likewise, if we start using this at outset of meetings menu, need to make it fast, possibly a query
+        return getUpcomingEvents(requestingUser).size() != 0;
+    }
+
+    @Override
     public String[] populateNotificationFields(Event event) {
         return new String[]{
                 event.getAppliesToGroup().getName(""),
@@ -284,6 +308,31 @@ public class EventManager implements EventManagementService {
                 event.getDateTimeString(),
                 event.getEventLocation()
         };
+    }
+
+    @Override
+    public Map<String, String> getEventDescription(Event event) {
+        Map<String, String> eventDescription = new HashMap<>();
+
+        eventDescription.put("groupName", event.getAppliesToGroup().getName(""));
+        eventDescription.put("creatingUser", event.getCreatedByUser().nameToDisplay());
+        eventDescription.put("eventSubject", event.getName());
+        eventDescription.put("createdDateTime", event.getCreatedDateTime().toString());
+        eventDescription.put("dateTimeString", event.getDateTimeString());
+        eventDescription.put("location", event.getEventLocation());
+
+        return eventDescription;
+    }
+
+    @Override
+    public Map<String, String> getEventDescription(Long eventId) {
+        return getEventDescription(loadEvent(eventId));
+    }
+
+    @Override
+    public int getNumberInvitees(Event event) {
+        // may make this more sophisticated once we have message relays in place
+        return event.getAppliesToGroup().getGroupMembers().size();
     }
 
 

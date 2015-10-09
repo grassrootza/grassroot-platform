@@ -1,15 +1,15 @@
 package za.org.grassroot.services;
 
 import com.google.common.collect.Lists;
-import com.google.i18n.phonenumbers.NumberParseException;
-import com.google.i18n.phonenumbers.PhoneNumberUtil;
-import com.google.i18n.phonenumbers.Phonenumber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.authentication.AuthenticationServiceException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -19,6 +19,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 
 import javax.transaction.Transactional;
 import java.util.*;
@@ -59,7 +60,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         Assert.hasText(userProfile.getPhoneNumber(), "User phone number is required");
 
         User userToSave;
-        String phoneNumber = convertPhoneNumber(userProfile.getPhoneNumber());
+        String phoneNumber = PhoneNumberUtil.convertPhoneNumber(userProfile.getPhoneNumber());
 
         if (userExist(phoneNumber)) {
 
@@ -158,7 +159,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     public User loadOrSaveUser(String inputNumber) {
-        String phoneNumber = convertPhoneNumber(inputNumber);
+        String phoneNumber = PhoneNumberUtil.convertPhoneNumber(inputNumber);
         if (!userExist(phoneNumber)) {
             User sessionUser = new User();
             sessionUser.setPhoneNumber(phoneNumber);
@@ -210,23 +211,21 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     public User findByInputNumber(String inputNumber) throws NoSuchUserException {
-        User sessionUser = userRepository.findByPhoneNumber(convertPhoneNumber(inputNumber));
+        User sessionUser = userRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(inputNumber));
         if (sessionUser == null) throw new NoSuchUserException("Could not find user with phone number: " + inputNumber);
         return sessionUser;
     }
 
     @Override
     public User findByInputNumber(String inputNumber, String currentUssdMenu) throws NoSuchUserException {
-        User sessionUser = userRepository.findByPhoneNumber(convertPhoneNumber(inputNumber));
+        User sessionUser = userRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(inputNumber));
         sessionUser.setLastUssdMenu(currentUssdMenu);
         return userRepository.save(sessionUser);
     }
 
     @Override
     public List<User> searchByInputNumber(String inputNumber) {
-        // might have just a fragment of phone number, which will make convertPhoneNumber throw an exception
-        // so need to just do something on prefix
-        String phoneNumber = convertPhoneNumber(inputNumber);
+        String phoneNumber = PhoneNumberUtil.convertPhoneNumberFragment(inputNumber);
         return userRepository.findByPhoneNumberContaining(phoneNumber);
     }
 
@@ -237,7 +236,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     public User reformatPhoneNumber(User sessionUser) {
-        String correctedPhoneNumber = convertPhoneNumber(sessionUser.getPhoneNumber());
+        String correctedPhoneNumber = PhoneNumberUtil.convertPhoneNumber(sessionUser.getPhoneNumber());
         sessionUser.setPhoneNumber(correctedPhoneNumber);
         return userRepository.save(sessionUser);
     }
@@ -248,7 +247,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         List<User> usersToAdd = new ArrayList<User>();
 
         for (String inputNumber : listOfNumbers) {
-            String phoneNumber = UserManager.convertPhoneNumber(inputNumber);
+            String phoneNumber = PhoneNumberUtil.convertPhoneNumber(inputNumber);
             if (!userExist(phoneNumber)) {
                 User userToCreate = new User();
                 userToCreate.setPhoneNumber(phoneNumber);
@@ -277,6 +276,10 @@ public class UserManager implements UserManagementService, UserDetailsService {
         return !(eventManagementService.getOutstandingRSVPForUser(sessionUser).size() == 0);
     }
 
+    /*
+    Method for user to reset password themselves, relies on them being able to access a token
+     */
+
     @Override
     public User resetUserPassword(String username, String newPassword, String token) {
 
@@ -290,6 +293,31 @@ public class UserManager implements UserManagementService, UserDetailsService {
         return user;
     }
 
+    /*
+    Method for an admin user to be able to reset a password for a user, if they don't have a means to get the token
+    Notes: This really should be made a temporary password that requires the user to generate it when they log in
+    Also, need to add the various permissions to make sure the admin user is admin, etc etc
+     */
+
+    @Override
+    public User resetUserPassword(String username, String newPassword, User adminUser, String adminPassword) {
+
+        User userToReset = userRepository.findByUsername(username);
+
+        try {
+
+            // Authentication authentication = new UsernamePasswordAuthenticationToken(adminUser, null, adminUser.getAuthorities());
+            String encodedPassword = passwordEncoder.encode(newPassword);
+            userToReset.setPassword(encodedPassword);
+            userToReset = userRepository.save(userToReset);
+
+        } catch (Exception e) {
+            throw new AuthenticationServiceException("Error, admin user could not be authenticated.");
+        }
+
+        return userToReset;
+    }
+
     @Override
     public User fetchUserByUsername(String username) {
         return userRepository.findByUsername(username);
@@ -300,63 +328,10 @@ public class UserManager implements UserManagementService, UserDetailsService {
         return (sessionUser.getLastUssdMenu() == null) ? "" : sessionUser.getLastUssdMenu();
     }
 
-    /**
-     * Moving some functions from the controller classes here, to handle phone number strings given by users
-     * todo: Move the country code definition into a properties file ?
-     * todo: call these from the (Grassroot) PhoneNumberUtil class instead of here? In general need to clean up phone # handling
-     */
-
-    public static String convertPhoneNumber(String inputString) throws InvalidPhoneNumberException {
-
-        try {
-            PhoneNumberUtil phoneNumberUtil = PhoneNumberUtil.getInstance();
-            Phonenumber.PhoneNumber phoneNumber = phoneNumberUtil.parse(inputString.trim(), "ZA");
-
-            if (phoneNumberUtil.isValidNumber(phoneNumber)) {
-                return phoneNumberUtil.format(phoneNumber, PhoneNumberUtil.PhoneNumberFormat.E164).replace("+", "");
-            } else {
-                throw new InvalidPhoneNumberException("Could not format phone number '" + inputString + "'");
-            }
-
-        } catch (NumberParseException e) {
-            throw new InvalidPhoneNumberException("Could not format phone number '" + inputString + "'");
-        }
-
-    }
-
-    public static String invertPhoneNumber(String storedNumber) throws InvalidPhoneNumberException {
-
-        // todo: handle error if number has gotten into database in incorrect format
-        // todo: make this much faster, e.g., use a simple regex / split function?
-
-        List<String> numComponents = new ArrayList<>();
-        String prefix = String.join("", Arrays.asList("0", storedNumber.substring(2, 4)));
-        String midnumbers, finalnumbers;
-
-        try {
-            midnumbers = storedNumber.substring(4, 7);
-            finalnumbers = storedNumber.substring(7, 11);
-        } catch (Exception e) { // in case the string doesn't have enough digits ...
-            midnumbers = storedNumber.substring(4);
-            finalnumbers = "";
-        }
-
-        return String.join(" ", Arrays.asList(prefix, midnumbers, finalnumbers));
-    }
-
-    public static String convertPhoneNumberFragment(String inputString) throws InvalidPhoneNumberException {
-
-        try {
-
-            // hopefully this throws only if really badly formatted, not just too few digits
-            PhoneNumberUtil phoneNumberUtil = PhoneNumberUtil.getInstance();
-            Phonenumber.PhoneNumber phoneNumber = phoneNumberUtil.parse(inputString.trim(), "ZA");
-            return phoneNumber.toString();
-
-        } catch (NumberParseException e) {
-            throw new InvalidPhoneNumberException("Could not format phone number '" + inputString + "'");
-        }
-
+    @Override
+    public User resetLastUssdMenu(User sessionUser) {
+        sessionUser.setLastUssdMenu(null);
+        return userRepository.save(sessionUser);
     }
 
     public void setPasswordEncoder(final PasswordEncoder passwordEncoder) {

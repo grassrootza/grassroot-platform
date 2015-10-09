@@ -328,7 +328,7 @@ public class USSDGroupController extends USSDController {
 
         List<String> usersList = new ArrayList<>();
         for (User userToList : groupToList.getGroupMembers()) {
-            usersList.add(UserManager.invertPhoneNumber(userToList.getPhoneNumber()));
+            usersList.add(PhoneNumberUtil.invertPhoneNumber(userToList.getPhoneNumber()));
         }
 
         User sessionUser = userManager.findByInputNumber(inputNumber);
@@ -371,7 +371,7 @@ public class USSDGroupController extends USSDController {
         catch (Exception e) { return noGroupError; }
 
         List<User> groupMembers = sessionGroup.getGroupMembers();
-        groupMembers.add(userManager.loadOrSaveUser(UserManager.convertPhoneNumber(numberToAdd)));
+        groupMembers.add(userManager.loadOrSaveUser(numberToAdd));
         sessionGroup.setGroupMembers(groupMembers);
         sessionGroup = groupManager.saveGroup(sessionGroup);
 

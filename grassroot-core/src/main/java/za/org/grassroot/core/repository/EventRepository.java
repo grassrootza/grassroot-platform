@@ -28,6 +28,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     List<Event> findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(Group group, Date startTime, boolean cancelled);
 
+    List<Event> findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(User user, Date startTime, boolean cancelled);
+
     /*
 
     N.B. do not remove start_date_time > current_timestamp as it will force the query to do an

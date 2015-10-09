@@ -17,6 +17,7 @@ import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 /**
@@ -69,7 +70,7 @@ public class AdminController extends BaseController {
      */
     @RequestMapping("/admin/users/view")
     public String viewUser(Model model, @RequestParam("lookup_field") String lookupField,
-                           @RequestParam("lookup_term") String lookupTerm) {
+                           @RequestParam("lookup_term") String lookupTerm, HttpServletRequest request) {
 
         String pageToDisplay;
         List<User> foundUsers;
@@ -79,24 +80,27 @@ public class AdminController extends BaseController {
                 foundUsers = userManagementService.searchByInputNumber(lookupTerm);
                 break;
             case "displayName":
-                foundUsers = userManagementService.searchByInputNumber(lookupTerm);
+                foundUsers = userManagementService.searchByDisplayName(lookupTerm);
                 break;
             default:
                 foundUsers = userManagementService.searchByInputNumber(lookupTerm);
                 break;
         }
 
+        log.info("Admin site, found this many users with the search term ... " + foundUsers.size());
+
         if (foundUsers.size() == 0) {
-            // say no users found, and ask to search again
-            pageToDisplay = "none_found";
+            // say no users found, and ask to search again ... use a redirect, I think
+            addMessage(model, MessageType.ERROR, "no.one.found", request);
+            pageToDisplay = "admin/users/home";
         } else if (foundUsers.size() == 1) {
             // display just that user
             model.addAttribute("user", foundUsers.get(0));
-            pageToDisplay = "view";
+            pageToDisplay = "admin/users/view";
         } else {
             // display a list of users
             model.addAttribute("userList", foundUsers);
-            pageToDisplay = "pick";
+            pageToDisplay = "admin/users/list";
         }
 
         return pageToDisplay;

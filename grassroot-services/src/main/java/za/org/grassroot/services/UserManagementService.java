@@ -50,9 +50,13 @@ public interface UserManagementService {
     
     User resetUserPassword(String username, String newPassword, String token);
 
+    User resetUserPassword(String username, String newPassword, User adminUser, String adminPassword);
+
     User fetchUserByUsername(String username);
 
     String getLastUssdMenu(User sessionUser);
+
+    User resetLastUssdMenu(User sessionUser);
 
 
 }
