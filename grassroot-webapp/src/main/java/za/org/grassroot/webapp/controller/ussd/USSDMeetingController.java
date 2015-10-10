@@ -101,7 +101,7 @@ public class USSDMeetingController extends USSDController {
             String promptMessage = getMessage(MTG_KEY, START_KEY, PROMPT + ".has-group", sessionUser);
             String existingGroupUri = MTG_MENUS + keyNext + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + keyGroup;
             String newGroupUri = MTG_MENUS + keyNewGroup + EVENTID_URL + eventId;
-            groupMenu = userGroupMenu(sessionUser, promptMessage, existingGroupUri, newGroupUri, TEXT_PARAM);
+            groupMenu = userGroupMenu(sessionUser, promptMessage, existingGroupUri, newGroupUri, GROUP_PARAM);
         }
         return groupMenu;
     }
@@ -115,8 +115,10 @@ public class USSDMeetingController extends USSDController {
 
         for (Event event : upcomingEvents) {
             Map<String, String> eventDescription = eventManager.getEventDescription(event);
-            String menuLine = eventDescription.get("groupName") + ": " + eventDescription.get("eventSubject");
-            askMenu.addMenuOption(MTG_MENUS + keyManage + EVENTID_URL + event.getId(), menuLine);
+            if (eventDescription.get("minimumData").equals("true")) {
+                String menuLine = eventDescription.get("groupName") + ": " + eventDescription.get("eventSubject");
+                askMenu.addMenuOption(MTG_MENUS + keyManage + EVENTID_URL + event.getId(), menuLine);
+            }
         }
 
         askMenu.addMenuOption(MTG_MENUS + START_KEY + "?newMtg=true", "Call a new meeting");
@@ -391,6 +393,9 @@ public class USSDMeetingController extends USSDController {
     // helper function to assemble the placeholder URLs from the menu; excludes 'text_param', since we get a '1' from the
     // interruption menu, and we don't want to create possible bugs through multiple parameters
 
+    // NOTE: Whatever menu comes after the group selection _has_ to use GROUP_PARAM instead of TEXT_PARAM, because the
+    // menu response will overwrite the 'request' parameter in the returned URL, and we will get a fail on the group
+
     private String assembleThisUri(Long eventId, String thisKey, String passedValueKey, String passedValue) {
         return (MTG_MENUS + thisKey + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + passedValueKey);
     }
@@ -400,7 +405,7 @@ public class USSDMeetingController extends USSDController {
     public Request getSubject(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
                               @RequestParam(value=EVENT_PARAM, required=true) Long eventId,
                               @RequestParam(value=PASSED_FIELD, required=true) String passedValueKey,
-                              @RequestParam(value=TEXT_PARAM, required=true) String passedValue) throws URISyntaxException {
+                              @RequestParam(value=GROUP_PARAM, required=true) String passedValue) throws URISyntaxException {
 
         String keyNext = nextMenuKey(keySubject); // skipped for the moment, like keyDate
         User sessionUser = userManager.loadOrSaveUser(inputNumber, assembleThisUri(eventId, keySubject, passedValueKey, passedValue));

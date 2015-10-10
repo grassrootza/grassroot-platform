@@ -314,12 +314,17 @@ public class EventManager implements EventManagementService {
     public Map<String, String> getEventDescription(Event event) {
         Map<String, String> eventDescription = new HashMap<>();
 
-        eventDescription.put("groupName", event.getAppliesToGroup().getName(""));
-        eventDescription.put("creatingUser", event.getCreatedByUser().nameToDisplay());
-        eventDescription.put("eventSubject", event.getName());
-        eventDescription.put("createdDateTime", event.getCreatedDateTime().toString());
-        eventDescription.put("dateTimeString", event.getDateTimeString());
-        eventDescription.put("location", event.getEventLocation());
+        if (minimumDataAvailable(event)) {
+            eventDescription.put("minimumData", "true");
+            eventDescription.put("groupName", event.getAppliesToGroup().getName(""));
+            eventDescription.put("creatingUser", event.getCreatedByUser().nameToDisplay());
+            eventDescription.put("eventSubject", event.getName());
+            eventDescription.put("createdDateTime", event.getCreatedDateTime().toString());
+            eventDescription.put("dateTimeString", event.getDateTimeString());
+            eventDescription.put("location", event.getEventLocation());
+        } else {
+            eventDescription.put("minimumData", "false");
+        }
 
         return eventDescription;
     }
