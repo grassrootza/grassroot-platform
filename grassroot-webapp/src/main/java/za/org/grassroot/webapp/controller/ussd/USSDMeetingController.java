@@ -130,13 +130,15 @@ public class USSDMeetingController extends USSDController {
     The event management menu -- can't have too much complexity, just giving an RSVP total, and allowing cancel
     and change the date & time or location (other changes have too high a clunky UI vs number of use case trade off)
      */
-    @RequestMapping(value=MTG_MENUS + keyManage)
+    @RequestMapping(value=mtgPath + keyManage)
     @ResponseBody
     public Request meetingManage(@RequestParam(value=PHONE_PARAM) String inputNumber,
                                  @RequestParam(value=EVENT_PARAM) Long eventId) throws URISyntaxException {
 
         User sessionUser = userManager.loadOrSaveUser(inputNumber);
         Event meeting = eventManager.loadEvent(eventId);
+
+        log.info("Inside the management menu, for event: " + meeting);
 
         // todo: check user's permissions on this group/event .. for now, just make sure it's the creating user
         String menuPrompt;
@@ -147,16 +149,18 @@ public class USSDMeetingController extends USSDController {
             menuPrompt = getMessage(MTG_KEY, keyManage, PROMPT, "" + eventManager.getNumberInvitees(meeting), sessionUser);
         }
 
+        log.info("Menu prompt will be: " + meeting);
+
         USSDMenu promptMenu = new USSDMenu(menuPrompt);
-        promptMenu.addMenuOption(MTG_MENUS + keyMtgDetails, getMessage(MTG_KEY, keyMtgDetails, OPTION, sessionUser));
-        promptMenu.addMenuOption(MTG_MENUS + keyChangeDate, getMessage(MTG_KEY, keyChangeDate, OPTION, sessionUser));
-        promptMenu.addMenuOption(MTG_MENUS + keyChangeLocation, getMessage(MTG_KEY, keyChangeLocation, OPTION, sessionUser));
-        promptMenu.addMenuOption(MTG_MENUS + keyCancel, getMessage(MTG_KEY, keyCancel, OPTION, sessionUser));
+        promptMenu.addMenuOption(MTG_MENUS + keyMtgDetails, getMessage(MTG_KEY, keyMtgDetails, "option", sessionUser));
+        promptMenu.addMenuOption(MTG_MENUS + keyChangeDate, getMessage(MTG_KEY, keyChangeDate, "option", sessionUser));
+        promptMenu.addMenuOption(MTG_MENUS + keyChangeLocation, getMessage(MTG_KEY, keyChangeLocation, "option", sessionUser));
+        promptMenu.addMenuOption(MTG_MENUS + keyCancel, getMessage(MTG_KEY, keyCancel, "option", sessionUser));
 
         return menuBuilder(promptMenu);
     }
 
-    @RequestMapping(value=MTG_MENUS + keyMtgDetails)
+    @RequestMapping(value=mtgPath + keyMtgDetails)
     @ResponseBody
     public Request meetingDetails(@RequestParam(value=PHONE_PARAM) String inputNumber,
                                   @RequestParam(value=EVENT_PARAM) Long eventId) throws URISyntaxException {
@@ -179,7 +183,7 @@ public class USSDMeetingController extends USSDController {
         }
 
         USSDMenu promptMenu = new USSDMenu(mtgDescription);
-        promptMenu.addMenuOption(MTG_MENUS + keyManage + EVENTID_URL + eventId, getMessage(MTG_KEY, keyMtgDetails, OPTION + ".back", sessionUser));
+        promptMenu.addMenuOption(MTG_MENUS + keyManage + EVENTID_URL + eventId, getMessage(MTG_KEY, keyMtgDetails, OPTION + "back", sessionUser));
         promptMenu.addMenuOption(START_KEY, getMessage(START_KEY, sessionUser));
         promptMenu.addMenuOption("exit", getMessage("exit.option", sessionUser));
 
@@ -192,7 +196,7 @@ public class USSDMeetingController extends USSDController {
     todo: add logging, etc.
      */
 
-    @RequestMapping(value=MTG_MENUS + keyChangeDate)
+    @RequestMapping(value=mtgPath + keyChangeDate)
     public Request changeDate(@RequestParam(value=PHONE_PARAM) String inputNumber,
                               @RequestParam(value=EVENT_PARAM) Long eventId) throws URISyntaxException {
 
@@ -208,7 +212,7 @@ public class USSDMeetingController extends USSDController {
 
     }
 
-    @RequestMapping(value=MTG_MENUS + keyChangeLocation)
+    @RequestMapping(value=mtgPath + keyChangeLocation)
     public Request changeLocation(@RequestParam(value=PHONE_PARAM) String inputNumber,
                                   @RequestParam(value=EVENT_PARAM) Long eventId) throws URISyntaxException {
 
@@ -222,7 +226,7 @@ public class USSDMeetingController extends USSDController {
 
     }
 
-    @RequestMapping(value=MTG_MENUS + keyCancel)
+    @RequestMapping(value=mtgPath + keyCancel)
     public Request meetingCancel(@RequestParam(value=PHONE_PARAM) String inputNumber,
                                  @RequestParam(value=EVENT_PARAM) Long eventId) throws URISyntaxException {
 
@@ -233,7 +237,7 @@ public class USSDMeetingController extends USSDController {
 
     }
 
-    @RequestMapping(value=MTG_MENUS + keyModify)
+    @RequestMapping(value=mtgPath + keyModify)
     public Request modifyMeeting(@RequestParam(value=PHONE_PARAM) String inputNumber,
                                  @RequestParam(value=EVENT_PARAM) Long eventId,
                                  @RequestParam("action") String action, @RequestParam(TEXT_PARAM) String userInput) throws URISyntaxException {
