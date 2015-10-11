@@ -43,7 +43,7 @@
           <label for="datepicker" class="col-lg-2 control-label">Date and time:</label>
           <div class="col-lg-6">
             <div class="input-group date" id="datepicker">
-              <input th:name="modifyDateTime" th:value="${meeting.eventStartDateTime}" type="text" class="form-control" />
+              <input th:name="modifyDateTime" th:value="${meeting.eventStartDateTime}" type="text" class="form-control" readonly="readonly"/>
                     <span class="input-group-addon">
                         <span class="glyphicon glyphicon-calendar"></span>
                     </span>
@@ -88,26 +88,6 @@
     </div>
   </div>
 
-
-</div>
-
-<div class="header-container" layout:fragment="script-container">
-  <script>
-
-    $(document).ready(function() {
-
-      $('#datepicker').datetimepicker({
-        format: 'DD/MM/YYYY h:mm A',
-        widgetPositioning: {
-          horizontal: 'right'
-        },
-        sideBySide:true,
-        minDate: new Date(),
-        maxDate: new Date()
-      });
-
-    });
-  </script>
 
 </div>
 

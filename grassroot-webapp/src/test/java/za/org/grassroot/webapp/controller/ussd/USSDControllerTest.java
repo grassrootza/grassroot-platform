@@ -266,8 +266,12 @@ public class USSDControllerTest {
         urlResponses.putAll(uriExecute(testPhoneUri(mtgPath + "group").queryParam(eventParam, eventId).
                 queryParam(freeTextParam, String.join(" ", testPhones)).build().toUri()));
 
+        log.info("Event as stored in DB after group creation and assignment: " + eventManager.loadEvent(eventId));
+
         urlResponses.putAll(uriExecute(testMtgParam(eventId, "time", "Saturday 9am", "place")));
         // responseEntities.add(testMtgParam(eventId, "place", "home", "send")); // add in when safe to do so w/out lots SMSs
+
+        log.info("Event as stored in DB after setting the time: " + eventManager.loadEvent(eventId));
 
         for (Map.Entry<URI, ResponseEntity<String>> urlResponse : urlResponses.entrySet()) {
             System.out.println("URL: " + urlResponse.getKey().toString() + "\n STATUS: " + urlResponse.getValue().getStatusCode().toString());
@@ -276,6 +280,7 @@ public class USSDControllerTest {
 
         Group groupCreated = groupManager.getLastCreatedGroup(userCreated);
         Event eventToTest = eventManager.getLastCreatedEvent(userCreated);
+        log.info("Event returned from database: " + eventToTest);
 
         assertNotNull(userCreated.getId());
         assertNotNull(groupCreated.getId());
@@ -284,10 +289,12 @@ public class USSDControllerTest {
 
         // todo: this is where the checks for message building need to go
 
+        Map<String, String> eventDescription = eventManager.getEventDescription(eventId);
+
         assertThat(eventToTest.getId(), is(eventId));
 
-        // assertThat(eventToTest.getDateTimeString(), is("Saturday 9am")); // for some reason this is failing, no idea why, works in rest
-        // assertThat(eventToTest.getEventLocation(), is("home")); // to include once can do messaging
+        // assertThat(eventDescription.get("dateTimeString"), is("Saturday 9am")); // for some reason this is failing, no idea why, works in rest
+        // assertThat(eventDescription.get("eventLocation"), is("home")); // to include once can do messaging
     }
 
     // todo: once we have the event model and repository, switch to checking the event repository

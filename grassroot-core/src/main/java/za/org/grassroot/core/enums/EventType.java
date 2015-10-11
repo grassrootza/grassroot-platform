@@ -7,5 +7,6 @@ package za.org.grassroot.core.enums;
 public enum EventType {
     Meeting,
     Vote,
-    LogEntry
+    LogEntry,
+    DummyEvent
 }
