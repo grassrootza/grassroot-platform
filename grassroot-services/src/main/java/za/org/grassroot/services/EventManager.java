@@ -140,7 +140,7 @@ public class EventManager implements EventManagementService {
         Event eventToUpdate = eventRepository.findOne(eventId);
         Event beforeEvent = SerializationUtils.clone(eventToUpdate);
         eventToUpdate.setDateTimeString(dateTimeString);
-        return saveandCheckChanges(beforeEvent,eventToUpdate);
+        return saveandCheckChanges(beforeEvent, eventToUpdate);
     }
 
     @Override
@@ -277,7 +277,16 @@ public class EventManager implements EventManagementService {
 
     @Override
     public List<Event> getUpcomingEventsUserCreated(User requestingUser) {
-        return eventRepository.findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(requestingUser, new Date(), false);
+        List<Event> possibleEvents = eventRepository.findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(requestingUser, new Date(), false);
+
+        // take out events that were only partially formed ... todo: think if a way to make this faster than the iteration below
+        List<Event> fullyFormedEvents = new ArrayList<>();
+        for (Event event : possibleEvents) {
+            if (minimumDataAvailable(event))
+                fullyFormedEvents.add(event);
+        }
+
+        return fullyFormedEvents;
     }
 
     @Override

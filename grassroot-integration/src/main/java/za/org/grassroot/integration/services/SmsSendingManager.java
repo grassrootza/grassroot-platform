@@ -61,6 +61,7 @@ public class SmsSendingManager implements SmsSendingService {
         gatewayURI.queryParam("number", destinationNumber);
         gatewayURI.queryParam("message", message);
 
+        // todo: probably should make this reference INMEMORY explicitly, in case default changes in future
         if (this.environment.getActiveProfiles() != this.environment.getDefaultProfiles()) {
             log.info("Sending SMS via URL: " + gatewayURI.toUriString());
             //@todo process response message
@@ -75,6 +76,7 @@ public class SmsSendingManager implements SmsSendingService {
             EventLog messageRecord = new EventLog(testMessageUser, messageEvent, EventLogType.EventTest, message);
             log.info("Saving a dummy EventLog ... " + messageRecord);
             messageRecord = eventLogRepository.save(messageRecord);
+            log.info("EventLog saved with message: " + messageRecord.getMessage());
             return messageRecord.toString();
         }
     }
