@@ -2,6 +2,7 @@ package za.org.grassroot.services;
 
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.EventDTO;
 
 import java.util.Map;
 
@@ -10,8 +11,9 @@ import java.util.Map;
  */
 public interface MeetingNotificationService {
 
-    public String createMeetingNotificationMessage(User user, Event event);
-    public String createChangeMeetingNotificationMessage(User user, Event event);
-    public String createCancelMeetingNotificationMessage(User user, Event event);
+    public String createMeetingNotificationMessage(User user, EventDTO event);
+    public String createChangeMeetingNotificationMessage(User user, EventDTO event);
+    public String createCancelMeetingNotificationMessage(User user, EventDTO event);
+
 
 }

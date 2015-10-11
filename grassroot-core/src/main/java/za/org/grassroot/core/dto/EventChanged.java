@@ -9,19 +9,19 @@ import java.io.Serializable;
  */
 public class EventChanged implements Serializable {
 
-    private Event event;
+    private EventDTO event;
     private boolean startTimeChanged;
 
-    public EventChanged(Event event, boolean startTimeChanged) {
+    public EventChanged(EventDTO event, boolean startTimeChanged) {
         this.event = event;
         this.startTimeChanged = startTimeChanged;
     }
 
-    public Event getEvent() {
+    public EventDTO getEvent() {
         return event;
     }
 
-    public void setEvent(Event event) {
+    public void setEvent(EventDTO event) {
         this.event = event;
     }
 

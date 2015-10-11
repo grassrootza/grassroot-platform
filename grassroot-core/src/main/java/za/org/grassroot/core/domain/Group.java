@@ -32,6 +32,8 @@ public class Group implements Serializable {
 
     private String      groupTokenCode;
     private Timestamp   tokenExpiryDateTime;
+    private Integer version;
+
 
     @Basic
     @Column(name = "name", nullable = false, length = 50)
@@ -112,6 +114,15 @@ public class Group implements Serializable {
 
     public void setTokenExpiryDateTime(Timestamp tokenExpiryDateTime) { this.tokenExpiryDateTime = tokenExpiryDateTime; }
 
+    @Version
+    public Integer getVersion() {
+        return version;
+    }
+
+    public void setVersion(Integer version) {
+        this.version = version;
+    }
+
     @PreUpdate
     @PrePersist
     public void updateTimeStamps() {
@@ -175,6 +186,8 @@ public class Group implements Serializable {
                 ", id=" + id +
                 ", createdDateTime=" + createdDateTime +
                 ", createdByUser=" + createdByUser +
+                ", version=" + version +
+
 //                ", groupMembers=" + groupMembers +
                 ", parent=" + parent +
 //                ", eventsApplied=" + eventsApplied +

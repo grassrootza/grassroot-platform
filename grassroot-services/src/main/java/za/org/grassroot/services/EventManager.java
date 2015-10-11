@@ -7,6 +7,7 @@ import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.EventChanged;
+import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.EventRepository;
@@ -109,7 +110,7 @@ public class EventManager implements EventManagementService {
         Event eventToUpdate = eventRepository.findOne(eventId);
         Event beforeEvent = SerializationUtils.clone(eventToUpdate);
         eventToUpdate.setName(subject);
-        return saveandCheckChanges(beforeEvent, eventToUpdate);
+        return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
     }
 
     @Override
@@ -122,7 +123,7 @@ public class EventManager implements EventManagementService {
             return eventToUpdate;
         } else {
             eventToUpdate.setAppliesToGroup(groupManager.loadGroup(groupId));
-            return saveandCheckChanges(beforeEvent, eventToUpdate);
+            return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
         }
     }
 
@@ -132,7 +133,7 @@ public class EventManager implements EventManagementService {
         Event eventToUpdate = eventRepository.findOne(eventId);
         Event beforeEvent = SerializationUtils.clone(eventToUpdate);
         eventToUpdate.setEventLocation(location);
-        return saveandCheckChanges(beforeEvent, eventToUpdate);
+        return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
     }
 
     @Override
@@ -140,7 +141,7 @@ public class EventManager implements EventManagementService {
         Event eventToUpdate = eventRepository.findOne(eventId);
         Event beforeEvent = SerializationUtils.clone(eventToUpdate);
         eventToUpdate.setDateTimeString(dateTimeString);
-        return saveandCheckChanges(beforeEvent, eventToUpdate);
+        return saveandCheckChanges(new EventDTO(beforeEvent),eventToUpdate);
     }
 
     @Override
@@ -148,7 +149,7 @@ public class EventManager implements EventManagementService {
         Event eventToUpdate = eventRepository.findOne(eventId);
         Event beforeEvent = SerializationUtils.clone(eventToUpdate);
         eventToUpdate.setEventStartDateTime(eventDateTime);
-        return saveandCheckChanges(beforeEvent, eventToUpdate);
+        return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
     }
 
     @Override
@@ -157,7 +158,7 @@ public class EventManager implements EventManagementService {
 
         Event beforeEvent = loadEvent(eventToUpdate.getId());
         eventToUpdate = fillOutEvent(eventToUpdate, beforeEvent);
-        return saveandCheckChanges(beforeEvent, eventToUpdate);
+        return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
 
     }
 
@@ -166,7 +167,7 @@ public class EventManager implements EventManagementService {
         Event eventToUpdate = eventRepository.findOne(eventId);
         Event beforeEvent = SerializationUtils.clone(eventToUpdate);
         eventToUpdate.setCanceled(true);
-        return saveandCheckChanges(beforeEvent, eventToUpdate);
+        return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
     }
 
     @Override
@@ -350,11 +351,10 @@ public class EventManager implements EventManagementService {
     }
 
 
-    private Event saveandCheckChanges(Event beforeEvent, Event changedEvent) {
+    private Event saveandCheckChanges(EventDTO beforeEvent, Event changedEvent) {
 
         log.info("saveandCheckChanges...starting ... with before event .. " + beforeEvent.toString());
 
-        entityManager.detach(beforeEvent);
         boolean priorEventComplete = minimumDataAvailable(beforeEvent);
         Event savedEvent = eventRepository.save(changedEvent);
 
@@ -365,7 +365,7 @@ public class EventManager implements EventManagementService {
          */
 
             if (!priorEventComplete && minimumDataAvailable(savedEvent) && !savedEvent.isCanceled()) {
-                jmsTemplateProducerService.sendWithNoReply("event-added",savedEvent);
+                jmsTemplateProducerService.sendWithNoReply("event-added",new EventDTO(savedEvent));
                 log.info("queued to event-added");
             }
             if (priorEventComplete && minimumDataAvailable(savedEvent) && !savedEvent.isCanceled()) {
@@ -374,8 +374,8 @@ public class EventManager implements EventManagementService {
                 if (!savedEvent.minimumEquals(beforeEvent)) {
                     boolean startTimeChanged = false;
                     if (!beforeEvent.getEventStartDateTime().equals(savedEvent.getEventStartDateTime())) startTimeChanged = true;
-                    jmsTemplateProducerService.sendWithNoReply("event-changed",new EventChanged(savedEvent,startTimeChanged));
-                    log.info("queued to event-changed");
+                    jmsTemplateProducerService.sendWithNoReply("event-changed",new EventChanged(new EventDTO(savedEvent),startTimeChanged));
+                    log.info("queued to event-changed event..." + savedEvent.getId() + "...version..." + savedEvent.getVersion());
                 } else {
                     log.info("NOT queued to event-changed as minimum required values did not change...");
 
@@ -383,7 +383,7 @@ public class EventManager implements EventManagementService {
             }
             if (priorEventComplete && !beforeEvent.isCanceled() && savedEvent.isCanceled()) {
                 // ok send out cancelation notifications
-                jmsTemplateProducerService.sendWithNoReply("event-cancelled", savedEvent);
+                jmsTemplateProducerService.sendWithNoReply("event-cancelled", new EventDTO(savedEvent));
                 log.info("queued to event-cancelled");
 
             }
@@ -393,7 +393,20 @@ public class EventManager implements EventManagementService {
 
     private boolean minimumDataAvailable(Event event) {
         boolean minimum = true;
-        log.info("minimumDataAvailable..." + event.toString());
+        log.finest("minimumDataAvailable..." + event.toString());
+        if (event.getName() == null || event.getName().trim().equals("")) minimum = false;
+        if (event.getEventLocation() == null || event.getEventLocation().trim().equals("")) minimum = false;
+        if (event.getAppliesToGroup() == null ) minimum = false;
+        if (event.getCreatedByUser() == null) minimum = false;
+        if (event.getDateTimeString() == null || event.getDateTimeString().trim().equals("")) minimum = false;
+        if (event.getEventStartDateTime() == null) minimum = false;
+        log.info("minimumDataAvailable...returning..." + minimum);
+
+        return minimum;
+    }
+    private boolean minimumDataAvailable(EventDTO event) {
+        boolean minimum = true;
+        log.finest("minimumDataAvailable..." + event.toString());
         if (event.getName() == null || event.getName().trim().equals("")) minimum = false;
         if (event.getEventLocation() == null || event.getEventLocation().trim().equals("")) minimum = false;
         if (event.getAppliesToGroup() == null ) minimum = false;

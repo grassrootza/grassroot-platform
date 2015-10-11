@@ -60,6 +60,12 @@ public class Event implements Serializable {
      */
     private boolean relayable;
 
+    /*
+    Version used by hibernate to resolve conflicting updates. Do not update set it, it is for Hibernate only
+     */
+
+    private Integer version;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="id", nullable = false)
@@ -157,6 +163,15 @@ public class Event implements Serializable {
 
     public void setRelayable(boolean relayable) { this.relayable = relayable; }
 
+    @Version
+    public Integer getVersion() {
+        return version;
+    }
+
+    public void setVersion(Integer version) {
+        this.version = version;
+    }
+
     @PreUpdate
     @PrePersist
     public void updateTimeStamps() {
@@ -229,6 +244,24 @@ public class Event implements Serializable {
         this.eventType = eventType;
     }
 
+    public Event(String eventLocation, Long id, Timestamp createdDateTime, Timestamp eventStartDateTime, User createdByUser, Group appliesToGroup, boolean canceled, EventType eventType, String name, String dateTimeString, boolean includeSubGroups, int reminderMinutes, boolean rsvpRequired, boolean relayable, Integer version) {
+        this.eventLocation = eventLocation;
+        this.id = id;
+        this.createdDateTime = createdDateTime;
+        this.eventStartDateTime = eventStartDateTime;
+        this.createdByUser = createdByUser;
+        this.appliesToGroup = appliesToGroup;
+        this.canceled = canceled;
+        this.eventType = eventType;
+        this.name = name;
+        this.dateTimeString = dateTimeString;
+        this.includeSubGroups = includeSubGroups;
+        this.reminderMinutes = reminderMinutes;
+        this.rsvpRequired = rsvpRequired;
+        this.relayable = relayable;
+        this.version = version;
+    }
+
     public Event() {
     }
 
@@ -264,6 +297,7 @@ public class Event implements Serializable {
                 ", dateTimeString=\'" + dateTimeString +'\'' +
                 ", rsvpRequired=\'" + rsvpRequired + '\'' +
                 ", includeSubGroups=" + includeSubGroups +'\'' +
+                ", version=" + version +'\'' +
 
                 '}';
     }
