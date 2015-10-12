@@ -33,6 +33,12 @@ public class Group implements Serializable {
     private String      groupTokenCode;
     private Timestamp   tokenExpiryDateTime;
     private Integer version;
+    /*
+     used to calculate when a reminder must be sent, before the eventStartTime
+     when the event is created and if appliestoGroup is set it will default to a value in group
+     if group = null or group.reminderminutes = 0, then it will use the site value in properties file
+      */
+    private int reminderMinutes;
 
 
     @Basic
@@ -122,6 +128,16 @@ public class Group implements Serializable {
     public void setVersion(Integer version) {
         this.version = version;
     }
+
+    @Column(name = "reminderminutes")
+    public int getReminderMinutes() {
+        return reminderMinutes;
+    }
+
+    public void setReminderMinutes(int reminderMinutes) {
+        this.reminderMinutes = reminderMinutes;
+    }
+
 
     @PreUpdate
     @PrePersist
