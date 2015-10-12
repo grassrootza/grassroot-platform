@@ -156,9 +156,10 @@ public class EventManager implements EventManagementService {
     public Event updateEvent(Event eventToUpdate) {
         // generic update for use from the web, where we get a bunch of changes applied at once
 
-        Event beforeEvent = loadEvent(eventToUpdate.getId());
-        eventToUpdate = fillOutEvent(eventToUpdate, beforeEvent);
-        return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
+        Event savedEvent = loadEvent(eventToUpdate.getId());
+        EventDTO beforeDTO = new EventDTO(savedEvent);
+        savedEvent = applyChangesToEntity(eventToUpdate, savedEvent);
+        return saveandCheckChanges(beforeDTO, savedEvent);
 
     }
 
@@ -354,6 +355,7 @@ public class EventManager implements EventManagementService {
     private Event saveandCheckChanges(EventDTO beforeEvent, Event changedEvent) {
 
         log.info("saveandCheckChanges...starting ... with before event .. " + beforeEvent.toString());
+        log.info("saveandCheckChanges...changedEvent.id..." + changedEvent.getId());
 
         boolean priorEventComplete = minimumDataAvailable(beforeEvent);
         Event savedEvent = eventRepository.save(changedEvent);
@@ -459,6 +461,43 @@ public class EventManager implements EventManagementService {
          */
 
         return passedEvent;
+
+    }
+
+    /*
+Method to take a partially filled out event, from the web application, and add in a series of fields at once
+ */
+    private Event applyChangesToEntity(Event passedEvent, Event savedEvent) {
+
+        // todo throw a proper exception if the two events don't have matching IDs
+
+        if (passedEvent.getId() != savedEvent.getId()) {
+            return null;
+        }
+
+        if (passedEvent.getName() != null ) savedEvent.setName(passedEvent.getName());
+
+        if (passedEvent.getEventLocation() != null) savedEvent.setEventLocation(passedEvent.getEventLocation());
+
+        //if (passedEvent.getAppliesToGroup() != null) savedEvent.setAppliesToGroup(passedEvent.getAppliesToGroup());
+
+        //if (passedEvent.getCreatedByUser() != null) savedEvent.setCreatedByUser(passedEvent.getCreatedByUser());
+
+        //if (passedEvent.getCreatedDateTime() != null) savedEvent.setCreatedDateTime(passedEvent.getCreatedDateTime());
+
+        if (passedEvent.getEventStartDateTime() != null) savedEvent.setEventStartDateTime(passedEvent.getEventStartDateTime());
+
+        //if (passedEvent.getEventType() != null) savedEvent.setEventType(passedEvent.getEventType());
+
+        if (passedEvent.getDateTimeString() != null) savedEvent.setDateTimeString(passedEvent.getDateTimeString());
+
+        /*
+        We do not touch the two boolean fields, rsvpRequired and includeSubGroups, since those are set by
+        default in the constructors, and if passedEvent has them set to something different to savedEvent,
+         that means the user changed them, and hence they should be preserved. To test this.
+         */
+
+        return savedEvent;
 
     }
 

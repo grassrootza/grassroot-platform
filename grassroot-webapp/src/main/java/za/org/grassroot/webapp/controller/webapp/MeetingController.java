@@ -138,7 +138,7 @@ public class MeetingController extends BaseController {
                                 BindingResult bindingResult, HttpServletRequest request) {
 
         log.info("Meeting we are passed: " + meeting);
-        eventManagementService.updateEvent(meeting);
+        meeting = eventManagementService.updateEvent(meeting);
         model.addAttribute("meeting", meeting);
         addMessage(model, MessageType.SUCCESS, "meeting.update.success", request);
         return "meeting/view";
