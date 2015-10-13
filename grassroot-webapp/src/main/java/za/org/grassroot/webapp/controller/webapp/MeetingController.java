@@ -255,7 +255,7 @@ public class MeetingController extends BaseController {
         eventLogManagementService.rsvpForEvent(event, user, EventRSVPResponse.NO);
 
         addMessage(redirectAttributes, MessageType.ERROR, "meeting.rsvp.no", request);
-        return "/home";
+        return "redirect:/home";
     }
 
 

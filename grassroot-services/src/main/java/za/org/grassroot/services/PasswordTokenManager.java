@@ -12,6 +12,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.repository.VerificationTokenCodeRepository;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
@@ -65,10 +66,14 @@ public class PasswordTokenManager implements PasswordTokenService {
 
         if (user != null) {
             return generateVerificationCode(user);
-
         } else {
-            log.warn("User '{}' with a non existing account found. Cannot create token.", username);
-            return  null; //We should not create a token for a non existing user. Otherwise Users will be created within an incorrect process
+            user = userRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(username));
+            if (user != null) {
+                return generateVerificationCode(user);
+            } else {
+                log.warn("User '{}' with a non existing account found. Cannot create token.", username);
+                return null; //We should not create a token for a non existing user. Otherwise Users will be created within an incorrect process
+            }
         }
 
     }

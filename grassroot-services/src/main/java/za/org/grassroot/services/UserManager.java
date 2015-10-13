@@ -283,7 +283,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public User resetUserPassword(String username, String newPassword, String token) {
 
-        User user = userRepository.findByUsername(username);
+        User user = userRepository.findByUsername(PhoneNumberUtil.convertPhoneNumber(username));
 
         if (passwordTokenService.isVerificationCodeValid(user, token)) {
             String encodedPassword = passwordEncoder.encode(newPassword);
@@ -302,7 +302,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public User resetUserPassword(String username, String newPassword, User adminUser, String adminPassword) {
 
-        User userToReset = userRepository.findByUsername(username);
+        User userToReset = userRepository.findByUsername(PhoneNumberUtil.convertPhoneNumber(username));
 
         try {
 

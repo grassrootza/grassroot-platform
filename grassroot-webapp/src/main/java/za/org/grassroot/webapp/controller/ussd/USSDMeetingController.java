@@ -141,21 +141,14 @@ public class USSDMeetingController extends USSDController {
         log.info("Inside the management menu, for event: " + meeting);
 
         // todo: check user's permissions on this group/event .. for now, just make sure it's the creating user
-        String menuPrompt;
-        if (meeting.isRsvpRequired()) {
-            menuPrompt = getMessage(MTG_KEY, keyManage, PROMPT + ".rsvp", new String[]{"" + eventManager.getNumberInvitees(meeting),
-                    "" + eventManager.getListOfUsersThatRSVPYesForEvent(meeting).size()}, sessionUser);
-        } else {
-            menuPrompt = getMessage(MTG_KEY, keyManage, PROMPT, "" + eventManager.getNumberInvitees(meeting), sessionUser);
-        }
 
-        log.info("Menu prompt will be: " + meeting);
+        String eventSuffix = EVENTID_URL + meeting.getId();
+        USSDMenu promptMenu = new USSDMenu(getMessage(MTG_KEY, keyManage, PROMPT, sessionUser));
 
-        USSDMenu promptMenu = new USSDMenu(menuPrompt);
-        promptMenu.addMenuOption(MTG_MENUS + keyMtgDetails, getMessage(MTG_KEY, keyMtgDetails, "option", sessionUser));
-        promptMenu.addMenuOption(MTG_MENUS + keyChangeDate, getMessage(MTG_KEY, keyChangeDate, "option", sessionUser));
-        promptMenu.addMenuOption(MTG_MENUS + keyChangeLocation, getMessage(MTG_KEY, keyChangeLocation, "option", sessionUser));
-        promptMenu.addMenuOption(MTG_MENUS + keyCancel, getMessage(MTG_KEY, keyCancel, "option", sessionUser));
+        promptMenu.addMenuOption(MTG_MENUS + keyMtgDetails + eventSuffix, getMessage(MTG_KEY, keyMtgDetails, "option", sessionUser));
+        promptMenu.addMenuOption(MTG_MENUS + keyChangeDate + eventSuffix, getMessage(MTG_KEY, keyChangeDate, "option", sessionUser));
+        promptMenu.addMenuOption(MTG_MENUS + keyChangeLocation + eventSuffix, getMessage(MTG_KEY, keyChangeLocation, "option", sessionUser));
+        promptMenu.addMenuOption(MTG_MENUS + keyCancel + eventSuffix, getMessage(MTG_KEY, keyCancel, "option", sessionUser));
 
         return menuBuilder(promptMenu);
     }
@@ -181,6 +174,8 @@ public class USSDMeetingController extends USSDController {
                                                     "" + eventManager.getNumberInvitees(meeting)};
             mtgDescription = getMessage(MTG_KEY, keyMtgDetails, PROMPT, messageFields, sessionUser);
         }
+
+        log.info("Meeting description: " + mtgDescription);
 
         USSDMenu promptMenu = new USSDMenu(mtgDescription);
         promptMenu.addMenuOption(MTG_MENUS + keyManage + EVENTID_URL + eventId, getMessage(MTG_KEY, keyMtgDetails, OPTION + "back", sessionUser));
@@ -217,7 +212,7 @@ public class USSDMeetingController extends USSDController {
                                   @RequestParam(value=EVENT_PARAM) Long eventId) throws URISyntaxException {
 
         User sessionUser = userManager.loadOrSaveUser(inputNumber);
-        String prompt = getMessage(MTG_KEY, keyChangeLocation, eventManager.getEventDescription(eventId).get("location"), sessionUser);
+        String prompt = getMessage(MTG_KEY, keyChangeLocation, PROMPT, eventManager.getEventDescription(eventId).get("location"), sessionUser);
 
         USSDMenu promptMenu = new USSDMenu(prompt);
         promptMenu.setFreeText(true);
@@ -231,8 +226,9 @@ public class USSDMeetingController extends USSDController {
                                  @RequestParam(value=EVENT_PARAM) Long eventId) throws URISyntaxException {
 
         User sessionUser = userManager.loadOrSaveUser(inputNumber);
-        String prompt = getMessage(MTG_KEY, keyCancel, PROMPT, sessionUser);
-        USSDMenu promptMenu = new USSDMenu(prompt, optionsYesNo(sessionUser, keyModify + EVENTID_URL + eventId + "&action=" + keyCancel, "exit"));
+        USSDMenu promptMenu = new USSDMenu(getMessage(MTG_KEY, keyCancel, PROMPT, sessionUser));
+        promptMenu.addMenuOption(MTG_MENUS + keyModify + EVENTID_URL + eventId + "&action=" + keyCancel, getMessage(OPTION + "yes", sessionUser));
+        promptMenu.addMenuOption(MTG_MENUS + keyManage + EVENTID_URL + eventId, getMessage(OPTION + "no", sessionUser));
         return menuBuilder(promptMenu);
 
     }
@@ -498,7 +494,7 @@ public class USSDMeetingController extends USSDController {
                 break;
             case keyTime:
                 // todo: make sure we confirm date/time that's parsed, and/or set it null, so the message still sends
-                eventToReturn = eventManager.setDateTimeString(eventId, passedValue);
+                // eventToReturn = eventManager.setDateTimeString(eventId, passedValue);
                 eventToReturn = eventManager.setEventTimestamp(eventId, Timestamp.valueOf(DateTimeUtil.parseDateTime(passedValue)));
                 break;
             case keyPlace:
