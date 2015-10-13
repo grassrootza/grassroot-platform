@@ -98,7 +98,8 @@ public class MeetingController extends BaseController {
 
     @RequestMapping(value = "/meeting/create", method = RequestMethod.POST)
     public String createMeeting(Model model, @ModelAttribute("meeting") Event meeting, BindingResult bindingResult,
-                                @RequestParam(value="subgroups", required=false) boolean subgroups, HttpServletRequest request, RedirectAttributes redirectAttributes) {
+                                @RequestParam(value="selectedGroupId", required=false) Long selectedGroupId,
+                                HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
         // todo: add error handling and validation
         // todo: check that we have all the needed information and/or add a confirmation screen
@@ -110,8 +111,20 @@ public class MeetingController extends BaseController {
         log.info("The string is: " + meeting.getDateTimeString());
 
         log.info("The event passed back to us: " + meeting.toString());
+
+        /*
+        This is a bit clunky. Unfortunately, Thymeleaf isn't handling the mapping of group IDs from selection box back
+          to the event.groupAppliesTo field, nor does it do it as a Group (just passes the toString() output around), hence ...
+         */
+
         meeting = eventManagementService.updateEvent(meeting);
-        System.out.println("Meeting currently: " + meeting.toString());
+
+        if (selectedGroupId != null) { // now we need to load a group and then pass it to meeting
+            log.info("Okay, we were passed a group Id, so we need to set it to this groupId: " + selectedGroupId);
+            meeting = eventManagementService.setGroup(meeting.getId(), selectedGroupId);
+        }
+
+        log.info("Meeting currently: " + meeting.toString());
 
         addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.creation.success", request);
         return "redirect:/home";

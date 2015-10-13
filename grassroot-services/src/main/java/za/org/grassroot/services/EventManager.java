@@ -159,6 +159,7 @@ public class EventManager implements EventManagementService {
         if (eventToUpdate.getAppliesToGroup() != null && eventToUpdate.getAppliesToGroup().getId() == groupId) {
             return eventToUpdate;
         } else {
+            log.info("Okay, we are setting this event to this groupId: " + groupId);
             eventToUpdate.setAppliesToGroup(groupManager.loadGroup(groupId));
             return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
         }

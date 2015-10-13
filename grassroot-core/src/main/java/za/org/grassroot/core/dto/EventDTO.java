@@ -230,7 +230,7 @@ public class EventDTO  implements Serializable {
                 ", createdDateTime=" + createdDateTime +
                 ", eventStartDateTime=" + eventStartDateTime +
                 ", createdByUser=" + createdByUser +
-//                ", appliesToGroup=" + appliesToGroup.getId() +
+                ", appliesToGroup.id=" + appliesToGroup +
                 ", canceled=" + canceled +
                 ", eventType=" + eventType +
                 ", name='" + name + '\'' +
