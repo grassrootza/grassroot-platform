@@ -54,7 +54,7 @@ public class Role extends BaseEntity implements GrantedAuthority {
         this.roleType = RoleType.GROUP;
     }
 
-    @Column(name = "role_name", length = 50)
+    @Column(name = "role_name", nullable = false, length = 100, unique = true)
     public String getName() {
         return name;
     }
@@ -88,6 +88,7 @@ public class Role extends BaseEntity implements GrantedAuthority {
     }
 
     @Column(name = "role_type")
+    @Enumerated(EnumType.STRING)
     public RoleType getRoleType() {
         return roleType;
     }

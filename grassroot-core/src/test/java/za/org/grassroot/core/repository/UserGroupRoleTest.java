@@ -11,10 +11,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.Role;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 
 
 import static org.hamcrest.Matchers.*;
@@ -45,7 +42,7 @@ public class UserGroupRoleTest {
     private UserRepository       userRepository;
 
     @Test
-    public void testName() throws Exception {
+    public void testCreateGroupRoles() throws Exception {
 
         User user = new User("27729100003");
         user.setFirstName("Java");
@@ -59,14 +56,14 @@ public class UserGroupRoleTest {
         group1 = groupRepository.save(group1);
         group2 = groupRepository.save(group2);
 
-        Role group1Role1 = new Role("GROUP_MANAGER", group1.getId(), group1.getGroupName());
+        Role group1Role1 = new Role("GROUP_ADMINISTRATOR", group1.getId(), group1.getGroupName());
 
         group1Role1 = roleRepository.save(group1Role1);
         assertThat(group1Role1.getRoleType(), equalTo(Role.RoleType.GROUP));
-        assertThat(group1Role1.getAuthority(), equalTo("GROUP_ROLE_GROUP_MANAGER_GROUP_ID_" + group1.getId() ));
+        assertThat(group1Role1.getAuthority(), equalTo("GROUP_ROLE_GROUP_ADMINISTRATOR_GROUP_ID_" + group1.getId() ));
 
 
-        Permission permission1 = new Permission("UN_SUBSCRIBE_GROUP_MEMBER");
+        Permission permission1 = new Permission(BasePermissions.GROUP_PERMISSION_CREATE_MEMBER_INVITATION, 2);
         permission1 = permissionRepository.save(permission1);
 
         group1Role1.addPermission(permission1);
@@ -88,9 +85,7 @@ public class UserGroupRoleTest {
 
         assertThat(user.getAuthorities(), CoreMatchers.hasItem(group1Role1));
 
-        assertThat(user.getAuthorities(), hasItem(Matchers.<GrantedAuthority>hasProperty("authority", equalTo("GROUP_ROLE_GROUP_MANAGER_GROUP_ID_" + group1.getId()))));
-//        assertThat(user.getAuthorities(), hasItem(Matchers.<GrantedAuthority>hasProperty("authority", equalTo("PERMISSION_UN_SUBSCRIBE_GROUP_MEMBER"))));
-
+        assertThat(user.getAuthorities(), hasItem(Matchers.<GrantedAuthority>hasProperty("authority", equalTo("GROUP_ROLE_GROUP_ADMINISTRATOR_GROUP_ID_" + group1.getId()))));
 
     }
 }

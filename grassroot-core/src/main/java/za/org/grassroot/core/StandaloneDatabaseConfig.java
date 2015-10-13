@@ -1,7 +1,13 @@
 package za.org.grassroot.core;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
+import org.springframework.jdbc.datasource.init.DataSourceInitializer;
+import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 
 import javax.sql.DataSource;
 import java.util.logging.Logger;
@@ -18,16 +24,35 @@ public class StandaloneDatabaseConfig extends DatabaseConfig {
 
     @Override
     public DataSource dataSource() {
-        log.info("Running with DEFAULT profile");
-        org.apache.tomcat.jdbc.pool.DataSource dataSource = new org.apache.tomcat.jdbc.pool.DataSource();
+        log.info("Running with DEFAULT H2 database profile");
 
-        dataSource.setDriverClassName("org.h2.Driver");
-        dataSource.setUrl("jdbc:h2:mem:sagan;MODE=PostgreSQL;DB_CLOSE_ON_EXIT=FALSE");
-        dataSource.setUsername("sa");
-        dataSource.setPassword("");
-        dataSource.setValidationQuery("SELECT 1");
-
-        configureDataSource(dataSource);
-        return dataSource;
+        return new EmbeddedDatabaseBuilder()
+                .setType(EmbeddedDatabaseType.H2)
+                .addScript("classpath:db/create_acl_schema.sql")
+                .addScript("classpath:db/insert_acl_class_seed_data.sql")
+                //.addScript("classpath:db/insert_permissions_seed_data.sql")
+                .ignoreFailedDrops(true)
+                .build();
     }
+
+    @Bean
+    public DataSourceInitializer dataSourceInitializer(DataSource dataSource) {
+        ResourceDatabasePopulator databasePopulator = new ResourceDatabasePopulator();
+
+
+        databasePopulator.addScript(new ClassPathResource("db/insert_permissions_seed_data.sql"));
+
+        //ResourceDatabasePopulator databaseCleaner = new ResourceDatabasePopulator();
+        //databaseCleaner.addScript(new ClassPathResource("db/drop_member_table.sql"));
+        //databaseCleaner.setIgnoreFailedDrops(true);
+
+        DataSourceInitializer initializer = new DataSourceInitializer();
+        initializer.setDataSource(dataSource);
+        initializer.setDatabasePopulator(databasePopulator);
+        //initializer.setDatabaseCleaner(databaseCleaner);
+
+        return initializer;
+    }
+
+
 }

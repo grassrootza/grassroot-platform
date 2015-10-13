@@ -1,2 +1,2 @@
--- manually drop the index as it will not drop from the script
---DROP INDEX idx_event_start_date_time on event;
+
+DELETE  from permission where id in (1,2,3,4,5,6,7,8);

@@ -52,6 +52,7 @@ public class HerokuDatabaseConfig extends  DatabaseConfig {
         dataSourceBuilder.username(username);
         dataSourceBuilder.password(password);
 
+
         return dataSourceBuilder.build();
     }
 }

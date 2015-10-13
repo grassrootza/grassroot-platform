@@ -1,22 +1,33 @@
 package za.org.grassroot.services;
 
+
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 
-import java.security.acl.Permission;
+import java.util.Set;
+
 
 /**
  * @author Lesetse Kimwaga
  */
 public interface GroupAccessControlManagementService {
 
+
     /**
      * @param group
-     * @param role
-     * @return
+     * @param user
+     * @param groupPermissions
      */
-    Role createGroupRole(Group group, Role role);
+    void addUserGroupPermissions(Group group, User user, Set<Permission> groupPermissions);
+
+    /**
+     * @param group
+     * @param user
+     * @param groupPermissions
+     */
+    void removeUserGroupPermissions(Group group, User user, Set<Permission> groupPermissions);
 
 
     /**
@@ -26,4 +37,6 @@ public interface GroupAccessControlManagementService {
      * @return
      */
     boolean hasGroupPermission(Permission permission, Group group, User user);
+
+
 }

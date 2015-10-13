@@ -6,11 +6,11 @@
   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.0.xsd">
 
-	<changeSet id="change_6" author="aakil">
-		<comment>Add index on event for start_date_time</comment>
-		<sqlFile path="db/scripts/script_6.sql"/>
+	<changeSet id="change_7" author="lesetse">
+		<comment>Update Role and Permission tables</comment>
+		<sqlFile path="db/scripts/script_7.sql"/>
 		<rollback>
-            <sqlFile  path="db/scripts/script_6_rollback.sql"/>
+            <sqlFile  path="db/scripts/script_7_rollback.sql"/>
         </rollback>
 	</changeSet>
 </databaseChangeLog>
