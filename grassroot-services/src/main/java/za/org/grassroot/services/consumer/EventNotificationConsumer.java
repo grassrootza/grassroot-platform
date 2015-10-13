@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.EventChanged;
 import za.org.grassroot.core.dto.NewGroupMember;
 import za.org.grassroot.core.enums.EventChangeType;
 import za.org.grassroot.core.enums.EventLogType;
@@ -63,16 +64,17 @@ public class EventNotificationConsumer {
 
     @JmsListener(destination = "event-changed", containerFactory = "messagingJmsContainerFactory",
             concurrency = "3")
-    public void sendChangedEventNotifications(Event event) {
-        log.finest("sendChangedEventNotifications... <" + event.toString() + ">");
-        for (User user : getAllUsersForGroup(event)) {
+    public void sendChangedEventNotifications(EventChanged eventChanged) {
+        log.finest("sendChangedEventNotifications... <" + eventChanged.toString() + ">");
+        for (User user : getAllUsersForGroup(eventChanged.getEvent())) {
             //generate message based on user language
-            String message = meetingNotificationService.createChangeMeetingNotificationMessage(user,event);
-            if (!eventLogManagementService.changeNotificationSentToUser(event, user, message)
-                    && !eventLogManagementService.userRsvpNoForEvent(event,user)) {
+            String message = meetingNotificationService.createChangeMeetingNotificationMessage(user,eventChanged.getEvent());
+            if (!eventLogManagementService.changeNotificationSentToUser(eventChanged.getEvent(), user, message)
+                    && (!eventLogManagementService.userRsvpNoForEvent(eventChanged.getEvent(),user)
+                    || eventChanged.isStartTimeChanged())) {
                 log.info("sendChangedEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
                 messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
-                eventLogManagementService.createEventLog(EventLogType.EventChange,event,user,message);
+                eventLogManagementService.createEventLog(EventLogType.EventChange,eventChanged.getEvent(),user,message);
             }
         }
 

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.EventChanged;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.EventRepository;
@@ -160,7 +161,7 @@ public class EventManager implements EventManagementService {
         Event eventToUpdate = eventRepository.findOne(eventId);
         Event beforeEvent = SerializationUtils.clone(eventToUpdate);
         eventToUpdate.setCanceled(true);
-        return saveandCheckChanges(beforeEvent,eventToUpdate);
+        return saveandCheckChanges(beforeEvent, eventToUpdate);
     }
 
     @Override
@@ -170,13 +171,13 @@ public class EventManager implements EventManagementService {
 
     @Override
     public List<Event> findByAppliesToGroupAndStartingAfter(Group group, Date date) {
-        return eventRepository.findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(group,date,false);
+        return eventRepository.findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(group, date, false);
     }
 
     @Override
     public List<Event> getUpcomingEvents(Group group) {
 
-        return findByAppliesToGroupAndStartingAfter(group,new Date());
+        return findByAppliesToGroupAndStartingAfter(group, new Date());
     }
 
     @Override
@@ -291,7 +292,9 @@ public class EventManager implements EventManagementService {
                 // let's send out a change notification if something changed in minimum required values
                 // todo: this seems to be malfunctioning because beforeEvent becomes confused.
                 if (!savedEvent.minimumEquals(beforeEvent)) {
-                    jmsTemplateProducerService.sendWithNoReply("event-changed",savedEvent);
+                    boolean startTimeChanged = false;
+                    if (!beforeEvent.getEventStartDateTime().equals(savedEvent.getEventStartDateTime())) startTimeChanged = true;
+                    jmsTemplateProducerService.sendWithNoReply("event-changed",new EventChanged(savedEvent,startTimeChanged));
                     log.info("queued to event-changed");
                 } else {
                     log.info("NOT queued to event-changed as minimum required values did not change...");
