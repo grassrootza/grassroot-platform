@@ -45,8 +45,13 @@ public class Event implements Serializable {
      */
     private boolean includeSubGroups;
 
+    //todo aakil this feels a bit clunky, re-visit and see if there is not a cleaner way
     /*
     used to calculate when a reminder must be sent, before the eventStartTime
+    if it is set to -1 it means there will be no reminders set for the event
+    if it is set to 0, then we will take the reminderminutes from group if appliestogroup is not null
+    if group = null or group.reminderminutes = 0 then set it to site.reminderminutes
+
      */
     private int reminderMinutes;
 
@@ -65,6 +70,14 @@ public class Event implements Serializable {
      */
 
     private Integer version;
+
+    /*
+    Used to see if reminders have allready been sent for the event. It is not the number of messages
+    sent but rather how many times we have sent reminders to participants.
+    At the moment we only send once but thought in the future we might send more than once
+    therefore the number rather than a boolean.
+     */
+    private Integer noRemindersSent;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -170,6 +183,15 @@ public class Event implements Serializable {
 
     public void setVersion(Integer version) {
         this.version = version;
+    }
+
+    @Column(name = "noreminderssent")
+    public Integer getNoRemindersSent() {
+        return noRemindersSent;
+    }
+
+    public void setNoRemindersSent(Integer noRemindersSent) {
+        this.noRemindersSent = noRemindersSent;
     }
 
     @PreUpdate
