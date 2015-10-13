@@ -13,9 +13,7 @@ import org.apache.commons.collections4.list.LazyList;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
+import java.util.*;
 
 @Entity
 @Table(name = "group_profile") // quoting table name in case "group" is a reserved keyword
@@ -28,17 +26,18 @@ public class Group implements Serializable {
     private User      createdByUser;
 
     private List<User> groupMembers = LazyList.lazyList(new ArrayList<>(), FactoryUtils.instantiateFactory(User.class));
-    private Group       parent;
+    private Group parent;
 
-    private String      groupTokenCode;
-    private Timestamp   tokenExpiryDateTime;
-    private Integer version;
+    private String    groupTokenCode;
+    private Timestamp tokenExpiryDateTime;
+    private Integer   version;
     /*
      used to calculate when a reminder must be sent, before the eventStartTime
      when the event is created and if appliestoGroup is set it will default to a value in group
      if group = null or group.reminderminutes = 0, then it will use the site value in properties file
       */
-    private int reminderMinutes;
+    private int       reminderMinutes;
+    private Set<Role> groupRoles = new HashSet<>();
 
 
     @Basic
@@ -139,6 +138,18 @@ public class Group implements Serializable {
     }
 
 
+    @OneToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "group_roles",
+            joinColumns        = {@JoinColumn(name = "group_id", referencedColumnName = "id")},
+            inverseJoinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id")}
+    )
+    public Set<Role> getGroupRoles() {
+        return groupRoles;
+    }
+
+    public void setGroupRoles(Set<Role> groupRoles) {
+        this.groupRoles = groupRoles;
+    }
     @PreUpdate
     @PrePersist
     public void updateTimeStamps() {

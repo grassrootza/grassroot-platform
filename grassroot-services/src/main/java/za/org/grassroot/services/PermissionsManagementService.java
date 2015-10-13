@@ -19,4 +19,6 @@ public interface PermissionsManagementService {
 
     List<Permission> getPermissions();
 
+    Permission findByName(String name);
+
 }

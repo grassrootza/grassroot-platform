@@ -7,4 +7,6 @@ import za.org.grassroot.core.domain.Permission;
  * @author Lesetse Kimwaga
  */
 public interface PermissionRepository extends CrudRepository<Permission,Long> {
+
+    Permission findByName(String name);
 }

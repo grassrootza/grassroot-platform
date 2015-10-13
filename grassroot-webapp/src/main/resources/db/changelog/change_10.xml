@@ -7,7 +7,7 @@
          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.0.xsd">
 
 	<changeSet id="change_10" author="lesetse">
-		<comment>ACL Seed Data</comment>
+		<comment>Roles and Permissions Table Updates</comment>
 		<sqlFile path="db/scripts/script_10.sql"/>
 		<rollback>
             <sqlFile  path="db/scripts/script_10_rollback.sql"/>

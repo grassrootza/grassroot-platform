@@ -6,11 +6,11 @@
   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.0.xsd">
 
-	<changeSet id="change_11" author="lesetse">
-		<comment>Permissions Seed Data</comment>
-		<sqlFile path="db/scripts/script_11.sql"/>
+	<changeSet id="change_12" author="lesetse">
+		<comment>ACL Schema Data</comment>
+		<sqlFile path="db/scripts/script_12.sql"/>
 		<rollback>
-            <sqlFile  path="db/scripts/script_11_rollback.sql"/>
+            <sqlFile  path="db/scripts/script_12_rollback.sql"/>
         </rollback>
 	</changeSet>
 </databaseChangeLog>

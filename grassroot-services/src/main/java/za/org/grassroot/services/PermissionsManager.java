@@ -44,4 +44,9 @@ public class PermissionsManager implements  PermissionsManagementService{
     public List<Permission> getPermissions() {
         return Lists.newArrayList(permissionRepository.findAll());
     }
+
+    @Override
+    public Permission findByName(String name) {
+        return permissionRepository.findByName(name);
+    }
 }

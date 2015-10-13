@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 INSERT INTO permission (id, permission_name, mask) VALUES
 (1, 'GROUP_PERMISSION_ADMINISTRATION',2),
 (2, 'GROUP_PERMISSION_UPDATE_GROUP_DETAILS',4),
@@ -10,12 +10,4 @@ INSERT INTO permission (id, permission_name, mask) VALUES
 (8, 'GROUP_PERMISSION_UPDATE_GROUP_EVENTS',256)
 
 ;
-=======
-ALTER TABLE event ADD COLUMN version integer;
-ALTER TABLE event ALTER COLUMN version SET DEFAULT 0;
-update event set version = 0;
-ALTER TABLE group_profile ADD COLUMN version integer;
-ALTER TABLE group_profile ALTER COLUMN version SET DEFAULT 0;
-update group_profile set version = 0;
 
->>>>>>> origin/master

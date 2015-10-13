@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 -- ACL Schema SQL for PostgreSQL
 
 -- drop table acl_entry;
@@ -45,8 +45,4 @@ create table acl_entry(
     constraint foreign_fk_4 foreign key(acl_object_identity) references acl_object_identity(id),
     constraint foreign_fk_5 foreign key(sid) references acl_sid(id)
 );
-=======
-ALTER TABLE group_profile ADD COLUMN reminderminutes integer;
-ALTER TABLE group_profile ALTER COLUMN reminderminutes SET DEFAULT 0;
-update group_profile set reminderminutes = 0;
->>>>>>> origin/master
+
