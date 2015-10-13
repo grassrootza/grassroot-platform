@@ -27,9 +27,11 @@ public class EventManager implements EventManagementService {
 
     private Logger log = Logger.getLogger(getClass().getCanonicalName());
 
+    //TODO aakil move this to the properties file as soon as you get the property injection to work
+    private final int SITE_REMINDERMINUTES = 1440; // 24hours
 
     @Autowired
-    EventRepository  eventRepository;
+    EventRepository eventRepository;
 
     @Autowired
     UserRepository userRepository;
@@ -56,12 +58,11 @@ public class EventManager implements EventManagementService {
 
     @Override
     public Event createEvent(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups, boolean rsvpRequired) {
-        return eventRepository.save(new Event(name, createdByUser, appliesToGroup, includeSubGroups, rsvpRequired));
+        return createNewEvent(createdByUser, EventType.Meeting, rsvpRequired, name ,appliesToGroup, includeSubGroups,0);
     }
 
     @Override
     public Event createEvent(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups) {
-        // return eventRepository.save(new Event(name, createdByUser, appliesToGroup,includeSubGroups));
         return createEvent(name, createdByUser, appliesToGroup, includeSubGroups, true);
     }
 
@@ -87,12 +88,48 @@ public class EventManager implements EventManagementService {
      */
     @Override
     public Event createEvent(String name, User createdByUser) {
-        return eventRepository.save(new Event(name, createdByUser));
+        return createNewEvent(createdByUser, EventType.Meeting,true,name,null,false,0);
     }
 
     @Override
     public Event createMeeting(User createdByUser) {
-        return eventRepository.save(new Event(createdByUser, EventType.Meeting, true)); // defaulting rsvpRequired to true
+        return createNewEvent(createdByUser, EventType.Meeting, true,"",null,false,0);
+    }
+
+    private Event createNewEvent(User createdByUser, EventType eventType, boolean rsvpRequired
+            , String name, Group appliesToGroup, boolean includeSubGroups, int reminderMinutes) {
+        Event event = new Event();
+        event.setCreatedByUser(createdByUser);
+        if (eventType == null) {
+            event.setEventType(EventType.Meeting); //default
+        } else {
+            event.setEventType(eventType);
+        }
+        event.setRsvpRequired(rsvpRequired);
+        event.setName(name);
+        if (appliesToGroup != null) {
+            event.setAppliesToGroup(appliesToGroup);
+        }
+        event.setIncludeSubGroups(includeSubGroups);
+        //set the event reminder minutes
+        if (reminderMinutes != 0) {
+            event.setReminderMinutes(reminderMinutes);
+        } else {
+            // see if we can set it from the group
+            if (appliesToGroup != null) {
+                if (appliesToGroup.getReminderMinutes() != 0) {
+                    reminderMinutes = appliesToGroup.getReminderMinutes();
+                }
+            }
+            if (reminderMinutes == 0) {
+                // set it to the site default
+                reminderMinutes = SITE_REMINDERMINUTES;
+            }
+            event.setReminderMinutes(reminderMinutes);
+        }
+        event.setNoRemindersSent(0);
+
+        return eventRepository.save(event);
     }
 
     @Override
@@ -141,7 +178,7 @@ public class EventManager implements EventManagementService {
         Event eventToUpdate = eventRepository.findOne(eventId);
         Event beforeEvent = SerializationUtils.clone(eventToUpdate);
         eventToUpdate.setDateTimeString(dateTimeString);
-        return saveandCheckChanges(new EventDTO(beforeEvent),eventToUpdate);
+        return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
     }
 
     @Override
@@ -218,6 +255,7 @@ public class EventManager implements EventManagementService {
     public List<Event> getOutstandingRSVPForUser(Long userId) {
         return getOutstandingRSVPForUser(userRepository.findOne(userId));
     }
+
     @Override
     public List<Event> getOutstandingRSVPForUser(User user) {
         // todo: we will probably use something like this at application load for every user that comes in via USSD
@@ -232,7 +270,7 @@ public class EventManager implements EventManagementService {
                 if (upcomingEvents != null) {
                     for (Event event : upcomingEvents) {
                         if (event.isRsvpRequired() && event.getCreatedByUser().getId() != user.getId()) {
-                            if (!eventLogManagementService.userRsvpForEvent(event,user)) {
+                            if (!eventLogManagementService.userRsvpForEvent(event, user)) {
                                 outstandingRSVPs.add(event);
                                 log.info("getOutstandingRSVPForUser...rsvpRequired..." + user.getId() + "...event..." + event.getId());
                             } else {
@@ -366,29 +404,30 @@ public class EventManager implements EventManagementService {
         Check if we need to send meeting notifications
          */
 
-            if (!priorEventComplete && minimumDataAvailable(savedEvent) && !savedEvent.isCanceled()) {
-                jmsTemplateProducerService.sendWithNoReply("event-added",new EventDTO(savedEvent));
-                log.info("queued to event-added");
-            }
-            if (priorEventComplete && minimumDataAvailable(savedEvent) && !savedEvent.isCanceled()) {
-                // let's send out a change notification if something changed in minimum required values
+        if (!priorEventComplete && minimumDataAvailable(savedEvent) && !savedEvent.isCanceled()) {
+            jmsTemplateProducerService.sendWithNoReply("event-added", new EventDTO(savedEvent));
+            log.info("queued to event-added");
+        }
+        if (priorEventComplete && minimumDataAvailable(savedEvent) && !savedEvent.isCanceled()) {
+            // let's send out a change notification if something changed in minimum required values
 
-                if (!savedEvent.minimumEquals(beforeEvent)) {
-                    boolean startTimeChanged = false;
-                    if (!beforeEvent.getEventStartDateTime().equals(savedEvent.getEventStartDateTime())) startTimeChanged = true;
-                    jmsTemplateProducerService.sendWithNoReply("event-changed",new EventChanged(new EventDTO(savedEvent),startTimeChanged));
-                    log.info("queued to event-changed event..." + savedEvent.getId() + "...version..." + savedEvent.getVersion());
-                } else {
-                    log.info("NOT queued to event-changed as minimum required values did not change...");
-
-                }
-            }
-            if (priorEventComplete && !beforeEvent.isCanceled() && savedEvent.isCanceled()) {
-                // ok send out cancelation notifications
-                jmsTemplateProducerService.sendWithNoReply("event-cancelled", new EventDTO(savedEvent));
-                log.info("queued to event-cancelled");
+            if (!savedEvent.minimumEquals(beforeEvent)) {
+                boolean startTimeChanged = false;
+                if (!beforeEvent.getEventStartDateTime().equals(savedEvent.getEventStartDateTime()))
+                    startTimeChanged = true;
+                jmsTemplateProducerService.sendWithNoReply("event-changed", new EventChanged(new EventDTO(savedEvent), startTimeChanged));
+                log.info("queued to event-changed event..." + savedEvent.getId() + "...version..." + savedEvent.getVersion());
+            } else {
+                log.info("NOT queued to event-changed as minimum required values did not change...");
 
             }
+        }
+        if (priorEventComplete && !beforeEvent.isCanceled() && savedEvent.isCanceled()) {
+            // ok send out cancelation notifications
+            jmsTemplateProducerService.sendWithNoReply("event-cancelled", new EventDTO(savedEvent));
+            log.info("queued to event-cancelled");
+
+        }
 
         return savedEvent;
     }
@@ -398,7 +437,7 @@ public class EventManager implements EventManagementService {
         log.finest("minimumDataAvailable..." + event.toString());
         if (event.getName() == null || event.getName().trim().equals("")) minimum = false;
         if (event.getEventLocation() == null || event.getEventLocation().trim().equals("")) minimum = false;
-        if (event.getAppliesToGroup() == null ) minimum = false;
+        if (event.getAppliesToGroup() == null) minimum = false;
         if (event.getCreatedByUser() == null) minimum = false;
         if (event.getDateTimeString() == null || event.getDateTimeString().trim().equals("")) minimum = false;
         if (event.getEventStartDateTime() == null) minimum = false;
@@ -406,12 +445,13 @@ public class EventManager implements EventManagementService {
 
         return minimum;
     }
+
     private boolean minimumDataAvailable(EventDTO event) {
         boolean minimum = true;
         log.finest("minimumDataAvailable..." + event.toString());
         if (event.getName() == null || event.getName().trim().equals("")) minimum = false;
         if (event.getEventLocation() == null || event.getEventLocation().trim().equals("")) minimum = false;
-        if (event.getAppliesToGroup() == null ) minimum = false;
+        if (event.getAppliesToGroup() == null) minimum = false;
         if (event.getCreatedByUser() == null) minimum = false;
         if (event.getDateTimeString() == null || event.getDateTimeString().trim().equals("")) minimum = false;
         if (event.getEventStartDateTime() == null) minimum = false;
@@ -475,7 +515,7 @@ Method to take a partially filled out event, from the web application, and add i
             return null;
         }
 
-        if (passedEvent.getName() != null ) savedEvent.setName(passedEvent.getName());
+        if (passedEvent.getName() != null) savedEvent.setName(passedEvent.getName());
 
         if (passedEvent.getEventLocation() != null) savedEvent.setEventLocation(passedEvent.getEventLocation());
 
@@ -485,7 +525,8 @@ Method to take a partially filled out event, from the web application, and add i
 
         //if (passedEvent.getCreatedDateTime() != null) savedEvent.setCreatedDateTime(passedEvent.getCreatedDateTime());
 
-        if (passedEvent.getEventStartDateTime() != null) savedEvent.setEventStartDateTime(passedEvent.getEventStartDateTime());
+        if (passedEvent.getEventStartDateTime() != null)
+            savedEvent.setEventStartDateTime(passedEvent.getEventStartDateTime());
 
         //if (passedEvent.getEventType() != null) savedEvent.setEventType(passedEvent.getEventType());
 

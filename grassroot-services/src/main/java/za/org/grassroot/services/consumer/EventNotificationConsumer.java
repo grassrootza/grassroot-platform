@@ -113,6 +113,15 @@ public class EventNotificationConsumer {
 
     }
 
+    @JmsListener(destination = "event-reminder", containerFactory = "messagingJmsContainerFactory",
+            concurrency = "3")
+    public void sendEventReminder(EventDTO event) {
+        log.info("sendEventReminder...event.id..." + event.getId());
+        for (User user : getAllUsersForGroup(event.getEventObject())) {
+            sendMeetingReminderMessage(user,event);
+        }
+
+    }
 
 
     private List<User> getAllUsersForGroup(Event event) {
@@ -134,6 +143,16 @@ public class EventNotificationConsumer {
 
     }
 
+    private void sendMeetingReminderMessage(User user, EventDTO event) {
+        //generate message based on user language
+        String message = meetingNotificationService.createMeetingReminderMessage(user, event);
+        if (!eventLogManagementService.reminderSentToUser(event.getEventObject(),user) && !eventLogManagementService.userRsvpNoForEvent(event.getEventObject(),user)) {
+            log.info("sendMeetingReminderMessage...send message..." + message + "...to..." + user.getPhoneNumber());
+            messageSendingService.sendMessage(message,user.getPhoneNumber(), MessageProtocol.SMS);
+            eventLogManagementService.createEventLog(EventLogType.EventReminder,event.getEventObject(),user,message);
+        }
+
+    }
 
 }
 

@@ -8,7 +8,8 @@ public enum EventChangeType {
     EVENT_ADDED("event-added"),
     EVENT_CHANGED("event-changed"),
     EVENT_CANCELLED("event-cancelled"),
-    USER_ADDED("user-added");
+    USER_ADDED("user-added"),
+    EVENT_REMINDER("event-reminder");
 
     private final String text;
 

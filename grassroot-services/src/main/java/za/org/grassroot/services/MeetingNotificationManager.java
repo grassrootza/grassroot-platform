@@ -53,6 +53,12 @@ public class MeetingNotificationManager implements MeetingNotificationService {
         return messageSourceAccessor.getMessage("sms.mtg.send.cancel", populateFields(user, event), locale);
     }
 
+    @Override
+    public String createMeetingReminderMessage(User user, EventDTO event) {
+        Locale locale = getUserLocale(user);
+        return messageSourceAccessor.getMessage("sms.mtg.send.reminder", populateFields(user, event), locale);
+    }
+
     private Locale getUserLocale(User user) {
         if (user.getLanguageCode() == null || user.getLanguageCode().trim().equals("")) {
             return Locale.ENGLISH;

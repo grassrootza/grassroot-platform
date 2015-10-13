@@ -35,14 +35,15 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     N.B. do not remove start_date_time > current_timestamp as it will force the query to do an
     index scan, when there is enough data
 
-    select * from event e
-        where e.canceled = FALSE
-        and start_date_time > current_timestamp -- index for start_date_time and so we can read by index - local timestamp???
-        and (start_date_time - INTERVAL '30 minute') > current_timestamp --minimum notification period
-        and date(start_date_time) <= (current_date + interval '1 day') -- local date??? - 1 day interval to catch meetings after midnight
-
+select * from event e
+where e.canceled = FALSE
+      and start_date_time > current_timestamp -- index for start_date_time and so we can read by index - local timestamp???
+      and (start_date_time - e.reminderminutes * INTERVAL '1 minute') < current_timestamp
+      and (start_date_time - e.reminderminutes * INTERVAL '1 minute') > e.created_date_time
+      and e.reminderminutes > 0
+      and e.noreminderssent = 0
 
      */
-    @Query(value = "select * from event e where e.canceled = FALSE and start_date_time > current_timestamp and (start_date_time - INTERVAL '?1 minute') > current_timestamp and date(start_date_time) <= (current_date + interval '1 day')",nativeQuery = true)
-    List<Event> findEventsForReminders(int minimumReminderMinutes);
+    @Query(value = "select * from event e where e.canceled = FALSE and start_date_time > current_timestamp and (start_date_time - e.reminderminutes * INTERVAL '1 minute') < current_timestamp and (start_date_time - e.reminderminutes * INTERVAL '1 minute') > e.created_date_time and e.reminderminutes > 0 and e.noreminderssent = 0",nativeQuery = true)
+    List<Event> findEventsForReminders();
 }

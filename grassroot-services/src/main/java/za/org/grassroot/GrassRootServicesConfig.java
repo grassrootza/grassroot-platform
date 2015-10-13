@@ -1,6 +1,7 @@
 package za.org.grassroot;
 
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.orm.jpa.EntityScan;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;

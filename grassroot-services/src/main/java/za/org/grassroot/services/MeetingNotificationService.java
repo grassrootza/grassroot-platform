@@ -14,6 +14,8 @@ public interface MeetingNotificationService {
     public String createMeetingNotificationMessage(User user, EventDTO event);
     public String createChangeMeetingNotificationMessage(User user, EventDTO event);
     public String createCancelMeetingNotificationMessage(User user, EventDTO event);
+    public String createMeetingReminderMessage(User user, EventDTO event);
+
 
 
 }
