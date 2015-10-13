@@ -60,13 +60,17 @@ public class MeetingController extends BaseController {
 
         model.addAttribute("meeting", meeting);
         model.addAttribute("rsvpYesTotal", eventManagementService.getListOfUsersThatRSVPYesForEvent(meeting).size());
-        model.addAttribute("rsvpResponses", eventManagementService.getRSVPResponses(meeting));
+        model.addAttribute("rsvpResponses", eventManagementService.getRSVPResponses(meeting).entrySet());
 
         log.info("Number of yes RSVPd: " + eventManagementService.getListOfUsersThatRSVPYesForEvent(meeting).size());
         log.info("Size of response map: " + eventManagementService.getRSVPResponses(meeting).size());
 
         return "meeting/view";
     }
+
+    /**
+     * Meeting creation
+     */
 
     @RequestMapping("/meeting/create")
     public String createMeetingIndex(Model model, @RequestParam(value="groupId", required=false) Long groupId) {
@@ -99,7 +103,6 @@ public class MeetingController extends BaseController {
         // todo: add error handling and validation
         // todo: check that we have all the needed information and/or add a confirmation screen
 
-
         // todo: put this data transformation else where:Maybe Wrapper?
         meeting.setDateTimeString(new SimpleDateFormat("E d MMM HH:mm").format(meeting.getEventStartDateTime()));
 
@@ -110,11 +113,24 @@ public class MeetingController extends BaseController {
         meeting = eventManagementService.updateEvent(meeting);
         System.out.println("Meeting currently: " + meeting.toString());
 
-        // todo: need a way to get the response of sending meeting
-
         addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.creation.success", request);
         return "redirect:/home";
 
+    }
+
+    /**
+     * Meeting modification
+     */
+
+    @RequestMapping(value = "/meeting/modify", params={"change"})
+    public String initiateMeetingModification(Model model, @ModelAttribute("meeting") Event meeting) {
+
+        // todo: check for permission ...
+        meeting = eventManagementService.loadEvent(meeting.getId()); // load all details, as may not have been passed by Th
+        model.addAttribute("meeting", meeting);
+        model.addAttribute("rsvpYesTotal", eventManagementService.getListOfUsersThatRSVPYesForEvent(meeting).size());
+
+        return "meeting/modify";
     }
 
     @RequestMapping(value = "/meeting/modify", method=RequestMethod.POST, params={"modify"})
@@ -122,7 +138,7 @@ public class MeetingController extends BaseController {
                                 BindingResult bindingResult, HttpServletRequest request) {
 
         log.info("Meeting we are passed: " + meeting);
-        eventManagementService.updateEvent(meeting);
+        meeting = eventManagementService.updateEvent(meeting);
         model.addAttribute("meeting", meeting);
         addMessage(model, MessageType.SUCCESS, "meeting.update.success", request);
         return "meeting/view";
@@ -152,6 +168,10 @@ public class MeetingController extends BaseController {
 
     }
 
+    /**
+     * Free text entry, for authorized accounts
+     */
+
     // Major todo: make this secured against the user's role as 'admin' on an institutional account
     // @Secured()
     @RequestMapping(value = "/meeting/free")
@@ -173,6 +193,7 @@ public class MeetingController extends BaseController {
         return "meeting/free";
     }
 
+    // Major todo: move to service layer
     @RequestMapping(value = "/meeting/free", method = RequestMethod.POST)
     public String sendFreeMsg(Model model, HttpServletRequest request, @RequestParam(value="groupId") Long groupId,
                               @RequestParam(value="message") String message, @RequestParam(value="includeSubGroups", required=false) boolean includeSubgroups) {
@@ -200,20 +221,25 @@ public class MeetingController extends BaseController {
 
     }
 
-    /*
-    These are to handle RSVPs that come in via the web application
-    If it's a 'yes', we add it as such; it it's a 'no, we just need to make sure the service layer excludes the user
-     from reminders and cancellations, but does include them on change notices (in case that changes RSVP ...).
+    /**
+     * RSVP handling
      */
+
+    /* These are to handle RSVPs that come in via the web application
+    If it's a 'yes', we add it as such; it it's a 'no, we just need to make sure the service layer excludes the user
+    from reminders and cancellations, but does include them on change notices (in case that changes RSVP ...). */
     @RequestMapping(value = "/meeting/rsvp", method = RequestMethod.POST, params={"yes"})
     public String rsvpYes(Model model, @RequestParam(value="eventId") Long eventId, HttpServletRequest request) {
 
-        Event event = eventManagementService.loadEvent(eventId);
+        Event meeting = eventManagementService.loadEvent(eventId);
         User user = getUserProfile();
 
-        eventLogManagementService.rsvpForEvent(event, user, EventRSVPResponse.YES);
+        eventLogManagementService.rsvpForEvent(meeting, user, EventRSVPResponse.YES);
 
-        model.addAttribute("meeting", event);
+        model.addAttribute("meeting", meeting);
+        model.addAttribute("rsvpYesTotal", eventManagementService.getListOfUsersThatRSVPYesForEvent(meeting).size());
+        model.addAttribute("rsvpResponses", eventManagementService.getRSVPResponses(meeting).entrySet());
+
         addMessage(model, MessageType.SUCCESS, "meeting.rsvp.yes", request);
 
         return "meeting/view";

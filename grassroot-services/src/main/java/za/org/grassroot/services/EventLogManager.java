@@ -52,7 +52,9 @@ public class EventLogManager implements EventLogManagementService {
 
     @Override
     public boolean changeNotificationSentToUser(Event event, User user, String message) {
-        return eventLogRepository.changeNotificationSent(event,user,message);
+        boolean messageSent = eventLogRepository.changeNotificationSent(event,user,message);
+        log.info("changeNotificationSentToUser...user..." + user.getPhoneNumber() + "...event..." + event.getId() + "...version..." + event.getVersion() + "...message..." + message + "...returning..." + messageSent);
+        return messageSent;
     }
 
     @Override
@@ -91,7 +93,9 @@ public class EventLogManager implements EventLogManagementService {
 
     @Override
     public boolean userRsvpNoForEvent(Event event, User user) {
-        return eventLogRepository.rsvpNoForEvent(event,user);
+        boolean rsvpNoForEvent = eventLogRepository.rsvpNoForEvent(event,user);
+        log.info("userRsvpNoForEvent...returning..." + rsvpNoForEvent + " for event..." + event.getId() + "...user..." + user.getPhoneNumber());
+        return rsvpNoForEvent;
     }
 
     @Override
@@ -107,7 +111,7 @@ public class EventLogManager implements EventLogManagementService {
     @Override
     public RSVPTotalsDTO getRSVPTotalsForEvent(Event event) {
         if (!event.isIncludeSubGroups()) {
-            return new RSVPTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(),event.getAppliesToGroup().getId()));
+            return new RSVPTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(),event.getAppliesToGroup().getId(),event.getCreatedByUser().getId()));
         }
         // get the totals recursively
         RSVPTotalsDTO totals = new RSVPTotalsDTO();
@@ -123,7 +127,7 @@ public class EventLogManager implements EventLogManagementService {
         }
 
         // add all the totals at this level
-        rsvpTotalsDTO.add(new RSVPTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), parentGroup.getId())));
+        rsvpTotalsDTO.add(new RSVPTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), parentGroup.getId(),event.getCreatedByUser().getId())));
 
     }
 }

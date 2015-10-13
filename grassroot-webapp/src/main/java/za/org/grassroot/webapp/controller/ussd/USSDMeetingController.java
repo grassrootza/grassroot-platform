@@ -22,7 +22,9 @@ import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -56,6 +58,8 @@ public class USSDMeetingController extends USSDController {
 
     private static final String keyNewGroup = "newgroup", keyGroup = "group", keySubject="subject",
             keyTime = "time", keyPlace = "place", keySend = "send";
+    private static final String keyManage = "manage", keyMtgDetails = "details", keyChangeDate = "changeDate",
+            keyChangeLocation = "changeLocation", keyCancel = "cancel", keyModify = "modify";
     private static final String mtgPath = USSD_BASE +MTG_MENUS;
 
     private static final List<String> menuSequence = Arrays.asList(START_KEY, keySubject, keyPlace, keyTime, keySend);
@@ -69,16 +73,22 @@ public class USSDMeetingController extends USSDController {
      */
     @RequestMapping(value = mtgPath + START_KEY)
     @ResponseBody
-    public Request meetingOrg(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber) throws URISyntaxException {
+    public Request meetingOrg(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                              @RequestParam(value="newMtg", required=false) boolean newMeeting) throws URISyntaxException {
 
         User sessionUser;
-        try { sessionUser = userManager.loadOrSaveUser(inputNumber, MTG_MENUS + START_KEY); }
+        try { sessionUser = userManager.loadOrSaveUser(inputNumber); }
         catch (NoSuchElementException e) { return noUserError; }
 
-        // initialize event to be filled out in subsequent menus
-        Event meetingToCreate = eventManager.createEvent("", sessionUser);
+        // first, check if the user has upcoming events, and, if so, prompt to manage / view
 
-        return menuBuilder(askForGroup(sessionUser, meetingToCreate.getId(), nextMenuKey(START_KEY), keyGroup));
+        if (newMeeting || eventManager.getUpcomingEventsUserCreated(sessionUser).size() == 0) {
+            // initialize event to be filled out in subsequent menus
+            Event meetingToCreate = eventManager.createEvent("", sessionUser);
+            return menuBuilder(askForGroup(sessionUser, meetingToCreate.getId(), nextMenuKey(START_KEY), keyGroup));
+        } else {
+            return menuBuilder(askNewOld(sessionUser));
+        }
     }
 
     private USSDMenu askForGroup(User sessionUser, Long eventId, String keyNext, String keyCreate) throws URISyntaxException {
@@ -91,10 +101,175 @@ public class USSDMeetingController extends USSDController {
             String promptMessage = getMessage(MTG_KEY, START_KEY, PROMPT + ".has-group", sessionUser);
             String existingGroupUri = MTG_MENUS + keyNext + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + keyGroup;
             String newGroupUri = MTG_MENUS + keyNewGroup + EVENTID_URL + eventId;
-            groupMenu = userGroupMenu(sessionUser, promptMessage, existingGroupUri, newGroupUri, TEXT_PARAM);
+            groupMenu = userGroupMenu(sessionUser, promptMessage, existingGroupUri, newGroupUri, GROUP_PARAM);
         }
         return groupMenu;
     }
+
+    private USSDMenu askNewOld(User sessionUser) {
+
+        // todo: paginate so there aren't too many, but think that will be a marginal problem for now
+
+        USSDMenu askMenu = new USSDMenu("Manage an upcoming meeting, or call a new one?");
+        List<Event> upcomingEvents = eventManager.getUpcomingEventsUserCreated(sessionUser);
+
+        for (Event event : upcomingEvents) {
+            Map<String, String> eventDescription = eventManager.getEventDescription(event);
+            if (eventDescription.get("minimumData").equals("true")) {
+                String menuLine = eventDescription.get("groupName") + ": " + eventDescription.get("eventSubject");
+                askMenu.addMenuOption(MTG_MENUS + keyManage + EVENTID_URL + event.getId(), menuLine);
+            }
+        }
+
+        askMenu.addMenuOption(MTG_MENUS + START_KEY + "?newMtg=true", "Call a new meeting");
+
+        return askMenu;
+    }
+
+    /*
+    The event management menu -- can't have too much complexity, just giving an RSVP total, and allowing cancel
+    and change the date & time or location (other changes have too high a clunky UI vs number of use case trade off)
+     */
+    @RequestMapping(value=mtgPath + keyManage)
+    @ResponseBody
+    public Request meetingManage(@RequestParam(value=PHONE_PARAM) String inputNumber,
+                                 @RequestParam(value=EVENT_PARAM) Long eventId) throws URISyntaxException {
+
+        User sessionUser = userManager.loadOrSaveUser(inputNumber);
+        Event meeting = eventManager.loadEvent(eventId);
+
+        log.info("Inside the management menu, for event: " + meeting);
+
+        // todo: check user's permissions on this group/event .. for now, just make sure it's the creating user
+        String menuPrompt;
+        if (meeting.isRsvpRequired()) {
+            menuPrompt = getMessage(MTG_KEY, keyManage, PROMPT + ".rsvp", new String[]{"" + eventManager.getNumberInvitees(meeting),
+                    "" + eventManager.getListOfUsersThatRSVPYesForEvent(meeting).size()}, sessionUser);
+        } else {
+            menuPrompt = getMessage(MTG_KEY, keyManage, PROMPT, "" + eventManager.getNumberInvitees(meeting), sessionUser);
+        }
+
+        log.info("Menu prompt will be: " + meeting);
+
+        USSDMenu promptMenu = new USSDMenu(menuPrompt);
+        promptMenu.addMenuOption(MTG_MENUS + keyMtgDetails, getMessage(MTG_KEY, keyMtgDetails, "option", sessionUser));
+        promptMenu.addMenuOption(MTG_MENUS + keyChangeDate, getMessage(MTG_KEY, keyChangeDate, "option", sessionUser));
+        promptMenu.addMenuOption(MTG_MENUS + keyChangeLocation, getMessage(MTG_KEY, keyChangeLocation, "option", sessionUser));
+        promptMenu.addMenuOption(MTG_MENUS + keyCancel, getMessage(MTG_KEY, keyCancel, "option", sessionUser));
+
+        return menuBuilder(promptMenu);
+    }
+
+    @RequestMapping(value=mtgPath + keyMtgDetails)
+    @ResponseBody
+    public Request meetingDetails(@RequestParam(value=PHONE_PARAM) String inputNumber,
+                                  @RequestParam(value=EVENT_PARAM) Long eventId) throws URISyntaxException {
+
+        User sessionUser = userManager.loadOrSaveUser(inputNumber);
+        Event meeting = eventManager.loadEvent(eventId);
+        String mtgDescription;
+
+        Map<String, String> meetingDetails = eventManager.getEventDescription(meeting);
+        if (meeting.isRsvpRequired()) {
+            int answeredYes = eventManager.getListOfUsersThatRSVPYesForEvent(meeting).size(), answeredNo = eventManager.getListOfUsersThatRSVPNoForEvent(meeting).size();
+            int noAnswer = eventManager.getNumberInvitees(meeting) - (answeredYes + answeredNo);
+            String[] messageFields = new String[]{meetingDetails.get("groupName"), meetingDetails.get("location"), meetingDetails.get("dateTimeString"),
+                    "" + eventManager.getNumberInvitees(meeting), "" + answeredYes, "" + answeredNo, "" + noAnswer};
+            mtgDescription = getMessage(MTG_KEY, keyMtgDetails, PROMPT + ".rsvp", messageFields, sessionUser);
+        } else {
+            String[] messageFields = new String[]{meetingDetails.get("groupName"), meetingDetails.get("location"), meetingDetails.get("dateTimeString"),
+                                                    "" + eventManager.getNumberInvitees(meeting)};
+            mtgDescription = getMessage(MTG_KEY, keyMtgDetails, PROMPT, messageFields, sessionUser);
+        }
+
+        USSDMenu promptMenu = new USSDMenu(mtgDescription);
+        promptMenu.addMenuOption(MTG_MENUS + keyManage + EVENTID_URL + eventId, getMessage(MTG_KEY, keyMtgDetails, OPTION + "back", sessionUser));
+        promptMenu.addMenuOption(START_KEY, getMessage(START_KEY, sessionUser));
+        promptMenu.addMenuOption("exit", getMessage("exit.option", sessionUser));
+
+        return menuBuilder(promptMenu);
+
+    }
+
+    /*
+    Major todo for these: add a 'confirm' screen
+    todo: add logging, etc.
+     */
+
+    @RequestMapping(value=mtgPath + keyChangeDate)
+    public Request changeDate(@RequestParam(value=PHONE_PARAM) String inputNumber,
+                              @RequestParam(value=EVENT_PARAM) Long eventId) throws URISyntaxException {
+
+        // todo: check permissions; include this in the interrupted / resume sequences
+        User sessionUser = userManager.loadOrSaveUser(inputNumber);
+        String prompt = getMessage(MTG_KEY, keyChangeDate, PROMPT, eventManager.getEventDescription(eventId).get("dateTimeString"), sessionUser);
+
+        USSDMenu promptMenu = new USSDMenu(prompt);
+        promptMenu.setFreeText(true);
+        promptMenu.setNextURI(MTG_MENUS + keyModify + EVENTID_URL + eventId + "&action=" + keyChangeDate);
+
+        return menuBuilder(promptMenu);
+
+    }
+
+    @RequestMapping(value=mtgPath + keyChangeLocation)
+    public Request changeLocation(@RequestParam(value=PHONE_PARAM) String inputNumber,
+                                  @RequestParam(value=EVENT_PARAM) Long eventId) throws URISyntaxException {
+
+        User sessionUser = userManager.loadOrSaveUser(inputNumber);
+        String prompt = getMessage(MTG_KEY, keyChangeLocation, eventManager.getEventDescription(eventId).get("location"), sessionUser);
+
+        USSDMenu promptMenu = new USSDMenu(prompt);
+        promptMenu.setFreeText(true);
+        promptMenu.setNextURI(MTG_MENUS + keyModify + EVENTID_URL + eventId + "&action=" + keyChangeLocation);
+        return menuBuilder(promptMenu);
+
+    }
+
+    @RequestMapping(value=mtgPath + keyCancel)
+    public Request meetingCancel(@RequestParam(value=PHONE_PARAM) String inputNumber,
+                                 @RequestParam(value=EVENT_PARAM) Long eventId) throws URISyntaxException {
+
+        User sessionUser = userManager.loadOrSaveUser(inputNumber);
+        String prompt = getMessage(MTG_KEY, keyCancel, PROMPT, sessionUser);
+        USSDMenu promptMenu = new USSDMenu(prompt, optionsYesNo(sessionUser, keyModify + EVENTID_URL + eventId + "&action=" + keyCancel, "exit"));
+        return menuBuilder(promptMenu);
+
+    }
+
+    @RequestMapping(value=mtgPath + keyModify)
+    public Request modifyMeeting(@RequestParam(value=PHONE_PARAM) String inputNumber,
+                                 @RequestParam(value=EVENT_PARAM) Long eventId,
+                                 @RequestParam("action") String action, @RequestParam(TEXT_PARAM) String userInput) throws URISyntaxException {
+
+        User sessionUser = userManager.loadOrSaveUser(inputNumber);
+        String menuPrompt;
+
+        switch (action) {
+            case keyChangeDate:
+                updateEvent(eventId, keyTime, userInput);
+                menuPrompt = getMessage(MTG_KEY, keyChangeDate, "done", sessionUser);
+                break;
+            case keyChangeLocation:
+                updateEvent(eventId, keyPlace, userInput);
+                menuPrompt = getMessage(MTG_KEY, keyChangeLocation, "done", sessionUser);
+                break;
+            case keyCancel:
+                eventManager.cancelEvent(eventId);
+                menuPrompt = getMessage(MTG_KEY, keyCancel, "done", sessionUser);
+                break;
+            default:
+                menuPrompt = getMessage(MTG_KEY, keyModify, "error", sessionUser);
+                break;
+        }
+
+        return menuBuilder(new USSDMenu(menuPrompt, optionsHomeExit(sessionUser)));
+
+    }
+
+    /**
+     * Menus to create and call a new meeting, including, if necessary, creating a new group for it
+     */
 
     private USSDMenu firstGroupPrompt(String keyNext, Long eventId, User sessionUser) {
 
@@ -162,9 +337,12 @@ public class USSDMeetingController extends USSDController {
             }
         } else {
             // process & validate the user's responses, and create a new group or add to the one we're building
+            String priorInputEncoded;
             Map<String, List<String>> splitPhoneNumbers = PhoneNumberUtil.splitPhoneNumbers(userResponse);
+            try { priorInputEncoded = URLEncoder.encode(userResponse, "UTF-8"); }
+            catch (UnsupportedEncodingException e) { priorInputEncoded = userResponse; }
             if (groupId == null) {
-                sessionUser = userManager.loadOrSaveUser(inputNumber, thisUriBase + "&prior_input=" + userResponse);
+                sessionUser = userManager.loadOrSaveUser(inputNumber, thisUriBase + "&prior_input=" + priorInputEncoded);
                 String returnUri;
                 if (splitPhoneNumbers.get(VALID).isEmpty()) { // avoid creating detritus groups if no valid numbers & user hangs up
                     returnUri = MTG_MENUS + keyGroup + EVENTID_URL + eventId;
@@ -175,7 +353,7 @@ public class USSDMeetingController extends USSDController {
                 thisMenu = numberEntryPrompt(returnUri, MTG_KEY, sessionUser, true, splitPhoneNumbers.get(ERROR));
             } else {
                 sessionUser = userManager.loadOrSaveUser(inputNumber, thisUriBase + "&" + GROUP_PARAM + "=" + groupId + "&" +
-                                                        "prior_input=" + userResponse);
+                                                        "prior_input=" + priorInputEncoded);
                 groupManager.addNumbersToGroup(groupId, splitPhoneNumbers.get(VALID));
                 String returnUri = MTG_MENUS + keyGroup + EVENTID_URL + eventId + "&groupId=" + groupId;
                 thisMenu = numberEntryPrompt(returnUri, MTG_KEY, sessionUser, false, splitPhoneNumbers.get(ERROR));
@@ -219,6 +397,9 @@ public class USSDMeetingController extends USSDController {
     // helper function to assemble the placeholder URLs from the menu; excludes 'text_param', since we get a '1' from the
     // interruption menu, and we don't want to create possible bugs through multiple parameters
 
+    // NOTE: Whatever menu comes after the group selection _has_ to use GROUP_PARAM instead of TEXT_PARAM, because the
+    // menu response will overwrite the 'request' parameter in the returned URL, and we will get a fail on the group
+
     private String assembleThisUri(Long eventId, String thisKey, String passedValueKey, String passedValue) {
         return (MTG_MENUS + thisKey + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + passedValueKey);
     }
@@ -228,7 +409,7 @@ public class USSDMeetingController extends USSDController {
     public Request getSubject(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
                               @RequestParam(value=EVENT_PARAM, required=true) Long eventId,
                               @RequestParam(value=PASSED_FIELD, required=true) String passedValueKey,
-                              @RequestParam(value=TEXT_PARAM, required=true) String passedValue) throws URISyntaxException {
+                              @RequestParam(value=GROUP_PARAM, required=true) String passedValue) throws URISyntaxException {
 
         String keyNext = nextMenuKey(keySubject); // skipped for the moment, like keyDate
         User sessionUser = userManager.loadOrSaveUser(inputNumber, assembleThisUri(eventId, keySubject, passedValueKey, passedValue));

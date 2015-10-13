@@ -131,4 +131,15 @@ public class EventRepositoryTest {
         assertEquals("future event", list.get(0).getName());
     }
 
+    @Test
+    public void shouldReturnSameObjectOnSecondUpdate() {
+        User user = userRepository.save(new User("085551234","test dup event user"));
+        Group group = groupRepository.save(new Group("test dup event",user));
+        Event event = eventRepository.save(new Event("duplicate event test",user,group));
+        event.setEventLocation("dup location");
+        Event event2 = eventRepository.save(event);
+        assertEquals(event.getId(),event2.getId());
+
+    }
+
 }

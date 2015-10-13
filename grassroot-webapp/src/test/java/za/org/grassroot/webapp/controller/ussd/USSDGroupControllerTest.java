@@ -80,7 +80,7 @@ public class USSDGroupControllerTest extends USSDAbstractTest {
         assertThat(createdGroup.getId(), is(reloadedGroup.getId()));
         assertThat(createdGroup.getCreatedByUser(), is(reloadedGroup.getCreatedByUser()));
 
-        // for some utterly bizarre reason, the below fails because 'code' comes back null
+        // for some reason, the below fails because 'code' comes back null, possibly similar reason to Event test fails
 
         /* String code = reloadedGroup.getGroupTokenCode();
         assertNotNull(code);
@@ -89,7 +89,6 @@ public class USSDGroupControllerTest extends USSDAbstractTest {
 
 
     }
-
 
     private Group utilCreateGroup() {
 

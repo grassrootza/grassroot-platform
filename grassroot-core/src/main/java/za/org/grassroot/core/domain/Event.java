@@ -50,7 +50,21 @@ public class Event implements Serializable {
      */
     private int reminderMinutes;
 
+    /*
+    Used for meetings, to note if an RSVP is necessary
+     */
     private boolean rsvpRequired;
+
+    /*
+    Used to determine if a recipient should have the option to forward an invite, vote, etc., when they receive it
+     */
+    private boolean relayable;
+
+    /*
+    Version used by hibernate to resolve conflicting updates. Do not update set it, it is for Hibernate only
+     */
+
+    private Integer version;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -144,6 +158,20 @@ public class Event implements Serializable {
         this.rsvpRequired = rsvpRequired;
     }
 
+    @Column(name = "can_relay")
+    public boolean isRelayable() { return relayable; }
+
+    public void setRelayable(boolean relayable) { this.relayable = relayable; }
+
+    @Version
+    public Integer getVersion() {
+        return version;
+    }
+
+    public void setVersion(Integer version) {
+        this.version = version;
+    }
+
     @PreUpdate
     @PrePersist
     public void updateTimeStamps() {
@@ -157,6 +185,18 @@ public class Event implements Serializable {
     Constructors
     Note: for the moment, until we build the use cases for other event types, defaulting all to meeting
      */
+
+
+    public Event(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups, boolean rsvpRequired, boolean relayable){
+        this.name = name;
+        this.createdByUser = createdByUser;
+        this.appliesToGroup = appliesToGroup;
+        this.eventLocation=""; // otherwise we get null violations
+        this.eventType = EventType.Meeting;
+        this.includeSubGroups = includeSubGroups;
+        this.rsvpRequired = rsvpRequired;
+        this.relayable = relayable;
+    }
 
     public Event(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups,boolean rsvpRequired) {
         this.name = name;
@@ -204,6 +244,24 @@ public class Event implements Serializable {
         this.eventType = eventType;
     }
 
+    public Event(String eventLocation, Long id, Timestamp createdDateTime, Timestamp eventStartDateTime, User createdByUser, Group appliesToGroup, boolean canceled, EventType eventType, String name, String dateTimeString, boolean includeSubGroups, int reminderMinutes, boolean rsvpRequired, boolean relayable, Integer version) {
+        this.eventLocation = eventLocation;
+        this.id = id;
+        this.createdDateTime = createdDateTime;
+        this.eventStartDateTime = eventStartDateTime;
+        this.createdByUser = createdByUser;
+        this.appliesToGroup = appliesToGroup;
+        this.canceled = canceled;
+        this.eventType = eventType;
+        this.name = name;
+        this.dateTimeString = dateTimeString;
+        this.includeSubGroups = includeSubGroups;
+        this.reminderMinutes = reminderMinutes;
+        this.rsvpRequired = rsvpRequired;
+        this.relayable = relayable;
+        this.version = version;
+    }
+
     public Event() {
     }
 
@@ -239,6 +297,7 @@ public class Event implements Serializable {
                 ", dateTimeString=\'" + dateTimeString +'\'' +
                 ", rsvpRequired=\'" + rsvpRequired + '\'' +
                 ", includeSubGroups=" + includeSubGroups +'\'' +
+                ", version=" + version +'\'' +
 
                 '}';
     }

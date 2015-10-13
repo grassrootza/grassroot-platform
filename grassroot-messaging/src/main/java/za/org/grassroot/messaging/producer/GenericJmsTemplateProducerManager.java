@@ -15,6 +15,7 @@ public class GenericJmsTemplateProducerManager implements GenericJmsTemplateProd
 
     @Override
     public void sendWithNoReply(String destination, Object message) {
+        jmsTemplate.setDeliveryPersistent(true);
         jmsTemplate.convertAndSend(destination, message);
     }
 }

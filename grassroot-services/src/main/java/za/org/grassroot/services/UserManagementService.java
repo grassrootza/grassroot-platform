@@ -16,6 +16,8 @@ public interface UserManagementService {
 
     List<User> getAllUsers();
 
+    Integer getUserCount();
+
     User getUserById(Long userId);
 
     Page<User> getDeploymentLog(Integer pageNumber);
@@ -32,6 +34,10 @@ public interface UserManagementService {
 
     User findByInputNumber(String inputNumber, String currentUssdMenu) throws NoSuchUserException;
 
+    List<User> searchByInputNumber(String inputNumber);
+
+    List<User> searchByDisplayName(String displayName);
+
     User reformatPhoneNumber(User sessionUser);
 
     List<User> getUsersFromNumbers(List<String> listOfNumbers);
@@ -44,9 +50,13 @@ public interface UserManagementService {
     
     User resetUserPassword(String username, String newPassword, String token);
 
+    User resetUserPassword(String username, String newPassword, User adminUser, String adminPassword);
+
     User fetchUserByUsername(String username);
 
     String getLastUssdMenu(User sessionUser);
+
+    User resetLastUssdMenu(User sessionUser);
 
 
 }

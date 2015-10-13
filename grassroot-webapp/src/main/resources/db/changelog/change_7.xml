@@ -6,8 +6,8 @@
   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.0.xsd">
 
-	<changeSet id="change_7" author="lesetse">
-		<comment>Update Role and Permission tables</comment>
+	<changeSet id="change_7" author="luke">
+		<comment>Add can_relay to event</comment>
 		<sqlFile path="db/scripts/script_7.sql"/>
 		<rollback>
             <sqlFile  path="db/scripts/script_7_rollback.sql"/>

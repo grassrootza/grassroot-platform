@@ -7,12 +7,14 @@ import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.EventChanged;
+import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 
+import javax.persistence.EntityManager;
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.logging.Logger;
@@ -43,6 +45,10 @@ public class EventManager implements EventManagementService {
 
     @Autowired
     EventLogManagementService eventLogManagementService;
+
+    @Autowired
+    EntityManager entityManager;
+
     /*
     Variety of createEvent methods with different signatures caters to USSD menus in particular, so can create event
     with varying degrees of information. Am defaulting to a meeting requires an RSVP, since that will be most cases.
@@ -104,7 +110,7 @@ public class EventManager implements EventManagementService {
         Event eventToUpdate = eventRepository.findOne(eventId);
         Event beforeEvent = SerializationUtils.clone(eventToUpdate);
         eventToUpdate.setName(subject);
-        return saveandCheckChanges(beforeEvent, eventToUpdate);
+        return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
     }
 
     @Override
@@ -117,7 +123,7 @@ public class EventManager implements EventManagementService {
             return eventToUpdate;
         } else {
             eventToUpdate.setAppliesToGroup(groupManager.loadGroup(groupId));
-            return saveandCheckChanges(beforeEvent, eventToUpdate);
+            return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
         }
     }
 
@@ -127,7 +133,7 @@ public class EventManager implements EventManagementService {
         Event eventToUpdate = eventRepository.findOne(eventId);
         Event beforeEvent = SerializationUtils.clone(eventToUpdate);
         eventToUpdate.setEventLocation(location);
-        return saveandCheckChanges(beforeEvent, eventToUpdate);
+        return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
     }
 
     @Override
@@ -135,7 +141,7 @@ public class EventManager implements EventManagementService {
         Event eventToUpdate = eventRepository.findOne(eventId);
         Event beforeEvent = SerializationUtils.clone(eventToUpdate);
         eventToUpdate.setDateTimeString(dateTimeString);
-        return saveandCheckChanges(beforeEvent,eventToUpdate);
+        return saveandCheckChanges(new EventDTO(beforeEvent),eventToUpdate);
     }
 
     @Override
@@ -143,16 +149,17 @@ public class EventManager implements EventManagementService {
         Event eventToUpdate = eventRepository.findOne(eventId);
         Event beforeEvent = SerializationUtils.clone(eventToUpdate);
         eventToUpdate.setEventStartDateTime(eventDateTime);
-        return saveandCheckChanges(beforeEvent, eventToUpdate);
+        return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
     }
 
     @Override
     public Event updateEvent(Event eventToUpdate) {
         // generic update for use from the web, where we get a bunch of changes applied at once
 
-        Event beforeEvent = loadEvent(eventToUpdate.getId());
-        eventToUpdate = fillOutEvent(eventToUpdate, beforeEvent);
-        return saveandCheckChanges(beforeEvent, eventToUpdate);
+        Event savedEvent = loadEvent(eventToUpdate.getId());
+        EventDTO beforeDTO = new EventDTO(savedEvent);
+        savedEvent = applyChangesToEntity(eventToUpdate, savedEvent);
+        return saveandCheckChanges(beforeDTO, savedEvent);
 
     }
 
@@ -161,7 +168,7 @@ public class EventManager implements EventManagementService {
         Event eventToUpdate = eventRepository.findOne(eventId);
         Event beforeEvent = SerializationUtils.clone(eventToUpdate);
         eventToUpdate.setCanceled(true);
-        return saveandCheckChanges(beforeEvent, eventToUpdate);
+        return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
     }
 
     @Override
@@ -221,10 +228,10 @@ public class EventManager implements EventManagementService {
         if (groups != null) {
             for (Group group : groups) {
                 List<Event> upcomingEvents = getUpcomingEventsForGroupAndParentGroups(group);
-                log.info("getOustandingRSVPForUser ... checking " + upcomingEvents.size() + " events");
+                //log.info("getOustandingRSVPForUser ... checking " + upcomingEvents.size() + " events");
                 if (upcomingEvents != null) {
                     for (Event event : upcomingEvents) {
-                        if (event.isRsvpRequired()) {
+                        if (event.isRsvpRequired() && event.getCreatedByUser().getId() != user.getId()) {
                             if (!eventLogManagementService.userRsvpForEvent(event,user)) {
                                 outstandingRSVPs.add(event);
                                 log.info("getOutstandingRSVPForUser...rsvpRequired..." + user.getId() + "...event..." + event.getId());
@@ -238,6 +245,7 @@ public class EventManager implements EventManagementService {
 
             }
         }
+        log.info("getOutstandingRSVPForUser..." + user.getId() + "...returning..." + outstandingRSVPs.size());
 
         return outstandingRSVPs;
     }
@@ -269,33 +277,107 @@ public class EventManager implements EventManagementService {
         return upComingEvents;
     }
 
+    @Override
+    public List<Event> getUpcomingEventsUserCreated(User requestingUser) {
+        List<Event> possibleEvents = eventRepository.findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(requestingUser, new Date(), false);
 
-    private Event saveandCheckChanges(Event beforeEvent, Event changedEvent) {
+        // take out events that were only partially formed ... todo: think if a way to make this faster than the iteration below
+        List<Event> fullyFormedEvents = new ArrayList<>();
+        for (Event event : possibleEvents) {
+            if (minimumDataAvailable(event))
+                fullyFormedEvents.add(event);
+        }
+
+        return fullyFormedEvents;
+    }
+
+    @Override
+    public List<Event> getUpcomingEvents(User requestingUser) {
+        // todo: at some point we will need this to be efficient ... for now, doing a very slow kludge, and going to avoid using the method
+
+        List<Event> upcomingEvents = new ArrayList<>();
+
+        for (Group group : requestingUser.getGroupsPartOf()) {
+            upcomingEvents.addAll(getUpcomingEvents(group));
+        }
+
+        return upcomingEvents;
+    }
+
+    @Override
+    public boolean hasUpcomingEvents(User requestingUser) {
+        // likewise, if we start using this at outset of meetings menu, need to make it fast, possibly a query
+        return getUpcomingEvents(requestingUser).size() != 0;
+    }
+
+    @Override
+    public String[] populateNotificationFields(Event event) {
+        return new String[]{
+                event.getAppliesToGroup().getName(""),
+                event.getCreatedByUser().nameToDisplay(),
+                event.getName(),
+                event.getDateTimeString(),
+                event.getEventLocation()
+        };
+    }
+
+    @Override
+    public Map<String, String> getEventDescription(Event event) {
+        Map<String, String> eventDescription = new HashMap<>();
+
+        if (minimumDataAvailable(event)) {
+            eventDescription.put("minimumData", "true");
+            eventDescription.put("groupName", event.getAppliesToGroup().getName(""));
+            eventDescription.put("creatingUser", event.getCreatedByUser().nameToDisplay());
+            eventDescription.put("eventSubject", event.getName());
+            eventDescription.put("createdDateTime", event.getCreatedDateTime().toString());
+            eventDescription.put("dateTimeString", event.getDateTimeString());
+            eventDescription.put("location", event.getEventLocation());
+        } else {
+            eventDescription.put("minimumData", "false");
+        }
+
+        return eventDescription;
+    }
+
+    @Override
+    public Map<String, String> getEventDescription(Long eventId) {
+        return getEventDescription(loadEvent(eventId));
+    }
+
+    @Override
+    public int getNumberInvitees(Event event) {
+        // may make this more sophisticated once we have message relays in place
+        return event.getAppliesToGroup().getGroupMembers().size();
+    }
+
+
+    private Event saveandCheckChanges(EventDTO beforeEvent, Event changedEvent) {
 
         log.info("saveandCheckChanges...starting ... with before event .. " + beforeEvent.toString());
+        log.info("saveandCheckChanges...changedEvent.id..." + changedEvent.getId());
 
-        // need to set this before saving the changed event, or the getters in minimuDataAvailable get confused
         boolean priorEventComplete = minimumDataAvailable(beforeEvent);
         Event savedEvent = eventRepository.save(changedEvent);
 
-        log.info("saveandCheckChanges..." + savedEvent.toString());
+        log.info("saveandCheckChanges...savedEvent..." + savedEvent.toString());
 
         /*
         Check if we need to send meeting notifications
          */
 
             if (!priorEventComplete && minimumDataAvailable(savedEvent) && !savedEvent.isCanceled()) {
-                jmsTemplateProducerService.sendWithNoReply("event-added",savedEvent);
+                jmsTemplateProducerService.sendWithNoReply("event-added",new EventDTO(savedEvent));
                 log.info("queued to event-added");
             }
             if (priorEventComplete && minimumDataAvailable(savedEvent) && !savedEvent.isCanceled()) {
                 // let's send out a change notification if something changed in minimum required values
-                // todo: this seems to be malfunctioning because beforeEvent becomes confused.
+
                 if (!savedEvent.minimumEquals(beforeEvent)) {
                     boolean startTimeChanged = false;
                     if (!beforeEvent.getEventStartDateTime().equals(savedEvent.getEventStartDateTime())) startTimeChanged = true;
-                    jmsTemplateProducerService.sendWithNoReply("event-changed",new EventChanged(savedEvent,startTimeChanged));
-                    log.info("queued to event-changed");
+                    jmsTemplateProducerService.sendWithNoReply("event-changed",new EventChanged(new EventDTO(savedEvent),startTimeChanged));
+                    log.info("queued to event-changed event..." + savedEvent.getId() + "...version..." + savedEvent.getVersion());
                 } else {
                     log.info("NOT queued to event-changed as minimum required values did not change...");
 
@@ -303,7 +385,7 @@ public class EventManager implements EventManagementService {
             }
             if (priorEventComplete && !beforeEvent.isCanceled() && savedEvent.isCanceled()) {
                 // ok send out cancelation notifications
-                jmsTemplateProducerService.sendWithNoReply("event-cancelled", savedEvent);
+                jmsTemplateProducerService.sendWithNoReply("event-cancelled", new EventDTO(savedEvent));
                 log.info("queued to event-cancelled");
 
             }
@@ -313,7 +395,20 @@ public class EventManager implements EventManagementService {
 
     private boolean minimumDataAvailable(Event event) {
         boolean minimum = true;
-        log.info("minimumDataAvailable..." + event.toString());
+        log.finest("minimumDataAvailable..." + event.toString());
+        if (event.getName() == null || event.getName().trim().equals("")) minimum = false;
+        if (event.getEventLocation() == null || event.getEventLocation().trim().equals("")) minimum = false;
+        if (event.getAppliesToGroup() == null ) minimum = false;
+        if (event.getCreatedByUser() == null) minimum = false;
+        if (event.getDateTimeString() == null || event.getDateTimeString().trim().equals("")) minimum = false;
+        if (event.getEventStartDateTime() == null) minimum = false;
+        log.info("minimumDataAvailable...returning..." + minimum);
+
+        return minimum;
+    }
+    private boolean minimumDataAvailable(EventDTO event) {
+        boolean minimum = true;
+        log.finest("minimumDataAvailable..." + event.toString());
         if (event.getName() == null || event.getName().trim().equals("")) minimum = false;
         if (event.getEventLocation() == null || event.getEventLocation().trim().equals("")) minimum = false;
         if (event.getAppliesToGroup() == null ) minimum = false;
@@ -366,6 +461,43 @@ public class EventManager implements EventManagementService {
          */
 
         return passedEvent;
+
+    }
+
+    /*
+Method to take a partially filled out event, from the web application, and add in a series of fields at once
+ */
+    private Event applyChangesToEntity(Event passedEvent, Event savedEvent) {
+
+        // todo throw a proper exception if the two events don't have matching IDs
+
+        if (passedEvent.getId() != savedEvent.getId()) {
+            return null;
+        }
+
+        if (passedEvent.getName() != null ) savedEvent.setName(passedEvent.getName());
+
+        if (passedEvent.getEventLocation() != null) savedEvent.setEventLocation(passedEvent.getEventLocation());
+
+        //if (passedEvent.getAppliesToGroup() != null) savedEvent.setAppliesToGroup(passedEvent.getAppliesToGroup());
+
+        //if (passedEvent.getCreatedByUser() != null) savedEvent.setCreatedByUser(passedEvent.getCreatedByUser());
+
+        //if (passedEvent.getCreatedDateTime() != null) savedEvent.setCreatedDateTime(passedEvent.getCreatedDateTime());
+
+        if (passedEvent.getEventStartDateTime() != null) savedEvent.setEventStartDateTime(passedEvent.getEventStartDateTime());
+
+        //if (passedEvent.getEventType() != null) savedEvent.setEventType(passedEvent.getEventType());
+
+        if (passedEvent.getDateTimeString() != null) savedEvent.setDateTimeString(passedEvent.getDateTimeString());
+
+        /*
+        We do not touch the two boolean fields, rsvpRequired and includeSubGroups, since those are set by
+        default in the constructors, and if passedEvent has them set to something different to savedEvent,
+         that means the user changed them, and hence they should be preserved. To test this.
+         */
+
+        return savedEvent;
 
     }
 

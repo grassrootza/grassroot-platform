@@ -8,7 +8,7 @@
 
 <div layout:fragment="header">
   <h2>Group: <span  th:text="${group.groupName}">Group</span></h2>
-  <div th:if="${hasParent}"><h3>This group has a parent. Its name is <span th:value="${group.parent.groupName}">parent</span></h3></div>
+  <div th:if="${hasParent}"><h3>This group has a parent. Its name is <span th:text="${group.parent.groupName}">parent</span></h3></div>
 </div>
 <div layout:fragment="overview">View Group and invite members</div>
 

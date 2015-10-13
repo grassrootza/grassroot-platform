@@ -6,11 +6,11 @@
   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.0.xsd">
 
-	<changeSet id="change_9" author="aakil">
-		<comment>Add reminderminutes to group</comment>
-		<sqlFile path="db/scripts/script_9.sql"/>
+	<changeSet id="change_10" author="lesetse">
+		<comment>ACL Seed Data</comment>
+		<sqlFile path="db/scripts/script_10.sql"/>
 		<rollback>
-            <sqlFile  path="db/scripts/script_9_rollback.sql"/>
+            <sqlFile  path="db/scripts/script_10_rollback.sql"/>
         </rollback>
 	</changeSet>
 </databaseChangeLog>

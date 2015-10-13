@@ -16,6 +16,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     User findByPhoneNumber(String phoneNumber);
 
+    /*
+    Used in admin pages to find users who can then be designated, modified, etc. Probably want a better search method
+    than to use 'containing', but will do for now.
+    Note: we can possibly also use something like to do an auto-complete or dropdown in group creation
+     */
+    List<User> findByPhoneNumberContaining(String phoneNumber);
+    List<User> findByDisplayNameContaining(String displayName);
+
     User findByUsername(String username);
     /*
     See if the phone number exists, before adding it
@@ -29,8 +37,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("select u from User u, EventLog el, Event e where e = ?1 and el.event = e and u = el.user and el.eventLogType = za.org.grassroot.core.enums.EventLogType.EventRSVP and el.message = 'No'")
     List<User> findUsersThatRSVPNoForEvent(Event event);
-
-
 
 
 }

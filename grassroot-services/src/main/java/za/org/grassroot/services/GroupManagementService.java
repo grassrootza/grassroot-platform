@@ -29,6 +29,8 @@ public interface GroupManagementService {
 
     public Group addRemoveGroupMembers(Group group, List<User> revisedUserList);
 
+    public Group createNewGroup(User creatingUser, String groupName);
+
     public Group createNewGroup(User creatingUser, List<String> phoneNumbers);
 
     public Group createNewGroup(Long creatingUserId, List<String> phoneNumbers);
@@ -40,6 +42,8 @@ public interface GroupManagementService {
     public boolean needsToRenameGroup(User sessionUser);
 
     public Long groupToRename(User sessionUser);
+
+    public Group renameGroup(Group group, String newGroupName);
 
     public List<Group> getCreatedGroups(User creatingUser);
 
@@ -74,6 +78,10 @@ public interface GroupManagementService {
     public List<User> getAllUsersInGroupAndSubGroups(Long groupId);
 
     public List<User> getAllUsersInGroupAndSubGroups(Group group);
+
+    boolean hasParent(Group group);
+
+    public Group linkSubGroup(Group child, Group parent);
 
     List<Group> getAllParentGroups(Group group);
 
