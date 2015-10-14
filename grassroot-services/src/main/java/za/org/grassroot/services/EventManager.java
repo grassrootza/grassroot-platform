@@ -208,8 +208,10 @@ public class EventManager implements EventManagementService {
     public Event updateEvent(Event eventToUpdate) {
         // generic update for use from the web, where we get a bunch of changes applied at once
 
+        log.info("Inside updateEvent method, and the event that we are passed: " + eventToUpdate);
         Event savedEvent = loadEvent(eventToUpdate.getId());
         EventDTO beforeDTO = new EventDTO(savedEvent);
+        log.info("Inside updateEvent method, event that comes back from server: " + beforeDTO);
         savedEvent = applyChangesToEntity(eventToUpdate, savedEvent);
         return saveandCheckChanges(beforeDTO, savedEvent);
 
@@ -408,6 +410,7 @@ public class EventManager implements EventManagementService {
     private Event saveandCheckChanges(EventDTO beforeEvent, Event changedEvent) {
 
         log.info("saveandCheckChanges...starting ... with before event .. " + beforeEvent.toString());
+        log.info("saveandCheckChanges...starting ... with changed event ..." + changedEvent.toString());
         log.info("saveandCheckChanges...changedEvent.id..." + changedEvent.getId());
 
         boolean priorEventComplete = minimumDataAvailable(beforeEvent);
@@ -529,6 +532,8 @@ Method to take a partially filled out event, from the web application, and add i
 
         // todo throw a proper exception if the two events don't have matching IDs
 
+        log.info("Inside applyChangesToEntity, with passed event: " + passedEvent);
+
         if (passedEvent.getId() != savedEvent.getId()) {
             return null;
         }
@@ -542,10 +547,16 @@ Method to take a partially filled out event, from the web application, and add i
 
         if (passedEvent.getDateTimeString() != null) savedEvent.setDateTimeString(passedEvent.getDateTimeString());
 
-        // a bit tricky, but we change the reminder minutes if they are not equal to site minutes or group minutes
+        if (passedEvent.isRsvpRequired() != savedEvent.isRsvpRequired())
+            savedEvent.setRsvpRequired(passedEvent.isRsvpRequired());
 
-        if (passedEvent.getReminderMinutes() != SITE_REMINDERMINUTES
-                && (passedEvent.getAppliesToGroup() != null && passedEvent.getReminderMinutes() != passedEvent.getAppliesToGroup().getReminderMinutes()))
+        if (passedEvent.isIncludeSubGroups() != savedEvent.isIncludeSubGroups())
+            savedEvent.setIncludeSubGroups(passedEvent.isIncludeSubGroups());
+
+        // have to do a prior check for group default number of minutes, else caught between null pointer exception and always eval true
+
+        int groupReminderMinutes = (savedEvent.getAppliesToGroup() != null) ? savedEvent.getAppliesToGroup().getReminderMinutes() : SITE_REMINDERMINUTES;
+        if (passedEvent.getReminderMinutes() != SITE_REMINDERMINUTES && (passedEvent.getReminderMinutes() != groupReminderMinutes))
             savedEvent.setReminderMinutes(passedEvent.getReminderMinutes());
 
         //if (passedEvent.getAppliesToGroup() != null) savedEvent.setAppliesToGroup(passedEvent.getAppliesToGroup());
@@ -558,6 +569,8 @@ Method to take a partially filled out event, from the web application, and add i
         default in the constructors, and if passedEvent has them set to something different to savedEvent,
          that means the user changed them, and hence they should be preserved. To test this.
          */
+
+        log.info("Exiting applyChangesToEntity, with saved event: " + savedEvent);
 
         return savedEvent;
 
