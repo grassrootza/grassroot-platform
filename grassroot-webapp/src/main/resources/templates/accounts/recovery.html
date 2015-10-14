@@ -27,7 +27,7 @@
                 <section>
                     <div class="row">
                         <div class="col-lg-6">
-                            <p th:text="#{web.user.account.recovery.password.reset.message}">User your Mobile Phone
+                            <p th:text="#{web.user.account.recovery.password.reset.message}">Use your Mobile Phone
                                 Number (GrassRoot ID) to reset your password.</p>
                         </div>
                     </div>
@@ -39,8 +39,9 @@
                                 <label class="control-label" for="username" th:text="#{web.signin.username}">GrassRoot
                                     ID</label>
 
-                                <input id="mobileNumber" class="form-control required" placeholder="072 123 4567"/>
-                                <input th:field="*{username}" type="hidden" class="form-control" id="username" name="username" placeholder="Mobile Number"/>
+                                <input  th:field="*{username}" id="mobileNumber" class="form-control required" placeholder="27721234567"/>
+                                <input type="hidden" id="username" class="form-control"
+                                       placeholder="Mobile Number"/>
 
                             </div>
                         </div>
@@ -156,7 +157,6 @@
             $( "#sendVerification" ).click(function(event) {
 
                 event.preventDefault();
-                $("#username").val( $("#mobile-number").intlTelInput("getNumber").replace("+","") );
 
                 $.ajax({
                     url: "/grass-root-verification/" + $("#mobileNumber").val(),

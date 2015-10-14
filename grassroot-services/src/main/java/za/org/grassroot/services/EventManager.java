@@ -191,6 +191,20 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
+    public Event setEventReminderMinutes(Long eventId, Integer minutes) {
+        Event event = loadEvent(eventId);
+        event.setReminderMinutes(minutes);
+        return eventRepository.save(event); // note: not doing save and check changes, because this shouldn't trigger an update or anything
+    }
+
+    @Override
+    public Event setEventNoReminder(Long eventId) {
+        Event event = loadEvent(eventId);
+        event.setReminderMinutes(-1);
+        return eventRepository.save(event); // as above, not using saveandCheckChanges for this, at least for now
+    }
+
+    @Override
     public Event updateEvent(Event eventToUpdate) {
         // generic update for use from the web, where we get a bunch of changes applied at once
 
@@ -495,6 +509,9 @@ public class EventManager implements EventManagementService {
         if (passedEvent.getDateTimeString() == null && savedEvent.getDateTimeString() != null)
             passedEvent.setDateTimeString(savedEvent.getDateTimeString());
 
+        if (passedEvent.getReminderMinutes() == 0 && savedEvent.getReminderMinutes() != 0)
+            passedEvent.setReminderMinutes(savedEvent.getReminderMinutes());
+
         /*
         We do not touch the two boolean fields, rsvpRequired and includeSubGroups, since those are set by
         default in the constructors, and if passedEvent has them set to something different to savedEvent,
@@ -520,18 +537,21 @@ Method to take a partially filled out event, from the web application, and add i
 
         if (passedEvent.getEventLocation() != null) savedEvent.setEventLocation(passedEvent.getEventLocation());
 
-        //if (passedEvent.getAppliesToGroup() != null) savedEvent.setAppliesToGroup(passedEvent.getAppliesToGroup());
-
-        //if (passedEvent.getCreatedByUser() != null) savedEvent.setCreatedByUser(passedEvent.getCreatedByUser());
-
-        //if (passedEvent.getCreatedDateTime() != null) savedEvent.setCreatedDateTime(passedEvent.getCreatedDateTime());
-
         if (passedEvent.getEventStartDateTime() != null)
             savedEvent.setEventStartDateTime(passedEvent.getEventStartDateTime());
 
-        //if (passedEvent.getEventType() != null) savedEvent.setEventType(passedEvent.getEventType());
-
         if (passedEvent.getDateTimeString() != null) savedEvent.setDateTimeString(passedEvent.getDateTimeString());
+
+        // a bit tricky, but we change the reminder minutes if they are not equal to site minutes or group minutes
+
+        if (passedEvent.getReminderMinutes() != SITE_REMINDERMINUTES
+                && (passedEvent.getAppliesToGroup() != null && passedEvent.getReminderMinutes() != passedEvent.getAppliesToGroup().getReminderMinutes()))
+            savedEvent.setReminderMinutes(passedEvent.getReminderMinutes());
+
+        //if (passedEvent.getAppliesToGroup() != null) savedEvent.setAppliesToGroup(passedEvent.getAppliesToGroup());
+        //if (passedEvent.getCreatedByUser() != null) savedEvent.setCreatedByUser(passedEvent.getCreatedByUser());
+        //if (passedEvent.getCreatedDateTime() != null) savedEvent.setCreatedDateTime(passedEvent.getCreatedDateTime());
+        //if (passedEvent.getEventType() != null) savedEvent.setEventType(passedEvent.getEventType());
 
         /*
         We do not touch the two boolean fields, rsvpRequired and includeSubGroups, since those are set by

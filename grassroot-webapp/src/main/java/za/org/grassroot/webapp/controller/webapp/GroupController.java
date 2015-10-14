@@ -425,14 +425,14 @@ public class GroupController extends BaseController {
     Simple method to delete a group, if it was recently created and this is the creating user
     todo: implement the simpler "unsubscribe me from this group" button & method
      */
-    @RequestMapping(value = "group/modify", params={"group_delete"})
+    /* @RequestMapping(value = "group/modify", params={"group_delete"})
     public String deleteGroup(Model model, @RequestParam("groupId") Long groupId,
                               HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
         Group group = groupManagementService.loadGroup(groupId);
 
         if (groupManagementService.canUserDeleteGroup(getUserProfile(), group)) {
-            groupManagementService.deleteGroup(group);
+            // groupManagementService.deleteGroup(group);
             addMessage(redirectAttributes, MessageType.SUCCESS, "group.delete.success", request);
             return "redirect:/home";
         } else {
@@ -441,7 +441,7 @@ public class GroupController extends BaseController {
             return "group/view";
         }
 
-    }
+    }*/
 
     @RequestMapping(value = "group/unsubscribe")
     public String unsubscribeGroup(Model model, @RequestParam("groupId") Long groupId) {

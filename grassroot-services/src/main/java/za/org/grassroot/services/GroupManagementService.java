@@ -11,23 +11,9 @@ import java.util.List;
  */
 public interface GroupManagementService {
 
-    public Group loadGroup(Long groupId);
-
-    public List<Group> getGroupsFromUser(User sessionUser);
-
-    public boolean isUserInGroup(Group group, User user);
-
-    public Group saveGroup(Group groupToSave);
-
-    public void deleteGroup(Group groupToDelete);
-
-    public Group addGroupMember(Group currentGroup, User newMember);
-
-    public Group addGroupMember(Long currentGroupId, Long newMemberId);
-
-    public Group removeGroupMember(Group group, User user);
-
-    public Group addRemoveGroupMembers(Group group, List<User> revisedUserList);
+    /*
+    Methods to create groups
+     */
 
     public Group createNewGroup(User creatingUser, String groupName);
 
@@ -35,15 +21,13 @@ public interface GroupManagementService {
 
     public Group createNewGroup(Long creatingUserId, List<String> phoneNumbers);
 
-    public Group addNumbersToGroup(Long groupId, List<String> phoneNumbers);
+    /*
+    Methods to load, find, save groups
+    */
 
-    public Group getLastCreatedGroup(User creatingUser);
+    public Group loadGroup(Long groupId);
 
-    public boolean needsToRenameGroup(User sessionUser);
-
-    public Long groupToRename(User sessionUser);
-
-    public Group renameGroup(Group group, String newGroupName);
+    public List<Group> getGroupsFromUser(User sessionUser);
 
     public List<Group> getCreatedGroups(User creatingUser);
 
@@ -54,6 +38,44 @@ public interface GroupManagementService {
     public List<Group> getSubGroups(Group group);
 
     public Group getGroupById(Long groupId);
+
+    public Group saveGroup(Group groupToSave);
+
+    // public void deleteGroup(Group groupToDelete); // Commenting this out until we have security sorted
+
+    public boolean canUserDeleteGroup(User user, Group group);
+
+    /*
+    Methods to find, and add group members
+     */
+
+    public boolean isUserInGroup(Group group, User user);
+
+    public Group addGroupMember(Group currentGroup, User newMember);
+
+    public Group addGroupMember(Long currentGroupId, Long newMemberId);
+
+    public Group removeGroupMember(Group group, User user);
+
+    public Group addRemoveGroupMembers(Group group, List<User> revisedUserList);
+
+    public Group addNumbersToGroup(Long groupId, List<String> phoneNumbers);
+
+    /*
+    Methods to find if a user has an outstanding group management action to perform
+     */
+
+    public Group getLastCreatedGroup(User creatingUser);
+
+    public boolean needsToRenameGroup(User sessionUser);
+
+    public Long groupToRename(User sessionUser);
+
+    public Group renameGroup(Group group, String newGroupName);
+
+    /*
+    Methods to work with group joining tokens
+     */
 
     public Group getGroupByToken(String groupToken);
 
@@ -70,6 +92,10 @@ public interface GroupManagementService {
     public boolean groupHasValidToken(Group group);
 
     public boolean tokenExists(String groupToken);
+
+    /*
+    Methods do deal with sub groups and parent groups
+     */
 
     public Group createSubGroup(User createdByUser, Group group, String subGroupName);
 
@@ -92,6 +118,13 @@ public interface GroupManagementService {
      */
     boolean isGroupAlsoParent(Group possibleChildGroup, Group possibleParentGroup);
 
-    public boolean canUserDeleteGroup(User user, Group group);
+    /*
+    Methods to set some basic group properties
+     */
+
+    public Group setGroupDefaultReminderMinutes(Group group, Integer minutes);
+
+    public Group setGroupDefaultReminderMinutes(Long groupId, Integer minutes);
+
 
 }

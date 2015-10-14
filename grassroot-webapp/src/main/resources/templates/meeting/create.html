@@ -63,6 +63,16 @@
       </div>
 
       <div class="form-group">
+        <label class="col-md-2 control-label">Reminder timing:</label>
+        <div class="col-md-4">
+          <span th:each="option, iterStat : ${reminderOptions}">
+            <input type="radio" th:field="*{reminderMinutes}" th:value="${option[0]}" />
+            <label th:for="${#ids.prev('reminderMinutes')}" th:text="${option[1]}">No reminder</label>
+          </span>
+        </div>
+      </div>
+
+      <div class="form-group">
         <label for="rsvp" class="col-md-2 control-label">Ask members if they will attend (RSVP)?</label>
         <div class="col-md-4">
           <input th:field="*{rsvpRequired}" type="checkbox" id="rsvp" class="form-control" th:checked="${true}" />

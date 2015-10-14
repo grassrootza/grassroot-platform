@@ -283,7 +283,11 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public User resetUserPassword(String username, String newPassword, String token) {
 
+        log.info("Inside reset user password ...");
+
         User user = userRepository.findByUsername(PhoneNumberUtil.convertPhoneNumber(username));
+
+        log.info("Found this user: " + user);
 
         if (passwordTokenService.isVerificationCodeValid(user, token)) {
             String encodedPassword = passwordEncoder.encode(newPassword);
