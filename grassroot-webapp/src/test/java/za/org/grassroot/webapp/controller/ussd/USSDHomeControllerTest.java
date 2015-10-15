@@ -18,6 +18,7 @@ import org.springframework.boot.test.WebIntegrationTest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.Event;
@@ -28,6 +29,8 @@ import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.GrassRootWebApplicationConfig;
 
+import javax.persistence.EntityManager;
+import javax.persistence.Query;
 import javax.transaction.Transactional;
 import java.net.URI;
 import java.util.*;
@@ -44,11 +47,15 @@ import static org.springframework.http.HttpStatus.OK;
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = {GrassRootWebApplicationConfig.class})
 @WebIntegrationTest(randomPort = true)
+//@EnableTransactionManagement
 @Transactional
 @ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
 public class USSDHomeControllerTest extends USSDAbstractTest {
 
     protected static final Logger log = LoggerFactory.getLogger(USSDHomeControllerTest.class);
+
+    @Autowired
+    EntityManager em;
 
     /* @Autowired
     protected UserManagementService userManager;
@@ -157,7 +164,7 @@ public class USSDHomeControllerTest extends USSDAbstractTest {
         User userCreated = userManager.findByInputNumber(testPhoneZu);
 
         final URI changeLanguageUri = assembleUssdURI("user/language-do").queryParam(phoneParam, testPhoneZu).queryParam("language", "zu").build().toUri();
-        executeQuery(changeLanguageUri);
+        ResponseEntity response = executeQuery(changeLanguageUri);
 
         log.info("The URL used is as follows: " + changeLanguageUri.toString());
         log.info("The user has been saved, as: " + userCreated);
@@ -169,9 +176,7 @@ public class USSDHomeControllerTest extends USSDAbstractTest {
 
         assertNotNull(userCreated.getId());
         assertNotNull(userCreated.getCreatedDateTime());
-        // todo: get these not to fail (it is something to do with test environment, as the URLs when entered on a running app give the right result
-        /*assertThat(userManager.findByInputNumber(testPhoneZu).getLanguageCode(), is("zu"));
-        assertXMLEqual(startMenuZU, newHomeMenu.getBody()); */
+        assertXMLEqual(startMenuZU, newHomeMenu.getBody());
 
 
     }
