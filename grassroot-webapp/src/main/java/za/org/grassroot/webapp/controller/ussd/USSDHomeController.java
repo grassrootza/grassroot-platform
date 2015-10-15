@@ -88,11 +88,42 @@ public class USSDHomeController extends USSDController {
             openingMenu = interruptedPrompt(sessionUser);
         } else if (userResponseNeeded(sessionUser)) {
             openingMenu = requestUserResponse(sessionUser);
+        } else if (firstSession(sessionUser)) {
+            sessionUser = userManager.setInitiatedSession(sessionUser);
+            openingMenu = askForLanguage(sessionUser);
         } else {
             openingMenu = defaultStartMenu(sessionUser);
         }
 
         return (checkMenuLength(openingMenu, true)) ? menuBuilder(openingMenu) : tooLongError;
+
+    }
+
+    private boolean firstSession(User sessionUser) {
+        return userManager.isFirstInitiatedSession(sessionUser);
+    }
+
+    private USSDMenu askForLanguage(User sessionUser) {
+
+        String prompt = getMessage(HOME_KEY, START_KEY, PROMPT + "-language", sessionUser);
+        String nextUrl = "start_language";
+        USSDMenu promptMenu = new USSDMenu(prompt);
+
+        for (Map.Entry<String, String> entry : getImplementedLanguages().entrySet()) {
+            promptMenu.addMenuOption(nextUrl + "?language=" + entry.getKey(), entry.getValue());
+        }
+
+        return promptMenu;
+    }
+
+    @RequestMapping(value = USSD_BASE + START_KEY + "_language")
+    @ResponseBody
+    public Request languageSetMenu(@RequestParam(value=PHONE_PARAM) String inputNumber,
+                                   @RequestParam(value="language") String language) throws URISyntaxException {
+
+        User sessionUser = userManager.findByInputNumber(inputNumber);
+        sessionUser = userManager.setUserLanguage(sessionUser, language);
+        return menuBuilder(defaultStartMenu(sessionUser));
 
     }
 
@@ -133,8 +164,12 @@ public class USSDHomeController extends USSDController {
 
     private boolean userResponseNeeded(User sessionUser) {
         // as other 'start menu' responses (votes etc) added, will insert them
-        if (userManager.needsToRSVP(sessionUser)) return true;
-        return false;
+        return userManager.needsToRSVP(sessionUser);
+
+        /* For the moment, removing the group rename and user rename, as is overloading the start menu
+        and use cases seem limited (users also getting confused). Will re-evaluate later.
+        return userManager.needsToRSVP(sessionUser) || groupManager.needsToRenameGroup(sessionUser)
+                || userManager.needsToRenameSelf(sessionUser); */
     }
 
     private UssdOpeningPrompt neededResponse(User sessionUser) {

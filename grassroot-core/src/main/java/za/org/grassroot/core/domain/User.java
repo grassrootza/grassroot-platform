@@ -37,9 +37,10 @@ public class User implements UserDetails {
     private String      password;
     private boolean   webProfile = false;
     private boolean   enabled    = true;
+    private String lastUssdMenu;
+    private boolean hasInitiatedSession;
     private Set<Role> roles      = new HashSet<>();
     private Integer version;
-    private String lastUssdMenu;
 
 
     @Column(name = "first_name")
@@ -195,6 +196,16 @@ public class User implements UserDetails {
 
     public void setLastUssdMenu(String lastUssdMenu) { this.lastUssdMenu = lastUssdMenu; }
 
+    /*
+    We use this to differentiate between users who have initiated a G/R session on their own, and those who have just
+    been added via being part of another group -- to us in our stats, plus for some use cases (e.g., asking for language)
+     */
+
+    @Column(name = "initiated_session")
+    public boolean isHasInitiatedSession() { return hasInitiatedSession; }
+
+    public void setHasInitiatedSession(boolean hasInitiatedSession) { this.hasInitiatedSession = hasInitiatedSession; }
+
     @Transient
     public Set<Permission> getPermissions() {
         Set<Permission> perms = new HashSet<Permission>();
@@ -329,7 +340,7 @@ public class User implements UserDetails {
 
     public User(String phoneNumber) {
         this.phoneNumber = phoneNumber;
-        this.languageCode = "en"; // anyone else should remove this if it shouldn't be here
+        this.languageCode = "en";
     }
 
     public User(String phoneNumber, String displayName) {

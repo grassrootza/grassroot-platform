@@ -227,6 +227,18 @@ public class USSDController {
                 put(noUri + "&" + YESNO_FIELD + "=no", getMessage(OPTION + "no", sessionUser)).build();
     }
 
+    // list of possible languages for USSD -- implementing as function instead of method because of Java disliking String[] in Arrays.asList
+    protected LinkedHashMap<String, String> getImplementedLanguages() {
+
+        LinkedHashMap<String, String> languages = new LinkedHashMap<>();
+
+        languages.put("en", "English");
+        languages.put("zu", "isiZulu");
+
+        return languages;
+
+    }
+
     protected String getMessage(String section, String menuKey, String messageLocation, User sessionUser) {
         final String messageKey = "ussd." + section + "." + menuKey + "." + messageLocation;
         return messageSource.getMessage(messageKey, null, new Locale(getLanguage(sessionUser)));

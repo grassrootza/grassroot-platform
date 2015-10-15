@@ -2,6 +2,8 @@ package za.org.grassroot.services;
 
 import org.apache.commons.lang3.SerializationUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
@@ -357,6 +359,13 @@ public class EventManager implements EventManagementService {
         }
 
         return upcomingEvents;
+    }
+
+    @Override
+    public List<Event> getPaginatedEventsCreatedByUser(User sessionUser, int pageNumber, int pageSize) {
+        Page<Event> pageOfEvents =
+                eventRepository.findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(sessionUser, new Date(), false, new PageRequest(pageNumber, pageSize));
+        return pageOfEvents.getContent();
     }
 
     @Override

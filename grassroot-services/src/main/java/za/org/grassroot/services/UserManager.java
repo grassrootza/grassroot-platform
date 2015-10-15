@@ -81,6 +81,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
             userToUpdate.setUsername(phoneNumber);
             userToUpdate.setWebProfile(true);
+            userToUpdate.setHasInitiatedSession(true);
             userToSave = userToUpdate;
 
         } else {
@@ -90,7 +91,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             // for some reason String.join was not inserting the space properly, so changing to a straight concatenation;
             userProfile.setDisplayName(userProfile.getFirstName() + " " + userProfile.getLastName());
             userProfile.setWebProfile(true);
-
+            userProfile.setHasInitiatedSession(true); // since signing up on web page presumes an active user
             userToSave = userProfile;
         }
 
@@ -182,6 +183,18 @@ public class UserManager implements UserManagementService, UserDetailsService {
         return sessionUser;
     }
 
+    /*
+    Method to load or save a user and store that they have initiated the session. Putting it in services and making it
+    distinct from standard loadOrSaveUser because we may want to optimize it aggressively in future.
+     */
+
+    @Override
+    public User loadOrSaveUser(String inputNumber, boolean isInitiatingSession) {
+        User sessionUser = loadOrSaveUser(inputNumber);
+        sessionUser.setHasInitiatedSession(isInitiatingSession);
+        return userRepository.save(sessionUser);
+    }
+
     /**
      * Method used in web application, which takes a half-formed user from Thymeleaf (or whatever view technology) and
      * first checks if a user with that phone number exists, and what information we do/don't have, then updates accordingy
@@ -266,6 +279,17 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
+    public boolean isFirstInitiatedSession(String phoneNumber) {
+        return loadOrSaveUser(phoneNumber).isHasInitiatedSession();
+    }
+
+    @Override
+    public boolean isFirstInitiatedSession(User user) {
+        // may want to reload from DB, but could slow it down quite a bit
+        return !user.isHasInitiatedSession();
+    }
+
+    @Override
     public boolean needsToRenameSelf(User sessionUser) {
         return sessionUser.needsToRenameSelf(5); // 5 min gap as placeholder for now, to make more a session count if possible
     }
@@ -328,6 +352,12 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
+    public User setInitiatedSession(User sessionUser) {
+        sessionUser.setHasInitiatedSession(true);
+        return userRepository.save(sessionUser);
+    }
+
+    @Override
     public String getLastUssdMenu(User sessionUser) {
         return (sessionUser.getLastUssdMenu() == null) ? "" : sessionUser.getLastUssdMenu();
     }
@@ -336,6 +366,17 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public User resetLastUssdMenu(User sessionUser) {
         sessionUser.setLastUssdMenu(null);
         return userRepository.save(sessionUser);
+    }
+
+    @Override
+    public User setUserLanguage(User sessionUser, String locale) {
+        sessionUser.setLanguageCode(locale);
+        return userRepository.save(sessionUser);
+    }
+
+    @Override
+    public User setUserLanguage(Long userId, String locale) {
+        return setUserLanguage(getUserById(userId), locale);
     }
 
     public void setPasswordEncoder(final PasswordEncoder passwordEncoder) {

@@ -60,6 +60,8 @@ public interface EventManagementService {
 
     List<Event> getUpcomingEvents(User requestingUser);
 
+    List<Event> getPaginatedEventsCreatedByUser(User sessionUser, int pageNumber, int pageSize);
+
     /*
     Methods to set and update events
      */

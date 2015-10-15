@@ -375,6 +375,28 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
+    public Group resetGroupLanguage(Group group, String locale) {
+
+        /*
+         Note: intentionally not doing this for all subgroups too -- a sufficiently delicate operation to require user
+         executing it to go through each subgroup, if they want to do that. Also note basic logic -- if user has language
+         which is non-default, we do not change theirs. Again, might lead to some extra work if some members are part
+         of two groups, and then have to manually over-ride. But that is better than alternatives, which is either to
+         over-ride user preference once set (= angry user), or have one more dummy field.
+          */
+        List<User> groupMembers = group.getGroupMembers();
+
+        for (User user : groupMembers) {
+            if (user.getLanguageCode() == "en") {
+                userManager.setUserLanguage(user, locale);
+            }
+        }
+
+        return saveGroup(group);
+
+    }
+
+    @Override
     public boolean canUserDeleteGroup(User user, Group group) {
         // todo: Integrate with permission checking -- for now, just checking if group created by user in last 24 hours
         // todo: the time checking would be so much easier if we use Joda or Java 8 DateTime ...

@@ -10,17 +10,21 @@ import java.util.List;
  */
 public interface UserManagementService {
 
+    /*
+    Methods to create and load a specific user
+     */
+
     User createUserProfile(User userProfile);
 
     User createUserWebProfile(User userProfile) throws UserExistsException;
 
-    List<User> getAllUsers();
-
-    Integer getUserCount();
-
     User getUserById(Long userId);
 
-    Page<User> getDeploymentLog(Integer pageNumber);
+    boolean userExist(String phoneNumber);
+
+    boolean isFirstInitiatedSession(String phoneNumber);
+
+    boolean isFirstInitiatedSession(User user);
 
     User save(User userToSave);
 
@@ -28,11 +32,27 @@ public interface UserManagementService {
 
     User loadOrSaveUser(String inputNumber, String currentUssdMenu);
 
+    User loadOrSaveUser(String inputNumber, boolean isInitiatingSession);
+
     public User loadOrSaveUser(User passedUser);
 
     User findByInputNumber(String inputNumber) throws NoSuchUserException;
 
     User findByInputNumber(String inputNumber, String currentUssdMenu) throws NoSuchUserException;
+
+    User fetchUserByUsername(String username);
+
+    User setInitiatedSession(User sessionUser);
+
+    /*
+    Methods to return lists of users
+     */
+
+    List<User> getAllUsers();
+
+    Integer getUserCount();
+
+    Page<User> getDeploymentLog(Integer pageNumber);
 
     List<User> searchByInputNumber(String inputNumber);
 
@@ -42,7 +62,10 @@ public interface UserManagementService {
 
     List<User> getUsersFromNumbers(List<String> listOfNumbers);
 
-    boolean userExist(String phoneNumber);
+
+    /*
+    Methods to set and retrieve varfious properties about a user
+     */
 
     boolean needsToRenameSelf(User sessionUser);
 
@@ -52,11 +75,12 @@ public interface UserManagementService {
 
     User resetUserPassword(String username, String newPassword, User adminUser, String adminPassword);
 
-    User fetchUserByUsername(String username);
-
     String getLastUssdMenu(User sessionUser);
 
     User resetLastUssdMenu(User sessionUser);
 
+    User setUserLanguage(User sessionUser, String locale);
+
+    User setUserLanguage(Long userId, String locale);
 
 }

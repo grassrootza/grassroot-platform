@@ -85,6 +85,7 @@ public class USSDMeetingController extends USSDController {
         if (newMeeting || eventManager.getUpcomingEventsUserCreated(sessionUser).size() == 0) {
             // initialize event to be filled out in subsequent menus
             Event meetingToCreate = eventManager.createEvent("", sessionUser);
+            meetingToCreate = eventManager.setEventNoReminder(meetingToCreate.getId()); // as in Web, a temporary thing
             return menuBuilder(askForGroup(sessionUser, meetingToCreate.getId(), nextMenuKey(START_KEY), keyGroup));
         } else {
             return menuBuilder(askNewOld(sessionUser));
@@ -108,15 +109,16 @@ public class USSDMeetingController extends USSDController {
 
     private USSDMenu askNewOld(User sessionUser) {
 
-        // todo: paginate so there aren't too many, but think that will be a marginal problem for now
+        // todo: paginate so there aren't too many
 
         USSDMenu askMenu = new USSDMenu("Manage an upcoming meeting, or call a new one?");
-        List<Event> upcomingEvents = eventManager.getUpcomingEventsUserCreated(sessionUser);
+        // paginate to just two for moment, given meeting description length is causing issues
+        List<Event> upcomingEvents = eventManager.getPaginatedEventsCreatedByUser(sessionUser, 0, 2);
 
         for (Event event : upcomingEvents) {
             Map<String, String> eventDescription = eventManager.getEventDescription(event);
             if (eventDescription.get("minimumData").equals("true")) {
-                String menuLine = eventDescription.get("groupName") + ": " + eventDescription.get("eventSubject");
+                String menuLine = eventDescription.get("groupName") + ": " + eventDescription.get("dateTimeString");
                 askMenu.addMenuOption(MTG_MENUS + keyManage + EVENTID_URL + event.getId(), menuLine);
             }
         }

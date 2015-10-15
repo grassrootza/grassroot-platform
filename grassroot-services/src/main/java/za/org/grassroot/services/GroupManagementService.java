@@ -126,5 +126,7 @@ public interface GroupManagementService {
 
     public Group setGroupDefaultReminderMinutes(Long groupId, Integer minutes);
 
+    public Group resetGroupLanguage(Group group, String locale);
+
 
 }

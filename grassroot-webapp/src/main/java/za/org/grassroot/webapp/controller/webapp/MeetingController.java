@@ -89,6 +89,9 @@ public class MeetingController extends BaseController {
             groupSpecified = false;
         }
 
+        // defaulting to this until we are comfortable that reminders are robust and use cases are sorted out
+        meeting = eventManagementService.setEventNoReminder(meeting.getId());
+
         model.addAttribute("meeting", meeting);
         model.addAttribute("groupSpecified", groupSpecified); // slightly redundant, but use it to tell Thymeleaf what to do
         model.addAttribute("reminderOptions", reminderMinuteOptions());
@@ -105,8 +108,8 @@ public class MeetingController extends BaseController {
 
         // todo: add error handling and validation
         // todo: check that we have all the needed information and/or add a confirmation screen
-
         // todo: put this data transformation else where:Maybe Wrapper?
+
         meeting.setDateTimeString(new SimpleDateFormat("E d MMM HH:mm").format(meeting.getEventStartDateTime()));
 
         log.info("The timestamp is: " + meeting.getEventStartDateTime().toString());
