@@ -90,7 +90,9 @@ public class USSDHomeControllerTest extends USSDAbstractTest {
             "    <options>" +
             "        <option command=\"1\" order=\"1\" callback=\"http://localhost:8080/ussd/start_language?language=en\"" +
             "                display=\"true\">English</option>\n" +
-            "        <option command=\"2\" order=\"2\" callback=\"http://localhost:8080/ussd/start_language?language=zu\"" +
+            "        <option command=\"2\" order=\"2\" callback=\"http://localhost:8080/ussd/start_language?language=ts\"" +
+            "                display=\"true\">Xitsonga</option>\n" +
+            "        <option command=\"3\" order=\"3\" callback=\"http://localhost:8080/ussd/start_language?language=zu\"" +
             "                display=\"true\">isiZulu</option>\n" +
             "    </options>" +
             "</request>";

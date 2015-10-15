@@ -233,6 +233,7 @@ public class USSDController {
         LinkedHashMap<String, String> languages = new LinkedHashMap<>();
 
         languages.put("en", "English");
+        languages.put("ts", "Xitsonga");
         languages.put("zu", "isiZulu");
 
         return languages;

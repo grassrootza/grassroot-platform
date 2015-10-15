@@ -10,6 +10,7 @@ import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
 import java.net.URISyntaxException;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
@@ -89,8 +90,10 @@ public class USSDUserController extends USSDController {
         catch (NoSuchElementException e) { return noUserError; }
 
         USSDMenu thisMenu = new USSDMenu(getMessage(USER_KEY, keyLanguage, PROMPT, sessionUser));
-        thisMenu.addMenuOption(USER_MENUS + keyLanguage + DO_SUFFIX + "?language=en", "English");
-        thisMenu.addMenuOption(USER_MENUS + keyLanguage + DO_SUFFIX + "?language=zu", "isiZulu");
+
+        for (Map.Entry<String, String> entry : getImplementedLanguages().entrySet()) {
+            thisMenu.addMenuOption(USER_MENUS + keyLanguage + DO_SUFFIX + "?language=" + entry.getKey(), entry.getValue());
+        }
 
         return menuBuilder(thisMenu);
     }
