@@ -5,7 +5,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.GroupManagementService;
@@ -31,6 +33,9 @@ public class GroupRestController {
 
     @Autowired
     UserRepository userRepository;
+
+    @Autowired
+    GroupRepository groupRepository;
 
     @RequestMapping(value = "/add/{userid}/{phonenumbers}", method = RequestMethod.POST)
     public GroupDTO add(@PathVariable("userid") Long userid,@PathVariable("phonenumbers") String phoneNumbers) {
@@ -60,6 +65,16 @@ public class GroupRestController {
         List<UserDTO> list =  new ArrayList<UserDTO>();
         for (User user : groupManagementService.getGroupById(groupId).getGroupMembers()) {
             list.add(new UserDTO(user));
+        }
+        return list;
+    }
+
+    @RequestMapping(value = "/list/groupandsubgroups/{groupId}",
+            method = RequestMethod.GET)
+    public List<Long> listGroupAndSubGroups(@PathVariable("groupId") Long groupId) {
+        List<Long> list =  new ArrayList<Long>();
+        for (Group group : groupRepository.findGroupAndSubGroupsById(groupId)) {
+            list.add(group.getId());
         }
         return list;
     }

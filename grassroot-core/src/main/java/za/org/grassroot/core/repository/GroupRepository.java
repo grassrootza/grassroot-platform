@@ -43,4 +43,10 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
      */
     @Query(value = "SELECT COALESCE(MAX(CAST(group_token_code as INTEGER)),123) FROM group_profile g", nativeQuery = true)
     int getMaxTokenValue();
+    
+    /* find a group by id and return it and all it's subgroups
+    .N.B. when adding columns to the table they must be added here is well
+     */
+    @Query(value = "WITH RECURSIVE tree(id, created_date_time, name, group_token_code, token_code_expiry, created_by_user, parent, version, reminderminutes) AS ( SELECT pg.* FROM group_profile pg WHERE pg.id = ?1 UNION ALL SELECT sg.* FROM group_profile sg, tree as nodes WHERE sg.parent = nodes.id ) SELECT * FROM tree",nativeQuery = true)
+    List<Group> findGroupAndSubGroupsById(Long groupId);
 }
