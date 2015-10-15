@@ -213,6 +213,7 @@ public class Group implements Serializable {
                 ", id=" + id +
                 ", createdDateTime=" + createdDateTime +
                 ", createdByUser=" + createdByUser +
+                ", reminderMinutes=" + reminderMinutes +
                 ", version=" + version +
 
 //                ", groupMembers=" + groupMembers +

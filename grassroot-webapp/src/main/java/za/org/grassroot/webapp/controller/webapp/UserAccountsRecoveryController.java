@@ -81,11 +81,15 @@ public class UserAccountsRecoveryController extends BaseController {
                                               BindingResult bindingResult, HttpServletRequest request,
                                               RedirectAttributes redirectAttributes) {
 
+        log.info("Okay we've been given the token code back");
+
         if (bindingResult.hasErrors()) {
+            log.info("Error on the binding result!");
             model.addAttribute("userAccountRecovery", userAccountRecovery);
             addMessage(model, MessageType.ERROR, "user.account.recovery.error", request);
             return new ModelAndView("accounts/recovery", model.asMap());
         }
+
         userManagementService.resetUserPassword(userAccountRecovery.getUsername(), userAccountRecovery.getNewPassword(),
                 userAccountRecovery.getVerificationCode());
 

@@ -425,7 +425,7 @@ public class USSDGroupController extends USSDController {
 
 
 
-    @RequestMapping(value = USSD_BASE + GROUP_MENUS + keyDelGroup)
+    /* @RequestMapping(value = USSD_BASE + GROUP_MENUS + keyDelGroup)
     @ResponseBody
     public Request deleteConfirm(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
                                  @RequestParam(value=GROUP_PARAM, required=true) Long groupId) throws URISyntaxException {
@@ -452,6 +452,6 @@ public class USSDGroupController extends USSDController {
 
         return menuBuilder(new USSDMenu(returnMessage, optionsHomeExit(sessionUser)));
 
-    }
+    }*/
 
 }

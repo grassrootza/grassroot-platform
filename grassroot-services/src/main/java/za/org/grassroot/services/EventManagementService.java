@@ -19,6 +19,9 @@ import java.util.Map;
  */
 public interface EventManagementService {
 
+    /*
+    Methods to create events, in various different forms
+     */
     Event createEvent(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups, boolean rsvpRequired);
 
     Event createEvent(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups);
@@ -33,9 +36,33 @@ public interface EventManagementService {
 
     public Event createMeeting(User createdByUser);
 
+    /*
+    Methods to find and load events
+     */
+
     public Event loadEvent(Long eventId);
 
     public Event getLastCreatedEvent(User creatingUser);
+
+    List<Event> findByAppliesToGroup(Group appliesToGroup);
+
+    List<Event> findByAppliesToGroupAndStartingAfter(Group group, Date date);
+
+    List<Event> getUpcomingEvents(Group group);
+
+    List<Event> getOutstandingRSVPForUser(Long userId);
+
+    List<Event> getOutstandingRSVPForUser(User user);
+
+    List<Event> getUpcomingEventsForGroupAndParentGroups(Group group);
+
+    List<Event> getUpcomingEventsUserCreated(User requestingUser);
+
+    List<Event> getUpcomingEvents(User requestingUser);
+
+    /*
+    Methods to set and update events
+     */
 
     public Event setSubject(Long eventId, String subject);
 
@@ -47,31 +74,23 @@ public interface EventManagementService {
 
     public Event setEventTimestamp(Long eventId, Timestamp eventDateTime);
 
+    public Event setEventReminderMinutes(Long eventId, Integer minutes);
+
+    public Event setEventNoReminder(Long eventId);
+
     public Event updateEvent(Event eventToUpdate);
 
     public Event cancelEvent(Long eventId);
 
-    List<Event> findByAppliesToGroup(Group appliesToGroup);
-
-    List<Event> findByAppliesToGroupAndStartingAfter(Group group, Date date);
-
-    List<Event> getUpcomingEvents(Group group);
+    /*
+    Methods to get important details about events, including users by RSVP response, and a descriptive hashmap of strings
+     */
 
     List<User> getListOfUsersThatRSVPYesForEvent(Event event);
 
     List<User> getListOfUsersThatRSVPNoForEvent(Event event);
 
     Map<User, EventRSVPResponse> getRSVPResponses(Event event);
-
-    List<Event> getOutstandingRSVPForUser(Long userId);
-
-    List<Event> getOutstandingRSVPForUser(User user);
-
-    List<Event> getUpcomingEventsForGroupAndParentGroups(Group group);
-
-    List<Event> getUpcomingEventsUserCreated(User requestingUser);
-
-    List<Event> getUpcomingEvents(User requestingUser);
 
     boolean hasUpcomingEvents(User requestingUser);
 

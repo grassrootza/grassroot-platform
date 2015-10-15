@@ -1,5 +1,7 @@
 package za.org.grassroot.webapp.controller.webapp;
 
+import com.google.common.collect.ImmutableMap;
+import edu.emory.mathcs.backport.java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,10 +29,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by luke on 2015/09/11.
@@ -89,8 +88,11 @@ public class MeetingController extends BaseController {
             model.addAttribute("userGroups", groupManagementService.getGroupsPartOf(sessionUser)); // todo: or just use user.getGroupsPartOf?
             groupSpecified = false;
         }
+
         model.addAttribute("meeting", meeting);
         model.addAttribute("groupSpecified", groupSpecified); // slightly redundant, but use it to tell Thymeleaf what to do
+        model.addAttribute("reminderOptions", reminderMinuteOptions());
+
         log.info("Meeting that we are passing: " + meeting.toString());
         return "meeting/create";
 
@@ -124,7 +126,7 @@ public class MeetingController extends BaseController {
             meeting = eventManagementService.setGroup(meeting.getId(), selectedGroupId);
         }
 
-        log.info("Meeting currently: " + meeting.toString());
+        log.info("Stored meeting, at end of creation method: " + meeting.toString());
 
         addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.creation.success", request);
         return "redirect:/home";
@@ -271,5 +273,27 @@ public class MeetingController extends BaseController {
         return "redirect:/home";
     }
 
+    /*
+    Helper functions for reminders -- may make this call group, if there is group, for defaults, and so on ... for now, just assembles the list
+    Would have done this as a list of array strings but Java has seriously terrible array/list handling for this sort of thing
+     */
+
+    private List<String[]> reminderMinuteOptions() {
+
+        List<String[]> minuteOptions = new ArrayList<>();
+
+        String[] oneDay = new String[]{"" + 24 * 60, "One day ahead"};
+        String[] halfDay = new String[]{"" + 6 * 60, "Half a day ahead"};
+        String[] oneHour = new String[]{"60", "An hour before"};
+        String[] noReminder = new String[]{"-1", "No reminder"};
+
+        minuteOptions.add(oneDay);
+        minuteOptions.add(halfDay);
+        minuteOptions.add(oneHour);
+        minuteOptions.add(noReminder);
+
+        return minuteOptions;
+
+    }
 
 }

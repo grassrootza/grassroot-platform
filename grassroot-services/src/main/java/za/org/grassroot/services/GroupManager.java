@@ -72,10 +72,10 @@ public class GroupManager implements GroupManagementService {
         return groupRepository.save(groupToSave);
     }
 
-    @Override
+    /* @Override
     public void deleteGroup(Group groupToDelete) {
         groupRepository.delete(groupToDelete);
-    }
+    }*/
 
 
     @Override
@@ -361,6 +361,17 @@ public class GroupManager implements GroupManagementService {
             if (g.getId() == possibleChildGroup.getId()) return true;
         }
         return false;
+    }
+
+    @Override
+    public Group setGroupDefaultReminderMinutes(Group group, Integer minutes) {
+        group.setReminderMinutes(minutes);
+        return groupRepository.save(group);
+    }
+
+    @Override
+    public Group setGroupDefaultReminderMinutes(Long groupId, Integer minutes) {
+        return setGroupDefaultReminderMinutes(loadGroup(groupId), minutes);
     }
 
     @Override

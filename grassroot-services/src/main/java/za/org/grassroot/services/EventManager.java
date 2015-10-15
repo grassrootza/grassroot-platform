@@ -191,11 +191,27 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
+    public Event setEventReminderMinutes(Long eventId, Integer minutes) {
+        Event event = loadEvent(eventId);
+        event.setReminderMinutes(minutes);
+        return eventRepository.save(event); // note: not doing save and check changes, because this shouldn't trigger an update or anything
+    }
+
+    @Override
+    public Event setEventNoReminder(Long eventId) {
+        Event event = loadEvent(eventId);
+        event.setReminderMinutes(-1);
+        return eventRepository.save(event); // as above, not using saveandCheckChanges for this, at least for now
+    }
+
+    @Override
     public Event updateEvent(Event eventToUpdate) {
         // generic update for use from the web, where we get a bunch of changes applied at once
 
+        log.info("Inside updateEvent method, and the event that we are passed: " + eventToUpdate);
         Event savedEvent = loadEvent(eventToUpdate.getId());
         EventDTO beforeDTO = new EventDTO(savedEvent);
+        log.info("Inside updateEvent method, event that comes back from server: " + beforeDTO);
         savedEvent = applyChangesToEntity(eventToUpdate, savedEvent);
         return saveandCheckChanges(beforeDTO, savedEvent);
 
@@ -394,6 +410,7 @@ public class EventManager implements EventManagementService {
     private Event saveandCheckChanges(EventDTO beforeEvent, Event changedEvent) {
 
         log.info("saveandCheckChanges...starting ... with before event .. " + beforeEvent.toString());
+        log.info("saveandCheckChanges...starting ... with changed event ..." + changedEvent.toString());
         log.info("saveandCheckChanges...changedEvent.id..." + changedEvent.getId());
 
         boolean priorEventComplete = minimumDataAvailable(beforeEvent);
@@ -495,6 +512,9 @@ public class EventManager implements EventManagementService {
         if (passedEvent.getDateTimeString() == null && savedEvent.getDateTimeString() != null)
             passedEvent.setDateTimeString(savedEvent.getDateTimeString());
 
+        if (passedEvent.getReminderMinutes() == 0 && savedEvent.getReminderMinutes() != 0)
+            passedEvent.setReminderMinutes(savedEvent.getReminderMinutes());
+
         /*
         We do not touch the two boolean fields, rsvpRequired and includeSubGroups, since those are set by
         default in the constructors, and if passedEvent has them set to something different to savedEvent,
@@ -512,6 +532,8 @@ Method to take a partially filled out event, from the web application, and add i
 
         // todo throw a proper exception if the two events don't have matching IDs
 
+        log.info("Inside applyChangesToEntity, with passed event: " + passedEvent);
+
         if (passedEvent.getId() != savedEvent.getId()) {
             return null;
         }
@@ -520,24 +542,35 @@ Method to take a partially filled out event, from the web application, and add i
 
         if (passedEvent.getEventLocation() != null) savedEvent.setEventLocation(passedEvent.getEventLocation());
 
-        //if (passedEvent.getAppliesToGroup() != null) savedEvent.setAppliesToGroup(passedEvent.getAppliesToGroup());
-
-        //if (passedEvent.getCreatedByUser() != null) savedEvent.setCreatedByUser(passedEvent.getCreatedByUser());
-
-        //if (passedEvent.getCreatedDateTime() != null) savedEvent.setCreatedDateTime(passedEvent.getCreatedDateTime());
-
         if (passedEvent.getEventStartDateTime() != null)
             savedEvent.setEventStartDateTime(passedEvent.getEventStartDateTime());
 
-        //if (passedEvent.getEventType() != null) savedEvent.setEventType(passedEvent.getEventType());
-
         if (passedEvent.getDateTimeString() != null) savedEvent.setDateTimeString(passedEvent.getDateTimeString());
+
+        if (passedEvent.isRsvpRequired() != savedEvent.isRsvpRequired())
+            savedEvent.setRsvpRequired(passedEvent.isRsvpRequired());
+
+        if (passedEvent.isIncludeSubGroups() != savedEvent.isIncludeSubGroups())
+            savedEvent.setIncludeSubGroups(passedEvent.isIncludeSubGroups());
+
+        // have to do a prior check for group default number of minutes, else caught between null pointer exception and always eval true
+
+        int groupReminderMinutes = (savedEvent.getAppliesToGroup() != null) ? savedEvent.getAppliesToGroup().getReminderMinutes() : SITE_REMINDERMINUTES;
+        if (passedEvent.getReminderMinutes() != SITE_REMINDERMINUTES && (passedEvent.getReminderMinutes() != groupReminderMinutes))
+            savedEvent.setReminderMinutes(passedEvent.getReminderMinutes());
+
+        //if (passedEvent.getAppliesToGroup() != null) savedEvent.setAppliesToGroup(passedEvent.getAppliesToGroup());
+        //if (passedEvent.getCreatedByUser() != null) savedEvent.setCreatedByUser(passedEvent.getCreatedByUser());
+        //if (passedEvent.getCreatedDateTime() != null) savedEvent.setCreatedDateTime(passedEvent.getCreatedDateTime());
+        //if (passedEvent.getEventType() != null) savedEvent.setEventType(passedEvent.getEventType());
 
         /*
         We do not touch the two boolean fields, rsvpRequired and includeSubGroups, since those are set by
         default in the constructors, and if passedEvent has them set to something different to savedEvent,
          that means the user changed them, and hence they should be preserved. To test this.
          */
+
+        log.info("Exiting applyChangesToEntity, with saved event: " + savedEvent);
 
         return savedEvent;
 

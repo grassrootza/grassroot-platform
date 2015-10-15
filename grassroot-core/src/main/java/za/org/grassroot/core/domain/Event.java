@@ -319,6 +319,7 @@ public class Event implements Serializable {
                 ", dateTimeString=\'" + dateTimeString +'\'' +
                 ", rsvpRequired=\'" + rsvpRequired + '\'' +
                 ", includeSubGroups=" + includeSubGroups +'\'' +
+                ", reminderMinutes=" + reminderMinutes +'\'' +
                 ", version=" + version +'\'' +
 
                 '}';
