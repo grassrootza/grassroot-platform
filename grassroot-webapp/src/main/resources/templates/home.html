@@ -94,7 +94,6 @@
   <!-- List of user's groups, if they have any -->
 
   <div th:if="${not #lists.isEmpty(userGroups)}">
-
     <div class="well">
       <div class="row">
         <div class="col-lg-12">
@@ -132,6 +131,19 @@
       </div>
     </div>
   </div>
+
+  <!-- Trying out the group tree view idea -->
+
+  <!-- <div th:if="${not #lists.isEmpty(groupTrees)}">
+    <div class="well">
+      <div th:each="${groupTree: ${groupTrees}">
+        <div class="row">
+          Parent group: <span th:value="${zero}">Zero</span>
+        </div>
+      </div>
+    </div>
+  </div> -->
+
 </div>
 </body>
 </html>

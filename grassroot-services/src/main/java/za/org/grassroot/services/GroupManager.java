@@ -222,6 +222,28 @@ public class GroupManager implements GroupManagementService {
         return pageOfGroups.getContent();
     }
 
+    /*
+    We use this for the web home page, so we can show a structured set of groups. Another way to do this might be via
+    a query in the repository, but the most obvious, findByUserAndParentNull, won't quite work if a user is a member
+     of a subgroup but not of the parent (i.e., the group is seniormost for that user but not within that tree
+     todo: figure out how to do this via query, or the below implementation may kill us when the group lists are large
+     */
+
+    @Override
+    public List<Group> getTopLevelGroups(User user) {
+
+        List<Group> groupsPartOf = getGroupsPartOf(user);
+        List<Group> topLevelGroups = new ArrayList<>();
+
+        for (Group group : groupsPartOf) {
+            if (group.getParent() == null || !isUserInGroup(group.getParent(), user)) {
+                topLevelGroups.add(group);
+            }
+        }
+
+        return topLevelGroups;
+    }
+
     @Override
     public List<Group> getSubGroups(Group group) {
         return groupRepository.findByParent(group);
@@ -344,6 +366,12 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
+    public Group getParent(Group group) {
+        // trivial method, but seems safer to do a trivial services call than have this sort of thing sitting in view
+        return group.getParent();
+    }
+
+    @Override
     public Group linkSubGroup(Group child, Group parent) {
         // todo: error checking, for one more barrier against infintite loops
         child.setParent(parent);
@@ -393,6 +421,18 @@ public class GroupManager implements GroupManagementService {
         }
 
         return saveGroup(group);
+
+    }
+
+    @Override
+    public Integer getGroupSize(Group group, boolean includeSubGroups) {
+        // as with a few above, a little trivial as implemented here, but may change in future, so rather here than code in webapp
+
+        if (!includeSubGroups) {
+            return group.getGroupMembers().size();
+        } else {
+            return getAllUsersInGroupAndSubGroups(group).size();
+        }
 
     }
 

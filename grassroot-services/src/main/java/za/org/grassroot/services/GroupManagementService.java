@@ -35,8 +35,6 @@ public interface GroupManagementService {
 
     public List<Group> getPaginatedGroups(User sessionUser, int pageNumber, int pageSize);
 
-    public List<Group> getSubGroups(Group group);
-
     public Group getGroupById(Long groupId);
 
     public Group saveGroup(Group groupToSave);
@@ -101,11 +99,17 @@ public interface GroupManagementService {
 
     public Group createSubGroup(Long createdByUserId, Long groupId, String subGroupName);
 
+    public List<Group> getTopLevelGroups(User user);
+
+    public List<Group> getSubGroups(Group group);
+
     public List<User> getAllUsersInGroupAndSubGroups(Long groupId);
 
     public List<User> getAllUsersInGroupAndSubGroups(Group group);
 
     boolean hasParent(Group group);
+
+    public Group getParent(Group group);
 
     public Group linkSubGroup(Group child, Group parent);
 
@@ -119,7 +123,7 @@ public interface GroupManagementService {
     boolean isGroupAlsoParent(Group possibleChildGroup, Group possibleParentGroup);
 
     /*
-    Methods to set some basic group properties
+    Methods to set and retrieve some basic group properties
      */
 
     public Group setGroupDefaultReminderMinutes(Group group, Integer minutes);
@@ -127,6 +131,8 @@ public interface GroupManagementService {
     public Group setGroupDefaultReminderMinutes(Long groupId, Integer minutes);
 
     public Group resetGroupLanguage(Group group, String locale);
+
+    public Integer getGroupSize(Group group, boolean includeSubGroups);
 
 
 }
