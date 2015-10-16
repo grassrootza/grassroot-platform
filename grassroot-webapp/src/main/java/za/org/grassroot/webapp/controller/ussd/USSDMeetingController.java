@@ -336,7 +336,7 @@ public class USSDMeetingController extends USSDController {
             if (groupId != null) {
                 // stop asking for numbers, set the event's group, and prompt for and pass whatever is next in the sequence
                 sessionUser = userManager.loadOrSaveUser(inputNumber, thisUriBase + "&" + GROUP_PARAM + "=" + groupId + "&prior_input=0");
-                updateEvent(eventId, keyGroup, "" + groupId);
+                updateEvent(eventId, keyGroup, "" + groupId, priorInput != null);
                 thisMenu.setPromptMessage(getMessage(MTG_KEY, keyNext, PROMPT, sessionUser));
                 thisMenu.setNextURI(MTG_MENUS + nextMenuKey(keyNext) + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + keyNext);
             } else {
@@ -424,7 +424,7 @@ public class USSDMeetingController extends USSDController {
 
         String keyNext = nextMenuKey(keySubject); // skipped for the moment, like keyDate
         User sessionUser = userManager.loadOrSaveUser(inputNumber, assembleThisUri(eventId, keySubject, passedValueKey, passedValue));
-        Event meetingToCreate = updateEvent(eventId, passedValueKey, passedValue);
+        Event meetingToCreate = updateEvent(eventId, passedValueKey, passedValue, passedValue.equals("1"));
         String promptMessage = getMessage(MTG_KEY, keySubject, PROMPT, sessionUser);
 
         USSDMenu thisMenu = new USSDMenu(promptMessage, MTG_MENUS + keyNext + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + keySubject);
@@ -441,7 +441,7 @@ public class USSDMeetingController extends USSDController {
 
         String keyNext = nextMenuKey(keyTime);
         User sessionUser = userManager.loadOrSaveUser(inputNumber, assembleThisUri(eventId, keyTime, passedValueKey, passedValue));
-        Event meetingToCreate = updateEvent(eventId, passedValueKey, passedValue);
+        Event meetingToCreate = updateEvent(eventId, passedValueKey, passedValue, passedValue.equals("1"));
         String promptMessage = getMessage(MTG_KEY, keyTime, PROMPT, sessionUser);
 
         return menuBuilder(new USSDMenu(promptMessage, MTG_MENUS + keyNext + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + keyTime));
@@ -460,7 +460,7 @@ public class USSDMeetingController extends USSDController {
 
         String keyNext = nextMenuKey(keyPlace);
         User sessionUser = userManager.loadOrSaveUser(inputNumber, assembleThisUri(eventId, keyPlace, passedValueKey, passedValue));
-        Event meetingToCreate = updateEvent(eventId, passedValueKey, passedValue);
+        Event meetingToCreate = updateEvent(eventId, passedValueKey, passedValue, passedValue.equals("1"));
         String promptMessage = getMessage(MTG_KEY, keyPlace, PROMPT, sessionUser);
 
         return menuBuilder(new USSDMenu(promptMessage, MTG_MENUS + keyNext + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + keyPlace));
@@ -498,10 +498,6 @@ public class USSDMeetingController extends USSDController {
 
     private Event updateEvent(Long eventId, String lastMenuKey, String passedValue) {
 
-        // before doing anything, check if we have been passed the menu option from the 'you were interrupted' start prompt
-        // and, if so, don't do anything, just return the event as it stands
-        if (passedValue.equals("1")) { return eventManager.loadEvent(eventId); }
-
         Event eventToReturn;
         switch(lastMenuKey) {
             case keySubject:
@@ -522,6 +518,19 @@ public class USSDMeetingController extends USSDController {
                 eventToReturn = eventManager.loadEvent(eventId);
         }
         return eventToReturn;
+    }
+
+    private Event updateEvent(Long eventId, String lastMenuKey, String passedValue, boolean wasInterrupted) {
+
+        // before doing anything, check if we have been passed the menu option from the 'you were interrupted' start prompt
+        // and, if so, don't do anything, just return the event as it stands
+
+        if (wasInterrupted) {
+            return eventManager.loadEvent(eventId);
+        } else {
+            return updateEvent(eventId, lastMenuKey, passedValue);
+        }
+
     }
 
 
