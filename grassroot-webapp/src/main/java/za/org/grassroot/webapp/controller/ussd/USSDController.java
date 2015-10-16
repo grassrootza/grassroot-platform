@@ -110,7 +110,6 @@ public class USSDController {
         Integer enumLength = ("1. ").length();
         Integer characterLimit = firstMenu ? 140 : 160;
 
-        // todo: replace with a logger
         log.info("Length of menu: " + menuToCheck.getMenuCharLength(enumLength));
 
         return (menuToCheck.getMenuCharLength(enumLength) < characterLimit); // might be able to get away with <=, but prefer to be conservative
@@ -118,60 +117,46 @@ public class USSDController {
 
     /**
      * SECTION: Auxiliary methods used in creating, sorting, displaying groups in USSD menus / from USSD input
+     * todo: extend pagination, to allow for multiple pages, and/or better sorting (last accessed & most accessed)
+     * todo: change the dateformat for unnamed groups to something more readable and/or shorter
      */
-
-    protected USSDMenu userGroupMenu(User sessionUser, String promptMessage, String path, boolean optionNewGroup)
-            throws URISyntaxException {
-
-        // todo: create a better sorting logic
-        List<Group> groupsPartOf = groupManager.getPaginatedGroups(sessionUser, 0, PAGE_LENGTH);
-
-        USSDMenu menuBuild = new USSDMenu(promptMessage);
-        final String dateFormat = "%1$TD";
-        final String formedUrl = (!path.contains("?")) ? (path + GROUPID_URL) : (path + "&" + GROUP_PARAM + "=");
-
-        for (Group groupForMenu : groupsPartOf) {
-            String groupName = (groupForMenu.hasName()) ? groupForMenu.getGroupName() :
-                    getMessage(GROUP_KEY, "unnamed", "label", String.format(dateFormat, groupForMenu.getCreatedDateTime()), sessionUser);
-            menuBuild.addMenuOption(formedUrl + groupForMenu.getId(), groupName);
-        }
-
-        if (optionNewGroup)
-            menuBuild.addMenuOption(formedUrl + "0", getMessage(GROUP_KEY, "create", "option", sessionUser));
-
-        return menuBuild;
-    }
-
-    // todo: remove the version above, for the below, once tested properly
 
     protected USSDMenu userGroupMenu(User sessionUser, String promptMessage, String existingPath, String newUri, String groupParam)
             throws URISyntaxException {
 
-        // todo: extend pagination, to allow for multiple pages, and/or better sorting (last accessed & most accessed)
-        // todo: change the dateformat to something more readable and/or shorter
-        // todo: switch to using URIComponentsBuilder instead of string joining the parameters
-
         USSDMenu menuBuild = new USSDMenu(promptMessage);
         List<Group> groupsPartOf = groupManager.getPaginatedGroups(sessionUser, 0, PAGE_LENGTH);
-        final String dateFormat = "%1$TD";
 
         final String formedUrl = (!existingPath.contains("?")) ?
                 (existingPath + GROUPID_URL) :
                 (existingPath + "&" + groupParam + "=");
 
+        String finalOption = (newUri != null) ? getMessage(GROUP_KEY, "create", "option", sessionUser) : "";
+
         for (Group groupToList : groupsPartOf) {
 
             String groupName = (groupToList.hasName()) ?
                     groupToList.getGroupName() :
-                    getMessage(GROUP_KEY, "unnamed", "label", String.format(dateFormat, groupToList.getCreatedDateTime()), sessionUser);
+                    getMessage(GROUP_KEY, "unnamed", "label", String.format("1$TD", groupToList.getCreatedDateTime()), sessionUser);
 
-            menuBuild.addMenuOption(formedUrl + groupToList.getId(), groupName);
+            if (menuBuild.getMenuCharLength() + groupName.length() + finalOption.length() < 154) // leaving 6 chars for X.
+                menuBuild.addMenuOption(formedUrl + groupToList.getId(), groupName);
         }
 
         if (newUri != null)
-            menuBuild.addMenuOption(newUri, getMessage(GROUP_KEY, "create", "option", sessionUser));
+            menuBuild.addMenuOption(newUri, finalOption);
 
         return menuBuild;
+    }
+
+    // slightly simplified version
+    protected USSDMenu userGroupMenu(User sessionUser, String promptMessage, String path, boolean optionNewGroup)
+            throws URISyntaxException {
+
+        final String formedUrl = (!path.contains("?")) ? (path + GROUPID_URL) : (path + "&" + GROUP_PARAM + "=");
+        final String newGroupUrl = (optionNewGroup) ? formedUrl + "0" : null;
+
+        return userGroupMenu(sessionUser, promptMessage, path, newGroupUrl, GROUP_PARAM);
     }
 
     /*
@@ -233,8 +218,9 @@ public class USSDController {
         LinkedHashMap<String, String> languages = new LinkedHashMap<>();
 
         languages.put("en", "English");
-        languages.put("ts", "Xitsonga");
-        languages.put("zu", "isiZulu");
+        languages.put("nso", "Sepedi");
+        languages.put("ts", "Tsonga");
+        languages.put("zu", "Zulu");
 
         return languages;
 

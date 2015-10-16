@@ -82,20 +82,23 @@ public class USSDMeetingController extends USSDController {
 
         // first, check if the user has upcoming events, and, if so, prompt to manage / view
 
+        USSDMenu returnMenu;
+
         if (newMeeting || eventManager.getUpcomingEventsUserCreated(sessionUser).size() == 0) {
             // initialize event to be filled out in subsequent menus
             Event meetingToCreate = eventManager.createEvent("", sessionUser);
             meetingToCreate = eventManager.setEventNoReminder(meetingToCreate.getId()); // as in Web, a temporary thing
-            return menuBuilder(askForGroup(sessionUser, meetingToCreate.getId(), nextMenuKey(START_KEY), keyGroup));
+            returnMenu = askForGroup(sessionUser, meetingToCreate.getId(), nextMenuKey(START_KEY), keyGroup);
         } else {
-            return menuBuilder(askNewOld(sessionUser));
+            returnMenu = askNewOld(sessionUser);
         }
+
+        return menuBuilder(returnMenu);
     }
 
     private USSDMenu askForGroup(User sessionUser, Long eventId, String keyNext, String keyCreate) throws URISyntaxException {
 
         USSDMenu groupMenu;
-
         if (sessionUser.getGroupsPartOf().isEmpty()) {
             groupMenu = firstGroupPrompt(keyCreate, eventId, sessionUser);
         } else {
@@ -109,21 +112,31 @@ public class USSDMeetingController extends USSDController {
 
     private USSDMenu askNewOld(User sessionUser) {
 
-        // todo: paginate so there aren't too many
+        USSDMenu askMenu = new USSDMenu(getMessage(MTG_KEY, START_KEY, PROMPT + ".new-old", sessionUser));
+        String newMeetingOption = getMessage(MTG_KEY, START_KEY, OPTION + "new", sessionUser);
 
-        USSDMenu askMenu = new USSDMenu("Manage an upcoming meeting, or call a new one?");
-        // paginate to just two for moment, given meeting description length is causing issues
-        List<Event> upcomingEvents = eventManager.getPaginatedEventsCreatedByUser(sessionUser, 0, 2);
+        Integer enumLength = "X. ".length();
+        Integer lastOptionBuffer = enumLength + newMeetingOption.length();
+
+        /*
+         note: this will bring up events in groups that the user has unsubscribed from, since it doesn't go via the
+          group menus. but the alternate, to do a group check on each event, is going to cause speed issues, and real
+          world cases of user unsubscribing between calling an event and it happening are marginal. so, leaving it
+          this way.
+          */
+        List<Event> upcomingEvents = eventManager.getPaginatedEventsCreatedByUser(sessionUser, 0, 3);
 
         for (Event event : upcomingEvents) {
             Map<String, String> eventDescription = eventManager.getEventDescription(event);
             if (eventDescription.get("minimumData").equals("true")) {
                 String menuLine = eventDescription.get("groupName") + ": " + eventDescription.get("dateTimeString");
-                askMenu.addMenuOption(MTG_MENUS + keyManage + EVENTID_URL + event.getId(), menuLine);
+                if (askMenu.getMenuCharLength() + enumLength + menuLine.length() + lastOptionBuffer < 160) {
+                    askMenu.addMenuOption(MTG_MENUS + keyManage + EVENTID_URL + event.getId(), menuLine);
+                }
             }
         }
 
-        askMenu.addMenuOption(MTG_MENUS + START_KEY + "?newMtg=true", "Call a new meeting");
+        askMenu.addMenuOption(MTG_MENUS + START_KEY + "?newMtg=true", newMeetingOption);
 
         return askMenu;
     }
