@@ -41,6 +41,20 @@ public class USSDMenu {
         this.menuOptions = new LinkedHashMap<>(nextOptionKeys);
     }
 
+    // constructor for empty shell, useful in various menus
+    public USSDMenu() {
+        this.promptMessage = "";
+        this.isFreeText = false;
+        this.menuOptions = new LinkedHashMap<>();
+    }
+
+    // constructor for empty shell for free text
+    public USSDMenu(boolean isFreeText) {
+        this.promptMessage = "";
+        this.isFreeText = isFreeText;
+        this.menuOptions = new LinkedHashMap<>();
+    }
+
     // now starting getters and setters
 
     public String getPromptMessage() {

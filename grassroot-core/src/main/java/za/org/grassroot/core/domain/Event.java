@@ -293,8 +293,8 @@ public class Event implements Serializable {
 
         Event event = (Event) o;
 
-        if (dateTimeString != null ? !dateTimeString.equals(event.dateTimeString) : event.dateTimeString != null)
-            return false;
+        /* if (dateTimeString != null ? !dateTimeString.equals(event.dateTimeString) : event.dateTimeString != null)
+            return false;*/
         if (eventLocation != null ? !eventLocation.equals(event.eventLocation) : event.eventLocation != null)
             return false;
         if (eventStartDateTime != null ? !eventStartDateTime.equals(event.eventStartDateTime) : event.eventStartDateTime != null)

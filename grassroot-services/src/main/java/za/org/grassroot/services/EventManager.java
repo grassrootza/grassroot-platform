@@ -18,6 +18,7 @@ import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 
 import javax.persistence.EntityManager;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -390,13 +391,18 @@ public class EventManager implements EventManagementService {
         Map<String, String> eventDescription = new HashMap<>();
 
         if (minimumDataAvailable(event)) {
+
+            SimpleDateFormat sdf = new SimpleDateFormat("EEE d MMM, h:mm a");
+            String dateTimeString = (event.getDateTimeString() != null) ? event.getDateTimeString() :
+                    sdf.format(event.getEventStartDateTime().getTime());;
+
             eventDescription.put("minimumData", "true");
             eventDescription.put("groupName", event.getAppliesToGroup().getName(""));
             eventDescription.put("creatingUser", event.getCreatedByUser().nameToDisplay());
             eventDescription.put("eventSubject", event.getName());
-            eventDescription.put("createdDateTime", event.getCreatedDateTime().toString());
-            eventDescription.put("dateTimeString", event.getDateTimeString());
             eventDescription.put("location", event.getEventLocation());
+            eventDescription.put("createdDateTime", event.getCreatedDateTime().toString());
+            eventDescription.put("dateTimeString", dateTimeString);
         } else {
             eventDescription.put("minimumData", "false");
         }

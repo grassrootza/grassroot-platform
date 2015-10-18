@@ -13,8 +13,10 @@ import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Option;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.util.*;
 
 /**
@@ -191,7 +193,7 @@ public class USSDController {
 
 
     /**
-     * SECTION: i18n methods, as well some default menus used often
+     * SECTION: i18n helper methods and encoding , as well some default menus used often
      * todo: replace these error messages, especially the 'no user' error
      */
 
@@ -210,6 +212,15 @@ public class USSDController {
         return ImmutableMap.<String, String>builder().
                 put(yesUri + "&" + YESNO_FIELD + "=yes", getMessage(OPTION + "yes", sessionUser)).
                 put(noUri + "&" + YESNO_FIELD + "=no", getMessage(OPTION + "no", sessionUser)).build();
+    }
+
+    protected String encodeParamater(String stringToEncode) {
+
+        String encodedString;
+        try { encodedString = URLEncoder.encode(stringToEncode, "UTF-8"); } // need to do this in case we get interrupted, to deal with spaces
+        catch (UnsupportedEncodingException e) { encodedString = stringToEncode; } // todo: handle errors better
+
+        return encodedString;
     }
 
     // list of possible languages for USSD -- implementing as function instead of method because of Java disliking String[] in Arrays.asList
