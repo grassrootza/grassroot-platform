@@ -1,7 +1,11 @@
 package za.org.grassroot.services;
 
+import net.sf.ehcache.Cache;
+import net.sf.ehcache.CacheManager;
+import net.sf.ehcache.Element;
 import org.apache.commons.lang3.SerializationUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
@@ -54,6 +58,10 @@ public class EventManager implements EventManagementService {
     @Autowired
     EntityManager entityManager;
 
+    @Autowired
+    private CacheManager cacheManager;
+
+
     /*
     Variety of createEvent methods with different signatures caters to USSD menus in particular, so can create event
     with varying degrees of information. Am defaulting to a meeting requires an RSVP, since that will be most cases.
@@ -77,7 +85,7 @@ public class EventManager implements EventManagementService {
     @Override
     public Event createEvent(String name, Long createdByUserId, Long appliesToGroupId, boolean includeSubGroups) {
         return createEvent(name, userManagementService.getUserById(createdByUserId),
-                           groupManager.getGroupById(appliesToGroupId),includeSubGroups);
+                groupManager.getGroupById(appliesToGroupId), includeSubGroups);
     }
 
     @Override
@@ -91,12 +99,12 @@ public class EventManager implements EventManagementService {
      */
     @Override
     public Event createEvent(String name, User createdByUser) {
-        return createNewEvent(createdByUser, EventType.Meeting,true,name,null,false,0);
+        return createNewEvent(createdByUser, EventType.Meeting, true, name, null, false, 0);
     }
 
     @Override
     public Event createMeeting(User createdByUser) {
-        return createNewEvent(createdByUser, EventType.Meeting, true,"",null,false,0);
+        return createNewEvent(createdByUser, EventType.Meeting, true, "", null, false, 0);
     }
 
     private Event createNewEvent(User createdByUser, EventType eventType, boolean rsvpRequired
@@ -276,32 +284,62 @@ public class EventManager implements EventManagementService {
         return getOutstandingRSVPForUser(userRepository.findOne(userId));
     }
 
+
+    /*
+    todo - aakil - figure out why the annotation is not working
+    @Cacheable(value="userRSVP", key="#user.id", cacheManager = "coreCacheManager")
+     */
     @Override
     public List<Event> getOutstandingRSVPForUser(User user) {
-        // todo: we will probably use something like this at application load for every user that comes in via USSD
-        // todo: so just wondering if we may want to do the below via a single query in one of the repositories?
         log.info("getOutstandingRSVPForUser..." + user.getId());
-        List<Event> outstandingRSVPs = new ArrayList<Event>();
-        List<Group> groups = groupManager.getGroupsPartOf(user);
-        if (groups != null) {
-            for (Group group : groups) {
-                List<Event> upcomingEvents = getUpcomingEventsForGroupAndParentGroups(group);
-                //log.info("getOustandingRSVPForUser ... checking " + upcomingEvents.size() + " events");
-                if (upcomingEvents != null) {
-                    for (Event event : upcomingEvents) {
-                        if (event.isRsvpRequired() && event.getCreatedByUser().getId() != user.getId()) {
-                            if (!eventLogManagementService.userRsvpForEvent(event, user)) {
-                                outstandingRSVPs.add(event);
-                                log.info("getOutstandingRSVPForUser...rsvpRequired..." + user.getId() + "...event..." + event.getId());
-                            } else {
-                                log.info("getOutstandingRSVPForUser...rsvp NOT Required..." + user.getId() + "...event..." + event.getId());
+        List<Event> outstandingRSVPs = null;
+        Cache cache = cacheManager.getCache("userRSVP");
+        try {
+            outstandingRSVPs = (List<Event>) cache.get(user.getId()).getObjectValue();
 
+        } catch (Exception e) {
+            log.fine("Could not retrieve outstanding RSVP from cache  userRSVP for user " + user.getPhoneNumber() + " error: " +  e.toString());
+        }
+        if (outstandingRSVPs == null) {
+            // fetch from the database
+            outstandingRSVPs = new ArrayList<Event>();
+            List<Group> groups = groupManager.getGroupsPartOf(user);
+            log.finest("getOutstandingRSVPForUser...after...getGroupsPartOf...");
+            if (groups != null) {
+                log.finest("getOutstandingRSVPForUser...number of groups..." + groups.size());
+
+                for (Group group : groups) {
+                    log.finest("getOutstandingRSVPForUser...before...getUpcomingEventsForGroupAndParentGroups..." + group.getId());
+                    List<Event> upcomingEvents = getUpcomingEventsForGroupAndParentGroups(group);
+                    log.finest("getOutstandingRSVPForUser...after...getUpcomingEventsForGroupAndParentGroups..." + group.getId());
+
+                    //log.info("getOustandingRSVPForUser ... checking " + upcomingEvents.size() + " events");
+                    if (upcomingEvents != null) {
+                        for (Event event : upcomingEvents) {
+                            log.finest("getOutstandingRSVPForUser...start...event check..." + event.getId());
+
+                            if (event.isRsvpRequired() && event.getCreatedByUser().getId() != user.getId()) {
+                                if (!eventLogManagementService.userRsvpForEvent(event, user)) {
+                                    outstandingRSVPs.add(event);
+                                    log.info("getOutstandingRSVPForUser...rsvpRequired..." + user.getId() + "...event..." + event.getId());
+                                } else {
+                                    log.info("getOutstandingRSVPForUser...rsvp NOT Required..." + user.getId() + "...event..." + event.getId());
+
+                                }
                             }
+                            log.finest("getOutstandingRSVPForUser...end...event check..." + event.getId());
+
                         }
                     }
-                }
 
+                }
+                try {
+                    cache.put(new Element(user.getId(),outstandingRSVPs));
+                } catch (Exception e) {
+                    log.severe(e.toString());
+                }
             }
+
         }
         log.info("getOutstandingRSVPForUser..." + user.getId() + "...returning..." + outstandingRSVPs.size());
 

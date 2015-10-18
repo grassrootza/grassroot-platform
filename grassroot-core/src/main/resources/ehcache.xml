@@ -4,4 +4,12 @@
            maxEntriesLocalHeap="200"
            timeToLiveSeconds="600">
     </cache>
+
+    <cache name="userRSVP"
+           maxEntriesLocalHeap="200"
+           eternal="false"
+           timeToIdleSeconds="120" timeToLiveSeconds="300"
+            >
+    </cache>
+
 </ehcache>

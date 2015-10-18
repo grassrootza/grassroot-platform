@@ -1,5 +1,7 @@
 package za.org.grassroot.services;
 
+import net.sf.ehcache.Cache;
+import net.sf.ehcache.CacheManager;
 import org.apache.commons.lang.enums.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -38,6 +40,10 @@ public class EventLogManager implements EventLogManagementService {
 
     @Autowired
     GroupRepository groupRepository;
+
+    @Autowired
+    CacheManager cacheManager;
+
 
 
     @Override
@@ -88,7 +94,15 @@ public class EventLogManager implements EventLogManagementService {
 
     @Override
     public EventLog rsvpForEvent(Event event, User user, EventRSVPResponse rsvpResponse) {
-        return createEventLog(EventLogType.EventRSVP, event, user, rsvpResponse.toString());
+        EventLog eventLog = createEventLog(EventLogType.EventRSVP, event, user, rsvpResponse.toString());
+        // clear rsvp cache for user
+        try {
+            Cache cache = cacheManager.getCache("userRSVP");
+            cache.remove(user.getId());
+        } catch (Exception e) {
+            log.severe("FAILED to clear userRSVP..." + user.getId() + " error: " + e.toString());
+        }
+        return eventLog;
     }
 
     @Override
