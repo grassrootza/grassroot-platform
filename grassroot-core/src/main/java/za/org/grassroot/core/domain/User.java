@@ -40,6 +40,7 @@ public class User implements UserDetails {
     private String lastUssdMenu;
     private boolean hasInitiatedSession;
     private Set<Role> roles      = new HashSet<>();
+    private Account accountAdministered;
     private Integer version;
 
 
@@ -118,6 +119,12 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "user")
     private List<Event> eventsCreated;
 
+    @ManyToOne
+    @JoinColumn(name = "account_administered")
+    public Account getAccountAdministered() { return accountAdministered; }
+    public void setAccountAdministered(Account accountAdministered) { this.accountAdministered = accountAdministered; }
+
+
     @ManyToMany(cascade = CascadeType.ALL, mappedBy = "groupMembers", fetch = FetchType.EAGER) // not sure which cascade type is going to be best
     public List<Group> getGroupsPartOf() {
         return groupsPartOf;
@@ -195,6 +202,7 @@ public class User implements UserDetails {
     public String getLastUssdMenu() { return lastUssdMenu; }
 
     public void setLastUssdMenu(String lastUssdMenu) { this.lastUssdMenu = lastUssdMenu; }
+
 
     /*
     We use this to differentiate between users who have initiated a G/R session on their own, and those who have just
