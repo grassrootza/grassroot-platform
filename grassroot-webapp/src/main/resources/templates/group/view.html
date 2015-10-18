@@ -82,10 +82,9 @@
         <!-- Major todo: look up user's permissions before they can do this ... -->
           <button type="submit" name="group_modify" class="btn btn-warning">Add and modify group members</button>
         </div>
-        <!-- Take this out of comments when have CRUD deletion working without deleting user
         <div th:if="${canDeleteGroup}" class="col-lg-4">
-          <button type="submit" name="group_delete" class="btn btn-warning">Delete group (only within 24 hours)</button>
-        </div> -->
+          <button type="submit" name="group_delete" class="btn btn-warning">Delete group (only within 48 hours)</button>
+        </div>
     </div>
     </form>
   </div>

@@ -39,7 +39,7 @@ public interface GroupManagementService {
 
     public Group saveGroup(Group groupToSave);
 
-    // public void deleteGroup(Group groupToDelete); // Commenting this out until we have security sorted
+    public void deleteGroup(Group groupToDelete);
 
     public boolean canUserDeleteGroup(User user, Group group);
 

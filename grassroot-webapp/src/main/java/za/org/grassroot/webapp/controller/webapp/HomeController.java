@@ -26,7 +26,7 @@ import java.util.List;
 @Controller
 public class HomeController extends BaseController{
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(HomeController.class);
+    private static final Logger log = LoggerFactory.getLogger(HomeController.class);
 
     @Autowired
     GroupManagementService groupManagementService;
@@ -36,7 +36,7 @@ public class HomeController extends BaseController{
 
     @RequestMapping("/")
     public String getIndexPage() {
-        LOGGER.debug("Getting home page");
+        log.debug("Getting home page");
         return "index";
     }
 
@@ -48,13 +48,17 @@ public class HomeController extends BaseController{
         /*
          Recursive construction in the view node will turn each of these into a tree with a root node as the top level
          group. There may be a more efficient way to do this than the groupManagement call (and/or optimizing within it
+         */
 
         List<Group> topLevelGroups = groupManagementService.getTopLevelGroups(user);
         List<GroupViewNode> groupViewNodes = new ArrayList<>();
-        for (Group group : topLevelGroups) { groupViewNodes.add(new GroupViewNode(group, user)); }*/
+        for (Group group : topLevelGroups) {
+            log.info("Creating a group node from group: " + group.getGroupName());
+            groupViewNodes.add(new GroupViewNode(group, user, groupManagementService));
+        }
 
         model.addAttribute("userGroups", user.getGroupsPartOf());
-        // model.addAttribute("groupTrees", groupViewNodes);
+        model.addAttribute("groupTrees", groupViewNodes);
 
         // get lists of outstanding RSVPs and, in time, votes and logbook entries
         List<Event> meetingsToRsvp = eventManagementService.getOutstandingRSVPForUser(user);

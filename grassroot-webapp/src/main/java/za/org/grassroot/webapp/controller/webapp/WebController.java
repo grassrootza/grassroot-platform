@@ -215,7 +215,7 @@ public class WebController {
 
         attributeMap.put("user_id", userId);
         attributeMap.put("group_name", groupName);
-        attributeMap.put("group_size", groupToCreate.getGroupMembers().size());
+        attributeMap.put("group_size", groupToCreate.getNumberMembers().size());
         model.addAllAttributes(attributeMap);
         return "group/new_action";
 
@@ -229,7 +229,7 @@ public class WebController {
 
         // todo: work out best level of abstraction here (i.e., what to pass, what to return)
 
-        List<User> usersToList = groupToDisplay.getGroupMembers();
+        List<User> usersToList = groupToDisplay.getNumberMembers();
         List<HashMap<String,String>> userList =new ArrayList<>();
 
         for (User userToList : usersToList) {
@@ -253,7 +253,7 @@ public class WebController {
             groupAttributes.put("group_id", "" + groupToList.getId());
             groupAttributes.put("group_name", groupToList.getGroupName());
             groupAttributes.put("created_by", groupToList.getCreatedByUser().getName("Unnamed user"));
-            groupAttributes.put("number_users", "" + groupToList.getGroupMembers().size());
+            groupAttributes.put("number_users", "" + groupToList.getNumberMembers().size());
             groupList.add(groupAttributes);
         }
 

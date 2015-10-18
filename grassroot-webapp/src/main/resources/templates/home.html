@@ -117,7 +117,7 @@
                       </div>
                       <div class="col-lg-6">
                         <a th:href="@{/group/unsubscribe(groupId=${group.id})}">
-                          <button class="btn btn-danger">Unsubscribe from group</button>
+                          <button class="btn">Unsubscribe from group</button>
                         </a>
                       </div>
                     </div>
@@ -134,14 +134,29 @@
 
   <!-- Trying out the group tree view idea -->
 
-  <!-- <div th:if="${not #lists.isEmpty(groupTrees)}">
+  <div th:if="${not #lists.isEmpty(groupTrees)}">
     <div class="well">
-      <div th:each="${groupTree: ${groupTrees}">
-        <div class="row">
-          Parent group: <span th:value="${zero}">Zero</span>
+      <h3>Groups in tree view:</h3>
+      <div th:each="groupTree: ${groupTrees}" class="bs-component">
+        <div class="list-group">
+          <div class="list-group-item">
+            <span th:text="${groupTree.groupName}">Group name</span>
+            <ul th:fragment="fragment_node(groupTree)">
+              <li th:each="subGroup : ${groupTree.Subgroups}" th:inline="text">
+                [[${subGroup.groupName}]] ([[${subGroup.level}]])
+                <ul th:replace="this::fragment_node(${subGroup})" th:unless="${groupTree.isTerminal()}"></ul>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- <div th:fragment="fragment_node(node)">
+    <li th:each="subGroup : ${node.Subgroups}" th:text="${subGroup.groupName}">
+      <span layout:include="this :: fragment_node(${subGroup})"></span>
+    </li>
   </div> -->
 
 </div>
