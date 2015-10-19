@@ -80,6 +80,8 @@ public interface UserManagementService {
 
     User resetLastUssdMenu(User sessionUser);
 
+    User setLastUssdMenu(User sessionUser, String lastUssdMenu);
+
     User setUserLanguage(User sessionUser, String locale);
 
     User setUserLanguage(Long userId, String locale);

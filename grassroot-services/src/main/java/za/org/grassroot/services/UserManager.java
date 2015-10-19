@@ -369,6 +369,12 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
+    public User setLastUssdMenu(User sessionUser, String lastUssdMenu) {
+        sessionUser.setLastUssdMenu(lastUssdMenu);
+        return userRepository.save(sessionUser);
+    }
+
+    @Override
     public User setUserLanguage(User sessionUser, String locale) {
         sessionUser.setLanguageCode(locale);
         return userRepository.save(sessionUser);
