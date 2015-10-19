@@ -27,6 +27,7 @@ import za.org.grassroot.webapp.validation.UserValidator;
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Lesetse Kimwaga
@@ -356,6 +357,35 @@ public class GroupController extends BaseController {
         redirectAttributes.addAttribute("groupId", group.getId());
         return "redirect:/group/view";
 
+    }
+
+    @RequestMapping(value = "/group/modify", params={"group_language"})
+    public String requestGroupLanguage(Model model, @RequestParam("groupId") Long groupId) {
+
+        Group group = groupManagementService.loadGroup(groupId);
+
+        List<Map.Entry<String, String>> languages = new ArrayList<>(userManagementService.getImplementedLanguages().entrySet());
+
+        model.addAttribute("group", group);
+        model.addAttribute("languages", languages);
+
+        return "group/language_pick";
+
+    }
+
+    @RequestMapping(value = "/group/language", method = RequestMethod.POST)
+    public String setGroupLanguage(Model model, @RequestParam("groupId") Long groupId, @RequestParam("locale") String locale,
+                                   HttpServletRequest request) {
+
+        // todo: add permissions checking, exception handling, etc.
+
+        log.info("Okay, setting the language to: " + locale);
+
+        Group group = groupManagementService.loadGroup(groupId);
+        group = groupManagementService.setGroupDefaultLanguage(group, locale);
+
+        addMessage(model, MessageType.SUCCESS, "group.language.success", request);
+        return viewGroupIndex(model, groupId);
     }
 
     /*

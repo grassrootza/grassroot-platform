@@ -379,6 +379,29 @@ public class UserManager implements UserManagementService, UserDetailsService {
         return setUserLanguage(getUserById(userId), locale);
     }
 
+    @Override
+    public String getUserLocale(User sessionUser) {
+
+        if (sessionUser.getLanguageCode() == null || sessionUser.getLanguageCode().trim().equals(""))
+            return "en";
+        else
+            return sessionUser.getLanguageCode();
+
+    }
+
+    @Override
+    public Map<String, String> getImplementedLanguages() {
+
+        LinkedHashMap<String, String> languages = new LinkedHashMap<>();
+
+        languages.put("en", "English");
+        languages.put("nso", "Sepedi");
+        languages.put("ts", "Tsonga");
+        languages.put("zu", "Zulu");
+
+        return languages;
+    }
+
     public void setPasswordEncoder(final PasswordEncoder passwordEncoder) {
         this.passwordEncoder = passwordEncoder;
     }

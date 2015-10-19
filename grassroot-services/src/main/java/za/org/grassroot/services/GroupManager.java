@@ -418,7 +418,7 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public Group resetGroupLanguage(Group group, String locale) {
+    public Group setGroupDefaultLanguage(Group group, String locale) {
 
         /*
          Note: intentionally not doing this for all subgroups too -- a sufficiently delicate operation to require user
@@ -426,11 +426,14 @@ public class GroupManager implements GroupManagementService {
          which is non-default, we do not change theirs. Again, might lead to some extra work if some members are part
          of two groups, and then have to manually over-ride. But that is better than alternatives, which is either to
          over-ride user preference once set (= angry user), or have one more dummy field.
+         Also todo: make this something recurring, so, once set, applies to new members joining the group
           */
+
         List<User> groupMembers = group.getGroupMembers();
 
         for (User user : groupMembers) {
-            if (user.getLanguageCode() == "en") {
+            if (!user.isHasInitiatedSession()) {
+                log.info("User hasn't set their own language, so adjusting it to: " + locale + " for this user: " + user.nameToDisplay());
                 userManager.setUserLanguage(user, locale);
             }
         }
