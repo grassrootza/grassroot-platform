@@ -35,8 +35,8 @@ public class Account {
     @OneToMany(mappedBy = "accountAdministered")
     private List<User> administrators;
 
-    @OneToMany(mappedBy = "payingAccount")
-    private List<Group> groupsPaidFor;
+    @OneToMany(mappedBy = "account")
+    private List<PaidGroup> paidGroups;
 
     @Basic
     @Column(name = "account_name")
@@ -108,16 +108,8 @@ public class Account {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
     public Timestamp getCreatedDateTime() {
         return createdDateTime;
-    }
-
-    public void setCreatedDateTime(Timestamp createdDateTime) {
-        this.createdDateTime = createdDateTime;
     }
 
     public List<User> getAdministrators() {
@@ -128,12 +120,12 @@ public class Account {
         this.administrators = administrators;
     }
 
-    public List<Group> getGroupsPaidFor() {
-        return groupsPaidFor;
+    public List<PaidGroup> getPaidGroups() {
+        return paidGroups;
     }
 
-    public void setGroupsPaidFor(List<Group> groupsPaidFor) {
-        this.groupsPaidFor = groupsPaidFor;
+    public void setPaidGroups(List<PaidGroup> paidGroups) {
+        this.paidGroups = paidGroups;
     }
 
     public String getAccountName() {
@@ -187,7 +179,7 @@ public class Account {
                 ", free form messages='" + freeFormMessages + '\'' +
                 ", relayable messages='" + relayableMessages + '\'' +
                 ", number administrators='" + administrators.size() + '\'' +
-                ", number groups paid for='" + groupsPaidFor.size() + '\'' +
+                ", number groups paid for='" + paidGroups.size() + '\'' +
                 '}';
     }
 

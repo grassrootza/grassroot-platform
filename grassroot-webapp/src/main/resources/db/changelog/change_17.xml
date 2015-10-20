@@ -7,7 +7,7 @@
          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.0.xsd">
 
 	<changeSet id="change_17" author="luke">
-		<comment>Create table for paid accounts</comment>
+		<comment>Create table for paid accounts and paid group entity</comment>
 		<sqlFile path="db/scripts/script_17.sql"/>
 		<rollback>
             <sqlFile  path="db/scripts/script_17_rollback.sql"/>

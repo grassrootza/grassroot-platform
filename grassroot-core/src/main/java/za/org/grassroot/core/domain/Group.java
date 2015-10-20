@@ -27,7 +27,7 @@ public class Group implements Serializable {
 
     private List<User> groupMembers = LazyList.lazyList(new ArrayList<>(), FactoryUtils.instantiateFactory(User.class));
     private Group parent;
-    private Account payingAccount;
+    private boolean paidFor;
 
     private String    groupTokenCode;
     private Timestamp tokenExpiryDateTime;
@@ -108,11 +108,11 @@ public class Group implements Serializable {
         this.parent = parent;
     }
 
-    @ManyToOne
-    @JoinColumn(name = "paying_account")
-    public Account getPayingAccount() { return payingAccount; }
+    @Basic
+    @Column(name = "paid_for")
+    public boolean isPaidFor() { return paidFor; }
 
-    public void setPayingAccount(Account payingAccount) { this.payingAccount = payingAccount; }
+    public void setPaidFor(boolean paidFor) { this.paidFor = paidFor; }
 
     @Basic
     @Column(name = "group_token_code", nullable = true, insertable = true, updatable = true, unique = true)
@@ -183,17 +183,17 @@ public class Group implements Serializable {
         this.parent = parent;
     }
 
-    public Group(String groupName, User createdByUser, Account payingAccount) {
+    public Group(String groupName, User createdByUser, boolean paidFor) {
         this.groupName = groupName;
         this.createdByUser = createdByUser;
-        this.payingAccount = payingAccount;
+        this.paidFor = paidFor;
     }
 
-    public Group(String groupName, User createdByUser, Group parent, Account payingAccount) {
+    public Group(String groupName, User createdByUser, Group parent, boolean paidFor) {
         this.groupName = groupName;
         this.createdByUser = createdByUser;
         this.parent = parent;
-        this.payingAccount = payingAccount;
+        this.paidFor = paidFor;
     }
 
     /*
