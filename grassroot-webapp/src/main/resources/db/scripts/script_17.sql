@@ -22,7 +22,7 @@ CREATE TABLE paid_group (
     account_id bigint NOT NULL,
     active_date_time timestamp,
     expire_date_time timestamp
-)
+);
 
 CREATE SEQUENCE paid_group_id_seq
     START WITH 1
