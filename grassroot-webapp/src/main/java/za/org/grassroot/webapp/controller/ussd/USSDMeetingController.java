@@ -390,17 +390,27 @@ public class USSDMeetingController extends USSDController {
                               @RequestParam(value=EVENT_PARAM, required=true) Long eventId,
                               @RequestParam(value=PASSED_FIELD, required=true) String passedValueKey,
                               @RequestParam(value=GROUP_PARAM, required=true) String passedValue,
-                              @RequestParam(value="prior_input", required=false) String priorInput) throws URISyntaxException {
+                              @RequestParam(value="prior_input", required=false) String priorInput,
+                              @RequestParam(value="revising", required=false) boolean revising) throws URISyntaxException {
 
-        String keyNext = nextMenu(subjectMenu);
         User sessionUser = userManager.loadOrSaveUser(inputNumber, assembleThisUri(eventId, subjectMenu, passedValueKey, passedValue));
+        updateEvent(eventId, passedValueKey, passedValue, priorInput != null);
 
-        Event meetingToCreate = updateEvent(eventId, passedValueKey, passedValue, priorInput != null);
         String promptMessage = getMessage(MTG_KEY, subjectMenu, PROMPT, sessionUser);
+        String nextUrl = (!revising) ? nextUrl(subjectMenu, eventId) : confirmUrl(subjectMenu, priorInput, eventId);
 
-        USSDMenu thisMenu = new USSDMenu(promptMessage, MTG_MENUS + keyNext + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + subjectMenu);
-        return menuBuilder(thisMenu);
+        return menuBuilder(new USSDMenu(promptMessage, nextUrl));
 
+    }
+
+    /* Another helper function to compose next URL */
+    private String nextUrl(String currentMenu, Long eventId) {
+        return MTG_MENUS + nextMenu(currentMenu) + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + currentMenu;
+    }
+
+    private String confirmUrl(String currentMenu, String dateTimeString, Long eventId) {
+        String dateString = encodeParamater(dateTimeString);
+        return MTG_MENUS + confirmMenu + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + currentMenu + "&prior_input=" + dateString + "&revising=1";
     }
 
     @RequestMapping(value = basePath + placeMenu)
@@ -409,19 +419,21 @@ public class USSDMeetingController extends USSDController {
                             @RequestParam(value=EVENT_PARAM, required=true) Long eventId,
                             @RequestParam(value=PASSED_FIELD, required=true) String passedValueKey,
                             @RequestParam(value=TEXT_PARAM, required=true) String passedValue,
-                            @RequestParam(value="prior_input", required=false) String priorInput) throws URISyntaxException {
+                            @RequestParam(value="prior_input", required=false) String priorInput,
+                            @RequestParam(value="revising", required=false) boolean revising) throws URISyntaxException {
 
-        // todo: add a lookup of group default places
         // todo: add error and exception handling
 
-        String keyNext = nextMenu(placeMenu);
         User sessionUser = userManager.loadOrSaveUser(inputNumber, assembleThisUri(eventId, placeMenu, passedValueKey, passedValue));
-        Event meetingToCreate = updateEvent(eventId, passedValueKey, passedValue, priorInput != null);
-        String promptMessage = getMessage(MTG_KEY, placeMenu, PROMPT, sessionUser);
+        updateEvent(eventId, passedValueKey, passedValue, priorInput != null);
 
-        return menuBuilder(new USSDMenu(promptMessage, MTG_MENUS + keyNext + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + placeMenu));
+        String promptMessage = getMessage(MTG_KEY, placeMenu, PROMPT, sessionUser);
+        String nextUrl = (!revising) ? nextUrl(placeMenu, eventId) : confirmUrl(placeMenu, priorInput, eventId);
+
+        return menuBuilder(new USSDMenu(promptMessage, nextUrl));
     }
 
+    // don't need the revision flag as this is always the menu in front of confirm screen
     @RequestMapping(value = basePath + timeMenu)
     @ResponseBody
     public Request getTime(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
@@ -445,36 +457,35 @@ public class USSDMeetingController extends USSDController {
                                   @RequestParam(value=EVENT_PARAM, required=true) Long eventId,
                                   @RequestParam(value=PASSED_FIELD, required=true) String passedValueKey,
                                   @RequestParam(value=TEXT_PARAM, required=true) String passedValue,
-                                  @RequestParam(value="prior_input", required=false) String priorInput) throws URISyntaxException {
+                                  @RequestParam(value="prior_input", required=false) String priorInput,
+                                  @RequestParam(value="revising", required=false) boolean revising) throws URISyntaxException {
 
         // show user the assembled confirmation string, _but_ truncate so we don't throw an error.
         // also note that we should not do any update to the event here, or it will trigger the send -- just assemble string
         // todo: refactor and optimize this so it doesn't use so many getters, etc. Could be quite slow if many users.
 
         User sessionUser = userManager.loadOrSaveUser(inputNumber, assembleThisUri(eventId, confirmMenu, passedValueKey, passedValue));
-        Event meeting = eventManager.loadEvent(eventId);
+        Event meeting = (revising) ? updateEvent(eventId, passedValueKey, passedValue) : eventManager.loadEvent(eventId);
 
-        USSDMenu thisMenu = new USSDMenu("");
+        USSDMenu thisMenu = new USSDMenu();
 
         String userInput = (priorInput == null) ? passedValue : priorInput;
         LocalDateTime parsedDate = DateTimeUtil.parseDateTime(userInput);
 
         String dateString = parsedDate.format(DateTimeFormatter.ofPattern("EEE d MMM, h:mm a"));
-        String dateTimeParameter = encodeParamater(dateString);
+        String dateTimeParam = encodeParamater(dateString);
 
         String[] confirmFields = new String[]{ dateString, meeting.getName(), meeting.getEventLocation() };
         String confirmPrompt = getMessage(MTG_KEY, confirmMenu, PROMPT, confirmFields, sessionUser);
 
-        // based on user feedback, giving option to return to any part of menu. Note that this will require them to go through
-        // all of it again, but have to do so for now. todo: pass a parameter to indicate we've gone back, and hence skip ahead once done
+        // based on user feedback, give options to return to any prior screen, then back here.
 
         thisMenu.setPromptMessage(confirmPrompt);
-
-        thisMenu.addMenuOption(MTG_MENUS + send + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + timeMenu + "&confirmed_time=" + dateTimeParameter,
+        thisMenu.addMenuOption(MTG_MENUS + send + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + timeMenu + "&confirmed_time=" + dateTimeParam,
                                getMessage(MTG_KEY + "." + confirmMenu + "." + OPTION + "yes", sessionUser));
-        thisMenu.addMenuOption(composeBackUri(eventId, timeMenu), composeBackMessage(sessionUser, timeMenu));
-        thisMenu.addMenuOption(composeBackUri(eventId, placeMenu), composeBackMessage(sessionUser, placeMenu));
-        thisMenu.addMenuOption(composeBackUri(eventId, subjectMenu) + "&groupId=" + meeting.getAppliesToGroup().getId(),
+        thisMenu.addMenuOption(composeBackUri(eventId, timeMenu, dateTimeParam), composeBackMessage(sessionUser, timeMenu));
+        thisMenu.addMenuOption(composeBackUri(eventId, placeMenu, dateTimeParam), composeBackMessage(sessionUser, placeMenu));
+        thisMenu.addMenuOption(composeBackUri(eventId, subjectMenu, dateTimeParam) + "&groupId=" + meeting.getAppliesToGroup().getId(),
                                composeBackMessage(sessionUser, subjectMenu));
 
         if (!checkMenuLength(thisMenu, false)) {
@@ -491,8 +502,8 @@ public class USSDMeetingController extends USSDController {
     Helper method for composing "back" urls
      */
 
-    private String composeBackUri(Long eventId, String backMenu) {
-        return MTG_MENUS + backMenu + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + backMenu + "&prior_input=1";
+    private String composeBackUri(Long eventId, String backMenu, String dateTimeString) {
+        return MTG_MENUS + backMenu + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + backMenu + "&revising=1" + "&prior_input=" + dateTimeString;
     }
 
     private String composeBackMessage(User user, String backMenu) {
@@ -507,9 +518,7 @@ public class USSDMeetingController extends USSDController {
     @ResponseBody
     public Request sendMessage(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
                                @RequestParam(value=EVENT_PARAM, required=true) Long eventId,
-                               @RequestParam(value=PASSED_FIELD, required=true) String passedValueKey,
-                               @RequestParam(value=TEXT_PARAM, required=true) String passedValue,
-                               @RequestParam(value="confirmed_time", required=false) String confirmedTime) throws URISyntaxException {
+                               @RequestParam(value="confirmed_time", required=true) String confirmedTime) throws URISyntaxException {
 
         // todo: various forms of error handling here (e.g., non-existent group, invalid users, etc)
         // todo: store the response from the SMS gateway and use it to state how many messages successful
@@ -520,8 +529,7 @@ public class USSDMeetingController extends USSDController {
 
         // todo: use responses (from integration or from elsewhere, to display errors if numbers wrong
 
-        String userInput = (confirmedTime != null) ? confirmedTime : passedValue;
-        Event meetingToSend = updateEvent(eventId, passedValueKey, confirmedTime);
+        Event meetingToSend = updateEvent(eventId, timeMenu, confirmedTime);
 
         return menuBuilder(new USSDMenu(getMessage(MTG_KEY, send, PROMPT, sessionUser), optionsHomeExit(sessionUser)));
     }
