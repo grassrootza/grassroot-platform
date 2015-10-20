@@ -447,11 +447,13 @@ public class USSDMeetingController extends USSDController {
                                   @RequestParam(value=TEXT_PARAM, required=true) String passedValue,
                                   @RequestParam(value="prior_input", required=false) String priorInput) throws URISyntaxException {
 
-        // we are confirming the date, before continuing on to send
-        // note that at present we assume this is the only thing that needs confirming, and hence that date is the last thing given
+        // show user the assembled confirmation string, _but_ truncate so we don't throw an error.
         // also note that we should not do any update to the event here, or it will trigger the send -- just assemble string
+        // todo: refactor and optimize this so it doesn't use so many getters, etc. Could be quite slow if many users.
 
         User sessionUser = userManager.loadOrSaveUser(inputNumber, assembleThisUri(eventId, confirmMenu, passedValueKey, passedValue));
+        Event meeting = eventManager.loadEvent(eventId);
+
         USSDMenu thisMenu = new USSDMenu("");
 
         String userInput = (priorInput == null) ? passedValue : priorInput;
@@ -460,17 +462,41 @@ public class USSDMeetingController extends USSDController {
         String dateString = parsedDate.format(DateTimeFormatter.ofPattern("EEE d MMM, h:mm a"));
         String dateTimeParameter = encodeParamater(dateString);
 
-        // we only ask user to confirm date & time, rather than whole meeting details -- UX decision to keep things simple
-        // if yes, proceed to send. if no, go back (by passing anything in prior_input, we ensure the event won't be updated)
+        String[] confirmFields = new String[]{ dateString, meeting.getName(), meeting.getEventLocation() };
+        String confirmPrompt = getMessage(MTG_KEY, confirmMenu, PROMPT, confirmFields, sessionUser);
 
-        thisMenu.setPromptMessage(getMessage(MTG_KEY, confirmMenu, PROMPT, dateString, sessionUser));
+        // based on user feedback, giving option to return to any part of menu. Note that this will require them to go through
+        // all of it again, but have to do so for now. todo: pass a parameter to indicate we've gone back, and hence skip ahead once done
+
+        thisMenu.setPromptMessage(confirmPrompt);
+
         thisMenu.addMenuOption(MTG_MENUS + send + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + timeMenu + "&confirmed_time=" + dateTimeParameter,
                                getMessage(MTG_KEY + "." + confirmMenu + "." + OPTION + "yes", sessionUser));
-        thisMenu.addMenuOption(MTG_MENUS + timeMenu + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + timeMenu + "prior_input=" + dateTimeParameter,
-                               getMessage(MTG_KEY + "." + confirmMenu + "." + OPTION + "no", sessionUser));
+        thisMenu.addMenuOption(composeBackUri(eventId, timeMenu), composeBackMessage(sessionUser, timeMenu));
+        thisMenu.addMenuOption(composeBackUri(eventId, placeMenu), composeBackMessage(sessionUser, placeMenu));
+        thisMenu.addMenuOption(composeBackUri(eventId, subjectMenu) + "&groupId=" + meeting.getAppliesToGroup().getId(),
+                               composeBackMessage(sessionUser, subjectMenu));
+
+        if (!checkMenuLength(thisMenu, false)) {
+            Integer charsToTrim = thisMenu.getMenuCharLength() - 159; // adding a character, for safety
+            String revisedPrompt = confirmPrompt.substring(0, confirmPrompt.length() - charsToTrim);
+            thisMenu.setPromptMessage(revisedPrompt);
+        }
 
         return menuBuilder(thisMenu);
 
+    }
+
+    /*
+    Helper method for composing "back" urls
+     */
+
+    private String composeBackUri(Long eventId, String backMenu) {
+        return MTG_MENUS + backMenu + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + backMenu + "&prior_input=1";
+    }
+
+    private String composeBackMessage(User user, String backMenu) {
+        return getMessage(MTG_KEY + "." + confirmMenu + "." + OPTION + backMenu, user);
     }
 
     /*
