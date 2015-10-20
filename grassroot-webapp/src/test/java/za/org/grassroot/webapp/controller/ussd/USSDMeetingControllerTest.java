@@ -24,6 +24,7 @@ import za.org.grassroot.webapp.GrassRootWebApplicationConfig;
 
 import javax.transaction.Transactional;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -80,8 +81,12 @@ public class USSDMeetingControllerTest extends USSDAbstractTest {
         List<ResponseEntity<String>> responseEntities = executeQueries(Arrays.asList(createUserUri, createEventUri));
 
         // todo: make the retrieval of the eventId less of a kludge (in eventManager have a "get last event" method?
-        final URI createGroupUri = testPhoneUri(mtgPath + "/group").queryParam(eventParam, "1").
-                queryParam(freeTextParam, String.join(" ", testPhones)).build().toUri();
+
+        Event meetingCreated = eventManager.getLastCreatedEvent(userManager.findByInputNumber(testPhone));
+        Long eventId = (meetingCreated != null) ? meetingCreated.getId() : 1;
+        String groupPhones = URLEncoder.encode(String.join(" ", testPhones), "UTF-8");
+        final URI createGroupUri = testPhoneUri(mtgPath + "/group").queryParam(eventParam, "" + eventId).
+                queryParam(freeTextParam, groupPhones).build().toUri();
 
         responseEntities.add(template.getForEntity(createGroupUri, String.class));
 
