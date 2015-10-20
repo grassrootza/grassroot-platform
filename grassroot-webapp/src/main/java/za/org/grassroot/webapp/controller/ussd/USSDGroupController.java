@@ -13,7 +13,9 @@ import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.util.*;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
@@ -106,12 +108,13 @@ public class USSDGroupController extends USSDController {
     public Request createGroup(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
                                @RequestParam(value=GROUP_PARAM, required=false) Long groupId,
                                @RequestParam(value=TEXT_PARAM, required=true) String userInput,
-                               @RequestParam(value="prior_input", required=false) String priorInput) throws URISyntaxException {
+                               @RequestParam(value="prior_input", required=false) String priorInput) throws URISyntaxException, UnsupportedEncodingException {
 
         USSDMenu thisMenu = new USSDMenu(true);
         String userResponse = (priorInput == null) ? userInput : priorInput;
         String groupParameter = (groupId == null) ? "?" : GROUPID_URL + groupId + "&";
-        String urlToSave = GROUP_MENUS + createGroupMenu + DO_SUFFIX + groupParameter + "prior_input=" + userResponse;
+
+        String urlToSave = GROUP_MENUS + createGroupMenu + DO_SUFFIX + groupParameter + "prior_input=" + URLEncoder.encode(userResponse, "UTF-8");
 
         User sessionUser = userManager.loadOrSaveUser(inputNumber, urlToSave);
 
