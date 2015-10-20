@@ -31,7 +31,7 @@ import java.util.Random;
 @Transactional
 public class GroupManager implements GroupManagementService {
 
-    Logger log = LoggerFactory.getLogger(GroupManager.class);
+    private final static Logger log = LoggerFactory.getLogger(GroupManager.class);
 
     @Autowired
     GroupRepository groupRepository;
@@ -72,10 +72,25 @@ public class GroupManager implements GroupManagementService {
         return groupRepository.save(groupToSave);
     }
 
-    /* @Override
+    @Override
     public void deleteGroup(Group groupToDelete) {
+        /*
+        there are issues with cascading if we delete the group before removing all users, hence doing it this way
+        which will be quite slow, but this function should almost never be used, so not a major issue, for now, and
+        rather safe than sorry on deletion.
+         */
+
+        List<User> members = new ArrayList<>(groupToDelete.getGroupMembers());
+        log.info("We are now going to delete a group ... first, we unsubscribe " + members.size() + " members");
+
+        for (User user : members) {
+            groupToDelete = removeGroupMember(groupToDelete, user);
+        }
+
+        log.info("Group members removed ... " + groupToDelete.getGroupMembers().size() + " members left. Proceeding to delete");
+
         groupRepository.delete(groupToDelete);
-    }*/
+    }
 
 
     @Override
@@ -403,7 +418,7 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public Group resetGroupLanguage(Group group, String locale) {
+    public Group setGroupDefaultLanguage(Group group, String locale) {
 
         /*
          Note: intentionally not doing this for all subgroups too -- a sufficiently delicate operation to require user
@@ -411,11 +426,14 @@ public class GroupManager implements GroupManagementService {
          which is non-default, we do not change theirs. Again, might lead to some extra work if some members are part
          of two groups, and then have to manually over-ride. But that is better than alternatives, which is either to
          over-ride user preference once set (= angry user), or have one more dummy field.
+         Also todo: make this something recurring, so, once set, applies to new members joining the group
           */
+
         List<User> groupMembers = group.getGroupMembers();
 
         for (User user : groupMembers) {
-            if (user.getLanguageCode() == "en") {
+            if (!user.isHasInitiatedSession()) {
+                log.info("User hasn't set their own language, so adjusting it to: " + locale + " for this user: " + user.nameToDisplay());
                 userManager.setUserLanguage(user, locale);
             }
         }
@@ -428,9 +446,12 @@ public class GroupManager implements GroupManagementService {
     public Integer getGroupSize(Group group, boolean includeSubGroups) {
         // as with a few above, a little trivial as implemented here, but may change in future, so rather here than code in webapp
 
+        log.info("Getting group member size");
         if (!includeSubGroups) {
+            log.info("Getting group size, for group: " + group);
             return group.getGroupMembers().size();
         } else {
+            log.info("Getting group size, including sub-groups, for group:" + group);
             return getAllUsersInGroupAndSubGroups(group).size();
         }
 
@@ -438,12 +459,12 @@ public class GroupManager implements GroupManagementService {
 
     @Override
     public boolean canUserDeleteGroup(User user, Group group) {
-        // todo: Integrate with permission checking -- for now, just checking if group created by user in last 24 hours
+        // todo: Integrate with permission checking -- for now, just checking if group created by user in last 48 hours
         // todo: the time checking would be so much easier if we use Joda or Java 8 DateTime ...
         boolean createdByUser = (group.getCreatedByUser() == user);
-        Timestamp oneDayAgo = new Timestamp(Calendar.getInstance().getTimeInMillis() - (24 * 60 * 60 * 1000));
-        boolean groupCreatedInLastDay = (group.getCreatedDateTime().after(oneDayAgo));
-        return (createdByUser && groupCreatedInLastDay);
+        Timestamp thresholdTime = new Timestamp(Calendar.getInstance().getTimeInMillis() - (48 * 60 * 60 * 1000));
+        boolean groupCreatedSinceThreshold = (group.getCreatedDateTime().after(thresholdTime));
+        return (createdByUser && groupCreatedSinceThreshold);
     }
 
     private void recursiveUserAdd(Group parentGroup, List<User> userList ) {

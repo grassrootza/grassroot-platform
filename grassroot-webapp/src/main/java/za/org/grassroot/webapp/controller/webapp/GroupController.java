@@ -27,6 +27,7 @@ import za.org.grassroot.webapp.validation.UserValidator;
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Lesetse Kimwaga
@@ -358,6 +359,35 @@ public class GroupController extends BaseController {
 
     }
 
+    @RequestMapping(value = "/group/modify", params={"group_language"})
+    public String requestGroupLanguage(Model model, @RequestParam("groupId") Long groupId) {
+
+        Group group = groupManagementService.loadGroup(groupId);
+
+        List<Map.Entry<String, String>> languages = new ArrayList<>(userManagementService.getImplementedLanguages().entrySet());
+
+        model.addAttribute("group", group);
+        model.addAttribute("languages", languages);
+
+        return "group/language_pick";
+
+    }
+
+    @RequestMapping(value = "/group/language", method = RequestMethod.POST)
+    public String setGroupLanguage(Model model, @RequestParam("groupId") Long groupId, @RequestParam("locale") String locale,
+                                   HttpServletRequest request) {
+
+        // todo: add permissions checking, exception handling, etc.
+
+        log.info("Okay, setting the language to: " + locale);
+
+        Group group = groupManagementService.loadGroup(groupId);
+        group = groupManagementService.setGroupDefaultLanguage(group, locale);
+
+        addMessage(model, MessageType.SUCCESS, "group.language.success", request);
+        return viewGroupIndex(model, groupId);
+    }
+
     /*
     Methods for handling group linking to a parent (as observing that users often create group first, link later)
      */
@@ -422,26 +452,42 @@ public class GroupController extends BaseController {
 
     /*
     Methods to handle group deletion and group unsubscribe
-    Simple method to delete a group, if it was recently created and this is the creating user
-    todo: implement the simpler "unsubscribe me from this group" button & method
+    Simple method to delete a group, if it was recently created and this is the creating user, after a confirmation screen
+    todo: add Spring Security annotations to stop unauthorized users from even accessing the URLs
      */
-    /* @RequestMapping(value = "group/modify", params={"group_delete"})
-    public String deleteGroup(Model model, @RequestParam("groupId") Long groupId,
+    @RequestMapping(value = "group/modify", params={"group_delete"})
+    public String confirmDelete(Model model, @RequestParam("groupId") Long groupId, HttpServletRequest request) {
+
+        User user = getUserProfile();
+        Group group = groupManagementService.loadGroup(groupId);
+
+        if (groupManagementService.canUserDeleteGroup(user, group)) {
+            model.addAttribute("group", group);
+            return "group/delete_confirm";
+        } else {
+            addMessage(model, MessageType.ERROR, "group.delete.error", request);
+            return "group/view";
+        }
+
+    }
+
+
+    @RequestMapping(value = "group/delete")
+    public String deleteGroup(Model model, @RequestParam("groupId") Long groupId, @RequestParam("confirm_field") String confirmText,
                               HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
         Group group = groupManagementService.loadGroup(groupId);
 
-        if (groupManagementService.canUserDeleteGroup(getUserProfile(), group)) {
-            // groupManagementService.deleteGroup(group);
+        if (groupManagementService.canUserDeleteGroup(getUserProfile(), group) && confirmText.toLowerCase().equals("delete")) {
+            groupManagementService.deleteGroup(group);
             addMessage(redirectAttributes, MessageType.SUCCESS, "group.delete.success", request);
             return "redirect:/home";
         } else {
             addMessage(model, MessageType.ERROR, "group.delete.error", request);
-            model.addAttribute("groupId", groupId);
-            return "group/view";
+            return viewGroupIndex(model, groupId);
         }
 
-    }*/
+    }
 
     @RequestMapping(value = "group/unsubscribe")
     public String unsubscribeGroup(Model model, @RequestParam("groupId") Long groupId) {

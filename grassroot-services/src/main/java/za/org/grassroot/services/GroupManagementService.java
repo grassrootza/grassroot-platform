@@ -39,7 +39,7 @@ public interface GroupManagementService {
 
     public Group saveGroup(Group groupToSave);
 
-    // public void deleteGroup(Group groupToDelete); // Commenting this out until we have security sorted
+    public void deleteGroup(Group groupToDelete);
 
     public boolean canUserDeleteGroup(User user, Group group);
 
@@ -130,7 +130,7 @@ public interface GroupManagementService {
 
     public Group setGroupDefaultReminderMinutes(Long groupId, Integer minutes);
 
-    public Group resetGroupLanguage(Group group, String locale);
+    public Group setGroupDefaultLanguage(Group group, String locale);
 
     public Integer getGroupSize(Group group, boolean includeSubGroups);
 

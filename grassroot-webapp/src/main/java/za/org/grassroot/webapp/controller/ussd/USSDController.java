@@ -17,6 +17,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -134,12 +135,13 @@ public class USSDController {
                 (existingPath + "&" + groupParam + "=");
 
         String finalOption = (newUri != null) ? getMessage(GROUP_KEY, "create", "option", sessionUser) : "";
+        SimpleDateFormat sdf = new SimpleDateFormat("d MMM");
 
         for (Group groupToList : groupsPartOf) {
 
             String groupName = (groupToList.hasName()) ?
                     groupToList.getGroupName() :
-                    getMessage(GROUP_KEY, "unnamed", "label", String.format("1$TD", groupToList.getCreatedDateTime()), sessionUser);
+                    getMessage(GROUP_KEY, "unnamed", "label", sdf.format(groupToList.getCreatedDateTime()), sessionUser);
 
             if (menuBuild.getMenuCharLength() + groupName.length() + finalOption.length() < 154) // leaving 6 chars for X.
                 menuBuild.addMenuOption(formedUrl + groupToList.getId(), groupName);

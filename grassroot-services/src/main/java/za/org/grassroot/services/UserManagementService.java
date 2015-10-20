@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import za.org.grassroot.core.domain.User;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Lesetse Kimwaga
@@ -79,8 +80,14 @@ public interface UserManagementService {
 
     User resetLastUssdMenu(User sessionUser);
 
+    User setLastUssdMenu(User sessionUser, String lastUssdMenu);
+
     User setUserLanguage(User sessionUser, String locale);
 
     User setUserLanguage(Long userId, String locale);
+
+    String getUserLocale(User sessionUser);
+
+    Map<String, String> getImplementedLanguages();
 
 }

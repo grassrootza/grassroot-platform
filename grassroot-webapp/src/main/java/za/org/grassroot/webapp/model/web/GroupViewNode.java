@@ -1,6 +1,7 @@
 package za.org.grassroot.webapp.model.web;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.GroupManagementService;
@@ -13,36 +14,48 @@ import java.util.List;
  */
 public class GroupViewNode {
 
-    @Autowired
-    GroupManagementService groupManagementService;
+    private static final Logger log = LoggerFactory.getLogger(GroupViewNode.class);
 
     private Group group;
     private User viewingUser;
 
-    private GroupViewNode parent;
+    private GroupManagementService groupManagementService;
+
+    // private GroupViewNode parent;
     private List<GroupViewNode> subgroups;
 
     private String groupName;
     private boolean isTopLevelGroup;
     private boolean hasSubGroups;
 
-    private Integer groupMembers;
+    private Integer numberMembers;
 
-    public GroupViewNode(Group group, User viewingUser) {
+    // this is somewhat ugly, but need it until can figure out how to count recursions in Thymeleaf
+    private Integer level;
+
+    /*
+    Constructor
+     */
+    public GroupViewNode(Group group, User viewingUser, GroupManagementService groupManagementService, Integer priorLevel) {
+
+        log.info("Creating a view node from this group: " + group);
 
         this.group = group;
         this.viewingUser = viewingUser;
-        this.groupName = group.getGroupName();
-        this.groupMembers = groupManagementService.getGroupSize(group, false);
+        this.groupManagementService = groupManagementService;
 
+        this.groupName = group.getGroupName();
+
+        this.numberMembers = groupManagementService.getGroupSize(group, false);
         Group possibleParent = groupManagementService.getParent(group);
 
         if (possibleParent != null && groupManagementService.isUserInGroup(possibleParent, viewingUser)) {
-            this.parent = new GroupViewNode(possibleParent, viewingUser);
+            // this.parent = new GroupViewNode(possibleParent, viewingUser, groupManagementService); // think this creates infinite loop
             isTopLevelGroup = false;
+            this.level = priorLevel + 1;
         } else {
-            this.parent = null;
             isTopLevelGroup = true;
+            this.level = 0;
         }
 
         subgroups = new ArrayList<>();
@@ -50,11 +63,48 @@ public class GroupViewNode {
 
         for (Group possibleChild : allSubGroups) {
             if (groupManagementService.isUserInGroup(possibleChild, viewingUser))
-                subgroups.add(new GroupViewNode(possibleChild, viewingUser));
+                subgroups.add(new GroupViewNode(possibleChild, viewingUser, groupManagementService, this.level));
         }
 
         this.hasSubGroups = (subgroups.size() != 0);
 
     }
 
+    public GroupViewNode(Group group, User viewingUser, GroupManagementService groupManagementService) {
+
+        this(group, viewingUser, groupManagementService, 0);
+
+    }
+
+    /*
+    Methods for traversing the tree
+     */
+
+    public boolean hasChildren() {
+        return hasSubGroups;
+    }
+
+    public boolean isTerminal() {
+        return !hasSubGroups;
+    }
+
+    public List<GroupViewNode> getSubgroups() {
+        return subgroups;
+    }
+
+    public String getGroupName() {
+        return groupName;
+    }
+
+    public boolean isTopLevelGroup() {
+        return isTopLevelGroup;
+    }
+
+    public Integer getNumberMembers() {
+        return numberMembers;
+    }
+
+    public Integer getLevel() {
+        return level;
+    }
 }
