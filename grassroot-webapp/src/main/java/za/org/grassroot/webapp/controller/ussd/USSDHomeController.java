@@ -140,7 +140,7 @@ public class USSDHomeController extends USSDController {
 
     private USSDMenu interruptedPrompt(User sessionUser) {
 
-        String returnUrl = sessionUser.getLastUssdMenu();
+        String returnUrl = userManager.getLastUssdMenu(sessionUser);
         log.info("The user was interrupted somewhere ...Here's the URL: " + returnUrl);
 
         // try { returnUrl = URLEncoder.encode(sessionUser.getLastUssdMenu(), "UTF-8"); }
