@@ -680,11 +680,11 @@ public class USSDMeetingController extends USSDController {
     }
 
     /*
-    Helper method to assemble the URI to save against the user, in case they get interrupted
+    Helper method to assemble the URI to save against the user, in case they get interrupted. Set prior input to 1 so skips updating on return
      */
 
     private String assembleThisUri(Long eventId, String thisKey, String passedValueKey, String passedValue) {
-        return (MTG_MENUS + thisKey + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + passedValueKey);
+        return (MTG_MENUS + thisKey + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + passedValueKey + "&prior_input=1");
     }
 
 }
