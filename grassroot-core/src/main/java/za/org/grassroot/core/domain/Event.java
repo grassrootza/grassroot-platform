@@ -320,6 +320,7 @@ public class Event implements Serializable {
                 ", rsvpRequired=\'" + rsvpRequired + '\'' +
                 ", includeSubGroups=" + includeSubGroups +'\'' +
                 ", reminderMinutes=" + reminderMinutes +'\'' +
+                ", canceled=" + canceled +'\'' +
                 ", version=" + version +'\'' +
 
                 '}';

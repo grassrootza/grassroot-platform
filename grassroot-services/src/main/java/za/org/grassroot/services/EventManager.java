@@ -473,6 +473,10 @@ public class EventManager implements EventManagementService {
 
         log.info("saveandCheckChanges...savedEvent..." + savedEvent.toString());
 
+        log.info("saveandCheckChanges ... values of some key paramaters ... priorEventComplete=" + priorEventComplete
+                + "; savedEventComplete=" + minimumDataAvailable(savedEvent) + "; cancelled flages (beforeEvent / savedEvent: "
+                + beforeEvent.isCanceled() + " / " + savedEvent.isCanceled());
+
         /*
         Check if we need to send meeting notifications
          */
@@ -481,6 +485,7 @@ public class EventManager implements EventManagementService {
             jmsTemplateProducerService.sendWithNoReply("event-added", new EventDTO(savedEvent));
             log.info("queued to event-added");
         }
+
         if (priorEventComplete && minimumDataAvailable(savedEvent) && !savedEvent.isCanceled()) {
             // let's send out a change notification if something changed in minimum required values
 
