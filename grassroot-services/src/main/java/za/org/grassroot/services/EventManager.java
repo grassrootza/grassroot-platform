@@ -415,12 +415,14 @@ public class EventManager implements EventManagementService {
 
     @Override
     public String[] populateNotificationFields(Event event) {
+        Map<String, String> description = getEventDescription(event);
+
         return new String[]{
-                event.getAppliesToGroup().getName(""),
-                event.getCreatedByUser().nameToDisplay(),
-                event.getName(),
-                event.getDateTimeString(),
-                event.getEventLocation()
+                description.get("groupName"),
+                description.get("creatingUser"),
+                description.get("eventSubject"),
+                description.get("dateTimeString"),
+                description.get("location")
         };
     }
 

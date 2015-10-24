@@ -13,7 +13,9 @@ import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.util.*;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
@@ -106,12 +108,15 @@ public class USSDGroupController extends USSDController {
     public Request createGroup(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
                                @RequestParam(value=GROUP_PARAM, required=false) Long groupId,
                                @RequestParam(value=TEXT_PARAM, required=true) String userInput,
-                               @RequestParam(value="prior_input", required=false) String priorInput) throws URISyntaxException {
+                               @RequestParam(value="prior_input", required=false) String priorInput) throws URISyntaxException, UnsupportedEncodingException {
 
         USSDMenu thisMenu = new USSDMenu(true);
-        String userResponse = (priorInput == null) ? userInput : priorInput;
-        String groupParameter = (groupId == null) ? "?" : GROUPID_URL + groupId + "&";
-        String urlToSave = GROUP_MENUS + createGroupMenu + DO_SUFFIX + groupParameter + "prior_input=" + userResponse;
+
+        final String userResponse = (priorInput == null) ? userInput : priorInput;
+        final String groupParameter = (groupId == null) ? "?" : GROUPID_URL + groupId + "&";
+        final String inputToSave = URLEncoder.encode(userResponse, "UTF-8");
+
+        String urlToSave = GROUP_MENUS + createGroupMenu + DO_SUFFIX + groupParameter + "prior_input=" + inputToSave;
 
         User sessionUser = userManager.loadOrSaveUser(inputNumber, urlToSave);
 
@@ -124,7 +129,7 @@ public class USSDGroupController extends USSDController {
             if (groupId == null) { // creating a new group, process numbers and ask for more
                 Group createdGroup = groupManager.createNewGroup(sessionUser, splitPhoneNumbers.get("valid"));
                 thisMenu = numberEntryPrompt(createdGroup.getId(), "created", sessionUser, splitPhoneNumbers.get("error"));
-                userManager.setLastUssdMenu(sessionUser, GROUP_MENUS + createGroupMenu + DO_SUFFIX + GROUPID_URL + createdGroup.getId() + "&prior_input=" + userResponse);
+                userManager.setLastUssdMenu(sessionUser, GROUP_MENUS + createGroupMenu + DO_SUFFIX + GROUPID_URL + createdGroup.getId() + "&prior_input=" + inputToSave);
             } else { // adding to a group, process numbers and ask to fix errors or to stop
                 groupManager.addNumbersToGroup(groupId, splitPhoneNumbers.get("valid"));
                 thisMenu = numberEntryPrompt(groupId, "added", sessionUser, splitPhoneNumbers.get("error"));
