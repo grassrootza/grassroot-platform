@@ -531,7 +531,7 @@ public class EventManager implements EventManagementService {
         if (event.getEventLocation() == null || event.getEventLocation().trim().equals("")) minimum = false;
         if (event.getAppliesToGroup() == null) minimum = false;
         if (event.getCreatedByUser() == null) minimum = false;
-        if (event.getDateTimeString() == null || event.getDateTimeString().trim().equals("")) minimum = false;
+        // if (event.getDateTimeString() == null || event.getDateTimeString().trim().equals("")) minimum = false;
         if (event.getEventStartDateTime() == null) minimum = false;
         log.info("minimumDataAvailable...returning..." + minimum);
 
