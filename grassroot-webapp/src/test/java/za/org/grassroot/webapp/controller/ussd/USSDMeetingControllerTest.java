@@ -85,8 +85,11 @@ public class USSDMeetingControllerTest extends USSDAbstractTest {
 
         responseEntities.add(template.getForEntity(createGroupUri, String.class));
 
-        for (ResponseEntity<String> responseEntity : responseEntities)
+        for (ResponseEntity<String> responseEntity : responseEntities){
+            log.debug("responseEntity..." + responseEntity.toString());
             assertThat(responseEntity.getStatusCode(), is(OK));
+
+        }
 
         log.info("URI STRING: " + createGroupUri.toString());
 
