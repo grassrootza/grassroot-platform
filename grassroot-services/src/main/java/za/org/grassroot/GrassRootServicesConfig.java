@@ -12,6 +12,8 @@ import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.jms.annotation.EnableJms;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.SchedulingConfigurer;
+import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
@@ -19,6 +21,8 @@ import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 
 import java.util.Locale;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 /**
  * @author Lesetse Kimwaga
@@ -31,7 +35,7 @@ import java.util.Locale;
 @EnableJpaRepositories
 @EnableJms
 @EnableScheduling
-public class GrassRootServicesConfig  {
+public class GrassRootServicesConfig  implements SchedulingConfigurer {
 
     @Bean( name = "servicesMessageSource")
     public ResourceBundleMessageSource messageSource() {
@@ -43,6 +47,16 @@ public class GrassRootServicesConfig  {
     @Bean ( name = "servicesMessageSourceAccessor")
     public MessageSourceAccessor getMessageSourceAccessor() { return new MessageSourceAccessor(messageSource()); }
 
+
+    @Override
+    public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
+        taskRegistrar.setScheduler(taskExecutor());
+    }
+
+    @Bean(destroyMethod="shutdown")
+    public Executor taskExecutor() {
+        return Executors.newScheduledThreadPool(10);
+    }
 
 
 }

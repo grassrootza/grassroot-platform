@@ -5,6 +5,7 @@ import com.joestelmach.natty.Parser;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.logging.Logger;
 
@@ -41,6 +42,39 @@ public class DateTimeUtil {
 
         return parsedDateTime;
 
+    }
+
+    public static Date addHoursToDate(Date date, int numberOfHours) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.add(Calendar.HOUR,numberOfHours);
+        return calendar.getTime();
+    }
+
+    public static Date addMinutesToDate(Date date, int numberOfMinutes) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.add(Calendar.MINUTE,numberOfMinutes);
+        return calendar.getTime();
+    }
+
+    public static Date roundHourUp(Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.add(Calendar.HOUR,1);
+        calendar.set(Calendar.MINUTE,0);
+        calendar.set(Calendar.SECOND,0);
+        calendar.set(Calendar.MILLISECOND,0);
+        return calendar.getTime();
+    }
+
+    public static Date roundHourDown(Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.set(Calendar.MINUTE,0);
+        calendar.set(Calendar.SECOND,0);
+        calendar.set(Calendar.MILLISECOND,0);
+        return calendar.getTime();
     }
 
 }

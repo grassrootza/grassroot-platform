@@ -8,6 +8,7 @@ package za.org.grassroot.core.domain;
  */
 
 
+import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.enums.EventType;
 
 import javax.persistence.*;
@@ -22,6 +23,11 @@ public class Event implements Serializable {
     private String eventLocation;
     private Long id;
     private Timestamp createdDateTime;
+
+    /*
+    For meetings this the meeting start time
+    For voting this the vote expire time
+     */
     private Timestamp eventStartDateTime;
 
     private User createdByUser;
@@ -56,7 +62,8 @@ public class Event implements Serializable {
     private int reminderMinutes;
 
     /*
-    Used for meetings, to note if an RSVP is necessary
+    Used primarily for meetings, to note if an RSVP is necessary
+    Also used for voting, and will default to true for voting. Wont serve any purpose for voting at this stage.
      */
     private boolean rsvpRequired;
 
@@ -76,6 +83,9 @@ public class Event implements Serializable {
     sent but rather how many times we have sent reminders to participants.
     At the moment we only send once but thought in the future we might send more than once
     therefore the number rather than a boolean.
+
+    N.B. will use this field for voting notification as well to determine if we already sent out the
+    the vote results.
      */
     private Integer noRemindersSent;
 
@@ -287,19 +297,38 @@ public class Event implements Serializable {
     public Event() {
     }
 
-    public boolean minimumEquals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+//    public boolean minimumEquals(Object o) {
+//        if (this == o) return true;
+//        if (o == null || getClass() != o.getClass()) return false;
+//
+//        Event event = (Event) o;
+//
+//        if (eventType == EventType.Vote) {
+//            if (eventStartDateTime != null ? !eventStartDateTime.equals(event.eventStartDateTime) : event.eventStartDateTime != null)
+//                return false;
+//            if (name != null ? !name.equals(event.name) : event.name != null) return false;
+//
+//        } else { // meeting and undefined
+//            if (eventLocation != null ? !eventLocation.equals(event.eventLocation) : event.eventLocation != null)
+//                return false;
+//            if (eventStartDateTime != null ? !eventStartDateTime.equals(event.eventStartDateTime) : event.eventStartDateTime != null)
+//                return false;
+//            if (name != null ? !name.equals(event.name) : event.name != null) return false;
+//
+//        }
+//        return true;
+//
+//    }
 
-        Event event = (Event) o;
+    public boolean minimumEquals(EventDTO o) {
 
-        /* if (dateTimeString != null ? !dateTimeString.equals(event.dateTimeString) : event.dateTimeString != null)
-            return false;*/
-        if (eventLocation != null ? !eventLocation.equals(event.eventLocation) : event.eventLocation != null)
+        if (eventType != EventType.Vote) {
+            if (eventLocation != null ? !eventLocation.equals(o.getEventLocation()) : o.getEventLocation() != null)
+                return false;
+        }
+        if (eventStartDateTime != null ? !eventStartDateTime.equals(o.getEventStartDateTime()) : o.getEventStartDateTime() != null)
             return false;
-        if (eventStartDateTime != null ? !eventStartDateTime.equals(event.eventStartDateTime) : event.eventStartDateTime != null)
-            return false;
-        if (name != null ? !name.equals(event.name) : event.name != null) return false;
+        if (name != null ? !name.equals(o.getName()) : o.getName() != null) return false;
 
         return true;
 

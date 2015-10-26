@@ -107,6 +107,22 @@ public class EventManager implements EventManagementService {
         return createNewEvent(createdByUser, EventType.Meeting, true, "", null, false, 0);
     }
 
+    @Override
+    public Event createVote(User createdByUser) {
+        return createVote("", createdByUser);
+    }
+
+    @Override
+    public Event createVote(String issue, User createdByUser) {
+        return createNewEvent(createdByUser, EventType.Vote, true, issue, null, false, 0);
+    }
+
+
+    @Override
+    public Event createVote(String issue, Long userId, Long groupId, boolean includeSubGroups) {
+        return createNewEvent(userManagementService.getUserById(userId), EventType.Vote, true, issue, groupManager.loadGroup(groupId), false, 0);
+    }
+
     private Event createNewEvent(User createdByUser, EventType eventType, boolean rsvpRequired
             , String name, Group appliesToGroup, boolean includeSubGroups, int reminderMinutes) {
         Event event = new Event();
@@ -483,7 +499,7 @@ public class EventManager implements EventManagementService {
 
         if (!priorEventComplete && minimumDataAvailable(savedEvent) && !savedEvent.isCanceled()) {
             jmsTemplateProducerService.sendWithNoReply("event-added", new EventDTO(savedEvent));
-            log.info("queued to event-added");
+            log.info("queued to event-added..." + savedEvent.getId() + "...version..." + savedEvent.getVersion());
         }
 
         if (priorEventComplete && minimumDataAvailable(savedEvent) && !savedEvent.isCanceled()) {
@@ -514,11 +530,12 @@ public class EventManager implements EventManagementService {
         boolean minimum = true;
         log.finest("minimumDataAvailable..." + event.toString());
         if (event.getName() == null || event.getName().trim().equals("")) minimum = false;
-        if (event.getEventLocation() == null || event.getEventLocation().trim().equals("")) minimum = false;
         if (event.getAppliesToGroup() == null) minimum = false;
         if (event.getCreatedByUser() == null) minimum = false;
-        // if (event.getDateTimeString() == null || event.getDateTimeString().trim().equals("")) minimum = false; // deprecated now
         if (event.getEventStartDateTime() == null) minimum = false;
+        if (event.getEventType() != EventType.Vote) {
+            if (event.getEventLocation() == null || event.getEventLocation().trim().equals("")) minimum = false;
+        }
         log.info("minimumDataAvailable...returning..." + minimum);
 
         return minimum;
@@ -528,11 +545,14 @@ public class EventManager implements EventManagementService {
         boolean minimum = true;
         log.finest("minimumDataAvailable..." + event.toString());
         if (event.getName() == null || event.getName().trim().equals("")) minimum = false;
-        if (event.getEventLocation() == null || event.getEventLocation().trim().equals("")) minimum = false;
         if (event.getAppliesToGroup() == null) minimum = false;
         if (event.getCreatedByUser() == null) minimum = false;
-        // if (event.getDateTimeString() == null || event.getDateTimeString().trim().equals("")) minimum = false;
         if (event.getEventStartDateTime() == null) minimum = false;
+
+        if (event.getEventType() != EventType.Vote) {
+            if (event.getEventLocation() == null || event.getEventLocation().trim().equals("")) minimum = false;
+
+        }
         log.info("minimumDataAvailable...returning..." + minimum);
 
         return minimum;

@@ -13,6 +13,7 @@ import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
@@ -162,6 +163,14 @@ public class EventManagementServiceTest {
         assertEquals(0,outstanding.size());
     }
 
+    @Test
+    public void shouldCreateVote() {
+        User user = userRepository.save(new User("0831111111"));
+        Event event = eventManagementService.createVote("Jacob is a nice guy to his friends",user);
+        assertNotSame(0,event.getId());
+        assertEquals(EventType.Vote,event.getEventType());
+
+    }
     //todo aakil test more scenarios , ie single level, multiple events etc
 
 }

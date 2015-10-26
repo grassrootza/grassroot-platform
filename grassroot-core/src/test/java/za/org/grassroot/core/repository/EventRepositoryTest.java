@@ -12,6 +12,9 @@ import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.EventDTO;
+import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
@@ -83,7 +86,7 @@ public class EventRepositoryTest {
     @Test
     public void testMinimumEqual() {
         Event e1 = new Event();
-        Event e2 = new Event();
+        EventDTO e2 = new EventDTO();
         assertEquals(true,e1.minimumEquals(e2));
         e1.setEventLocation("location");
         assertEquals(false, e1.minimumEquals(e2));
@@ -139,6 +142,56 @@ public class EventRepositoryTest {
         event.setEventLocation("dup location");
         Event event2 = eventRepository.save(event);
         assertEquals(event.getId(),event2.getId());
+
+    }
+
+    @Test
+    public void shouldFindOneFutureVote() {
+        User user = userRepository.save(new User("0831111112"));
+        Event vote = eventRepository.save(new Event(user, EventType.Vote,true));
+        vote.setName("testing vote query");
+        Date expiry = DateTimeUtil.roundHourUp(DateTimeUtil.addHoursToDate(new Date(),1));
+        Timestamp expiryTS = new Timestamp(expiry.getTime());
+        vote.setEventStartDateTime(expiryTS);
+        vote = eventRepository.save(vote);
+        List<Event> list = eventRepository.findAllVotesAfterTimeStamp(new Date());
+        assertEquals(1,list.size());
+
+    }
+
+    @Test
+    public void shouldNotFindOneFutureVote() {
+        User user = userRepository.save(new User("0831111113"));
+        Event vote = eventRepository.save(new Event(user, EventType.Vote,true));
+        vote.setName("testing vote query");
+        Date expiry = DateTimeUtil.roundHourDown(new Date());
+        Timestamp expiryTS = new Timestamp(expiry.getTime());
+        vote.setEventStartDateTime(expiryTS);
+        vote = eventRepository.save(vote);
+        List<Event> list = eventRepository.findAllVotesAfterTimeStamp(new Date());
+        assertEquals(0,list.size());
+
+    }
+
+    @Test
+    public void shouldNotFindOneFutureVoteBecauseMeeting() {
+        User user = userRepository.save(new User("0831111114"));
+        Event vote = eventRepository.save(new Event(user, EventType.Meeting,true));
+        vote.setName("testing vote query");
+        Date expiry = DateTimeUtil.roundHourUp(DateTimeUtil.addHoursToDate(new Date(),1));
+        Timestamp expiryTS = new Timestamp(expiry.getTime());
+        vote.setEventStartDateTime(expiryTS);
+        vote = eventRepository.save(vote);
+        List<Event> list = eventRepository.findAllVotesAfterTimeStamp(new Date());
+        assertEquals(0,list.size());
+
+    }
+
+    @Test
+    public void shouldIdentifyEventTypeVote() {
+        User user = userRepository.save(new User("0831111115"));
+        Event vote = eventRepository.save(new Event(user, EventType.Vote, true));
+        assertEquals(EventType.Vote,vote.getEventType());
 
     }
 

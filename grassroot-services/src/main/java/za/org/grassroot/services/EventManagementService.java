@@ -40,6 +40,13 @@ public interface EventManagementService {
     Methods to find and load events
      */
 
+    Event createVote(User createdByUser);
+
+    Event createVote(String issue, User createdByUser);
+
+    //createVote(name,userId,groupId,includeSubGroups)
+    Event createVote(String issue, Long userId, Long groupId, boolean includeSubGroups);
+
     public Event loadEvent(Long eventId);
 
     public Event getLastCreatedEvent(User creatingUser);
