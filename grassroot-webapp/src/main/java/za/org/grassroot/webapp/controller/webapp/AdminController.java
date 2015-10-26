@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -40,7 +41,7 @@ public class AdminController extends BaseController {
     @Autowired
     EventManagementService eventManagementService;
 
-    // @Secured("ADMIN")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     @RequestMapping("/admin/home")
     public String adminIndex(Model model, @ModelAttribute("currentUser") UserDetails userDetails) {
 
@@ -55,6 +56,7 @@ public class AdminController extends BaseController {
     First page is to provide a count of users and allow a search by phone number to modify them
     To do will be to have graphs / counts of users by sign up periods, last active date, etc.
      */
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     @RequestMapping("/admin/users/home")
     public String allUsers(Model model) {
 
@@ -68,6 +70,7 @@ public class AdminController extends BaseController {
     Page to provide results of a user search, and, if only one found, provide a list of user details with options
     to be able to modify them, as well as to do a password reset
      */
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     @RequestMapping("/admin/users/view")
     public String viewUser(Model model, @RequestParam("lookup_field") String lookupField,
                            @RequestParam("lookup_term") String lookupTerm, HttpServletRequest request) {
@@ -109,12 +112,14 @@ public class AdminController extends BaseController {
     /* Method to designate a user as an 'institutional admin', with authority to link groups to an institutional account
     Major todo: access control this, since it opens _a lot_
      */
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     @RequestMapping("/admin/users/designate")
     public String designateUser(Model model, @RequestParam("userId") Long userId) {
         
         return "admin/designate";
     }
 
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     @RequestMapping("/admin/groups")
     public String allGroups(Model model) {
 
@@ -122,6 +127,7 @@ public class AdminController extends BaseController {
 
     }
 
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     @RequestMapping("/admin/designate/group")
     public String designateGroup(Model model) {
 
