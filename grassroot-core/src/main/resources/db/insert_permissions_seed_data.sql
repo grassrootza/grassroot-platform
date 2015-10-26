@@ -43,5 +43,27 @@ INSERT  INTO role(id,role_name,role_type)VALUES
   (3,'ROLE_NEW_USER','STANDARD')
 ;
 
+INSERT  INTO role_permissions (role_id, permission_id) VALUES
+  (1,1),
+  (1,2),
+  (1,3),
+  (1,4),
+  (1,5),
+  (1,6),
+  (1,7),
+  (1,8),
+  (1,11),
+  (1,12),
+  (2,5),
+  (2,7),
+  (2,8),
+  (2,9),
+  (2,10),
+  (2,11),
+  (2,12),
+  (3,5),
+  (3,12)
+;
+
 
 
