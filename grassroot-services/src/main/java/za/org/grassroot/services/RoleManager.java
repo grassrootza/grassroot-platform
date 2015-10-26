@@ -44,4 +44,33 @@ public class RoleManager implements  RoleManagementService {
     public List<Role> getAllRoles() {
         return Lists.newArrayList(roleRepository.findAll());
     }
+
+    @Override
+    public Role fetchStandardRoleByName(String name) {
+        List<Role> roles = roleRepository.findByNameAndRoleType(name, Role.RoleType.STANDARD);
+        //we really should have one standard Role
+         return  !roles.isEmpty()? roles.get(0): null;
+    }
+
+    @Override
+    public List<Role> fetchGroupRoles(Long groupId) {
+        return roleRepository.findByGroupReferenceId(groupId);
+    }
+
+    @Override
+    public Role fetchGroupRole(String roleName, Long groupId) {
+        return roleRepository.findByNameAndGroupReferenceId(roleName,groupId);
+    }
+
+    @Override
+    public Role createGroupRole(String roleName, Long groupId, String groupName) {
+
+        Role role = roleRepository.findByNameAndGroupReferenceId(roleName,groupId);
+
+        if(role == null)
+        {
+            role = roleRepository.save( new Role(roleName,groupId,groupName));
+        }
+        return role;
+    }
 }

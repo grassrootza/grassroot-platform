@@ -127,4 +127,12 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
         }
 
     }
+
+    @Override
+    public void updateUserGroupPermissions(Group group, User user, Set<Permission> groupPermissions) {
+
+        throw new RuntimeException("Not implemented yest");
+    }
+
+
 }

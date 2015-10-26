@@ -42,7 +42,7 @@ public class PermissionRepositoryTest {
     public void testCreatePermissions() throws Exception {
 
         Permission permission1 = new Permission(BasePermissions.GROUP_PERMISSION_UPDATE_GROUP_DETAILS, 2);
-        Permission permission2 = new Permission(BasePermissions.GROUP_PERMISSION_CREATE_MEMBER_INVITATION, 4);
+        Permission permission2 = new Permission(BasePermissions.GROUP_PERMISSION_FORCE_PERMISSION_CHANGE, 4);
         Permission permission3 = new Permission(BasePermissions.GROUP_PERMISSION_DELETE_GROUP_MEMBER, 6);
 
         permissionRepository.save(permission1);
@@ -67,7 +67,7 @@ public class PermissionRepositoryTest {
     public void testCreateUniquePermissionMask() throws Exception {
 
         Permission permission1 = new Permission(BasePermissions.GROUP_PERMISSION_UPDATE_GROUP_DETAILS, 2);
-        Permission permission2 = new Permission(BasePermissions.GROUP_PERMISSION_READ_MEMBER_DETAILS, 2);
+        Permission permission2 = new Permission(BasePermissions.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE, 2);
 
         permissionRepository.save(permission1);
         permissionRepository.save(permission2);
