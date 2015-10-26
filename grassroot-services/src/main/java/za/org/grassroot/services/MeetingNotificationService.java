@@ -12,10 +12,12 @@ import java.util.Map;
 public interface MeetingNotificationService {
 
     public String createMeetingNotificationMessage(User user, EventDTO event);
+
     public String createChangeMeetingNotificationMessage(User user, EventDTO event);
+
     public String createCancelMeetingNotificationMessage(User user, EventDTO event);
+
     public String createMeetingReminderMessage(User user, EventDTO event);
 
-
-
+    public String createVoteResultsMessage(User user, EventDTO event, double yes, double no, double invalid, double noReply);
 }

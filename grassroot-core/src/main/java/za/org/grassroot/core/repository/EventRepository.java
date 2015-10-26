@@ -47,4 +47,10 @@ where e.canceled = FALSE
      */
     @Query(value = "select * from event e where e.canceled = FALSE and start_date_time > current_timestamp and (start_date_time - e.reminderminutes * INTERVAL '1 minute') < current_timestamp and (start_date_time - e.reminderminutes * INTERVAL '1 minute') > e.created_date_time and e.reminderminutes > 0 and e.noreminderssent = 0",nativeQuery = true)
     List<Event> findEventsForReminders();
+
+    @Query(value = "select v from Event v where v.eventType = za.org.grassroot.core.enums.EventType.Vote and v.eventStartDateTime > ?1 and v.canceled = false")
+    List<Event> findAllVotesAfterTimeStamp(Date date);
+
+    @Query(value = "SELECT * FROM event e WHERE start_date_time  between  (current_timestamp - INTERVAL '1 hour') and current_timestamp AND e.event_type = 1 AND e.canceled = FALSE AND (SELECT count(*) FROM event_log el WHERE el.event_log_type = 7 AND e.id = el.event_id) = 0", nativeQuery = true)
+    List<Event> findUnsentVoteResults();
 }

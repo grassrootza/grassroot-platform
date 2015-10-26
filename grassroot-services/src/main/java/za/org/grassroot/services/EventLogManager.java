@@ -57,6 +57,10 @@ public class EventLogManager implements EventLogManagementService {
     }
 
     @Override
+    public boolean voteResultSentToUser(Event event, User user) {
+        return eventLogRepository.voteResultSent(event, user);
+    }
+    @Override
     public boolean changeNotificationSentToUser(Event event, User user, String message) {
         boolean messageSent = eventLogRepository.changeNotificationSent(event,user,message);
         log.info("changeNotificationSentToUser...user..." + user.getPhoneNumber() + "...event..." + event.getId() + "...version..." + event.getVersion() + "...message..." + message + "...returning..." + messageSent);
@@ -134,6 +138,17 @@ public class EventLogManager implements EventLogManagementService {
         return totals;
     }
 
+    @Override
+    public RSVPTotalsDTO getVoteResultsForEvent(Event event) {
+        if (!event.isIncludeSubGroups()) {
+            return new RSVPTotalsDTO(eventLogRepository.voteTotalsForEventAndGroup(event.getId(), event.getAppliesToGroup().getId()));
+        }
+        // get the totals recursively
+        RSVPTotalsDTO totals = new RSVPTotalsDTO();
+        recursiveVotesAdd(event, event.getAppliesToGroup(), totals);
+        log.info("getVoteResultsForEvent...returning..." + totals.toString());
+        return totals;
+    }
     private void recursiveTotalsAdd(Event event, Group parentGroup, RSVPTotalsDTO rsvpTotalsDTO ) {
 
         for (Group childGroup : groupRepository.findByParent(parentGroup)) {
@@ -142,6 +157,18 @@ public class EventLogManager implements EventLogManagementService {
 
         // add all the totals at this level
         rsvpTotalsDTO.add(new RSVPTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), parentGroup.getId(),event.getCreatedByUser().getId())));
+
+    }
+
+
+    private void recursiveVotesAdd(Event event, Group parentGroup, RSVPTotalsDTO rsvpTotalsDTO ) {
+
+        for (Group childGroup : groupRepository.findByParent(parentGroup)) {
+            recursiveVotesAdd(event, childGroup, rsvpTotalsDTO);
+        }
+
+        // add all the totals at this level
+        rsvpTotalsDTO.add(new RSVPTotalsDTO(eventLogRepository.voteTotalsForEventAndGroup(event.getId(), parentGroup.getId())));
 
     }
 }

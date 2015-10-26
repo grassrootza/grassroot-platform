@@ -51,13 +51,13 @@ public class GroupAccessControlManagementServiceTest {
         Permission permission1 = new Permission(BasePermissions.GROUP_PERMISSION_UPDATE_GROUP_DETAILS, 2);
         permission1 = permissionsManagementService.createPermission(permission1);
 
-        Permission permission2 = new Permission(BasePermissions.GROUP_PERMISSION_CREATE_MEMBER_INVITATION, 4);
+        Permission permission2 = new Permission(BasePermissions.GROUP_PERMISSION_AUTHORIZE_SUBGROUP, 4);
         permission2 = permissionsManagementService.createPermission(permission2);
 
         Permission permission3 = new Permission(BasePermissions.GROUP_PERMISSION_DELETE_GROUP_MEMBER, 8);
         permission3 = permissionsManagementService.createPermission(permission3);
 
-        Permission permission4 = new Permission(BasePermissions.GROUP_PERMISSION_READ_MEMBER_DETAILS, 16);
+        Permission permission4 = new Permission(BasePermissions.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE, 16);
         permission4 = permissionsManagementService.createPermission(permission4);
 
     }
@@ -72,7 +72,7 @@ public class GroupAccessControlManagementServiceTest {
         group = groupManagementService.saveGroup(group);
 
 
-        Role groupRole = new Role(BaseRoles.GROUP_ADMINISTRATOR, group.getId(), group.getGroupName());
+        Role groupRole = new Role(BaseRoles.ROLE_GROUP_ORGANIZER, group.getId(), group.getGroupName());
 
         groupRole.setPermissions(ImmutableSet.copyOf(permissionsManagementService.getPermissions()));
 

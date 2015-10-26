@@ -19,11 +19,11 @@ public class RSVPTotalsDTO implements Serializable {
 
     public RSVPTotalsDTO(List<Object[]> listFields) {
         Object[] fields = listFields.get(0);
-        this.yes = Integer.parseInt(fields[0].toString());
-        this.no = Integer.parseInt(fields[1].toString());
-        this.maybe = Integer.parseInt(fields[2].toString());
-        this.invalid = Integer.parseInt(fields[3].toString());
-        this.numberOfUsers = Integer.parseInt(fields[4].toString());
+        this.yes = (fields[0] == null) ? 0 : Integer.parseInt(fields[0].toString());
+        this.no = (fields[1] == null) ? 0 : Integer.parseInt(fields[1].toString());
+        this.maybe = (fields[2] == null) ? 0 : Integer.parseInt(fields[2].toString());
+        this.invalid = (fields[3] == null) ? 0 : Integer.parseInt(fields[3].toString());
+        this.numberOfUsers = (fields[4] == null) ? 0 : Integer.parseInt(fields[4].toString());
 
     }
 

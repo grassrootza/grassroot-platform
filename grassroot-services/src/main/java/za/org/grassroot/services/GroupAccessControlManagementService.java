@@ -38,5 +38,12 @@ public interface GroupAccessControlManagementService {
      */
     boolean hasGroupPermission(Permission permission, Group group, User user);
 
+    /**
+     *
+     * @param group
+     * @param user
+     * @param groupPermissions
+     */
+    void updateUserGroupPermissions(Group group, User user, Set<Permission> groupPermissions);
 
 }

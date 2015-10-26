@@ -84,7 +84,7 @@ public class GrassRootCoreConfig {
     }
 
     public GrantedAuthority administratorRole() {
-        return new SimpleGrantedAuthority(BaseRoles.ADMINISTRATOR);
+        return new SimpleGrantedAuthority(BaseRoles.ROLE_SYSTEM_ADMIN);
     }
 
     @Bean

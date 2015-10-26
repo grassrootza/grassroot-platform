@@ -21,6 +21,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
  * Created by luke on 2015/09/10.
@@ -28,6 +29,9 @@ import java.util.List;
  * all in one place here. If this starts impacting test suite performance can undo.
  */
 public class USSDAbstractTest {
+
+    private Logger log = Logger.getLogger(getClass().getCanonicalName());
+
 
     @Autowired
     UserManagementService userManager;
@@ -84,6 +88,7 @@ public class USSDAbstractTest {
     protected List<ResponseEntity<String>> executeQueries(List<URI> urisToExecute) {
         List<ResponseEntity<String>> responseEntities = new ArrayList<>();
         for (URI uriToExecute : urisToExecute) {
+            log.finest("before calling..." + uriToExecute);
             responseEntities.add(template.getForEntity(uriToExecute, String.class));
         }
         return responseEntities;

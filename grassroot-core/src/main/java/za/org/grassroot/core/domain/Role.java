@@ -54,7 +54,7 @@ public class Role extends BaseEntity implements GrantedAuthority {
         this.roleType = RoleType.GROUP;
     }
 
-    @Column(name = "role_name", nullable = false, length = 100, unique = true)
+    @Column(name = "role_name", nullable = false, length = 100)
     public String getName() {
         return name;
     }
@@ -135,7 +135,8 @@ public class Role extends BaseEntity implements GrantedAuthority {
 
         if (o instanceof Role) {
             final Role other = (Role) o;
-            return Objects.equal(getAuthority(), other.getAuthority());
+            return Objects.equal(getAuthority(), other.getAuthority())
+                    &&  Objects.equal(getId(), other.getId());
         }
         return false;
     }
@@ -149,16 +150,23 @@ public class Role extends BaseEntity implements GrantedAuthority {
     @Transient
     public String getAuthority() {
 
-        switch (roleType) {
+        return  getName();
 
-            case GROUP:
-                return Joiner.on(ROLE_NAME_SEPARATOR).join(RoleType.GROUP.name(),
-                        ROLE_NAME_PREFIX, getName(), GROUP_ID_PREFIX, getGroupReferenceId());
-            default:
-                return Joiner.on(ROLE_NAME_SEPARATOR).join(RoleType.STANDARD.name(),
-                        ROLE_NAME_PREFIX, getName());
-        }
+//        switch (roleType) {
+//
+//            case GROUP:
+//                return Joiner.on(ROLE_NAME_SEPARATOR).join(RoleType.GROUP.name(),
+//                        ROLE_NAME_PREFIX, getName(), GROUP_ID_PREFIX, getGroupReferenceId());
+//            default:
+//                return Joiner.on(ROLE_NAME_SEPARATOR).join(RoleType.STANDARD.name(),
+//                        ROLE_NAME_PREFIX, getName());
+//        }
     }
 
+    @Transient
+    public  boolean isGroupRole()
+    {
+        return roleType.equals(RoleType.GROUP) && groupReferenceId != null;
+    }
 
 }

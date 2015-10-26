@@ -19,6 +19,8 @@ public interface EventLogManagementService {
 
     public boolean notificationSentToUser(Event event, User user);
 
+    boolean voteResultSentToUser(Event event, User user);
+
     public boolean changeNotificationSentToUser(Event event, User user, String message);
 
     public boolean cancelNotificationSentToUser(Event event, User user);
@@ -42,4 +44,6 @@ public interface EventLogManagementService {
     RSVPTotalsDTO getRSVPTotalsForEvent(Long eventId);
 
     RSVPTotalsDTO getRSVPTotalsForEvent(Event event);
+
+    RSVPTotalsDTO getVoteResultsForEvent(Event event);
 }
