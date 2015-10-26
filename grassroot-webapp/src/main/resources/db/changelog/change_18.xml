@@ -7,7 +7,7 @@
          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.0.xsd">
 
 	<changeSet id="change_18" author="luke">
-		<comment>Add account columns to user and group</comment>
+		<comment>Create table for paid accounts and paid group entity</comment>
 		<sqlFile path="db/scripts/script_18.sql"/>
 		<rollback>
             <sqlFile  path="db/scripts/script_18_rollback.sql"/>
