@@ -1,3 +1,4 @@
+DELETE from role_permissions;
 DELETE from permission;
 INSERT INTO permission (id, permission_name, mask) VALUES
 (1, 'PERMISSION_SEE_ALL_GROUPS',2),
@@ -34,14 +35,11 @@ INSERT INTO permission (id, permission_name, mask) VALUES
 --- Java int MAX 2^31
 DELETE  from role;
 
-ALTER TABLE role DROP CONSTRAINT unique_role_name;
 INSERT  INTO role(id,role_name,role_type)VALUES
 (1,'ROLE_SYSTEM_ADMIN','STANDARD'),
 (2,'ROLE_ACCOUNT_ADMIN','STANDARD'),
 (3,'ROLE_NEW_USER','STANDARD')
 ;
-ALTER TABLE role_permissions DROP CONSTRAINT uk_d4atqq8ege1sij0316vh2mxfu;
-ALTER TABLE role_permissions DROP CONSTRAINT uk_qfkbccnh2c5o4tc7akq5x11wv;
 
 INSERT  INTO role_permissions (role_id, permission_id) VALUES
 (1,1),
