@@ -12,6 +12,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.GroupRepository;
@@ -111,13 +112,15 @@ public class EventLogManager implements EventLogManagementService {
         } catch (Exception e) {
             log.severe("FAILED to clear userRSVP..." + user.getId() + " error: " + e.toString());
         }
-        // see if everyone voted, if they did expire the vote so that the results are sent out
-        RSVPTotalsDTO rsvpTotalsDTO = getVoteResultsForEvent(event);
-        log.finest("rsvpForEvent...after..." + rsvpTotalsDTO.toString());
-        if (rsvpTotalsDTO.getNumberNoRSVP() < 1) {
-            Date now = new Date();
-            event.setEventStartDateTime(new Timestamp(now.getTime()));
-            eventRepository.save(event);
+        if (event.getEventType() == EventType.Vote) {
+            // see if everyone voted, if they did expire the vote so that the results are sent out
+            RSVPTotalsDTO rsvpTotalsDTO = getVoteResultsForEvent(event);
+            log.finest("rsvpForEvent...after..." + rsvpTotalsDTO.toString());
+            if (rsvpTotalsDTO.getNumberNoRSVP() < 1) {
+                Date now = new Date();
+                event.setEventStartDateTime(new Timestamp(now.getTime()));
+                eventRepository.save(event);
+            }
         }
 
         return eventLog;
