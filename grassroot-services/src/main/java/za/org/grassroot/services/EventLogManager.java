@@ -18,6 +18,8 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 
 import javax.jws.soap.SOAPBinding;
+import java.sql.Timestamp;
+import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -48,7 +50,9 @@ public class EventLogManager implements EventLogManagementService {
 
     @Override
     public EventLog createEventLog(EventLogType eventLogType, Event event, User user, String message) {
-        return eventLogRepository.save(new EventLog(user,event,eventLogType,message));
+        EventLog eventLog = eventLogRepository.save(new EventLog(user,event,eventLogType,message));
+        eventLogRepository.flush();
+        return eventLog;
     }
 
     @Override
@@ -98,6 +102,7 @@ public class EventLogManager implements EventLogManagementService {
 
     @Override
     public EventLog rsvpForEvent(Event event, User user, EventRSVPResponse rsvpResponse) {
+        log.finest("rsvpForEvent...event..." + event.getId() + "...user..." + user.getPhoneNumber() + "...rsvp..." + rsvpResponse.toString());
         EventLog eventLog = createEventLog(EventLogType.EventRSVP, event, user, rsvpResponse.toString());
         // clear rsvp cache for user
         try {
@@ -106,6 +111,15 @@ public class EventLogManager implements EventLogManagementService {
         } catch (Exception e) {
             log.severe("FAILED to clear userRSVP..." + user.getId() + " error: " + e.toString());
         }
+        // see if everyone voted, if they did expire the vote so that the results are sent out
+        RSVPTotalsDTO rsvpTotalsDTO = getVoteResultsForEvent(event);
+        log.finest("rsvpForEvent...after..." + rsvpTotalsDTO.toString());
+        if (rsvpTotalsDTO.getNumberNoRSVP() < 1) {
+            Date now = new Date();
+            event.setEventStartDateTime(new Timestamp(now.getTime()));
+            eventRepository.save(event);
+        }
+
         return eventLog;
     }
 
