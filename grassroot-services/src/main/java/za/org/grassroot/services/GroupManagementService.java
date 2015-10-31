@@ -60,7 +60,7 @@ public interface GroupManagementService {
     public Group addNumbersToGroup(Long groupId, List<String> phoneNumbers);
 
     /*
-    Methods to find if a user has an outstanding group management action to perform
+    Methods to find if a user has an outstanding group management action to perform or groups on which they can perform it
      */
 
     public Group getLastCreatedGroup(User creatingUser);
@@ -70,6 +70,10 @@ public interface GroupManagementService {
     public Long groupToRename(User sessionUser);
 
     public Group renameGroup(Group group, String newGroupName);
+
+    public List<Group> groupsOnWhichCanCallVote(User user);
+
+    public boolean canUserCallVoteOnAnyGroup(User user);
 
     /*
     Methods to work with group joining tokens

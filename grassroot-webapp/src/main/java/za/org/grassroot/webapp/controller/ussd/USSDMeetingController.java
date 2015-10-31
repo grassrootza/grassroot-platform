@@ -19,14 +19,10 @@ import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
 import javax.servlet.http.HttpServletRequest;
-import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
-import java.net.URLEncoder;
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.FormatStyle;
 import java.util.*;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
@@ -38,12 +34,6 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 @RequestMapping(method = GET, produces = MediaType.APPLICATION_XML_VALUE)
 @RestController
 public class USSDMeetingController extends USSDController {
-
-    @Autowired
-    MessageSendingService messageService;
-
-    @Autowired
-    SmsSendingService smsService;
 
     /**
      * Meeting organizer menus

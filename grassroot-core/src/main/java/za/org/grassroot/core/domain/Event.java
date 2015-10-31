@@ -338,6 +338,7 @@ public class Event implements Serializable {
     public String toString() {
         return "Event{" +
                 "eventName='" + name + '\'' +
+                ", eventType='" + eventType + '\'' +
                 ", eventLocation='" + eventLocation + '\'' +
                 ", id=" + id +
                 ", createdDateTime=" + createdDateTime +

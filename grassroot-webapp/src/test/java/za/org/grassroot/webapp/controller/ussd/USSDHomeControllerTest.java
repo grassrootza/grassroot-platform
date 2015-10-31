@@ -73,7 +73,7 @@ public class USSDHomeControllerTest extends USSDAbstractTest {
             "    <options>" +
             "        <option command=\"1\" order=\"1\" callback=\"http://localhost:8080/ussd/mtg/start\"" +
             "                display=\"true\">Call a meeting</option>\n" +
-            "        <option command=\"2\" order=\"2\" callback=\"http://localhost:8080/ussd/vote\"" +
+            "        <option command=\"2\" order=\"2\" callback=\"http://localhost:8080/ussd/vote/start\"" +
             "                display=\"true\">Take a vote</option>\n" +
             "        <option command=\"3\" order=\"3\" callback=\"http://localhost:8080/ussd/log\"" +
             "                display=\"true\">Record an action</option>\n" +
@@ -106,7 +106,7 @@ public class USSDHomeControllerTest extends USSDAbstractTest {
             "    <options>" +
             "        <option command=\"1\" order=\"1\" callback=\"http://localhost:8080/ussd/mtg/start\"" +
             "                display=\"true\">Biza umhlangano</option>\n" +
-            "        <option command=\"2\" order=\"2\" callback=\"http://localhost:8080/ussd/vote\"" +
+            "        <option command=\"2\" order=\"2\" callback=\"http://localhost:8080/ussd/vote/start\"" +
             "                display=\"true\">Biza ivoti</option>\n" +
             "        <option command=\"3\" order=\"3\" callback=\"http://localhost:8080/ussd/log\"" +
             "                display=\"true\">Bhala isenzo</option>\n" +

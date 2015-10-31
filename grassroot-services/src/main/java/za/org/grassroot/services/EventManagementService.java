@@ -36,16 +36,18 @@ public interface EventManagementService {
 
     public Event createMeeting(User createdByUser);
 
-    /*
-    Methods to find and load events
-     */
-
     Event createVote(User createdByUser);
 
     Event createVote(String issue, User createdByUser);
 
+    Event createVote(User createdByUser, Long groupId);
+
     //createVote(name,userId,groupId,includeSubGroups)
     Event createVote(String issue, Long userId, Long groupId, boolean includeSubGroups);
+
+    /*
+    Methods to find and load events
+     */
 
     public Event loadEvent(Long eventId);
 
@@ -76,6 +78,8 @@ public interface EventManagementService {
     public Event setSubject(Long eventId, String subject);
 
     public Event setGroup(Long eventId, Long groupId);
+
+    public Event setGroup(Event event, Long groupId);
 
     public Event setLocation(Long eventId, String location);
 
@@ -110,5 +114,21 @@ public interface EventManagementService {
     Map<String, String> getEventDescription(Long eventId);
 
     int getNumberInvitees(Event event);
+
+    /*
+    Methods to retrieve information about votes
+     */
+
+    Map<String, Integer> getVoteResults(Event vote);
+
+    Integer getNumberYesVotes(Event vote);
+
+    Integer getNumberNoVotes(Event vote);
+
+    Integer getNumberAbstained(Event vote);
+
+    Integer getNumberTotalVotes(Event vote);
+
+    Integer getTotalPossibleVotes(Event vote);
 
 }

@@ -54,7 +54,7 @@ public class USSDHomeController extends USSDController {
         Locale menuLang = new Locale(getLanguage(sessionUser));
 
         homeMenu.addMenuOption(MTG_MENUS + START_KEY, getMessage(HOME_KEY, START_KEY, OPTION + MTG_KEY, menuLang));
-        homeMenu.addMenuOption(VOTE_MENUS, getMessage(HOME_KEY, START_KEY, OPTION + VOTE_KEY, menuLang));
+        homeMenu.addMenuOption(VOTE_MENUS + START_KEY, getMessage(HOME_KEY, START_KEY, OPTION + VOTE_KEY, menuLang));
         homeMenu.addMenuOption(LOG_MENUS, getMessage(HOME_KEY, START_KEY, OPTION + LOG_KEY, menuLang));
         homeMenu.addMenuOption(GROUP_MENUS + START_KEY, getMessage(HOME_KEY, START_KEY, OPTION + GROUP_KEY, menuLang));
         homeMenu.addMenuOption(USER_MENUS + START_KEY, getMessage(HOME_KEY, START_KEY, OPTION + USER_KEY, menuLang));
@@ -326,7 +326,7 @@ public class USSDHomeController extends USSDController {
 
     }
 
-    @RequestMapping(value = { USSD_BASE + U404, USSD_BASE + VOTE_MENUS, USSD_BASE + LOG_MENUS, USSD_BASE + GROUP_MENUS + "menu2" })
+    @RequestMapping(value = { USSD_BASE + U404, USSD_BASE + LOG_MENUS, USSD_BASE + GROUP_MENUS + "menu2" })
     @ResponseBody
     public Request notBuilt() throws URISyntaxException {
         // String errorMessage = "Sorry! We haven't built that yet. We're working on it.";

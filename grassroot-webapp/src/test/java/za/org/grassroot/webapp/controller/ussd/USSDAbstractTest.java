@@ -70,8 +70,8 @@ public class USSDAbstractTest {
                                                             PhoneNumberUtil.invertPhoneNumber(thirdGroupPhone, ""), "0845550000"); // todo: as above
     protected final Integer testGroupSize = testPhones.size() + 1; // includes creating user
 
-    protected final String nonGroupPhone = "27805550000";
-    protected final String testPhoneZu = "27725550000"; // for testing the Zulu opening menu
+    protected final String nonGroupPhone = "27800000000";
+    protected final String testPhoneZu = "27720000000"; // for testing the Zulu opening menu
     protected final String testMtgLocation = "JoziHub";
     protected final String testMtgDateTime = "Tomorrow 9am";
 

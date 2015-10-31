@@ -14,6 +14,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.EventChanged;
 import za.org.grassroot.core.dto.EventDTO;
+import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.EventRepository;
@@ -117,6 +118,11 @@ public class EventManager implements EventManagementService {
         return createNewEvent(createdByUser, EventType.Vote, true, issue, null, false, 0);
     }
 
+    @Override
+    public Event createVote(User createdByUser, Long groupId) {
+        return createNewEvent(createdByUser, EventType.Vote, true, "", groupManager.loadGroup(groupId), false, -1);
+    }
+
 
     @Override
     public Event createVote(String issue, Long userId, Long groupId, boolean includeSubGroups) {
@@ -190,6 +196,12 @@ public class EventManager implements EventManagementService {
             eventToUpdate.setAppliesToGroup(groupManager.loadGroup(groupId));
             return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
         }
+    }
+
+    @Override
+    public Event setGroup(Event event, Long groupId) {
+        // helper method for web application, as this is most natural signature for that call -- to do as above
+        return setGroup(event.getId(), groupId);
     }
 
     @Override
@@ -475,6 +487,45 @@ public class EventManager implements EventManagementService {
     public int getNumberInvitees(Event event) {
         // may make this more sophisticated once we have message relays in place
         return event.getAppliesToGroup().getGroupMembers().size();
+    }
+
+    @Override
+    public Map<String, Integer> getVoteResults(Event vote) {
+
+        Map<String, Integer> results = new HashMap<>();
+        RSVPTotalsDTO totalsDTO = eventLogManagementService.getVoteResultsForEvent(vote);
+
+        results.put("yes", totalsDTO.getYes());
+        results.put("no", totalsDTO.getNo());
+        results.put("abstained", totalsDTO.getNumberOfUsers() - totalsDTO.getYes() - totalsDTO.getNo());
+        results.put("possible", totalsDTO.getNumberOfUsers());
+
+        return results;
+    }
+
+    @Override
+    public Integer getNumberYesVotes(Event vote) {
+        return getVoteResults(vote).get("yes");
+    }
+
+    @Override
+    public Integer getNumberNoVotes(Event vote) {
+        return getVoteResults(vote).get("no");
+    }
+
+    @Override
+    public Integer getNumberAbstained(Event vote) {
+        return getVoteResults(vote).get("abstained");
+    }
+
+    @Override
+    public Integer getNumberTotalVotes(Event vote) {
+        return getNumberYesVotes(vote) + getNumberNoVotes(vote);
+    }
+
+    @Override
+    public Integer getTotalPossibleVotes(Event vote) {
+        return getVoteResults(vote).get("possible");
     }
 
 

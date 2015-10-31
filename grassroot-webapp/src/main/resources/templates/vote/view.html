@@ -1,0 +1,81 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+  <title>GrassRoot - View Vote</title>
+</head>
+<body>
+
+<div layout:fragment="header">
+  <h2>Vote: <span  th:text="${vote.name}">Vote</span></h2>
+</div>
+<div layout:fragment="overview">View vote details</div>
+
+<div layout:fragment="content">
+  <div layout:fragment="messages"></div>
+
+  <div class="well">
+    <div class="row">
+      Vote will close at <span th:text="${vote.dateTimeString}">date and time</span>.
+
+    </div>
+    <div class="row">
+      Vote details:
+    </div>
+    <div class="row">
+      <form th:action="@{/vote/modify}" th:object="${vote}" method="post">
+        <input type="hidden" th:field="*{id}" th:value="${vote.id}" />
+        <div class="row form-group">
+          <label for="voteIssue" class="col-lg-2 control-label">Issue:</label>
+          <div class="col-lg-6">
+            <input type="text" id="voteIssue" th:value="${vote.name}" readonly="readonly"/>
+          </div>
+        </div>
+        <div class="row">
+          <label for="possibleVotes" class="col-lg-2 control-label">Possible votes:</label>
+          <div class="col-lg-6">
+            <input type="text" id="possibleVotes" th:value="${possible}" readonly="readonly"/>
+          </div>
+        </div>
+        <div class="row">
+          <label for="yesVotes" class="col-lg-2 control-label">Yes votes:</label>
+          <div class="col-lg-6">
+            <input type="text" id="yesVotes" th:value="${yes}" readonly="readonly"/>
+          </div>
+        </div>
+        <div class="row">
+          <label for="noVotes" class="col-lg-2 control-label">No votes:</label>
+          <div class="col-lg-6">
+            <input type="text" id="noVotes" th:value="${no}" readonly="readonly"/>
+          </div>
+        </div>
+        <div class="row">
+          <label for="abstained" class="col-lg-2 control-label">Abstained:</label>
+          <div class="col-lg-6">
+            <input type="text" id="abstained" th:value="${abstained}" readonly="readonly"/>
+          </div>
+        </div>
+        <div class="row form-group">
+          <label for="datepicker" class="col-lg-2 control-label">Date and time:</label  >
+          <div class="col-lg-6">
+            <div class="input-group date" id="datepicker">
+              <input th:name="modifyDateTime" th:value="${vote.eventStartDateTime}" type="text" class="form-control" readonly="readonly"/>
+                    <span class="input-group-addon">
+                        <span class="glyphicon glyphicon-calendar"></span>
+                    </span>
+            </div>
+          </div>
+        </div>
+        <div class="row form-group">
+          <div class="col-lg-4">
+            <button type="submit" name="reminder" class="btn btn-warning">Send a reminder</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

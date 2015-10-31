@@ -50,7 +50,7 @@ public class USSDController {
 
     // Constants used in URL mapping and message handling
     protected static final String USSD_BASE = "/ussd/", MTG_MENUS = "mtg/", USER_MENUS = "user/", GROUP_MENUS = "group/";
-    protected static final String VOTE_MENUS = "vote", LOG_MENUS = "log", U404="error"; // leaving off '/' for now, until built
+    protected static final String VOTE_MENUS = "vote/", LOG_MENUS = "log", U404="error"; // leaving off '/' for now, until built
     protected static final String PHONE_PARAM = "msisdn", TEXT_PARAM = "request", GROUP_PARAM = "groupId", EVENT_PARAM = "eventId", TOKEN_PARAM="token";
     protected static final String START_KEY = "start", PASSED_FIELD = "menukey", YESNO_FIELD = "confirmed",
             GROUPID_URL = ("?" + GROUP_PARAM + "="), EVENTID_URL = ("?" + EVENT_PARAM + "="), TOKEN_URL = ("&" + TOKEN_PARAM + "="), DO_SUFFIX = "-do";
@@ -84,9 +84,11 @@ public class USSDController {
         return menuToBuild;
     }
 
-    // integrating check for menu length in here, to avoid writing it in every return
-    // defaulting to not first screen, can do an override in start (shouldn't cause speed issues, but watch)
-    // not bothering to check free text input, since the odds of those exceeding are very low (and then a UX issue...)
+    /*
+    integrating check for menu length in here, to avoid writing it in every return
+    defaulting to not first screen, can do an override in start (shouldn't cause speed issues, but watch)
+    not bothering to check length on a free text menu, since the odds of those exceeding are very low (and then a UX issue...)
+    */
     protected Request menuBuilder(USSDMenu thisMenu) throws URISyntaxException {
         Request menuRequest;
         if (thisMenu.isFreeText()) {
@@ -104,10 +106,11 @@ public class USSDController {
         return Collections.singletonList(new Option("", 1, 1, new URI(baseURI + urlEnding), false));
     }
 
-    // method to check the length of a USSD menu and make sure it is under 140/160 chars.
-    // at present, am just returning a boolean, but may want to truncate / throw an exception or do something else
-    // last: writing it here, so that if we change aggregator / view technology, we adjust here
-
+    /*
+    method to check the length of a USSD menu and make sure it is under 140/160 chars.
+    at present, am just returning a boolean, but may want to truncate / throw an exception or do something else
+    last: writing it here, so that if we change aggregator / view technology, we adjust here
+     */
     protected boolean checkMenuLength(USSDMenu menuToCheck, boolean firstMenu) {
 
         Integer enumLength = ("1. ").length();
@@ -121,7 +124,6 @@ public class USSDController {
     /**
      * SECTION: Auxiliary methods used in creating, sorting, displaying groups in USSD menus / from USSD input
      * todo: extend pagination, to allow for multiple pages, and/or better sorting (last accessed & most accessed)
-     * todo: change the dateformat for unnamed groups to something more readable and/or shorter
      */
 
     protected USSDMenu userGroupMenu(User sessionUser, String promptMessage, String existingPath, String newUri, String groupParam)
@@ -153,7 +155,7 @@ public class USSDController {
         return menuBuild;
     }
 
-    // slightly simplified version
+    // slightly simplified version, with an explicit option to leave off the new group
     protected USSDMenu userGroupMenu(User sessionUser, String promptMessage, String path, boolean optionNewGroup)
             throws URISyntaxException {
 
