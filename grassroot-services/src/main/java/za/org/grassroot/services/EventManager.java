@@ -307,69 +307,89 @@ public class EventManager implements EventManagementService {
         return rsvpResponses;
     }
 
+
+    @Override
+    public List<Event> getOutstandingVotesForUser(Long userId) {
+        return getOutstandingVotesForUser(userRepository.findOne(userId));
+    }
+    @Override
+    public List<Event> getOutstandingVotesForUser(User user) {
+        return getOutstandingResponseForUser(user, EventType.Vote);
+    }
+
+
     @Override
     public List<Event> getOutstandingRSVPForUser(Long userId) {
         return getOutstandingRSVPForUser(userRepository.findOne(userId));
     }
 
-
     /*
     todo - aakil - figure out why the annotation is not working
     @Cacheable(value="userRSVP", key="#user.id", cacheManager = "coreCacheManager")
      */
+
     @Override
     public List<Event> getOutstandingRSVPForUser(User user) {
-        log.info("getOutstandingRSVPForUser..." + user.getId());
+        return getOutstandingResponseForUser(user, EventType.Meeting);
+    }
+
+    private List<Event> getOutstandingResponseForUser(User user, EventType eventType) {
+        log.info("getOutstandingResponseForUser..." + user.getPhoneNumber() + "...type..." + eventType.toString());
         List<Event> outstandingRSVPs = null;
         Cache cache = cacheManager.getCache("userRSVP");
+        String cacheKey = eventType.toString() + "|" + user.getId();
         try {
-            outstandingRSVPs = (List<Event>) cache.get(user.getId()).getObjectValue();
+            outstandingRSVPs = (List<Event>) cache.get(cacheKey).getObjectValue();
 
         } catch (Exception e) {
-            log.fine("Could not retrieve outstanding RSVP from cache  userRSVP for user " + user.getPhoneNumber() + " error: " +  e.toString());
+            log.fine("Could not retrieve outstanding RSVP/Vote from cache  userRSVP for user " + user.getPhoneNumber() + " error: " +  e.toString() + " eventType: " + eventType.toString());
         }
         if (outstandingRSVPs == null) {
             // fetch from the database
             outstandingRSVPs = new ArrayList<Event>();
             List<Group> groups = groupManager.getGroupsPartOf(user);
-            log.finest("getOutstandingRSVPForUser...after...getGroupsPartOf...");
+            log.finest("getOutstandingResponseForUser...after...getGroupsPartOf...");
             if (groups != null) {
-                log.finest("getOutstandingRSVPForUser...number of groups..." + groups.size());
+                log.finest("getOutstandingResponseForUser...number of groups..." + groups.size());
 
                 for (Group group : groups) {
-                    log.finest("getOutstandingRSVPForUser...before...getUpcomingEventsForGroupAndParentGroups..." + group.getId());
+                    log.finest("getOutstandingResponseForUser...before...getUpcomingEventsForGroupAndParentGroups..." + group.getId());
                     List<Event> upcomingEvents = getUpcomingEventsForGroupAndParentGroups(group);
-                    log.finest("getOutstandingRSVPForUser...after...getUpcomingEventsForGroupAndParentGroups..." + group.getId());
+                    log.finest("getOutstandingResponseForUser...after...getUpcomingEventsForGroupAndParentGroups..." + group.getId());
 
-                    //log.info("getOustandingRSVPForUser ... checking " + upcomingEvents.size() + " events");
                     if (upcomingEvents != null) {
                         for (Event event : upcomingEvents) {
-                            log.finest("getOutstandingRSVPForUser...start...event check..." + event.getId());
+                            log.finest("getOutstandingResponseForUser...start...event check..." + event.getId());
 
-                            if (event.isRsvpRequired() && event.getCreatedByUser().getId() != user.getId()) {
-                                if (!eventLogManagementService.userRsvpForEvent(event, user)) {
-                                    outstandingRSVPs.add(event);
-                                    log.info("getOutstandingRSVPForUser...rsvpRequired..." + user.getId() + "...event..." + event.getId());
-                                } else {
-                                    log.info("getOutstandingRSVPForUser...rsvp NOT Required..." + user.getId() + "...event..." + event.getId());
+                            if (event.isRsvpRequired()  && event.getEventType() == eventType) {
+                                //rsvp
+                                if ((eventType == EventType.Meeting && event.getCreatedByUser().getId() != user.getId())
+                                        || eventType != EventType.Meeting) {
+                                    if (!eventLogManagementService.userRsvpForEvent(event, user)) {
+                                        outstandingRSVPs.add(event);
+                                        log.info("getOutstandingResponseForUser..." + eventType.toString() + " Required..." + user.getPhoneNumber() + "...event..." + event.getId());
+                                    } else {
+                                        log.info("getOutstandingResponseForUser..." + eventType.toString() + " NOT Required..." + user.getPhoneNumber() + "...event..." + event.getId());
 
+                                    }
                                 }
                             }
-                            log.finest("getOutstandingRSVPForUser...end...event check..." + event.getId());
+
+                            log.finest("getOutstandingResponseForUser...end...event check..." + event.getId());
 
                         }
                     }
 
                 }
                 try {
-                    cache.put(new Element(user.getId(),outstandingRSVPs));
+                    cache.put(new Element(cacheKey,outstandingRSVPs));
                 } catch (Exception e) {
                     log.severe(e.toString());
                 }
             }
 
         }
-        log.info("getOutstandingRSVPForUser..." + user.getId() + "...returning..." + outstandingRSVPs.size());
+        log.info("getOutstandingResponseForUser..." + user.getPhoneNumber() + "...type..." + eventType.toString() + "...returning..." + outstandingRSVPs.size());
 
         return outstandingRSVPs;
     }

@@ -76,7 +76,6 @@ public class EventRestController {
         return new EventDTO(eventManagementService.cancelEvent(eventId));
     }
 
-    //todo this method was not tested
     @RequestMapping(value = "rsvprequired/{userId}", method = RequestMethod.GET)
     public List<EventDTO> getRsvpRequired(@PathVariable("userId") Long userId) {
         List<EventDTO> rsvpRequired = new ArrayList<EventDTO>();
@@ -92,6 +91,20 @@ public class EventRestController {
 
     }
 
+    @RequestMapping(value = "voterequired/{userId}", method = RequestMethod.GET)
+    public List<EventDTO> getVoteRequired(@PathVariable("userId") Long userId) {
+        List<EventDTO> rsvpRequired = new ArrayList<EventDTO>();
+        List<Event> events = eventManagementService.getOutstandingVotesForUser(userId);
+        if (events != null) {
+            for (Event event : events) {
+                rsvpRequired.add(new EventDTO(event));
+            }
+        }
+
+        return rsvpRequired;
+
+
+    }
 
 
 }

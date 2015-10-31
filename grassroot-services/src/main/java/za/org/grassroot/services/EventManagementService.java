@@ -61,6 +61,10 @@ public interface EventManagementService {
 
     List<Event> getOutstandingRSVPForUser(Long userId);
 
+    List<Event> getOutstandingVotesForUser(Long userId);
+
+    List<Event> getOutstandingVotesForUser(User user);
+
     List<Event> getOutstandingRSVPForUser(User user);
 
     List<Event> getUpcomingEventsForGroupAndParentGroups(Group group);
