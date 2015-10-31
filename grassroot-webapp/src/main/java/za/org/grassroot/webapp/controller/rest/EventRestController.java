@@ -38,6 +38,27 @@ public class EventRestController {
         return (List<Event>) eventRepository.findAll();
     }
 
+    @RequestMapping(value = "/upcoming/meeting/{groupId}", method = RequestMethod.GET)
+    public List<EventDTO> getUpcomingMeetings(@PathVariable("groupId") Long groupId) {
+        List<Event> upcomingList = eventManagementService.getUpcomingMeetings(groupId);
+        List<EventDTO> list = new ArrayList<>();
+        for (Event event : upcomingList) {
+            list.add(new EventDTO(event));
+        }
+        return list;
+
+    }
+
+    @RequestMapping(value = "/upcoming/vote/{groupId}", method = RequestMethod.GET)
+    public List<EventDTO> getUpcomingVotes(@PathVariable("groupId") Long groupId) {
+        List<Event> upcomingList = eventManagementService.getUpcomingVotes(groupId);
+        List<EventDTO> list = new ArrayList<>();
+        for (Event event : upcomingList) {
+            list.add(new EventDTO(event));
+        }
+        return list;
+
+    }
 
     @RequestMapping(value = "/add/{userId}/{groupId}/{name}", method = RequestMethod.POST)
     public EventDTO add(@PathVariable("userId") Long userId,@PathVariable("groupId") Long groupId,

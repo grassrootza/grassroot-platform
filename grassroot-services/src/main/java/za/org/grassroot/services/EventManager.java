@@ -275,6 +275,40 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
+    public List<Event> findUpcomingMeetingsForGroup(Group group, Date date) {
+        return eventRepository.findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceledAndEventType(group, date, false, EventType.Meeting);
+    }
+
+    @Override
+    public List<Event> findUpcomingVotesForGroup(Group group, Date date) {
+        return eventRepository.findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceledAndEventType(group, date, false, EventType.Vote);
+    }
+
+    @Override
+    public List<Event> getUpcomingMeetings(Long groupId) {
+
+        return getUpcomingMeetings(groupManager.loadGroup(groupId));
+    }
+
+    @Override
+    public List<Event> getUpcomingMeetings(Group group) {
+
+        return findUpcomingMeetingsForGroup(group, new Date());
+    }
+
+    @Override
+    public List<Event> getUpcomingVotes(Long groupId) {
+
+        return getUpcomingVotes(groupManager.loadGroup(groupId));
+    }
+
+    @Override
+    public List<Event> getUpcomingVotes(Group group) {
+
+        return findUpcomingVotesForGroup(group, new Date());
+    }
+
+    @Override
     public List<Event> getUpcomingEvents(Group group) {
 
         return findByAppliesToGroupAndStartingAfter(group, new Date());

@@ -57,6 +57,18 @@ public interface EventManagementService {
 
     List<Event> findByAppliesToGroupAndStartingAfter(Group group, Date date);
 
+    List<Event> findUpcomingMeetingsForGroup(Group group, Date date);
+
+    List<Event> findUpcomingVotesForGroup(Group group, Date date);
+
+    List<Event> getUpcomingMeetings(Long groupId);
+
+    List<Event> getUpcomingMeetings(Group group);
+
+    List<Event> getUpcomingVotes(Long groupId);
+
+    List<Event> getUpcomingVotes(Group group);
+
     List<Event> getUpcomingEvents(Group group);
 
     List<Event> getOutstandingRSVPForUser(Long userId);
