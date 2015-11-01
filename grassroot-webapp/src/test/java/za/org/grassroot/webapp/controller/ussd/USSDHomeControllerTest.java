@@ -151,7 +151,7 @@ public class USSDHomeControllerTest extends USSDAbstractTest {
     public void userStart() throws Exception {
 
         final URI requestUri = base.path("ussd/start").queryParam(phoneParam, nonGroupPhone)
-                .queryParam("request", "*120*1994#").build().toUri();
+                .queryParam("request", "*134*1994#").build().toUri();
         ResponseEntity<String> response1 = template.getForEntity(requestUri, String.class); // gets initiation menu
         ResponseEntity<String> response2 = template.getForEntity(requestUri, String.class); // gets standard welcome menu
 
@@ -240,7 +240,7 @@ public class USSDHomeControllerTest extends USSDAbstractTest {
         String groupToken = testGroup.getGroupTokenCode();
 
         final URI useJoinCode = assembleUssdURI("start").queryParam(phoneParam, nonGroupPhone).
-                queryParam("request", "*120*1994*" + groupToken + "#").build().toUri();
+                queryParam("request", "*134*1994*" + groupToken + "#").build().toUri();
 
         Long groupId = testGroup.getId();
         log.info("Group token URI testing: " + useJoinCode.toString());

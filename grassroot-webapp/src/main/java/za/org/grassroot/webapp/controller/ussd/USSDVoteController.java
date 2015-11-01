@@ -54,7 +54,8 @@ public class USSDVoteController extends USSDController {
 
         if (groupManager.canUserCallVoteOnAnyGroup(user)) {
             // todo: restrict to groups on which user can call votes (via permissions)
-            menu = userGroupMenu(user, "Okay, which group will be voting?", VOTE_MENUS + "issue", false);
+            menu = userGroupMenu(user, getMessage(VOTE_KEY, "group", PROMPT, user),
+                                 VOTE_MENUS + "issue", false);
         } else {
             menu.setPromptMessage("Sorry, you need to create a group first before calling a vote");
             menu.addMenuOption(GROUP_MENUS + "create", "Create a group");

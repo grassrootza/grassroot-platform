@@ -239,15 +239,21 @@ public class USSDHomeController extends USSDController {
 
         switch (neededResponse(sessionUser)) {
             case VOTE:
-                log.info("Asking for a vote!");
+                log.info("Asking for a vote ... from user " + sessionUser);
                 Long voteId = eventManager.getNextOutstandingVote(sessionUser);
-                Map<String, String> voteDetails = eventManager.getEventDescription(voteId);
-                String votePrompt = "X has called a vote about Y. What is your response?";
-                String voteUri = "vote" + EVENTID_URL + voteId + "&response=";
-                startMenu.setPromptMessage(votePrompt);
-                startMenu.addMenuOption(voteUri + "yes", "Yes");
-                startMenu.addMenuOption(voteUri + "no", "No");
-                startMenu.addMenuOption(voteUri + "maybe", "Abstain");
+
+                final Map<String, String> voteDetails = eventManager.getEventDescription(voteId);
+                final String[] promptFields = new String[]{ voteDetails.get("groupName"), voteDetails.get("creatingUser"),
+                        voteDetails.get("eventSubject")};
+
+                final String voteUri = "vote" + EVENTID_URL + voteId + "&response=";
+                final String optionMsgKey = VOTE_KEY + "." + OPTION;
+
+                startMenu.setPromptMessage(getMessage(HOME_KEY, START_KEY, PROMPT + "-vote", promptFields, sessionUser));
+
+                startMenu.addMenuOption(voteUri + "yes", getMessage(optionMsgKey + "yes", sessionUser));
+                startMenu.addMenuOption(voteUri + "no", getMessage(optionMsgKey + "no", sessionUser));
+                startMenu.addMenuOption(voteUri + "maybe", getMessage(optionMsgKey + "abstain", sessionUser));
                 break;
             case MTG_RSVP:
                 log.info("Asking for rsvp!");

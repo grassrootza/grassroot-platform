@@ -204,6 +204,12 @@ public class USSDMeetingController extends USSDController {
         promptMenu.addMenuOption(START_KEY, getMessage(START_KEY, sessionUser)); // go to GR home menu
         promptMenu.addMenuOption("exit", getMessage("exit.option", sessionUser)); // exit system
 
+        if (!checkMenuLength(promptMenu, false)) {
+            Integer charsToTrim = promptMenu.getMenuCharLength() - 159; // adding a character, for safety
+            String revisedPrompt = mtgDescription.substring(0, mtgDescription.length() - charsToTrim);
+            promptMenu.setPromptMessage(revisedPrompt);
+        }
+
         return menuBuilder(promptMenu);
 
     }
