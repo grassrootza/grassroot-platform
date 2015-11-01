@@ -162,7 +162,9 @@ public class EventManager implements EventManagementService {
         }
         event.setNoRemindersSent(0);
 
-        return eventRepository.save(event);
+        Event createdEvent = eventRepository.save(event);
+        log.fine("createNewEvent...created..." + createdEvent.toString());
+        return createdEvent;
     }
 
     @Override
@@ -372,28 +374,29 @@ public class EventManager implements EventManagementService {
         List<Event> outstandingRSVPs = null;
         Cache cache = cacheManager.getCache("userRSVP");
         String cacheKey = eventType.toString() + "|" + user.getId();
+        log.info("getOutstandingResponseForUser...cacheKey..." + cacheKey);
         try {
             outstandingRSVPs = (List<Event>) cache.get(cacheKey).getObjectValue();
 
         } catch (Exception e) {
-            log.fine("Could not retrieve outstanding RSVP/Vote from cache  userRSVP for user " + user.getPhoneNumber() + " error: " +  e.toString() + " eventType: " + eventType.toString());
+            log.info("Could not retrieve outstanding RSVP/Vote from cache  userRSVP for user " + user.getPhoneNumber() + " error: " + e.toString() + " eventType: " + eventType.toString());
         }
         if (outstandingRSVPs == null) {
             // fetch from the database
             outstandingRSVPs = new ArrayList<Event>();
             List<Group> groups = groupManager.getGroupsPartOf(user);
-            log.finest("getOutstandingResponseForUser...after...getGroupsPartOf...");
+            log.fine("getOutstandingResponseForUser...after...getGroupsPartOf...");
             if (groups != null) {
-                log.finest("getOutstandingResponseForUser...number of groups..." + groups.size());
+                log.fine("getOutstandingResponseForUser...number of groups..." + groups.size());
 
                 for (Group group : groups) {
-                    log.finest("getOutstandingResponseForUser...before...getUpcomingEventsForGroupAndParentGroups..." + group.getId());
+                    log.fine("getOutstandingResponseForUser...before...getUpcomingEventsForGroupAndParentGroups..." + group.getId());
                     List<Event> upcomingEvents = getUpcomingEventsForGroupAndParentGroups(group);
-                    log.finest("getOutstandingResponseForUser...after...getUpcomingEventsForGroupAndParentGroups..." + group.getId());
+                    log.fine("getOutstandingResponseForUser...after...getUpcomingEventsForGroupAndParentGroups..." + group.getId());
 
                     if (upcomingEvents != null) {
                         for (Event event : upcomingEvents) {
-                            log.finest("getOutstandingResponseForUser...start...event check..." + event.getId());
+                            log.fine("getOutstandingResponseForUser...start...event check..." + event.getId());
 
                             if (event.isRsvpRequired()  && event.getEventType() == eventType) {
                                 //rsvp
@@ -407,9 +410,12 @@ public class EventManager implements EventManagementService {
 
                                     }
                                 }
+                            } else {
+                                log.fine("getOutstandingResponseForUser...start...event check..." + event.getId() + "...NOT matching on eventtype..." + event.getEventType().toString() + "... or RSVP required..." + event.isRsvpRequired());
+
                             }
 
-                            log.finest("getOutstandingResponseForUser...end...event check..." + event.getId());
+                            log.fine("getOutstandingResponseForUser...end...event check..." + event.getId());
 
                         }
                     }
