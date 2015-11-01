@@ -107,8 +107,9 @@ public class EventLogManager implements EventLogManagementService {
         EventLog eventLog = createEventLog(EventLogType.EventRSVP, event, user, rsvpResponse.toString());
         // clear rsvp cache for user
         try {
+            String cacheKey = event.getEventType().toString() + "|" + user.getId();
             Cache cache = cacheManager.getCache("userRSVP");
-            cache.remove(user.getId());
+            cache.remove(cacheKey);
         } catch (Exception e) {
             log.severe("FAILED to clear userRSVP..." + user.getId() + " error: " + e.toString());
         }
