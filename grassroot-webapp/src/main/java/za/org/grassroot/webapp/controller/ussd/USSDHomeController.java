@@ -163,8 +163,8 @@ public class USSDHomeController extends USSDController {
     }
 
     private boolean userResponseNeeded(User sessionUser) {
-        // as other 'start menu' responses (votes etc) added, will insert them
-        return userManager.needsToRSVP(sessionUser);
+        log.info("Checking if user needs to respond to anything, returning ... " + userManager.needsToVoteOrRSVP(sessionUser));
+        return userManager.needsToVoteOrRSVP(sessionUser);
 
         /* For the moment, removing the group rename and user rename, as is overloading the start menu
         and use cases seem limited (users also getting confused). Will re-evaluate later.
@@ -174,6 +174,10 @@ public class USSDHomeController extends USSDController {
 
     private UssdOpeningPrompt neededResponse(User sessionUser) {
 
+        if (userManager.needsToVote(sessionUser)) {
+            log.info("User needs to vote!");
+            return UssdOpeningPrompt.VOTE;
+        }
         if (userManager.needsToRSVP(sessionUser)) return UssdOpeningPrompt.MTG_RSVP;
         if (userManager.needsToRenameSelf(sessionUser)) return UssdOpeningPrompt.RENAME_SELF;
         if (groupManager.needsToRenameGroup(sessionUser)) return UssdOpeningPrompt.NAME_GROUP;
@@ -231,10 +235,22 @@ public class USSDHomeController extends USSDController {
 
     private USSDMenu requestUserResponse(User sessionUser) throws URISyntaxException {
 
-        USSDMenu startMenu = new USSDMenu("");
+        USSDMenu startMenu = new USSDMenu();
 
         switch (neededResponse(sessionUser)) {
+            case VOTE:
+                log.info("Asking for a vote!");
+                Long voteId = eventManager.getNextOutstandingVote(sessionUser);
+                Map<String, String> voteDetails = eventManager.getEventDescription(voteId);
+                String votePrompt = "X has called a vote about Y. What is your response?";
+                String voteUri = "vote" + EVENTID_URL + voteId + "&response=";
+                startMenu.setPromptMessage(votePrompt);
+                startMenu.addMenuOption(voteUri + "yes", "Yes");
+                startMenu.addMenuOption(voteUri + "no", "No");
+                startMenu.addMenuOption(voteUri + "maybe", "Abstain");
+                break;
             case MTG_RSVP:
+                log.info("Asking for rsvp!");
                 Event meeting = eventManager.getOutstandingRSVPForUser(sessionUser).get(0);
                 String[] meetingDetails = eventManager.populateNotificationFields(meeting);
 
@@ -265,6 +281,10 @@ public class USSDHomeController extends USSDController {
 
     }
 
+    /*
+    Menus to process responses to votes and RSVPs,
+     */
+
     @RequestMapping(value = USSD_BASE + keyRsvp)
     @ResponseBody
     public Request rsvpAndWelcome(@RequestParam(value=PHONE_PARAM) String inputNumber,
@@ -283,6 +303,20 @@ public class USSDHomeController extends USSDController {
         }
 
         return menuBuilder(new USSDMenu(getMessage(welcomeKey, sessionUser), optionsHomeExit(sessionUser)));
+
+    }
+
+    @RequestMapping(value = USSD_BASE + "vote")
+    @ResponseBody
+    public Request voteAndWelcome(@RequestParam(value=PHONE_PARAM) String inputNumber,
+                                  @RequestParam(value=EVENT_PARAM) Long voteId,
+                                  @RequestParam(value="response") String response) throws URISyntaxException {
+
+        String welcomePromptKey;
+        User sessionUser = userManager.loadOrSaveUser(inputNumber);
+        eventLogManagementService.rsvpForEvent(voteId, inputNumber, EventRSVPResponse.fromString(response));
+
+        return menuBuilder(new USSDMenu("Thanks! Done.", optionsHomeExit(sessionUser)));
 
     }
 

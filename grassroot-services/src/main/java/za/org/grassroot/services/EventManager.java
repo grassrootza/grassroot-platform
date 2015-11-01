@@ -544,6 +544,12 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
+    public Long getNextOutstandingVote(User sessionUser) {
+        // todo: rapid check that this will not return null (current use cases are safe, future might not be)
+        return getOutstandingVotesForUser(sessionUser).get(0).getId();
+    }
+
+    @Override
     public Map<String, Integer> getVoteResults(Event vote) {
 
         Map<String, Integer> results = new HashMap<>();

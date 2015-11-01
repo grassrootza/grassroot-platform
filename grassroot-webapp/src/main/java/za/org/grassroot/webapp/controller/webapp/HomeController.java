@@ -60,9 +60,12 @@ public class HomeController extends BaseController{
         model.addAttribute("userGroups", user.getGroupsPartOf());
         model.addAttribute("groupTrees", groupViewNodes);
 
-        // get lists of outstanding RSVPs and, in time, votes and logbook entries
+        // get lists of outstanding RSVPs and votes
         List<Event> meetingsToRsvp = eventManagementService.getOutstandingRSVPForUser(user);
+        List<Event> votesToAnswer = eventManagementService.getOutstandingVotesForUser(user);
+
         model.addAttribute("meetingRsvps", meetingsToRsvp);
+        model.addAttribute("votesToAnswer", votesToAnswer);
 
         return "home";
     }

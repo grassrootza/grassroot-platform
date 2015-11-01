@@ -71,6 +71,10 @@ public interface UserManagementService {
     boolean needsToRenameSelf(User sessionUser);
 
     boolean needsToRSVP(User sessionUser);
+
+    boolean needsToVote(User sessionUser);
+
+    boolean needsToVoteOrRSVP(User sessionUser);
     
     User resetUserPassword(String username, String newPassword, String token);
 

@@ -91,6 +91,50 @@
 
   </div>
 
+  <!-- List of outstanding votes to answer, if any -->
+
+  <div th:if="${not #lists.isEmpty(votesToAnswer)}">
+
+    <div class="well">
+      <div class="row">
+        <div class="col-lg-12">
+          <h3>These votes have been called. What is your vote?</h3>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-lg-12">
+          <div th:each="event : ${votesToAnswer}" class="bs-component">
+            <form class="list-group" th:action="@{vote/answer}" method="post">
+              <input type="hidden" name="eventId" th:value="${event.id}" />
+              <div class="list-group-item">
+                <div class="row">
+                  <div class="col-lg-4">
+                    <h4>
+                      <p class="list-group-item-heading">Group: <span th:text="${event.appliesToGroup.getName('')}">group name</span></p>
+                      <p class="list-group-item-heading">Issue: <span th:text="${event.name}">Meeting subject</span><br/></p>
+                      <p class="list-group-item-heading">Closing date: <span th:text="${event.dateTimeString}">date and time</span></p>
+                    </h4>
+                    <div class="least-content">
+                      Vote called by <span th:text="${event.createdByUser.nameToDisplay()}">meeting caller</span>.
+                    </div>
+                  </div>
+                  <div class="col-lg-4">
+                    <p class="list-group-item-heading">
+                      <button class="btn btn-primary" type="submit" name="answer" value="yes">Yes</button>
+                      <button class="btn btn-danger" type="submit" name="answer" value="no">No</button>
+                      <button class="btn btn-info" type="submit" name="answer" value="maybe">Abstain</button>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
   <!-- List of user's groups, if they have any -->
 
   <div th:if="${not #lists.isEmpty(userGroups)}">

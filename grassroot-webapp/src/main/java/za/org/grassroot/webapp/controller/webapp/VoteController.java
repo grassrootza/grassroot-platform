@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
@@ -34,6 +36,9 @@ public class VoteController extends BaseController {
 
     @Autowired
     GroupManagementService groupManagementService;
+
+    @Autowired
+    EventLogManagementService eventLogManagementService;
 
     @RequestMapping("/vote/create")
     public String createVote(Model model, @RequestParam(value="groupId", required = false) Long groupId) {
@@ -87,6 +92,20 @@ public class VoteController extends BaseController {
         model.addAttribute("abstained", voteResults.get("abstained"));
         model.addAttribute("possible", voteResults.get("possible"));
         return "vote/view";
+    }
+
+    @RequestMapping(value = "/vote/answer", method = RequestMethod.POST)
+    public String answerVote(Model model, @RequestParam(value="eventId") Long eventId,
+                             @RequestParam(value="answer") String answer, HttpServletRequest request, RedirectAttributes redirectAttributes) {
+
+        Event vote = eventManagementService.loadEvent(eventId);
+        User sessionUser = getUserProfile();
+
+        eventLogManagementService.rsvpForEvent(vote, sessionUser, EventRSVPResponse.fromString(answer));
+
+        addMessage(redirectAttributes, MessageType.INFO, "vote.recorded", request);
+        return "redirect:/home";
+
     }
 
 }

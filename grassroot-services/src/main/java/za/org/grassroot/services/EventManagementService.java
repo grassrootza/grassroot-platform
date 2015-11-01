@@ -135,6 +135,8 @@ public interface EventManagementService {
     Methods to retrieve information about votes
      */
 
+    Long getNextOutstandingVote(User sessionUser);
+
     Map<String, Integer> getVoteResults(Event vote);
 
     Integer getNumberYesVotes(Event vote);

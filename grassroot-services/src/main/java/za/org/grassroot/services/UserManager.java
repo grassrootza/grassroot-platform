@@ -300,6 +300,18 @@ public class UserManager implements UserManagementService, UserDetailsService {
         return !(eventManagementService.getOutstandingRSVPForUser(sessionUser).size() == 0);
     }
 
+    @Override
+    public boolean needsToVote(User sessionUser) {
+        log.info("Checking if vote outstanding for user: " + sessionUser);
+        return !(eventManagementService.getOutstandingVotesForUser(sessionUser).size() == 0);
+    }
+
+    @Override
+    public boolean needsToVoteOrRSVP(User sessionUser) {
+        log.info("Checking if user needs to respond to something: " + sessionUser);
+        return (needsToVote(sessionUser) || needsToRSVP(sessionUser));
+    }
+
     /*
     Method for user to reset password themselves, relies on them being able to access a token
      */

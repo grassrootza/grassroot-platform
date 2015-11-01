@@ -68,7 +68,8 @@ public class GroupController extends BaseController {
 
         model.addAttribute("group", group);
         model.addAttribute("hasParent", groupManagementService.hasParent(group));
-        model.addAttribute("groupEvents", eventManagementService.getUpcomingEvents(group));
+        model.addAttribute("groupMeetings", eventManagementService.getUpcomingMeetings(group));
+        model.addAttribute("groupVotes", eventManagementService.getUpcomingVotes(group));
         model.addAttribute("subGroups", groupManagementService.getSubGroups(group));
         model.addAttribute("openToken", groupManagementService.groupHasValidToken(group));
         model.addAttribute("canDeleteGroup", groupManagementService.canUserDeleteGroup(getUserProfile(), group));

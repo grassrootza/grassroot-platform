@@ -19,16 +19,16 @@
   <!-- todo: use event type to distinguish / classify among them -->
   <!-- todo: find a more elegant way to avoid null pointer problems on list.isEmpty -->
 
-<div th:if="${not #lists.isEmpty(groupEvents)}">
+<div th:if="${not #lists.isEmpty(groupMeetings)}">
   <div class="well">
     <div class="row">
       <div class="col-md-12">
-        <h2>Upcoming events</h2>
+        <h2>Upcoming meetings</h2>
       </div>
     </div>
     <div class="row">
       <div class="col-md-12">
-        <div th:each="event, iterStat : ${groupEvents}" class="bs-component">
+        <div th:each="event, iterStat : ${groupMeetings}" class="bs-component">
           <div class="list-group">
             <div class="list-group-item">
               <div class="row-content">
@@ -45,6 +45,33 @@
     </div>
   </div>
 </div>
+
+  <div th:if="${not #lists.isEmpty(groupVotes)}">
+    <div class="well">
+      <div class="row">
+        <div class="col-md-12">
+          <h2>Open votes</h2>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12">
+          <div th:each="event, iterStat : ${groupVotes}" class="bs-component">
+            <div class="list-group">
+              <div class="list-group-item">
+                <div class="row-content">
+                  <h4 class="list-group-item">
+                    <!-- todo: redirect this based on the event type -->
+                    <a href="" th:href="@{/vote/view(eventId=${event.id})}"><span th:text="${event.name}"></span></a>
+                  </h4>
+                  <p class="list=group-time-text">Closing on <span th:text="${#calendars.format(event.getEventStartDateTime(),'dd MMMM yyyy')}">11 September 2015</span></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Major todo: add in user permissions about changing names & groups &c. -->
   <div class="well">
@@ -70,7 +97,7 @@
       <div class="row">
         <div class="col-lg-2" th:switch="${openToken}">
           <div th:case="true">
-            <p class="text-strong">Group join code: *120*1994*<span th:text="${group.groupTokenCode}"></span>#</p>
+            <p class="text-strong">Group join code: *134*1994*<span th:text="${group.groupTokenCode}"></span>#</p>
             <button type="submit" name="token_extend" class="btn btn-primary">Extend code</button>
             <button type="submit" name="token_cancel" class="btn btn-danger">Close this code</button>
           </div>

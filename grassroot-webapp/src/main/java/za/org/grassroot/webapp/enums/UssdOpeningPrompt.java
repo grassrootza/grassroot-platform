@@ -6,6 +6,7 @@ package za.org.grassroot.webapp.enums;
 public enum UssdOpeningPrompt {
 
     MTG_RSVP,
+    VOTE,
     RENAME_SELF,
     NAME_GROUP,
     NONE;
