@@ -17,6 +17,7 @@ import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.services.util.CacheUtilService;
 
 import javax.jws.soap.SOAPBinding;
 import java.sql.Timestamp;
@@ -45,7 +46,7 @@ public class EventLogManager implements EventLogManagementService {
     GroupRepository groupRepository;
 
     @Autowired
-    CacheManager cacheManager;
+    CacheUtilService cacheUtilService;
 
 
 
@@ -106,13 +107,8 @@ public class EventLogManager implements EventLogManagementService {
         log.finest("rsvpForEvent...event..." + event.getId() + "...user..." + user.getPhoneNumber() + "...rsvp..." + rsvpResponse.toString());
         EventLog eventLog = createEventLog(EventLogType.EventRSVP, event, user, rsvpResponse.toString());
         // clear rsvp cache for user
-        try {
-            String cacheKey = event.getEventType().toString() + "|" + user.getId();
-            Cache cache = cacheManager.getCache("userRSVP");
-            cache.remove(cacheKey);
-        } catch (Exception e) {
-            log.severe("FAILED to clear userRSVP..." + user.getId() + " error: " + e.toString());
-        }
+        cacheUtilService.clearRsvpCacheForUser(user,event.getEventType());
+
         if (event.getEventType() == EventType.Vote) {
             // see if everyone voted, if they did expire the vote so that the results are sent out
             RSVPTotalsDTO rsvpTotalsDTO = getVoteResultsForEvent(event);

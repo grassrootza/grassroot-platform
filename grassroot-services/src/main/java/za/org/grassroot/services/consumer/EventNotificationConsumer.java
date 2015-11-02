@@ -18,6 +18,7 @@ import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.MeetingNotificationService;
+import za.org.grassroot.services.util.CacheUtilService;
 
 import javax.swing.event.ChangeEvent;
 import java.util.ArrayList;
@@ -49,6 +50,9 @@ public class EventNotificationConsumer {
 
     @Autowired
     EventLogManagementService eventLogManagementService;
+
+    @Autowired
+    CacheUtilService cacheUtilService;
 
     @JmsListener(destination = "event-added", containerFactory = "messagingJmsContainerFactory",
             concurrency = "5")
@@ -133,6 +137,14 @@ public class EventNotificationConsumer {
 
     }
 
+    @JmsListener(destination = "clear-groupcache", containerFactory = "messagingJmsContainerFactory",
+            concurrency = "5")
+    public void clearGroupCache(EventDTO event) {
+        log.info("clearGroupCache...event.id..." + event.getId());
+        cacheUtilService.clearCacheForAllUsersInGroup(event);
+
+
+    }
     private void sendVoteResultsToUser(User user, EventWithTotals eventWithTotals) {
         //generate message based on user language
         EventDTO event = eventWithTotals.getEventDTO();

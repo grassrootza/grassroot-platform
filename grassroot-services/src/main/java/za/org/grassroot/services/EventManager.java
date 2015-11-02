@@ -20,6 +20,7 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
+import za.org.grassroot.services.util.CacheUtilService;
 
 import javax.persistence.EntityManager;
 import java.sql.Timestamp;
@@ -60,7 +61,7 @@ public class EventManager implements EventManagementService {
     EntityManager entityManager;
 
     @Autowired
-    private CacheManager cacheManager;
+    CacheUtilService cacheUtilService;
 
 
     /*
@@ -166,6 +167,8 @@ public class EventManager implements EventManagementService {
         log.fine("createNewEvent...created..." + createdEvent.toString());
         return createdEvent;
     }
+
+
 
     @Override
     public Event loadEvent(Long eventId) {
@@ -371,16 +374,9 @@ public class EventManager implements EventManagementService {
 
     private List<Event> getOutstandingResponseForUser(User user, EventType eventType) {
         log.info("getOutstandingResponseForUser..." + user.getPhoneNumber() + "...type..." + eventType.toString());
-        List<Event> outstandingRSVPs = null;
-        Cache cache = cacheManager.getCache("userRSVP");
-        String cacheKey = eventType.toString() + "|" + user.getId();
-        log.info("getOutstandingResponseForUser...cacheKey..." + cacheKey);
-        try {
-            outstandingRSVPs = (List<Event>) cache.get(cacheKey).getObjectValue();
 
-        } catch (Exception e) {
-            log.info("Could not retrieve outstanding RSVP/Vote from cache  userRSVP for user " + user.getPhoneNumber() + " error: " + e.toString() + " eventType: " + eventType.toString());
-        }
+        List<Event> outstandingRSVPs = cacheUtilService.getOutstandingResponseForUser(user,eventType);
+
         if (outstandingRSVPs == null) {
             // fetch from the database
             outstandingRSVPs = new ArrayList<Event>();
@@ -421,11 +417,7 @@ public class EventManager implements EventManagementService {
                     }
 
                 }
-                try {
-                    cache.put(new Element(cacheKey,outstandingRSVPs));
-                } catch (Exception e) {
-                    log.severe(e.toString());
-                }
+                cacheUtilService.putOutstandingResponseForUser(user,eventType,outstandingRSVPs);
             }
 
         }
@@ -617,6 +609,11 @@ public class EventManager implements EventManagementService {
         if (!priorEventComplete && minimumDataAvailable(savedEvent) && !savedEvent.isCanceled()) {
             jmsTemplateProducerService.sendWithNoReply("event-added", new EventDTO(savedEvent));
             log.info("queued to event-added..." + savedEvent.getId() + "...version..." + savedEvent.getVersion());
+            //todo do the same for changes???
+            //clear the users cache so that they can pickup the new event
+            cacheUtilService.clearRsvpCacheForUser(savedEvent.getCreatedByUser(),savedEvent.getEventType());
+            jmsTemplateProducerService.sendWithNoReply("clear-groupcache",new EventDTO(savedEvent));
+
         }
 
         if (priorEventComplete && minimumDataAvailable(savedEvent) && !savedEvent.isCanceled()) {
