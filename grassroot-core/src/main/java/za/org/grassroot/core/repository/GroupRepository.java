@@ -38,6 +38,11 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     Group findByGroupTokenCode(String groupTokenCode);
 
     /*
+    Find all groups, with pagination--for system admin
+     */
+    Page<Group> findAll(Pageable pageable);
+
+    /*
     Find the max(groupTokenCode) in table
     N.B. remove this when we stop using integer values
      */

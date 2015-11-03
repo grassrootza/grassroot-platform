@@ -32,7 +32,7 @@ import java.util.*;
 @Transactional
 public class UserManager implements UserManagementService, UserDetailsService {
 
-    private Logger log = LoggerFactory.getLogger(UserManager.class);
+    private static final Logger log = LoggerFactory.getLogger(UserManager.class);
 
     private static final int PAGE_SIZE = 50;
 

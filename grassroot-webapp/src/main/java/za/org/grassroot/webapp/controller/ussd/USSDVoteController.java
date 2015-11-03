@@ -23,6 +23,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
+import static org.springframework.web.bind.annotation.RequestMethod.OPTIONS;
 
 /**
  * Created by luke on 2015/10/28.
@@ -54,12 +55,12 @@ public class USSDVoteController extends USSDController {
 
         if (groupManager.canUserCallVoteOnAnyGroup(user)) {
             // todo: restrict to groups on which user can call votes (via permissions)
-            menu = userGroupMenu(user, getMessage(VOTE_KEY, "group", PROMPT, user),
+            menu = userGroupMenu(user, getMessage(VOTE_KEY, START_KEY, PROMPT, user),
                                  VOTE_MENUS + "issue", false);
         } else {
-            menu.setPromptMessage("Sorry, you need to create a group first before calling a vote");
-            menu.addMenuOption(GROUP_MENUS + "create", "Create a group");
-            menu.addMenuOption(START_KEY, "Back to start");
+            menu.setPromptMessage(getMessage(VOTE_KEY, START_KEY, PROMPT + "-nogroup", user));
+            menu.addMenuOption(GROUP_MENUS + "create", getMessage(VOTE_KEY, START_KEY, OPTION + "create", user));
+            menu.addMenuOption(START_KEY, getMessage(VOTE_KEY, START_KEY, OPTION + "home", user));
         }
 
         return menuBuilder(menu);
@@ -81,7 +82,7 @@ public class USSDVoteController extends USSDController {
 
         Event vote = eventManager.createVote(user, groupId);
 
-        USSDMenu menu = new USSDMenu("What is the subject of the vote?");
+        USSDMenu menu = new USSDMenu(getMessage(VOTE_KEY, "issue", PROMPT, user));
         menu.setFreeText(true);
         menu.setNextURI(VOTE_MENUS + "time" + EVENTID_URL + vote.getId());
 
@@ -105,15 +106,16 @@ public class USSDVoteController extends USSDController {
 
         Event vote = eventManager.setSubject(eventId, issue);
 
-        USSDMenu menu = new USSDMenu("When will the vote close?");
+        USSDMenu menu = new USSDMenu(getMessage(VOTE_KEY, "time", PROMPT, user));
 
         String nextUrl = VOTE_MENUS + "confirm" + EVENTID_URL + eventId + "&time=";
+        String optionKey = VOTE_KEY + ".time." + OPTION;
 
-        menu.addMenuOption(nextUrl + "instant", "In five minutes (instant poll)");
-        menu.addMenuOption(nextUrl + "hour", "In an hour");
-        menu.addMenuOption(nextUrl + "day", "In one day");
-        menu.addMenuOption(nextUrl + "week", "In one week");
-        menu.addMenuOption(VOTE_MENUS + "time_custom" + EVENTID_URL + eventId, "Custom");
+        menu.addMenuOption(nextUrl + "instant", getMessage(optionKey + "instant", user));
+        menu.addMenuOption(nextUrl + "hour", getMessage(optionKey + "hour", user));
+        menu.addMenuOption(nextUrl + "day", getMessage(optionKey + "day", user));
+        menu.addMenuOption(nextUrl + "week", getMessage(optionKey + "week", user));
+        menu.addMenuOption(VOTE_MENUS + "time_custom" + EVENTID_URL + eventId, getMessage(optionKey + "custom", user));
 
         return menuBuilder(menu);
     }
@@ -125,7 +127,14 @@ public class USSDVoteController extends USSDController {
     @ResponseBody
     public Request customVotingTime(@RequestParam(value = PHONE_PARAM) String inputNumber,
                                     @RequestParam(value = EVENT_PARAM) Long eventId) {
+
+        User user = userManager.findByInputNumber(inputNumber);
+        USSDMenu menu = new USSDMenu(getMessage(VOTE_KEY, "time", PROMPT + "-custom", user));
+        menu.setFreeText(true);
+        menu.setNextURI(VOTE_MENUS + "confirm" + EVENTID_URL + eventId + "&custom=true");
+
         return null;
+
     }
 
     /*
@@ -135,6 +144,7 @@ public class USSDVoteController extends USSDController {
     @ResponseBody
     public Request voteConfirm(@RequestParam(value = PHONE_PARAM) String inputNumber,
                                @RequestParam(value = EVENT_PARAM) Long eventId,
+                               @RequestParam(value = TEXT_PARAM) String userInput,
                                @RequestParam(value = "time") String time,
                                @RequestParam(value = "custom", required = false) boolean custom) throws URISyntaxException {
 
@@ -178,7 +188,7 @@ public class USSDVoteController extends USSDController {
             }
         } else {
             // todo: use the same Date objects for all of these (should switch all to Java 8 LocalDateTime, eventually)
-            LocalDateTime parsedDate = DateTimeUtil.parseDateTime(time);
+            LocalDateTime parsedDate = DateTimeUtil.parseDateTime(userInput);
             proposedDateTime = Date.from(parsedDate.atZone(ZoneId.systemDefault()).toInstant());
 
             // dateTimeFormatted = parsedDate.format(DateTimeFormatter.ofPattern(dateFormat));

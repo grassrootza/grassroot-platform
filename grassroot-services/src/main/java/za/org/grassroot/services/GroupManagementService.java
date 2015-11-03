@@ -1,5 +1,6 @@
 package za.org.grassroot.services;
 
+import org.springframework.data.domain.Page;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 
@@ -138,5 +139,12 @@ public interface GroupManagementService {
 
     public Integer getGroupSize(Group group, boolean includeSubGroups);
 
+    /*
+    Methods for system admin
+     */
+
+    List<Group> getAllGroups();
+
+    Page<Group> getAllGroupsPaginated(Integer pageNumber, Integer pageSize);
 
 }

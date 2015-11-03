@@ -469,6 +469,16 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
+    public List<Group> getAllGroups() {
+        return groupRepository.findAll();
+    }
+
+    @Override
+    public Page<Group> getAllGroupsPaginated(Integer pageNumber, Integer pageSize) {
+        return groupRepository.findAll(new PageRequest(pageNumber, pageSize));
+    }
+
+    @Override
     public boolean canUserDeleteGroup(User user, Group group) {
         // todo: Integrate with permission checking -- for now, just checking if group created by user in last 48 hours
         // todo: the time checking would be so much easier if we use Joda or Java 8 DateTime ...

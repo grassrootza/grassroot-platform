@@ -1,0 +1,42 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+  <title>GrassRoot - System Admin</title>
+</head>
+<body>
+
+<div layout:fragment="content">
+  <div layout:fragment="messages"></div>
+
+  <div class="well">
+    <div class="row">
+      <h2>List of all groups in GrassRoot</h2>
+    </div>
+    <div class="row">
+      <table class="table table-striped">
+        <thead>
+        <th>Group name</th>
+        <td>Creating user</td>
+        <td>Number of users</td>
+        <td>Created date time</td>
+        <td>Last active</td>
+        </thead>
+        <tbody>
+        <tr th:each="group : ${groupList}">
+          <td><span th:text="${group.getName('')}"></span></td>
+          <td><span th:text="${group.createdByUser.displayName}"></span></td>
+          <td><span th:text="${group.getGroupMembers().size()}"></span></td>
+          <td><span th:text="${#calendars.format(group.getCreatedDateTime(),'dd MMMM yyyy')}"></span></td>
+          <td>TBD</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    </div>
+
+  </div>
+
+
+</body>
+</html>

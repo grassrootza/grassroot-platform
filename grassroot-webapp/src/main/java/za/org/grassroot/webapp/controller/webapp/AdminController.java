@@ -3,6 +3,7 @@ package za.org.grassroot.webapp.controller.webapp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -30,7 +31,9 @@ import java.util.List;
 @Controller
 public class AdminController extends BaseController {
 
-    private Logger log = LoggerFactory.getLogger(AdminController.class);
+    private static final Logger log = LoggerFactory.getLogger(AdminController.class);
+
+    private static final Integer GROUP_PAGE_SIZE = 5; // note: these are top-level groups (since we use tree-view)
 
     @Autowired
     UserManagementService userManagementService;
@@ -41,7 +44,7 @@ public class AdminController extends BaseController {
     @Autowired
     EventManagementService eventManagementService;
 
-    @PreAuthorize("hasRole('ADMINISTRATOR')")
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/admin/home")
     public String adminIndex(Model model, @ModelAttribute("currentUser") UserDetails userDetails) {
 
@@ -56,7 +59,7 @@ public class AdminController extends BaseController {
     First page is to provide a count of users and allow a search by phone number to modify them
     To do will be to have graphs / counts of users by sign up periods, last active date, etc.
      */
-    @PreAuthorize("hasRole('ADMINISTRATOR')")
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/admin/users/home")
     public String allUsers(Model model) {
 
@@ -70,7 +73,7 @@ public class AdminController extends BaseController {
     Page to provide results of a user search, and, if only one found, provide a list of user details with options
     to be able to modify them, as well as to do a password reset
      */
-    @PreAuthorize("hasRole('ADMINISTRATOR')")
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/admin/users/view")
     public String viewUser(Model model, @RequestParam("lookup_field") String lookupField,
                            @RequestParam("lookup_term") String lookupTerm, HttpServletRequest request) {
@@ -112,22 +115,31 @@ public class AdminController extends BaseController {
     /* Method to designate a user as an 'institutional admin', with authority to link groups to an institutional account
     Major todo: access control this, since it opens _a lot_
      */
-    @PreAuthorize("hasRole('ADMINISTRATOR')")
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/admin/users/designate")
     public String designateUser(Model model, @RequestParam("userId") Long userId) {
         
         return "admin/designate";
     }
 
-    @PreAuthorize("hasRole('ADMINISTRATOR')")
-    @RequestMapping("/admin/groups")
-    public String allGroups(Model model) {
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping("/admin/groups/home")
+    public String allGroups(Model model, @RequestParam("page") Integer page) {
 
-        return "admin/groups";
+        // major todo: some way to search through groups
+        // major todo: ability to do tree view
+
+        Page<Group> groupList = groupManagementService.getAllGroupsPaginated(page, GROUP_PAGE_SIZE);
+
+        model.addAttribute("hasPriorPage", groupList.hasPrevious());
+        model.addAttribute("hasNextPage", groupList.hasNext());
+        model.addAttribute("groupList", groupList.getContent());
+
+        return "admin/groups/home";
 
     }
 
-    @PreAuthorize("hasRole('ADMINISTRATOR')")
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/admin/designate/group")
     public String designateGroup(Model model) {
 
