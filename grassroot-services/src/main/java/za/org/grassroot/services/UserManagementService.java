@@ -45,6 +45,8 @@ public interface UserManagementService {
 
     User setInitiatedSession(User sessionUser);
 
+    User loadUser(Long userId);
+
     /*
     Methods to return lists of users
      */

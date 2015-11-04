@@ -16,16 +16,18 @@
     <div class="row">
       <table class="table table-striped">
         <thead>
+        <th></th>
         <th>Group name</th>
         <td>Creating user</td>
-        <td>Number of users</td>
+        <td>Number of members</td>
         <td>Created date time</td>
         <td>Last active</td>
         </thead>
         <tbody>
-        <tr th:each="group : ${groupList}">
+        <tr th:each="group, iterStat : ${groupList}">
+          <td><span th:text="${iterStat.count + __${countBase}__}">1</span></td>
           <td><span th:text="${group.getName('')}"></span></td>
-          <td><span th:text="${group.createdByUser.displayName}"></span></td>
+          <td><span th:text="${group.createdByUser.nameToDisplay()}"></span></td>
           <td><span th:text="${group.getGroupMembers().size()}"></span></td>
           <td><span th:text="${#calendars.format(group.getCreatedDateTime(),'dd MMMM yyyy')}"></span></td>
           <td>TBD</td>
@@ -33,7 +35,20 @@
         </tbody>
       </table>
     </div>
+  </div>
+  <div class="row">
+    <div th:if="${paginated}" class="row">
+      <div class="col-lg-4"><a th:href="@{home?page=-1}">Full view</a></div>
+      <div class="col-lg-4" th:unless="${previousPage == -1}"><a href="" th:href="@{home(page=${previousPage})}">Previous page</a></div>
+      <div class="col-lg-4" th:unless="${nextPage == -1}"><a href="" th:href="@{home(page=${nextPage})}">Next page</a></div>
+      <div class="col-lg-4"></div>
     </div>
+    <div th:unless="${paginated}" class="row">
+      <div class="col-lg-4"><a th:href="@{home?page=0}">Paginated view</a></div>
+    </div>
+    <a href="" th:href="@{filter}">Filter groups</a>
+  </div>
+
 
   </div>
 

@@ -370,6 +370,11 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
+    public User loadUser(Long userId) {
+        return userRepository.findOne(userId);
+    }
+
+    @Override
     public String getLastUssdMenu(User sessionUser) {
         return (sessionUser.getLastUssdMenu() == null) ? "" : sessionUser.getLastUssdMenu();
     }

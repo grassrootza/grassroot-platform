@@ -1,0 +1,70 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+  <title>GrassRoot - System Admin</title>
+</head>
+<body>
+
+<div layout:fragment="content">
+  <div layout:fragment="messages"></div>
+
+  <div class="well">
+    <div class="row">
+      <form th:action="@{/admin/groups/list}" class="form-horizontal">
+        <div class="form-group">
+          <label for="minSize" class="col-md-2 control-label">Minimum group size:</label>
+          <div class="col-md-4">
+            <input name="groupMemberSize" id="minSize" type="number" />
+          </div>
+          <div class="input col-md-2">
+            <input name="searchBySize" type="checkbox" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="datepicker" class="col-md-2 control-label">Created after:</label>
+          <div class="input col-md-4">
+            <div class="input-group date" id="datepicker">
+              <input name="createdAfter" type="text" class="form-control" />
+                      <span class="input-group-addon">
+                          <span class="glyphicon glyphicon-calendar"></span>
+                      </span>
+            </div>
+          </div>
+          <div class="input col-md-2">
+            <input name="searchByAfter" type="checkbox" />
+          </div>
+        </div>
+        <div class="form-group">
+          <button type="submit" class="btn btn-primary">Submit</button>
+        </div>
+      </form>
+    </div>
+    <div class="row">
+      <a href="" th:href="@{home}">Back to group home</a> | <a href="" th:href="@{/admin/home}">Back to admin home</a>
+    </div>
+  </div>
+
+  </div>
+
+<div class="header-container" layout:fragment="script-container">
+  <script>
+
+    $(document).ready(function() {
+
+      $('#datepicker').datetimepicker({
+        format: 'DD/MM/YYYY h:mm A',
+        widgetPositioning: {
+          horizontal: 'right'
+        },
+        sideBySide:true,
+        maxDate: new Date()
+      });
+
+    });
+  </script>
+
+</div>
+
+</body>
+</html>

@@ -3,6 +3,8 @@ package za.org.grassroot.core.util;
 import com.joestelmach.natty.DateGroup;
 import com.joestelmach.natty.Parser;
 
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Calendar;
@@ -63,8 +65,8 @@ public class DateTimeUtil {
         calendar.setTime(date);
         calendar.add(Calendar.HOUR,1);
         calendar.set(Calendar.MINUTE,0);
-        calendar.set(Calendar.SECOND,0);
-        calendar.set(Calendar.MILLISECOND,0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
         return calendar.getTime();
     }
 
@@ -75,6 +77,19 @@ public class DateTimeUtil {
         calendar.set(Calendar.SECOND,0);
         calendar.set(Calendar.MILLISECOND,0);
         return calendar.getTime();
+    }
+
+    /*
+    Simple method to turn strings from HTML date-time-picker into a Timestamp, if not done within Thymeleaf
+     */
+    public static Date processDateString(String dateString, SimpleDateFormat sdf) {
+        try { return (dateString == null || dateString.trim().equals("")) ?
+                null : sdf.parse(dateString); }
+        catch (Exception e) { return null; }
+    }
+
+    public static Date processDateString(String dateString) {
+        return processDateString(dateString, new SimpleDateFormat("dd/MM/yyyy HH:mm a"));
     }
 
 }

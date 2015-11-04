@@ -201,8 +201,8 @@ public class USSDVoteController extends USSDController {
                 + ". Correct?";
 
         USSDMenu menu = new USSDMenu(confirmPrompt);
-        menu.addMenuOption(MTG_MENUS + "send" + EVENTID_URL + eventId + "&time=" + dateTimeParam, "Yes, send out");
-        menu.addMenuOption(MTG_MENUS + START_KEY, "No, start again");
+        menu.addMenuOption(VOTE_MENUS + "send" + EVENTID_URL + eventId + "&time=" + dateTimeParam, "Yes, send out");
+        menu.addMenuOption(VOTE_MENUS + START_KEY, "No, start again");
 
         return menuBuilder(menu);
     }
@@ -219,6 +219,8 @@ public class USSDVoteController extends USSDController {
         User user;
         try { user = userManager.findByInputNumber(inputNumber); }
         catch (NoSuchUserException e) { return noUserError; }
+
+        log.info("Vote details confirmed! Closing date and time: " + confirmedTime);
 
         Event vote = eventManager.setEventTimestamp(eventId, new Timestamp(dateFormat.parse(confirmedTime).getTime()));
         USSDMenu menu = new USSDMenu("Vote sent out!", optionsHomeExit(user));

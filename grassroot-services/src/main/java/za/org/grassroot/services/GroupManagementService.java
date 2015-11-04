@@ -5,6 +5,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 
 import java.sql.Timestamp;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -147,4 +148,5 @@ public interface GroupManagementService {
 
     Page<Group> getAllGroupsPaginated(Integer pageNumber, Integer pageSize);
 
+    List<Group> getGroupsFiltered(User createdByUser, Integer minGroupSize, Date createdAfterDate, Date createdBeforeDate);
 }

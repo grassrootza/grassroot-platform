@@ -14,13 +14,9 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.util.TokenGeneratorService;
 
-import javax.jws.soap.SOAPBinding;
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /**
  * @author luke on 2015/08/14.
@@ -360,11 +356,11 @@ public class GroupManager implements GroupManagementService {
     returns the new sub-group
      */
     public Group createSubGroup(Long createdByUserId, Long groupId, String subGroupName) {
-        return createSubGroup(userManager.getUserById(createdByUserId), loadGroup(groupId),subGroupName);
+        return createSubGroup(userManager.getUserById(createdByUserId), loadGroup(groupId), subGroupName);
     }
 
     public Group createSubGroup(User createdByUser, Group group, String subGroupName) {
-        return groupRepository.save(new Group(subGroupName,createdByUser,group));
+        return groupRepository.save(new Group(subGroupName, createdByUser, group));
     }
 
     @Override
@@ -382,7 +378,7 @@ public class GroupManager implements GroupManagementService {
     @Override
     public List<Group> getAllParentGroups(Group group) {
         List<Group> parentGroups = new ArrayList<Group>();
-        recursiveParentGroups(group,parentGroups);
+        recursiveParentGroups(group, parentGroups);
         return parentGroups;
     }
 
@@ -476,6 +472,42 @@ public class GroupManager implements GroupManagementService {
     @Override
     public Page<Group> getAllGroupsPaginated(Integer pageNumber, Integer pageSize) {
         return groupRepository.findAll(new PageRequest(pageNumber, pageSize));
+    }
+
+    @Override
+    public List<Group> getGroupsFiltered(User createdByUser, Integer minGroupSize, Date createdAfterDate, Date createdBeforeDate) {
+        /*
+        Note: this is an extremely expensive way to do what follows, and needs to be fixed in due course, but for now it'll be called
+         rarely, and just by system admin, on at most a few hundred groups.
+          */
+
+        List<Group> allGroups = getAllGroups();
+        List<Group> filteredGroups = new ArrayList<>(allGroups);
+
+        if (createdByUser != null) {
+            for (Group group : allGroups)
+                if (group.getCreatedByUser() != createdByUser)
+                    filteredGroups.remove(group);
+        }
+
+        if (minGroupSize != null) {
+            for (Group group : allGroups)
+                if (group.getGroupMembers().size() < minGroupSize)
+                    filteredGroups.remove(group);
+        }
+
+        if (createdAfterDate != null) {
+            for (Group group : allGroups)
+                if (group.getCreatedDateTime().before(new Timestamp(createdAfterDate.getTime())))
+                    filteredGroups.remove(group);
+        }
+
+        if (createdBeforeDate != null) {
+            for (Group group : allGroups)
+                if (group.getCreatedDateTime().after(new Timestamp(createdBeforeDate.getTime())));
+        }
+
+        return filteredGroups;
     }
 
     @Override

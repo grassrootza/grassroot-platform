@@ -14,12 +14,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -33,7 +35,7 @@ public class AdminController extends BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(AdminController.class);
 
-    private static final Integer GROUP_PAGE_SIZE = 5; // note: these are top-level groups (since we use tree-view)
+    private static final Integer GROUP_PAGE_SIZE = 10; // todo: allow user to set
 
     @Autowired
     UserManagementService userManagementService;
@@ -124,25 +126,73 @@ public class AdminController extends BaseController {
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/admin/groups/home")
-    public String allGroups(Model model, @RequestParam("page") Integer page) {
+    public String allGroups(Model model, @RequestParam(value = "page", required = false) Integer page) {
 
         // major todo: some way to search through groups
         // major todo: ability to do tree view
 
-        Page<Group> groupList = groupManagementService.getAllGroupsPaginated(page, GROUP_PAGE_SIZE);
+        page = (page == null) ? 0 : page;
 
-        model.addAttribute("hasPriorPage", groupList.hasPrevious());
-        model.addAttribute("hasNextPage", groupList.hasNext());
-        model.addAttribute("groupList", groupList.getContent());
+        if (page == -1) {
+            model.addAttribute("paginated", false);
+            model.addAttribute("countBase", 0);
+            List<Group> groupList = groupManagementService.getAllGroups();
+            model.addAttribute("groupList", groupList);
+        } else {
+
+            // thymeleaf, as usual, makes the simple (incrementing the page paramater) complex, so have to construct work-around using ints
+
+            model.addAttribute("paginated", true);
+            model.addAttribute("countBase", page * GROUP_PAGE_SIZE);
+            Page<Group> groupList = groupManagementService.getAllGroupsPaginated(page, GROUP_PAGE_SIZE);
+
+            Integer previousPage = (groupList.hasPrevious()) ? page - 1 : -1;
+            Integer nextPage = (groupList.hasNext()) ? page + 1 : -1;
+
+            model.addAttribute("previousPage", previousPage);
+            model.addAttribute("nextPage", nextPage);
+            model.addAttribute("groupList", groupList.getContent());
+        }
 
         return "admin/groups/home";
 
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping("/admin/groups/filter")
+    public String filterGroups(Model model) {
+        return "admin/groups/filter";
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping("/admin/groups/list")
+    public String listGroups(Model model,@RequestParam(value="createdByUser", required=false) Long createdByUserId,
+                             @RequestParam(value="groupMemberSize", required=false) Integer groupSize,
+                             @RequestParam(value="createdAfter", required=false) String createdAfter,
+                             @RequestParam(value="createdBefore", required=false) String createdBefore) {
+
+        Date createdAfterDate = DateTimeUtil.processDateString(createdAfter);
+        Date createdBeforeDate = DateTimeUtil.processDateString(createdBefore);
+
+        log.info("createdAfterDate: " + createdAfterDate);
+        log.info("createdBeforeDate: " + createdBeforeDate);
+
+        User createdByUser;
+        if (createdByUserId == null || createdByUserId == 0)
+            createdByUser = null;
+        else
+            createdByUser = userManagementService.loadUser(createdByUserId);
+
+        List<Group> groupList = groupManagementService.getGroupsFiltered(createdByUser, groupSize, createdAfterDate, createdBeforeDate);
+
+        model.addAttribute("groupList", groupList);
+        return "admin/groups/list";
+
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/admin/designate/group")
     public String designateGroup(Model model) {
-
 
         return "admin/group";
 

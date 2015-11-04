@@ -228,6 +228,7 @@ public class EventManager implements EventManagementService {
 
     @Override
     public Event setEventTimestamp(Long eventId, Timestamp eventDateTime) {
+        log.info("Setting event timestamp, passed: " + eventDateTime.toString());
         Event eventToUpdate = eventRepository.findOne(eventId);
         Event beforeEvent = SerializationUtils.clone(eventToUpdate);
         eventToUpdate.setEventStartDateTime(eventDateTime);
