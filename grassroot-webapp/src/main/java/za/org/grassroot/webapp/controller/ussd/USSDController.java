@@ -234,6 +234,7 @@ public class USSDController {
 
         languages.put("en", "English");
         languages.put("nso", "Sepedi");
+        languages.put("st", "Sesotho");
         languages.put("ts", "Tsonga");
         languages.put("zu", "Zulu");
 

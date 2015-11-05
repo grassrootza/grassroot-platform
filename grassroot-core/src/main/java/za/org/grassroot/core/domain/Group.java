@@ -40,6 +40,12 @@ public class Group implements Serializable {
     private int       reminderMinutes;
     private Set<Role> groupRoles = new HashSet<>();
 
+    /*
+    Setting a group 'language', not used for messages etc., but as a default if new user enters system through this
+    group. Advanced feature only for web access (in effect, for paid account groups which have many many members)
+     */
+    private String defaultLanguage;
+
 
     @Basic
     @Column(name = "name", nullable = false, length = 50)
@@ -144,6 +150,11 @@ public class Group implements Serializable {
         this.reminderMinutes = reminderMinutes;
     }
 
+    @Column(name = "default_language", nullable = true)
+    public String getDefaultLanguage() { return defaultLanguage; }
+
+    public void setDefaultLanguage(String defaultLanguage) { this.defaultLanguage = defaultLanguage; }
+
 
     @OneToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "group_roles",
@@ -164,6 +175,7 @@ public class Group implements Serializable {
             createdDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis());
         }
     }
+
 
     /*
     Constructors
