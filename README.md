@@ -1,2 +1,2 @@
-# meeting-organizer
-Backend Application that interfaces with Vumi to enable users to setup group meetings using USSD on their mobile phones
+# grassroot-platform
+Application to make it faster and easier to persistently organize and mobilize people in low-income communities. 
