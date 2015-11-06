@@ -36,6 +36,7 @@ public class USSDVoteController extends USSDController {
 
     private static final String subMenuPath = USSD_BASE + VOTE_MENUS;
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("EEE d MMM, h:mm a");
+    private static final SimpleDateFormat dateWithYear = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
     /*
     First menu asks user to select a group. Until we have a "snap voting" functionality worked out, this requires
@@ -126,14 +127,14 @@ public class USSDVoteController extends USSDController {
     @RequestMapping(value = subMenuPath + "time_custom")
     @ResponseBody
     public Request customVotingTime(@RequestParam(value = PHONE_PARAM) String inputNumber,
-                                    @RequestParam(value = EVENT_PARAM) Long eventId) {
+                                    @RequestParam(value = EVENT_PARAM) Long eventId) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
         USSDMenu menu = new USSDMenu(getMessage(VOTE_KEY, "time", PROMPT + "-custom", user));
         menu.setFreeText(true);
         menu.setNextURI(VOTE_MENUS + "confirm" + EVENTID_URL + eventId + "&custom=true");
 
-        return null;
+        return menuBuilder(menu);
 
     }
 
@@ -145,7 +146,7 @@ public class USSDVoteController extends USSDController {
     public Request voteConfirm(@RequestParam(value = PHONE_PARAM) String inputNumber,
                                @RequestParam(value = EVENT_PARAM) Long eventId,
                                @RequestParam(value = TEXT_PARAM) String userInput,
-                               @RequestParam(value = "time") String time,
+                               @RequestParam(value = "time", required = false) String time,
                                @RequestParam(value = "custom", required = false) boolean custom) throws URISyntaxException {
 
         User user;
@@ -162,28 +163,28 @@ public class USSDVoteController extends USSDController {
             switch (time) {
                 case "instant":
                     proposedDateTime = DateTimeUtil.addMinutesToDate(new Date(), 5);
-                    dateTimeFormatted = dateFormat.format(proposedDateTime);
+                    dateTimeFormatted = dateWithYear.format(proposedDateTime);
                     dateTimePrompt = " in five minutes";
                     break;
                 case "hour":
                     proposedDateTime = DateTimeUtil.addHoursToDate(new Date(), 1);
-                    dateTimeFormatted = dateFormat.format(proposedDateTime);
+                    dateTimeFormatted = dateWithYear.format(proposedDateTime);
                     dateTimePrompt = " in one hour";
                     break;
                 case "day":
                     proposedDateTime = DateTimeUtil.addHoursToDate(new Date(), 24);
-                    dateTimeFormatted = dateFormat.format(proposedDateTime);
+                    dateTimeFormatted = dateWithYear.format(proposedDateTime);
                     dateTimePrompt = " at " + dateTimeFormatted;
                     break;
                 case "week":
                     proposedDateTime = DateTimeUtil.addHoursToDate(new Date(), 7*24);
-                    dateTimeFormatted = dateFormat.format(proposedDateTime);
+                    dateTimeFormatted = dateWithYear.format(proposedDateTime);
                     dateTimePrompt = " at " + dateTimeFormatted;
                     break;
                 default:
                     // this should never be called, but need it else Java throws error -- defaulting to instant
                     proposedDateTime = DateTimeUtil.addMinutesToDate(new Date(), 5);
-                    dateTimeFormatted = dateFormat.format(proposedDateTime);
+                    dateTimeFormatted = dateWithYear.format(proposedDateTime);
                     dateTimePrompt = " in five minutes";
             }
         } else {
@@ -192,8 +193,8 @@ public class USSDVoteController extends USSDController {
             proposedDateTime = Date.from(parsedDate.atZone(ZoneId.systemDefault()).toInstant());
 
             // dateTimeFormatted = parsedDate.format(DateTimeFormatter.ofPattern(dateFormat));
-            dateTimeFormatted = dateFormat.format(proposedDateTime);
-            dateTimePrompt = " at " + dateTimeFormatted;
+            dateTimeFormatted = dateWithYear.format(proposedDateTime);
+            dateTimePrompt = " at " + dateFormat.format(proposedDateTime);
         }
 
         final String dateTimeParam = encodeParamater(dateTimeFormatted);
@@ -222,7 +223,7 @@ public class USSDVoteController extends USSDController {
 
         log.info("Vote details confirmed! Closing date and time: " + confirmedTime);
 
-        Event vote = eventManager.setEventTimestamp(eventId, new Timestamp(dateFormat.parse(confirmedTime).getTime()));
+        Event vote = eventManager.setEventTimestamp(eventId, new Timestamp(dateWithYear.parse(confirmedTime).getTime()));
         USSDMenu menu = new USSDMenu("Vote sent out!", optionsHomeExit(user));
 
         return menuBuilder(menu);
