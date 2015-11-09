@@ -6,51 +6,30 @@ package za.org.grassroot.webapp.controller.ussd;
  */
 
 import org.custommonkey.xmlunit.XMLUnit;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
-import org.springframework.boot.test.WebIntegrationTest;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.transaction.annotation.EnableTransactionManagement;
+import org.springframework.test.context.transaction.TestTransaction;
 import org.springframework.web.util.UriComponentsBuilder;
-import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.services.EventManagementService;
-import za.org.grassroot.services.GroupManagementService;
-import za.org.grassroot.services.UserManagementService;
-import za.org.grassroot.webapp.GrassRootWebApplicationConfig;
 
 import javax.persistence.EntityManager;
-import javax.persistence.Query;
-import javax.transaction.Transactional;
 import java.net.URI;
 import java.util.*;
 
 import static junit.framework.Assert.assertNotNull;
 import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
 import static org.custommonkey.xmlunit.XMLAssert.assertXMLNotEqual;
-import static org.dbunit.Assertion.assertEquals;
-import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.springframework.http.HttpStatus.OK;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {GrassRootWebApplicationConfig.class})
-@WebIntegrationTest(randomPort = true)
-//@EnableTransactionManagement
-@Transactional
-@ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
 public class USSDHomeControllerTest extends USSDAbstractTest {
 
     protected static final Logger log = LoggerFactory.getLogger(USSDHomeControllerTest.class);
@@ -58,14 +37,6 @@ public class USSDHomeControllerTest extends USSDAbstractTest {
     @Autowired
     EntityManager em;
 
-    /* @Autowired
-    protected UserManagementService userManager;
-
-    @Autowired
-    protected GroupManagementService groupManager;
-
-    @Autowired
-    protected EventManagementService eventManager; */
 
     private final String startMenuEN = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>" +
             "<request>" +
@@ -118,6 +89,7 @@ public class USSDHomeControllerTest extends USSDAbstractTest {
             "                display=\"true\">Shintsha iprofile</option>\n" +
             "    </options>" +
             "</request>";
+
 
     @Before
     public void setUp() throws Exception {
@@ -198,7 +170,12 @@ public class USSDHomeControllerTest extends USSDAbstractTest {
 
         assertNotNull(userCreated.getId());
         assertNotNull(userCreated.getCreatedDateTime());
-        // assertXMLEqual(startMenuZU, newHomeMenu.getBody());
+        assertXMLEqual(startMenuZU, newHomeMenu.getBody());
+        TestTransaction.end();
+        TestTransaction.start();
+        User zuluOnMyStoep = userManager.findByInputNumber(testPhoneZu);
+        assertEquals(testPhoneZu, zuluOnMyStoep.getPhoneNumber());
+        assertEquals("zu",zuluOnMyStoep.getLanguageCode());
 
 
     }

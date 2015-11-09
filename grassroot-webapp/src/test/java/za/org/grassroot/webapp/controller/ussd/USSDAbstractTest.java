@@ -1,11 +1,22 @@
 package za.org.grassroot.webapp.controller.ussd;
 
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.boot.test.TestRestTemplate;
+import org.springframework.boot.test.WebIntegrationTest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit4.AbstractTransactionalJUnit4SpringContextTests;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
@@ -15,7 +26,12 @@ import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.webapp.GrassRootWebApplicationConfig;
 
+import javax.annotation.PostConstruct;
+import javax.net.ssl.*;
+import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -28,7 +44,12 @@ import java.util.logging.Logger;
  * The USSD tests rely heavily on some common functions for piecing together and calling URLs, so am collecting them
  * all in one place here. If this starts impacting test suite performance can undo.
  */
-public class USSDAbstractTest {
+@RunWith(SpringJUnit4ClassRunner.class)
+@SpringApplicationConfiguration(classes = {GrassRootWebApplicationConfig.class})
+@WebIntegrationTest(randomPort = true)
+@Transactional
+@ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
+public class USSDAbstractTest extends AbstractTransactionalJUnit4SpringContextTests {
 
     private Logger log = Logger.getLogger(getClass().getCanonicalName());
 
@@ -48,8 +69,10 @@ public class USSDAbstractTest {
     @Value("${local.server.port}")
     int port;
 
+
+    //protected RestTemplate template = new TestRestTemplate(TestRestTemplate.HttpClientOption.ENABLE_REDIRECTS);
     protected RestTemplate template = new TestRestTemplate();
-    protected UriComponentsBuilder base = UriComponentsBuilder.newInstance().scheme("http").host("localhost");
+    protected UriComponentsBuilder base = UriComponentsBuilder.newInstance().scheme("https").host("localhost").port(port);
 
     // Common parameters for assembling the USSD urls
     protected final String ussdPath = "ussd/";
@@ -75,6 +98,56 @@ public class USSDAbstractTest {
     protected final String testMtgLocation = "JoziHub";
     protected final String testMtgDateTime = "Tomorrow 9am";
 
+    @PostConstruct
+    public void init() {
+        final MySimpleClientHttpRequestFactory factory = new MySimpleClientHttpRequestFactory(
+                new HostnameVerifier() {
+
+                    @Override
+                    public boolean verify(final String hostname,
+                                          final SSLSession session) {
+                        return true; // these guys are alright by me...
+                    }
+                });
+        template.setRequestFactory(factory);
+    }
+
+    @BeforeClass
+    public static void classSetUp() {
+        // setup ssl context to ignore certificate errors
+
+        try {
+            SSLContext ctx = SSLContext.getInstance("TLS");
+            X509TrustManager tm = new X509TrustManager() {
+
+                @Override
+                public void checkClientTrusted(java.security.cert.X509Certificate[] chain,
+                                               String authType) throws java.security.cert.CertificateException {
+                }
+
+                @Override
+                public void checkServerTrusted(java.security.cert.X509Certificate[] chain,
+                                               String authType) throws java.security.cert.CertificateException {
+                }
+
+                @Override
+                public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                    return null;
+                }
+            };
+            ctx.init(null, new TrustManager[] { tm }, null);
+            SSLContext.setDefault(ctx);
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+    }
+
+    @Test
+    public void dummyTest() {
+
+    }
     protected UriComponentsBuilder assembleUssdURI(String urlEnding) {
         UriComponentsBuilder baseUri = UriComponentsBuilder.fromUri(base.build().toUri())
                 .path(ussdPath + urlEnding);
@@ -136,6 +209,27 @@ public class USSDAbstractTest {
 
         return eventToTest;
 
+    }
+
+    /**
+     * Http Request Factory for ignoring SSL hostname errors. Not for production use!
+     */
+    class MySimpleClientHttpRequestFactory extends SimpleClientHttpRequestFactory {
+
+        private final HostnameVerifier verifier;
+
+        public MySimpleClientHttpRequestFactory(final HostnameVerifier verifier) {
+            this.verifier = verifier;
+        }
+
+        @Override
+        protected void prepareConnection(final HttpURLConnection connection,
+                                         final String httpMethod) throws IOException {
+            if (connection instanceof HttpsURLConnection) {
+                ((HttpsURLConnection) connection).setHostnameVerifier(this.verifier);
+            }
+            super.prepareConnection(connection, httpMethod);
+        }
     }
 
 }

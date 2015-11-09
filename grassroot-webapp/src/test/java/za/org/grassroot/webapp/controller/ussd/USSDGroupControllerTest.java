@@ -3,42 +3,27 @@ package za.org.grassroot.webapp.controller.ussd;
 import org.custommonkey.xmlunit.XMLUnit;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
-import org.springframework.boot.test.WebIntegrationTest;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
-import za.org.grassroot.webapp.GrassRootWebApplicationConfig;
 
-import javax.transaction.Transactional;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 
 import static junit.framework.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 
 /**
  * Created by luke on 2015/09/08.
  */
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {GrassRootWebApplicationConfig.class})
-@WebIntegrationTest(randomPort = true)
-@Transactional
-@ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
 public class USSDGroupControllerTest extends USSDAbstractTest {
 
     private Logger log = LoggerFactory.getLogger(USSDGroupControllerTest.class);
@@ -51,6 +36,7 @@ public class USSDGroupControllerTest extends USSDAbstractTest {
 
     private final String groupPath = "group/";
     private final String groupParam = "groupId";
+
 
     @Before
     public void setUp() throws Exception {
