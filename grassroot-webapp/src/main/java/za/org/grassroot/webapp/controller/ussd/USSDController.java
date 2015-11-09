@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.MessageSource;
+import org.springframework.data.domain.Page;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.*;
@@ -93,11 +94,14 @@ public class USSDController {
         Request menuRequest;
         if (thisMenu.isFreeText()) {
             menuRequest = new Request(thisMenu.getPromptMessage(), freeText(thisMenu.getNextURI()));
+        } else if (checkMenuLength(thisMenu, false)) {
+            menuRequest = new Request(thisMenu.getPromptMessage(), createMenu(thisMenu.getMenuOptions()));
         } else {
-            if (checkMenuLength(thisMenu, false))
-                menuRequest = new Request(thisMenu.getPromptMessage(), createMenu(thisMenu.getMenuOptions()));
-            else
-                menuRequest = tooLongError;
+            // note: this runs the risk of cutting off crucial end-of-prompt info, but is 'least bad' option so far (other is just an error message)
+            Integer charsToTrim = thisMenu.getMenuCharLength() - 159; // adding a character, for safety
+            String currentPrompt = thisMenu.getPromptMessage();
+            String revisedPrompt = currentPrompt.substring(0, currentPrompt.length() - charsToTrim);
+            menuRequest = new Request(revisedPrompt, createMenu(thisMenu.getMenuOptions()));
         }
         return menuRequest;
     }
@@ -126,36 +130,44 @@ public class USSDController {
      * todo: extend pagination, to allow for multiple pages, and/or better sorting (last accessed & most accessed)
      */
 
-    protected USSDMenu userGroupMenu(User sessionUser, String promptMessage, String existingPath, String newUri, String groupParam)
+    protected USSDMenu userGroupMenu(User user, String menuPrompt, String urlForExistingGroups, String urlForNewGroup, String groupParam, Integer pageNumber)
             throws URISyntaxException {
 
-        USSDMenu menuBuild = new USSDMenu(promptMessage);
-        List<Group> groupsPartOf = groupManager.getPaginatedGroups(sessionUser, 0, PAGE_LENGTH);
+        USSDMenu menu = new USSDMenu(menuPrompt);
+        Page<Group> groupsPartOf = groupManager.getPageOfGroups(user, pageNumber, PAGE_LENGTH);
 
-        final String formedUrl = (!existingPath.contains("?")) ?
-                (existingPath + GROUPID_URL) :
-                (existingPath + "&" + groupParam + "=");
+        final String formedUrl = (!urlForExistingGroups.contains("?")) ?
+                (urlForExistingGroups + GROUPID_URL) :
+                (urlForExistingGroups + "&" + groupParam + "=");
 
-        String finalOption = (newUri != null) ? getMessage(GROUP_KEY, "create", "option", sessionUser) : "";
+        String finalOption = (urlForNewGroup != null) ? getMessage(GROUP_KEY, "create", "option", user) : "";
         SimpleDateFormat sdf = new SimpleDateFormat("d MMM");
 
         for (Group groupToList : groupsPartOf) {
-
-            String groupName = (groupToList.hasName()) ?
-                    groupToList.getGroupName() :
-                    getMessage(GROUP_KEY, "unnamed", "label", sdf.format(groupToList.getCreatedDateTime()), sessionUser);
-
-            if (menuBuild.getMenuCharLength() + groupName.length() + finalOption.length() < 154) // leaving 6 chars for X.
-                menuBuild.addMenuOption(formedUrl + groupToList.getId(), groupName);
+            String groupName = (groupToList.hasName()) ? groupToList.getGroupName() :
+                    getMessage(GROUP_KEY, "unnamed", "label", sdf.format(groupToList.getCreatedDateTime()), user);
+            menu.addMenuOption(formedUrl + groupToList.getId(), groupName);
         }
 
-        if (newUri != null)
-            menuBuild.addMenuOption(newUri, finalOption);
+        if (groupsPartOf.hasNext())
+            menu.addMenuOption(assemblePaginatedURI(menuPrompt, urlForExistingGroups, urlForNewGroup, pageNumber + 1), "More groups");
 
-        return menuBuild;
+        if (groupsPartOf.hasPrevious())
+            menu.addMenuOption(assemblePaginatedURI(menuPrompt, urlForExistingGroups, urlForNewGroup, pageNumber -1), "Back");
+
+        if (urlForNewGroup != null)
+            menu.addMenuOption(urlForNewGroup, finalOption);
+
+        return menu;
     }
 
-    // slightly simplified version, with an explicit option to leave off the new group
+    private String assemblePaginatedURI(String menuPrompt, String existingGroupUri, String newGroupUri, Integer pageNumber) {
+        String newGroupParameter = (newGroupUri != null) ? "&newUri=" + encodeParamater(newGroupUri) : "";
+        return "group_page?prompt=" + encodeParamater(menuPrompt) + "&existingUri=" + encodeParamater(existingGroupUri)
+                + newGroupParameter + "&page=" + pageNumber;
+    }
+
+    // slightly simplified version, with an option to leave off the new group
     protected USSDMenu userGroupMenu(User sessionUser, String promptMessage, String path, boolean optionNewGroup)
             throws URISyntaxException {
 
@@ -163,6 +175,11 @@ public class USSDController {
         final String newGroupUrl = (optionNewGroup) ? formedUrl + "0" : null;
 
         return userGroupMenu(sessionUser, promptMessage, path, newGroupUrl, GROUP_PARAM);
+    }
+
+    protected USSDMenu userGroupMenu(User sessionUser, String promptMessage, String existingPath, String newUri, String groupParam)
+            throws URISyntaxException {
+        return userGroupMenu(sessionUser, promptMessage, existingPath, newUri, groupParam, 0);
     }
 
     /*
@@ -216,6 +233,10 @@ public class USSDController {
         return ImmutableMap.<String, String>builder().
                 put(yesUri + "&" + YESNO_FIELD + "=yes", getMessage(OPTION + "yes", sessionUser)).
                 put(noUri + "&" + YESNO_FIELD + "=no", getMessage(OPTION + "no", sessionUser)).build();
+    }
+
+    protected Map<String, String> optionsYesNo(User sesionUser, String nextUri) {
+        return optionsYesNo(sesionUser, nextUri, nextUri);
     }
 
     protected String encodeParamater(String stringToEncode) {

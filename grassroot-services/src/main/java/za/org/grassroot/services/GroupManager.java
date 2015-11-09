@@ -240,8 +240,12 @@ public class GroupManager implements GroupManagementService {
 
     @Override
     public List<Group> getPaginatedGroups(User sessionUser, int pageNumber, int pageSize) {
-        Page<Group> pageOfGroups = groupRepository.findByGroupMembers(sessionUser, new PageRequest(pageNumber, pageSize));
-        return pageOfGroups.getContent();
+        return getPageOfGroups(sessionUser, pageNumber, pageSize).getContent();
+    }
+
+    @Override
+    public Page<Group> getPageOfGroups(User sessionUser, int pageNumber, int pageSize) {
+        return groupRepository.findByGroupMembers(sessionUser, new PageRequest(pageNumber, pageSize));
     }
 
     /*

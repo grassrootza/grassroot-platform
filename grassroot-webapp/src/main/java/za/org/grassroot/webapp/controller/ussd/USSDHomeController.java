@@ -366,7 +366,23 @@ public class USSDHomeController extends USSDController {
 
     }
 
-    @RequestMapping(value = { USSD_BASE + U404, USSD_BASE + LOG_MENUS, USSD_BASE + GROUP_MENUS + "menu2" })
+    /*
+    Helper methods, for group pagination, etc.
+     */
+
+    @RequestMapping(value = USSD_BASE + "group_page")
+    @ResponseBody
+    public Request groupPaginationHelper(@RequestParam(value=PHONE_PARAM) String inputNumber,
+                                         @RequestParam(value="prompt") String prompt,
+                                         @RequestParam(value="page") Integer pageNumber,
+                                         @RequestParam(value="existingUri") String existingUri,
+                                         @RequestParam(value="newUri", required=false) String newUri) throws URISyntaxException {
+
+        return menuBuilder(userGroupMenu(userManager.findByInputNumber(inputNumber), prompt, existingUri, newUri, GROUP_PARAM, pageNumber));
+
+    }
+
+    @RequestMapping(value = { USSD_BASE + U404, USSD_BASE + LOG_MENUS })
     @ResponseBody
     public Request notBuilt() throws URISyntaxException {
         // String errorMessage = "Sorry! We haven't built that yet. We're working on it.";

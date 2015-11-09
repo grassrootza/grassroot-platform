@@ -37,6 +37,8 @@ public interface GroupManagementService {
 
     public List<Group> getPaginatedGroups(User sessionUser, int pageNumber, int pageSize);
 
+    public Page<Group> getPageOfGroups(User sessionUser, int pageNumber, int pageSize);
+
     public Group getGroupById(Long groupId);
 
     public Group saveGroup(Group groupToSave);

@@ -299,7 +299,7 @@ public class USSDGroupController extends USSDController {
 
         User sessionUser = userManager.findByInputNumber(inputNumber);
         Group sessionGroup = groupManager.loadGroup(groupId);
-        USSDMenu promptMenu = new USSDMenu("");
+        USSDMenu promptMenu = new USSDMenu();
         String thisUri = GROUP_MENUS + groupTokenMenu + "_extend" + GROUPID_URL + groupId;
 
         if (daysValid == null) {
@@ -326,20 +326,22 @@ public class USSDGroupController extends USSDController {
     public Request extendToken(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
                                @RequestParam(value=GROUP_PARAM, required=true) Long groupId,
                                @RequestParam(value=TOKEN_PARAM, required=true) String code,
-                               @RequestParam(value="confirmed", required=false) String confirmed) throws URISyntaxException {
+                               @RequestParam(value=YESNO_FIELD, required=false) String confirmed) throws URISyntaxException {
 
         // todo: check the token and group match, and that the user has token admin rights
         User sessionUser = userManager.findByInputNumber(inputNumber);
         USSDMenu thisMenu;
 
-        if (confirmed != null && confirmed.equals("true")) {
+        if (confirmed == null) {
+            String beginUri = GROUP_MENUS + groupTokenMenu, endUri = GROUPID_URL + groupId + "&" + TOKEN_PARAM + "=" + code;
+            thisMenu = new USSDMenu(getMessage(GROUP_KEY, groupTokenMenu, PROMPT + ".close", sessionUser),
+                                    optionsYesNo(sessionUser, beginUri + "-close" + endUri));
+        } else if (confirmed.equals("yes")) {
             // todo: error handling here (bad token, etc., also, security)
             groupManager.invalidateGroupToken(groupId);
             thisMenu = new USSDMenu(getMessage(GROUP_KEY, groupTokenMenu, PROMPT + ".close-done", sessionUser), optionsHomeExit(sessionUser));
         } else {
-            String beginUri = GROUP_MENUS + groupTokenMenu, endUri = GROUPID_URL + groupId + "&" + TOKEN_PARAM + "=" + code;
-            thisMenu = new USSDMenu(getMessage(GROUP_KEY, groupTokenMenu, PROMPT + ".close", sessionUser),
-                                    optionsYesNo(sessionUser, beginUri + "extend" + endUri, beginUri + endUri));
+            thisMenu = new USSDMenu("Okay, cancelled.", optionsHomeExit(sessionUser));
         }
 
         return menuBuilder(thisMenu);
