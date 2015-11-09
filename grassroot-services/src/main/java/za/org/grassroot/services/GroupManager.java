@@ -141,7 +141,12 @@ public class GroupManager implements GroupManagementService {
             return currentGroup;
         } else {
             currentGroup.addMember(newMember);
+
+            if (hasDefaultLanguage(currentGroup) && !newMember.isHasInitiatedSession())
+                assignDefaultLanguage(currentGroup, newMember);
+
             jmsTemplateProducerService.sendWithNoReply(EventChangeType.USER_ADDED.toString(),new NewGroupMember(currentGroup,newMember));
+
             return groupRepository.save(currentGroup);
         }
     }
@@ -273,6 +278,12 @@ public class GroupManager implements GroupManagementService {
     @Override
     public List<Group> getSubGroups(Group group) {
         return groupRepository.findByParent(group);
+    }
+
+    @Override
+    public boolean hasSubGroups(Group group) {
+        // slightly redundant for now, but if trees get large & complex may want to replace with quick count query (a la 'if user exists')
+        return !getSubGroups(group).isEmpty();
     }
 
     @Override
@@ -449,8 +460,34 @@ public class GroupManager implements GroupManagementService {
             }
         }
 
+        group.setDefaultLanguage(locale);
+
         return saveGroup(group);
 
+    }
+
+    @Override
+    public Group setGroupAndSubGroupDefaultLanguage(Group group, String locale) {
+
+        group = setGroupDefaultLanguage(group, locale);
+
+        // there is almost certainly a more elegant way to do this recursion
+        if (hasSubGroups(group)) {
+            for (Group subGroup : getSubGroups(group))
+                setGroupAndSubGroupDefaultLanguage(subGroup, locale);
+        }
+
+        return group;
+    }
+
+    @Override
+    public boolean hasDefaultLanguage(Group group) {
+        return (group.getDefaultLanguage() != null && !group.getDefaultLanguage().trim().equals("en"));
+    }
+
+    @Override
+    public void assignDefaultLanguage(Group group, User user) {
+        userManager.setUserLanguage(user, group.getDefaultLanguage());
     }
 
     @Override

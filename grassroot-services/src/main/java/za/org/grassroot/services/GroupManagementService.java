@@ -111,6 +111,8 @@ public interface GroupManagementService {
 
     public List<Group> getSubGroups(Group group);
 
+    public boolean hasSubGroups(Group group);
+
     public List<User> getAllUsersInGroupAndSubGroups(Long groupId);
 
     public List<User> getAllUsersInGroupAndSubGroups(Group group);
@@ -139,6 +141,12 @@ public interface GroupManagementService {
     public Group setGroupDefaultReminderMinutes(Long groupId, Integer minutes);
 
     public Group setGroupDefaultLanguage(Group group, String locale);
+
+    public Group setGroupAndSubGroupDefaultLanguage(Group group, String locale);
+
+    public boolean hasDefaultLanguage(Group group);
+
+    public void assignDefaultLanguage(Group group, User user);
 
     public Integer getGroupSize(Group group, boolean includeSubGroups);
 

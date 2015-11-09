@@ -413,12 +413,15 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public Map<String, String> getImplementedLanguages() {
+    public LinkedHashMap<String, String> getImplementedLanguages() {
+
+        // todo: replace calls to one in USSDController to this one
 
         LinkedHashMap<String, String> languages = new LinkedHashMap<>();
 
         languages.put("en", "English");
         languages.put("nso", "Sepedi");
+        languages.put("st", "Sesotho");
         languages.put("ts", "Tsonga");
         languages.put("zu", "Zulu");
 

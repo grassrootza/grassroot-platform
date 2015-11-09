@@ -385,7 +385,7 @@ public class USSDMeetingController extends USSDController {
     public Request getSubject(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
                               @RequestParam(value=EVENT_PARAM, required=true) Long eventId,
                               @RequestParam(value=PASSED_FIELD, required=true) String passedValueKey,
-                              @RequestParam(value=GROUP_PARAM, required=true) String passedValue,
+                              @RequestParam(value=GROUP_PARAM, required=false) String passedValue,
                               @RequestParam(value="prior_input", required=false) String priorInput,
                               @RequestParam(value="revising", required=false) boolean revising) throws URISyntaxException {
 

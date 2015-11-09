@@ -91,7 +91,7 @@ public class USSDUserController extends USSDController {
 
         USSDMenu thisMenu = new USSDMenu(getMessage(USER_KEY, keyLanguage, PROMPT, sessionUser));
 
-        for (Map.Entry<String, String> entry : getImplementedLanguages().entrySet()) {
+        for (Map.Entry<String, String> entry : userManager.getImplementedLanguages().entrySet()) {
             thisMenu.addMenuOption(USER_MENUS + keyLanguage + DO_SUFFIX + "?language=" + entry.getKey(), entry.getValue());
         }
 

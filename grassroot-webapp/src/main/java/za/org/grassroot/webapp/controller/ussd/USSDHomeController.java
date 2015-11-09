@@ -109,7 +109,7 @@ public class USSDHomeController extends USSDController {
         String nextUrl = "start_language";
         USSDMenu promptMenu = new USSDMenu(prompt);
 
-        for (Map.Entry<String, String> entry : getImplementedLanguages().entrySet()) {
+        for (Map.Entry<String, String> entry : userManager.getImplementedLanguages().entrySet()) {
             promptMenu.addMenuOption(nextUrl + "?language=" + entry.getKey(), entry.getValue());
         }
 

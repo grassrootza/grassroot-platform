@@ -376,14 +376,19 @@ public class GroupController extends BaseController {
 
     @RequestMapping(value = "/group/language", method = RequestMethod.POST)
     public String setGroupLanguage(Model model, @RequestParam("groupId") Long groupId, @RequestParam("locale") String locale,
-                                   HttpServletRequest request) {
+                                   @RequestParam("includeSubGroups") boolean includeSubGroups, HttpServletRequest request) {
 
         // todo: add permissions checking, exception handling, etc.
 
         log.info("Okay, setting the language to: " + locale);
 
         Group group = groupManagementService.loadGroup(groupId);
-        group = groupManagementService.setGroupDefaultLanguage(group, locale);
+
+        if (!includeSubGroups) {
+            group = groupManagementService.setGroupDefaultLanguage(group, locale);
+        } else {
+            group = groupManagementService.setGroupAndSubGroupDefaultLanguage(group, locale);
+        }
 
         addMessage(model, MessageType.SUCCESS, "group.language.success", request);
         return viewGroupIndex(model, groupId);
