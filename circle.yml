@@ -7,4 +7,5 @@ test:
     - find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} $CIRCLE_TEST_REPORTS/junit/ \;
 general:
   artifacts:
+    - "grassroot-core/target/grassroot-core-1.0-SNAPSHOT.jar"
     - "grassroot-webapp/target/grassroot-webapp-1.0-SNAPSHOT.jar"
