@@ -369,7 +369,7 @@ public class User implements UserDetails {
                 ", createdDateTime=" + createdDateTime +
 //                ", groupsPartOf=" + groupsPartOf +
                 ", username='" + username + '\'' +
-                ", password='" + password + '\'' +
+//                ", password='" + password + '\'' +
                 ", enabled=" + enabled +
 //                ", roles=" + roles +
                 ", version=" + version +

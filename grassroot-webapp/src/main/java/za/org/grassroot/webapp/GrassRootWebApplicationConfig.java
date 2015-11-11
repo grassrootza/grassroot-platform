@@ -23,7 +23,7 @@ import org.springframework.util.SocketUtils;
 @EnableAutoConfiguration
 @EnableJpaRepositories
 public class GrassRootWebApplicationConfig {
-    @Bean
+    /*@Bean
     public EmbeddedServletContainerFactory servletContainer() {
         TomcatEmbeddedServletContainerFactory tomcat = new TomcatEmbeddedServletContainerFactory(){
             @Override
@@ -45,6 +45,6 @@ public class GrassRootWebApplicationConfig {
         connector.setPort(8080);
         connector.setRedirectPort(8443);
         return connector;
-    }
+    }*/
 
 }
