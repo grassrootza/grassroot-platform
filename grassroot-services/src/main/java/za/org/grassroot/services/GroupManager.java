@@ -580,6 +580,13 @@ public class GroupManager implements GroupManagementService {
         return (createdByUser && groupCreatedSinceThreshold);
     }
 
+    /*
+    Recursive query better to use than recursive code calls
+     */
+    public List<Group> findGroupAndSubGroupsById(Long groupId) {
+        return groupRepository.findGroupAndSubGroupsById(groupId);
+    }
+
     private void recursiveUserAdd(Group parentGroup, List<User> userList ) {
 
         for (Group childGroup : groupRepository.findByParent(parentGroup)) {
@@ -599,5 +606,7 @@ public class GroupManager implements GroupManagementService {
         // todo aakil this adds the group even if it had no parents??? is this a problem, rethink
         parentGroups.add(childGroup);
     }
+
+
 
 }

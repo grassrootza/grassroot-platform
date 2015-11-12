@@ -59,6 +59,7 @@ public class EventLog {
 
 
     public EventLog() {
+
     }
 
     public EventLog(User user, Event event, EventLogType eventLogType, String message) {

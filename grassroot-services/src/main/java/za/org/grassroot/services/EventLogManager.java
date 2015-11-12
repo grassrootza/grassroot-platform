@@ -49,38 +49,38 @@ public class EventLogManager implements EventLogManagementService {
     CacheUtilService cacheUtilService;
 
 
-
     @Override
     public EventLog createEventLog(EventLogType eventLogType, Event event, User user, String message) {
-        EventLog eventLog = eventLogRepository.save(new EventLog(user,event,eventLogType,message));
+        EventLog eventLog = eventLogRepository.save(new EventLog(user, event, eventLogType, message));
         eventLogRepository.flush();
         return eventLog;
     }
 
     @Override
     public boolean notificationSentToUser(Event event, User user) {
-        return eventLogRepository.notificationSent(event,user);
+        return eventLogRepository.notificationSent(event, user);
     }
 
     @Override
     public boolean voteResultSentToUser(Event event, User user) {
         return eventLogRepository.voteResultSent(event, user);
     }
+
     @Override
     public boolean changeNotificationSentToUser(Event event, User user, String message) {
-        boolean messageSent = eventLogRepository.changeNotificationSent(event,user,message);
+        boolean messageSent = eventLogRepository.changeNotificationSent(event, user, message);
         log.info("changeNotificationSentToUser...user..." + user.getPhoneNumber() + "...event..." + event.getId() + "...version..." + event.getVersion() + "...message..." + message + "...returning..." + messageSent);
         return messageSent;
     }
 
     @Override
     public boolean cancelNotificationSentToUser(Event event, User user) {
-        return eventLogRepository.cancelNotificationSent(event,user);
+        return eventLogRepository.cancelNotificationSent(event, user);
     }
 
     @Override
     public boolean reminderSentToUser(Event event, User user) {
-        return eventLogRepository.reminderSent(event,user);
+        return eventLogRepository.reminderSent(event, user);
     }
 
     @Override
@@ -97,6 +97,7 @@ public class EventLogManager implements EventLogManagementService {
     public EventLog rsvpForEvent(Long eventId, Long userId, EventRSVPResponse rsvpResponse) {
         return rsvpForEvent(eventRepository.findOne(eventId), userRepository.findOne(userId), rsvpResponse);
     }
+
     @Override
     public EventLog rsvpForEvent(Long eventId, String phoneNumber, EventRSVPResponse rsvpResponse) {
         return rsvpForEvent(eventRepository.findOne(eventId), userRepository.findByPhoneNumber(phoneNumber), rsvpResponse);
@@ -105,19 +106,30 @@ public class EventLogManager implements EventLogManagementService {
     @Override
     public EventLog rsvpForEvent(Event event, User user, EventRSVPResponse rsvpResponse) {
         log.finest("rsvpForEvent...event..." + event.getId() + "...user..." + user.getPhoneNumber() + "...rsvp..." + rsvpResponse.toString());
-        EventLog eventLog = createEventLog(EventLogType.EventRSVP, event, user, rsvpResponse.toString());
-        // clear rsvp cache for user
-        cacheUtilService.clearRsvpCacheForUser(user,event.getEventType());
+        EventLog eventLog = new EventLog();
+        // dont allow the user to rsvp/vote twice
 
-        if (event.getEventType() == EventType.Vote) {
-            // see if everyone voted, if they did expire the vote so that the results are sent out
-            RSVPTotalsDTO rsvpTotalsDTO = getVoteResultsForEvent(event);
-            log.finest("rsvpForEvent...after..." + rsvpTotalsDTO.toString());
-            if (rsvpTotalsDTO.getNumberNoRSVP() < 1) {
-                Date now = new Date();
-                event.setEventStartDateTime(new Timestamp(now.getTime()));
-                eventRepository.save(event);
+        if (!userRsvpForEvent(event,user)) {
+            eventLog = createEventLog(EventLogType.EventRSVP, event, user, rsvpResponse.toString());
+            // clear rsvp cache for user
+            cacheUtilService.clearRsvpCacheForUser(user, event.getEventType());
+
+            if (event.getEventType() == EventType.Vote) {
+                // see if everyone voted, if they did expire the vote so that the results are sent out
+                RSVPTotalsDTO rsvpTotalsDTO = getVoteResultsForEvent(event);
+                log.finest("rsvpForEvent...after..." + rsvpTotalsDTO.toString());
+                if (rsvpTotalsDTO.getNumberNoRSVP() < 1) {
+                    Date now = new Date();
+                    event.setEventStartDateTime(new Timestamp(now.getTime()));
+                    eventRepository.save(event);
+                }
             }
+        } else {
+            // put values in the fields so that rest method does not NPE
+            eventLog.setId(0L);
+            eventLog.setEvent(new Event());
+            eventLog.setUser(new User());
+
         }
 
         return eventLog;
@@ -125,14 +137,14 @@ public class EventLogManager implements EventLogManagementService {
 
     @Override
     public boolean userRsvpNoForEvent(Event event, User user) {
-        boolean rsvpNoForEvent = eventLogRepository.rsvpNoForEvent(event,user);
+        boolean rsvpNoForEvent = eventLogRepository.rsvpNoForEvent(event, user);
         log.info("userRsvpNoForEvent...returning..." + rsvpNoForEvent + " for event..." + event.getId() + "...user..." + user.getPhoneNumber());
         return rsvpNoForEvent;
     }
 
     @Override
     public boolean userRsvpForEvent(Event event, User user) {
-        return eventLogRepository.userRsvpForEvent(event,user);
+        return eventLogRepository.userRsvpForEvent(event, user);
     }
 
     @Override
@@ -143,11 +155,13 @@ public class EventLogManager implements EventLogManagementService {
     @Override
     public RSVPTotalsDTO getRSVPTotalsForEvent(Event event) {
         if (!event.isIncludeSubGroups()) {
-            return new RSVPTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(),event.getAppliesToGroup().getId(),event.getCreatedByUser().getId()));
+            return new RSVPTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), event.getAppliesToGroup().getId(), event.getCreatedByUser().getId()));
         }
-        // get the totals recursively
         RSVPTotalsDTO totals = new RSVPTotalsDTO();
-        recursiveTotalsAdd(event,event.getAppliesToGroup(),totals);
+        for (Group group : groupRepository.findGroupAndSubGroupsById(event.getAppliesToGroup().getId())) {
+            totals.add(new RSVPTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), event.getAppliesToGroup().getId(), event.getCreatedByUser().getId())));
+
+        }
         log.info("getRSVPTotalsForEvent...returning..." + totals.toString());
         return totals;
     }
@@ -157,32 +171,33 @@ public class EventLogManager implements EventLogManagementService {
         if (!event.isIncludeSubGroups()) {
             return new RSVPTotalsDTO(eventLogRepository.voteTotalsForEventAndGroup(event.getId(), event.getAppliesToGroup().getId()));
         }
-        // get the totals recursively
         RSVPTotalsDTO totals = new RSVPTotalsDTO();
-        recursiveVotesAdd(event, event.getAppliesToGroup(), totals);
+        for (Group group : groupRepository.findGroupAndSubGroupsById(event.getAppliesToGroup().getId())) {
+            totals.add(new RSVPTotalsDTO(eventLogRepository.voteTotalsForEventAndGroup(event.getId(), group.getId())));
+        }
         log.info("getVoteResultsForEvent...returning..." + totals.toString());
         return totals;
     }
-    private void recursiveTotalsAdd(Event event, Group parentGroup, RSVPTotalsDTO rsvpTotalsDTO ) {
+//    private void recursiveTotalsAdd(Event event, Group parentGroup, RSVPTotalsDTO rsvpTotalsDTO ) {
+//
+//        for (Group childGroup : groupRepository.findByParent(parentGroup)) {
+//            recursiveTotalsAdd(event, childGroup, rsvpTotalsDTO);
+//        }
+//
+//        // add all the totals at this level
+//        rsvpTotalsDTO.add(new RSVPTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), parentGroup.getId(),event.getCreatedByUser().getId())));
+//
+//    }
 
-        for (Group childGroup : groupRepository.findByParent(parentGroup)) {
-            recursiveTotalsAdd(event, childGroup, rsvpTotalsDTO);
-        }
 
-        // add all the totals at this level
-        rsvpTotalsDTO.add(new RSVPTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), parentGroup.getId(),event.getCreatedByUser().getId())));
-
-    }
-
-
-    private void recursiveVotesAdd(Event event, Group parentGroup, RSVPTotalsDTO rsvpTotalsDTO ) {
-
-        for (Group childGroup : groupRepository.findByParent(parentGroup)) {
-            recursiveVotesAdd(event, childGroup, rsvpTotalsDTO);
-        }
-
-        // add all the totals at this level
-        rsvpTotalsDTO.add(new RSVPTotalsDTO(eventLogRepository.voteTotalsForEventAndGroup(event.getId(), parentGroup.getId())));
-
-    }
+//    private void recursiveVotesAdd(Event event, Group parentGroup, RSVPTotalsDTO rsvpTotalsDTO ) {
+//
+//        for (Group childGroup : groupRepository.findByParent(parentGroup)) {
+//            recursiveVotesAdd(event, childGroup, rsvpTotalsDTO);
+//        }
+//
+//        // add all the totals at this level
+//        rsvpTotalsDTO.add(new RSVPTotalsDTO(eventLogRepository.voteTotalsForEventAndGroup(event.getId(), parentGroup.getId())));
+//
+//    }
 }

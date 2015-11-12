@@ -3,6 +3,7 @@ package za.org.grassroot.services;
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;
+import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.lang3.SerializationUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
@@ -380,6 +381,7 @@ public class EventManager implements EventManagementService {
 
         if (outstandingRSVPs == null) {
             // fetch from the database
+            Map eventMap = new HashedMap<Long,Long>();
             outstandingRSVPs = new ArrayList<Event>();
             List<Group> groups = groupManager.getGroupsPartOf(user);
             log.fine("getOutstandingResponseForUser...after...getGroupsPartOf...");
@@ -400,7 +402,11 @@ public class EventManager implements EventManagementService {
                                 if ((eventType == EventType.Meeting && event.getCreatedByUser().getId() != user.getId())
                                         || eventType != EventType.Meeting) {
                                     if (!eventLogManagementService.userRsvpForEvent(event, user)) {
-                                        outstandingRSVPs.add(event);
+                                        //see if we added it already as the user can be in multiple groups in a group structure
+                                        if (eventMap.get(event.getId()) == null) {
+                                            outstandingRSVPs.add(event);
+                                            eventMap.put(event.getId(),event.getId());
+                                        }
                                         log.info("getOutstandingResponseForUser..." + eventType.toString() + " Required..." + user.getPhoneNumber() + "...event..." + event.getId());
                                     } else {
                                         log.info("getOutstandingResponseForUser..." + eventType.toString() + " NOT Required..." + user.getPhoneNumber() + "...event..." + event.getId());
@@ -440,6 +446,7 @@ public class EventManager implements EventManagementService {
 
         if (parentGroups != null) {
             for (Group parentGroup : parentGroups) {
+                log.fine("parentGroup..." + parentGroup.getId());
                 List<Event> parentEvents = getUpcomingEvents(parentGroup);
                 if (parentEvents != null) {
                     for (Event upComingEvent : parentEvents) {
