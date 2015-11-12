@@ -45,7 +45,7 @@ public class Group implements Serializable {
     group. Advanced feature only for web access (in effect, for paid account groups which have many many members)
      */
     private String defaultLanguage;
-
+    
 
     @Basic
     @Column(name = "name", nullable = false, length = 50)

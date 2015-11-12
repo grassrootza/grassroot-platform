@@ -24,9 +24,9 @@
       <input type="hidden" name="groupId" th:value="${group.id}" />
       <div class="row">
         <div class="form-group">
-          <label for="daysExtension" class="col-lg-2 control-label">What language to set for current users?</label>
+          <label for="locale" class="col-lg-2 control-label">What language to set for current users?</label>
           <div class="col-lg-4">
-            <select name="locale" id="daysExtension">
+            <select name="locale" id="locale">
               <option th:each="language: ${languages}"
                       th:value="${language.key}"
                       th:text="${language.value}"/>

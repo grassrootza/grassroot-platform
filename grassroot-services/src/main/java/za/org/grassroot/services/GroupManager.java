@@ -17,6 +17,7 @@ import za.org.grassroot.services.util.TokenGeneratorService;
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * @author luke on 2015/08/14.
@@ -443,17 +444,13 @@ public class GroupManager implements GroupManagementService {
     public Group setGroupDefaultLanguage(Group group, String locale) {
 
         /*
-         Note: intentionally not doing this for all subgroups too -- a sufficiently delicate operation to require user
-         executing it to go through each subgroup, if they want to do that. Also note basic logic -- if user has language
-         which is non-default, we do not change theirs. Again, might lead to some extra work if some members are part
-         of two groups, and then have to manually over-ride. But that is better than alternatives, which is either to
-         over-ride user preference once set (= angry user), or have one more dummy field.
-         Also todo: make this something recurring, so, once set, applies to new members joining the group
+         todo: the copying of the list is probably an expensive way to do this, but better ways to avoid concurrent modification error are above my pay grade.
           */
 
-        List<User> groupMembers = group.getGroupMembers();
+        log.info("Okay, we are inside the group language setting function ...");
+        List<User> userList = new ArrayList<>(group.getGroupMembers());
 
-        for (User user : groupMembers) {
+        for (User user : userList) {
             if (!user.isHasInitiatedSession()) {
                 log.info("User hasn't set their own language, so adjusting it to: " + locale + " for this user: " + user.nameToDisplay());
                 userManager.setUserLanguage(user, locale);
@@ -471,7 +468,7 @@ public class GroupManager implements GroupManagementService {
 
         group = setGroupDefaultLanguage(group, locale);
 
-        // there is almost certainly a more elegant way to do this recursion
+        // todo: there is almost certainly a more elegant way to do this recursion
         if (hasSubGroups(group)) {
             for (Group subGroup : getSubGroups(group))
                 setGroupAndSubGroupDefaultLanguage(subGroup, locale);

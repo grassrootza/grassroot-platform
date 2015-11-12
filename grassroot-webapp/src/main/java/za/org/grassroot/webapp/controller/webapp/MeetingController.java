@@ -213,8 +213,9 @@ public class MeetingController extends BaseController {
 
     // Major todo: move to service layer
     @RequestMapping(value = "/meeting/free", method = RequestMethod.POST)
-    public String sendFreeMsg(Model model, HttpServletRequest request, @RequestParam(value="groupId") Long groupId,
-                              @RequestParam(value="message") String message, @RequestParam(value="includeSubGroups", required=false) boolean includeSubgroups) {
+    public String sendFreeMsg(Model model, @RequestParam(value="groupId") Long groupId, @RequestParam(value="message") String message,
+                              @RequestParam(value="includeSubGroups", required=false) boolean includeSubgroups,
+                              RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
         Group group = groupManagementService.loadGroup(groupId);
 
@@ -233,9 +234,9 @@ public class MeetingController extends BaseController {
 
         log.info("We just sent a message to " + usersToMessage.size() + " members");
 
-        model.addAttribute("groupId");
-        addMessage(model, MessageType.SUCCESS, "sms.message.sent", request);
-        return "/home";
+        redirectAttributes.addAttribute("groupId", groupId);
+        addMessage(redirectAttributes, MessageType.SUCCESS, "sms.message.sent", request);
+        return "redirect:/group/view";
 
     }
 

@@ -376,7 +376,8 @@ public class GroupController extends BaseController {
 
     @RequestMapping(value = "/group/language", method = RequestMethod.POST)
     public String setGroupLanguage(Model model, @RequestParam("groupId") Long groupId, @RequestParam("locale") String locale,
-                                   @RequestParam("includeSubGroups") boolean includeSubGroups, HttpServletRequest request) {
+                                   @RequestParam(value = "includeSubGroups", required = false) boolean includeSubGroups,
+                                   RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
         // todo: add permissions checking, exception handling, etc.
 
@@ -390,8 +391,10 @@ public class GroupController extends BaseController {
             group = groupManagementService.setGroupAndSubGroupDefaultLanguage(group, locale);
         }
 
-        addMessage(model, MessageType.SUCCESS, "group.language.success", request);
-        return viewGroupIndex(model, groupId);
+        // todo: there is probably a more efficient way to do this than the redirect
+        redirectAttributes.addAttribute("groupId", group.getId());
+        addMessage(redirectAttributes, MessageType.SUCCESS, "group.language.success", request);
+        return "redirect:/group/view";
     }
 
     /*
