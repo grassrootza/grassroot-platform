@@ -45,7 +45,11 @@ public class Group implements Serializable {
     group. Advanced feature only for web access (in effect, for paid account groups which have many many members)
      */
     private String defaultLanguage;
-    
+
+    /*
+    Adding group inactive field, for when we want to deactivate a group (e.g., after a user consolidates)
+     */
+    private boolean active;
 
     @Basic
     @Column(name = "name", nullable = false, length = 50)
@@ -155,6 +159,11 @@ public class Group implements Serializable {
 
     public void setDefaultLanguage(String defaultLanguage) { this.defaultLanguage = defaultLanguage; }
 
+    @Column(name = "active")
+    public boolean isActive() { return active; }
+
+    public void setActive(boolean active) { this.active = active; }
+
 
     @OneToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "group_roles",
@@ -187,18 +196,21 @@ public class Group implements Serializable {
     public Group(String groupName, User createdByUser) {
         this.groupName = groupName;
         this.createdByUser = createdByUser;
+        this.active = true;
     }
 
     public Group(String groupName, User createdByUser, Group parent) {
         this.groupName = groupName;
         this.createdByUser = createdByUser;
         this.parent = parent;
+        this.active = true;
     }
 
     public Group(String groupName, User createdByUser, boolean paidFor) {
         this.groupName = groupName;
         this.createdByUser = createdByUser;
         this.paidFor = paidFor;
+        this.active = true;
     }
 
     public Group(String groupName, User createdByUser, Group parent, boolean paidFor) {
@@ -206,6 +218,7 @@ public class Group implements Serializable {
         this.createdByUser = createdByUser;
         this.parent = parent;
         this.paidFor = paidFor;
+        this.active = true;
     }
 
     /*
@@ -247,7 +260,6 @@ public class Group implements Serializable {
                 ", createdByUser=" + createdByUser +
                 ", reminderMinutes=" + reminderMinutes +
                 ", version=" + version +
-
 //                ", groupMembers=" + groupMembers +
                 ", parent=" + parent +
 //                ", eventsApplied=" + eventsApplied +

@@ -38,6 +38,14 @@ public class PaidGroup {
     @Column(name="active_date_time")
     private Timestamp activeDateTime;
 
+    @ManyToOne
+    @JoinColumn(name="user_added_id")
+    private User addedByUser;
+
+    @ManyToOne
+    @JoinColumn(name="user_removed_id", nullable = true)
+    private User removedByUser;
+
     @Basic
     @Column(name="expire_date_time")
     private Timestamp expireDateTime;
@@ -52,10 +60,11 @@ public class PaidGroup {
     todo: perform same sort of checks on the account
      */
 
-    public PaidGroup(Group group, Account account) {
+    public PaidGroup(Group group, Account account, User addedByUser) {
 
         this.group = group;
         this.account = account;
+        this.addedByUser = addedByUser;
 
         this.activeDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis());
         this.expireDateTime = Timestamp.valueOf("2999-12-31 23:59:59");
@@ -66,10 +75,11 @@ public class PaidGroup {
     Constructor with custom active and expiry dates
      */
 
-    public PaidGroup(Group group, Account account, Timestamp activeDateTime, Timestamp expireDateTime) {
+    public PaidGroup(Group group, Account account, User addedByUser, Timestamp activeDateTime, Timestamp expireDateTime) {
 
         this.group = group;
         this.account = account;
+        this.addedByUser = addedByUser;
         this.activeDateTime = activeDateTime;
         this.expireDateTime = expireDateTime;
 
@@ -78,13 +88,16 @@ public class PaidGroup {
     /*
     Constructor with a custom expiry date but active now
      */
-    public PaidGroup(Group group, Account account, Timestamp expireDateTime) {
+    public PaidGroup(Group group, Account account, User addedByUser, Timestamp expireDateTime) {
 
-        this(group, account, new Timestamp(Calendar.getInstance().getTimeInMillis()), expireDateTime);
+        this(group, account, addedByUser, new Timestamp(Calendar.getInstance().getTimeInMillis()), expireDateTime);
 
     }
 
-    /* Getters and setters */
+    /*
+    Getters and setters
+    Some things should be immutable -- group, added user, active timestamp, so leaving out setters for them.
+    */
 
     public Long getId() {
         return id;
@@ -107,6 +120,12 @@ public class PaidGroup {
     public Timestamp getActiveDateTime() {
         return activeDateTime;
     }
+
+    public User getAddedByUser() { return addedByUser; }
+
+    public User getRemovedByUser() { return removedByUser; }
+
+    public void setRemovedByUser(User removedByUser) { this.removedByUser = removedByUser; }
 
     public void setActiveDateTime(Timestamp activeDateTime) { this.activeDateTime = activeDateTime; }
 

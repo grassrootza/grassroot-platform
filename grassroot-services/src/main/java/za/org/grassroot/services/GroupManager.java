@@ -6,11 +6,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.PaidGroup;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.NewGroupMember;
 import za.org.grassroot.core.enums.EventChangeType;
 import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.core.repository.PaidGroupRepository;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.util.TokenGeneratorService;
 
@@ -34,6 +37,9 @@ public class GroupManager implements GroupManagementService {
     GroupRepository groupRepository;
 
     @Autowired
+    PaidGroupRepository paidGroupRepository;
+
+    @Autowired
     UserManagementService userManager;
 
     @Autowired
@@ -41,6 +47,7 @@ public class GroupManager implements GroupManagementService {
 
     @Autowired
     GenericJmsTemplateProducerService jmsTemplateProducerService;
+
 
     /**
      * Have not yet created methods analogous to those in UserManager, as not sure if necessary
@@ -500,6 +507,21 @@ public class GroupManager implements GroupManagementService {
             return getAllUsersInGroupAndSubGroups(group).size();
         }
 
+    }
+
+    @Override
+    public Group setGroupInactive(Group group) {
+        group.setActive(false);
+        return saveGroup(group);
+    }
+
+    @Override
+    public Group designateGroupPaidFor(Group group, Account payingAccount, User addingUser) {
+        // todo: consider splitting these off into their own service
+        PaidGroup paidGroupRecord = new PaidGroup(group, payingAccount, addingUser);
+        paidGroupRepository.save(paidGroupRecord);
+        group.setPaidFor(true);
+        return saveGroup(group);
     }
 
     @Override

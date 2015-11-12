@@ -1,6 +1,7 @@
 package za.org.grassroot.services;
 
 import org.springframework.data.domain.Page;
+import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 
@@ -151,8 +152,16 @@ public interface GroupManagementService {
     public Integer getGroupSize(Group group, boolean includeSubGroups);
 
     /*
-    Methods for system admin
+    Methods to consolidate groups, and to manage active / inactive
      */
+
+    public Group setGroupInactive(Group group);
+
+    /*
+    Methods for system and account admin
+     */
+
+    Group designateGroupPaidFor(Group group, Account payingAccount, User addingUser);
 
     List<Group> getAllGroups();
 
