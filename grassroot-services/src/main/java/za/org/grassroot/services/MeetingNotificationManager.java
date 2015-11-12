@@ -77,10 +77,10 @@ public class MeetingNotificationManager implements MeetingNotificationService {
     }
 
     @Override
-    public String createVoteResultsMessage(User user, EventDTO event, double yes, double no, double invalid, double noReply) {
+    public String createVoteResultsMessage(User user, EventDTO event, double yes, double no, double abstain, double noReply) {
         Locale locale = getUserLocale(user);
         String messageKey = "sms.vote.send.results";
-        return messageSourceAccessor.getMessage(messageKey, populateFields(user, event,yes,no,invalid,noReply), locale);
+        return messageSourceAccessor.getMessage(messageKey, populateFields(user, event,yes,no,abstain,noReply), locale);
     }
     private Locale getUserLocale(User user) {
         if (user.getLanguageCode() == null || user.getLanguageCode().trim().equals("")) {
@@ -95,7 +95,7 @@ public class MeetingNotificationManager implements MeetingNotificationService {
         return populateFields(user,event,0D,0D,0D,0D);
     }
 
-        private String[] populateFields(User user, EventDTO event, double yes, double no, double invalid, double noReply) {
+    private String[] populateFields(User user, EventDTO event, double yes, double no, double abstain, double noReply) {
 
         String salutation = (event.getAppliesToGroup().hasName()) ? event.getAppliesToGroup().getGroupName() : "GrassRoot";
         log.info("populateFields...user..." + user.getPhoneNumber() + "...event..." + event.getId() + "...version..." + event.getVersion());
@@ -112,7 +112,7 @@ public class MeetingNotificationManager implements MeetingNotificationService {
                 dateString,
                 FormatUtil.formatDoubleToString(yes),
                 FormatUtil.formatDoubleToString(no),
-                FormatUtil.formatDoubleToString(invalid),
+                FormatUtil.formatDoubleToString(abstain),
                 FormatUtil.formatDoubleToString(noReply)
         };
 

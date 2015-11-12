@@ -173,9 +173,9 @@ public class USSDHomeControllerTest extends USSDAbstractTest {
         assertXMLEqual(startMenuZU, newHomeMenu.getBody());
         TestTransaction.end();
         TestTransaction.start();
-        User zuluOnMyStoep = userManager.findByInputNumber(testPhoneZu);
-        assertEquals(testPhoneZu, zuluOnMyStoep.getPhoneNumber());
-        assertEquals("zu",zuluOnMyStoep.getLanguageCode());
+        User zuUser = userManager.findByInputNumber(testPhoneZu);
+        assertEquals(testPhoneZu, zuUser.getPhoneNumber());
+        assertEquals("zu", zuUser.getLanguageCode());
 
 
     }

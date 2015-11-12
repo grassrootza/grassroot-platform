@@ -11,16 +11,20 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.services.AccountManagementService;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -45,6 +49,9 @@ public class AdminController extends BaseController {
 
     @Autowired
     EventManagementService eventManagementService;
+
+    @Autowired
+    AccountManagementService accountManagementService;
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/admin/home")
@@ -114,16 +121,9 @@ public class AdminController extends BaseController {
         return pageToDisplay;
     }
 
-    /* Method to designate a user as an 'institutional admin', with authority to link groups to an institutional account
-    Major todo: access control this, since it opens _a lot_
+    /*
+    Group admin methods
      */
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping("/admin/users/designate")
-    public String designateUser(Model model, @RequestParam("userId") Long userId) {
-        
-        return "admin/designate";
-    }
-
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/admin/groups/home")
     public String allGroups(Model model, @RequestParam(value = "page", required = false) Integer page) {
@@ -188,6 +188,44 @@ public class AdminController extends BaseController {
         model.addAttribute("groupList", groupList);
         return "admin/groups/list";
 
+    }
+
+    /**
+     * Methods to create institutional accounts and designate their administrators
+     */
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping("/admin/accounts/index")
+    public String listAccounts(Model model) {
+
+        model.addAttribute("accounts", new ArrayList<>(accountManagementService.loadAllAccounts()));
+        return "admin/accounts/index";
+    }
+
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping("/admin/accounts/create")
+    public String createAccount(Model model) {
+
+        // todo: additional security checks, given the sensitivity of this
+
+        model.addAttribute("account", new Account());
+        return "admin/accounts/create";
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/admin/accounts/create", method = RequestMethod.POST)
+    public String createAccountDo(Model model, @ModelAttribute("account") Account account,
+                                  HttpServletRequest request) {
+
+        // todo: work out best way to do this
+        return null;
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping("/admin/users/designate")
+    public String designateUser(Model model, @RequestParam("userId") Long userId) {
+
+        return "admin/designate";
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")

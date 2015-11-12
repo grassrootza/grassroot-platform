@@ -95,7 +95,7 @@ public class USSDHomeController extends USSDController {
             openingMenu = defaultStartMenu(sessionUser);
         }
 
-        return (checkMenuLength(openingMenu, true)) ? menuBuilder(openingMenu) : tooLongError;
+        return (checkMenuLength(openingMenu, true)) ? menuBuilder(openingMenu) : menuBuilder(fixMenuLength(openingMenu, true));
 
     }
 

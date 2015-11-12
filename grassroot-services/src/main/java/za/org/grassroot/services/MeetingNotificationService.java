@@ -19,5 +19,5 @@ public interface MeetingNotificationService {
 
     public String createMeetingReminderMessage(User user, EventDTO event);
 
-    public String createVoteResultsMessage(User user, EventDTO event, double yes, double no, double invalid, double noReply);
+    public String createVoteResultsMessage(User user, EventDTO event, double yes, double no, double abstain, double noReply);
 }

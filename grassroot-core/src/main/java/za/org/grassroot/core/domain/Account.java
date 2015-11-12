@@ -91,7 +91,7 @@ public class Account {
 
     }
 
-    public Account(String accountName, String primaryEmail, User administrator, boolean enabled) {
+    public Account(String accountName, User administrator, String primaryEmail, boolean enabled) {
 
         this.accountName = accountName;
         this.administrators = new ArrayList<>();
@@ -103,6 +103,10 @@ public class Account {
         this.relayableMessages = relayableMessages;
 
     }
+
+    /*
+    Getters and setters
+     */
 
     public Long getId() {
         return id;
@@ -166,6 +170,27 @@ public class Account {
 
     public void setRelayableMessages(boolean relayableMessages) {
         this.relayableMessages = relayableMessages;
+    }
+
+    /*
+    Helper methods for adding and removing administrators and groups
+    todo: check for duplicates in all the adding methods, and that entity is in list for remove methods
+     */
+
+    public void addAdministrator(User administrator) {
+        administrators.add(administrator);
+    }
+
+    public void removeAdministrator(User administrator) {
+        administrators.remove(administrator);
+    }
+
+    public void addPaidGroup(PaidGroup paidGroup) {
+        paidGroups.add(paidGroup);
+    }
+
+    public void removePaidGroup(PaidGroup paidGroup) {
+        paidGroups.remove(paidGroup);
     }
 
     @Override

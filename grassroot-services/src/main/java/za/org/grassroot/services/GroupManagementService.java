@@ -157,11 +157,15 @@ public interface GroupManagementService {
 
     public Group setGroupInactive(Group group);
 
+    public Group mergeGroups(Group firstGroup, Group secondGroup);
+
+    public Group mergeGroups(Group firstGroup, Group secondGroup, boolean setInactive);
+
+    public Group mergeGroupsSpecifyOrder(Group groupInto, Group groupFrom, boolean setInactive);
+
     /*
     Methods for system and account admin
      */
-
-    Group designateGroupPaidFor(Group group, Account payingAccount, User addingUser);
 
     List<Group> getAllGroups();
 

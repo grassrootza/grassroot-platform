@@ -394,7 +394,7 @@ public class GroupManager implements GroupManagementService {
     @Override
     public List<User> getAllUsersInGroupAndSubGroups(Group group) {
         List<User> userList = new ArrayList<User>();
-        recursiveUserAdd(group,userList);
+        recursiveUserAdd(group, userList);
         return userList;
     }
 
@@ -516,12 +516,37 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public Group designateGroupPaidFor(Group group, Account payingAccount, User addingUser) {
-        // todo: consider splitting these off into their own service
-        PaidGroup paidGroupRecord = new PaidGroup(group, payingAccount, addingUser);
-        paidGroupRepository.save(paidGroupRecord);
-        group.setPaidFor(true);
-        return saveGroup(group);
+    public Group mergeGroups(Group groupA, Group groupB) {
+        return mergeGroups(groupA, groupB, true);
+    }
+
+    @Override
+    public Group mergeGroups(Group groupA, Group groupB, boolean setInactive) {
+
+        Group largerGroup, smallerGroup;
+
+        if (groupA.getGroupMembers().size() >= groupB.getGroupMembers().size()) {
+            largerGroup = groupA;
+            smallerGroup = groupB;
+        } else {
+            largerGroup = groupB;
+            smallerGroup = groupA;
+        }
+
+        return mergeGroupsSpecifyOrder(largerGroup, smallerGroup, setInactive);
+    }
+
+    @Override
+    public Group mergeGroupsSpecifyOrder(Group groupInto, Group groupFrom, boolean setInactive) {
+
+        for (User user : groupFrom.getGroupMembers()) {
+            addGroupMember(groupInto, user);
+        }
+
+        groupFrom.setActive(!setInactive);
+        groupRepository.save(groupFrom);
+
+        return groupRepository.save(groupInto);
     }
 
     @Override

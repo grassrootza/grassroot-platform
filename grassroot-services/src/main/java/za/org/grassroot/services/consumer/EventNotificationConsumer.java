@@ -150,7 +150,7 @@ public class EventNotificationConsumer {
         EventDTO event = eventWithTotals.getEventDTO();
         RSVPTotalsDTO totalsDTO = eventWithTotals.getRsvpTotalsDTO();
         String message = meetingNotificationService.createVoteResultsMessage(user, event,
-                totalsDTO.getYes(),totalsDTO.getNo(),totalsDTO.getInvalid(),totalsDTO.getNumberNoRSVP());
+                totalsDTO.getYes(),totalsDTO.getNo(),totalsDTO.getMaybe(),totalsDTO.getNumberNoRSVP());
         if (!eventLogManagementService.voteResultSentToUser(event.getEventObject(), user)) {
             log.info("sendVoteResultsToUser...send message..." + message + "...to..." + user.getPhoneNumber());
             messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);

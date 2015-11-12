@@ -106,6 +106,15 @@ public class USSDController {
         return menuRequest;
     }
 
+    protected USSDMenu fixMenuLength(USSDMenu menu, boolean frontPage) {
+        final Integer neededLength = frontPage ? 140 : 160;
+        final Integer charsToTrim = menu.getMenuCharLength() - neededLength + 1; // adding a character, for safety
+        final String currentPrompt = menu.getPromptMessage();
+        final String revisedPrompt = currentPrompt.substring(0, currentPrompt.length() - charsToTrim);
+        menu.setPromptMessage(revisedPrompt);
+        return menu;
+    }
+
     protected List<Option> freeText(String urlEnding) throws URISyntaxException {
         return Collections.singletonList(new Option("", 1, 1, new URI(baseURI + urlEnding), false));
     }
