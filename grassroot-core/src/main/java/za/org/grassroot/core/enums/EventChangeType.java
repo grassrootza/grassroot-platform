@@ -10,7 +10,8 @@ public enum EventChangeType {
     EVENT_CANCELLED("event-cancelled"),
     USER_ADDED("user-added"),
     EVENT_REMINDER("event-reminder"),
-    VOTE_RESULT("vote-results");
+    VOTE_RESULT("vote-results"),
+    MANUAL_REMINDER("manual-reminder");
 
     private final String text;
 

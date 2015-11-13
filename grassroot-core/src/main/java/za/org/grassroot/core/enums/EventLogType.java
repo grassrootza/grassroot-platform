@@ -15,5 +15,6 @@ public enum EventLogType {
     EventMinutes,
     EventRSVP,
     EventTest,
-    EventResult
+    EventResult,
+    EventManualReminder
 }

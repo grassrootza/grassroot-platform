@@ -1,11 +1,9 @@
 package za.org.grassroot.webapp.controller.rest;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.EventManagementService;
@@ -126,6 +124,16 @@ public class EventRestController {
 
 
     }
+    //@Path("getall/{message: .*}") - regular expression to allow empty message being passed, nope
+    //@MatrixVariable(required=false, defaultValue="") nope
+    @RequestMapping(value = "/manualreminder/{eventId}/{message}", method = RequestMethod.POST)
+    public boolean rsvpTotals(@PathVariable("eventId") Long eventId,
+                              @PathVariable("message") String message) {
+        message = message.replace("|"," ");
+        return eventManagementService.sendManualReminder(eventRepository.findOne(eventId),message);
+
+    }
+
 
 
 }

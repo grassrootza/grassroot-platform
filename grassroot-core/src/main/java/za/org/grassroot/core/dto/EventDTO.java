@@ -57,6 +57,11 @@ public class EventDTO  implements Serializable {
      */
 
     private Integer version;
+    /*
+    Message field is used to override the reminder message created from template
+     */
+    private String message;
+
 
     public EventDTO(String eventLocation, Long id, Timestamp createdDateTime, Timestamp eventStartDateTime, User createdByUser, Group appliesToGroup, boolean canceled, EventType eventType, String name, String dateTimeString, boolean includeSubGroups, int reminderMinutes, boolean rsvpRequired, boolean relayable, Integer version) {
         this.eventLocation = eventLocation;
@@ -74,6 +79,7 @@ public class EventDTO  implements Serializable {
         this.rsvpRequired = rsvpRequired;
         this.relayable = relayable;
         this.version = version;
+        this.message = "";
     }
 
     public EventDTO() {
@@ -95,6 +101,7 @@ public class EventDTO  implements Serializable {
         this.rsvpRequired = event.isRsvpRequired();
         this.relayable = event.isRelayable();
         this.version = event.getVersion();
+        this.message = "";
 
     }
 
@@ -222,6 +229,14 @@ public class EventDTO  implements Serializable {
         this.version = version;
     }
 
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
     @Override
     public String toString() {
         return "EventDTO{" +
@@ -230,7 +245,7 @@ public class EventDTO  implements Serializable {
                 ", createdDateTime=" + createdDateTime +
                 ", eventStartDateTime=" + eventStartDateTime +
                 ", createdByUser=" + createdByUser +
-                ", appliesToGroup.id=" + appliesToGroup +
+                ", appliesToGroup=" + appliesToGroup +
                 ", canceled=" + canceled +
                 ", eventType=" + eventType +
                 ", name='" + name + '\'' +
@@ -240,8 +255,7 @@ public class EventDTO  implements Serializable {
                 ", rsvpRequired=" + rsvpRequired +
                 ", relayable=" + relayable +
                 ", version=" + version +
+                ", message='" + message + '\'' +
                 '}';
     }
-
-
 }

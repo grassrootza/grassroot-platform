@@ -1,17 +1,13 @@
 package za.org.grassroot.services.consumer;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.*;
-import za.org.grassroot.core.enums.EventChangeType;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.event.EventChangeEvent;
 import za.org.grassroot.integration.domain.MessageProtocol;
 import za.org.grassroot.integration.services.MessageSendingService;
 import za.org.grassroot.services.EventLogManagementService;
@@ -20,13 +16,8 @@ import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.MeetingNotificationService;
 import za.org.grassroot.services.util.CacheUtilService;
 
-import javax.swing.event.ChangeEvent;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.logging.Logger;
-
-import static za.org.grassroot.core.enums.EventChangeType.EVENT_ADDED;
 
 /**
  * Created by aakilomar on 8/31/15.
@@ -126,6 +117,15 @@ public class EventNotificationConsumer {
         }
 
     }
+    @JmsListener(destination = "manual-reminder", containerFactory = "messagingJmsContainerFactory",
+            concurrency = "1")
+    public void sendManualEventReminder(EventDTO event) {
+        log.info("sendManualEventReminder...event.id..." + event.getId());
+        for (User user : getAllUsersForGroup(event.getEventObject())) {
+            sendManualReminderMessage(user, event);
+        }
+
+    }
 
     @JmsListener(destination = "vote-results", containerFactory = "messagingJmsContainerFactory",
             concurrency = "3")
@@ -203,11 +203,50 @@ public class EventNotificationConsumer {
         }
 
     }
+    private void sendManualReminderMessage(User user, EventDTO event) {
+        //generate message based on user language if message not captured by the user
+        String message = event.getMessage();
+        boolean manual = false;
+        if (message == null || message.trim().equals("")) {
+            message = meetingNotificationService.createMeetingReminderMessage(user, event);
+
+        } else {
+            manual = true;
+        }
+        /*
+        Do not send vote reminder if the user already voted (userRsvpForEvent)
+         */
+        if (event.getEventType() == EventType.Vote) {
+            if (!eventLogManagementService.userRsvpForEvent(event.getEventObject(), user)) {
+                sendManualMessageAction(user,event,message);
+            }
+
+        } else {
+        /*
+        Do not send meeting reminder if the user already rsvp'ed "no"
+         */
+
+            if (!eventLogManagementService.userRsvpNoForEvent(event.getEventObject(), user)) {
+                sendManualMessageAction(user,event,message);
+            }
+
+        }
+
+    }
+
     private void sendMeetingReminderMessageAction(User user, EventDTO event, String message) {
         log.info("sendMeetingReminderMessage...send message..." + message + "...to..." + user.getPhoneNumber());
         messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
         eventLogManagementService.createEventLog(EventLogType.EventReminder, event.getEventObject(), user, message);
 
     }
+
+    private void sendManualMessageAction(User user, EventDTO event, String message) {
+        log.info("sendManualMessageAction...send message..." + message + "...to..." + user.getPhoneNumber());
+        messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
+        eventLogManagementService.createEventLog(EventLogType.EventManualReminder, event.getEventObject(), user, message);
+
+    }
+
 }
 
