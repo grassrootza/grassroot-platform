@@ -17,10 +17,7 @@ import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.services.AccountManagementService;
-import za.org.grassroot.services.EventManagementService;
-import za.org.grassroot.services.GroupManagementService;
-import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
@@ -48,10 +45,10 @@ public class AdminController extends BaseController {
     GroupManagementService groupManagementService;
 
     @Autowired
-    EventManagementService eventManagementService;
+    AccountManagementService accountManagementService;
 
     @Autowired
-    AccountManagementService accountManagementService;
+    RoleManagementService roleManagementService;
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/admin/home")
@@ -204,7 +201,7 @@ public class AdminController extends BaseController {
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/admin/accounts/create")
-    public String createAccount(Model model) {
+    public String createAccountForm(Model model) {
 
         // todo: additional security checks, given the sensitivity of this
 
@@ -214,18 +211,54 @@ public class AdminController extends BaseController {
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping(value = "/admin/accounts/create", method = RequestMethod.POST)
-    public String createAccountDo(Model model, @ModelAttribute("account") Account account,
+    public String createAccountDo(Model model, @RequestParam("accountName") String accountName, @RequestParam("billingAddress") String billingEmail,
                                   HttpServletRequest request) {
 
-        // todo: work out best way to do this
-        return null;
+        // todo: can almost certainly do this better with a passed entity, binding & validation etc., but doing minimal for now
+        // todo: all the checks & validation, e.g., whether account already exists, etc
+
+        log.info("Okay, we're going to create an account ... with name: " + accountName);
+        Account account = accountManagementService.createAccount(accountName);
+        account = accountManagementService.setBillingEmail(account, billingEmail);
+        model.addAttribute("account", account);
+        return "/admin/accounts/view";
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping("/admin/users/designate")
-    public String designateUser(Model model, @RequestParam("userId") Long userId) {
+    @RequestMapping("/admin/accounts/designate")
+    public String designateUserForm(Model model, @RequestParam(value = "accountId", required = false) Long accountId) {
 
         return "admin/designate";
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "admin/accounts/designate", method = RequestMethod.POST)
+    public String designateUserConfirm(Model model, @RequestParam("searchNumber") String searchNumber,
+                                       @RequestParam("accountId") Long accountId) {
+
+        User userToDesignate = userManagementService.findByInputNumber(searchNumber); // todo: make this a multi-result search
+        Account account = accountManagementService.loadAccount(accountId);
+
+        model.addAttribute("userToDesignate", userToDesignate);
+        model.addAttribute("account", account);
+
+        return "admin/designate-confirm";
+
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/admin/users/designate_confirmed", method = RequestMethod.POST)
+    public String designateUserDo(Model model, @RequestParam("userId") Long userId, @RequestParam("accountId") Long accountId) {
+
+        // todo: add error handling, etc
+
+        User userToDesignate = userManagementService.loadUser(userId);
+        Account account = accountManagementService.loadAccount(accountId);
+
+        accountManagementService.addAdministrator(account, userToDesignate);
+        roleManagementService.addStandardRoleToUser("ROLE_ACCOUNT_ADMIN", userToDesignate);
+
+        return listAccounts(model);
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")

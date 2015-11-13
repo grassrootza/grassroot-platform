@@ -1,0 +1,34 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+  <title>GrassRoot - View an institutional account</title>
+<script>
+
+
+
+</script>
+</head>
+<body>
+
+<div layout:fragment="header">
+  <h2>View a paid account</h2>
+</div>
+<div layout:fragment="overview">View an account</div>
+
+<div layout:fragment="content">
+  <div layout:fragment="messages"></div>
+  <div class="well">
+    <!-- to do: Add stuff about the account in here -->
+    <div class="row">
+      Viewing account: <span th:text="${account.accountName}">account name</span>
+      <div class="form-group">
+        <div class="col-md-8">
+          <a href="" th:href="@{designate(accountId, $account.id)}"><button type="submit" class="btn btn-primary">Designate admin user</button></a>
+        </div>
+      </div>
+  </div>
+</div>
+
+</body>
+</html>

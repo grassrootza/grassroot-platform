@@ -1,5 +1,7 @@
 package za.org.grassroot.services;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.Account;
@@ -21,6 +23,8 @@ import java.util.List;
 @Transactional
 public class AccountManager implements AccountManagementService {
 
+    private static final Logger log = LoggerFactory.getLogger(AccountManager.class);
+
     @Autowired
     AccountRepository accountRepository;
     
@@ -32,7 +36,9 @@ public class AccountManager implements AccountManagementService {
 
     @Override
     public Account createAccount(String accountName) {
-        return accountRepository.save(new Account(accountName, true));
+        log.info("Okay, creating a bare bones account ... with name: " + accountName);
+        Account newAccount = new Account(accountName, true);
+        return accountRepository.save(newAccount);
     }
 
     @Override
@@ -54,6 +60,12 @@ public class AccountManager implements AccountManagementService {
     @Override
     public Account removeAdministrator(Account account, User administrator) {
         account.removeAdministrator(administrator);
+        return accountRepository.save(account);
+    }
+
+    @Override
+    public Account setBillingEmail(Account account, String billingEmail) {
+        account.setPrimaryEmail(billingEmail);
         return accountRepository.save(account);
     }
 

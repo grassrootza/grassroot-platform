@@ -312,6 +312,7 @@ public class User implements UserDetails {
 
     /**
      * Inserting string functions to handle phone numbers here, for the moment
+     * todo: remove these to use only the Util class
      */
 
     public static String invertPhoneNumber(String storedNumber, String joinString) {

@@ -25,6 +25,8 @@ public interface AccountManagementService {
 
     Account removeAdministrator(Account account, User administrator);
 
+    Account setBillingEmail(Account account, String billingEmail);
+
     /*
     Methods to load, find and save institutional accounts
      */

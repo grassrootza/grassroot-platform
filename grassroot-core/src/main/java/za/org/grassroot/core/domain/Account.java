@@ -5,6 +5,7 @@ import lombok.EqualsAndHashCode;
 import javax.persistence.*;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 /**
@@ -15,7 +16,7 @@ import java.util.List;
 
 @Entity
 @Table(name="paid_account")
-@EqualsAndHashCode
+// @EqualsAndHashCode
 public class Account {
 
     @Id
@@ -66,6 +67,14 @@ public class Account {
     Constructors
      */
 
+    @PreUpdate
+    @PrePersist
+    public void updateTimeStamps() {
+        if (createdDateTime == null) {
+            createdDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis());
+        }
+    }
+
     public Account() {
     }
 
@@ -112,9 +121,13 @@ public class Account {
         return id;
     }
 
+    public void setId(Long id) { this.id = id; }
+
     public Timestamp getCreatedDateTime() {
         return createdDateTime;
     }
+
+    public void setCreatedDateTime(Timestamp createdDateTime) { this.createdDateTime = createdDateTime; }
 
     public List<User> getAdministrators() {
         return administrators;

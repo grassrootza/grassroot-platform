@@ -222,7 +222,7 @@ public class Group implements Serializable {
     }
 
     /*
-    Adding & removing members
+    Adding & removing members and roles
      */
 
     public Group addMember(User newMember) {
@@ -230,6 +230,11 @@ public class Group implements Serializable {
         // the check and add without calling the repository
         if (!this.groupMembers.contains(newMember))
             this.groupMembers.add(newMember);
+        return this;
+    }
+
+    public Group addRole(Role role) {
+        this.groupRoles.add(role);
         return this;
     }
 
