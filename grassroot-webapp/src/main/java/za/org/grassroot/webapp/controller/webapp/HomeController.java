@@ -59,11 +59,8 @@ public class HomeController extends BaseController {
         return new ModelAndView("/index", model.asMap());
     }
 
-    /*
-    aakil was here
-     */
     @RequestMapping("/index")
-    public String getHomePage(Model model) {
+    public String getIndexPage(Model model) {
         return "index";
     }
 
