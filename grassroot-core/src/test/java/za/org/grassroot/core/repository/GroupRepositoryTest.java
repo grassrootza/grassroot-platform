@@ -34,7 +34,7 @@ public class GroupRepositoryTest {
     GroupRepository groupRepository;
 
     @Autowired
-    UserRepository userRepository; // LSJ: there may be a less expensive way to do this?
+    UserRepository userRepository;
 
 
     @Test

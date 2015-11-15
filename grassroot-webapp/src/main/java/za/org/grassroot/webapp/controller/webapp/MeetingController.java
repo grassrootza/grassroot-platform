@@ -49,10 +49,6 @@ public class MeetingController extends BaseController {
     @Autowired
     EventLogManagementService eventLogManagementService;
 
-    // temporary, just to make sure the SMS sends, will later leave this to service layer
-    @Autowired
-    SmsSendingService smsSendingService;
-
     @RequestMapping("/meeting/view")
     public String viewMeetingDetails(Model model, @RequestParam("eventId") Long eventId) {
 
@@ -192,7 +188,7 @@ public class MeetingController extends BaseController {
      */
 
     // Major todo: make this secured against the user's role as 'admin' on an institutional account
-    @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/meeting/free")
     public String sendFreeForm(Model model, @RequestParam(value="groupId", required=false) Long groupId) {
 
@@ -212,15 +208,19 @@ public class MeetingController extends BaseController {
         return "meeting/free";
     }
 
-    // Major todo: move to service layer
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/meeting/free", method = RequestMethod.POST)
     public String sendFreeMsg(Model model, @RequestParam(value="groupId") Long groupId, @RequestParam(value="message") String message,
                               @RequestParam(value="includeSubGroups", required=false) boolean includeSubgroups,
                               RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
-        Group group = groupManagementService.loadGroup(groupId);
+        // todo: check that this group is paid for (and filter on previous page)
 
-        List<User> usersToMessage = (!includeSubgroups) ?  group.getGroupMembers() :
+        Group group = groupManagementService.loadGroup(groupId);
+        Event dummyEvent = eventManagementService.createEvent("", getUserProfile(), group, includeSubgroups);
+        boolean messageSent = eventManagementService.sendManualReminder(dummyEvent, message);
+
+        /* List<User> usersToMessage = (!includeSubgroups) ?  group.getGroupMembers() :
                 groupManagementService.getAllUsersInGroupAndSubGroups(groupId);
 
         // removing duplicates ...
@@ -231,9 +231,9 @@ public class MeetingController extends BaseController {
 
         for (User user : usersToMessage) {
             smsSendingService.sendSMS(group.getName("") + ": " + message, user.getPhoneNumber());
-        }
+        }*/
 
-        log.info("We just sent a message to " + usersToMessage.size() + " members");
+        log.info("We just sent a free form message with result: " + messageSent);
 
         redirectAttributes.addAttribute("groupId", groupId);
         addMessage(redirectAttributes, MessageType.SUCCESS, "sms.message.sent", request);

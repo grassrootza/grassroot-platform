@@ -52,7 +52,8 @@ public class HomeController extends BaseController {
             return signinController.autoLogonUser(request, model);
         }
         if (signinController.isAuthenticated()) {
-            return new ModelAndView("/home", model.asMap());
+            model.addAttribute("userGroups", groupManagementService.getGroupsPartOf(getUserProfile()));
+            return new ModelAndView("/home",model.asMap());
         }
 
         return new ModelAndView("/index", model.asMap());
