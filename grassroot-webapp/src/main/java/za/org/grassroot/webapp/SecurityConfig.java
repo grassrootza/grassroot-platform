@@ -2,6 +2,7 @@ package za.org.grassroot.webapp;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.SecurityProperties;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -13,7 +14,12 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.rememberme.JdbcTokenRepositoryImpl;
+import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+
+import javax.sql.DataSource;
 
 /**
  * @author Lesetse Kimwaga
@@ -29,6 +35,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    DataSource dataSource;
+
 
     @Override
     public void configure(WebSecurity web) throws Exception {
@@ -50,6 +60,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
             http
                 .formLogin()
+                    .successHandler(savedRequestAwareAuthenticationSuccessHandler())
                     .defaultSuccessUrl("/home")
                     .loginPage("/login")
                     .permitAll()
@@ -67,7 +78,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                         .antMatchers("/grass-root-verification/*").permitAll()
                         .antMatchers("/home").fullyAuthenticated()
                         .anyRequest()
-                        .fullyAuthenticated();
+                        .fullyAuthenticated()
+                    .and()
+                .rememberMe().tokenRepository(persistentTokenRepository())
+                .tokenValiditySeconds(1209600);
                         /*.and()
                                 .requiresChannel()
                                 .anyRequest()
@@ -81,6 +95,23 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         auth
                 .userDetailsService(userDetailsService)
                 .passwordEncoder(passwordEncoder);
+    }
+
+    @Bean
+    public PersistentTokenRepository persistentTokenRepository() {
+        JdbcTokenRepositoryImpl db = new JdbcTokenRepositoryImpl();
+        db.setDataSource(dataSource);
+        return db;
+    }
+
+    @Bean
+    public SavedRequestAwareAuthenticationSuccessHandler
+    savedRequestAwareAuthenticationSuccessHandler() {
+
+        SavedRequestAwareAuthenticationSuccessHandler auth
+                = new SavedRequestAwareAuthenticationSuccessHandler();
+        auth.setTargetUrlParameter("targetUrl");
+        return auth;
     }
 
 }

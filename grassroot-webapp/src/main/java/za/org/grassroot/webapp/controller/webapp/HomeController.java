@@ -3,20 +3,25 @@ package za.org.grassroot.webapp.controller.webapp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.ModelAndView;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.util.AuthenticationUtil;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupViewNode;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,14 +39,29 @@ public class HomeController extends BaseController{
     @Autowired
     EventManagementService eventManagementService;
 
+    @Autowired
+    AuthenticationUtil authenticationUtil;
+
+    @Autowired
+    SigninController signinController;
+
     @RequestMapping("/")
-    public String getIndexPage() {
+    public ModelAndView getIndexPage(Model model, HttpServletRequest request) {
         log.debug("Getting home page");
-        return "index";
+        if (signinController.isRememberMeAuthenticated()) {
+            return signinController.autoLogonUser(request,model);
+        }
+        if (signinController.isAuthenticated()) {
+            return new ModelAndView("/home",model.asMap());
+        }
+
+        return new ModelAndView("/index",model.asMap());
     }
 
     @RequestMapping("/home")
     public String getHomePage(Model model, @ModelAttribute("currentUser") UserDetails userDetails) {
+
+        authenticationUtil.debugAuthentication();
 
         User user = userManagementService.fetchUserByUsername(userDetails.getUsername());
 
@@ -69,6 +89,8 @@ public class HomeController extends BaseController{
 
         return "home";
     }
+
+
 
     private List<Event> getConsolidatedGroupEvents(List<Group> groups) {
         List<Event> groupEvents = new ArrayList<>();
