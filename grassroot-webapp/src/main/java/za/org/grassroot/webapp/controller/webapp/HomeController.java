@@ -29,7 +29,7 @@ import java.util.List;
  * @author Lesetse Kimwaga
  */
 @Controller
-public class HomeController extends BaseController{
+public class HomeController extends BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(HomeController.class);
 
@@ -49,13 +49,18 @@ public class HomeController extends BaseController{
     public ModelAndView getIndexPage(Model model, HttpServletRequest request) {
         log.debug("Getting home page");
         if (signinController.isRememberMeAuthenticated()) {
-            return signinController.autoLogonUser(request,model);
+            return signinController.autoLogonUser(request, model);
         }
         if (signinController.isAuthenticated()) {
-            return new ModelAndView("/home",model.asMap());
+            return new ModelAndView("/home", model.asMap());
         }
 
-        return new ModelAndView("/index",model.asMap());
+        return new ModelAndView("/index", model.asMap());
+    }
+
+    @RequestMapping("/index")
+    public String getHomePage(Model model) {
+        return "index";
     }
 
     @RequestMapping("/home")
@@ -91,14 +96,12 @@ public class HomeController extends BaseController{
     }
 
 
-
     private List<Event> getConsolidatedGroupEvents(List<Group> groups) {
         List<Event> groupEvents = new ArrayList<>();
         for (Group group : groups) {
 
             List<Event> events = eventManagementService.findByAppliesToGroup(group);
-            if(!events.isEmpty())
-            {
+            if (!events.isEmpty()) {
                 groupEvents.addAll(events);
             }
         }
