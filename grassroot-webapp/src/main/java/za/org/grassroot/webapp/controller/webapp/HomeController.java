@@ -46,7 +46,7 @@ public class HomeController extends BaseController {
     SigninController signinController;
 
     @RequestMapping("/")
-    public ModelAndView getIndexPage(Model model, HttpServletRequest request) {
+    public ModelAndView getRootPage(Model model, HttpServletRequest request) {
         log.debug("Getting home page");
         if (signinController.isRememberMeAuthenticated()) {
             return signinController.autoLogonUser(request, model);
@@ -56,13 +56,9 @@ public class HomeController extends BaseController {
             return new ModelAndView("/home",model.asMap());
         }
 
-        return new ModelAndView("/index", model.asMap());
+        return new ModelAndView("index", model.asMap());
     }
 
-    @RequestMapping("/index")
-    public String getIndexPage(Model model) {
-        return "index";
-    }
 
     @RequestMapping("/home")
     public String getHomePage(Model model, @ModelAttribute("currentUser") UserDetails userDetails) {
