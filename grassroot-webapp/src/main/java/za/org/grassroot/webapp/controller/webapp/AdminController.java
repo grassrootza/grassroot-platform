@@ -191,13 +191,20 @@ public class AdminController extends BaseController {
      * Methods to create institutional accounts and designate their administrators
      */
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping("/admin/accounts/index")
+    @RequestMapping("/admin/accounts/home")
     public String listAccounts(Model model) {
-
         model.addAttribute("accounts", new ArrayList<>(accountManagementService.loadAllAccounts()));
-        return "admin/accounts/index";
+        return "admin/accounts/home";
     }
 
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping("/admin/accounts/view")
+    public String adminViewAccount(Model model, @RequestParam("accountId") Long accountId) {
+        Account account = accountManagementService.loadAccount(accountId);
+        log.info("Viewing account ... " + account.toString());
+        model.addAttribute("account", account);
+        return "admin/accounts/view";
+    }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/admin/accounts/create")
@@ -205,7 +212,6 @@ public class AdminController extends BaseController {
 
         // todo: additional security checks, given the sensitivity of this
 
-        model.addAttribute("account", new Account());
         return "admin/accounts/create";
     }
 
@@ -227,36 +233,52 @@ public class AdminController extends BaseController {
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/admin/accounts/designate")
     public String designateUserForm(Model model, @RequestParam(value = "accountId", required = false) Long accountId) {
-
-        return "admin/designate";
+        // todo: use a selector box if accountId not specified
+        model.addAttribute("account", accountManagementService.loadAccount(accountId));
+        return "admin/accounts/designate";
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping(value = "admin/accounts/designate", method = RequestMethod.POST)
     public String designateUserConfirm(Model model, @RequestParam("searchNumber") String searchNumber,
-                                       @RequestParam("accountId") Long accountId) {
+                                       @RequestParam("accountId") Long accountId, HttpServletRequest request) {
 
-        User userToDesignate = userManagementService.findByInputNumber(searchNumber); // todo: make this a multi-result search
         Account account = accountManagementService.loadAccount(accountId);
-
-        model.addAttribute("userToDesignate", userToDesignate);
         model.addAttribute("account", account);
 
-        return "admin/designate-confirm";
+        try {
+            User userToDesignate = userManagementService.findByInputNumber(searchNumber); // todo: make this a multi-result search
+            model.addAttribute("userToDesignate", userToDesignate);
+            return "admin/accounts/designate-confirm";
+        } catch (Exception e) {
+            addMessage(model, MessageType.ERROR, "admin.find.error", request);
+            return "admin/accounts/designate";
+        }
 
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/admin/users/designate_confirmed", method = RequestMethod.POST)
+    @RequestMapping(value = "/admin/accounts/designate_confirmed", method = RequestMethod.POST)
     public String designateUserDo(Model model, @RequestParam("userId") Long userId, @RequestParam("accountId") Long accountId) {
 
         // todo: add error handling, etc
 
+        String roleName = "ROLE_ACCOUNT_ADMIN";
+        log.info("Okay, adding the role " + roleName + " to a user ...");
+
         User userToDesignate = userManagementService.loadUser(userId);
         Account account = accountManagementService.loadAccount(accountId);
 
+        log.info("Inside designating method, going to add role on this account: " + account.getAccountName() + ", " +
+                         "for this user: " + userToDesignate.nameToDisplay());
+
         accountManagementService.addAdministrator(account, userToDesignate);
+
+        log.info("Added the user to the account and saved it");
+
         roleManagementService.addStandardRoleToUser("ROLE_ACCOUNT_ADMIN", userToDesignate);
+
+        log.info("Added the role to the user and saved them");
 
         return listAccounts(model);
     }

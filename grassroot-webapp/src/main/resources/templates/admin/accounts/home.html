@@ -1,0 +1,51 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+  <title>GrassRoot - Manage institutional accounts</title>
+<script>
+
+
+
+</script>
+</head>
+<body>
+
+<div layout:fragment="header">
+  <h2>Manage paid accounts</h2>
+</div>
+<div layout:fragment="overview">Manage accounts for paid group</div>
+
+<div layout:fragment="content">
+  <div layout:fragment="messages"></div>
+  <div class="well">
+    <div th:if="${not #lists.isEmpty(accounts)}">
+      <div class="row">
+        <table class="table table-striped">
+          <!-- to do: add a bunch more information -->
+          <thead>
+            <th>Account name</th>
+            <th>Billing email</th>
+            <th>Enabled?</th>
+          </thead>
+          <tbody>
+            <tr th:each="account : ${accounts}">
+              <td>
+                <a href="" th:href="@{view(accountId=${account.id})}"><span th:text="${account.accountName}">Account name</span></a>
+              </td>
+              <td><span th:text="${account.primaryEmail}">Email address</span></td>
+              <td><span th:text="${account.enabled}">True</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="row">
+      <!-- todo: add buttons/pages for deleting / disabling accounts -->
+      <a href="" th:href="@{create}"><button type="button btn-info">Create new account</button></a>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

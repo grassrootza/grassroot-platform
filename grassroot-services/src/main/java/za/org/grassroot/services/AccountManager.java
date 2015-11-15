@@ -27,9 +27,12 @@ public class AccountManager implements AccountManagementService {
 
     @Autowired
     AccountRepository accountRepository;
-    
+
     @Autowired
     PaidGroupRepository paidGroupRepository;
+
+    @Autowired
+    UserManagementService userManagementService;
 
     @Autowired
     GroupManagementService groupManagementService;
@@ -54,12 +57,16 @@ public class AccountManager implements AccountManagementService {
     @Override
     public Account addAdministrator(Account account, User administrator) {
         account.addAdministrator(administrator);
+        administrator.setAccountAdministered(account);
+        userManagementService.save(administrator);
         return accountRepository.save(account);
     }
 
     @Override
     public Account removeAdministrator(Account account, User administrator) {
         account.removeAdministrator(administrator);
+        administrator.setAccountAdministered(null);
+        userManagementService.save(administrator);
         return accountRepository.save(account);
     }
 
