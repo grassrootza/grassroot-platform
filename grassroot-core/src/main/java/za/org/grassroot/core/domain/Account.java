@@ -3,6 +3,7 @@ package za.org.grassroot.core.domain;
 import lombok.EqualsAndHashCode;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -16,7 +17,7 @@ import java.util.List;
 
 @Entity
 @Table(name="paid_account")
-public class Account {
+public class Account implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
