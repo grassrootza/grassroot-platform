@@ -60,6 +60,14 @@ public class PaidGroup {
     todo: perform same sort of checks on the account
      */
 
+    @PreUpdate
+    @PrePersist
+    public void updateTimeStamps() {
+        if (createdDateTime == null) {
+            createdDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis());
+        }
+    }
+
     public PaidGroup(Group group, Account account, User addedByUser) {
 
         this.group = group;
@@ -91,6 +99,10 @@ public class PaidGroup {
     public PaidGroup(Group group, Account account, User addedByUser, Timestamp expireDateTime) {
 
         this(group, account, addedByUser, new Timestamp(Calendar.getInstance().getTimeInMillis()), expireDateTime);
+
+    }
+
+    public PaidGroup() {
 
     }
 

@@ -61,6 +61,7 @@ public class EventLogRepositoryTest {
 
 
     }
+
     @Test
     public void shouldSaveAndNotRetrieveEventLogEventNotification() throws Exception {
 

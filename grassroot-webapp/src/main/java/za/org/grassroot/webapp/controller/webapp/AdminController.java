@@ -227,7 +227,7 @@ public class AdminController extends BaseController {
         Account account = accountManagementService.createAccount(accountName);
         account = accountManagementService.setBillingEmail(account, billingEmail);
         model.addAttribute("account", account);
-        return "/admin/accounts/view";
+        return "admin/accounts/view";
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
