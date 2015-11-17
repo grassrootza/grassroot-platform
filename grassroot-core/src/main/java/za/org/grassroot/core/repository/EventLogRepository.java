@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.EventLog;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventLogType;
 
@@ -58,5 +59,8 @@ public interface EventLogRepository extends JpaRepository<EventLog, Long> {
      */
 
     List<EventLog> findByUserOrderByIdDesc(User user);
+
+    @Query(value = "WITH RECURSIVE tree(id, created_date_time, name, group_token_code, token_code_expiry, created_by_user, parent, version, reminderminutes) AS ( SELECT pg.* FROM group_profile pg WHERE pg.id = ?1 UNION ALL SELECT sg.* FROM group_profile sg, tree AS nodes WHERE sg.parent = nodes.id ) SELECT tree.id, tree.name, sum(CASE WHEN message = 'Yes' THEN 1 ELSE 0 END) AS yes, sum(CASE WHEN message = 'No' THEN 1 ELSE 0 END) AS no, (select count(*) from group_user_membership gu2 where gu2.group_id = tree.id) as noofusers FROM tree, event_log el, group_user_membership gu where tree.id = gu.group_id and el.user_id = gu.user_id and el.event_log_type = 5 and el.event_id = ?2 group by tree.id, tree.name order by tree.id", nativeQuery = true)
+    public List<Object[]> voteTotalsPerGroupAndSubGroup(Long startingGroupId, Long eventId);
 
 }

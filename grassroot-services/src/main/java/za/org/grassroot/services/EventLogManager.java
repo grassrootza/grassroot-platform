@@ -10,6 +10,7 @@ import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.RSVPTotalsDTO;
+import za.org.grassroot.core.dto.RSVPTotalsPerGroupDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
@@ -21,8 +22,7 @@ import za.org.grassroot.services.util.CacheUtilService;
 
 import javax.jws.soap.SOAPBinding;
 import java.sql.Timestamp;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Logger;
 
 /**
@@ -177,6 +177,16 @@ public class EventLogManager implements EventLogManagementService {
         }
         log.info("getVoteResultsForEvent...returning..." + totals.toString());
         return totals;
+    }
+
+    @Override
+    public List<RSVPTotalsPerGroupDTO> getVoteTotalsPerGroup(Long startingGroup, Long event) {
+        List<RSVPTotalsPerGroupDTO> list = new ArrayList<>();
+        for (Object[] objArray : eventLogRepository.voteTotalsPerGroupAndSubGroup(startingGroup,event)) {
+            list.add(new RSVPTotalsPerGroupDTO(objArray));
+        }
+
+        return list;
     }
 //    private void recursiveTotalsAdd(Event event, Group parentGroup, RSVPTotalsDTO rsvpTotalsDTO ) {
 //

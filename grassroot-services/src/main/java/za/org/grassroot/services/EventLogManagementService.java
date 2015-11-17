@@ -5,6 +5,7 @@ import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.RSVPTotalsDTO;
+import za.org.grassroot.core.dto.RSVPTotalsPerGroupDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 
@@ -46,4 +47,6 @@ public interface EventLogManagementService {
     RSVPTotalsDTO getRSVPTotalsForEvent(Event event);
 
     RSVPTotalsDTO getVoteResultsForEvent(Event event);
+
+    List<RSVPTotalsPerGroupDTO> getVoteTotalsPerGroup(Long startingGroup, Long event);
 }
