@@ -98,9 +98,9 @@ public class SigninController {
             //authentication = new RememberMeAuthenticationToken(userDetails.getUsername(), userDetails, userDetails.getAuthorities());
             authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            logger.info("autoLogonUser...return...ModelAndView.../home");
+            logger.info("autoLogonUser...return...ModelAndView...home");
             model.addAttribute("userGroups", userManagementService.fetchUserByUsername(userDetails.getUsername()).getGroupsPartOf());
-            return new ModelAndView("/home", model.asMap());
+            return new ModelAndView("home", model.asMap());
         } catch (Exception e) {
             throw new AuthenticationServiceException("Problem  auto logging user", e);
         }

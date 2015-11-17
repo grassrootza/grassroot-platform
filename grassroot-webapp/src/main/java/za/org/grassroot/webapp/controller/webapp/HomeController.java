@@ -53,7 +53,7 @@ public class HomeController extends BaseController {
         }
         if (signinController.isAuthenticated()) {
             model.addAttribute("userGroups", groupManagementService.getGroupsPartOf(getUserProfile()));
-            return new ModelAndView("/home",model.asMap());
+            return new ModelAndView("home",model.asMap());
         }
 
         return new ModelAndView("index", model.asMap());

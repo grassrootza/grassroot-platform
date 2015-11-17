@@ -1,8 +1,11 @@
 package za.org.grassroot.core.domain;
 
 import lombok.EqualsAndHashCode;
+import org.apache.commons.collections4.FactoryUtils;
+import org.apache.commons.collections4.list.LazyList;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -16,7 +19,7 @@ import java.util.List;
 
 @Entity
 @Table(name="paid_account")
-public class Account {
+public class Account implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,10 +36,10 @@ public class Account {
     possibility, but until/unless we have (very) strong user demand, catering to it is not worth many-to-many overheads
      */
     @OneToMany(mappedBy = "accountAdministered")
-    private List<User> administrators;
+    private List<User> administrators = LazyList.lazyList(new ArrayList<>(), FactoryUtils.instantiateFactory(User.class));
 
     @OneToMany(mappedBy = "account")
-    private List<PaidGroup> paidGroups;
+    private List<PaidGroup> paidGroups = LazyList.lazyList(new ArrayList<>(), FactoryUtils.instantiateFactory(PaidGroup.class));
 
     @Basic
     @Column(name = "account_name")
