@@ -247,6 +247,23 @@ public class AccountRepositoryTest {
     @Rollback
     public void shouldSaveBooleanFlags() {
 
+        assertThat(accountRepository.count(), is(0L));
+
+        Account account = new Account(accountName, true);
+        accountRepository.save(account);
+
+        Account accountFromDb = accountRepository.findByAccountName(accountName).get(0);
+
+        assertTrue(accountFromDb.isRelayableMessages());
+        accountFromDb.setRelayableMessages(false);
+        accountFromDb = accountRepository.save(accountFromDb);
+        assertFalse(accountFromDb.isRelayableMessages());
+
+        assertTrue(accountFromDb.isFreeFormMessages());
+        accountFromDb.setFreeFormMessages(false);
+        accountFromDb = accountRepository.save(accountFromDb);
+        assertFalse(accountFromDb.isFreeFormMessages());
+
     }
 
 }

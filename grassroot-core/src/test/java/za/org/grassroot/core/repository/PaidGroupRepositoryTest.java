@@ -1,5 +1,6 @@
 package za.org.grassroot.core.repository;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -18,6 +19,12 @@ import za.org.grassroot.core.domain.User;
 
 import javax.transaction.Transactional;
 
+import java.sql.Timestamp;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+
+import static org.hamcrest.CoreMatchers.either;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
@@ -45,6 +52,25 @@ public class PaidGroupRepositoryTest {
     @Autowired
     AccountRepository accountRepository;
 
+    private static final String testPhoneNumber = "0810005555";
+    private static final String testGroupName = "testGroup";
+    private static final String testAccountName = "testAccount";
+
+    private User testUser;
+    private Group testGroup, testGroup2;
+    private Account testAccount, testAccount2;
+
+    @Before
+    public void setUp() throws Exception {
+
+        testUser = userRepository.save(new User(testPhoneNumber));
+        testGroup = groupRepository.save(new Group(testGroupName, testUser));
+        testGroup2 = groupRepository.save(new Group(testGroupName + "2", testUser));
+        testAccount = accountRepository.save(new Account(testAccountName, true));
+        testAccount2 = accountRepository.save(new Account(testAccountName + "2", true));
+
+    }
+
     @Test
     @Rollback
     public void shouldSaveAndReturnId() {
@@ -65,15 +91,76 @@ public class PaidGroupRepositoryTest {
 
         assertThat(paidGroupRepository.count(), is(0L));
 
-        User testUser = new User("0810005555");
-        testUser = userRepository.save(testUser);
-        Group testGroup = new Group("testGroup", testUser);
-        testGroup = groupRepository.save(testGroup);
-        Account testAccount = new Account("testAccount", true);
-        testAccount = accountRepository.save(testAccount);
-
         PaidGroup paidGroup = new PaidGroup(testGroup, testAccount, testUser);
-        paidGroup = paidGroupRepository.save(paidGroup);
+        paidGroupRepository.save(paidGroup);
+        assertThat(paidGroupRepository.count(), is(1L));
+        PaidGroup paidGroupFromDb = paidGroupRepository.findAll().iterator().next();
+        assertNotNull(paidGroupFromDb);
+        assertEquals(paidGroupFromDb.getAccount(), testAccount);
+        assertEquals(paidGroupFromDb.getAddedByUser(), testUser);
+        assertEquals(paidGroupFromDb.getGroup(), testGroup);
+
+    }
+
+    @Test
+    @Rollback
+    public void shouldRemoveWithGroupUserAccount() {
+
+        assertThat(paidGroupRepository.count(), is(0L));
+        PaidGroup paidGroup = new PaidGroup(testGroup, testAccount, testUser);
+        paidGroupRepository.save(paidGroup);
+        PaidGroup paidGroupFromDb = paidGroupRepository.findAll().iterator().next();
+        assertNotNull(paidGroupFromDb);
+        paidGroupFromDb.setExpireDateTime(new Timestamp(Calendar.getInstance().getTimeInMillis()));
+        paidGroupFromDb.setRemovedByUser(testUser);
+        paidGroupRepository.save(paidGroupFromDb);
+        PaidGroup paidGroupFromDb1 = paidGroupRepository.findAll().iterator().next();
+        assertNotNull(paidGroupFromDb1);
+        assertEquals(paidGroupFromDb.getId(), paidGroupFromDb1.getId());
+        assertEquals(paidGroupFromDb1.getRemovedByUser(), testUser);
+        assertTrue(paidGroupFromDb1.getExpireDateTime().getTime() < Calendar.getInstance().getTimeInMillis());
+    }
+
+    @Test
+    @Rollback
+    public void shouldFindPaidGroupsByExpiryDateTime() {
+
+        assertThat(paidGroupRepository.count(), is(0L));
+
+        PaidGroup paidGroup = paidGroupRepository.save(new PaidGroup(testGroup, testAccount, testUser));
+        PaidGroup paidGroup2 = paidGroupRepository.save(new PaidGroup(testGroup, testAccount2, testUser));
+        List<PaidGroup> firstFind = paidGroupRepository.findByExpireDateTimeGreaterThan(new Date());
+        assertNotNull(firstFind);
+        assertThat(firstFind.size(), is(2));
+        assertTrue(firstFind.contains(paidGroup));
+        assertTrue(firstFind.contains(paidGroup2));
+        paidGroup2.setExpireDateTime(new Timestamp(Calendar.getInstance().getTimeInMillis()));
+        paidGroup2.setRemovedByUser(testUser);
+        paidGroup2 = paidGroupRepository.save(paidGroup2);
+        List<PaidGroup> secondFind = paidGroupRepository.findByExpireDateTimeGreaterThan(new Date());
+        assertNotNull(secondFind);
+        assertThat(secondFind.size(), is(1));
+        assertTrue(secondFind.contains(paidGroup));
+        assertFalse(secondFind.contains(paidGroup2));
+
+    }
+
+    @Test
+    @Rollback
+    public void shouldFindPaidGroupsByAccount() {
+
+        assertThat(paidGroupRepository.count(), is(0L));
+        PaidGroup paidGroup = paidGroupRepository.save(new PaidGroup(testGroup, testAccount, testUser));
+        PaidGroup paidGroup2 = paidGroupRepository.save(new PaidGroup(testGroup2, testAccount2, testUser));
+        assertThat(paidGroupRepository.count(), is(2L));
+        List<PaidGroup> listAccount1 = paidGroupRepository.findByAccount(testAccount);
+        List<PaidGroup> listAccount2 = paidGroupRepository.findByAccount(testAccount2);
+        assertNotNull(listAccount1);
+        assertNotNull(listAccount2);
+        assertThat(listAccount1.size(), is(1));
+        assertThat(listAccount2.size(), is(1));
+        assertTrue(listAccount1.contains(paidGroup));
+        assertTrue(listAccount2.contains(paidGroup2));
 
     }
 

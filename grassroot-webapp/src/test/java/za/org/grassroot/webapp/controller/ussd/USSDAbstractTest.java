@@ -86,7 +86,7 @@ public class USSDAbstractTest extends AbstractTransactionalJUnit4SpringContextTe
 
     // Some strings used throughout tests
     protected final String testPhone = "27815550000"; // todo: make sure this isn't an actual number
-    protected final String secondGroupPhone = "27825550000"; // slightly different ot main testPhone so rename doesn't break XML checks if renamed already
+    protected final String secondGroupPhone = "27625550000"; // slightly different ot main testPhone so rename doesn't break XML checks if renamed already
     protected final String thirdGroupPhone = "27835550000";
     protected final String testDisplayName = "TestPhone1";
     protected final List<String> testPhones = Arrays.asList(PhoneNumberUtil.invertPhoneNumber(secondGroupPhone, ""),
