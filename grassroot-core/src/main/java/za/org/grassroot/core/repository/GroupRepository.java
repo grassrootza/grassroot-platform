@@ -11,6 +11,7 @@ import org.springframework.data.repository.PagingAndSortingRepository;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 
+import java.util.Date;
 import java.util.List;
 
 public interface GroupRepository extends JpaRepository<Group, Long> {
@@ -33,9 +34,15 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     List<Group> findByGroupMembers(User sessionUser);
     Page<Group> findByGroupMembers(User sessionUser, Pageable pageable);
     /*
+    Find groups which are active
+     */
+    List<Group> findByGroupMembersAndActive(User user, boolean active);
+    Page<Group> findByGroupMembersAndActive(User user, Pageable pageable, boolean active);
+    /*
     Find a group by a code
      */
     Group findByGroupTokenCode(String groupTokenCode);
+    Group findByGroupTokenCodeAndTokenExpiryDateTimeAfter(String groupTokenCode, Date expiryTime);
 
     /*
     Find all groups, with pagination--for system admin

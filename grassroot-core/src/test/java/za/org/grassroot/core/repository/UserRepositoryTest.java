@@ -3,16 +3,16 @@ package za.org.grassroot.core.repository;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.EventLog;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 
@@ -22,8 +22,6 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import javax.transaction.Transactional;
 
 import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.logging.Logger;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
@@ -34,8 +32,7 @@ import static org.junit.Assert.*;
 @ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
 public class UserRepositoryTest {
 
-    private Logger log = Logger.getLogger(getClass().getName());
-
+    private static final Logger log = LoggerFactory.getLogger(UserRepositoryTest.class);
 
     @Autowired
     UserRepository userRepository;
@@ -49,6 +46,10 @@ public class UserRepositoryTest {
     @Autowired
     EventLogRepository eventLogRepository;
 
+    @Autowired
+    RoleRepository roleRepository;
+
+    private static final String number = "0821234560";
 
     @Test
     public void shouldSaveAndRetrieveUserData() throws Exception {
@@ -134,6 +135,7 @@ public class UserRepositoryTest {
         log.info("list.size..." + list.size() + "...first user..." + list.get(0).getPhoneNumber());
         assertEquals(u1.getPhoneNumber(),list.get(0).getPhoneNumber());
     }
+
     @Test
     public void shouldReturnUserThatRSVPNo() {
         User u1 = userRepository.save(new User("0821234570"));
@@ -147,6 +149,35 @@ public class UserRepositoryTest {
 
         List<User> list = userRepository.findUsersThatRSVPNoForEvent(event);
         assertEquals(u2.getPhoneNumber(),list.get(0).getPhoneNumber());
+    }
+
+    @Test
+    @Rollback
+    public void shouldSaveAddedRole() {
+        User user = userRepository.save(new User(number));
+        Role role = roleRepository.save(new Role("TEST_ROLE"));
+        user.addRole(role);
+        userRepository.save(user);
+        User userFromDb = userRepository.findByPhoneNumber(number);
+        assertNotNull(userFromDb);
+        assertEquals(userFromDb.getId(), user.getId());
+        assertTrue(userFromDb.getRoles().contains(role));
+    }
+
+    @Test
+    @Rollback
+    public void shouldRemoveRole() {
+        User user = userRepository.save(new User(number));
+        Role role = roleRepository.save(new Role("TEST_ROLE"));
+        user.addRole(role);
+        user = userRepository.save(user);
+        assertTrue(user.getRoles().contains(role));
+        user.removeRole(role);
+        userRepository.save(user);
+        User userfromDb = userRepository.findByPhoneNumber(number);
+        assertNotNull(userfromDb);
+        assertEquals(userfromDb.getId(), user.getId());
+        assertFalse(userfromDb.getRoles().contains(role));
     }
 
 }

@@ -10,8 +10,12 @@ import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.transaction.Transactional;
+import java.sql.Timestamp;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -152,6 +156,110 @@ public class GroupRepositoryTest {
     @Test
     public void shouldGetMaxToken() {
         log.info(String.valueOf(groupRepository.getMaxTokenValue()));
+    }
+
+    @Test
+    public void shouldCreateAndUseToken() {
+        User user1 = userRepository.save(new User("3331118888"));
+        Group group = groupRepository.save(new Group("token", user1));
+        Integer realToken = groupRepository.getMaxTokenValue();
+        Integer fakeToken = realToken - 10;
+        group.setGroupTokenCode(String.valueOf(realToken));
+        groupRepository.save(group);
+        Group groupFromDb1 = groupRepository.findByGroupTokenCode(String.valueOf(realToken));
+        Group groupFromDb2 = groupRepository.findByGroupTokenCode(String.valueOf(fakeToken));
+        assertNotNull(groupFromDb1);
+        assertNull(groupFromDb2);
+        assertEquals(groupFromDb1, group);
+    }
+
+    @Test
+    public void shouldUseAndExtendToken() {
+        User user = userRepository.save(new User("3335551111"));
+        Group group = groupRepository.save(new Group("tg", user));
+        String token = String.valueOf(groupRepository.getMaxTokenValue());
+        Date testDate1 = DateTimeUtil.addHoursToDate(new Date(), 12);
+        Date testDate2 = DateTimeUtil.addHoursToDate(new Date(), 24);
+        Date testDate3 = DateTimeUtil.addHoursToDate(new Date(), 36);
+
+        group.setGroupTokenCode(token);
+        group.setTokenExpiryDateTime(new Timestamp(testDate2.getTime()));
+        groupRepository.save(group);
+        Group group1 = groupRepository.findByGroupTokenCodeAndTokenExpiryDateTimeAfter(token, testDate1);
+        Group group2 = groupRepository.findByGroupTokenCodeAndTokenExpiryDateTimeAfter(token, testDate3);
+        assertNotNull(group1);
+        assertEquals(group1, group);
+        assertNull(group2);
+
+        group.setTokenExpiryDateTime(new Timestamp(testDate3.getTime()));
+        groupRepository.save(group);
+        Group group3 = groupRepository.findByGroupTokenCodeAndTokenExpiryDateTimeAfter(token, testDate2);
+        assertNotNull(group3);
+        assertEquals(group3, group);
+    }
+
+    @Test
+    public void shouldCloseToken() {
+        User user = userRepository.save(new User("3335550000"));
+        Group group = groupRepository.save(new Group("tg", user));
+        String token = String.valueOf(groupRepository.getMaxTokenValue());
+        Date testDate1 = DateTimeUtil.addHoursToDate(new Date(), 12);
+        Date testDate2 = DateTimeUtil.addHoursToDate(new Date(), 24);
+
+        group.setGroupTokenCode(token);
+        group.setTokenExpiryDateTime(new Timestamp(testDate2.getTime()));
+        groupRepository.save(group);
+        Group group1 = groupRepository.findByGroupTokenCodeAndTokenExpiryDateTimeAfter(token, testDate1);
+        assertNotNull(group1);
+        assertEquals(group, group1);
+
+        group.setTokenExpiryDateTime(new Timestamp(Calendar.getInstance().getTimeInMillis()));
+        Group group2 = groupRepository.findByGroupTokenCodeAndTokenExpiryDateTimeAfter(token, testDate1);
+        assertNull(group2);
+
+    }
+
+    @Test
+    public void shouldSetInactive() {
+        assertThat(groupRepository.count(), is(0L));
+        User user = userRepository.save(new User("3331110000"));
+        Group group = groupRepository.save(new Group("gc", user));
+        group.setActive(false);
+        groupRepository.save(group);
+        Group groupFromDb = groupRepository.findAll().iterator().next();
+        assertThat(groupFromDb.getId(), is(group.getId()));
+        assertEquals(groupFromDb.getGroupName(), "gc");
+        assertFalse(groupFromDb.isActive());
+    }
+
+    @Test
+    public void shouldReturnOnlyActive() {
+        assertThat(groupRepository.count(), is(0L));
+        User user = userRepository.save(new User("3331115555"));
+        Group group1 = new Group("gc1", user);
+        Group group2 = new Group("gc2", user);
+        group1.addMember(user);
+        group2.addMember(user);
+        group1 = groupRepository.save(group1);
+        group2 = groupRepository.save(group2);
+        List<Group> list1 = groupRepository.findByGroupMembers(user);
+        assertThat(list1.size(), is(2));
+        group2.setActive(false);
+        group2 = groupRepository.save(group2);
+        List<Group> list2 = groupRepository.findByGroupMembersAndActive(user, true);
+        assertThat(list2.size(), is(1));
+        assertTrue(list2.contains(group1));
+        assertFalse(list2.contains(group2));
+    }
+
+    @Test
+    public void shouldSaveAndRetrievePaidFor() {
+        assertThat(groupRepository.count(), is(0L));
+        User user = userRepository.save(new User("3331113333"));
+        Group group1 = groupRepository.save(new Group("paidGroup", user, true));
+        Group group2 = groupRepository.save(new Group("unpaidGroup", user));
+        assertTrue(group1.isPaidFor());
+        assertFalse(group2.isPaidFor());
     }
 
 }

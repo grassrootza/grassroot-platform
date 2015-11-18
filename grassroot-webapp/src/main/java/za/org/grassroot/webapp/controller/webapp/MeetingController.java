@@ -175,10 +175,14 @@ public class MeetingController extends BaseController {
     public String sendReminder(Model model, @ModelAttribute("meeting") Event meeting, RedirectAttributes redirectAttributes,
                                HttpServletRequest request) {
 
-        // we need a method in eventManagementService to force a reminder
+        // todo: make sure this is a paid account before allowing it
+        if (request.isUserInRole("ROLE_SYSTEM_ADMIN") || request.isUserInRole("ROLE_ACCOUNT_ADMIN")) {
+            eventManagementService.sendManualReminder(eventManagementService.loadEvent(meeting.getId()), "");
+            addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.reminder.success", request);
+        } else {
+            addMessage(redirectAttributes, MessageType.ERROR, "permission.denied.error", request);
+        }
 
-        eventManagementService.updateEvent(meeting);
-        addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.reminder.success", request);
         return "redirect:/home";
 
     }
