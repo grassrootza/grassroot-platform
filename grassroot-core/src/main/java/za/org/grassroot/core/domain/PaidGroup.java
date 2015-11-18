@@ -26,6 +26,10 @@ public class PaidGroup {
     @Column(name="created_date_time", insertable = true, updatable = false)
     private Timestamp createdDateTime;
 
+    /*
+    Since this is a record for a specific duration of time, we have many-to-one on groups (so, one group can be paid
+    by a certain account for a certain period, a different one later, etc., but only ever one at a time).
+     */
     @ManyToOne
     @JoinColumn(name="group_id")
     private Group group;

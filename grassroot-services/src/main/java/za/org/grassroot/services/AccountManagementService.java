@@ -33,7 +33,7 @@ public interface AccountManagementService {
 
     Account loadAccount(Long accountId);
 
-    List<Account> findAccountsByAdministrator(User administrator);
+    Account findAccountByAdministrator(User administrator);
 
     List<Account> loadAllAccounts();
 
@@ -42,6 +42,8 @@ public interface AccountManagementService {
      */
 
     Group addGroupToAccount(Account account, Group group, User addingUser);
+
+    Account findAccountForGroup(Group group);
 
     /*
     Methods to remove 'paid for' flag from groups

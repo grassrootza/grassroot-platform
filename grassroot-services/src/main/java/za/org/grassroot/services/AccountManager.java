@@ -37,6 +37,11 @@ public class AccountManager implements AccountManagementService {
     @Autowired
     GroupManagementService groupManagementService;
 
+    @Autowired
+    RoleManagementService roleManagementService;
+
+    private String accountAdminRole = "ROLE_ACCOUNT_ADMIN";
+
     @Override
     public Account createAccount(String accountName) {
         log.info("Okay, creating a bare bones account ... with name: " + accountName);
@@ -46,27 +51,32 @@ public class AccountManager implements AccountManagementService {
 
     @Override
     public Account createAccount(String accountName, User administrator) {
-        return accountRepository.save(new Account(accountName, administrator));
+        Account account = accountRepository.save(new Account(accountName, administrator));
+        log.info("Created the account ... " + account.toString());
+        addAdminToUser(administrator, account);
+        return accountRepository.save(account);
     }
 
     @Override
     public Account createAccount(String accountName, User administrator, String billingEmail, boolean enabled) {
-        return accountRepository.save(new Account(accountName, administrator, billingEmail, enabled));
+        Account account = accountRepository.save(new Account(accountName, administrator, billingEmail, enabled));
+        addAdminToUser(administrator, account);
+        return account;
     }
 
     @Override
     public Account addAdministrator(Account account, User administrator) {
         account.addAdministrator(administrator);
-        administrator.setAccountAdministered(account);
-        userManagementService.save(administrator);
+        addAdminToUser(administrator, account);
         return accountRepository.save(account);
     }
 
     @Override
     public Account removeAdministrator(Account account, User administrator) {
-        account.removeAdministrator(administrator);
+        /* account.removeAdministrator(administrator);
         administrator.setAccountAdministered(null);
-        userManagementService.save(administrator);
+        userManagementService.save(administrator); */
+        roleManagementService.removeStandardRoleFromUser(accountAdminRole, administrator);
         return accountRepository.save(account);
     }
 
@@ -76,14 +86,27 @@ public class AccountManager implements AccountManagementService {
         return accountRepository.save(account);
     }
 
+    /*
+    Helper function to make sure second side of relationship & admin role added to user
+     */
+    private User addAdminToUser(User user, Account account) {
+        // todo: check if there are redundant calls here (though this won't be used often)
+        log.info("Wiring up user to account admin ... ");
+        user.setAccountAdministered(account);
+        user = userManagementService.save(user);
+        log.info("User account admin set ... User: " + user.toString());
+        return roleManagementService.addStandardRoleToUser(accountAdminRole, user);
+//        return user;
+    }
+
     @Override
     public Account loadAccount(Long accountId) {
         return accountRepository.findOne(accountId);
     }
 
     @Override
-    public List<Account> findAccountsByAdministrator(User administrator) {
-        return null;
+    public Account findAccountByAdministrator(User administrator) {
+        return accountRepository.findByAdministrators(administrator);
     }
 
     @Override
@@ -92,13 +115,25 @@ public class AccountManager implements AccountManagementService {
     }
 
     @Override
-    public Group addGroupToAccount(Account account, Group group, User addingUser) {
+    public Group addGroupToAccount(Account account, Group group, User addingUser) throws GroupAlreadyPaidForException {
         // todo: check it isn't already added, didn't exist before, etc
+
+        // do this a bit more elegantly
+        if (group.isPaidFor())
+            throw new GroupAlreadyPaidForException();
         PaidGroup paidGroup = paidGroupRepository.save(new PaidGroup(group, account, addingUser));
         account.addPaidGroup(paidGroup);
         account = accountRepository.save(account);
         group.setPaidFor(true);
         return groupManagementService.saveGroup(group);
+    }
+
+    @Override
+    public Account findAccountForGroup(Group group) {
+        if (!group.isPaidFor())
+            return null;
+        else
+            return paidGroupRepository.findByGroupOrderByExpireDateTimeDesc(group).get(0).getAccount();
     }
 
     @Override

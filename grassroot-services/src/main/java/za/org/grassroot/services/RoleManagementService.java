@@ -17,6 +17,8 @@ public interface RoleManagementService {
 
     Role createRole(Role role);
 
+    Role createStandardRole(String roleName);
+
     Role getRole(Long roleId);
 
     Role updateRole(Role role);
@@ -37,6 +39,8 @@ public interface RoleManagementService {
 
     Role fetchGroupRole(String roleName, Long groupId);
 
+    Integer getNumberStandardRoles();
+
     /*
     Methods to assign roles to users and groups
      */
@@ -44,6 +48,10 @@ public interface RoleManagementService {
     User addStandardRoleToUser(Role role, User user);
 
     User addStandardRoleToUser(String roleName, User user);
+
+    User removeStandardRoleFromUser(Role role, User user);
+
+    User removeStandardRoleFromUser(String roleName, User user);
 
     Group addRoleToGroup(Role role, Group group);
 

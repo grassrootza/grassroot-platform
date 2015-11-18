@@ -164,4 +164,30 @@ public class PaidGroupRepositoryTest {
 
     }
 
+    @Test
+    @Rollback
+    public void shouldFindPaidGroupByGroup() {
+        assertThat(paidGroupRepository.count(), is(0L));
+        PaidGroup paidGroup = paidGroupRepository.save(new PaidGroup(testGroup, testAccount, testUser));
+        PaidGroup paidGroupFromDb = paidGroupRepository.findByGroupOrderByExpireDateTimeDesc(testGroup).iterator().next();
+        assertNotNull(paidGroupFromDb);
+        assertThat(paidGroupFromDb, is(paidGroup));
+    }
+
+    @Test
+    @Rollback
+    public void shouldFindCurrentPaidGroupByGroup() {
+        // services layer needs to ensure several of these steps don't happen (test there), but testing DB behaviour here
+        assertThat(paidGroupRepository.count(), is(0L));
+        PaidGroup paidGroup1 = paidGroupRepository.save(new PaidGroup(testGroup, testAccount, testUser));
+        PaidGroup paidGroup2 = paidGroupRepository.save(new PaidGroup(testGroup, testAccount2, testUser));
+        List<PaidGroup> firstList = paidGroupRepository.findByGroupOrderByExpireDateTimeDesc(testGroup);
+        assertThat(firstList.size(), is(2));
+        paidGroup1.setExpireDateTime(new Timestamp(Calendar.getInstance().getTimeInMillis()));
+        paidGroup1.setRemovedByUser(testUser);
+        paidGroupRepository.save(paidGroup1);
+        List<PaidGroup> secondList = paidGroupRepository.findByGroupOrderByExpireDateTimeDesc(testGroup);
+        assertEquals(secondList.get(0).getId(), paidGroup2.getId()); // straight equals gives errors on hash codes
+    }
+
 }

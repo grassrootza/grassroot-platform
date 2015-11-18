@@ -36,6 +36,14 @@ public class RoleManager implements  RoleManagementService {
         return roleRepository.save(role);
     }
 
+    /*
+    NB: only to be used in tests, to populate in-memory DB
+     */
+    @Override
+    public Role createStandardRole(String roleName) {
+        return roleRepository.save(new Role(roleName));
+    }
+
     @Override
     public Role getRole(Long roleId) {
         return roleRepository.findOne(roleId);
@@ -85,6 +93,11 @@ public class RoleManager implements  RoleManagementService {
     }
 
     @Override
+    public Integer getNumberStandardRoles() {
+        return roleRepository.findByRoleType(Role.RoleType.STANDARD).size();
+    }
+
+    @Override
     public User addStandardRoleToUser(Role role, User user) {
         user.addRole(role);
         return userManagementService.save(user);
@@ -93,6 +106,17 @@ public class RoleManager implements  RoleManagementService {
     @Override
     public User addStandardRoleToUser(String roleName, User user) {
         return addStandardRoleToUser(fetchStandardRoleByName(roleName), user);
+    }
+
+    @Override
+    public User removeStandardRoleFromUser(Role role, User user) {
+        user.removeRole(role);
+        return userManagementService.save(user);
+    }
+
+    @Override
+    public User removeStandardRoleFromUser(String roleName, User user) {
+        return removeStandardRoleFromUser(fetchStandardRoleByName(roleName), user);
     }
 
     @Override

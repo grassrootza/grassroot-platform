@@ -14,6 +14,8 @@ public interface RoleRepository extends CrudRepository<Role,Long> {
 
     List<Role> findByNameAndRoleType(String name, Role.RoleType roleType);
 
+    List<Role> findByRoleType(Role.RoleType roleType);
+
     List<Role> findByGroupReferenceId(Long groupReferenceId);
 
     Role findByNameAndGroupReferenceId(String name, Long groupReferenceId);
