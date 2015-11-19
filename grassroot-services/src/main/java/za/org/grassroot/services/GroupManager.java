@@ -187,12 +187,15 @@ public class GroupManager implements GroupManagementService {
     public Group addNumbersToGroup(Long groupId, List<String> phoneNumbers) {
 
         Group groupToExpand = loadGroup(groupId);
+        log.info("ZOG: Adding numbers to group ... these numbers ... " + phoneNumbers + " ... to this group: " + groupToExpand);
         List<User> groupNewMembers = userManager.getUsersFromNumbers(phoneNumbers);
 
         for (User newMember : groupNewMembers) {
             groupToExpand.addMember(newMember);
             jmsTemplateProducerService.sendWithNoReply(EventChangeType.USER_ADDED.toString(),new NewGroupMember(groupToExpand,newMember));
         }
+
+        log.info("ZOG: Group members now looks like .. " + groupToExpand.getGroupMembers());
 
         return groupRepository.save(groupToExpand);
 

@@ -15,11 +15,11 @@ import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 
 import javax.transaction.Transactional;
+import java.util.List;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * @author Lesetse Kimwaga
@@ -138,5 +138,51 @@ public class RoleRepositoryTest {
         assertThat(roleFromDb.getId(), is(role.getId()));
         assertThat(roleFromDb.getName(), is(role.getName()));
         assertThat(roleFromDb.getGroupReferenceName(), is(role.getGroupReferenceName()));
+    }
+
+    @Test
+    @Rollback
+    public void testGroupAssignment() throws Exception {
+        assertThat(roleRepository.count(), is(0L));
+        String roleName1 = "GROUP_ORGANIZER";
+        String roleName2 = "ORDINARY_MEMBER";
+        String roleName3 = "COMMITTEE_MEMBER";
+        User user = userRepository.save(new User("0801110000"));
+        Group group1 = groupRepository.save(new Group("gc1", user));
+        Group group2 = groupRepository.save(new Group("gc2", user));
+
+        Role role1a = roleRepository.save(new Role(roleName1, group1.getId(), group1.getGroupName()));
+        Role role1b = roleRepository.save(new Role(roleName2, group1.getId(), group1.getGroupName()));
+        Role role2a = roleRepository.save(new Role(roleName1, group2.getId(), group2.getGroupName()));
+        Role role2b =  roleRepository.save(new Role(roleName2, group2.getId(), group2.getGroupName()));
+        Role role2c = roleRepository.save(new Role(roleName3, group2.getId(), group2.getGroupName()));
+        assertThat(roleRepository.count(), is(5L));
+
+        List<Role> group1roles = roleRepository.findByGroupReferenceId(group1.getId());
+        List<Role> group2roles = roleRepository.findByGroupReferenceId(group2.getId());
+        assertThat(group1roles.size(), is(2));
+        assertThat(group2roles.size(), is(3));
+        assertTrue(group1roles.contains(role1a));
+        assertTrue(group1roles.contains(role1b));
+        assertTrue(group2roles.contains(role2a));
+        assertTrue(group2roles.contains(role2b));
+        assertTrue(group2roles.contains(role2c));
+    }
+
+    @Test
+    @Rollback
+    public void testGroupAssignmentAfterConstruction() throws Exception {
+        assertThat(roleRepository.count(), is(0L));
+        Role role = roleRepository.save(new Role("GROUP_ORGANIZER"));
+        assertThat(roleRepository.count(), is(1L));
+        Role roleFromDb1 = roleRepository.findByName("GROUP_ORGANIZER").iterator().next();
+        User user = userRepository.save(new User("0811110001"));
+        Group group = groupRepository.save(new Group("test Group", user));
+        roleFromDb1.setGroup(group);
+        roleRepository.save(roleFromDb1);
+        assertThat(roleRepository.count(), is(1L)); // check doesn't duplicate
+        Role roleFromDb2 = roleRepository.findByNameAndGroupReferenceId("GROUP_ORGANIZER", group.getId());
+        assertNotNull(roleFromDb2);
+        assertThat(roleFromDb1, is(roleFromDb2));
     }
 }

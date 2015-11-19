@@ -47,10 +47,12 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
 
         try {
 
+            log.info("ZOG: Adding permissions for this group ... " + group.toString());
+            log.info("ZOG: Adding them to this user ... " + user.toString());
+
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user.getUsername(),
                     user.getPassword(), user.getAuthorities());
             SecurityContextHolder.getContext().setAuthentication(authentication);
-
 
             ObjectIdentity objectIdentity = new ObjectIdentityImpl(Group.class, group.getId());
             Sid sid = new PrincipalSid(user.getUsername());
@@ -131,7 +133,7 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
     @Override
     public void updateUserGroupPermissions(Group group, User user, Set<Permission> groupPermissions) {
 
-        throw new RuntimeException("Not implemented yest");
+        throw new RuntimeException("Not implemented yet");
     }
 
 

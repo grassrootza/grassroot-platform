@@ -20,3 +20,4 @@ public interface RoleRepository extends CrudRepository<Role,Long> {
 
     Role findByNameAndGroupReferenceId(String name, Long groupReferenceId);
 }
+

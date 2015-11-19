@@ -19,6 +19,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
+import za.org.grassroot.webapp.model.web.GroupWrapper;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
@@ -185,6 +186,40 @@ public class AdminController extends BaseController {
         model.addAttribute("groupList", groupList);
         return "admin/groups/list";
 
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping("/admin/groups/view")
+    public String adminViewGroup(Model model, @RequestParam("groupId") Long groupId) {
+
+        Group group = groupManagementService.loadGroup(groupId);
+        GroupWrapper groupModifier = new GroupWrapper();
+        groupModifier.populate(group);
+
+        model.addAttribute("groupModifier", groupModifier);
+        return "admin/groups/view";
+    }
+
+    /*
+    Group admin methods to adjust roles
+     */
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/admin/groups/modify", params={"changeRole"})
+    public String changeGroupRole(Model model, @RequestParam("group.id") Long groupId, @RequestParam("changeRole") Long userId, HttpServletRequest request) {
+
+        User userToModify = userManagementService.loadUser(userId);
+        log.info("Found this user ... " + userToModify);
+        Group group = groupManagementService.loadGroup(groupId);
+        String roleName = request.getParameter("role_" + userId);
+
+        log.info("Role name retrieved: " + roleName);
+        log.info("About to do role assignment etc ... Role: " + roleName + " ... to user ... " + userToModify.nameToDisplay() +
+                         " ... to group ... " + group.getGroupName());
+
+        roleManagementService.addDefaultRoleToGroupAndUser(roleName, group, userToModify);
+
+        addMessage(model, MessageType.INFO, "admin.done", request);
+        return "admin/groups/view";
     }
 
     /**

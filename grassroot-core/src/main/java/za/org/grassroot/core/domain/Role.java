@@ -31,7 +31,6 @@ public class Role extends BaseEntity implements GrantedAuthority {
 
     private Set<Permission> permissions = new HashSet<>();
 
-
     public Role() {
         this.roleType = RoleType.STANDARD;
     }
@@ -117,6 +116,26 @@ public class Role extends BaseEntity implements GrantedAuthority {
     @Transient
     public void addPermission(Permission permission) {
         this.permissions.add(permission);
+    }
+
+    @Transient
+    public void setGroup(Group group) {
+        this.setGroupReferenceId(group.getId());
+        this.setGroupReferenceName(group.getGroupName());
+    }
+
+    // looks like toString() method might be used for other purposes, so creating a helper as a descriptor
+    @Transient
+    public String describe() {
+        return "Role{" +
+                "role name='" + name + '\'' +
+                ", groupReferenceId ='" + groupReferenceId + '\'' +
+                ", groupReferenceName ='" + groupReferenceName + '\'' +
+                ", id=" + id +
+                ", type=" + roleType +
+                ", permissions=" + permissions.toString()+
+
+                '}';
     }
 
     @Override

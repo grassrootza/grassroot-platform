@@ -5,13 +5,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Role;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.RoleRepository;
 
 import javax.transaction.Transactional;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Lesetse Kimwaga
@@ -30,6 +29,12 @@ public class RoleManager implements  RoleManagementService {
 
     @Autowired
     private GroupManagementService groupManagementService;
+
+    @Autowired
+    private PermissionsManagementService permissionsManagementService;
+
+    @Autowired
+    private GroupAccessControlManagementService groupAccessControlManagementService;
 
     @Override
     public Role createRole(Role role) {
@@ -89,7 +94,12 @@ public class RoleManager implements  RoleManagementService {
 
     @Override
     public Role fetchGroupRole(String roleName, Long groupId) {
-        return roleRepository.findByNameAndGroupReferenceId(roleName,groupId);
+        return roleRepository.findByNameAndGroupReferenceId(roleName, groupId);
+    }
+
+    @Override
+    public Role fetchGroupRole(String roleName, Group group) {
+        return fetchGroupRole(roleName, group.getId());
     }
 
     @Override
@@ -120,14 +130,71 @@ public class RoleManager implements  RoleManagementService {
     }
 
     @Override
-    public Group addRoleToGroup(Role role, Group group) {
+    public Role addRoleToGroup(Role role, Group group) {
+        // todo: check for duplicates before doing this
         group.addRole(role);
-        return groupManagementService.saveGroup(group);
+        groupManagementService.saveGroup(group);
+        role.setGroup(group);
+        return roleRepository.save(role);
     }
 
     @Override
-    public Group addRoleToGroup(String roleName, Group group) {
-        return addRoleToGroup(fetchGroupRoleByName(roleName), group);
+    public Role addRoleToGroup(String roleName, Group group) {
+        // todo: check for duplicates before doing this
+        Role role = (fetchGroupRoleByName(roleName) == null) ?
+                roleRepository.save(new Role(roleName)) : fetchGroupRoleByName(roleName);
+        return addRoleToGroup(role, group);
+    }
+
+    @Override
+    public void addDefaultRoleToGroupAndUser(String roleName, Group group, User user) {
+        // todo: throw a fit if roleName is not standard
+
+        Role role;
+
+        if (fetchGroupRole(roleName, group) == null) {
+            // create the role with default permissions and add it to the group
+            role = new Role(roleName, group.getId(), group.getGroupName());
+            log.info("Created this new role: " + role.describe());
+            role.setPermissions(permissionsManagementService.defaultPermissionsGroupRole(roleName));
+            role = roleRepository.save(role);
+            log.info("Role saved as ... " + role.describe());
+            group.addRole(role);
+            groupManagementService.saveGroup(group);
+            user.addRole(role);
+            userManagementService.save(user);
+        } else {
+            // role exists, just make sure it has a set of permissions and add it to user and group
+            // todo: work out what to do if role has a non-BaseRoles name and permissions set is empty (throw a fit)
+            role = fetchGroupRole(roleName, group);
+            log.info("Retrieved the following role: " + role.toString());
+            if (role.getPermissions() == null || role.getPermissions().isEmpty())
+                role.setPermissions(permissionsManagementService.defaultPermissionsGroupRole(role.getName()));
+            role = roleRepository.save(role);
+            group.addRole(role);
+            groupManagementService.saveGroup(group);
+            user.addRole(role);
+            userManagementService.save(user);
+        }
+
+        // now that we have a role with the right set of permissions, finish off by wiring up access control
+        groupAccessControlManagementService.addUserGroupPermissions(group, user, role.getPermissions());
+
+    }
+
+    @Override
+    public Role assignPermissionsToRole(Role role, List<Permission> permissions) {
+        return null;
+    }
+
+    @Override
+    public Role addPermissionToRole(Role role, Permission permission) {
+        return null;
+    }
+
+    @Override
+    public Role removePermissionFromRole(Role role, Permission permission) {
+        return null;
     }
 
     /*
