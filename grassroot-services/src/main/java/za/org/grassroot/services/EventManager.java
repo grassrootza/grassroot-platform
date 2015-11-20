@@ -64,6 +64,10 @@ public class EventManager implements EventManagementService {
     @Autowired
     CacheUtilService cacheUtilService;
 
+    @Autowired
+    MeetingNotificationService meetingNotificationService;
+
+    private final static double SMS_COST = 0.2; // might move to message services
 
     /*
     Variety of createEvent methods with different signatures caters to USSD menus in particular, so can create event
@@ -546,7 +550,19 @@ public class EventManager implements EventManagementService {
     @Override
     public int getNumberInvitees(Event event) {
         // may make this more sophisticated once we have message relays in place
-        return event.getAppliesToGroup().getGroupMembers().size();
+        return (!event.isIncludeSubGroups()) ? event.getAppliesToGroup().getGroupMembers().size() :
+                groupManager.getAllUsersInGroupAndSubGroups(event.getAppliesToGroup()).size();
+    }
+
+    @Override
+    public double getCostOfMessages(Event event, double costPerMessage) {
+        // this will also get more sophisticated, and important, as message sending methods multiply, accounts become real, etc
+        return getNumberInvitees(event) * costPerMessage;
+    }
+
+    @Override
+    public double getCostOfMessages(Event event) {
+        return getCostOfMessages(event, SMS_COST);
     }
 
     @Override
@@ -605,6 +621,18 @@ public class EventManager implements EventManagementService {
         jmsTemplateProducerService.sendWithNoReply("manual-reminder", eventDTO);
         log.info("sendManualReminder...queued..." + eventDTO.toString());
         return true;
+    }
+
+    @Override
+    public String getReminderMessageForConfirmation(String locale, User user, Event event) {
+        log.info("Composing reminder message ... with locale ... " + locale);
+        EventDTO eventDTO = new EventDTO(event);
+        return meetingNotificationService.createMeetingReminderMessage(locale, user, eventDTO);
+    }
+
+    @Override
+    public String getDefaultLocaleReminderMessage(User user, Event event) {
+        return getReminderMessageForConfirmation("en", user, event);
     }
 
     private Event saveandCheckChanges(EventDTO beforeEvent, Event changedEvent) {

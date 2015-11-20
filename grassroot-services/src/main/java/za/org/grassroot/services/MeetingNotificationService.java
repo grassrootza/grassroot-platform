@@ -20,4 +20,9 @@ public interface MeetingNotificationService {
     public String createMeetingReminderMessage(User user, EventDTO event);
 
     public String createVoteResultsMessage(User user, EventDTO event, double yes, double no, double abstain, double noReply);
+
+    /*
+    Helper method to produce messages in different languages, for confirmation screens
+     */
+    public String createMeetingReminderMessage(String locale, User user, EventDTO event);
 }

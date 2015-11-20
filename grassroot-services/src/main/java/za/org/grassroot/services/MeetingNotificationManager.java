@@ -82,6 +82,13 @@ public class MeetingNotificationManager implements MeetingNotificationService {
         String messageKey = "sms.vote.send.results";
         return messageSourceAccessor.getMessage(messageKey, populateFields(user, event,yes,no,abstain,noReply), locale);
     }
+
+    @Override
+    public String createMeetingReminderMessage(String locale, User user, EventDTO event) {
+        log.info("Creating meeting reminder in this locale ..." + locale);
+        return messageSourceAccessor.getMessage("sms.mtg.send.reminder", populateFields(user, event), locale);
+    }
+
     private Locale getUserLocale(User user) {
         if (user.getLanguageCode() == null || user.getLanguageCode().trim().equals("")) {
             return Locale.ENGLISH;

@@ -49,6 +49,7 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
 
             log.info("ZOG: Adding permissions for this group ... " + group.toString());
             log.info("ZOG: Adding them to this user ... " + user.toString());
+            log.info("ZOG: Adding this set of permissions ... " + groupPermissions);
 
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user.getUsername(),
                     user.getPassword(), user.getAuthorities());

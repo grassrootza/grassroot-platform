@@ -20,10 +20,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.integration.services.SmsSendingService;
-import za.org.grassroot.services.EventLogManagementService;
-import za.org.grassroot.services.EventManagementService;
-import za.org.grassroot.services.GroupManagementService;
-import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
@@ -48,6 +45,9 @@ public class MeetingController extends BaseController {
 
     @Autowired
     EventLogManagementService eventLogManagementService;
+
+    @Autowired
+    MeetingNotificationService meetingNotificationService; // for confirmation screens
 
     @RequestMapping("/meeting/view")
     public String viewMeetingDetails(Model model, @RequestParam("eventId") Long eventId) {
@@ -172,17 +172,44 @@ public class MeetingController extends BaseController {
     }
 
     @RequestMapping(value = "/meeting/modify", method=RequestMethod.POST, params={"reminder"})
-    public String sendReminder(Model model, @ModelAttribute("meeting") Event meeting, RedirectAttributes redirectAttributes,
+    public String confirmReminder(Model model, @ModelAttribute("meeting") Event meeting, RedirectAttributes redirectAttributes,
                                HttpServletRequest request) {
 
-        // todo: make sure this is a paid account before allowing it
+        meeting = eventManagementService.loadEvent(meeting.getId());
+        // todo: make sure this is a paid group before allowing it (not just that user is admin)
         if (request.isUserInRole("ROLE_SYSTEM_ADMIN") || request.isUserInRole("ROLE_ACCOUNT_ADMIN")) {
-            eventManagementService.sendManualReminder(eventManagementService.loadEvent(meeting.getId()), "");
-            addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.reminder.success", request);
-        } else {
-            addMessage(redirectAttributes, MessageType.ERROR, "permission.denied.error", request);
-        }
 
+            model.addAttribute("entityId", meeting.getId());
+            model.addAttribute("action", "remind");
+            model.addAttribute("includeSubGRoups", meeting.isIncludeSubGroups());
+
+            String groupLanguage = meeting.getAppliesToGroup().getDefaultLanguage();
+            log.info("Composing dummy message for confirmation ... Group language is ... " + groupLanguage);
+            String message = (groupLanguage == null || groupLanguage.trim().equals("")) ?
+                    eventManagementService.getDefaultLocaleReminderMessage(getUserProfile(), meeting) :
+                    eventManagementService.getReminderMessageForConfirmation(groupLanguage, getUserProfile(), meeting);
+
+            model.addAttribute("message", message);
+            model.addAttribute("recipients", eventManagementService.getNumberInvitees(meeting));
+            model.addAttribute("cost", eventManagementService.getCostOfMessages(meeting));
+            return "meeting/remind_confirm";
+
+        } else {
+
+            // todo: go back to the meeting instead
+            addMessage(redirectAttributes, MessageType.ERROR, "permission.denied.error", request);
+            return "redirect:/home";
+
+        }
+    }
+
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/meeting/remind", method=RequestMethod.POST)
+    public String sendReminder(Model model, @RequestParam("entityId") Long eventId, RedirectAttributes redirectAttributes,
+                               HttpServletRequest request) {
+
+        eventManagementService.sendManualReminder(eventManagementService.loadEvent(eventId), "");
+        addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.reminder.success", request);
         return "redirect:/home";
 
     }
@@ -214,28 +241,34 @@ public class MeetingController extends BaseController {
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/meeting/free", method = RequestMethod.POST)
-    public String sendFreeMsg(Model model, @RequestParam(value="groupId") Long groupId, @RequestParam(value="message") String message,
+    public String confirmFreeMsg(Model model, @RequestParam(value="groupId") Long groupId, @RequestParam(value="message") String message,
+                                 @RequestParam(value="includeSubGroups", required=false) boolean includeSubgroups) {
+
+        model.addAttribute("action", "free");
+        model.addAttribute("entityId", groupId);
+        model.addAttribute("includeSubGroups", includeSubgroups);
+
+        model.addAttribute("message", message);
+        int recipients = groupManagementService.getGroupSize(groupManagementService.loadGroup(groupId), includeSubgroups);
+        model.addAttribute("recipients", recipients);
+        model.addAttribute("cost", recipients * 0.2);
+        return "meeting/remind_confirm";
+
+    }
+
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/meeting/free", method = RequestMethod.POST, params = { "confirmed" })
+    public String sendFreeMsg(Model model, @RequestParam(value="entityId") Long groupId, @RequestParam(value="message") String message,
                               @RequestParam(value="includeSubGroups", required=false) boolean includeSubgroups,
                               RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
         // todo: check that this group is paid for (and filter on previous page)
 
+        log.info("Sending free form message ... includeSubGroups set to ... " + includeSubgroups);
+
         Group group = groupManagementService.loadGroup(groupId);
         Event dummyEvent = eventManagementService.createEvent("", getUserProfile(), group, includeSubgroups);
         boolean messageSent = eventManagementService.sendManualReminder(dummyEvent, message);
-
-        /* List<User> usersToMessage = (!includeSubgroups) ?  group.getGroupMembers() :
-                groupManagementService.getAllUsersInGroupAndSubGroups(groupId);
-
-        // removing duplicates ...
-        Set<User> usersSet = new HashSet<>();
-        usersSet.addAll(usersToMessage);
-        usersToMessage.clear();
-        usersToMessage.addAll(usersSet);
-
-        for (User user : usersToMessage) {
-            smsSendingService.sendSMS(group.getName("") + ": " + message, user.getPhoneNumber());
-        }*/
 
         log.info("We just sent a free form message with result: " + messageSent);
 
