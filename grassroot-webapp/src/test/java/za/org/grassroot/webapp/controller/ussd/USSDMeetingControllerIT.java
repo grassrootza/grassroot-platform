@@ -31,9 +31,9 @@ import static org.springframework.http.HttpStatus.OK;
 /**
  * Created by luke on 2015/10/11.
  */
-public class USSDMeetingControllerTest extends USSDAbstractTest {
+public class USSDMeetingControllerIT extends USSDAbstractIT {
 
-    private static final Logger log = LoggerFactory.getLogger(USSDMeetingControllerTest.class);
+    private static final Logger log = LoggerFactory.getLogger(USSDMeetingControllerIT.class);
 
     @Autowired
     UserManagementService userManager;

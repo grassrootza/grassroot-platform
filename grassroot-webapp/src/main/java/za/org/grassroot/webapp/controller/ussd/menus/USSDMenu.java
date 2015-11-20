@@ -97,7 +97,7 @@ public class USSDMenu {
 
     public Integer getMenuCharLength(Integer enumLength) {
         Integer characterCount = 0;
-        characterCount += promptMessage.length();
+        characterCount += (promptMessage == null) ? 0 : promptMessage.length();
 
         if (!isFreeText) {
             for (Map.Entry<String, String> menuOption : menuOptions.entrySet())

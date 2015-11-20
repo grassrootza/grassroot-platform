@@ -24,9 +24,9 @@ import static org.junit.Assert.assertThat;
 /**
  * Created by luke on 2015/09/08.
  */
-public class USSDGroupControllerTest extends USSDAbstractTest {
+public class USSDGroupControllerIT extends USSDAbstractIT {
 
-    private Logger log = LoggerFactory.getLogger(USSDGroupControllerTest.class);
+    private Logger log = LoggerFactory.getLogger(USSDGroupControllerIT.class);
 
     @Autowired
     UserManagementService userManager;

@@ -7,6 +7,7 @@ import org.springframework.boot.context.embedded.EmbeddedServletContainerCustomi
 import org.springframework.boot.context.embedded.ErrorPage;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
@@ -68,7 +69,6 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
         filter.setForceEncoding(true);
         return filter;
     }
-
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {

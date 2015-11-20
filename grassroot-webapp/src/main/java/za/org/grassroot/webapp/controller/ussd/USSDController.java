@@ -129,6 +129,7 @@ public class USSDController {
         Integer enumLength = ("1. ").length();
         Integer characterLimit = firstMenu ? 140 : 160;
 
+        log.info("Menu with prompt message ... " + menuToCheck.getPromptMessage());
         log.info("Length of menu: " + menuToCheck.getMenuCharLength(enumLength));
 
         return (menuToCheck.getMenuCharLength(enumLength) < characterLimit); // might be able to get away with <=, but prefer to be conservative

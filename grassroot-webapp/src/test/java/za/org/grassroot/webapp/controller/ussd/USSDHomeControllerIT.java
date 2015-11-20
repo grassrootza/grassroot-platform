@@ -31,7 +31,7 @@ import static org.springframework.http.HttpStatus.OK;
  */
 
 @Category(IntegrationTest.class)
-public class USSDHomeControllerIT extends USSDAbstractTest {
+public class USSDHomeControllerIT extends USSDAbstractIT {
 
     private static final Logger log = LoggerFactory.getLogger(USSDHomeControllerIT.class);
 

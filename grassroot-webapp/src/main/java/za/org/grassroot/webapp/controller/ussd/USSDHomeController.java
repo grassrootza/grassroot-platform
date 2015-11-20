@@ -9,6 +9,7 @@ import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -39,7 +40,6 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 @RestController
 public class USSDHomeController extends USSDController {
 
-
     @Autowired
     EventLogManagementService eventLogManagementService;
 
@@ -47,6 +47,8 @@ public class USSDHomeController extends USSDController {
 
     private static final String keyRsvp = "rsvp", keyRenameStart = "rename-start", keyGroupNameStart = "group-start";
     private static final int hashPosition = Integer.valueOf(System.getenv("USSD_CODE_LENGTH"));
+
+    public void setMessageSource(MessageSource messageSource) { this.messageSource = messageSource; }
 
     public USSDMenu welcomeMenu(String opening, User sessionUser) throws URISyntaxException {
 

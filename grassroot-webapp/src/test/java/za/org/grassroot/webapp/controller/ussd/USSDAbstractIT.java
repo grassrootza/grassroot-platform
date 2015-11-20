@@ -2,9 +2,11 @@ package za.org.grassroot.webapp.controller.ussd;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.IntegrationTest;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.boot.test.TestRestTemplate;
 import org.springframework.boot.test.WebIntegrationTest;
@@ -49,10 +51,10 @@ import java.util.logging.Logger;
 @WebIntegrationTest(randomPort = true)
 @Transactional
 @ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
-public class USSDAbstractTest extends AbstractTransactionalJUnit4SpringContextTests {
+@Category(IntegrationTest.class)
+public class USSDAbstractIT extends AbstractTransactionalJUnit4SpringContextTests {
 
     private Logger log = Logger.getLogger(getClass().getCanonicalName());
-
 
     @Autowired
     UserManagementService userManager;
