@@ -14,6 +14,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupManagementService;
@@ -54,7 +55,7 @@ public class VoteController extends BaseController {
             model.addAttribute("possibleGroups", groupManagementService.groupsOnWhichCanCallVote(user));
         }
 
-        // model.addAttribute("vote", vote);
+        model.addAttribute("vote", new Event(user, EventType.Vote, true));
         model.addAttribute("groupSpecified", groupSpecified);
 
         // log.info("Vote that we are passing: " + vote);
@@ -69,9 +70,16 @@ public class VoteController extends BaseController {
 
         log.info("Vote passed back to us: " + vote);
 
-        vote = eventManagementService.updateEvent(vote);
-        if (selectedGroupId != null) { eventManagementService.setGroup(vote, selectedGroupId); }
+        // choosing to set some default fields here instead of a lot of hidden fields in Thymeleaf
+        vote.setEventType(EventType.Vote);
+        vote.setCreatedByUser(getUserProfile());
+        vote.setRsvpRequired(true);
 
+        log.info("Fleshed out vote: " + vote);
+
+        if (selectedGroupId != null) { vote.setAppliesToGroup(groupManagementService.loadGroup(selectedGroupId)); }
+
+        vote = eventManagementService.createVote(vote);
         log.info("Stored vote, at end of creation: " + vote.toString());
 
         addMessage(model, MessageType.SUCCESS, "vote.creation.success", request);

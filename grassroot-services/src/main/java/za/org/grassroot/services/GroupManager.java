@@ -233,7 +233,7 @@ public class GroupManager implements GroupManagementService {
     @Override
     public List<Group> groupsOnWhichCanCallVote(User user) {
         // major todo: integrate this with group/user permissions; for now, just returning all groups
-        return user.getGroupsPartOf();
+        return getActiveGroupsPartOf(user);
     }
 
     @Override

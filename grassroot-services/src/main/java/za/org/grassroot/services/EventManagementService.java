@@ -45,6 +45,9 @@ public interface EventManagementService {
     //createVote(name,userId,groupId,includeSubGroups)
     Event createVote(String issue, Long userId, Long groupId, boolean includeSubGroups);
 
+    // method to call we have a fully formed vote entity
+    Event createVote(Event vote);
+
     /*
     Methods to find and load events
      */

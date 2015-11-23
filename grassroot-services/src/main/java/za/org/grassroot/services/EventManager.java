@@ -76,7 +76,7 @@ public class EventManager implements EventManagementService {
 
     @Override
     public Event createEvent(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups, boolean rsvpRequired) {
-        return createNewEvent(createdByUser, EventType.Meeting, rsvpRequired, name ,appliesToGroup, includeSubGroups,0);
+        return createNewEvent(createdByUser, EventType.Meeting, rsvpRequired, name, appliesToGroup, includeSubGroups, 0);
     }
 
     @Override
@@ -92,7 +92,7 @@ public class EventManager implements EventManagementService {
     @Override
     public Event createEvent(String name, Long createdByUserId, Long appliesToGroupId, boolean includeSubGroups) {
         return createEvent(name, userManagementService.getUserById(createdByUserId),
-                groupManager.getGroupById(appliesToGroupId), includeSubGroups);
+                           groupManager.getGroupById(appliesToGroupId), includeSubGroups);
     }
 
     @Override
@@ -133,6 +133,12 @@ public class EventManager implements EventManagementService {
     @Override
     public Event createVote(String issue, Long userId, Long groupId, boolean includeSubGroups) {
         return createNewEvent(userManagementService.getUserById(userId), EventType.Vote, true, issue, groupManager.loadGroup(groupId), false, 0);
+    }
+
+    @Override
+    public Event createVote(Event vote) {
+        // todo: handle the exception (or just save the partial entity)
+        return saveandCheckChanges(new EventDTO(), vote);
     }
 
     private Event createNewEvent(User createdByUser, EventType eventType, boolean rsvpRequired

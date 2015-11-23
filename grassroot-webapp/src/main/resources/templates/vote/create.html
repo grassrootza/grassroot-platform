@@ -79,13 +79,16 @@
 
     $(document).ready(function() {
 
+      var defTime = new Date();
+      defTime.setTime(defTime.getTime() + 5*60*1000);
+
       $('#datepicker').datetimepicker({
         format: 'DD/MM/YYYY h:mm A',
         widgetPositioning: {
           horizontal: 'right'
         },
         sideBySide:true,
-        minDate: new Date()
+        minDate: defTime
       });
 
     });

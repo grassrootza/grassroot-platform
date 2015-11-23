@@ -162,7 +162,7 @@ public class USSDVoteController extends USSDController {
         if (!custom) {
             switch (time) {
                 case "instant":
-                    proposedDateTime = DateTimeUtil.addMinutesToDate(new Date(), 5);
+                    proposedDateTime = DateTimeUtil.addMinutesToDate(new Date(), 7);
                     dateTimeFormatted = dateWithYear.format(proposedDateTime);
                     dateTimePrompt = " in five minutes";
                     break;
