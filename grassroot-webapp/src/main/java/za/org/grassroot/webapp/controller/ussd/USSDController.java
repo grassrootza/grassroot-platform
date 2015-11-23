@@ -140,24 +140,36 @@ public class USSDController {
      * todo: extend pagination, to allow for multiple pages, and/or better sorting (last accessed & most accessed)
      */
 
-    protected USSDMenu userGroupMenu(User user, String menuPrompt, String urlForExistingGroups, String urlForNewGroup, String groupParam, Integer pageNumber)
+    /*
+    First, a simple helper method to take a list of groups and a URL and spit out a set of menu options
+     */
+
+    protected USSDMenu addListOfGroupsToMenu(USSDMenu menu, String nextMenuUrl, List<Group> groups, User user) {
+
+        final String formedUrl = (!nextMenuUrl.contains("?")) ?
+                (nextMenuUrl + GROUPID_URL) :
+                (nextMenuUrl + "&groupId=");
+
+        SimpleDateFormat sdf = new SimpleDateFormat("d MMM");
+
+        for (Group group : groups) {
+            String name = (group.hasName()) ? group.getGroupName() :
+                    getMessage(GROUP_KEY, "unnamed", "label", sdf.format(group.getCreatedDateTime()), user);
+            menu.addMenuOption(formedUrl + group.getId(), name);
+        }
+
+        return menu;
+
+    }
+
+    protected USSDMenu userGroupMenu(User user, String menuPrompt, String urlForExistingGroups, String urlForNewGroup, Integer pageNumber)
             throws URISyntaxException {
 
         USSDMenu menu = new USSDMenu(menuPrompt);
-        Page<Group> groupsPartOf = groupManager.getPageOfGroups(user, pageNumber, PAGE_LENGTH);
-
-        final String formedUrl = (!urlForExistingGroups.contains("?")) ?
-                (urlForExistingGroups + GROUPID_URL) :
-                (urlForExistingGroups + "&" + groupParam + "=");
+        Page<Group> groupsPartOf = groupManager.getPageOfActiveGroups(user, pageNumber, PAGE_LENGTH);
+        menu = addListOfGroupsToMenu(menu, urlForExistingGroups, groupsPartOf.getContent(), user);
 
         String finalOption = (urlForNewGroup != null) ? getMessage(GROUP_KEY, "create", "option", user) : "";
-        SimpleDateFormat sdf = new SimpleDateFormat("d MMM");
-
-        for (Group groupToList : groupsPartOf) {
-            String groupName = (groupToList.hasName()) ? groupToList.getGroupName() :
-                    getMessage(GROUP_KEY, "unnamed", "label", sdf.format(groupToList.getCreatedDateTime()), user);
-            menu.addMenuOption(formedUrl + groupToList.getId(), groupName);
-        }
 
         if (groupsPartOf.hasNext())
             menu.addMenuOption(assemblePaginatedURI(menuPrompt, urlForExistingGroups, urlForNewGroup, pageNumber + 1), "More groups");
@@ -184,12 +196,12 @@ public class USSDController {
         final String formedUrl = (!path.contains("?")) ? (path + GROUPID_URL) : (path + "&" + GROUP_PARAM + "=");
         final String newGroupUrl = (optionNewGroup) ? formedUrl + "0" : null;
 
-        return userGroupMenu(sessionUser, promptMessage, path, newGroupUrl, GROUP_PARAM);
+        return userGroupMenu(sessionUser, promptMessage, path, newGroupUrl);
     }
 
-    protected USSDMenu userGroupMenu(User sessionUser, String promptMessage, String existingPath, String newUri, String groupParam)
+    protected USSDMenu userGroupMenu(User sessionUser, String promptMessage, String existingPath, String newUri)
             throws URISyntaxException {
-        return userGroupMenu(sessionUser, promptMessage, existingPath, newUri, groupParam, 0);
+        return userGroupMenu(sessionUser, promptMessage, existingPath, newUri, 0);
     }
 
     /*
@@ -228,10 +240,9 @@ public class USSDController {
      * todo: replace these error messages, especially the 'no user' error
      */
 
-    Request tooLongError = new Request("Error! Menu is too long.", new ArrayList<Option>());
-    Request noUserError = new Request("Error! Couldn't find you as a user.", new ArrayList<Option>());
-    Request noGroupError = new Request("Sorry! Something went wrong finding the group.", new ArrayList<Option>());
-    Request exitScreen = new Request("Thanks! We're done.", new ArrayList<Option>());
+    Request tooLongError = new Request("Error! Menu is too long.", new ArrayList<>());
+    Request noUserError = new Request("Error! Couldn't find you as a user.", new ArrayList<>());
+    Request noGroupError = new Request("Sorry! Something went wrong finding the group.", new ArrayList<>());
 
     protected Map<String, String> optionsHomeExit(User sessionUser) {
         return ImmutableMap.<String, String>builder().

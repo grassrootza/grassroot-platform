@@ -36,9 +36,13 @@ public interface GroupManagementService {
 
     public List<Group> getGroupsPartOf(User sessionUser);
 
-    public List<Group> getPaginatedGroups(User sessionUser, int pageNumber, int pageSize);
+    public List<Group> getActiveGroupsPartOf(User sessionUser);
 
-    public Page<Group> getPageOfGroups(User sessionUser, int pageNumber, int pageSize);
+    // public List<Group> getPaginatedGroups(User sessionUser, int pageNumber, int pageSize);
+
+    // public Page<Group> getPageOfGroups(User sessionUser, int pageNumber, int pageSize);
+
+    public Page<Group> getPageOfActiveGroups(User sessionUser, int pageNumber, int pageSize);
 
     public Group getGroupById(Long groupId);
 
@@ -46,7 +50,11 @@ public interface GroupManagementService {
 
     public void deleteGroup(Group groupToDelete);
 
-    public boolean canUserDeleteGroup(User user, Group group);
+    public boolean canUserMakeGroupInactive(User user, Group group);
+
+    public boolean canUserMakeGroupInactive(User user, Long groupId);
+
+    public boolean isGroupCreatedByUser(Long groupId, User user);
 
     /*
     Methods to find, and add group members
@@ -108,7 +116,7 @@ public interface GroupManagementService {
 
     public Group createSubGroup(Long createdByUserId, Long groupId, String subGroupName);
 
-    public List<Group> getTopLevelGroups(User user);
+    public List<Group> getActiveTopLevelGroups(User user);
 
     public List<Group> getSubGroups(Group group);
 
@@ -157,11 +165,31 @@ public interface GroupManagementService {
 
     public Group setGroupInactive(Group group);
 
+    public Group setGroupInactive(Long groupId);
+
+    public Group mergeGroups(Long firstGroupId, Long secondGroupId);
+
     public Group mergeGroups(Group firstGroup, Group secondGroup);
 
-    public Group mergeGroups(Group firstGroup, Group secondGroup, boolean setInactive);
+    public Group mergeGroups(Group firstGroup, Group secondGroup, boolean setConsolidatedGroupInactive);
 
-    public Group mergeGroupsSpecifyOrder(Group groupInto, Group groupFrom, boolean setInactive);
+    public Group mergeGroupsSpecifyOrder(Group groupInto, Group groupFrom, boolean setFromGroupInactive);
+
+    public Group mergeGroupsSpecifyOrder(Long groupIntoId, Long groupFromId, boolean setFromGroupInactive);
+
+    public List<Group> getMergeCandidates(User mergingUser, Long firstGroupSelected);
+
+    public Long[] orderPairByNumberMembers(Long groupId1, Long groupId2);
+
+    /*
+    Methods to get group properties if paid or not
+     */
+
+    public boolean isGroupPaid(Group group);
+
+    public boolean canGroupDoFreeForm(Group group);
+
+    public boolean canGroupRelayMessage(Group group);
 
     /*
     Methods for system and account admin

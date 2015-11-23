@@ -45,19 +45,19 @@ public class VoteController extends BaseController {
 
         boolean groupSpecified = (groupId != null);
         User user = getUserProfile();
-        Event vote = eventManagementService.createVote(user);
+        // Event vote = eventManagementService.createVote(user);
 
         if (groupSpecified) {
             model.addAttribute("group", groupManagementService.loadGroup(groupId));
-            vote = eventManagementService.setGroup(vote.getId(), groupId);
+        //    vote = eventManagementService.setGroup(vote.getId(), groupId);
         } else {
             model.addAttribute("possibleGroups", groupManagementService.groupsOnWhichCanCallVote(user));
         }
 
-        model.addAttribute("vote", vote);
+        // model.addAttribute("vote", vote);
         model.addAttribute("groupSpecified", groupSpecified);
 
-        log.info("Vote that we are passing: " + vote);
+        // log.info("Vote that we are passing: " + vote);
 
         return "vote/create";
     }

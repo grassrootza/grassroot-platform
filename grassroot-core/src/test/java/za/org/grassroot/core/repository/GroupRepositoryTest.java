@@ -4,6 +4,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.TestContextConfiguration;
@@ -14,6 +16,7 @@ import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -250,6 +253,24 @@ public class GroupRepositoryTest {
         assertThat(list2.size(), is(1));
         assertTrue(list2.contains(group1));
         assertFalse(list2.contains(group2));
+    }
+
+    @Test
+    public void shouldReturnPagesActive() {
+        assertThat(groupRepository.count(), is(0L));
+        User user = userRepository.save(new User("3331110000"));
+        List<Group> testGroups = Arrays.asList(new Group("gc1", user), new Group("gc2", user), new Group("gc3", user), new Group("gc4", user));
+        for (Group group : testGroups) group.addMember(user);
+        testGroups = groupRepository.save(testGroups);
+        assertThat(groupRepository.count(), is(4L));
+        Page<Group> pageTest1 = groupRepository.findByGroupMembersAndActive(user, new PageRequest(0, 3), true);
+        assertThat(pageTest1.hasNext(), is(true));
+        testGroups.get(0).setActive(false);
+        groupRepository.save(testGroups.get(0));
+        Page<Group> allGroups = groupRepository.findByGroupMembers(user, new PageRequest(0, 3));
+        Page<Group> activeGroups = groupRepository.findByGroupMembersAndActive(user, new PageRequest(0,3), true);
+        assertTrue(allGroups.hasNext());
+        assertFalse(activeGroups.hasNext());
     }
 
     @Test

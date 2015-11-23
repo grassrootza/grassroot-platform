@@ -6,9 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.PaidGroup;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.NewGroupMember;
 import za.org.grassroot.core.enums.EventChangeType;
@@ -20,7 +18,6 @@ import za.org.grassroot.services.util.TokenGeneratorService;
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * @author luke on 2015/08/14.
@@ -246,7 +243,7 @@ public class GroupManager implements GroupManagementService {
 
     @Override
     public List<Group> getCreatedGroups(User creatingUser) {
-        return groupRepository.findByCreatedByUser(creatingUser);
+        return groupRepository.findByCreatedByUserAndActive(creatingUser, true);
     }
 
     @Override
@@ -255,6 +252,11 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
+    public List<Group> getActiveGroupsPartOf(User sessionUser) {
+        return groupRepository.findByGroupMembersAndActive(sessionUser, true);
+    }
+
+    /*@Override
     public List<Group> getPaginatedGroups(User sessionUser, int pageNumber, int pageSize) {
         return getPageOfGroups(sessionUser, pageNumber, pageSize).getContent();
     }
@@ -262,6 +264,11 @@ public class GroupManager implements GroupManagementService {
     @Override
     public Page<Group> getPageOfGroups(User sessionUser, int pageNumber, int pageSize) {
         return groupRepository.findByGroupMembers(sessionUser, new PageRequest(pageNumber, pageSize));
+    }*/
+
+    @Override
+    public Page<Group> getPageOfActiveGroups(User sessionUser, int pageNumber, int pageSize) {
+        return groupRepository.findByGroupMembersAndActive(sessionUser, new PageRequest(pageNumber, pageSize), true);
     }
 
     /*
@@ -272,9 +279,9 @@ public class GroupManager implements GroupManagementService {
      */
 
     @Override
-    public List<Group> getTopLevelGroups(User user) {
+    public List<Group> getActiveTopLevelGroups(User user) {
 
-        List<Group> groupsPartOf = getGroupsPartOf(user);
+        List<Group> groupsPartOf = getActiveGroupsPartOf(user);
         List<Group> topLevelGroups = new ArrayList<>();
 
         for (Group group : groupsPartOf) {
@@ -514,8 +521,19 @@ public class GroupManager implements GroupManagementService {
 
     @Override
     public Group setGroupInactive(Group group) {
+        // todo errors and exception throwing
         group.setActive(false);
         return saveGroup(group);
+    }
+
+    @Override
+    public Group setGroupInactive(Long groupId) {
+        return setGroupInactive(loadGroup(groupId));
+    }
+
+    @Override
+    public Group mergeGroups(Long firstGroupId, Long secondGroupId) {
+        return mergeGroups(loadGroup(firstGroupId), loadGroup(secondGroupId));
     }
 
     @Override
@@ -524,10 +542,11 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public Group mergeGroups(Group groupA, Group groupB, boolean setInactive) {
+    public Group mergeGroups(Group groupA, Group groupB, boolean setConsolidatedGroupInactive) {
 
         Group largerGroup, smallerGroup;
 
+        // note: if the groups are the same size, this will default to merging into the first-passed group
         if (groupA.getGroupMembers().size() >= groupB.getGroupMembers().size()) {
             largerGroup = groupA;
             smallerGroup = groupB;
@@ -536,20 +555,56 @@ public class GroupManager implements GroupManagementService {
             smallerGroup = groupA;
         }
 
-        return mergeGroupsSpecifyOrder(largerGroup, smallerGroup, setInactive);
+        return mergeGroupsSpecifyOrder(largerGroup, smallerGroup, setConsolidatedGroupInactive);
     }
 
     @Override
-    public Group mergeGroupsSpecifyOrder(Group groupInto, Group groupFrom, boolean setInactive) {
+    public Group mergeGroupsSpecifyOrder(Group groupInto, Group groupFrom, boolean setFromGroupInactive) {
 
         for (User user : groupFrom.getGroupMembers()) {
             addGroupMember(groupInto, user);
         }
 
-        groupFrom.setActive(!setInactive);
+        groupFrom.setActive(!setFromGroupInactive);
         groupRepository.save(groupFrom);
 
         return groupRepository.save(groupInto);
+    }
+
+    @Override
+    public Group mergeGroupsSpecifyOrder(Long groupIntoId, Long groupFromId, boolean setFromGroupInactive) {
+        return mergeGroupsSpecifyOrder(loadGroup(groupIntoId), loadGroup(groupFromId), setFromGroupInactive);
+    }
+
+    @Override
+    public List<Group> getMergeCandidates(User mergingUser, Long firstGroupSelected) {
+
+        // todo: lots of error handling etc
+        List<Group> createdGroups = getCreatedGroups(mergingUser);
+        createdGroups.remove(loadGroup(firstGroupSelected));
+        return createdGroups;
+    }
+
+    @Override
+    public Long[] orderPairByNumberMembers(Long groupId1, Long groupId2) {
+        Integer group1size = loadGroup(groupId1).getGroupMembers().size(),
+                group2size = loadGroup(groupId2).getGroupMembers().size();
+        return (group1size >= group2size) ? new Long[] {groupId1, groupId2} : new Long[] {groupId2, groupId1};
+    }
+
+    @Override
+    public boolean isGroupPaid(Group group) {
+        return false;
+    }
+
+    @Override
+    public boolean canGroupDoFreeForm(Group group) {
+        return false;
+    }
+
+    @Override
+    public boolean canGroupRelayMessage(Group group) {
+        return false;
     }
 
     @Override
@@ -599,13 +654,23 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public boolean canUserDeleteGroup(User user, Group group) {
+    public boolean canUserMakeGroupInactive(User user, Group group) {
         // todo: Integrate with permission checking -- for now, just checking if group created by user in last 48 hours
         // todo: the time checking would be so much easier if we use Joda or Java 8 DateTime ...
         boolean createdByUser = (group.getCreatedByUser() == user);
         Timestamp thresholdTime = new Timestamp(Calendar.getInstance().getTimeInMillis() - (48 * 60 * 60 * 1000));
         boolean groupCreatedSinceThreshold = (group.getCreatedDateTime().after(thresholdTime));
         return (createdByUser && groupCreatedSinceThreshold);
+    }
+
+    @Override
+    public boolean canUserMakeGroupInactive(User user, Long groupId) {
+        return canUserMakeGroupInactive(user, loadGroup(groupId));
+    }
+
+    @Override
+    public boolean isGroupCreatedByUser(Long groupId, User user) {
+        return (loadGroup(groupId).getCreatedByUser() == user);
     }
 
     /*

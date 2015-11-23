@@ -1,0 +1,46 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+  <title>GrassRoot - Consolidate groups</title>
+</head>
+<body>
+
+<div layout:fragment="header">
+  <h2>Confirm group merging</h2>
+</div>
+
+<div layout:fragment="overview">Merge one group into another</div>
+
+<div layout:fragment="content">
+  <div layout:fragment="messages"></div>
+  <div class="well">
+    <div class="row">
+      <h4>
+        You are merging ''<span th:text="${groupFrom.getName('')}">group name</span>'', into the group
+        ''<span th:text="${groupInto.getName('')}">group name</span>''.
+        This means <span th:text="${numberFrom}">X</span> members will be added to
+        <span th:text="${groupInto.getName('')}">group into</span>.
+        <div th:unless="${leaveActive}">
+          After the merge, <span th:text="${groupFrom.getName('')}">group name</span> will be deactivated.
+        </div>
+      </h4>
+    </div>
+    <div class="row">
+    <form th:action="@{/group/consolidate/do}" method="post" class="form-horizontal">
+      <input type="hidden" name="groupInto" th:value="${groupInto.id}" />
+      <input type="hidden" name="groupFrom" th:value="${groupFrom.id}" />
+      <input type="hidden" name="leaveActive" th:value="${leaveActive}" />
+      <div class="form-group">
+        <div class="col-lg-12">
+          <button type="submit" class="btn btn-primary">Confirm</button>
+          <a href="" th:href="@{/group/view(groupId=${groupFrom.id})}"><button class="btn btn-link" role="link">Cancel</button></a>
+        </div>
+      </div>
+    </form>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

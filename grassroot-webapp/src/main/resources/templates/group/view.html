@@ -141,10 +141,15 @@
     </div>
   </div>
 
-  <div class="well" th:if="${not hasParent}">
-    <div class="row"><div class="col-md-12">
-      <a href="" th:href="@{/group/parent(groupId=${group.id})}"><button class="btn btn-info">Link this group to a parent</button></a>
-    </div></div>
+  <div class="well">
+    <div class="row">
+      <div class="col-md-6" th:if="${not hasParent}">
+        <a href="" th:href="@{/group/parent(groupId=${group.id})}"><button class="btn btn-success">Link this group to a parent</button></a>
+      </div>
+      <div class="col-md-6" th:if="${canMergeWithOthers}">
+        <a href="" th:href="@{/group/consolidate/select(groupId=${group.id})}"><button class="btn btn-success">Consolidate with another group</button></a>
+      </div>
+    </div>
   </div>
 
   <!-- list subgroups -->

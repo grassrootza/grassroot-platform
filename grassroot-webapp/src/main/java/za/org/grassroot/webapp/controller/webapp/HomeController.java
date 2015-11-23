@@ -52,7 +52,7 @@ public class HomeController extends BaseController {
             return signinController.autoLogonUser(request, model);
         }
         if (signinController.isAuthenticated()) {
-            model.addAttribute("userGroups", groupManagementService.getGroupsPartOf(getUserProfile()));
+            model.addAttribute("userGroups", groupManagementService.getActiveGroupsPartOf(getUserProfile()));
             return new ModelAndView("home",model.asMap());
         }
 
@@ -72,14 +72,14 @@ public class HomeController extends BaseController {
          group. There may be a more efficient way to do this than the groupManagement call (and/or optimizing within it
          */
 
-        List<Group> topLevelGroups = groupManagementService.getTopLevelGroups(user);
+        List<Group> topLevelGroups = groupManagementService.getActiveTopLevelGroups(user);
         List<GroupViewNode> groupViewNodes = new ArrayList<>();
         for (Group group : topLevelGroups) {
             log.info("Creating a group node from group: " + group.getGroupName());
             groupViewNodes.add(new GroupViewNode(group, user, groupManagementService));
         }
 
-        model.addAttribute("userGroups", user.getGroupsPartOf());
+        model.addAttribute("userGroups", groupManagementService.getActiveGroupsPartOf(user));
         model.addAttribute("groupTrees", groupViewNodes);
 
         // get lists of outstanding RSVPs and votes

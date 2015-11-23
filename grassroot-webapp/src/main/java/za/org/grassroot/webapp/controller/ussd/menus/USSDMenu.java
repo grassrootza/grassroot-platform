@@ -95,6 +95,10 @@ public class USSDMenu {
         this.menuOptions.put(optionURL, optionDescription);
     }
 
+    public void addMenuOptions(Map<String, String> menuOptions) {
+        this.menuOptions.putAll(menuOptions);
+    }
+
     public Integer getMenuCharLength(Integer enumLength) {
         Integer characterCount = 0;
         characterCount += (promptMessage == null) ? 0 : promptMessage.length();

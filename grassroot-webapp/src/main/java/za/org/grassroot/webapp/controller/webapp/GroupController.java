@@ -65,6 +65,7 @@ public class GroupController extends BaseController {
 
         // todo: all sorts of user/group permission checking
         Group group = groupManagementService.loadGroup(groupId);
+        User user = getUserProfile();
 
         model.addAttribute("group", group);
         model.addAttribute("hasParent", groupManagementService.hasParent(group));
@@ -72,7 +73,8 @@ public class GroupController extends BaseController {
         model.addAttribute("groupVotes", eventManagementService.getUpcomingVotes(group));
         model.addAttribute("subGroups", groupManagementService.getSubGroups(group));
         model.addAttribute("openToken", groupManagementService.groupHasValidToken(group));
-        model.addAttribute("canDeleteGroup", groupManagementService.canUserDeleteGroup(getUserProfile(), group));
+        model.addAttribute("canDeleteGroup", groupManagementService.canUserMakeGroupInactive(getUserProfile(), group));
+        model.addAttribute("canMergeWithOthers", groupManagementService.isGroupCreatedByUser(groupId, user));
 
         return "group/view";
     }
@@ -458,9 +460,82 @@ public class GroupController extends BaseController {
 
     }
 
+    /*
+    Methods to consolidate groups
+    todo: add role authorizations, etc
+     */
+
+    @RequestMapping(value = "group/consolidate/select")
+    public String selectConsolidate(Model model, @RequestParam("groupId") Long groupId,
+                                    RedirectAttributes redirectAttributes, HttpServletRequest request) {
+
+        User user = getUserProfile();
+
+        List<Group> candidateGroups = groupManagementService.getMergeCandidates(user, groupId);
+        if (candidateGroups == null || candidateGroups.size() == 0) {
+            addMessage(redirectAttributes, MessageType.ERROR, "group.merge.no-candidates", request);
+            redirectAttributes.addAttribute("groupId", groupId);
+            return "redirect:view";
+        } else {
+            model.addAttribute("group1", groupManagementService.loadGroup(groupId));
+            model.addAttribute("candidateGroups", candidateGroups);
+            return "group/consolidate_select";
+        }
+    }
+
+
+    @RequestMapping(value = "group/consolidate/confirm", method = RequestMethod.POST)
+    public String consolidateGroupsConfirm(Model model, @RequestParam("groupId1") Long groupId1, @RequestParam("groupId2") Long groupId2,
+                                           @RequestParam("order") String order, @RequestParam(value="leaveActive", required=false) boolean leaveActive,
+                                           HttpServletRequest request) {
+
+        Group groupInto;
+        Group groupFrom;
+        Long[] orderedIds;
+
+        switch (order) {
+            case "small_to_large":
+                orderedIds = groupManagementService.orderPairByNumberMembers(groupId1, groupId2);
+                groupInto = groupManagementService.loadGroup(orderedIds[0]);
+                groupFrom = groupManagementService.loadGroup(orderedIds[1]);
+                break;
+            case "2_into_1":
+                groupInto = groupManagementService.loadGroup(groupId1);
+                groupFrom = groupManagementService.loadGroup(groupId2);
+                break;
+            case "1_into_2":
+                groupInto = groupManagementService.loadGroup(groupId2);
+                groupFrom = groupManagementService.loadGroup(groupId1);
+                break;
+            default:
+                orderedIds = groupManagementService.orderPairByNumberMembers(groupId1, groupId2);
+                groupInto = groupManagementService.loadGroup(orderedIds[0]);
+                groupFrom = groupManagementService.loadGroup(orderedIds[1]);
+        }
+
+        model.addAttribute("groupInto", groupInto);
+        model.addAttribute("groupFrom", groupFrom);
+        model.addAttribute("numberFrom", groupManagementService.getGroupSize(groupFrom, false));
+        model.addAttribute("leaveActive", leaveActive);
+
+        return "group/consolidate_confirm";
+    }
+
+    @RequestMapping(value = "group/consolidate/do", method = RequestMethod.POST)
+    public String consolidateGroupsDo(Model model, @RequestParam("groupInto") Long groupIdInto, @RequestParam("groupFrom") Long groupIdFrom,
+                                      @RequestParam(value="leaveActive", required=false) boolean leaveActive, RedirectAttributes redirectAttributes, HttpServletRequest request) {
+
+        // todo: add error handling
+        Group consolidatedGroup = groupManagementService.mergeGroupsSpecifyOrder(groupIdInto, groupIdFrom, !leaveActive);
+        Integer[] userCounts = new Integer[] { groupManagementService.loadGroup(groupIdFrom).getGroupMembers().size(),
+                groupManagementService.getGroupSize(consolidatedGroup, false)};
+        redirectAttributes.addAttribute("groupId", consolidatedGroup.getId());
+        addMessage(redirectAttributes, MessageType.SUCCESS, "group.merge.success", userCounts, request);
+        return "redirect:/group/view";
+    }
 
     /*
-    Methods to handle group deletion and group unsubscribe
+    Methods to handle group deactivation and group unsubscribe
     Simple method to delete a group, if it was recently created and this is the creating user, after a confirmation screen
     todo: add Spring Security annotations to stop unauthorized users from even accessing the URLs
      */
@@ -470,7 +545,7 @@ public class GroupController extends BaseController {
         User user = getUserProfile();
         Group group = groupManagementService.loadGroup(groupId);
 
-        if (groupManagementService.canUserDeleteGroup(user, group)) {
+        if (groupManagementService.canUserMakeGroupInactive(user, group)) {
             model.addAttribute("group", group);
             return "group/delete_confirm";
         } else {
@@ -480,15 +555,14 @@ public class GroupController extends BaseController {
 
     }
 
-
     @RequestMapping(value = "group/delete")
     public String deleteGroup(Model model, @RequestParam("groupId") Long groupId, @RequestParam("confirm_field") String confirmText,
                               HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
         Group group = groupManagementService.loadGroup(groupId);
 
-        if (groupManagementService.canUserDeleteGroup(getUserProfile(), group) && confirmText.toLowerCase().equals("delete")) {
-            groupManagementService.deleteGroup(group);
+        if (groupManagementService.canUserMakeGroupInactive(getUserProfile(), group) && confirmText.toLowerCase().equals("delete")) {
+            groupManagementService.setGroupInactive(group);
             addMessage(redirectAttributes, MessageType.SUCCESS, "group.delete.success", request);
             return "redirect:/home";
         } else {

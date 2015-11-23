@@ -191,6 +191,7 @@ public class Group implements Serializable {
      */
 
     public Group() {
+        this.active = true; // else this constructor causes null pointers in some calls
     }
 
     public Group(String groupName, User createdByUser) {

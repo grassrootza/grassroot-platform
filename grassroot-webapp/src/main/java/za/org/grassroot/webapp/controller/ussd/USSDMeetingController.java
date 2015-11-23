@@ -98,7 +98,7 @@ public class USSDMeetingController extends USSDController {
             String existingGroupUri = MTG_MENUS + keyNext + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + groupHandlingMenu;
             String newGroupUri = MTG_MENUS + newGroupMenu + EVENTID_URL + eventId;
 
-            groupMenu = userGroupMenu(sessionUser, prompt, existingGroupUri, newGroupUri, GROUP_PARAM);
+            groupMenu = userGroupMenu(sessionUser, prompt, existingGroupUri, newGroupUri);
 
         }
         return groupMenu;

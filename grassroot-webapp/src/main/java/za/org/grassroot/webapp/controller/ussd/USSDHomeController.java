@@ -380,7 +380,7 @@ public class USSDHomeController extends USSDController {
                                          @RequestParam(value="existingUri") String existingUri,
                                          @RequestParam(value="newUri", required=false) String newUri) throws URISyntaxException {
 
-        return menuBuilder(userGroupMenu(userManager.findByInputNumber(inputNumber), prompt, existingUri, newUri, GROUP_PARAM, pageNumber));
+        return menuBuilder(userGroupMenu(userManager.findByInputNumber(inputNumber), prompt, existingUri, newUri, pageNumber));
 
     }
 

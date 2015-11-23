@@ -33,8 +33,16 @@ public class USSDGroupController extends USSDController {
 
     Logger log = LoggerFactory.getLogger(this.getClass());
 
-    private static final String existingGroupMenu = "menu", createGroupMenu = "create", listGroupMembers = "list", renameGroupPrompt = "rename",
-            addMemberPrompt = "addnumber", unsubscribePrompt = "unsubscribe", groupTokenMenu = "token", deleteGroupMenu = "delete";
+    private static final String existingGroupMenu = "menu",
+            createGroupMenu = "create",
+            listGroupMembers = "list",
+            renameGroupPrompt = "rename",
+            addMemberPrompt = "addnumber",
+            unsubscribePrompt = "unsubscribe",
+            groupTokenMenu = "token",
+            mergeGroupMenu = "merge",
+            inactiveMenu = "inactive";
+
     private static final String groupPath = USSD_BASE + GROUP_MENUS;
 
     /*
@@ -78,6 +86,12 @@ public class USSDGroupController extends USSDController {
         listMenu.addMenuOption(GROUP_MENUS + addMemberPrompt + groupParam, getMessage(menuKey + addMemberPrompt, sessionUser));
         listMenu.addMenuOption(GROUP_MENUS + unsubscribePrompt + groupParam, getMessage(menuKey + unsubscribePrompt, sessionUser));
         listMenu.addMenuOption(GROUP_MENUS + renameGroupPrompt + groupParam, getMessage(menuKey + renameGroupPrompt, sessionUser));
+
+        if (groupManager.isGroupCreatedByUser(groupId, sessionUser))
+            listMenu.addMenuOption(GROUP_MENUS + mergeGroupMenu + groupParam, getMessage(menuKey + mergeGroupMenu, sessionUser));
+
+        if (groupManager.canUserMakeGroupInactive(sessionUser, groupId))
+            listMenu.addMenuOption(GROUP_MENUS + inactiveMenu + groupParam, getMessage(menuKey + inactiveMenu, sessionUser));
 
         return menuBuilder(listMenu);
 
@@ -459,35 +473,115 @@ public class USSDGroupController extends USSDController {
 
     }
 
-
-
-    /* @RequestMapping(value = groupPath + deleteGroupMenu)
+    /*
+    Menus to merge groups
+     */
+    @RequestMapping(value = groupPath + mergeGroupMenu)
     @ResponseBody
-    public Request deleteConfirm(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
-                                 @RequestParam(value=GROUP_PARAM, required=true) Long groupId) throws URISyntaxException {
+    public Request selectMergeGroups(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                                     @RequestParam(value=GROUP_PARAM, required=true) Long groupId) throws URISyntaxException {
 
-        // todo: decide if this function will exist through USSD
-        // todo: add confirmation screen
-        // todo: check for user permissions
-        // todo: generally make this more than a quick-and-dirty to clean up prototype database
+        USSDMenu menu;
+        User user = userManager.findByInputNumber(inputNumber);
+        List<Group> mergeCandidates = groupManager.getMergeCandidates(user, groupId);
 
-        String returnMessage;
-        User sessionUser = userManager.findByInputNumber(inputNumber);
-        Group sessionGroup = new Group();
-        try { sessionGroup = groupManager.loadGroup(groupId); }
-        catch (Exception e) { return noGroupError; }
+        if (mergeCandidates == null || mergeCandidates.size() == 0) {
+            menu = new USSDMenu(getMessage(GROUP_KEY, mergeGroupMenu, PROMPT + ".error", user));
+            menu.addMenuOption(GROUP_MENUS + existingGroupMenu + GROUPID_URL + groupId, getMessage(GROUP_KEY, mergeGroupMenu, OPTION + "back", user));
+            menu.addMenuOptions(optionsHomeExit(user));
+        } else {
+            menu = new USSDMenu(getMessage(GROUP_KEY, mergeGroupMenu, PROMPT, user));
+            menu = addListOfGroupsToMenu(menu, GROUP_MENUS + mergeGroupMenu + "-confirm?groupIdFirst=" + groupId,
+                                         mergeCandidates, user);
 
-        try {
-            sessionGroup.setGroupMembers(new ArrayList<User>());
-            sessionGroup = groupManager.saveGroup(sessionGroup);
-            groupManager.deleteGroup(sessionGroup);
-            returnMessage = getMessage(GROUP_KEY, deleteGroupMenu, PROMPT + ".success", sessionUser);
-        } catch (Exception e) {
-            returnMessage = getMessage(GROUP_KEY, deleteGroupMenu, PROMPT_ERROR, sessionUser);
         }
 
-        return menuBuilder(new USSDMenu(returnMessage, optionsHomeExit(sessionUser)));
+        return menuBuilder(menu);
 
-    }*/
+    }
+
+    @RequestMapping(value = groupPath + mergeGroupMenu + "-confirm")
+    @ResponseBody
+    public Request confirmMerge(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                                @RequestParam(value=GROUP_PARAM, required=true) Long groupId1,
+                                @RequestParam(value=GROUP_PARAM+"First", required=true) Long groupIdFirst) throws URISyntaxException {
+
+        // todo: specify which one is smaller
+        User user = userManager.findByInputNumber(inputNumber);
+        USSDMenu menu = new USSDMenu(getMessage(GROUP_KEY, mergeGroupMenu + "-confirm", PROMPT, user));
+
+        menu.addMenuOption(GROUP_MENUS + mergeGroupMenu + DO_SUFFIX + GROUPID_URL + groupId1 + "&groupIdFirst=" + groupIdFirst,
+                           getMessage(GROUP_KEY, mergeGroupMenu + "-confirm", OPTION + "yes", user));
+        menu.addMenuOption(GROUP_MENUS + mergeGroupMenu + GROUPID_URL + groupIdFirst,
+                           getMessage(GROUP_KEY, mergeGroupMenu + "-confirm", OPTION + "no1", user));
+        menu.addMenuOption(GROUP_MENUS + START_KEY,
+                           getMessage(GROUP_KEY, mergeGroupMenu + "-confirm", OPTION + "no2", user));
+
+        return menuBuilder(menu);
+    }
+
+    @RequestMapping(value = groupPath + mergeGroupMenu + DO_SUFFIX)
+    @ResponseBody
+    public Request mergeDo(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                           @RequestParam(value=GROUP_PARAM, required=true) Long groupId,
+                           @RequestParam(value=GROUP_PARAM+"First", required=true) Long groupIdFirst) throws URISyntaxException {
+
+
+        User user = userManager.findByInputNumber(inputNumber);
+        USSDMenu menu = new USSDMenu();
+        Long remainingGroupId;
+
+        try {
+            remainingGroupId = groupManager.mergeGroups(groupIdFirst, groupId).getId();
+            menu.setPromptMessage(getMessage(GROUP_KEY, mergeGroupMenu + DO_SUFFIX, PROMPT, user));
+        } catch (Exception e) {
+            remainingGroupId = groupIdFirst; // this will actually be the group the user started with
+            menu.setPromptMessage(getMessage(GROUP_KEY, mergeGroupMenu + DO_SUFFIX, PROMPT_ERROR, user));
+        }
+
+        menu.addMenuOption(GROUP_MENUS + existingGroupMenu + GROUPID_URL + remainingGroupId,
+                           getMessage(GROUP_KEY, mergeGroupMenu + DO_SUFFIX, OPTION + "group", user));
+        menu.addMenuOptions(optionsHomeExit(user));
+
+        return menuBuilder(menu);
+    }
+
+    @RequestMapping(value = groupPath + inactiveMenu)
+    @ResponseBody
+    public Request inactiveConfirm(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                                   @RequestParam(value=GROUP_PARAM, required=true) Long groupId) throws URISyntaxException {
+
+        // todo: add exception handling
+        User user = userManager.findByInputNumber(inputNumber);
+        USSDMenu menu = new USSDMenu(getMessage(GROUP_KEY, inactiveMenu, PROMPT, user));
+        menu.addMenuOption(GROUP_MENUS + inactiveMenu + DO_SUFFIX + GROUPID_URL + groupId,
+                           getMessage(GROUP_KEY, inactiveMenu, OPTION + "confirm", user));
+        menu.addMenuOption(GROUP_MENUS + existingGroupMenu + GROUPID_URL + groupId,
+                           getMessage(GROUP_KEY, inactiveMenu, OPTION + "cancel", user));
+        return menuBuilder(menu);
+
+    }
+
+    @RequestMapping(value = groupPath + inactiveMenu + DO_SUFFIX)
+    @ResponseBody
+    public Request inactiveDo(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                              @RequestParam(value=GROUP_PARAM, required=true) Long groupId) throws URISyntaxException {
+
+        // todo: check for user role & permissions (must have all of them)
+
+        User user = userManager.findByInputNumber(inputNumber);
+        USSDMenu menu;
+
+        // todo: rather make this rely on an exception from services layer and move logic there
+        if (groupManager.canUserMakeGroupInactive(user, groupId)) {
+            groupManager.setGroupInactive(groupId);
+            menu = new USSDMenu(getMessage(GROUP_KEY, inactiveMenu + DO_SUFFIX, PROMPT + ".success", user), optionsHomeExit(user));
+        } else {
+            menu = new USSDMenu(getMessage(GROUP_KEY, inactiveMenu + DO_SUFFIX, PROMPT_ERROR, user), optionsHomeExit(user));
+        }
+
+        return menuBuilder(menu);
+
+    }
 
 }

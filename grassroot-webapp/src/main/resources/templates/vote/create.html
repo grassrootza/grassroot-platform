@@ -21,7 +21,7 @@
   <div class="well">
     <form th:object="${vote}" th:action="@{/vote/create}" method="post" autocomplete="off" class="form-horizontal">
       <input th:field="*{id}" type="hidden" />
-        <input th:field="*{rsvpRequired}" type="hidden" />
+      <input th:field="*{rsvpRequired}" type="hidden" />
 
       <div class="form-group">
         <label for="group" class="col-md-2 control-label">Group which is voting</label>

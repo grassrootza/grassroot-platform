@@ -19,6 +19,7 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     Find all the groups created by a specific user
      */
     List<Group> findByCreatedByUser(User createdByUser);
+    List<Group> findByCreatedByUserAndActive(User createdByUser, boolean active);
     /*
     Find the last group created by a specific user
      */

@@ -18,6 +18,7 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.view.RedirectView;
 import za.org.grassroot.core.util.AuthenticationUtil;
+import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
 
 import javax.servlet.http.HttpServletRequest;
@@ -34,6 +35,9 @@ public class SigninController {
 
     @Autowired
     UserManagementService userManagementService;
+
+    @Autowired
+    GroupManagementService groupManagementService;
 
     @Autowired
     AuthenticationUtil authenticationUtil;
@@ -99,7 +103,9 @@ public class SigninController {
             authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
             SecurityContextHolder.getContext().setAuthentication(authentication);
             logger.info("autoLogonUser...return...ModelAndView...home");
-            model.addAttribute("userGroups", userManagementService.fetchUserByUsername(userDetails.getUsername()).getGroupsPartOf());
+            // todo: check if this is possibly inefficient (may involve redundant DB calls?)
+            model.addAttribute("userGroups", groupManagementService.getActiveGroupsPartOf(
+                    userManagementService.fetchUserByUsername(userDetails.getUsername())));
             return new ModelAndView("home", model.asMap());
         } catch (Exception e) {
             throw new AuthenticationServiceException("Problem  auto logging user", e);

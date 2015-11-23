@@ -22,6 +22,7 @@ import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
@@ -47,6 +48,9 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
     @Autowired
     private UserRepository userRepository;
 
+    private final String testUserBase = "081000555";
+    private final String testGroupBase = "test group ";
+
     /*
     Testing parent detection
      */
@@ -68,8 +72,21 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
     }
 
     /*
-    Testing group member addition and consolidation
+    Testing group member addition and group consolidation
      */
+
+    @Test
+    @Rollback
+    public void shouldNotDuplicateMembers() {
+        User user = userManagementService.loadOrSaveUser(testUserBase + "0");
+        User user2 = userManagementService.loadOrSaveUser(testUserBase + "1");
+
+        Group group = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "1"));
+        assertThat(group.getGroupMembers().size(), is(2));
+        Group group2 = groupManagementService.addGroupMember(group, user2);
+        assertThat(group2.getGroupMembers().size(), is(2));
+    }
+
     @Test
     @Rollback
     public void shouldAddMultipleNumbersToGroup() {
@@ -81,6 +98,146 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         assertNotNull(group.getGroupMembers());
         assertEquals(4, group.getGroupMembers().size());
         // further tests, e.g., that members contains the users created, stretch persistence lucky-streak to its breaking point
+    }
+
+    @Test
+    @Rollback
+    public void shouldSetGroupInactive() {
+        assertThat(groupRepository.count(), is(0L));
+        User user = userManagementService.loadOrSaveUser(testUserBase + "1");
+        Group group = groupManagementService.createNewGroup(user, testGroupBase + "1");
+        Group group2 = groupManagementService.createNewGroup(user, testGroupBase + "2");
+        groupManagementService.setGroupInactive(group);
+
+        // todo: do a 'find by active' and count here instead
+        Group groupFromDb = groupManagementService.loadGroup(group.getId());
+        assertNotNull(groupFromDb);
+        assertFalse(groupFromDb.isActive());
+    }
+
+    @Test
+    @Rollback
+    public void shouldOnlyReturnCreatedGroups() {
+        assertThat(groupRepository.count(), is(0L));
+        User user1 = userManagementService.loadOrSaveUser(testUserBase + "1");
+        User user2 = userManagementService.loadOrSaveUser(testUserBase + "2");
+        Group group1 = groupManagementService.createNewGroup(user1, testGroupBase + "1");
+        Group group2 = groupManagementService.createNewGroup(user2, testGroupBase + "2");
+        groupManagementService.addGroupMember(group1, user1);
+        groupManagementService.addGroupMember(group2, user1);
+        assertTrue(group2.getGroupMembers().contains(user1));
+        List<Group> list1 = groupManagementService.getActiveGroupsPartOf(user1);
+        List<Group> list2 = groupManagementService.getCreatedGroups(user1);
+        assertNotEquals(list1, list2);
+        assertThat(list1.size(), is(2));
+        assertThat(list2.size(), is(1));
+    }
+
+    @Test
+    @Rollback
+    public void shouldMergeGroups() {
+        assertThat(groupRepository.count(), is(0L));
+        User user = userManagementService.loadOrSaveUser(testUserBase + "2");
+
+        Group group1 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "3", testUserBase + "4", testUserBase + "5"));
+        Group group2 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase+"6", testUserBase+"7"));
+
+        assertThat(group1.getGroupMembers().size(), is(4));
+        assertTrue(group1.isActive());
+        assertThat(group2.getGroupMembers().size(), is(3));
+
+        groupManagementService.mergeGroups(group1, group2);
+        assertNotNull(group1);
+        assertNotNull(group2);
+        assertTrue(group1.isActive());
+        assertFalse(group2.isActive());
+        assertThat(group1.getGroupMembers().size(), is(6));
+        assertTrue(group1.getGroupMembers().contains(userManagementService.findByInputNumber(testUserBase + "6")));
+    }
+
+    @Test
+    @Rollback
+    public void shouldNotFindInactiveGroups() {
+        assertThat(groupRepository.count(), is(0L));
+        User user = userManagementService.loadOrSaveUser(testUserBase + "3");
+
+        Group group1 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "4"));
+        Group group2 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "5"));
+
+        List<Group> list1 = groupManagementService.getActiveGroupsPartOf(user);
+        assertThat(list1.size(), is(2));
+        assertTrue(list1.contains(group1));
+        assertTrue(list1.contains(group2));
+
+        groupManagementService.setGroupInactive(group2);
+
+        List<Group> list2 = groupManagementService.getActiveGroupsPartOf(user);
+        assertThat(list2.size(), is(1));
+        assertTrue(list2.contains(group1));
+        assertFalse(list2.contains(group2));
+    }
+
+    @Test
+    @Rollback
+    public void mergeSpecificOrderShouldWorkForSmallerGroup() {
+        assertThat(groupRepository.count(), is(0L));
+        User user = userManagementService.loadOrSaveUser(testUserBase + "0");
+
+        Group group1 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "3", testUserBase + "4", testUserBase + "5"));
+        Group group2 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "6", testUserBase + "7"));
+
+        groupManagementService.mergeGroupsSpecifyOrder(group2, group1, true);
+
+        assertNotNull(group1);
+        assertNotNull(group2);
+        assertFalse(group1.isActive());
+        assertTrue(group2.isActive());
+        assertThat(group2.getGroupMembers().size(), is(6));
+        assertTrue(group2.getGroupMembers().contains(userManagementService.findByInputNumber(testUserBase + "3")));
+    }
+
+    @Test
+    @Rollback
+    public void groupMergeShouldLeaveActiveIfFlagged() {
+        assertThat(groupRepository.count(), is(0L));
+        User user = userManagementService.loadOrSaveUser(testUserBase + "1");
+        Group group1 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "2"));
+        Group group2 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase+"3"));
+        groupManagementService.mergeGroups(group1, group2, false);
+        assertNotNull(group1);
+        assertNotNull(group2);
+        assertTrue(group1.isActive());
+        assertTrue(group2.isActive());
+        assertThat(groupManagementService.getActiveGroupsPartOf(user).size(), is(2));
+    }
+
+    @Test
+    @Rollback
+    public void getMergeCandidatesShouldReturnAccurately() {
+        assertThat(groupRepository.count(), is(0L));
+        User user = userManagementService.loadOrSaveUser(testUserBase + "1");
+        User user2 = userManagementService.loadOrSaveUser(testUserBase + "2");
+
+        Group group1 = groupManagementService.createNewGroup(user, testGroupBase + "1");
+        Group group2 = groupManagementService.createNewGroup(user, testGroupBase + "2");
+        Group group3 = groupManagementService.createNewGroup(user, testGroupBase + "3");
+        Group group4 = groupManagementService.createNewGroup(user2, Arrays.asList(testUserBase + "1"));
+
+        assertThat(groupRepository.count(), is(4L));
+
+        List<Group> list = groupManagementService.getActiveGroupsPartOf(user);
+        List<Group> list1 = groupManagementService.getCreatedGroups(user);
+        List<Group> list2 = groupManagementService.getMergeCandidates(user, group1.getId());
+
+        assertTrue(list.contains(group4));
+        assertFalse(list2.contains(group4));
+
+        assertTrue(list1.contains(group1));
+        assertFalse(list2.contains(group1));
+
+        assertThat(list2.size(), is(2));
+        assertTrue(list2.contains(group2));
+        assertTrue(list2.contains(group3));
     }
 
 }
