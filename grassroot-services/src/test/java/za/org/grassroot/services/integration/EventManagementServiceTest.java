@@ -14,9 +14,12 @@ import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
@@ -29,6 +32,9 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import static junit.framework.Assert.*;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThat;
 
 /**
  * @author Lesetse Kimwaga
@@ -63,6 +69,9 @@ public class EventManagementServiceTest {
 
     @Autowired
     EventRepository eventRepository;
+
+    @Autowired
+    EventLogRepository eventLogRepository;
 
     @Test
     public void shouldSaveEventWithNameUserAndGroup() {
@@ -172,5 +181,25 @@ public class EventManagementServiceTest {
 
     }
     //todo aakil test more scenarios , ie single level, multiple events etc
+
+    @Test
+    public void shouldCreateVoteFromEntity() {
+        assertThat(eventLogRepository.count(), is(0L));
+        User user = userManagementService.loadOrSaveUser("0710001234");
+        Group group1 = groupManagementService.createNewGroup(user, Arrays.asList("0701112345"));
+        Event event = new Event();
+        event.setEventType(EventType.Vote);
+        event.setRsvpRequired(true);
+        event.setAppliesToGroup(group1);
+        event.setName("Does voting work?");
+        event.setEventStartDateTime(new Timestamp(DateTimeUtil.addMinutesToDate(new Date(), 5).getTime()));
+        event = eventManagementService.createVote(event);
+        assertNotSame(0, event.getId());
+        assertThat(event.getAppliesToGroup(), is(group1));
+        // assertTrue(eventManagementService.hasUpcomingEvents(user)); // fails because getUpcomingEventsQuery is PSQL-dependent
+
+        // todo: make method in send message save to cache -- so that we can check -- this fails because of async and various other issues
+        // assertNotEquals(eventLogRepository.count(), 0L);
+    }
 
 }

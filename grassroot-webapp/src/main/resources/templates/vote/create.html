@@ -34,6 +34,7 @@
             </select>
           </div>
           <div th:case="true" class="col-md-4">
+            <input type="hidden" name="selectedGroupId" th:value="${group.id}" />
             <span th:text="${group.groupName}" id="group">Group name</span>
           </div>
         </div>

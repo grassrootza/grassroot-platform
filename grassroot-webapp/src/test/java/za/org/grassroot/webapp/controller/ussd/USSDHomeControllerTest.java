@@ -57,10 +57,28 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.loadOrSaveUser("27810001111")).thenReturn(testUser);
 
+        // todo: check a lot more than this
         mockMvc.perform(get("/ussd/start").param("msisdn", "27810001111")).andExpect(status().isOk());
 
         // USSDMenu welcomeMenu = ussdHomeController.welcomeMenu("Hello", testUser);
 
     }
+
+    @Test
+    public void welcomeMenuAfterChoosingLanguageShouldWork() throws Exception {
+
+    }
+
+    @Test
+    public void welcomeMenuLocaleShouldWork() throws Exception {
+
+    }
+
+    @Test
+    public void groupJoinTokenShouldWork() throws Exception {
+
+    }
+
+
 
 }

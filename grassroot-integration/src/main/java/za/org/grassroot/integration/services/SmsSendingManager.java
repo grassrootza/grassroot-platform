@@ -7,6 +7,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.domain.User;
@@ -48,7 +49,7 @@ public class SmsSendingManager implements SmsSendingService {
     private String smsGatewayUsername = System.getenv("SMSUSER");
     private String smsGatewayPassword = System.getenv("SMSPASS");
 
-    private String testMessagePhone = "27815555555";
+    private String testMessagePhone = "27701110000";
 
     @Override
     public String sendSMS(String message, String destinationNumber) {
@@ -61,8 +62,8 @@ public class SmsSendingManager implements SmsSendingService {
         gatewayURI.queryParam("number", destinationNumber);
         gatewayURI.queryParam("message", message);
 
-        // todo: probably should make this reference INMEMORY explicitly, in case default changes in future
-        if (this.environment.getActiveProfiles() != this.environment.getDefaultProfiles()) {
+        // todo: test this on staging
+        if (!environment.acceptsProfiles(GrassRootApplicationProfiles.INMEMORY)) {
             log.info("Sending SMS via URL: " + gatewayURI.toUriString());
             //@todo process response message
             String messageResult = restTemplate.getForObject(gatewayURI.build().toUri(), String.class);
@@ -70,7 +71,8 @@ public class SmsSendingManager implements SmsSendingService {
             return messageResult;
         } else {
             // todo: store this result somewhere in the cache so an integrated test can check it
-            User testMessageUser = (userRepository.existsByPhoneNumber(testMessagePhone)) ? userRepository.findByPhoneNumber(testMessagePhone) :
+            User testMessageUser = (userRepository.existsByPhoneNumber(testMessagePhone)) ?
+                    userRepository.findByPhoneNumber(testMessagePhone) :
                     userRepository.save(new User(testMessagePhone));
             Event messageEvent = eventRepository.save(new Event(testMessageUser, EventType.DummyEvent));
             EventLog messageRecord = new EventLog(testMessageUser, messageEvent, EventLogType.EventTest, message);

@@ -65,7 +65,7 @@ public class VoteController extends BaseController {
 
     @RequestMapping(value = "/vote/create", method = RequestMethod.POST)
     public String createVoteDo(Model model, @ModelAttribute("vote") Event vote, BindingResult bindingResult,
-                               @RequestParam(value = "selectedGroupId", required = false) Long selectedGroupId,
+                               @RequestParam("selectedGroupId") Long selectedGroupId,
                                HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
         log.info("Vote passed back to us: " + vote);
@@ -74,10 +74,9 @@ public class VoteController extends BaseController {
         vote.setEventType(EventType.Vote);
         vote.setCreatedByUser(getUserProfile());
         vote.setRsvpRequired(true);
+        vote.setAppliesToGroup(groupManagementService.loadGroup(selectedGroupId));
 
         log.info("Fleshed out vote: " + vote);
-
-        if (selectedGroupId != null) { vote.setAppliesToGroup(groupManagementService.loadGroup(selectedGroupId)); }
 
         vote = eventManagementService.createVote(vote);
         log.info("Stored vote, at end of creation: " + vote.toString());
