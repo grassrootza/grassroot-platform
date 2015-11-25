@@ -12,6 +12,8 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.handler.SimpleMappingExceptionResolver;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
+import za.org.grassroot.services.EventLogManagementService;
+import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
 
@@ -27,6 +29,15 @@ public abstract class USSDAbstractUnitTest {
 
     @Mock
     protected UserManagementService userManagementServiceMock;
+
+    @Mock
+    protected GroupManagementService groupManagementServiceMock;
+
+    @Mock
+    protected EventManagementService eventManagementServiceMock;
+
+    @Mock
+    protected EventLogManagementService eventLogManagementServiceMock;
 
     protected HandlerExceptionResolver exceptionResolver() {
         SimpleMappingExceptionResolver exceptionResolver = new SimpleMappingExceptionResolver();
@@ -54,6 +65,7 @@ public abstract class USSDAbstractUnitTest {
     }
 
     protected MessageSource messageSource() {
+        // todo: wire this up to the actual message source so unit tests make sure languages don't have gaps ...
         ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
 
         messageSource.setBasename("messages");

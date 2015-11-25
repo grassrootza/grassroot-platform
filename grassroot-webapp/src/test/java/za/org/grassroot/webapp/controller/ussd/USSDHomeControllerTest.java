@@ -4,26 +4,22 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.MessageSource;
-import org.springframework.context.support.ResourceBundleMessageSource;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.annotation.Rollback;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
-import org.springframework.web.servlet.HandlerExceptionResolver;
-import org.springframework.web.servlet.ViewResolver;
-import org.springframework.web.servlet.handler.SimpleMappingExceptionResolver;
-import org.springframework.web.servlet.view.InternalResourceViewResolver;
+import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.util.DateTimeUtil;
 
-import java.util.Properties;
+import java.sql.Timestamp;
+import java.util.*;
 
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -35,6 +31,23 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
     private static final Logger log = LoggerFactory.getLogger(USSDHomeControllerTest.class);
 
+    private static final String phoneForTests = "27810001111";
+    private static final String baseForOthers = "2781000111";
+    private static final String testUserName = "Test User";
+    private static final String testGroupName = "Test Group";
+
+    private static final String openingMenu = "/ussd/start";
+    private static final String phoneParameter = "msisdn";
+
+    private User testUser = new User(phoneForTests, testUserName);
+
+    private User testUserZu = new User(baseForOthers + "2");
+    private User testUserTs = new User(baseForOthers + "3");
+    private User testUserNso = new User(baseForOthers + "4");
+    private User testUserSt = new User(baseForOthers + "5");
+
+    List<User> languageUsers;
+
     @InjectMocks
     USSDHomeController ussdHomeController;
 
@@ -45,40 +58,228 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
                 .setValidator(validator())
                 .setViewResolvers(viewResolver())
                 .build();
-    }
-
-    @Test
-    public void welcomeMenuShouldWork() throws Exception {
-
         ussdHomeController.setMessageSource(messageSource());
 
-        User testUser = new User("27810001111");
-        testUser.setLanguageCode("en");
+        /* We use these quite often */
+        testUserZu.setLanguageCode("zu");
+        testUserTs.setLanguageCode("ts");
+        testUserNso.setLanguageCode("nso");
+        testUserSt.setLanguageCode("st");
 
-        when(userManagementServiceMock.loadOrSaveUser("27810001111")).thenReturn(testUser);
+        languageUsers = Arrays.asList(testUserNso, testUserSt, testUserTs, testUserZu);
+    }
+
+
+    @Test
+    @Rollback
+    public void welcomeMenuShouldWork() throws Exception {
+
+        testUser.setHasInitiatedSession(false);
+        when(userManagementServiceMock.loadOrSaveUser(phoneForTests)).thenReturn(testUser);
 
         // todo: check a lot more than this
-        mockMvc.perform(get("/ussd/start").param("msisdn", "27810001111")).andExpect(status().isOk());
+        mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests)).andExpect(status().isOk());
 
-        // USSDMenu welcomeMenu = ussdHomeController.welcomeMenu("Hello", testUser);
-
+        verify(userManagementServiceMock, times(1)).loadOrSaveUser(phoneForTests);
+        // verifyNoMoreInteractions(userManagementServiceMock); // todo: work out if should shift other calls to user entity itself
     }
 
     @Test
     public void welcomeMenuAfterChoosingLanguageShouldWork() throws Exception {
 
+        testUser.setHasInitiatedSession(true);
+        testUser.setLanguageCode("zu");
+
+        when(userManagementServiceMock.loadOrSaveUser(phoneForTests)).thenReturn(testUser);
+
+        mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests)).andExpect(status().isOk());
     }
 
     @Test
-    public void welcomeMenuLocaleShouldWork() throws Exception {
+    public void welcomeMenuLocaleShouldWorkWithNoName() throws Exception {
+
+        testUser.setDisplayName("");
+        testUser.setHasInitiatedSession(false);
+        when(userManagementServiceMock.loadOrSaveUser(phoneForTests)).thenReturn(testUser);
+        when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
+
+        mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests)).andExpect(status().isOk());
+        testUser.setLanguageCode("ts");
+        when(userManagementServiceMock.setUserLanguage(testUser, "ts")).thenReturn(testUser);
+        mockMvc.perform(get(openingMenu + "_language").param(phoneParameter, phoneForTests).param("language", "ts")).
+                andExpect(status().isOk());
+
+        testUser.setDisplayName(testUserName);
 
     }
 
     @Test
-    public void groupJoinTokenShouldWork() throws Exception {
+    public void forcedStartMenuShouldWork() throws Exception {
+
+        testUser.setHasInitiatedSession(true);
+        testUser.setLastUssdMenu("/ussd/mtg/start"); // irrelevant if this is well formed or not, just testing if it asks
+
+        when(userManagementServiceMock.loadOrSaveUser(phoneForTests)).thenReturn(testUser);
+        when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
+
+        mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests)).andExpect(status().isOk());
+        mockMvc.perform(get(openingMenu + "_force").param(phoneParameter, phoneForTests)).andExpect(status().isOk());
+
+        testUser.setLastUssdMenu("");
 
     }
 
+    @Test
+    public void groupJoinTokenShouldWorkInAllLanguages() throws Exception {
+
+        testUser.setDisplayName("");
+        testUser.setHasInitiatedSession(false);
+
+        Group testGroup = new Group(testGroupName, new User("27601110000"));
+
+        testGroup.setGroupTokenCode("111");
+        testGroup.setTokenExpiryDateTime(new Timestamp(DateTimeUtil.addHoursToDate(new Date(), 24 * 7).getTime()));
+
+        when(userManagementServiceMock.loadOrSaveUser(phoneForTests)).thenReturn(testUser);
+        when(groupManagementServiceMock.tokenExists("111")).thenReturn(true);
+        when(groupManagementServiceMock.getGroupByToken("111")).thenReturn(testGroup);
+
+        mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests).param("request", "*134*1994*111#")).
+                andExpect(status().isOk());
+
+        for (User user : languageUsers) {
+            when(userManagementServiceMock.loadOrSaveUser(user.getPhoneNumber())).thenReturn(user);
+            mockMvc.perform(get(openingMenu).param(phoneParameter, user.getPhoneNumber()).param("request", "*134*1994*111#")).
+                    andExpect(status().isOk());
+        }
+
+    }
+
+    @Test
+    public void voteRequestScreenShouldWorkInAllLanguages() throws Exception {
+
+        testUser.setDisplayName(testUserName);
+        testUser.setLanguageCode("en");
+        Group testGroup = new Group(testGroupName, testUser);
+
+        Event vote = new Event(testUser, EventType.Vote, true);
+        vote.setId(1L); // since we will need this in getting and displaying
+        vote.setName("Are unit tests working?");
+        vote.setAppliesToGroup(testGroup);
+
+        Map<String, String> voteDetails = new HashMap<>();
+        voteDetails.put("groupName", testGroup.getGroupName());
+        voteDetails.put("creatingUser", testUser.getDisplayName());
+        voteDetails.put("eventSubject", "Are unit tests working?");
+
+        when(eventManagementServiceMock.getEventDescription(1L)).thenReturn(voteDetails);
+
+        List<User> votingUsers = new ArrayList<>(languageUsers);
+        votingUsers.add(testUser);
+
+        for (User user : votingUsers) {
+
+            testGroup.addMember(user); // this may be redundant
+            user.setHasInitiatedSession(false);
+            user.setLastUssdMenu("");
+
+            when(userManagementServiceMock.loadOrSaveUser(user.getPhoneNumber())).thenReturn(user);
+            when(userManagementServiceMock.findByInputNumber(user.getPhoneNumber())).thenReturn(user);
+            when(userManagementServiceMock.needsToVoteOrRSVP(user)).thenReturn(true);
+            when(userManagementServiceMock.needsToVote(user)).thenReturn(true);
+            when(eventManagementServiceMock.getNextOutstandingVote(user)).thenReturn(vote.getId());
+
+            mockMvc.perform(get(openingMenu).param(phoneParameter, user.getPhoneNumber())).andExpect(status().isOk());
+            verify(userManagementServiceMock, times(1)).needsToVoteOrRSVP(user);
+            verify(eventManagementServiceMock, times(1)).getNextOutstandingVote(user);
+
+            // note: the fact that message source accessor is not wired up may mean this is not actually testing
+            mockMvc.perform(get("/ussd/vote").param(phoneParameter, user.getPhoneNumber()).param("eventId", "" + vote.getId()).
+                    param("response", "yes")).andExpect(status().isOk());
+
+            verify(eventLogManagementServiceMock, times(1)).rsvpForEvent(vote.getId(), user.getPhoneNumber(),
+                                                                         EventRSVPResponse.fromString("yes"));
+        }
+    }
+
+    @Test
+    public void meetingRsvpShouldWorkInAllLanguages() throws Exception {
+
+        resetTestUser();
+        Group testGroup = new Group(testGroupName, testUser);
+
+        Event meeting = new Event("Meeting about testing", testUser, testGroup, false);
+        meeting.setId(2L);
+
+        List<User> groupMembers = new ArrayList<>(languageUsers);
+        groupMembers.add(testUser);
+
+        for (User user: groupMembers) {
+
+            user.setHasInitiatedSession(false);
+            user.setLastUssdMenu("");
+
+            when(userManagementServiceMock.loadOrSaveUser(user.getPhoneNumber())).thenReturn(user);
+            when(userManagementServiceMock.findByInputNumber(user.getPhoneNumber())).thenReturn(user);
+            when(userManagementServiceMock.needsToVoteOrRSVP(user)).thenReturn(true);
+            when(userManagementServiceMock.needsToRSVP(user)).thenReturn(true);
+            when(eventManagementServiceMock.getOutstandingRSVPForUser(user)).thenReturn(Arrays.asList(meeting));
+
+            String[] mockMeetingFields = new String[] { testGroup.getGroupName(), testUser.getDisplayName(), meeting.getName(),
+                                                        "Tomorrow 10am", "Braam" };
+
+            when(eventManagementServiceMock.populateNotificationFields(meeting)).thenReturn(mockMeetingFields);
+
+            mockMvc.perform(get(openingMenu).param(phoneParameter, user.getPhoneNumber())).andExpect(status().isOk());
+            verify(userManagementServiceMock, times(1)).needsToVoteOrRSVP(user);
+            verify(eventManagementServiceMock, times(1)).getOutstandingRSVPForUser(user);
+
+            mockMvc.perform(get("/ussd/vote").param(phoneParameter, user.getPhoneNumber()).param("eventId", "" + meeting.getId()).
+                    param("response", "yes")).andExpect(status().isOk());
+
+            verify(eventLogManagementServiceMock, times(1)).rsvpForEvent(meeting.getId(), user.getPhoneNumber(), EventRSVPResponse.YES);
+
+        }
+
+    }
+
+    /*
+    Make sure groupRename works properly
+     */
+    /*@Test
+    public void groupRenameShouldWork() throws Exception {
+
+        resetTestUser();
+
+    }*/
+
+    /*
+    User rename should work properly
+     */
+    /*@Test
+    public void userRenamePromptShouldWork() throws Exception {
+
+    }*/
+
+    /*
+    Make sure that error pages etc work properly
+     */
+    /*@Test
+    public void errorPagesShouldBeWellFormed() throws Exception {
+
+        resetTestUser();
+
+    }*/
+
+    /*
+    Small helper method to reset testUser between tests
+     */
+
+    private void resetTestUser() {
+        testUser.setDisplayName(testUserName);
+        testUser.setLanguageCode("en");
+        testUser.setLastUssdMenu("");
+    }
 
 
 }

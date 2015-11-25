@@ -165,7 +165,7 @@ public class USSDHomeController extends USSDController {
     }
 
     private boolean userResponseNeeded(User sessionUser) {
-        log.info("Checking if user needs to respond to anything, returning ... " + userManager.needsToVoteOrRSVP(sessionUser));
+        log.info("Checking if user needs to respond to anything, either a vote or an RSVP ...");
         return userManager.needsToVoteOrRSVP(sessionUser);
 
         /* For the moment, removing the group rename and user rename, as is overloading the start menu
@@ -175,6 +175,8 @@ public class USSDHomeController extends USSDController {
     }
 
     private UssdOpeningPrompt neededResponse(User sessionUser) {
+
+        /* Note: the sequence in which these are checked and returned sets the order of priority of responses */
 
         if (userManager.needsToVote(sessionUser)) {
             log.info("User needs to vote!");
@@ -320,11 +322,11 @@ public class USSDHomeController extends USSDController {
                                   @RequestParam(value=EVENT_PARAM) Long voteId,
                                   @RequestParam(value="response") String response) throws URISyntaxException {
 
-        String welcomePromptKey;
-        User sessionUser = userManager.loadOrSaveUser(inputNumber);
+        User sessionUser = userManager.findByInputNumber(inputNumber);
         eventLogManagementService.rsvpForEvent(voteId, inputNumber, EventRSVPResponse.fromString(response));
 
-        return menuBuilder(new USSDMenu("Thanks! Done.", optionsHomeExit(sessionUser)));
+        return menuBuilder(new USSDMenu(getMessage(HOME_KEY, START_KEY, PROMPT, "vote-recorded", sessionUser),
+                                        optionsHomeExit(sessionUser)));
 
     }
 
