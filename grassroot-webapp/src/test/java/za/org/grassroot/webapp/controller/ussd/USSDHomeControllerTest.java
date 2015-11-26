@@ -75,7 +75,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
     @Test
     public void testQuestion() throws Exception {
 
-
+        mockMvc.perform(get("/ussd/test_question")).andExpect(status().isOk());
 
     }
 

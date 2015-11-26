@@ -70,6 +70,11 @@ public class USSDController {
     // protected final String baseURI = "http://meeting-organizer.herokuapp.com/ussd/";
     protected final String baseURI = System.getenv("APP_URL") + USSD_BASE;
 
+    /*
+    Simple helper method for mocking and unit test
+     */
+    public void setMessageSource(MessageSource messageSource) { this.messageSource = messageSource; }
+
 
     /**
      * SECTION: Menu building methods

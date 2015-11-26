@@ -48,8 +48,6 @@ public class USSDHomeController extends USSDController {
     private static final String keyRsvp = "rsvp", keyRenameStart = "rename-start", keyGroupNameStart = "group-start";
     private static final int hashPosition = Integer.valueOf(System.getenv("USSD_CODE_LENGTH"));
 
-    public void setMessageSource(MessageSource messageSource) { this.messageSource = messageSource; }
-
     public USSDMenu welcomeMenu(String opening, User sessionUser) throws URISyntaxException {
 
         USSDMenu homeMenu = new USSDMenu(opening);

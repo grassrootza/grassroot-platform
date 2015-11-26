@@ -67,11 +67,12 @@ public class USSDMeetingController extends USSDController {
                               @RequestParam(value="newMtg", required=false) boolean newMeeting) throws URISyntaxException {
 
         User sessionUser;
-        try { sessionUser = userManager.loadOrSaveUser(inputNumber); }
+        try { sessionUser = userManager.findByInputNumber(inputNumber); }
         catch (NoSuchElementException e) { return noUserError; }
 
         USSDMenu returnMenu;
 
+        // todo: only create the event on the next page
         if (newMeeting || eventManager.getUpcomingEventsUserCreated(sessionUser).size() == 0) {
             Event meetingToCreate = eventManager.createEvent("", sessionUser); // initialize event to be filled out in subsequent menus
             meetingToCreate = eventManager.setEventNoReminder(meetingToCreate.getId()); // until we are confident with reminders
@@ -323,7 +324,7 @@ public class USSDMeetingController extends USSDController {
     public Request newGroup(@RequestParam(value=PHONE_PARAM, required = true) String inputNumber,
                             @RequestParam(value=EVENT_PARAM, required = true) Long eventId) throws URISyntaxException {
 
-        User sessionUser = userManager.loadOrSaveUser(inputNumber, MTG_MENUS + newGroupMenu + EVENTID_URL + eventId);
+        User sessionUser = userManager.findByInputNumber(inputNumber, MTG_MENUS + newGroupMenu + EVENTID_URL + eventId);
         return menuBuilder(firstGroupPrompt(groupHandlingMenu, eventId, sessionUser));
 
     }
@@ -366,7 +367,7 @@ public class USSDMeetingController extends USSDController {
             /* user still in the middle of entering numbers, so process response,and create a new group or add to the one we're building */
             thisMenu = numberEntryHandling(inputNumber, userInput, eventId, groupId, thisUriBase);
         }
-        log.info("In the guts of the meeting/group creation menu ... User return URL is: " + userManager.findByInputNumber(inputNumber).getLastUssdMenu());
+        log.info("In the guts of the meeting/group creation menu ... User return URL base is: " + thisUriBase);
         return menuBuilder(thisMenu);
 
     }
@@ -387,7 +388,7 @@ public class USSDMeetingController extends USSDController {
                               @RequestParam(value="prior_input", required=false) String priorInput,
                               @RequestParam(value="revising", required=false) boolean revising) throws URISyntaxException {
 
-        User sessionUser = userManager.loadOrSaveUser(inputNumber, assembleThisUri(eventId, subjectMenu, passedValueKey, passedValue));
+        User sessionUser = userManager.findByInputNumber(inputNumber, assembleThisUri(eventId, subjectMenu, passedValueKey, passedValue));
         updateEvent(eventId, passedValueKey, passedValue, priorInput != null);
 
         String promptMessage = getMessage(MTG_KEY, subjectMenu, PROMPT, sessionUser);
@@ -595,7 +596,7 @@ public class USSDMeetingController extends USSDController {
     private USSDMenu numberHandlingForNewGroup(String inputNumber, List<String> validNumbers, List<String> errorNumbers, Long eventId,
                                                String thisUriBase, String priorInputEncoded) {
 
-        User sessionUser = userManager.loadOrSaveUser(inputNumber, thisUriBase + "&prior_input=" + priorInputEncoded);
+        User sessionUser = userManager.findByInputNumber(inputNumber, thisUriBase + "&prior_input=" + priorInputEncoded);
 
         String returnUri;
 
@@ -614,7 +615,7 @@ public class USSDMeetingController extends USSDController {
     private USSDMenu numberHandlingForExistingGroup(String inputNumber, List<String> validNumbers, List<String> errorNumbers, Long eventId,
                                                     Long groupId, String thisUriBase, String priorInputEncoded) {
 
-        User sessionUser = userManager.loadOrSaveUser(inputNumber, thisUriBase + "&" + GROUP_PARAM + "=" + groupId + "&" +
+        User sessionUser = userManager.findByInputNumber(inputNumber, thisUriBase + "&" + GROUP_PARAM + "=" + groupId + "&" +
                 "prior_input=" + priorInputEncoded);
         groupManager.addNumbersToGroup(groupId, validNumbers);
         String returnUri = MTG_MENUS + groupHandlingMenu + EVENTID_URL + eventId + "&groupId=" + groupId;
@@ -627,7 +628,7 @@ public class USSDMeetingController extends USSDController {
         USSDMenu returnMenu = new USSDMenu(true);
         String keyNext = nextMenu(START_KEY); // so we know which menu follows once done with the group creation
 
-        User sessionUser = userManager.loadOrSaveUser(inputNumber, thisUriBase + "&" + GROUP_PARAM + "=" + groupId + "&prior_input=0");
+        User sessionUser = userManager.findByInputNumber(inputNumber, thisUriBase + "&" + GROUP_PARAM + "=" + groupId + "&prior_input=0");
         if (!interrupted) { updateEvent(eventId, groupHandlingMenu, "" + groupId); }
 
         returnMenu.setPromptMessage(getMessage(MTG_KEY, keyNext, PROMPT, sessionUser));
@@ -642,7 +643,7 @@ public class USSDMeetingController extends USSDController {
         // alternate approach may be to provide option of returning to the group picking menu
 
         USSDMenu returnMenu = new USSDMenu(true);
-        User sessionUser = userManager.loadOrSaveUser(inputNumber, thisUriBase + "&" + TEXT_PARAM + "=0");
+        User sessionUser = userManager.findByInputNumber(inputNumber, thisUriBase + "&" + TEXT_PARAM + "=0");
         returnMenu.setPromptMessage(getMessage(MTG_KEY, groupHandlingMenu, PROMPT + ".no-group", sessionUser));
         returnMenu.setNextURI(MTG_MENUS + groupHandlingMenu + EVENTID_URL + eventId);
 
