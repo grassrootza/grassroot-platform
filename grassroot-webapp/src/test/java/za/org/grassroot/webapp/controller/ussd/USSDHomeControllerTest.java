@@ -7,6 +7,9 @@ import org.mockito.InjectMocks;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.Event;
@@ -69,6 +72,12 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         languageUsers = Arrays.asList(testUserNso, testUserSt, testUserTs, testUserZu);
     }
 
+    @Test
+    public void testQuestion() throws Exception {
+
+
+
+    }
 
     @Test
     @Rollback
@@ -246,39 +255,119 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
     /*
     Make sure groupRename works properly
      */
-    /*@Test
+    @Test
     public void groupRenameShouldWork() throws Exception {
 
         resetTestUser();
+        testUser.setHasInitiatedSession(true);
+        Group testGroup = new Group("", testUser);
+        testGroup.setId(0L);
 
-    }*/
+        when(userManagementServiceMock.loadOrSaveUser(phoneForTests)).thenReturn(testUser);
+        when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
+        when(groupManagementServiceMock.needsToRenameGroup(testUser)).thenReturn(true);
+        when(groupManagementServiceMock.loadGroup(testGroup.getId())).thenReturn(testGroup);
+        when(groupManagementServiceMock.saveGroup(testGroup)).thenReturn(testGroup);
+
+        // todo: work out how to verify that it actually returned the prompt to rename the group
+        mockMvc.perform(get(openingMenu).param(phoneParameter, testUser.getPhoneNumber())).
+                andExpect(status().isOk());
+
+        mockMvc.perform(get("/ussd/group-start").param(phoneParameter, phoneForTests).param("groupId", "" + testGroup.getId()).
+                param("request", testGroupName)).andExpect(status().isOk());
+
+        verify(userManagementServiceMock, times(1)).loadOrSaveUser(phoneForTests);
+        verify(userManagementServiceMock, times(1)).findByInputNumber(phoneForTests);
+        verify(groupManagementServiceMock, times(1)).loadGroup(testGroup.getId());
+        verify(groupManagementServiceMock, times(1)).saveGroup(testGroup);
+        // verify(groupManagementServiceMock, times(1)).needsToRenameGroup(testUser); removing until we add this back
+    }
 
     /*
     User rename should work properly
      */
-    /*@Test
+    @Test
     public void userRenamePromptShouldWork() throws Exception {
 
-    }*/
+        resetTestUser();
+        testUser.setHasInitiatedSession(true);
+        testUser.setDisplayName("");
+
+        when(userManagementServiceMock.loadOrSaveUser(phoneForTests)).thenReturn(testUser);
+        when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
+        when(userManagementServiceMock.needsToRenameSelf(testUser)).thenReturn(true);
+
+        // todo: as above, work how to verify what it returned (once / if this is re-enabled
+        mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests)).
+                andExpect(status().isOk());
+
+        testUser.setDisplayName(testUserName); // necessary else when/then doesn't work within controller
+        when(userManagementServiceMock.save(testUser)).thenReturn(testUser);
+
+        mockMvc.perform(get("/ussd/rename-start").param(phoneParameter, phoneForTests).param("request", testUserName)).
+                andExpect(status().isOk());
+
+        verify(userManagementServiceMock, times(1)).loadOrSaveUser(phoneForTests);
+        verify(userManagementServiceMock, times(1)).findByInputNumber(phoneForTests);
+        // verify(userManagementServiceMock, times(1)).needsToRenameSelf(testUser); // since disabled at present
+        verify(userManagementServiceMock, times(1)).save(testUser);
+
+    }
 
     /*
-    Make sure that error pages etc work properly
+    Make sure group pagination works
      */
-    /*@Test
-    public void errorPagesShouldBeWellFormed() throws Exception {
+    @Test
+    public void groupSecondPageShouldWork() throws Exception {
 
         resetTestUser();
 
-    }*/
+        Group testGroup1 = new Group();
+        List<Group> testGroups = Arrays.asList(new Group("gc1", testUser),
+                                               new Group("gc2", testUser),
+                                               new Group("gc3", testUser),
+                                               new Group("gc4", testUser));
+
+        Page<Group> groupPage = new PageImpl<Group>(testGroups, new PageRequest(1, 3), 4); // need to work out how to do
+
+        when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
+        when(groupManagementServiceMock.getPageOfActiveGroups(testUser, 1, 3)).thenReturn(groupPage);
+
+        mockMvc.perform(get("/ussd/group_page").param(phoneParameter, phoneForTests).param("prompt", "Look at pages").
+                param("page", "1").param("existingUri", "/ussd/blank").param("newUri", "/ussd/blank2")).
+                andExpect(status().isOk());
+
+        verify(userManagementServiceMock, times(1)).findByInputNumber(phoneForTests);
+        verify(groupManagementServiceMock, times(1)).getPageOfActiveGroups(testUser, 1, 3);
+        verifyNoMoreInteractions(userManagementServiceMock);
+        verifyNoMoreInteractions(groupManagementServiceMock);
+    }
+
+    /*
+    Make sure that exit page works properly
+     */
+    @Test
+    public void errorPagesShouldBeWellFormed() throws Exception {
+
+        resetTestUser();
+        when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
+        mockMvc.perform(get("/ussd/error").param(phoneParameter, phoneForTests)).
+                andExpect(status().isOk());
+        verify(userManagementServiceMock, times(1)).findByInputNumber(phoneForTests);
+        verifyNoMoreInteractions(userManagementServiceMock);
+
+    }
 
     /*
     Small helper method to reset testUser between tests
      */
 
     private void resetTestUser() {
+
         testUser.setDisplayName(testUserName);
         testUser.setLanguageCode("en");
         testUser.setLastUssdMenu("");
+
     }
 
 

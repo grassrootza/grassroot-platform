@@ -335,7 +335,7 @@ public class USSDHomeController extends USSDController {
     public Request renameAndStart(@RequestParam(value=PHONE_PARAM) String inputNumber,
                                   @RequestParam(value=TEXT_PARAM) String userName) throws URISyntaxException {
 
-        User sessionUser = userManager.loadOrSaveUser(inputNumber);
+        User sessionUser = userManager.findByInputNumber(inputNumber);
         String welcomeMessage;
         if (userName.equals("0") || userName.trim().equals("")) {
             welcomeMessage = getMessage(HOME_KEY, START_KEY, PROMPT, sessionUser);
@@ -355,7 +355,7 @@ public class USSDHomeController extends USSDController {
 
         // todo: use permission model to check if user can actually do this
 
-        User sessionUser = userManager.loadOrSaveUser(inputNumber);
+        User sessionUser = userManager.findByInputNumber(inputNumber);
         String welcomeMessage;
         if (groupName.equals("0") || groupName.trim().equals("")) {
             welcomeMessage = getMessage(HOME_KEY, START_KEY, PROMPT, sessionUser);
@@ -382,16 +382,20 @@ public class USSDHomeController extends USSDController {
                                          @RequestParam(value="existingUri") String existingUri,
                                          @RequestParam(value="newUri", required=false) String newUri) throws URISyntaxException {
 
+        /*
+         todo: this is going to need a way to pass the purpose of the group, or the permission filter (since which groups are
+         displayed/paginated will vary a lot
+          */
         return menuBuilder(userGroupMenu(userManager.findByInputNumber(inputNumber), prompt, existingUri, newUri, pageNumber));
 
     }
 
     @RequestMapping(value = { USSD_BASE + U404, USSD_BASE + LOG_MENUS })
     @ResponseBody
-    public Request notBuilt() throws URISyntaxException {
+    public Request notBuilt(@RequestParam(value=PHONE_PARAM) String inputNumber) throws URISyntaxException {
         // String errorMessage = "Sorry! We haven't built that yet. We're working on it.";
         String errorMessage = messageSource.getMessage("ussd.error", null, new Locale("en"));
-        return new Request(errorMessage, new ArrayList<Option>());
+        return menuBuilder(new USSDMenu(errorMessage, optionsHomeExit(userManager.findByInputNumber(inputNumber))));
     }
 
     @RequestMapping(value = USSD_BASE + "exit")
