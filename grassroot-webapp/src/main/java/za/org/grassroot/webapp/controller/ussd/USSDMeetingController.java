@@ -2,7 +2,6 @@ package za.org.grassroot.webapp.controller.ussd;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -145,7 +144,7 @@ public class USSDMeetingController extends USSDController {
     public Request meetingManage(@RequestParam(value=PHONE_PARAM) String inputNumber,
                                  @RequestParam(value=EVENT_PARAM) Long eventId) throws URISyntaxException {
 
-        User sessionUser = userManager.loadOrSaveUser(inputNumber);
+        User sessionUser = userManager.findByInputNumber(inputNumber);
         Event meeting = eventManager.loadEvent(eventId);
 
         log.info("Inside the management menu, for event: " + meeting);
@@ -168,7 +167,7 @@ public class USSDMeetingController extends USSDController {
     public Request meetingDetails(@RequestParam(value=PHONE_PARAM) String inputNumber,
                                   @RequestParam(value=EVENT_PARAM) Long eventId) throws URISyntaxException {
 
-        User sessionUser = userManager.loadOrSaveUser(inputNumber);
+        User sessionUser = userManager.findByInputNumber(inputNumber);
         Event meeting = eventManager.loadEvent(eventId);
 
         String mtgDescription;
@@ -177,8 +176,12 @@ public class USSDMeetingController extends USSDController {
 
         if (meeting.isRsvpRequired()) {
 
-            int answeredYes = eventManager.getListOfUsersThatRSVPYesForEvent(meeting).size(), answeredNo = eventManager.getListOfUsersThatRSVPNoForEvent(meeting).size();
-            int noAnswer = eventManager.getNumberInvitees(meeting) - (answeredYes + answeredNo);
+            // todo: use queries for the count instead of code
+            Map<String, Integer> rsvpResponses = eventManager.getMeetingRsvpTotals(meeting);
+
+            int answeredYes = rsvpResponses.get("yes");
+            int answeredNo = rsvpResponses.get("no");
+            int noAnswer = rsvpResponses.get("no_answer");
 
             String[] messageFields = new String[]{meetingDetails.get("groupName"), meetingDetails.get("location"), meetingDetails.get("dateTimeString"),
                     "" + eventManager.getNumberInvitees(meeting), "" + answeredYes, "" + answeredNo, "" + noAnswer};
@@ -224,7 +227,7 @@ public class USSDMeetingController extends USSDController {
 
         // todo: check user permissions.
 
-        User sessionUser = userManager.loadOrSaveUser(inputNumber, MTG_MENUS + changeMeetingDate + EVENTID_URL + eventId);
+        User sessionUser = userManager.findByInputNumber(inputNumber, MTG_MENUS + changeMeetingDate + EVENTID_URL + eventId);
 
         String prompt = getMessage(MTG_KEY, changeMeetingDate, PROMPT, eventManager.getEventDescription(eventId).get("dateTimeString"), sessionUser);
 
@@ -240,7 +243,7 @@ public class USSDMeetingController extends USSDController {
     public Request changeLocation(@RequestParam(value=PHONE_PARAM) String inputNumber,
                                   @RequestParam(value=EVENT_PARAM) Long eventId) throws URISyntaxException {
 
-        User sessionUser = userManager.loadOrSaveUser(inputNumber, MTG_MENUS + changeMeetingLocation + EVENTID_URL + eventId);
+        User sessionUser = userManager.findByInputNumber(inputNumber, MTG_MENUS + changeMeetingLocation + EVENTID_URL + eventId);
 
         String prompt = getMessage(MTG_KEY, changeMeetingLocation, PROMPT, eventManager.getEventDescription(eventId).get("location"), sessionUser);
 
@@ -256,7 +259,7 @@ public class USSDMeetingController extends USSDController {
     public Request meetingCancel(@RequestParam(value=PHONE_PARAM) String inputNumber,
                                  @RequestParam(value=EVENT_PARAM) Long eventId) throws URISyntaxException {
 
-        User sessionUser = userManager.loadOrSaveUser(inputNumber);
+        User sessionUser = userManager.findByInputNumber(inputNumber);
 
         USSDMenu promptMenu = new USSDMenu(getMessage(MTG_KEY, cancelMeeting, PROMPT, sessionUser));
         promptMenu.addMenuOption(MTG_MENUS + modifyMeeting + EVENTID_URL + eventId + "&action=" + cancelMeeting, getMessage(OPTION + "yes", sessionUser));
@@ -271,7 +274,7 @@ public class USSDMeetingController extends USSDController {
                                  @RequestParam(value=EVENT_PARAM) Long eventId,
                                  @RequestParam("action") String action, @RequestParam(TEXT_PARAM) String userInput) throws URISyntaxException {
 
-        User sessionUser = userManager.loadOrSaveUser(inputNumber, null); // reset interrupted slag
+        User sessionUser = userManager.findByInputNumber(inputNumber, null); // reset interrupted slag
 
         String menuPrompt;
         log.info("Updating a meeting via USSD ... action parameter is " + action + " and user input is: " + userInput);
@@ -388,7 +391,7 @@ public class USSDMeetingController extends USSDController {
                               @RequestParam(value="prior_input", required=false) String priorInput,
                               @RequestParam(value="revising", required=false) boolean revising) throws URISyntaxException {
 
-        User sessionUser = userManager.findByInputNumber(inputNumber, assembleThisUri(eventId, subjectMenu, passedValueKey, passedValue));
+        User sessionUser = userManager.findByInputNumber(inputNumber, assembleThisUri(eventId, subjectMenu, passedValueKey));
         updateEvent(eventId, passedValueKey, passedValue, priorInput != null);
 
         String promptMessage = getMessage(MTG_KEY, subjectMenu, PROMPT, sessionUser);
@@ -419,7 +422,7 @@ public class USSDMeetingController extends USSDController {
 
         // todo: add error and exception handling
 
-        User sessionUser = userManager.loadOrSaveUser(inputNumber, assembleThisUri(eventId, placeMenu, passedValueKey, passedValue));
+        User sessionUser = userManager.findByInputNumber(inputNumber, assembleThisUri(eventId, placeMenu, passedValueKey));
         updateEvent(eventId, passedValueKey, passedValue, priorInput != null);
 
         String promptMessage = getMessage(MTG_KEY, placeMenu, PROMPT, sessionUser);
@@ -438,7 +441,7 @@ public class USSDMeetingController extends USSDController {
                            @RequestParam(value="prior_input", required=false) String priorInput) throws URISyntaxException {
 
         String keyNext = nextMenu(timeMenu);
-        User sessionUser = userManager.loadOrSaveUser(inputNumber, assembleThisUri(eventId, timeMenu, passedValueKey, passedValue));
+        User sessionUser = userManager.findByInputNumber(inputNumber, assembleThisUri(eventId, timeMenu, passedValueKey));
         Event meetingToCreate = updateEvent(eventId, passedValueKey, passedValue, priorInput != null);
         String promptMessage = getMessage(MTG_KEY, timeMenu, PROMPT, sessionUser);
 
@@ -459,7 +462,7 @@ public class USSDMeetingController extends USSDController {
         // also note that we should not do any update to the event here, or it will trigger the send -- just assemble string
         // todo: refactor and optimize this so it doesn't use so many getters, etc. Could be quite slow if many users.
 
-        User sessionUser = userManager.loadOrSaveUser(inputNumber, assembleThisUri(eventId, confirmMenu, passedValueKey, passedValue));
+        User sessionUser = userManager.findByInputNumber(inputNumber, assembleThisUri(eventId, confirmMenu, passedValueKey));
         Event meeting = (revising) ? updateEvent(eventId, passedValueKey, passedValue) : eventManager.loadEvent(eventId);
 
         USSDMenu thisMenu = new USSDMenu();
@@ -519,7 +522,7 @@ public class USSDMeetingController extends USSDController {
         // todo: store the response from the SMS gateway and use it to state how many messages successful
 
         User sessionUser;
-        try { sessionUser = userManager.loadOrSaveUser(inputNumber, null); } // so, 'menu to come back to' returns null
+        try { sessionUser = userManager.findByInputNumber(inputNumber, null); } // so, 'menu to come back to' returns null
         catch (Exception e) { return noUserError; }
 
         // todo: use responses (from integration or from elsewhere, to display errors if numbers wrong
@@ -678,8 +681,8 @@ public class USSDMeetingController extends USSDController {
     Helper method to assemble the URI to save against the user, in case they get interrupted. Set prior input to 1 so skips updating on return
      */
 
-    private String assembleThisUri(Long eventId, String thisKey, String passedValueKey, String passedValue) {
-        return (MTG_MENUS + thisKey + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + passedValueKey + "&prior_input=1");
+    private String assembleThisUri(Long eventId, String thisMenu, String previousMenu) {
+        return (MTG_MENUS + thisMenu + EVENTID_URL + eventId + "&" + PASSED_FIELD + "=" + previousMenu + "&prior_input=1");
     }
 
 }

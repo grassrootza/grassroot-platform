@@ -118,6 +118,8 @@ public interface EventManagementService {
     Methods to get important details about events, including users by RSVP response, and a descriptive hashmap of strings
      */
 
+    Map<String, Integer> getMeetingRsvpTotals(Event meeting);
+
     List<User> getListOfUsersThatRSVPYesForEvent(Event event);
 
     List<User> getListOfUsersThatRSVPNoForEvent(Event event);

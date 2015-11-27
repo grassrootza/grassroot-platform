@@ -282,6 +282,18 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
+    public Map<String, Integer> getMeetingRsvpTotals(Event meeting) {
+        Map<String, Integer> results = new HashMap<>();
+        RSVPTotalsDTO totalsDTO = eventLogManagementService.getRSVPTotalsForEvent(meeting);
+
+        results.put("yes", totalsDTO.getYes());
+        results.put("no", totalsDTO.getNo());
+        results.put("no_answer", totalsDTO.getNumberOfUsers() - totalsDTO.getYes() - totalsDTO.getNo());
+
+        return results;
+    }
+
+    @Override
     public List<Event> findByAppliesToGroup(Group group) {
         return eventRepository.findByAppliesToGroup(group);
     }

@@ -54,7 +54,7 @@ public class USSDMeetingControllerIT extends USSDAbstractIT {
 
     protected URI testMtgParam(Long eventId, String parameter, String value, String urlEnding) {
         URI uriToExecute = testPhoneUri(mtgPath + urlEnding).queryParam(eventParam, eventId).
-                queryParam("menukey", parameter).queryParam(freeTextParam, value).build().toUri();
+                queryParam("prior_menu", parameter).queryParam(freeTextParam, value).build().toUri();
         return uriToExecute;
     }
 
