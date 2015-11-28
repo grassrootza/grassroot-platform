@@ -28,6 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
+    // todo: log stuff
     private static final Logger log = LoggerFactory.getLogger(USSDMeetingControllerTest.class);
 
     private static final String testUserPhone = "27601110000";

@@ -19,11 +19,9 @@ import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
-import static org.springframework.web.bind.annotation.RequestMethod.OPTIONS;
 
 /**
  * Created by luke on 2015/10/28.
@@ -34,7 +32,7 @@ public class USSDVoteController extends USSDController {
 
     private static final Logger log = LoggerFactory.getLogger(USSDVoteController.class);
 
-    private static final String subMenuPath = USSD_BASE + VOTE_MENUS;
+    private static final String path = USSD_BASE + VOTE_MENUS;
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("EEE d MMM, h:mm a");
     private static final SimpleDateFormat dateWithYear = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
@@ -44,7 +42,7 @@ public class USSDVoteController extends USSDController {
     Major todo: add menus to see status of vote while in progress, and possibly trigger reminder
     Major todo: add an option to do an "instant vote", i.e., call a vote on a temporary group
      */
-    @RequestMapping(value = subMenuPath + START_KEY)
+    @RequestMapping(value = path + START_KEY)
     @ResponseBody
     public Request votingStart(@RequestParam(value = PHONE_PARAM) String inputNumber) throws URISyntaxException {
 
@@ -72,7 +70,7 @@ public class USSDVoteController extends USSDController {
     Second menu asks the user to enter the issue that will be voted upon
     todo: some form of length restriction / checking
      */
-    @RequestMapping(value = subMenuPath + "issue")
+    @RequestMapping(value = path + "issue")
     @ResponseBody
     public Request votingIssue(@RequestParam(value = PHONE_PARAM) String inputNumber,
                                @RequestParam(value = GROUP_PARAM) Long groupId) throws URISyntaxException {
@@ -95,7 +93,7 @@ public class USSDVoteController extends USSDController {
     Third menu asks the user when the vote will close. Options are "instant vote", i.e., 5 minutes, versus "one day",
     versus "custom".
      */
-    @RequestMapping(value = subMenuPath + "time")
+    @RequestMapping(value = path + "time")
     @ResponseBody
     public Request votingTime(@RequestParam(value = PHONE_PARAM) String inputNumber,
                               @RequestParam(value = EVENT_PARAM) Long eventId,
@@ -124,7 +122,7 @@ public class USSDVoteController extends USSDController {
     /*
     Optional menu if user wants to enter a custom expiry time
      */
-    @RequestMapping(value = subMenuPath + "time_custom")
+    @RequestMapping(value = path + "time_custom")
     @ResponseBody
     public Request customVotingTime(@RequestParam(value = PHONE_PARAM) String inputNumber,
                                     @RequestParam(value = EVENT_PARAM) Long eventId) throws URISyntaxException {
@@ -140,8 +138,9 @@ public class USSDVoteController extends USSDController {
 
     /*
     Final menu asks for confirmation, then sends out
+    major todo: shift the time strings into messages (and generally do i18n for this)
      */
-    @RequestMapping(value = subMenuPath + "confirm")
+    @RequestMapping(value = path + "confirm")
     @ResponseBody
     public Request voteConfirm(@RequestParam(value = PHONE_PARAM) String inputNumber,
                                @RequestParam(value = EVENT_PARAM) Long eventId,
@@ -183,7 +182,7 @@ public class USSDVoteController extends USSDController {
                     break;
                 default:
                     // this should never be called, but need it else Java throws error -- defaulting to instant
-                    proposedDateTime = DateTimeUtil.addMinutesToDate(new Date(), 5);
+                    proposedDateTime = DateTimeUtil.addMinutesToDate(new Date(), 7);
                     dateTimeFormatted = dateWithYear.format(proposedDateTime);
                     dateTimePrompt = " in five minutes";
             }
@@ -211,7 +210,7 @@ public class USSDVoteController extends USSDController {
     /*
     Send out and confirm it has been sent
      */
-    @RequestMapping(value = subMenuPath + "send")
+    @RequestMapping(value = path + "send")
     @ResponseBody
     public Request voteSend(@RequestParam(value = PHONE_PARAM) String inputNumber,
                             @RequestParam(value = EVENT_PARAM) Long eventId,

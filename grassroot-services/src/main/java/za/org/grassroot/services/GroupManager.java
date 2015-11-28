@@ -107,6 +107,11 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
+    public Group removeGroupMember(Long groupId, User user) {
+        return removeGroupMember(loadGroup(groupId), user);
+    }
+
+    @Override
     public Group addRemoveGroupMembers(Group group, List<User> revisedUserList) {
 
         List<User> originalUsers = new ArrayList<>(group.getGroupMembers());
@@ -130,6 +135,11 @@ public class GroupManager implements GroupManagementService {
         }
 
         return groupRepository.save(group);
+    }
+
+    @Override
+    public Group addNumberToGroup(Long groupId, String phoneNumber) {
+        return addGroupMember(loadGroup(groupId), userManager.loadOrSaveUser(phoneNumber));
     }
 
     @Override

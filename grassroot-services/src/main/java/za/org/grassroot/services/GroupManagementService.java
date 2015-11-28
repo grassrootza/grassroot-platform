@@ -68,7 +68,11 @@ public interface GroupManagementService {
 
     public Group removeGroupMember(Group group, User user);
 
+    public Group removeGroupMember(Long groupId, User user);
+
     public Group addRemoveGroupMembers(Group group, List<User> revisedUserList);
+
+    public Group addNumberToGroup(Long groupId, String phoneNumber);
 
     public Group addNumbersToGroup(Long groupId, List<String> phoneNumbers);
 

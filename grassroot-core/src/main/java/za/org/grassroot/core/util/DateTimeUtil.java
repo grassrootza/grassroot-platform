@@ -60,6 +60,31 @@ public class DateTimeUtil {
         return calendar.getTime();
     }
 
+    public static Date roundMinutesUp(Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.add(Calendar.MINUTE,1);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTime();
+    }
+
+    public static Date roundMinutesDown(Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTime();
+    }
+
+    public static Date addMinutesAndTrimSeconds(Date date, int numberOfMinutes) {
+        return roundMinutesDown(addMinutesToDate(date, numberOfMinutes));
+    }
+
+    public static Date addMinutesAndRoundUp(Date date, int numberOfMinutes) {
+        return roundMinutesUp(addMinutesToDate(date, numberOfMinutes));
+    }
+
     public static Date roundHourUp(Date date) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(date);

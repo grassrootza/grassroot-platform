@@ -176,7 +176,7 @@ public class USSDMeetingController extends USSDController {
 
         if (meeting.isRsvpRequired()) {
 
-            // todo: use queries for the count instead of code
+            // todo: use enums instead of literal strings for the map
             Map<String, Integer> rsvpResponses = eventManager.getMeetingRsvpTotals(meeting);
 
             int answeredYes = rsvpResponses.get("yes");

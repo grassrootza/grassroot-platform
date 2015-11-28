@@ -52,9 +52,9 @@ public class USSDController {
     // Constants used in URL mapping and message handling
     protected static final String USSD_BASE = "/ussd/", MTG_MENUS = "mtg/", USER_MENUS = "user/", GROUP_MENUS = "group/";
     protected static final String VOTE_MENUS = "vote/", LOG_MENUS = "log", U404="error"; // leaving off '/' for now, until built
-    protected static final String PHONE_PARAM = "msisdn", TEXT_PARAM = "request", GROUP_PARAM = "groupId", EVENT_PARAM = "eventId", TOKEN_PARAM="token";
+    protected static final String PHONE_PARAM = "msisdn", TEXT_PARAM = "request", GROUP_PARAM = "groupId", EVENT_PARAM = "eventId";
     protected static final String START_KEY = "start", PASSED_FIELD = "prior_menu", YESNO_FIELD = "confirmed",
-            GROUPID_URL = ("?" + GROUP_PARAM + "="), EVENTID_URL = ("?" + EVENT_PARAM + "="), TOKEN_URL = ("&" + TOKEN_PARAM + "="), DO_SUFFIX = "-do";
+            GROUPID_URL = ("?" + GROUP_PARAM + "="), EVENTID_URL = ("?" + EVENT_PARAM + "="), DO_SUFFIX = "-do";
 
     // Constants used in i18n and message handling
     protected static final String HOME_KEY = "home", MTG_KEY = "mtg", USER_KEY = "user", GROUP_KEY = "group", VOTE_KEY = "vote", LOG_KEY = "log";
@@ -62,10 +62,6 @@ public class USSDController {
 
     // Constants used in pagination of groups
     protected static final Integer PAGE_LENGTH = 3;
-
-    protected final String smsHost = "xml2sms.gsm.co.za";
-    protected final String smsUsername = System.getenv("SMSUSER");
-    protected final String smsPassword = System.getenv("SMSPASS");
 
     // protected final String baseURI = "http://meeting-organizer.herokuapp.com/ussd/";
     protected final String baseURI = System.getenv("APP_URL") + USSD_BASE;
