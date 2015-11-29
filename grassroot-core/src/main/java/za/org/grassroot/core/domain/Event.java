@@ -73,6 +73,11 @@ public class Event implements Serializable {
     private boolean relayable;
 
     /*
+    Used to prevent a formed entity from sending out when on the confirm screen of USSD
+     */
+    private boolean sendBlocked;
+
+    /*
     Version used by hibernate to resolve conflicting updates. Do not update set it, it is for Hibernate only
      */
 
@@ -186,6 +191,11 @@ public class Event implements Serializable {
 
     public void setRelayable(boolean relayable) { this.relayable = relayable; }
 
+    @Column(name = "send_blocked")
+    public boolean isSendBlocked() { return sendBlocked; }
+
+    public void setSendBlocked(boolean sendBlocked) { this.sendBlocked = sendBlocked; }
+
     @Version
     public Integer getVersion() {
         return version;
@@ -228,6 +238,7 @@ public class Event implements Serializable {
         this.includeSubGroups = includeSubGroups;
         this.rsvpRequired = rsvpRequired;
         this.relayable = relayable;
+        this.sendBlocked = false;
     }
 
     public Event(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups,boolean rsvpRequired) {
@@ -238,6 +249,7 @@ public class Event implements Serializable {
         this.eventType = EventType.Meeting;
         this.includeSubGroups = includeSubGroups;
         this.rsvpRequired = rsvpRequired;
+        this.sendBlocked = false;
     }
 
     public Event(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups) {
@@ -247,6 +259,7 @@ public class Event implements Serializable {
         this.eventLocation=""; // otherwise we get null violations
         this.eventType = EventType.Meeting;
         this.includeSubGroups = includeSubGroups;
+        this.sendBlocked = false;
     }
 
     public Event(String name, User createdByUser, Group appliesToGroup) {
@@ -255,12 +268,14 @@ public class Event implements Serializable {
         this.appliesToGroup = appliesToGroup;
         this.eventLocation=""; // otherwise we get null violations
         this.eventType = EventType.Meeting;
+        this.sendBlocked = false;
     }
 
     public Event(User createdByUser, EventType eventType, boolean rsvpRequired) {
         this.createdByUser = createdByUser;
         this.eventType = eventType;
         this.rsvpRequired = rsvpRequired;
+        this.sendBlocked = false;
     }
 
     public Event(String name, User createdByUser) {
@@ -269,14 +284,16 @@ public class Event implements Serializable {
         this.eventLocation=""; // otherwise we get null violations
         this.eventType = EventType.Meeting;
         this.rsvpRequired = true; // this is our default
+        this.sendBlocked = false;
     }
 
     public Event(User createdByUser, EventType eventType) {
         this.createdByUser = createdByUser;
         this.eventType = eventType;
+        this.sendBlocked = false;
     }
 
-    public Event(String eventLocation, Long id, Timestamp createdDateTime, Timestamp eventStartDateTime, User createdByUser, Group appliesToGroup, boolean canceled, EventType eventType, String name, String dateTimeString, boolean includeSubGroups, int reminderMinutes, boolean rsvpRequired, boolean relayable, Integer version) {
+    public Event(String eventLocation, Long id, Timestamp createdDateTime, Timestamp eventStartDateTime, User createdByUser, Group appliesToGroup, boolean canceled, EventType eventType, String name, String dateTimeString, boolean includeSubGroups, int reminderMinutes, boolean rsvpRequired, boolean relayable, boolean sendBlocked, Integer version) {
         this.eventLocation = eventLocation;
         this.id = id;
         this.createdDateTime = createdDateTime;
@@ -291,6 +308,7 @@ public class Event implements Serializable {
         this.reminderMinutes = reminderMinutes;
         this.rsvpRequired = rsvpRequired;
         this.relayable = relayable;
+        this.sendBlocked = false;
         this.version = version;
     }
 
@@ -350,6 +368,7 @@ public class Event implements Serializable {
                 ", rsvpRequired=\'" + rsvpRequired + '\'' +
                 ", includeSubGroups=" + includeSubGroups +'\'' +
                 ", reminderMinutes=" + reminderMinutes +'\'' +
+                ", sendBlocked=" + sendBlocked  +'\'' +
                 ", canceled=" + canceled +'\'' +
                 ", version=" + version +'\'' +
 

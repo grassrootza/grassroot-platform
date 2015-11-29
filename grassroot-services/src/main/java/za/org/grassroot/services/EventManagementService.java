@@ -112,7 +112,15 @@ public interface EventManagementService {
 
     public Event updateEvent(Event eventToUpdate);
 
+    public Event changeMeetingDate(Long eventId, String newDate);
+
+    public Event changeMeetingTime(Long eventId, String newTime);
+
     public Event cancelEvent(Long eventId);
+
+    public Event setSendBlock(Long eventId);
+
+    public Event removeSendBlock(Long eventId);
 
     /*
     Methods to get important details about events, including users by RSVP response, and a descriptive hashmap of strings

@@ -315,16 +315,20 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         Group testGroup = new Group("gc1", testUser);
         testGroup.setId(1L);
         meetingForTest.setAppliesToGroup(testGroup);
+        LocalDateTime forTimestamp = DateTimeUtil.parseDateTime("Tomorrow 7am");
+        meetingForTest.setEventStartDateTime(Timestamp.valueOf(forTimestamp));
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        when(eventManagementServiceMock.loadEvent(1L)).thenReturn(meetingForTest);
+        when(eventManagementServiceMock.setSendBlock(1L)).thenReturn(meetingForTest);
+        when(eventManagementServiceMock.setEventTimestamp(1L, Timestamp.valueOf(forTimestamp))).thenReturn(meetingForTest);
 
         mockMvc.perform(get(path + "confirm").param(phoneParam, testUserPhone).param("eventId", "1").
                 param("prior_menu", "time").param("request", "Tomorrow 7am")).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(anyString(), anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(eventManagementServiceMock, times(1)).loadEvent(1L);
+        verify(eventManagementServiceMock, times(1)).setSendBlock(1L);
+        verify(eventManagementServiceMock, times(1)).setEventTimestamp(1L, Timestamp.valueOf(forTimestamp));
         verifyNoMoreInteractions(eventManagementServiceMock);
         verifyZeroInteractions(groupManagementServiceMock);
 
@@ -341,11 +345,11 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         String confirmedTime = forTimestamp.format(DateTimeFormatter.ofPattern("EEE d MMM, h:mm a"));
 
         mockMvc.perform(get(path + "send").param(phoneParam, testUserPhone).param("eventId", "1").
-                                param("confirmed_time", confirmedTime)).andExpect(status().isOk());
+                param("confirmed_time", confirmedTime)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(anyString(), anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(eventManagementServiceMock, times(1)).setEventTimestamp(1L, Timestamp.valueOf(forTimestamp));
+        verify(eventManagementServiceMock, times(1)).removeSendBlock(1L);
         verifyNoMoreInteractions(eventManagementServiceMock);
         verifyZeroInteractions(groupManagementServiceMock);
     }

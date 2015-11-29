@@ -298,10 +298,13 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         Group mergingGroup = new Group("tg1", testUser);
         mergingGroup.setId(2L);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
+        when(groupManagementServiceMock.loadGroup(1L)).thenReturn(testGroup);
+        when(groupManagementServiceMock.loadGroup(2L)).thenReturn(mergingGroup);
         mockMvc.perform(get(path + "merge-confirm").param(phoneParam, testUserPhone).param(groupParam, "2").
                 param("firstGroupSelected", "" + testGroup.getId())).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
+        verify(groupManagementServiceMock, times(2)).loadGroup(anyLong());
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }

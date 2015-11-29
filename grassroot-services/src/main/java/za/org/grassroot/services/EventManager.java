@@ -20,6 +20,7 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.util.CacheUtilService;
 
@@ -274,10 +275,48 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
+    public Event changeMeetingDate(Long eventId, String newDate) {
+        // note: this assumes the newDate string is formatted according to DateTimeUtil.preferredDate, but if that fails
+        // then the utility method will invoke the natural language parser to attempt other tries
+        Event meeting = loadEvent(eventId);
+        EventDTO beforeDTO = new EventDTO(meeting);
+        Timestamp newTimestamp = DateTimeUtil.changeTimestampDates(meeting.getEventStartDateTime(), newDate);
+        meeting.setEventStartDateTime(newTimestamp);
+        return saveandCheckChanges(beforeDTO, meeting);
+    }
+
+    @Override
+    public Event changeMeetingTime(Long eventId, String newTime) {
+        Event meeting = loadEvent(eventId);
+        log.info("Inside changeMeetingTime method ... new time should be ... " + newTime + " ... for event: " + meeting.toString());
+        EventDTO beforeDTO = new EventDTO(meeting);
+        Timestamp newTimestamp = DateTimeUtil.changeTimestampTimes(meeting.getEventStartDateTime(), newTime);
+        meeting.setEventStartDateTime(newTimestamp);
+        log.info("At end of changeMeetingTime method, timestamp set to ... " + meeting.getEventStartDateTime().toString());
+        return saveandCheckChanges(beforeDTO, meeting);
+    }
+
+    @Override
     public Event cancelEvent(Long eventId) {
         Event eventToUpdate = eventRepository.findOne(eventId);
         Event beforeEvent = SerializationUtils.clone(eventToUpdate);
         eventToUpdate.setCanceled(true);
+        return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
+    }
+
+    @Override
+    public Event setSendBlock(Long eventId) {
+        Event eventToUpdate = eventRepository.findOne(eventId);
+        Event beforeEvent = SerializationUtils.clone(eventToUpdate);
+        eventToUpdate.setSendBlocked(true);
+        return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
+    }
+
+    @Override
+    public Event removeSendBlock(Long eventId) {
+        Event eventToUpdate = eventRepository.findOne(eventId);
+        Event beforeEvent = SerializationUtils.clone(eventToUpdate);
+        eventToUpdate.setSendBlocked(false);
         return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
     }
 
@@ -716,6 +755,7 @@ public class EventManager implements EventManagementService {
         if (event.getEventType() != EventType.Vote) {
             if (event.getEventLocation() == null || event.getEventLocation().trim().equals("")) minimum = false;
         }
+        if (event.isSendBlocked()) minimum = false;
         log.info("minimumDataAvailable...returning..." + minimum);
 
         return minimum;
@@ -728,11 +768,11 @@ public class EventManager implements EventManagementService {
         if (event.getAppliesToGroup() == null) minimum = false;
         if (event.getCreatedByUser() == null) minimum = false;
         if (event.getEventStartDateTime() == null) minimum = false;
-
         if (event.getEventType() != EventType.Vote) {
             if (event.getEventLocation() == null || event.getEventLocation().trim().equals("")) minimum = false;
-
         }
+        if (event.isSendBlocked()) minimum = false;
+
         log.info("minimumDataAvailable...returning..." + minimum);
 
         return minimum;

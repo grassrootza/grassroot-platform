@@ -495,9 +495,13 @@ public class USSDGroupController extends USSDController {
 
         // todo: specify which one is smaller
         // todo: check permissions
-        String returnUrl = GROUP_MENUS + mergeGroupMenu + "-confirm" + GROUPID_URL + groupId1 + "&firstGroupSelected=" + firstGroupSelected;
+        String returnUrl = GROUP_MENUS + mergeGroupMenu + "-confirm" + GROUPID_URL + groupId1
+                + "&firstGroupSelected=" + firstGroupSelected;
         User user = userManager.findByInputNumber(inputNumber, returnUrl);
-        USSDMenu menu = new USSDMenu(getMessage(GROUP_KEY, mergeGroupMenu + "-confirm", PROMPT, user));
+        String[] groupNames = new String[] { groupManager.loadGroup(groupId1).getName(""),
+                groupManager.loadGroup(firstGroupSelected).getName("") };
+
+        USSDMenu menu = new USSDMenu(getMessage(GROUP_KEY, mergeGroupMenu + "-confirm", PROMPT, groupNames, user));
 
         menu.addMenuOption(GROUP_MENUS + mergeGroupMenu + DO_SUFFIX + GROUPID_URL + groupId1 + "&SecondGroupId=" + firstGroupSelected,
                            getMessage(GROUP_KEY, mergeGroupMenu + "-confirm", OPTION + "yes", user));

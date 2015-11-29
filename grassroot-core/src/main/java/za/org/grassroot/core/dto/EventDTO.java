@@ -53,6 +53,11 @@ public class EventDTO  implements Serializable {
     private boolean relayable;
 
     /*
+    Used to block messages from sending when still at confirmation screen in USSD
+     */
+    private boolean sendBlocked;
+
+    /*
     Version used by hibernate to resolve conflicting updates. Do not update set it, it is for Hibernate only
      */
 
@@ -63,7 +68,7 @@ public class EventDTO  implements Serializable {
     private String message;
 
 
-    public EventDTO(String eventLocation, Long id, Timestamp createdDateTime, Timestamp eventStartDateTime, User createdByUser, Group appliesToGroup, boolean canceled, EventType eventType, String name, String dateTimeString, boolean includeSubGroups, int reminderMinutes, boolean rsvpRequired, boolean relayable, Integer version) {
+    public EventDTO(String eventLocation, Long id, Timestamp createdDateTime, Timestamp eventStartDateTime, User createdByUser, Group appliesToGroup, boolean canceled, EventType eventType, String name, String dateTimeString, boolean includeSubGroups, int reminderMinutes, boolean rsvpRequired, boolean relayable, boolean sendBlocked, Integer version) {
         this.eventLocation = eventLocation;
         this.id = id;
         this.createdDateTime = createdDateTime;
@@ -78,6 +83,7 @@ public class EventDTO  implements Serializable {
         this.reminderMinutes = reminderMinutes;
         this.rsvpRequired = rsvpRequired;
         this.relayable = relayable;
+        this.sendBlocked = sendBlocked;
         this.version = version;
         this.message = "";
     }
@@ -101,12 +107,13 @@ public class EventDTO  implements Serializable {
         this.rsvpRequired = event.isRsvpRequired();
         this.relayable = event.isRelayable();
         this.version = event.getVersion();
+        this.sendBlocked = event.isSendBlocked();
         this.message = "";
 
     }
 
     public Event getEventObject() {
-        return new Event(eventLocation, id, createdDateTime, eventStartDateTime, createdByUser, appliesToGroup, canceled, eventType, name, dateTimeString, includeSubGroups, reminderMinutes, rsvpRequired, relayable, version);
+        return new Event(eventLocation, id, createdDateTime, eventStartDateTime, createdByUser, appliesToGroup, canceled, eventType, name, dateTimeString, includeSubGroups, reminderMinutes, rsvpRequired, relayable, sendBlocked, version);
     }
 
     public String getEventLocation() {
@@ -221,6 +228,10 @@ public class EventDTO  implements Serializable {
         this.relayable = relayable;
     }
 
+    public boolean isSendBlocked() { return sendBlocked; }
+
+    public void setSendBlocked(boolean sendBlocked) { this.sendBlocked = sendBlocked; }
+
     public Integer getVersion() {
         return version;
     }
@@ -254,6 +265,7 @@ public class EventDTO  implements Serializable {
                 ", reminderMinutes=" + reminderMinutes +
                 ", rsvpRequired=" + rsvpRequired +
                 ", relayable=" + relayable +
+                ", sendBlocked=" + sendBlocked +
                 ", version=" + version +
                 ", message='" + message + '\'' +
                 '}';
