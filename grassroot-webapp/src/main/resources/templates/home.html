@@ -197,6 +197,27 @@
     </div>
   </div>
 
+  <!-- Trying out the group tree view idea - sql version -->
+
+  <div th:if="${not #lists.isEmpty(groupTreesSql)}">
+    <div class="well">
+      <h3>Groups in tree view SQL:</h3>
+      <div th:each="groupTreeSql: ${groupTreesSql}" class="bs-component">
+        <div class="list-group">
+          <div class="list-group-item">
+            <span th:text="${groupTreeSql.groupName}">Group name</span>
+            <ul th:fragment="fragment_nodeSql(groupTreeSql)">
+              <li th:each="subGroupSql : ${groupTreeSql.Subgroups}" th:inline="text">
+                [[${subGroupSql.groupName}]] ([[${subGroupSql.level}]])
+                <ul th:replace="this::fragment_node(${subGroupSql})" th:unless="${groupTreeSql.isTerminal()}"></ul>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- <div th:fragment="fragment_node(node)">
     <li th:each="subGroup : ${node.Subgroups}" th:text="${subGroup.groupName}">
       <span layout:include="this :: fragment_node(${subGroup})"></span>

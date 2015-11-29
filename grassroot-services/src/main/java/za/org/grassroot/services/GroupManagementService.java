@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.GroupTreeDTO;
 
 import java.sql.Timestamp;
 import java.util.Date;
@@ -204,4 +205,6 @@ public interface GroupManagementService {
     Page<Group> getAllGroupsPaginated(Integer pageNumber, Integer pageSize);
 
     List<Group> getGroupsFiltered(User createdByUser, Integer minGroupSize, Date createdAfterDate, Date createdBeforeDate);
+
+    List<GroupTreeDTO> getGroupsMemberOfTree(Long userId);
 }

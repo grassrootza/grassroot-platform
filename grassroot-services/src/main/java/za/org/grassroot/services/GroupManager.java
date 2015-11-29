@@ -8,6 +8,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.dto.NewGroupMember;
 import za.org.grassroot.core.enums.EventChangeType;
 import za.org.grassroot.core.repository.GroupRepository;
@@ -683,6 +684,15 @@ public class GroupManager implements GroupManagementService {
         return (loadGroup(groupId).getCreatedByUser() == user);
     }
 
+    @Override
+    public List<GroupTreeDTO> getGroupsMemberOfTree(Long userId) {
+        List<Object[]> listObjArray = groupRepository.getGroupMemberTree(userId);
+        List<GroupTreeDTO> list = new ArrayList<>();
+        for (Object[] objArray : listObjArray) {
+            list.add(new GroupTreeDTO(objArray));
+        }
+        return list;
+    }
     /*
     Recursive query better to use than recursive code calls
      */

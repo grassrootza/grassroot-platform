@@ -37,7 +37,7 @@ public class GroupViewNode {
     Constructor
      */
     public GroupViewNode(Group group, User viewingUser, GroupManagementService groupManagementService, Integer priorLevel) {
-
+        Long startTime = System.currentTimeMillis();
         log.info("Creating a view node from this group: " + group);
 
         this.group = group;
@@ -67,6 +67,9 @@ public class GroupViewNode {
         }
 
         this.hasSubGroups = (subgroups.size() != 0);
+        Long endTime = System.currentTimeMillis();
+
+        log.info(String.format("GroupViewNode... timetaken... %d msec", endTime - startTime) );
 
     }
 
