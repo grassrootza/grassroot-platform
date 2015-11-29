@@ -251,7 +251,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         User testUser = new User(testUserPhone);
         Group testGroup = new Group("gc1", testUser);
         testGroup.setId(1L);
-        String urlToCheck = "mtg/subject?eventId=1&prior_menu=group&prior_input=1";
+        String urlToCheck = "mtg/subject?eventId=1&prior_menu=group&interrupted=1";
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToCheck)).thenReturn(testUser);
 
@@ -270,7 +270,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     public void settingLocationShouldWork() throws Exception {
 
         User testUser = new User(testUserPhone);
-        String urlToSave = "mtg/place?eventId=1&prior_menu=subject&prior_input=1";
+        String urlToSave = "mtg/place?eventId=1&prior_menu=subject&interrupted=1";
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
 
@@ -288,7 +288,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     public void settingDateTimeShouldWork() throws Exception {
 
         User testUser = new User(testUserPhone);
-        String urlToSave = "mtg/time?eventId=1&prior_menu=place&prior_input=1";
+        String urlToSave = "mtg/time?eventId=1&prior_menu=place&interrupted=1";
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
 
@@ -308,7 +308,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     public void confirmationMenuShouldWork() throws Exception {
 
         User testUser = new User(testUserPhone);
-        String urlToSave = "mtg/confirm?eventId=1&prior_menu=time&prior_input=1";
+        String urlToSave = "mtg/confirm?eventId=1&prior_menu=time&interrupted=1";
 
         Event meetingForTest = new Event("unit test", testUser);
         meetingForTest.setEventLocation("JoziHub");
