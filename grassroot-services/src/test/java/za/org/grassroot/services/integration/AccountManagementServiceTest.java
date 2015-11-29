@@ -12,6 +12,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.transaction.TestTransaction;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
+import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.GrassRootServicesConfig;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.Account;
@@ -25,7 +26,7 @@ import static org.junit.Assert.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = GrassRootServicesConfig.class)
-@EnableTransactionManagement
+@Transactional
 @ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
 public class AccountManagementServiceTest {
 
