@@ -470,6 +470,7 @@ public class USSDGroupController extends USSDController {
 
         USSDMenu menu;
         User user = userManager.findByInputNumber(inputNumber, GROUP_MENUS + mergeGroupMenu + GROUPID_URL + groupId);
+        // todo: debug why this is returning inactive groups (service method has active flag)
         List<Group> mergeCandidates = groupManager.getMergeCandidates(user, groupId);
 
         if (mergeCandidates == null || mergeCandidates.size() == 0) {
@@ -533,8 +534,7 @@ public class USSDGroupController extends USSDController {
             menu.setPromptMessage(getMessage(GROUP_KEY, mergeGroupMenu + DO_SUFFIX, PROMPT_ERROR, user));
         }
 
-        menu.addMenuOption(GROUP_MENUS + existingGroupMenu + GROUPID_URL + remainingGroupId,
-                           getMessage(GROUP_KEY, mergeGroupMenu + DO_SUFFIX, OPTION + "group", user));
+        menu.addMenuOption(GROUP_MENUS + START_KEY, getMessage(GROUP_KEY, mergeGroupMenu + DO_SUFFIX, OPTION + "group", user));
         menu.addMenuOptions(optionsHomeExit(user));
 
         return menuBuilder(menu);

@@ -389,14 +389,14 @@ public class USSDMeetingController extends USSDController {
                               @RequestParam(value=EVENT_PARAM, required=true) Long eventId,
                               @RequestParam(value=PRIOR_MENU, required=true) String passedValueKey,
                               @RequestParam(value=GROUP_PARAM, required=false) String passedValue,
-                              @RequestParam(value="prior_input", required=false) String priorInput,
+                              @RequestParam(value="interrupted", required=false) boolean interrupted,
                               @RequestParam(value="revising", required=false) boolean revising) throws URISyntaxException {
 
         User sessionUser = userManager.findByInputNumber(inputNumber, assembleThisUri(eventId, subjectMenu, passedValueKey));
-        updateEvent(eventId, passedValueKey, passedValue, priorInput != null);
+        updateEvent(eventId, passedValueKey, passedValue, interrupted);
 
         String promptMessage = getMessage(MTG_KEY, subjectMenu, PROMPT, sessionUser);
-        String nextUrl = (!revising) ? nextUrl(subjectMenu, eventId) : confirmUrl(subjectMenu, priorInput, eventId);
+        String nextUrl = (!revising) ? nextUrl(subjectMenu, eventId) : confirmUrl(subjectMenu, eventId);
 
         return menuBuilder(new USSDMenu(promptMessage, nextUrl));
 
@@ -408,16 +408,16 @@ public class USSDMeetingController extends USSDController {
                             @RequestParam(value=EVENT_PARAM, required=true) Long eventId,
                             @RequestParam(value=PRIOR_MENU, required=true) String passedValueKey,
                             @RequestParam(value=TEXT_PARAM, required=true) String passedValue,
-                            @RequestParam(value="prior_input", required=false) String priorInput,
+                            @RequestParam(value="interrupted", required=false) boolean interrupted,
                             @RequestParam(value="revising", required=false) boolean revising) throws URISyntaxException {
 
         // todo: add error and exception handling
 
         User sessionUser = userManager.findByInputNumber(inputNumber, assembleThisUri(eventId, placeMenu, passedValueKey));
-        updateEvent(eventId, passedValueKey, passedValue, priorInput != null);
+        updateEvent(eventId, passedValueKey, passedValue, interrupted);
 
         String promptMessage = getMessage(MTG_KEY, placeMenu, PROMPT, sessionUser);
-        String nextUrl = (!revising) ? nextUrl(placeMenu, eventId) : confirmUrl(placeMenu, priorInput, eventId);
+        String nextUrl = (!revising) ? nextUrl(placeMenu, eventId) : confirmUrl(placeMenu, eventId);
 
         return menuBuilder(new USSDMenu(promptMessage, nextUrl));
     }
@@ -429,11 +429,11 @@ public class USSDMeetingController extends USSDController {
                            @RequestParam(value=EVENT_PARAM, required=true) Long eventId,
                            @RequestParam(value=PRIOR_MENU, required=false) String passedValueKey,
                            @RequestParam(value=TEXT_PARAM, required=true) String passedValue,
-                           @RequestParam(value="prior_input", required=false) String priorInput) throws URISyntaxException {
+                           @RequestParam(value="interrupted", required=false) boolean interrupted) throws URISyntaxException {
 
         String keyNext = nextMenu(timeMenu);
         User sessionUser = userManager.findByInputNumber(inputNumber, assembleThisUri(eventId, timeMenu, passedValueKey));
-        Event meetingToCreate = updateEvent(eventId, passedValueKey, passedValue, priorInput != null);
+        Event meetingToCreate = updateEvent(eventId, passedValueKey, passedValue, interrupted);
         String promptMessage = getMessage(MTG_KEY, timeMenu, PROMPT, sessionUser);
 
         return menuBuilder(new USSDMenu(promptMessage, MTG_MENUS + keyNext + EVENTID_URL + eventId + "&" + PRIOR_MENU + "=" + timeMenu));
@@ -444,9 +444,12 @@ public class USSDMeetingController extends USSDController {
     @ResponseBody
     public Request changeTimeOnly(@RequestParam(value=PHONE_PARAM, required = true) String inputNumber,
                                   @RequestParam(value=EVENT_PARAM, required = true) Long eventId,
-                                  @RequestParam(value="next_menu", required = true) String nextMenu) throws URISyntaxException {
+                                  @RequestParam(value="prior_menu", required = false) String priorMenu,
+                                  @RequestParam(value="next_menu", required = false) String nextMenu) throws URISyntaxException {
 
+        if (nextMenu == null) nextMenu = priorMenu; // needed in case we get here from an interruption
         User user = userManager.findByInputNumber(inputNumber, assembleThisUri(eventId, timeOnly, nextMenu));
+
         Event meeting = eventManager.loadEvent(eventId);
         String currentTime = meeting.getEventStartDateTime().toLocalDateTime().format(DateTimeUtil.preferredTimeFormat);
 
@@ -461,8 +464,10 @@ public class USSDMeetingController extends USSDController {
     @ResponseBody
     public Request changeDateOnly(@RequestParam(value=PHONE_PARAM, required = true) String inputNumber,
                                   @RequestParam(value=EVENT_PARAM, required = true) Long eventId,
-                                  @RequestParam(value="next_menu", required = true) String nextMenu) throws URISyntaxException {
+                                  @RequestParam(value=PRIOR_MENU, required = false) String priorMenu,
+                                  @RequestParam(value="next_menu", required = false) String nextMenu) throws URISyntaxException {
 
+        if (nextMenu == null) nextMenu = priorMenu;
         User user = userManager.findByInputNumber(inputNumber, assembleThisUri(eventId, dateOnly, nextMenu));
         Event meeting = eventManager.loadEvent(eventId);
         String currentDate = meeting.getEventStartDateTime().toLocalDateTime().format(DateTimeUtil.preferredDateFormat);
@@ -480,10 +485,9 @@ public class USSDMeetingController extends USSDController {
     }
 
     /* Helper method to compose URL for going to confirmation screen after revisions */
-    private String confirmUrl(String currentMenu, String dateTimeString, Long eventId) {
-        String dateString = encodeParamater(dateTimeString);
+    private String confirmUrl(String currentMenu, Long eventId) {
         return MTG_MENUS + confirmMenu + EVENTID_URL + eventId + "&" + PRIOR_MENU + "=" + currentMenu +
-                "&prior_input=" + dateString + "&revising=1";
+                "&revising=1";
     }
 
     @RequestMapping(value = path + confirmMenu)
@@ -492,7 +496,7 @@ public class USSDMeetingController extends USSDController {
                                   @RequestParam(value=EVENT_PARAM, required=true) Long eventId,
                                   @RequestParam(value=PRIOR_MENU, required=true) String priorMenuName,
                                   @RequestParam(value=TEXT_PARAM, required=true) String passedValue,
-                                  @RequestParam(value="prior_input", required=false) String priorInput,
+                                  @RequestParam(value="interrupted", required=false) boolean interrupted,
                                   @RequestParam(value="revising", required=false) boolean revising) throws URISyntaxException {
 
         // todo: refactor and optimize this so it doesn't use so many getters, etc. Could be quite slow if many users.
@@ -503,18 +507,15 @@ public class USSDMeetingController extends USSDController {
 
         Event meeting = eventManager.setSendBlock(eventId);
 
-        String dateString;
         USSDMenu thisMenu = new USSDMenu();
 
-        if (!revising) {
-            String userInput = (priorInput == null) ? passedValue : priorInput;
-            meeting = updateEvent(eventId, priorMenuName, userInput);
-        } else {
-            meeting = updateEvent(eventId, priorMenuName, passedValue);
+        // only do an update if we are not returning from an interruption
+        if (!interrupted) {
+                meeting = updateEvent(eventId, priorMenuName, passedValue);
         }
 
         // todo: decide whether to keep this here with getter or to move into services logic
-        dateString = meeting.getEventStartDateTime().toLocalDateTime().format(dateTimeFormat);
+        String dateString = meeting.getEventStartDateTime().toLocalDateTime().format(dateTimeFormat);
         String[] confirmFields = new String[]{ dateString, meeting.getName(), meeting.getEventLocation() };
         String confirmPrompt = getMessage(MTG_KEY, confirmMenu, PROMPT, confirmFields, sessionUser);
 
@@ -736,7 +737,7 @@ public class USSDMeetingController extends USSDController {
      */
 
     private String assembleThisUri(Long eventId, String thisMenu, String previousMenu) {
-        return (MTG_MENUS + thisMenu + EVENTID_URL + eventId + "&" + PRIOR_MENU + "=" + previousMenu + "&prior_input=1");
+        return (MTG_MENUS + thisMenu + EVENTID_URL + eventId + "&" + PRIOR_MENU + "=" + previousMenu + "&interrupted=1");
     }
 
 }
