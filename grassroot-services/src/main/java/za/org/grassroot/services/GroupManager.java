@@ -544,6 +544,7 @@ public class GroupManager implements GroupManagementService {
 
     @Override
     public Group mergeGroups(Long firstGroupId, Long secondGroupId) {
+        log.info("Okay, trying to merge these groups");
         return mergeGroups(loadGroup(firstGroupId), loadGroup(secondGroupId));
     }
 

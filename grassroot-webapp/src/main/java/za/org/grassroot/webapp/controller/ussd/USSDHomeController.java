@@ -140,7 +140,7 @@ public class USSDHomeController extends USSDController {
 
     private USSDMenu interruptedPrompt(User sessionUser) {
 
-        String returnUrl = userManager.getLastUssdMenu(sessionUser);
+        String returnUrl = sessionUser.getLastUssdMenu();
         log.info("The user was interrupted somewhere ...Here's the URL: " + returnUrl);
 
         // try { returnUrl = URLEncoder.encode(sessionUser.getLastUssdMenu(), "UTF-8"); }
@@ -151,15 +151,14 @@ public class USSDHomeController extends USSDController {
         promptMenu.addMenuOption(START_KEY + "_force", getMessage(HOME_KEY, START_KEY, "interrupted.start", sessionUser));
 
         // set the user's "last USSD menu" back to null, so avoids them always coming back here
-        sessionUser = userManager.resetLastUssdMenu(sessionUser);
+        userManager.resetLastUssdMenu(sessionUser);
 
         return promptMenu;
 
     }
 
     private boolean userInterrupted(User sessionUser) {
-        String lastMenu = userManager.getLastUssdMenu(sessionUser);
-        return (lastMenu != null && !lastMenu.trim().equals(""));
+        return (sessionUser.getLastUssdMenu() != null && !sessionUser.getLastUssdMenu().trim().equals(""));
     }
 
     private boolean userResponseNeeded(User sessionUser) {

@@ -105,7 +105,7 @@ public class USSDGroupController extends USSDController {
     @ResponseBody
     public Request createPrompt(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber) throws URISyntaxException {
 
-        User sessionUser = userManager.loadOrSaveUser(inputNumber, GROUP_MENUS + createGroupMenu);
+        User sessionUser = userManager.findByInputNumber(inputNumber, GROUP_MENUS + createGroupMenu);
 
         return menuBuilder(new USSDMenu(getMessage(GROUP_KEY, createGroupMenu, PROMPT, sessionUser),
                                         GROUP_MENUS + createGroupMenu + DO_SUFFIX));
@@ -132,7 +132,7 @@ public class USSDGroupController extends USSDController {
 
         String urlToSave = GROUP_MENUS + createGroupMenu + DO_SUFFIX + groupParameter + "prior_input=" + inputToSave;
 
-        User sessionUser = userManager.loadOrSaveUser(inputNumber, urlToSave);
+        User sessionUser = userManager.findByInputNumber(inputNumber, urlToSave);
 
         if (userResponse.trim().equals("0")) { // stop asking for numbers and go on to naming the group
             thisMenu.setPromptMessage(getMessage(GROUP_KEY, createGroupMenu + DO_SUFFIX, PROMPT + ".done", sessionUser));
@@ -186,6 +186,7 @@ public class USSDGroupController extends USSDController {
                                 @RequestParam(value=GROUP_PARAM, required=true) Long groupId,
                                 @RequestParam(value="newgroup", required=false) Integer newGroup) throws URISyntaxException {
 
+        // todo: figure out if actually using the newgroup paramater (may just be used by -do method)
         Group groupToRename;
         String promptMessage;
         String newGroupPassed = (newGroup == null) ? "" : ("&newgroup=" + newGroup);
@@ -212,6 +213,8 @@ public class USSDGroupController extends USSDController {
                                @RequestParam(value="prior_input", required=false) String priorInput,
                                @RequestParam(value="newgroup", required=false) Integer newGroup) throws URISyntaxException {
 
+        // todo: consolidate into one service call
+
         Group groupToRename;
         User sessionUser;
         try { groupToRename = groupManager.loadGroup(groupId); }
@@ -229,6 +232,7 @@ public class USSDGroupController extends USSDController {
             thisMenu = new USSDMenu(getMessage(GROUP_KEY, renameGroupPrompt + DO_SUFFIX, PROMPT, newName, sessionUser),
                                     optionsHomeExit(sessionUser));
         } else {
+            // todo: should probably encode name
             sessionUser = userManager.findByInputNumber(inputNumber, GROUP_MENUS + renameGroupPrompt + DO_SUFFIX +
                     GROUPID_URL + groupId + "&newgroup=1&prior_input=" + name);
             String messageKey = GROUP_KEY + "." + renameGroupPrompt + DO_SUFFIX + ".";
@@ -524,15 +528,15 @@ public class USSDGroupController extends USSDController {
 
         User user = userManager.findByInputNumber(inputNumber, null); // resetting return flag
         USSDMenu menu = new USSDMenu();
-        Long remainingGroupId;
 
-        try {
-            remainingGroupId = groupManager.mergeGroups(firstGroupId, secondGroupId).getId();
+        // trying to debug why it's giving errors some times
+
+        //try {
+            groupManager.mergeGroups(firstGroupId, secondGroupId).getId();
             menu.setPromptMessage(getMessage(GROUP_KEY, mergeGroupMenu + DO_SUFFIX, PROMPT, user));
-        } catch (Exception e) {
-            remainingGroupId = secondGroupId; // this will actually be the group the user started with
+        /*} catch (Exception e) {
             menu.setPromptMessage(getMessage(GROUP_KEY, mergeGroupMenu + DO_SUFFIX, PROMPT_ERROR, user));
-        }
+        }*/
 
         menu.addMenuOption(GROUP_MENUS + START_KEY, getMessage(GROUP_KEY, mergeGroupMenu + DO_SUFFIX, OPTION + "group", user));
         menu.addMenuOptions(optionsHomeExit(user));

@@ -12,6 +12,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.DateTimeUtil;
 
+import java.net.URLEncoder;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -365,7 +366,75 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     @Test
     public void newGroupPromptShouldWork() throws Exception {
         resetTestGroup();
+        String urlToSave = "group/create";
+        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
+        mockMvc.perform(get(path + "create").param(phoneParam, testUserPhone)).andExpect(status().isOk());
+        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
+        verifyNoMoreInteractions(userManagementServiceMock);
+        verifyZeroInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
+    }
+
+    @Test
+    public void newGroupNumberProcessingShouldWork() throws Exception {
+        resetTestGroup();;
+        String numbersToPass = "0615550000 080123456"; // second number is invalid
+        String firstUrlToSave = "group/create-do?prior_input=" + URLEncoder.encode(numbersToPass, "UTF-8");
+        String secondUrlToSave = "group/create-do?groupId=" + testGroup.getId() + "&prior_input=" + URLEncoder.encode(numbersToPass, "UTF-8");
+        when(userManagementServiceMock.findByInputNumber(testUserPhone, firstUrlToSave)).thenReturn(testUser);
+        when(groupManagementServiceMock.createNewGroup(testUser, Arrays.asList("0615550000"))).thenReturn(testGroup);
+        mockMvc.perform(get(path + "create-do").param(phoneParam, testUserPhone).param("request", numbersToPass)).
+                andExpect(status().isOk());
+        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, firstUrlToSave);
+        verify(userManagementServiceMock, times(1)).setLastUssdMenu(testUser, secondUrlToSave);
+        verifyNoMoreInteractions(userManagementServiceMock);
+        verify(groupManagementServiceMock, times(1)).createNewGroup(testUser, Arrays.asList("0615550000"));
+        verifyNoMoreInteractions(groupManagementServiceMock);
+        verifyZeroInteractions(eventManagementServiceMock);
+    }
+
+    @Test
+    public void newGroupSecondBatchNumbersShouldWork() throws Exception {
+        resetTestGroup();
+        String newNumbersToPass = "0801234567 010111222"; // second number is invalid
+        String urlToSave = "group/create-do?groupId=" + testGroup.getId() + "&prior_input=" + URLEncoder.encode(newNumbersToPass, "UTF-8");
+        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
+        mockMvc.perform(get(path + "create-do").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString).
+                param("request", newNumbersToPass)).andExpect(status().isOk());
+        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
+        verifyNoMoreInteractions(userManagementServiceMock);
+        verify(groupManagementServiceMock, times(1)).addNumbersToGroup(testGroup.getId(), Arrays.asList("0801234567"));
+        verifyNoMoreInteractions(groupManagementServiceMock);
+        verifyZeroInteractions(eventManagementServiceMock);
+    }
+
+    @Test
+    public void newGroupFinishingShouldWork() throws Exception {
+        resetTestGroup();
+        String urlToSave = "group/create-do?groupId=" + testGroup.getId() + "&prior_input=0";
+        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
+        mockMvc.perform(get(path + "create-do").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString).
+                param("request", "0")).andExpect(status().isOk());
+        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
+        verifyNoMoreInteractions(userManagementServiceMock);
+        verifyNoMoreInteractions(groupManagementServiceMock);
+        verifyZeroInteractions(eventManagementServiceMock);
+    }
+
+    @Test
+    public void newGroupNameSettingShouldWork() throws Exception {
+        resetTestGroup();
+        String urlToSave = "group/rename-do?groupId=" + testGroup.getId() + "&newgroup=1&prior_input=test group";
+        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
+        when(groupManagementServiceMock.loadGroup(testGroup.getId())).thenReturn(testGroup);
+        mockMvc.perform(get(path + "rename-do").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString).
+                param("newgroup", "1").param("request", "test group")).andExpect(status().isOk());
+        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
+        verifyNoMoreInteractions(userManagementServiceMock);
+        verify(groupManagementServiceMock, times(1)).loadGroup(testGroup.getId());
+        verify(groupManagementServiceMock, times(1)).saveGroup(testGroup);
+        verifyNoMoreInteractions(groupManagementServiceMock);
+        verifyZeroInteractions(groupManagementServiceMock);
     }
 
     /*

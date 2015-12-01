@@ -69,7 +69,7 @@ public class DateTimeUtil {
     private static final Pattern timeWithDelims = Pattern.compile("\\d{1,2}" + possibleTimeDelims + "\\d\\d");
     private static final Pattern timeWithoutDelims = Pattern.compile("\\d{3,4}");
     private static final Pattern timeHourOnly = Pattern.compile("\\d{1,2}[am|pm]?");
-    private static final Pattern neededOutput = Pattern.compile("\\d{1,2}:\\d{2}");
+    private static final Pattern neededOutput = Pattern.compile("\\d{2}:\\d{2}");
 
     // todo: major refactor of this
     public static String reformatTimeInput(String userResponse) {
@@ -93,7 +93,7 @@ public class DateTimeUtil {
             List<String> split = Lists.newArrayList(Splitter.on(CharMatcher.anyOf(possibleTimeDelims)).omitEmptyStrings().split(digitsOnly));
             log.info("And the split gives us ...  " + split.toString());
             int hours = Integer.parseInt(split.get(0)) + (pmStringEntered ? 12 : 0);
-            reformattedTime = timeJoiner.join(new String[]{"" + hours, split.get(1)});
+            reformattedTime = timeJoiner.join(new String[]{String.format("%02d", hours), split.get(1)});
 
         } else if (matcherNoDelims.find()) {
             log.info("Okay, no delimiter, but 3-4 digits in a row, assuming those are it ...");
@@ -129,7 +129,7 @@ public class DateTimeUtil {
         // return (neededOutput.matcher(reformattedTime).matches()) ? reformattedTime : userResponse;
 
         if (neededOutput.matcher(reformattedTime).matches()) {
-            log.info("It worked! Returning reformatted time ...");
+            log.info("It worked! Returning reformatted time ..." + reformattedTime);
             return reformattedTime;
         } else {
             log.info("Got all the way to the end and, nope");

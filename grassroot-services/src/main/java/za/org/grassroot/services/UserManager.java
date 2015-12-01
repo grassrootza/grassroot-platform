@@ -308,6 +308,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     public boolean needsToVoteOrRSVP(User sessionUser) {
+        // todo: make this into a single combined (and optimized) query
         // note: in effect this is going to run getOutstanding twice, once here, second time to distinguish
         // todo: instead make this return EventType or null, or something like that, so only need once
         log.info("Checking if user needs to respond to something: " + sessionUser);
