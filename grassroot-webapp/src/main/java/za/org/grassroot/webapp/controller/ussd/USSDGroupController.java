@@ -35,9 +35,11 @@ public class USSDGroupController extends USSDController {
 
     private static final String existingGroupMenu = "menu",
             createGroupMenu = "create",
+            createGroupAddToken = "create-token",
+            createGroupAddNumbers = "add-numbers",
             listGroupMembers = "list",
             renameGroupPrompt = "rename",
-            addMemberPrompt = "addnumber",
+            addMemberPrompt = "addnumber", // probably should rename this to prevent confusion w/ above
             unsubscribePrompt = "unsubscribe",
             groupTokenMenu = "token",
             mergeGroupMenu = "merge",
@@ -50,12 +52,11 @@ public class USSDGroupController extends USSDController {
      */
     @RequestMapping(value = groupPath + START_KEY)
     @ResponseBody
-    public Request groupList(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber) throws URISyntaxException {
+    public Request groupList(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                             @RequestParam(value="interrupted", required=false) boolean interrupted) throws URISyntaxException {
 
-        User sessionUser;
-
-        try { sessionUser = userManager.findByInputNumber(inputNumber); }
-        catch (NoSuchElementException e) { return noUserError; }
+        // in case went "back" from menu in middle of create group
+        User sessionUser = (interrupted) ? userManager.findByInputNumber(inputNumber, null) : userManager.findByInputNumber(inputNumber);
 
         String returnMessage = getMessage(GROUP_KEY, START_KEY, PROMPT, sessionUser);
 
@@ -98,7 +99,7 @@ public class USSDGroupController extends USSDController {
     }
 
     /*
-    The user is creating a group, so ask for the first number
+    The user is creating a group. First, ask for the group name.
      */
 
     @RequestMapping(value = groupPath + createGroupMenu)
@@ -113,41 +114,121 @@ public class USSDGroupController extends USSDController {
     }
 
     /*
-    Generates a loop, where it keeps asking for additional numbers and adds them to group over and over, until the
-    user enters "0", when wrap up, and ask for the group name.
+    The user has given a name, now ask whether to enter numbers or just go straight to a joining code
      */
 
     @RequestMapping(value = groupPath + createGroupMenu + DO_SUFFIX)
     @ResponseBody
-    public Request createGroup(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
-                               @RequestParam(value=GROUP_PARAM, required=false) Long groupId,
-                               @RequestParam(value=TEXT_PARAM, required=true) String userInput,
-                               @RequestParam(value="prior_input", required=false) String priorInput) throws URISyntaxException, UnsupportedEncodingException {
+    public Request createGroupWithName(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                                       @RequestParam(value=TEXT_PARAM, required=true) String groupName,
+                                       @RequestParam(value="interrupted", required=false) boolean interrupted,
+                                       @RequestParam(value=GROUP_PARAM, required=false) Long groupId) throws URISyntaxException {
 
+        User user = userManager.findByInputNumber(inputNumber);
+
+        Group createdGroup = (interrupted) ?    groupManager.loadGroup(groupId) :
+                                                groupManager.createNewGroup(user, groupName);
+
+        userManager.setLastUssdMenu(user, interruptedUrl(createGroupMenu + DO_SUFFIX, createdGroup.getId(), null));
+
+        USSDMenu menu = new USSDMenu(getMessage(GROUP_KEY, createGroupMenu + DO_SUFFIX, PROMPT, user));
+        menu.addMenuOption(GROUP_MENUS + createGroupAddToken + GROUPID_URL + createdGroup.getId(),
+                           getMessage(GROUP_KEY, createGroupMenu + DO_SUFFIX, OPTION + "token", user));
+        menu.addMenuOption(GROUP_MENUS + createGroupAddNumbers + GROUPID_URL + createdGroup.getId(),
+                           getMessage(GROUP_KEY, createGroupMenu + DO_SUFFIX, OPTION + "numbers", user));
+
+        return menuBuilder(menu);
+    }
+
+    // todo: consider moving these into a USSDUtil or similar class, to make easier to alter / work with / test
+    private String interruptedUrl(String currentMenu, Long groupId, String input) {
+        String priorInput = (input == null) ? "" : "&prior_input=" + input;
+        return GROUP_MENUS + currentMenu + GROUPID_URL + groupId + "&interrupted=1" + priorInput;
+    }
+
+    /*
+    Create an indefinite token and then give the options to go home or add some numbers
+     */
+    @RequestMapping(value = groupPath + createGroupAddToken)
+    @ResponseBody
+    public Request createGroupCreateIndefiniteToken(@RequestParam(PHONE_PARAM) String inputNumber,
+                                                    @RequestParam(GROUP_PARAM) Long groupId,
+                                                    @RequestParam(value = "interrupted", required = false) boolean interrupted) throws URISyntaxException {
+
+        // todo: various forms of error and permission checking
+        User user = userManager.findByInputNumber(inputNumber, interruptedUrl(createGroupAddToken, groupId, null));
+        Group group = groupManager.loadGroup(groupId);
+
+        String token;
+
+        /*  the only case of coming here and the group has a code is after interruption or after 'add numbers' via create
+            hence there is no need to check if the code expiry date has passed (by definition, the code is valid) */
+        if (interrupted || (group.getGroupTokenCode() != null && !group.getGroupTokenCode().equals(""))) {
+            token = groupManager.loadGroup(groupId).getGroupTokenCode();
+        } else {
+            token = groupManager.generateGroupToken(groupId).getGroupTokenCode();
+        }
+
+        USSDMenu menu = new USSDMenu(getMessage(GROUP_KEY, createGroupAddToken, PROMPT, token, user));
+        menu.addMenuOption(GROUP_MENUS + createGroupAddNumbers + GROUPID_URL + groupId,
+                           getMessage(GROUP_KEY, createGroupAddToken, OPTION + "add", user));
+        menu.addMenuOption(GROUP_MENUS + START_KEY + "?interrupted=1",
+                           getMessage(GROUP_KEY, createGroupAddToken, OPTION + "home", user));
+        menu.addMenuOption("exit", getMessage("exit.option", user));
+
+        return menuBuilder(menu);
+    }
+
+    /*
+    todo: check permissions on user (more simply, that they created the group) to avoid hand hacking through Url
+    Generates a loop, where it keeps asking for additional numbers and adds them to group over and over, until the
+    user enters "0", when wrap up, and ask for the group name.
+     */
+
+    @RequestMapping(value = groupPath + createGroupAddNumbers)
+    @ResponseBody
+    public Request createGroupAddNumbersOpeningPrompt(@RequestParam(PHONE_PARAM) String inputNumber,
+                                                      @RequestParam(GROUP_PARAM) Long groupId) throws URISyntaxException {
+
+        User user = userManager.findByInputNumber(inputNumber, interruptedUrl(createGroupAddNumbers, groupId, null));
+        USSDMenu menu = new USSDMenu(getMessage(GROUP_KEY, createGroupAddNumbers, PROMPT, user));
+        menu.setNextURI(GROUP_MENUS + createGroupAddNumbers + DO_SUFFIX + GROUPID_URL + groupId);
+        menu.setFreeText(true);
+        return menuBuilder(menu);
+
+    }
+
+    @RequestMapping(value = groupPath + createGroupAddNumbers + DO_SUFFIX)
+    @ResponseBody
+    public Request addNumbersToNewlyCreatedGroup(@RequestParam(value=PHONE_PARAM, required=true) String inputNumber,
+                                                 @RequestParam(value=GROUP_PARAM, required=true) Long groupId,
+                                                 @RequestParam(value=TEXT_PARAM, required=true) String userInput,
+                                                 @RequestParam(value="prior_input", required=false) String priorInput) throws URISyntaxException, UnsupportedEncodingException {
+
+        User sessionUser;
         USSDMenu thisMenu = new USSDMenu(true);
 
         final String userResponse = (priorInput == null) ? userInput : priorInput;
-        final String groupParameter = (groupId == null) ? "?" : GROUPID_URL + groupId + "&";
         final String inputToSave = URLEncoder.encode(userResponse, "UTF-8");
+        sessionUser = userManager.findByInputNumber(inputNumber,
+                                                    interruptedUrl(createGroupAddNumbers + DO_SUFFIX, groupId, inputToSave));
 
-        String urlToSave = GROUP_MENUS + createGroupMenu + DO_SUFFIX + groupParameter + "prior_input=" + inputToSave;
+        if (userResponse.trim().equals("0")) { // stop asking for numbers, reset interrupt prompt and give options to go back
 
-        User sessionUser = userManager.findByInputNumber(inputNumber, urlToSave);
+            thisMenu.setPromptMessage(getMessage(GROUP_KEY, createGroupAddNumbers + DO_SUFFIX, PROMPT + ".done", sessionUser));
+            thisMenu.addMenuOption(GROUP_MENUS + createGroupAddToken + GROUPID_URL + groupId,
+                                   getMessage(GROUP_KEY, createGroupAddNumbers + DO_SUFFIX, OPTION + "token", sessionUser));
+            thisMenu.addMenuOption(GROUP_MENUS + START_KEY + "?interrupted=1",
+                                   getMessage(GROUP_KEY, createGroupAddNumbers, OPTION + "home", sessionUser));
+            thisMenu.addMenuOption("exit", getMessage("exit.option", sessionUser));
 
-        if (userResponse.trim().equals("0")) { // stop asking for numbers and go on to naming the group
-            thisMenu.setPromptMessage(getMessage(GROUP_KEY, createGroupMenu + DO_SUFFIX, PROMPT + ".done", sessionUser));
-            thisMenu.setNextURI(GROUP_MENUS + renameGroupPrompt + DO_SUFFIX + GROUPID_URL + groupId + "&newgroup=1"); // reusing the rename function
         } else {
+
             Map<String, List<String>> splitPhoneNumbers = PhoneNumberUtil.splitPhoneNumbers(userResponse);
             PhoneNumberUtil.splitPhoneNumbers(userResponse);
-            if (groupId == null) { // creating a new group, process numbers and ask for more
-                Group createdGroup = groupManager.createNewGroup(sessionUser, splitPhoneNumbers.get("valid"));
-                thisMenu = numberEntryPrompt(createdGroup.getId(), "created", sessionUser, splitPhoneNumbers.get("error"));
-                userManager.setLastUssdMenu(sessionUser, GROUP_MENUS + createGroupMenu + DO_SUFFIX + GROUPID_URL + createdGroup.getId() + "&prior_input=" + inputToSave);
-            } else { // adding to a group, process numbers and ask to fix errors or to stop
-                groupManager.addNumbersToGroup(groupId, splitPhoneNumbers.get("valid"));
-                thisMenu = numberEntryPrompt(groupId, "added", sessionUser, splitPhoneNumbers.get("error"));
-            }
+            groupManager.addNumbersToGroup(groupId, splitPhoneNumbers.get("valid"));
+            thisMenu = numberEntryPrompt(groupId, "added", sessionUser, splitPhoneNumbers.get("error"));
+
         }
 
         return menuBuilder(thisMenu);
@@ -162,15 +243,15 @@ public class USSDGroupController extends USSDController {
         USSDMenu thisMenu = new USSDMenu(true);
 
         if (errorNumbers.size() == 0) {
-            thisMenu.setPromptMessage(getMessage(GROUP_KEY, createGroupMenu + DO_SUFFIX, PROMPT + "." + promptKey, sessionUser));
+            thisMenu.setPromptMessage(getMessage(GROUP_KEY, createGroupAddNumbers, PROMPT + "." + promptKey, sessionUser));
         } else {
             // assemble the error menu
             String listErrors = String.join(", ", errorNumbers);
-            String promptMessage = getMessage(GROUP_KEY, createGroupMenu + DO_SUFFIX, PROMPT_ERROR, listErrors, sessionUser);
+            String promptMessage = getMessage(GROUP_KEY, createGroupAddNumbers, PROMPT_ERROR, listErrors, sessionUser);
             thisMenu.setPromptMessage(promptMessage);
         }
 
-        thisMenu.setNextURI(GROUP_MENUS + createGroupMenu + DO_SUFFIX + GROUPID_URL + groupId); // loop back to group menu
+        thisMenu.setNextURI(GROUP_MENUS + createGroupAddNumbers + DO_SUFFIX + GROUPID_URL + groupId); // loop back to group menu
         return thisMenu;
 
     }
@@ -265,7 +346,6 @@ public class USSDGroupController extends USSDController {
             sessionUser = userManager.findByInputNumber(inputNumber, null);
             String tokenCode = sessionGroup.getGroupTokenCode();
             tokenMenu.setPromptMessage(getMessage(GROUP_KEY, groupTokenMenu, PROMPT + ".exists", tokenCode, sessionUser));
-            // todo: since token is unique to group, shouldn't need to pass the token code
             tokenMenu.addMenuOption(GROUP_MENUS + groupTokenMenu + "-extend" + GROUPID_URL + groupId,
                                     getMessage(GROUP_KEY, groupTokenMenu, OPTION + "extend", sessionUser));
             tokenMenu.addMenuOption(GROUP_MENUS + groupTokenMenu + "-close" + GROUPID_URL + groupId,

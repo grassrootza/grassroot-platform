@@ -99,6 +99,10 @@ public interface GroupManagementService {
 
     public Group getGroupByToken(String groupToken);
 
+    public Group generateGroupToken(Long groupId);
+
+    public Group generateGroupToken(Group group);
+
     public Group generateGroupToken(Group group, Integer daysValid);
 
     public Group generateGroupToken(Long groupId, Integer daysValid);
@@ -108,6 +112,8 @@ public interface GroupManagementService {
     public Group invalidateGroupToken(Group group);
 
     public Group invalidateGroupToken(Long groupId);
+
+    public boolean groupHasValidToken(Long groupId);
 
     public boolean groupHasValidToken(Group group);
 

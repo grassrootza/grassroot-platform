@@ -18,6 +18,7 @@ import za.org.grassroot.services.util.TokenGeneratorService;
 
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -326,6 +327,20 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
+    public Group generateGroupToken(Long groupId) {
+        return generateGroupToken(loadGroup(groupId));
+    }
+
+    @Override
+    public Group generateGroupToken(Group group) {
+        log.info("Generating a token code that is indefinitely open ...");
+        Timestamp endOfTime = Timestamp.valueOf(LocalDateTime.MAX);
+        group.setGroupTokenCode(generateCodeString());
+        group.setTokenExpiryDateTime(endOfTime);
+        return groupRepository.save(group);
+    }
+
+    @Override
     public Group generateGroupToken(Group group, Integer daysValid) {
         // todo: checks for whether the code already exists, and/or existing validity of group
 
@@ -369,6 +384,11 @@ public class GroupManager implements GroupManagementService {
     @Override
     public Group invalidateGroupToken(Long groupId) {
         return invalidateGroupToken(loadGroup(groupId));
+    }
+
+    @Override
+    public boolean groupHasValidToken(Long groupId) {
+        return groupHasValidToken(loadGroup(groupId));
     }
 
     @Override

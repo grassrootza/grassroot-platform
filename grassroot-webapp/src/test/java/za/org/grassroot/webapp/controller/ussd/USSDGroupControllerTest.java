@@ -376,30 +376,30 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     }
 
     @Test
-    public void newGroupNumberProcessingShouldWork() throws Exception {
+    public void newGroupCreateShouldWork() throws Exception {
         resetTestGroup();;
-        String numbersToPass = "0615550000 080123456"; // second number is invalid
-        String firstUrlToSave = "group/create-do?prior_input=" + URLEncoder.encode(numbersToPass, "UTF-8");
-        String secondUrlToSave = "group/create-do?groupId=" + testGroup.getId() + "&prior_input=" + URLEncoder.encode(numbersToPass, "UTF-8");
-        when(userManagementServiceMock.findByInputNumber(testUserPhone, firstUrlToSave)).thenReturn(testUser);
-        when(groupManagementServiceMock.createNewGroup(testUser, Arrays.asList("0615550000"))).thenReturn(testGroup);
-        mockMvc.perform(get(path + "create-do").param(phoneParam, testUserPhone).param("request", numbersToPass)).
+        String nameToPass = "test group";
+        String urlToSave = "group/create-do?groupId=" + testGroup.getId() + "&interrupted=1";
+        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+        when(groupManagementServiceMock.createNewGroup(testUser, nameToPass)).thenReturn(testGroup);
+        mockMvc.perform(get(path + "create-do").param(phoneParam, testUserPhone).param("request", nameToPass)).
                 andExpect(status().isOk());
-        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, firstUrlToSave);
-        verify(userManagementServiceMock, times(1)).setLastUssdMenu(testUser, secondUrlToSave);
+        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
+        verify(userManagementServiceMock, times(1)).setLastUssdMenu(testUser, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupManagementServiceMock, times(1)).createNewGroup(testUser, Arrays.asList("0615550000"));
+        verify(groupManagementServiceMock, times(1)).createNewGroup(testUser, nameToPass);
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
 
     @Test
-    public void newGroupSecondBatchNumbersShouldWork() throws Exception {
+    public void newGroupBatchNumbersShouldWork() throws Exception {
         resetTestGroup();
         String newNumbersToPass = "0801234567 010111222"; // second number is invalid
-        String urlToSave = "group/create-do?groupId=" + testGroup.getId() + "&prior_input=" + URLEncoder.encode(newNumbersToPass, "UTF-8");
+        String urlToSave = "group/add-numbers-do?groupId=" + testGroup.getId() +
+                "&interrupted=1&prior_input=" + URLEncoder.encode(newNumbersToPass, "UTF-8");
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        mockMvc.perform(get(path + "create-do").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString).
+        mockMvc.perform(get(path + "add-numbers-do").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString).
                 param("request", newNumbersToPass)).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
@@ -411,9 +411,9 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     @Test
     public void newGroupFinishingShouldWork() throws Exception {
         resetTestGroup();
-        String urlToSave = "group/create-do?groupId=" + testGroup.getId() + "&prior_input=0";
+        String urlToSave = "group/add-numbers-do?groupId=" + testGroup.getId() + "&interrupted=1&prior_input=0";
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        mockMvc.perform(get(path + "create-do").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString).
+        mockMvc.perform(get(path + "add-numbers-do").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString).
                 param("request", "0")).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
