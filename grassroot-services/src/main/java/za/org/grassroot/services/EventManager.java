@@ -304,11 +304,13 @@ public class EventManager implements EventManagementService {
         return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
     }
 
+    // todo: when we build the rsvp required query we need to filter by send blocked, instead of doing it this way
     @Override
     public Event setSendBlock(Long eventId) {
         Event eventToUpdate = eventRepository.findOne(eventId);
         Event beforeEvent = SerializationUtils.clone(eventToUpdate);
         eventToUpdate.setSendBlocked(true);
+        eventToUpdate.setRsvpRequired(false); // otherwise events aborted on confirm screen dirty the 'rsvpRequired' methods
         return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
     }
 
@@ -317,6 +319,7 @@ public class EventManager implements EventManagementService {
         Event eventToUpdate = eventRepository.findOne(eventId);
         Event beforeEvent = SerializationUtils.clone(eventToUpdate);
         eventToUpdate.setSendBlocked(false);
+        eventToUpdate.setRsvpRequired(true);
         return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
     }
 

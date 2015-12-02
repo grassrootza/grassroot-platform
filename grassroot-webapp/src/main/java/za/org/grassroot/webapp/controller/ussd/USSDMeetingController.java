@@ -522,10 +522,11 @@ public class USSDMeetingController extends USSDController {
 
         Event meeting = eventManager.loadEvent(eventId);
         String currentlySetTime = meeting.getEventStartDateTime().toLocalDateTime().format(DateTimeUtil.preferredTimeFormat);
+        String passingField = (nextMenu.equals(confirmMenu)) ? PRIOR_MENU : "action";
 
         USSDMenu menu = new USSDMenu(getMessage(MTG_KEY, "change", "time." + PROMPT, currentlySetTime, user));
         menu.setFreeText(true);
-        menu.setNextURI(MTG_MENUS + nextMenu + EVENTID_URL + eventId + "&" + PRIOR_MENU + "=" + timeOnly + "&revising=1");
+        menu.setNextURI(MTG_MENUS + nextMenu + EVENTID_URL + eventId + "&" + passingField + "=" + timeOnly + "&revising=1");
 
         return menuBuilder(menu);
     }
@@ -541,10 +542,11 @@ public class USSDMeetingController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber, assembleThisUri(eventId, dateOnly, nextMenu));
         Event meeting = eventManager.loadEvent(eventId);
         String currentDate = meeting.getEventStartDateTime().toLocalDateTime().format(DateTimeUtil.preferredDateFormat);
+        String passingField = (nextMenu.equals(confirmMenu)) ? PRIOR_MENU : "action"; // modify & confirm screens name params differently
 
         USSDMenu menu = new USSDMenu(getMessage(MTG_KEY, "change", "date." + PROMPT, currentDate, user));
         menu.setFreeText(true);
-        menu.setNextURI(MTG_MENUS + nextMenu + EVENTID_URL + eventId + "&" + PRIOR_MENU + "=" + dateOnly + "&revising=1");
+        menu.setNextURI(MTG_MENUS + nextMenu + EVENTID_URL + eventId + "&" + passingField + "=" + dateOnly + "&revising=1");
 
         return menuBuilder(menu);
     }
