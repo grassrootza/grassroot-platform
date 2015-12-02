@@ -333,10 +333,10 @@ public class GroupManager implements GroupManagementService {
 
     @Override
     public Group generateGroupToken(Group group) {
-        log.info("Generating a token code that is indefinitely open ...");
-        Timestamp endOfTime = Timestamp.valueOf(LocalDateTime.MAX);
+        log.info("Generating a token code that is indefinitely open, within postgresql range ... We will have to adjust this before the next century");
+        Timestamp endOfCentury = Timestamp.valueOf(LocalDateTime.of(2099, 12, 31, 23, 59));
         group.setGroupTokenCode(generateCodeString());
-        group.setTokenExpiryDateTime(endOfTime);
+        group.setTokenExpiryDateTime(endOfCentury);
         return groupRepository.save(group);
     }
 

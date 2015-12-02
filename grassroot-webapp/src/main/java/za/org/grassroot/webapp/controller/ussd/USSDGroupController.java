@@ -130,8 +130,9 @@ public class USSDGroupController extends USSDController {
                                                 groupManager.createNewGroup(user, groupName);
 
         userManager.setLastUssdMenu(user, interruptedUrl(createGroupMenu + DO_SUFFIX, createdGroup.getId(), null));
+        groupManager.addGroupMember(createdGroup, user); // since the constructor doesn't do this (todo: have a method that does)
 
-        USSDMenu menu = new USSDMenu(getMessage(GROUP_KEY, createGroupMenu + DO_SUFFIX, PROMPT, user));
+        USSDMenu menu = new USSDMenu(getMessage(GROUP_KEY, createGroupMenu + DO_SUFFIX, PROMPT, createdGroup.getGroupName(), user));
         menu.addMenuOption(GROUP_MENUS + createGroupAddToken + GROUPID_URL + createdGroup.getId(),
                            getMessage(GROUP_KEY, createGroupMenu + DO_SUFFIX, OPTION + "token", user));
         menu.addMenuOption(GROUP_MENUS + createGroupAddNumbers + GROUPID_URL + createdGroup.getId(),
@@ -215,9 +216,10 @@ public class USSDGroupController extends USSDController {
 
         if (userResponse.trim().equals("0")) { // stop asking for numbers, reset interrupt prompt and give options to go back
 
-            thisMenu.setPromptMessage(getMessage(GROUP_KEY, createGroupAddNumbers + DO_SUFFIX, PROMPT + ".done", sessionUser));
+            thisMenu.setFreeText(false);
+            thisMenu.setPromptMessage(getMessage(GROUP_KEY, createGroupAddNumbers, PROMPT + ".done", sessionUser));
             thisMenu.addMenuOption(GROUP_MENUS + createGroupAddToken + GROUPID_URL + groupId,
-                                   getMessage(GROUP_KEY, createGroupAddNumbers + DO_SUFFIX, OPTION + "token", sessionUser));
+                                   getMessage(GROUP_KEY, createGroupAddNumbers, OPTION + "token", sessionUser));
             thisMenu.addMenuOption(GROUP_MENUS + START_KEY + "?interrupted=1",
                                    getMessage(GROUP_KEY, createGroupAddNumbers, OPTION + "home", sessionUser));
             thisMenu.addMenuOption("exit", getMessage("exit.option", sessionUser));

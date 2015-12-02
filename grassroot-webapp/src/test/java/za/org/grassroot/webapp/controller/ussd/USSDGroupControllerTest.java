@@ -388,6 +388,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(1)).setLastUssdMenu(testUser, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupManagementServiceMock, times(1)).createNewGroup(testUser, nameToPass);
+        verify(groupManagementServiceMock, times(1)).addGroupMember(testGroup, testUser);
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
