@@ -340,6 +340,7 @@ public class Event implements Serializable {
 
     public boolean minimumEquals(EventDTO o) {
 
+        // check location, start date time, and subject, and if any of them are different, return false
         if (eventType != EventType.Vote) {
             if (eventLocation != null ? !eventLocation.equals(o.getEventLocation()) : o.getEventLocation() != null)
                 return false;
@@ -347,6 +348,9 @@ public class Event implements Serializable {
         if (eventStartDateTime != null ? !eventStartDateTime.equals(o.getEventStartDateTime()) : o.getEventStartDateTime() != null)
             return false;
         if (name != null ? !name.equals(o.getName()) : o.getName() != null) return false;
+
+        // last, check if other event is send blocked, and if so, this being true means equal, being false means not, so just return that
+        if (o.isSendBlocked()) return sendBlocked;
 
         return true;
 

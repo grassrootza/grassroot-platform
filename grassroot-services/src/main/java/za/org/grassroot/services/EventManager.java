@@ -701,7 +701,12 @@ public class EventManager implements EventManagementService {
         log.info("saveandCheckChanges...starting ... with changed event ..." + changedEvent.toString());
         log.info("saveandCheckChanges...changedEvent.id..." + changedEvent.getId());
 
-        boolean priorEventComplete = minimumDataAvailable(beforeEvent);
+        // a bit verbose but the logic here is complex and final booleans are cheap so rather explicating
+        final boolean priorEventComplete = minimumDataAvailable(beforeEvent);
+        final boolean priorEventBlocked = beforeEvent.isSendBlocked();
+        final boolean priorEventIncompleteOrBlocked = !priorEventBlocked || priorEventBlocked;
+        final boolean sendBlockFlipped = beforeEvent.isSendBlocked() && !changedEvent.isSendBlocked(); // need to set here else issues
+
         Event savedEvent = eventRepository.save(changedEvent);
 
         log.info("saveandCheckChanges...savedEvent..." + savedEvent.toString());
@@ -710,24 +715,32 @@ public class EventManager implements EventManagementService {
                 + "; savedEventComplete=" + minimumDataAvailable(savedEvent) + "; cancelled flages (beforeEvent / savedEvent: "
                 + beforeEvent.isCanceled() + " / " + savedEvent.isCanceled());
 
+        final boolean savedEventOkayToSend = !savedEvent.isSendBlocked() && !savedEvent.isCanceled() && minimumDataAvailable(savedEvent);
+
         /*
         Check if we need to send meeting notifications
+        This occurs if _either_ the prior saved event was not complete, or, the prior event was complete but send blocked
          */
 
-        if (!priorEventComplete && minimumDataAvailable(savedEvent) && !savedEvent.isCanceled()) {
+        if (priorEventIncompleteOrBlocked && savedEventOkayToSend) {
+
             jmsTemplateProducerService.sendWithNoReply("event-added", new EventDTO(savedEvent));
             log.info("queued to event-added..." + savedEvent.getId() + "...version..." + savedEvent.getVersion());
             //todo do the same for changes???
             //clear the users cache so that they can pickup the new event
             cacheUtilService.clearRsvpCacheForUser(savedEvent.getCreatedByUser(),savedEvent.getEventType());
             jmsTemplateProducerService.sendWithNoReply("clear-groupcache",new EventDTO(savedEvent));
-
         }
 
-        if (priorEventComplete && minimumDataAvailable(savedEvent) && !savedEvent.isCanceled()) {
-            // let's send out a change notification if something changed in minimum required values
+        /*
+        Check if we need to send an update notification
+        This occurs if the prior event is complete (even if blocked), and if something changed
+         */
 
+        if (priorEventComplete && savedEventOkayToSend) {
+            // let's send out a change notification if something changed in minimum required values
             if (!savedEvent.minimumEquals(beforeEvent)) {
+                // todo: figure out a way to reach back past the last change to check if this time change really does happen
                 boolean startTimeChanged = false;
                 if (!beforeEvent.getEventStartDateTime().equals(savedEvent.getEventStartDateTime()))
                     startTimeChanged = true;
@@ -758,7 +771,7 @@ public class EventManager implements EventManagementService {
         if (event.getEventType() != EventType.Vote) {
             if (event.getEventLocation() == null || event.getEventLocation().trim().equals("")) minimum = false;
         }
-        if (event.isSendBlocked()) minimum = false;
+        // if (event.isSendBlocked()) minimum = false; // this causes issues with things like RSVP, so am moving into its own
         log.info("minimumDataAvailable...returning..." + minimum);
 
         return minimum;
@@ -774,7 +787,7 @@ public class EventManager implements EventManagementService {
         if (event.getEventType() != EventType.Vote) {
             if (event.getEventLocation() == null || event.getEventLocation().trim().equals("")) minimum = false;
         }
-        if (event.isSendBlocked()) minimum = false;
+        // if (event.isSendBlocked()) minimum = false; // as above, causes issues with updating if we do this check here
 
         log.info("minimumDataAvailable...returning..." + minimum);
 

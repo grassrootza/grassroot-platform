@@ -18,6 +18,7 @@ import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import javax.servlet.http.HttpServletRequest;
 import java.net.URISyntaxException;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -46,8 +47,8 @@ public class USSDMeetingController extends USSDController {
     private static final String newGroupMenu = "newgroup", groupHandlingMenu = "group", subjectMenu ="subject",
             timeMenu = "time", placeMenu = "place", confirmMenu = "confirm", timeOnly = "time_only", dateOnly = "date_only", send = "send";
 
-    private static final String manageMeetingMenu = "manage", viewMeetingDetails = "details", changeMeetingDate = "changeDate",
-            changeMeetingLocation = "changeLocation", cancelMeeting = "cancel", modifyMeeting = "modify";
+    private static final String manageMeetingMenu = "manage", viewMeetingDetails = "details", changeDateAndTime = "changeDateTime",
+            changeMeetingLocation = "changeLocation", cancelMeeting = "cancel", modifyConfirm = "modify", dateTimeModifier = "confirm_date_time";;
 
     private static final List<String> menuSequence = Arrays.asList(START_KEY, subjectMenu, placeMenu, timeMenu, confirmMenu, send);
 
@@ -153,8 +154,7 @@ public class USSDMeetingController extends USSDController {
         log.info("Inside the management menu, for event: " + meeting);
 
         // todo: check user's permissions on this group/event, once permissions structure in place and being used
-
-        String eventSuffix = EVENTID_URL + meeting.getId() + "&next_menu=" + modifyMeeting;
+        String eventSuffix = EVENTID_URL + eventId + "&next_menu=" + changeDateAndTime; // next_menu param only used by date/time
         USSDMenu promptMenu = new USSDMenu(getMessage(MTG_KEY, manageMeetingMenu, PROMPT, sessionUser));
 
         promptMenu.addMenuOption(MTG_MENUS + viewMeetingDetails + eventSuffix, getMessage(MTG_KEY, viewMeetingDetails, "option", sessionUser));
@@ -175,73 +175,35 @@ public class USSDMeetingController extends USSDController {
         Event meeting = eventManager.loadEvent(eventId);
 
         String mtgDescription;
-
         Map<String, String> meetingDetails = eventManager.getEventDescription(meeting);
 
         if (meeting.isRsvpRequired()) {
-
             // todo: use enums instead of literal strings for the map
             Map<String, Integer> rsvpResponses = eventManager.getMeetingRsvpTotals(meeting);
-
             int answeredYes = rsvpResponses.get("yes");
             int answeredNo = rsvpResponses.get("no");
             int noAnswer = rsvpResponses.get("no_answer");
-
             String[] messageFields = new String[]{meetingDetails.get("groupName"), meetingDetails.get("location"), meetingDetails.get("dateTimeString"),
                     "" + eventManager.getNumberInvitees(meeting), "" + answeredYes, "" + answeredNo, "" + noAnswer};
-
             mtgDescription = getMessage(MTG_KEY, viewMeetingDetails, PROMPT + ".rsvp", messageFields, sessionUser);
-
         } else {
-
             String[] messageFields = new String[]{meetingDetails.get("groupName"), meetingDetails.get("location"), meetingDetails.get("dateTimeString"),
                                                     "" + eventManager.getNumberInvitees(meeting)};
-
             mtgDescription = getMessage(MTG_KEY, viewMeetingDetails, PROMPT, messageFields, sessionUser);
-
         }
 
         log.info("Meeting description: " + mtgDescription);
-
         USSDMenu promptMenu = new USSDMenu(mtgDescription);
-
         promptMenu.addMenuOption(MTG_MENUS + manageMeetingMenu + EVENTID_URL + eventId,
                                  getMessage(MTG_KEY, viewMeetingDetails, OPTION + "back", sessionUser)); // go back to 'manage meeting'
         promptMenu.addMenuOption(START_KEY, getMessage(START_KEY, sessionUser)); // go to GR home menu
         promptMenu.addMenuOption("exit", getMessage("exit.option", sessionUser)); // exit system
-
-        if (!checkMenuLength(promptMenu, false)) {
-            Integer charsToTrim = promptMenu.getMenuCharLength() - 159; // adding a character, for safety
-            String revisedPrompt = mtgDescription.substring(0, mtgDescription.length() - charsToTrim);
-            promptMenu.setPromptMessage(revisedPrompt);
-        }
-
         return menuBuilder(promptMenu);
-
     }
 
     /*
-    Major todo for these: add a 'confirm' screen
     todo: add logging, etc.
      */
-
-    @RequestMapping(value= path + changeMeetingDate)
-    public Request changeDate(@RequestParam(value=PHONE_PARAM) String inputNumber,
-                              @RequestParam(value=EVENT_PARAM) Long eventId) throws URISyntaxException {
-
-        // todo: check user permissions.
-
-        User sessionUser = userManager.findByInputNumber(inputNumber, MTG_MENUS + changeMeetingDate + EVENTID_URL + eventId);
-
-        String prompt = getMessage(MTG_KEY, changeMeetingDate, PROMPT, eventManager.getEventDescription(eventId).get("dateTimeString"), sessionUser);
-
-        USSDMenu promptMenu = new USSDMenu(prompt);
-        promptMenu.setFreeText(true);
-        promptMenu.setNextURI(MTG_MENUS + modifyMeeting + EVENTID_URL + eventId + "&action=" + changeMeetingDate);
-
-        return menuBuilder(promptMenu);
-
-    }
 
     @RequestMapping(value= path + changeMeetingLocation)
     public Request changeLocation(@RequestParam(value=PHONE_PARAM) String inputNumber,
@@ -253,7 +215,7 @@ public class USSDMeetingController extends USSDController {
 
         USSDMenu promptMenu = new USSDMenu(prompt);
         promptMenu.setFreeText(true);
-        promptMenu.setNextURI(MTG_MENUS + modifyMeeting + EVENTID_URL + eventId + "&action=" + changeMeetingLocation);
+        promptMenu.setNextURI(MTG_MENUS + modifyConfirm + EVENTID_URL + eventId + "&action=" + changeMeetingLocation);
 
         return menuBuilder(promptMenu);
 
@@ -263,18 +225,61 @@ public class USSDMeetingController extends USSDController {
     public Request meetingCancel(@RequestParam(value=PHONE_PARAM) String inputNumber,
                                  @RequestParam(value = EVENT_PARAM) Long eventId) throws URISyntaxException {
 
-        User sessionUser = userManager.findByInputNumber(inputNumber);
+        // todo: make clear how many people will be notified, how many have said yes, etc etc
+
+        User sessionUser = userManager.findByInputNumber(inputNumber); // not saving URL on this one
 
         USSDMenu promptMenu = new USSDMenu(getMessage(MTG_KEY, cancelMeeting, PROMPT, sessionUser));
-        promptMenu.addMenuOption(MTG_MENUS + modifyMeeting + EVENTID_URL + eventId + "&action=" + cancelMeeting, getMessage(OPTION + "yes", sessionUser));
-        promptMenu.addMenuOption(MTG_MENUS + manageMeetingMenu + EVENTID_URL + eventId, getMessage(OPTION + "no", sessionUser));
+        promptMenu.addMenuOption(MTG_MENUS + modifyConfirm + DO_SUFFIX + EVENTID_URL + eventId + "&action=" + cancelMeeting,
+                                 getMessage(OPTION + "yes", sessionUser));
+        promptMenu.addMenuOption(MTG_MENUS + manageMeetingMenu + EVENTID_URL + eventId,
+                                 getMessage(OPTION + "no", sessionUser));
 
         return menuBuilder(promptMenu);
 
     }
 
-    // major todo: make it so you can go back and change the date after changing the time, before sending out the correction
-    @RequestMapping(value= path + modifyMeeting)
+    /*
+    This menu allows to change date and time one by one but not to have to send two reminders if changing both
+    It needs a separate case int the updateEvent switch statement, or else we use the parser for no reason
+     */
+    @RequestMapping(value = path + changeDateAndTime)
+    @ResponseBody
+    public Request confirmDateTime(@RequestParam(value=PHONE_PARAM, required = true) String inputNumber,
+                                   @RequestParam(value=EVENT_PARAM, required = true) Long eventId,
+                                   @RequestParam(value=TEXT_PARAM, required = true) String userInput,
+                                   @RequestParam(value="action", required = true) String action,
+                                   @RequestParam(value="interrupted", required = false) boolean interrupted) throws URISyntaxException {
+
+        User user = userManager.findByInputNumber(inputNumber, MTG_MENUS + changeDateAndTime + EVENTID_URL + eventId +
+                                                 "&action=" + action + "&interrupted=1");
+
+        Event meeting = (interrupted) ? eventManager.loadEvent(eventId) : updateEventAndBlockSend(eventId, action, userInput);
+        LocalDateTime newDateTime = meeting.getEventStartDateTime().toLocalDateTime();
+        String formattedDate = newDateTime.format(dateFormat);
+        String formattedTime = newDateTime.format(timeFormat);
+
+        String[] promptFields = (action.equals(timeOnly)) ? new String[] { formattedTime, formattedDate } :
+                new String[] { formattedDate, formattedTime };
+
+        String otherMenu = (action.equals(timeOnly)) ? dateOnly : timeOnly;
+        USSDMenu menu = new USSDMenu(getMessage(MTG_KEY, changeDateAndTime, PROMPT + "." + action, promptFields, user));
+
+        String sendUrl = MTG_MENUS + modifyConfirm + DO_SUFFIX + EVENTID_URL + eventId + "&action=" + changeDateAndTime +
+                "&input=" + encodeParamater(newDateTime.format(DateTimeUtil.preferredDateTimeFormat));
+        String otherUrl = MTG_MENUS + otherMenu + EVENTID_URL + eventId + "&next_menu=" + changeDateAndTime;
+        String backUrl = MTG_MENUS + action + EVENTID_URL + eventId + "&next_menu=" + changeDateAndTime;
+
+        menu.addMenuOption(sendUrl, getMessage(MTG_KEY, changeDateAndTime, OPTION + "confirm", user));
+        menu.addMenuOption(otherUrl, getMessage(MTG_KEY, changeDateAndTime, OPTION + otherMenu, user));
+        menu.addMenuOption(backUrl, getMessage(MTG_KEY, changeDateAndTime, OPTION + "back", user));
+
+        return menuBuilder(menu);
+
+    }
+
+    // note: changing date and time do not come through here, but through a separate menu
+    @RequestMapping(value= path + modifyConfirm)
     public Request modifyMeeting(@RequestParam(value=PHONE_PARAM) String inputNumber,
                                  @RequestParam(value=EVENT_PARAM) Long eventId,
                                  @RequestParam("action") String action,
@@ -282,94 +287,51 @@ public class USSDMeetingController extends USSDController {
                                  @RequestParam(value = "prior_input", required=false) String priorInput) throws URISyntaxException {
 
         userInput = (priorInput == null) ? userInput : priorInput;
-
-        User sessionUser = userManager.findByInputNumber(inputNumber, MTG_MENUS + modifyMeeting + EVENTID_URL + eventId
+        User sessionUser = userManager.findByInputNumber(inputNumber, MTG_MENUS + modifyConfirm + EVENTID_URL + eventId
                 + "&action=" + action + "&prior_input=" + encodeParamater(userInput));
-        USSDMenu menu;
-        String menuPrompt, inputToPass;
+
+        USSDMenu menu = new USSDMenu();
+        String sendUrl = MTG_MENUS + modifyConfirm + DO_SUFFIX + EVENTID_URL + eventId + "&action=" + action;
+        String backUrl = MTG_MENUS + action + EVENTID_URL + eventId + "&next_menu=" + modifyConfirm;
 
         log.info("Updating a meeting via USSD ... action parameter is " + action + " and user input is: " + userInput);
 
         switch (action) {
-
-            case timeOnly:
-                String formattedTime = DateTimeUtil.reformatTimeInput(userInput);
-                String derivedDate = eventManager.loadEvent(eventId).getEventStartDateTime().
-                        toLocalDateTime().format(dateFormat);
-                menuPrompt = getMessage(MTG_KEY, timeOnly + "_modify", PROMPT, new String[]{ formattedTime, derivedDate}, sessionUser);
-                inputToPass = encodeParamater(formattedTime);
-                break;
-
-            case dateOnly:
-                String formattedDate = DateTimeUtil.reformatDateInput(userInput);
-                String derivedTime = eventManager.loadEvent(eventId).getEventStartDateTime().
-                        toLocalDateTime().format(timeFormat);
-                menuPrompt = getMessage(MTG_KEY, dateOnly + "_modify", PROMPT, new String[]{ formattedDate, derivedTime}, sessionUser);
-                inputToPass = encodeParamater(formattedDate);
-                break;
-
-            case changeMeetingLocation:
-                menuPrompt = getMessage(MTG_KEY, changeMeetingLocation, "done", sessionUser);
-                inputToPass = userInput;
-                break;
-
             case cancelMeeting:
-                menuPrompt = getMessage(MTG_KEY, cancelMeeting, "done", sessionUser);
-                inputToPass = "confirmed";
+                menu.setPromptMessage(getMessage(MTG_KEY, cancelMeeting, "prompt", sessionUser));
                 break;
-
+            case changeMeetingLocation:
+                menu.setPromptMessage(getMessage(MTG_KEY, modifyConfirm, changeMeetingLocation + "." + PROMPT, userInput, sessionUser));
+                updateEventAndBlockSend(eventId, changeMeetingLocation, userInput);
+                break;
             default:
-                menuPrompt = getMessage(MTG_KEY, modifyMeeting, "error", sessionUser);
-                inputToPass = "error";
+                menu.setPromptMessage(getMessage(MTG_KEY, modifyConfirm, "error", sessionUser));
                 break;
         }
 
-        String sendUrl = MTG_MENUS + modifyMeeting + DO_SUFFIX + EVENTID_URL + eventId + "&action=" + action +
-                "&input=" + inputToPass;
-
-        String backUrl = MTG_MENUS + action + EVENTID_URL + eventId + "&next_menu=" + modifyMeeting;
-
-        menu = new USSDMenu(menuPrompt);
-        menu.addMenuOption(sendUrl, "Yes"); // todo: i18n
-        menu.addMenuOption(backUrl, "No");
-
+        menu.addMenuOption(sendUrl, getMessage(OPTION + "yes", sessionUser)); // todo: i18n
+        menu.addMenuOption(backUrl, getMessage(OPTION + "no", sessionUser));
         return menuBuilder(menu);
 
     }
 
-    @RequestMapping(value=path + modifyMeeting + DO_SUFFIX)
+    @RequestMapping(value=path + modifyConfirm + DO_SUFFIX)
     public Request modifyMeetingSend(@RequestParam(value=PHONE_PARAM) String inputNumber,
                                      @RequestParam(value=EVENT_PARAM) Long eventId,
                                      @RequestParam("action") String action,
-                                     @RequestParam(value="input") String confirmedValue) throws URISyntaxException {
+                                     @RequestParam(value="input", required = false) String confirmedValue) throws URISyntaxException {
 
         User sessionUser = userManager.findByInputNumber(inputNumber, null);
-        String menuPrompt;
+        String menuPrompt = getMessage(MTG_KEY, modifyConfirm, action + ".done", sessionUser);
 
         switch (action) {
-
-            case timeOnly:
-                updateEvent(eventId, timeOnly, confirmedValue);
-                menuPrompt = getMessage(MTG_KEY, timeOnly, "modify.done", sessionUser);
+            case "error":
                 break;
-
-            case dateOnly:
-                updateEvent(eventId, dateOnly, confirmedValue);
-                menuPrompt = getMessage(MTG_KEY, dateOnly, "modify.done", sessionUser);
-                break;
-
-            case changeMeetingLocation:
-                updateEvent(eventId, placeMenu, confirmedValue);
-                menuPrompt = getMessage(MTG_KEY, changeMeetingLocation, "done", sessionUser);
-                break;
-
             case cancelMeeting:
                 eventManager.cancelEvent(eventId);
-                menuPrompt = getMessage(MTG_KEY, cancelMeeting, "done", sessionUser);
                 break;
-
             default:
-                menuPrompt = getMessage(MTG_KEY, modifyMeeting, "error", sessionUser);
+                eventManager.removeSendBlock(eventId);
                 break;
         }
 
@@ -576,6 +538,7 @@ public class USSDMeetingController extends USSDController {
         User sessionUser = userManager.findByInputNumber(inputNumber, assembleThisUri(eventId, confirmMenu, priorMenuName));
 
         // make sure we don't send out the invites before the user has confirmed
+        // todo optimize db calls in this, think may be doing an unnecessary call
 
         Event meeting = eventManager.setSendBlock(eventId);
 
@@ -682,23 +645,29 @@ public class USSDMeetingController extends USSDController {
                 log.info("This is what we got back ... " + formattedDate);
                 eventToReturn = eventManager.changeMeetingDate(eventId, formattedDate);
                 break;
+            /* case changeDateAndTime:
+                // todo: this may be redundant
+                eventToReturn = eventManager.setEventTimestamp(eventId,Timestamp.valueOf(LocalDateTime.parse(
+                        passedValue, DateTimeUtil.preferredDateTimeFormat)));*/
+            case changeMeetingLocation:
+                eventToReturn = eventManager.setLocation(eventId, passedValue);
+                break;
             default:
                 eventToReturn = eventManager.loadEvent(eventId);
         }
         return eventToReturn;
     }
 
+    // helper method to set a send block before updating (todo: consolidate/minimize DB calls)
+    private Event updateEventAndBlockSend(Long eventId, String lastMenuKey, String passedValue) {
+        eventManager.setSendBlock(eventId);
+        return updateEvent(eventId, lastMenuKey, passedValue);
+    }
+
+    // before doing anything, check if we have been passed the menu option from the 'you were interrupted' start prompt
+    // and, if so, don't do anything, just return the event as it stands
     private Event updateEvent(Long eventId, String lastMenuKey, String passedValue, boolean wasInterrupted) {
-
-        // before doing anything, check if we have been passed the menu option from the 'you were interrupted' start prompt
-        // and, if so, don't do anything, just return the event as it stands
-
-        if (wasInterrupted) {
-            return eventManager.loadEvent(eventId);
-        } else {
-            return updateEvent(eventId, lastMenuKey, passedValue);
-        }
-
+        return (wasInterrupted) ? eventManager.loadEvent(eventId) : updateEvent(eventId, lastMenuKey, passedValue);
     }
 
     /*

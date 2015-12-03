@@ -27,8 +27,22 @@ public class DateTimeUtil {
 
     private static Logger log = Logger.getLogger("DateTimeUtil");
 
+    // todo: replace with getters
     public static final DateTimeFormatter preferredDateFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy");
     public static final DateTimeFormatter preferredTimeFormat = DateTimeFormatter.ofPattern("HH:mm");
+    public static final DateTimeFormatter preferredDateTimeFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:MM");
+
+    private static final String possibleTimeDelims = "[-, :]+";
+    private static final Joiner timeJoiner = Joiner.on(":").skipNulls();
+    private static final Pattern timeWithDelims = Pattern.compile("\\d{1,2}" + possibleTimeDelims + "\\d\\d");
+    private static final Pattern timeWithoutDelims = Pattern.compile("\\d{3,4}");
+    private static final Pattern timeHourOnly = Pattern.compile("\\d{1,2}[am|pm]?");
+    private static final Pattern neededOutput = Pattern.compile("\\d{2}:\\d{2}");
+
+    private static final LocalDateTime veryLongTimeAway = LocalDateTime.of(2099, 12, 31, 23, 59);
+
+    public static LocalDateTime getVeryLongTimeAway() { return veryLongTimeAway; }
+    public static Timestamp getVeryLongTimestamp() { return Timestamp.valueOf(veryLongTimeAway); }
 
         /*
         Inserting method to parse date time user input and, if it can be parsed, set the timestamp accordingly.
@@ -56,6 +70,11 @@ public class DateTimeUtil {
 
     }
 
+    public static LocalDateTime parsePreformattedString(String formattedValue) {
+        // todo: exception handling just in case someone uses this / passes it badly
+        return LocalDateTime.parse(formattedValue, preferredDateTimeFormat);
+    }
+
     /*
     Helper method to deal with messy user input of a time string, more strict but also more likely to be accurate than
     free form parsing above. The menu prompt does give the preferred format of HH:mm, but never know, so check for a
@@ -63,13 +82,6 @@ public class DateTimeUtil {
     outside, all we care about is finding a match, not the whole input matching, and then whether we have to add 12 to
     hour if 'pm' has been entered. We check for those, then give up if none work
      */
-
-    private static final String possibleTimeDelims = "[-, :]+";
-    private static final Joiner timeJoiner = Joiner.on(":").skipNulls();
-    private static final Pattern timeWithDelims = Pattern.compile("\\d{1,2}" + possibleTimeDelims + "\\d\\d");
-    private static final Pattern timeWithoutDelims = Pattern.compile("\\d{3,4}");
-    private static final Pattern timeHourOnly = Pattern.compile("\\d{1,2}[am|pm]?");
-    private static final Pattern neededOutput = Pattern.compile("\\d{2}:\\d{2}");
 
     // todo: major refactor of this
     public static String reformatTimeInput(String userResponse) {

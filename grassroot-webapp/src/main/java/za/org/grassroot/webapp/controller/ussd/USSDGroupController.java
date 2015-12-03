@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -359,9 +360,9 @@ public class USSDGroupController extends USSDController {
             String daySuffix = getMessage(GROUP_KEY, groupTokenMenu, OPTION + "days", sessionUser);
             tokenMenu.setPromptMessage(getMessage(GROUP_KEY, groupTokenMenu, PROMPT, sessionUser));
             String daysUrl = GROUP_MENUS + groupTokenMenu + DO_SUFFIX + GROUPID_URL + groupId + "&days=";
-            for (int i = 1; i <= 5; i++) {
-                tokenMenu.addMenuOption(daysUrl + i, i + daySuffix);
-            }
+            tokenMenu.addMenuOption(daysUrl + "0", "Permanent (can be closed at any time)");
+            tokenMenu.addMenuOption(daysUrl + "1", "One day");
+            tokenMenu.addMenuOption(daysUrl + "7", "One week");
         }
 
         return menuBuilder(tokenMenu);
@@ -380,10 +381,16 @@ public class USSDGroupController extends USSDController {
         try { sessionUser = userManager.findByInputNumber(inputNumber, null); }
         catch (Exception e) { return noUserError; }
 
-        Group sessionGroup = groupManager.generateGroupToken(groupId, daysValid);
+        Group group;
+
+        if (daysValid == 0) {
+            group = groupManager.generateGroupToken(groupId);
+        } else {
+            group = groupManager.generateGroupToken(groupId, daysValid);
+        }
 
         USSDMenu returnMessage = new USSDMenu(getMessage(GROUP_KEY, groupTokenMenu, "created",
-                                                         sessionGroup.getGroupTokenCode(), sessionUser),
+                                                         group.getGroupTokenCode(), sessionUser),
                                               optionsHomeExit(sessionUser));
 
         return menuBuilder(returnMessage);
@@ -399,15 +406,29 @@ public class USSDGroupController extends USSDController {
         User sessionUser = userManager.findByInputNumber(inputNumber);
         Group sessionGroup = groupManager.loadGroup(groupId);
         USSDMenu promptMenu = new USSDMenu();
-        String thisUri = GROUP_MENUS + groupTokenMenu + "_extend" + GROUPID_URL + groupId;
+
+        String thisUri = GROUP_MENUS + groupTokenMenu + "-extend" + GROUPID_URL + groupId;
 
         if (daysValid == null) {
-            promptMenu.setPromptMessage(getMessage(GROUP_KEY, groupTokenMenu, PROMPT + ".extend", sessionUser));
-            promptMenu.addMenuOption(GROUP_MENUS + existingGroupMenu + GROUPID_URL + groupId,
-                                     getMessage(GROUP_KEY, groupTokenMenu, OPTION + "extend.none", sessionUser));
-            String daySuffix = getMessage(GROUP_KEY, groupTokenMenu, OPTION + "days", sessionUser);
-            for (int i = 1; i <= 3; i++)
-                promptMenu.addMenuOption(thisUri + "&days=" + i, i + daySuffix);
+
+            if (sessionGroup.getTokenExpiryDateTime().equals(DateTimeUtil.getVeryLongTimestamp())) {
+
+                // todo : probably want to check this before the option even arises
+                promptMenu.setPromptMessage("This token is open until you close it, and cannot be extended");
+                promptMenu.addMenuOption(GROUP_MENUS + groupTokenMenu + GROUPID_URL + groupId, "Back to token menu");
+                promptMenu.addMenuOption(GROUP_MENUS + existingGroupMenu + GROUPID_URL + groupId, "Back to group menu");
+                promptMenu.addMenuOptions(optionsHomeExit(sessionUser));
+
+            } else {
+
+                promptMenu.setPromptMessage(getMessage(GROUP_KEY, groupTokenMenu, PROMPT + ".extend", sessionUser));
+                promptMenu.addMenuOption(GROUP_MENUS + existingGroupMenu + GROUPID_URL + groupId,
+                                         getMessage(GROUP_KEY, groupTokenMenu, OPTION + "extend.none", sessionUser));
+                String daySuffix = getMessage(GROUP_KEY, groupTokenMenu, OPTION + "days", sessionUser);
+                for (int i = 1; i <= 3; i++)
+                    promptMenu.addMenuOption(thisUri + "&days=" + i, i + daySuffix);
+            }
+
         } else {
             sessionGroup = groupManager.extendGroupToken(sessionGroup, daysValid);
             // todo: use a proper date formatter here

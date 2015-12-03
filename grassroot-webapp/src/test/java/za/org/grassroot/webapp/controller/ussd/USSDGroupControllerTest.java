@@ -172,6 +172,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     @Test
     public void extendTokenShouldWork() throws Exception {
         resetTestGroup();
+        testGroup.setTokenExpiryDateTime(Timestamp.valueOf(LocalDateTime.now()));
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(groupManagementServiceMock.loadGroup(testGroup.getId())).thenReturn(testGroup);
         when(groupManagementServiceMock.extendGroupToken(testGroup, 3)).thenReturn(testGroup);
