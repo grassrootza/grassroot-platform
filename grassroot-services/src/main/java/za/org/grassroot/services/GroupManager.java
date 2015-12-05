@@ -717,6 +717,7 @@ public class GroupManager implements GroupManagementService {
     /*
     Recursive query better to use than recursive code calls
      */
+    @Override
     public List<Group> findGroupAndSubGroupsById(Long groupId) {
         return groupRepository.findGroupAndSubGroupsById(groupId);
     }

@@ -11,7 +11,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.AbstractTransactionalJUnit4SpringContextTests;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.transaction.TestTransaction;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
+import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.GrassRootServicesConfig;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.Group;
@@ -30,7 +32,7 @@ import static org.junit.Assert.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = GrassRootServicesConfig.class)
-@EnableTransactionManagement
+@Transactional
 @ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
 public class GroupManagementServiceTest extends AbstractTransactionalJUnit4SpringContextTests {
 
@@ -57,17 +59,17 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
     @Test
     public void shouldDetectLoop() {
         User user = userRepository.save(new User("0824444441"));
-        Group g1 = groupRepository.save(new Group("g1",user));
-        Group g2 = groupRepository.save(new Group("g2",user,g1));
+        Group g1 = groupRepository.save(new Group("g1", user));
+        Group g2 = groupRepository.save(new Group("g2", user, g1));
         assertEquals(true, groupManagementService.isGroupAlsoParent(g1, g2));
     }
 
     @Test
     public void shouldNotDetectLoop() {
         User user = userRepository.save(new User("0824444442"));
-        Group g1 = groupRepository.save(new Group("g1",user));
-        Group g2 = groupRepository.save(new Group("g2",user,g1));
-        Group g3 = groupRepository.save(new Group("g3",user));
+        Group g1 = groupRepository.save(new Group("g1", user));
+        Group g2 = groupRepository.save(new Group("g2", user, g1));
+        Group g3 = groupRepository.save(new Group("g3", user));
         assertEquals(false, groupManagementService.isGroupAlsoParent(g3, g2));
     }
 
@@ -140,7 +142,7 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         User user = userManagementService.loadOrSaveUser(testUserBase + "2");
 
         Group group1 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "3", testUserBase + "4", testUserBase + "5"));
-        Group group2 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase+"6", testUserBase+"7"));
+        Group group2 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "6", testUserBase + "7"));
 
         assertThat(group1.getGroupMembers().size(), is(4));
         assertTrue(group1.isActive());
@@ -202,7 +204,7 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         assertThat(groupRepository.count(), is(0L));
         User user = userManagementService.loadOrSaveUser(testUserBase + "1");
         Group group1 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "2"));
-        Group group2 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase+"3"));
+        Group group2 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "3"));
         groupManagementService.mergeGroups(group1, group2, false);
         assertNotNull(group1);
         assertNotNull(group2);
@@ -239,5 +241,32 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         assertTrue(list2.contains(group2));
         assertTrue(list2.contains(group3));
     }
+
+    @Test
+    public void shouldCreateSubGroup() {
+
+        User userProfile = userManagementService.createUserProfile(new User("111111111", "aap1"));
+
+        Group level1 = groupManagementService.createNewGroup(userProfile, Arrays.asList("111111112", "111111113"));
+        Group level2 = groupManagementService.createSubGroup(userProfile, level1, "level2 group");
+        assertEquals(level2.getParent().getId(), level1.getId());
+    }
+
+    //@Test
+    public void shouldReturnGroupAndSubGroups() {
+
+        User userProfile = userManagementService.createUserProfile(new User("111111111", "aap1"));
+
+        Group level1 = groupManagementService.createNewGroup(userProfile, Arrays.asList("111111112", "111111113"));
+        Group level2 = groupManagementService.createSubGroup(userProfile, level1, "level2 group");
+        assertEquals(level2.getParent().getId(), level1.getId());
+        List<Group> children = groupManagementService.getSubGroups(level1);
+        assertEquals(1, children.size());
+        TestTransaction.end();
+        TestTransaction.start();
+        List<Group> list = groupManagementService.findGroupAndSubGroupsById(level1.getId());
+        assertEquals(2, list.size());
+    }
+
 
 }

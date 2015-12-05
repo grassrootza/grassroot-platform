@@ -213,4 +213,9 @@ public interface GroupManagementService {
     List<Group> getGroupsFiltered(User createdByUser, Integer minGroupSize, Date createdAfterDate, Date createdBeforeDate);
 
     List<GroupTreeDTO> getGroupsMemberOfTree(Long userId);
+
+    /*
+        Recursive query better to use than recursive code calls
+         */
+    List<Group> findGroupAndSubGroupsById(Long groupId);
 }
