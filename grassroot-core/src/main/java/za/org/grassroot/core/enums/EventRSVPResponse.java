@@ -31,8 +31,6 @@ public enum EventRSVPResponse {
         response = s;
     }
 
-
-
     public boolean equalsName(String otherResponse) {
         return (otherResponse == null) ? false : response.equals(otherResponse);
     }

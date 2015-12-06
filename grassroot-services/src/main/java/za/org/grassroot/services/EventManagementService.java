@@ -36,6 +36,10 @@ public interface EventManagementService {
 
     public Event createMeeting(User createdByUser);
 
+    public Event createMeeting(String inputNumber, Long groupId);
+
+    public Event createMeeting(User createdByUser, Long groupId);
+
     Event createVote(User createdByUser);
 
     Event createVote(String issue, User createdByUser);

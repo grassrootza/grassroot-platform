@@ -61,7 +61,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
                 .setValidator(validator())
                 .setViewResolvers(viewResolver())
                 .build();
-        ussdHomeController.setMessageSource(messageSource());
+        wireUpMessageSourceAndGroupUtil(ussdHomeController, ussdGroupUtil);
 
         /* We use these quite often */
         testUserZu.setLanguageCode("zu");

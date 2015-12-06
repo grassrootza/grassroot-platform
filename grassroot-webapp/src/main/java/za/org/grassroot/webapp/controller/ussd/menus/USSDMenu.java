@@ -15,6 +15,7 @@ import java.util.*;
 public class USSDMenu {
 
     protected static final String BASE_URI_STRING = "http://meeting-organizer.herokuapp.com/ussd/";
+    protected static final String interruptedFlag = "interrupted";
 
     protected String promptMessage;
     protected boolean isFreeText;

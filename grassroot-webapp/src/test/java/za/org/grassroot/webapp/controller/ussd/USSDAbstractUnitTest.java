@@ -2,6 +2,7 @@ package za.org.grassroot.webapp.controller.ussd;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.context.MessageSource;
@@ -16,7 +17,10 @@ import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.webapp.util.USSDGroupUtil;
+import za.org.grassroot.webapp.util.USSDUtil;
 
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -38,6 +42,9 @@ public abstract class USSDAbstractUnitTest {
 
     @Mock
     protected EventLogManagementService eventLogManagementServiceMock;
+
+    @InjectMocks
+    protected USSDGroupUtil ussdGroupUtil;
 
     protected HandlerExceptionResolver exceptionResolver() {
         SimpleMappingExceptionResolver exceptionResolver = new SimpleMappingExceptionResolver();
@@ -74,4 +81,9 @@ public abstract class USSDAbstractUnitTest {
         return messageSource;
     }
 
+    protected void wireUpMessageSourceAndGroupUtil(USSDController controller, USSDGroupUtil groupUtil) {
+        controller.setMessageSource(messageSource());
+        groupUtil.setMessageSource(messageSource());
+        controller.setUssdGroupUtil(groupUtil);
+    }
 }

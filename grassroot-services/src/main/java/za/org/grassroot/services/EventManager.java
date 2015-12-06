@@ -116,6 +116,16 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
+    public Event createMeeting(String inputNumber, Long groupId) {
+        return createMeeting(userManagementService.findByInputNumber(inputNumber), groupId);
+    }
+
+    @Override
+    public Event createMeeting(User createdByUser, Long groupId) {
+        return createNewEvent(createdByUser, EventType.Meeting, true, "", groupManager.loadGroup(groupId), false, 0);
+    }
+
+    @Override
     public Event createVote(User createdByUser) {
         return createVote("", createdByUser);
     }

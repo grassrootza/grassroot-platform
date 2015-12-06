@@ -52,7 +52,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
                 .setValidator(validator())
                 .setViewResolvers(viewResolver())
                 .build();
-        ussdGroupController.setMessageSource(messageSource());
+        wireUpMessageSourceAndGroupUtil(ussdGroupController, ussdGroupUtil);
 
         testUser = new User(testUserPhone);
         testGroup = new Group("test group", testUser);
@@ -60,8 +60,9 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     }
 
     @Test
-    public void openingMenuShouldWork() throws Exception {
+    public void openingMenuShouldWorkWithNoGroups() throws Exception {
         resetTestGroup();
+        testUser.setGroupsPartOf(Arrays.asList(testGroup));
         Page<Group> groupPage = new PageImpl<Group>(Arrays.asList(testGroup));
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(groupManagementServiceMock.getPageOfActiveGroups(testUser, 0, 3)).thenReturn(groupPage);

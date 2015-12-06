@@ -12,7 +12,9 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.NoSuchUserException;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
+import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
+import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.net.URISyntaxException;
 import java.sql.Timestamp;
@@ -32,7 +34,7 @@ public class USSDVoteController extends USSDController {
 
     private static final Logger log = LoggerFactory.getLogger(USSDVoteController.class);
 
-    private static final String path = USSD_BASE + VOTE_MENUS;
+    private static final String path = homePath + voteMenus;
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("EEE d MMM, h:mm a");
     private static final SimpleDateFormat dateWithYear = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
@@ -42,9 +44,9 @@ public class USSDVoteController extends USSDController {
     Major todo: add menus to see status of vote while in progress, and possibly trigger reminder
     Major todo: add an option to do an "instant vote", i.e., call a vote on a temporary group
      */
-    @RequestMapping(value = path + START_KEY)
+    @RequestMapping(value = path + startMenu)
     @ResponseBody
-    public Request votingStart(@RequestParam(value = PHONE_PARAM) String inputNumber) throws URISyntaxException {
+    public Request votingStart(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
 
         User user;
         try { user = userManager.findByInputNumber(inputNumber); }
@@ -54,12 +56,11 @@ public class USSDVoteController extends USSDController {
 
         if (groupManager.canUserCallVoteOnAnyGroup(user)) {
             // todo: restrict to groups on which user can call votes (via permissions)
-            menu = userGroupMenu(user, getMessage(VOTE_KEY, START_KEY, PROMPT, user),
-                                 VOTE_MENUS + "issue", false);
+            menu = ussdGroupUtil.userGroupMenuPageOne(user, getMessage(voteKey, startMenu, promptKey, user), voteMenus + "issue", null);
         } else {
-            menu.setPromptMessage(getMessage(VOTE_KEY, START_KEY, PROMPT + "-nogroup", user));
-            menu.addMenuOption(GROUP_MENUS + "create", getMessage(VOTE_KEY, START_KEY, OPTION + "create", user));
-            menu.addMenuOption(START_KEY, getMessage(VOTE_KEY, START_KEY, OPTION + "home", user));
+            menu.setPromptMessage(getMessage(voteKey, startMenu, promptKey + "-nogroup", user));
+            menu.addMenuOption(groupMenus + "create", getMessage(voteKey, startMenu, optionsKey + "create", user));
+            menu.addMenuOption(startMenu, getMessage(voteKey, startMenu, optionsKey + "home", user));
         }
 
         return menuBuilder(menu);
@@ -72,8 +73,8 @@ public class USSDVoteController extends USSDController {
      */
     @RequestMapping(value = path + "issue")
     @ResponseBody
-    public Request votingIssue(@RequestParam(value = PHONE_PARAM) String inputNumber,
-                               @RequestParam(value = GROUP_PARAM) Long groupId) throws URISyntaxException {
+    public Request votingIssue(@RequestParam(value = phoneNumber) String inputNumber,
+                               @RequestParam(value = groupIdParam) Long groupId) throws URISyntaxException {
 
         User user;
         try { user = userManager.findByInputNumber(inputNumber); }
@@ -81,9 +82,9 @@ public class USSDVoteController extends USSDController {
 
         Event vote = eventManager.createVote(user, groupId);
 
-        USSDMenu menu = new USSDMenu(getMessage(VOTE_KEY, "issue", PROMPT, user));
+        USSDMenu menu = new USSDMenu(getMessage(voteKey, "issue", promptKey, user));
         menu.setFreeText(true);
-        menu.setNextURI(VOTE_MENUS + "time" + EVENTID_URL + vote.getId());
+        menu.setNextURI(voteMenus + "time" + eventIdUrlSuffix + vote.getId());
 
         return menuBuilder(menu);
 
@@ -95,9 +96,9 @@ public class USSDVoteController extends USSDController {
      */
     @RequestMapping(value = path + "time")
     @ResponseBody
-    public Request votingTime(@RequestParam(value = PHONE_PARAM) String inputNumber,
-                              @RequestParam(value = EVENT_PARAM) Long eventId,
-                              @RequestParam(value = TEXT_PARAM) String issue) throws URISyntaxException {
+    public Request votingTime(@RequestParam(value = phoneNumber) String inputNumber,
+                              @RequestParam(value = eventIdParam) Long eventId,
+                              @RequestParam(value = userInputParam) String issue) throws URISyntaxException {
 
         User user;
         try { user = userManager.findByInputNumber(inputNumber); }
@@ -105,16 +106,16 @@ public class USSDVoteController extends USSDController {
 
         Event vote = eventManager.setSubject(eventId, issue);
 
-        USSDMenu menu = new USSDMenu(getMessage(VOTE_KEY, "time", PROMPT, user));
+        USSDMenu menu = new USSDMenu(getMessage(voteKey, "time", promptKey, user));
 
-        String nextUrl = VOTE_MENUS + "confirm" + EVENTID_URL + eventId + "&time=";
-        String optionKey = VOTE_KEY + ".time." + OPTION;
+        String nextUrl = voteMenus + "confirm" + eventIdUrlSuffix + eventId + "&time=";
+        String optionKey = voteKey + ".time." + optionsKey;
 
         menu.addMenuOption(nextUrl + "instant", getMessage(optionKey + "instant", user));
         menu.addMenuOption(nextUrl + "hour", getMessage(optionKey + "hour", user));
         menu.addMenuOption(nextUrl + "day", getMessage(optionKey + "day", user));
         menu.addMenuOption(nextUrl + "week", getMessage(optionKey + "week", user));
-        menu.addMenuOption(VOTE_MENUS + "time_custom" + EVENTID_URL + eventId, getMessage(optionKey + "custom", user));
+        menu.addMenuOption(voteMenus + "time_custom" + eventIdUrlSuffix + eventId, getMessage(optionKey + "custom", user));
 
         return menuBuilder(menu);
     }
@@ -124,13 +125,13 @@ public class USSDVoteController extends USSDController {
      */
     @RequestMapping(value = path + "time_custom")
     @ResponseBody
-    public Request customVotingTime(@RequestParam(value = PHONE_PARAM) String inputNumber,
-                                    @RequestParam(value = EVENT_PARAM) Long eventId) throws URISyntaxException {
+    public Request customVotingTime(@RequestParam(value = phoneNumber) String inputNumber,
+                                    @RequestParam(value = eventIdParam) Long eventId) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
-        USSDMenu menu = new USSDMenu(getMessage(VOTE_KEY, "time", PROMPT + "-custom", user));
+        USSDMenu menu = new USSDMenu(getMessage(voteKey, "time", promptKey + "-custom", user));
         menu.setFreeText(true);
-        menu.setNextURI(VOTE_MENUS + "confirm" + EVENTID_URL + eventId + "&custom=true");
+        menu.setNextURI(voteMenus + "confirm" + eventIdUrlSuffix + eventId + "&custom=true");
 
         return menuBuilder(menu);
 
@@ -142,9 +143,9 @@ public class USSDVoteController extends USSDController {
      */
     @RequestMapping(value = path + "confirm")
     @ResponseBody
-    public Request voteConfirm(@RequestParam(value = PHONE_PARAM) String inputNumber,
-                               @RequestParam(value = EVENT_PARAM) Long eventId,
-                               @RequestParam(value = TEXT_PARAM) String userInput,
+    public Request voteConfirm(@RequestParam(value = phoneNumber) String inputNumber,
+                               @RequestParam(value = eventIdParam) Long eventId,
+                               @RequestParam(value = userInputParam) String userInput,
                                @RequestParam(value = "time", required = false) String time,
                                @RequestParam(value = "custom", required = false) boolean custom) throws URISyntaxException {
 
@@ -196,13 +197,13 @@ public class USSDVoteController extends USSDController {
             dateTimePrompt = " at " + dateFormat.format(proposedDateTime);
         }
 
-        final String dateTimeParam = encodeParamater(dateTimeFormatted);
+        final String dateTimeParam = USSDUrlUtil.encodeParameter(dateTimeFormatted);
         final String confirmPrompt = "You are calling a vote about \'" + vote.getName() + "\', which will close" + dateTimePrompt
                 + ". Correct?";
 
         USSDMenu menu = new USSDMenu(confirmPrompt);
-        menu.addMenuOption(VOTE_MENUS + "send" + EVENTID_URL + eventId + "&time=" + dateTimeParam, "Yes, send out");
-        menu.addMenuOption(VOTE_MENUS + START_KEY, "No, start again");
+        menu.addMenuOption(voteMenus + "send" + eventIdUrlSuffix + eventId + "&time=" + dateTimeParam, "Yes, send out");
+        menu.addMenuOption(voteMenus + startMenu, "No, start again");
 
         return menuBuilder(menu);
     }
@@ -212,8 +213,8 @@ public class USSDVoteController extends USSDController {
      */
     @RequestMapping(value = path + "send")
     @ResponseBody
-    public Request voteSend(@RequestParam(value = PHONE_PARAM) String inputNumber,
-                            @RequestParam(value = EVENT_PARAM) Long eventId,
+    public Request voteSend(@RequestParam(value = phoneNumber) String inputNumber,
+                            @RequestParam(value = eventIdParam) Long eventId,
                             @RequestParam(value = "time") String confirmedTime) throws Exception {
 
         User user;
