@@ -12,6 +12,8 @@ public interface LogBookService {
 
     List<LogBook> getAllReplicatedEntriesForGroup(Long groupId);
 
+    List<LogBook> getAllReplicatedEntriesForGroup(Long groupId, boolean completed);
+
     LogBook create(Long createdByUserId, Long groupId, String message);
 
     LogBook create(Long createdByUserId, Long groupId, String message, boolean replicateToSubGroups);
