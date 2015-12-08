@@ -143,7 +143,7 @@ public class GrassRootCoreConfig {
     }
 
     @Bean
-    public  MethodSecurityExpressionHandler expressionHandler(ConfigurableEnvironment environment) throws IOException {
+    public  MethodSecurityExpressionHandler expressionHandler() throws IOException {
 
         DefaultMethodSecurityExpressionHandler methodSecurityExpressionHandler =  new  DefaultMethodSecurityExpressionHandler();
         methodSecurityExpressionHandler.setPermissionEvaluator(permissionEvaluator());
