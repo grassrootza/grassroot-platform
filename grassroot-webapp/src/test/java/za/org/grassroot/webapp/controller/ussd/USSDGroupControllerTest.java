@@ -79,8 +79,8 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         resetTestGroup();
         String urlToSave = "group/menu?groupId=" + testGroup.getId();
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        when(groupManagementServiceMock.isGroupCreatedByUser(testGroup.getId(), testUser)).thenReturn(true);
-        when(groupManagementServiceMock.canUserMakeGroupInactive(testUser, testGroup.getId())).thenReturn(true);
+        when(groupManagementServiceMock.isGroupCreatedByUser(testGroup.getId(), testUser)).thenReturn(false); // but note length issues
+        when(groupManagementServiceMock.canUserMakeGroupInactive(testUser, testGroup.getId())).thenReturn(false);
 
         mockMvc.perform(get(path + "menu").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
                 andExpect(status().isOk());

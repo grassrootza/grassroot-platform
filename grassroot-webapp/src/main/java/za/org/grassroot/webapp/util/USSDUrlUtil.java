@@ -57,8 +57,9 @@ public class USSDUrlUtil {
 
     // note: this expects the entityId string fully formed (e.g., "groupId=1"), else have to create many duplicate methods
     public static String saveMenuUrlWithInput(USSDSection section, String menu, String entityId, String input) {
-        String divisor = (entityId != null) ? entityId : "?"; // if we are passed groupId=1, or similar, it comes with the "?" character
-        return section.toPath() + menu + divisor + setInterruptedFlag + "&" + interruptedInput + "=" + encodeParameter(input);
+        String divisor = (entityId == null) ? "?" : entityId; // if we are passed groupId=1, or similar, it comes with the "?" character
+        String inputToSave = (input == null) ? "" : encodeParameter(input);
+        return section.toPath() + menu + divisor + setInterruptedFlag + "&" + interruptedInput + "=" + inputToSave;
     }
 
     public static String saveMeetingMenu(String menu, Long eventId, boolean revising) {

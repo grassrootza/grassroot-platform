@@ -1,15 +1,14 @@
 package za.org.grassroot.webapp.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.MessageSource;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.PaidGroup;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.GroupManagementService;
-import za.org.grassroot.webapp.controller.ussd.USSDController;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 
@@ -26,6 +25,8 @@ import java.util.Map;
  */
 @Component
 public class USSDGroupUtil extends USSDUtil {
+
+    private static final Logger log = LoggerFactory.getLogger(USSDGroupUtil.class);
 
     @Autowired
     GroupManagementService groupManager;
@@ -50,9 +51,9 @@ public class USSDGroupUtil extends USSDUtil {
         if (sessionUser.getGroupsPartOf().isEmpty()) {
             groupMenu = createGroupPrompt(sessionUser, section, newGroupUrl);
         } else {
-            String prompt = getMessage(section.toKey(), groupKeyForMessages, promptKey + ".existing", sessionUser);
-            String existingGroupUri = section.toPath() + nextUrl + nonGroupParams;
-            String newGroupUri = section.toPath() + newGroupUrl + nonGroupParams;
+            String prompt = getMessage(section, groupKeyForMessages, promptKey + ".existing", sessionUser);
+            String existingGroupUri = section.toPath() + nextUrl + ((nonGroupParams == null) ? "" : nonGroupParams);
+            String newGroupUri = section.toPath() + newGroupUrl + ((nonGroupParams == null) ? "" : nonGroupParams);
             groupMenu = userGroupMenuPageOne(sessionUser, prompt, existingGroupUri, newGroupUri);
         }
         return groupMenu;
@@ -67,7 +68,7 @@ public class USSDGroupUtil extends USSDUtil {
             groupMenu.addMenuOption(urlIfEmpty, getMessage(section.toKey(), groupKeyForMessages, "options.new", sessionUser));
             groupMenu.addMenuOption("exit", getMessage("exit", sessionUser));
         } else {
-            String existingGroupUri = section.toPath() + urlIfExisting + nonGroupParams;
+            String existingGroupUri = section.toPath() + urlIfExisting + ((nonGroupParams == null) ? "" : nonGroupParams);
             groupMenu = userGroupMenuPageOne(sessionUser, promptIfExisting, existingGroupUri, null);
         }
         return groupMenu;
@@ -111,36 +112,42 @@ public class USSDGroupUtil extends USSDUtil {
 
 
     public USSDMenu createGroupPrompt(User user, USSDSection section, String nextUrl) throws URISyntaxException {
-        USSDMenu thisMenu = new USSDMenu(getMessage(section.toKey(), groupKeyForMessages, promptKey + ".create", user));
+        USSDMenu thisMenu = new USSDMenu(getMessage(section, groupKeyForMessages, promptKey + ".create", user));
         thisMenu.setNextURI(nextUrl);
         return thisMenu;
     }
 
     public USSDMenu addNumbersToNewGroup(User user, USSDSection section, String userInput, String returnUrl) throws URISyntaxException {
-        USSDMenu menu = new USSDMenu(true);
+        USSDMenu menu;
         final Map<String, List<String>> enteredNumbers = PhoneNumberUtil.splitPhoneNumbers(userInput);
+        log.info("addNumbersToNewGroup ... with user input ... " + userInput);
         if (enteredNumbers.get(validNumbers).isEmpty()) {
-            // do not create a group, just tell the user that no numbers are valid, please try again
-            menu.setPromptMessage("Nope, didn't work");
+            menu = new USSDMenu(true);
+            menu.setPromptMessage(getMessage(section, groupKeyForMessages, promptKey + ".error",
+                                             String.join(", ", enteredNumbers.get(invalidNumbers)), user));
             menu.setNextURI(section.toPath() + returnUrl);
         } else {
+            log.info("Okay we have some valid numbers, adding them ... ");
             Group createdGroup = groupManager.createNewGroup(user, enteredNumbers.get(validNumbers));
-            menu = checkForErrorsAndSetPrompt(menu, createdGroup.getId(), section, enteredNumbers.get(invalidNumbers), returnUrl);
+            menu = checkForErrorsAndSetPrompt(user, section, createdGroup.getId(), enteredNumbers.get(invalidNumbers), returnUrl, true);
         }
         return menu;
     }
 
     public USSDMenu addNumbersToExistingGroup(User user, Long groupId, USSDSection section, String userInput, String returnUrl)
             throws URISyntaxException {
-        USSDMenu menu = new USSDMenu(true);
         Map<String, List<String>> enteredNumbers = PhoneNumberUtil.splitPhoneNumbers(userInput);
         groupManager.addNumbersToGroup(groupId, enteredNumbers.get(validNumbers));
-        return checkForErrorsAndSetPrompt(menu, groupId, section, enteredNumbers.get(invalidNumbers), returnUrl);
+        return checkForErrorsAndSetPrompt(user, section, groupId, enteredNumbers.get(invalidNumbers), returnUrl, false);
     }
 
-    private USSDMenu checkForErrorsAndSetPrompt(USSDMenu menu, Long groupId, USSDSection section, List<String> invalidNumbers,
-                                                String returnUrl) {
-        String prompt = invalidNumbers.isEmpty() ? "" : "";
+    private USSDMenu checkForErrorsAndSetPrompt(User user, USSDSection section, Long groupId, List<String> invalidNumbers,
+                                                String returnUrl, boolean newGroup) {
+        log.info("Inside checkForErrorsAndSetPrompt ... with invalid numbers ... " + invalidNumbers.toString());
+        USSDMenu menu = new USSDMenu(true);
+        String addedOrCreated = newGroup ? ".created" : ".added";
+        String prompt = invalidNumbers.isEmpty() ? getMessage(section, groupKeyForMessages, promptKey + addedOrCreated, user) :
+                getMessage(section, groupKeyForMessages, promptKey + ".error", String.join(", ", invalidNumbers), user);
         menu.setPromptMessage(prompt);
         String groupIdWithParams = (returnUrl.contains("?")) ? ("&" + groupIdParameter + "=") : groupIdUrlEnding;
         menu.setNextURI(section.toPath() + returnUrl + groupIdWithParams + groupId);

@@ -20,6 +20,7 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDResponseTypes;
+import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Option;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
@@ -42,6 +43,7 @@ public class USSDHomeController extends USSDController {
 
     Logger log = LoggerFactory.getLogger(getClass());
     private static final String path = homePath + "/";
+    private static final USSDSection home = USSDSection.BASE;
 
     private static final String keyRsvp = "rsvp", keyRenameStart = "rename-start", keyGroupNameStart = "group-start";
     private static final int hashPosition = Integer.valueOf(System.getenv("USSD_CODE_LENGTH"));

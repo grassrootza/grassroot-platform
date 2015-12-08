@@ -59,11 +59,8 @@ public class USSDGroupController extends USSDController {
 
         // in case went "back" from menu in middle of create group
         User sessionUser = (interrupted) ? userManager.findByInputNumber(inputNumber, null) : userManager.findByInputNumber(inputNumber);
-
-        String returnMessage = getMessage(groupKey, startMenu, promptKey, sessionUser);
-
         return menuBuilder(ussdGroupUtil.askForGroupAllowCreateNew(sessionUser, USSDSection.GROUP_MANAGER,
-                                                                   existingGroupMenu, createGroupMenu, ""));
+                                                                   existingGroupMenu, createGroupMenu, null));
 
     }
 
@@ -110,7 +107,6 @@ public class USSDGroupController extends USSDController {
     public Request createPrompt(@RequestParam(value= phoneNumber, required=true) String inputNumber) throws URISyntaxException {
 
         User sessionUser = userManager.findByInputNumber(inputNumber, groupMenus + createGroupMenu);
-
         return menuBuilder(new USSDMenu(getMessage(groupKey, createGroupMenu, promptKey, sessionUser),
                                         groupMenus + createGroupMenu + doSuffix));
 

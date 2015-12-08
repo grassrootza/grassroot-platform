@@ -9,6 +9,7 @@ import org.springframework.context.MessageSource;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
+import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import za.org.grassroot.webapp.util.USSDGroupUtil;
 import za.org.grassroot.webapp.util.USSDMenuUtil;
@@ -78,12 +79,12 @@ public class USSDController {
 
     // Constants used in i18n and message handling
     protected static final String
-            homeKey = "home",
-            mtgKey = "mtg",
-            userKey = "user",
-            groupKey = "group",
-            voteKey = "vote",
-            logKey = "log";
+            homeKey = USSDSection.HOME.toString(),
+            mtgKey = USSDSection.MEETINGS.toString(),
+            userKey = USSDSection.USER_PROFILE.toString(),
+            groupKey = USSDSection.GROUP_MANAGER.toString(),
+            voteKey = USSDSection.VOTES.toString(),
+            logKey = USSDSection.LOGBOOK.toString();
 
     protected static final String
             promptKey = "prompt",
@@ -134,6 +135,11 @@ public class USSDController {
     protected String getMessage(String section, String menuKey, String messageLocation, User sessionUser) {
         final String messageKey = "ussd." + section + "." + menuKey + "." + messageLocation;
         return messageSource.getMessage(messageKey, null, new Locale(getLanguage(sessionUser)));
+    }
+
+    protected String getMessage(USSDSection section, String menu, String messageType, User user) {
+        final String messageKey = "ussd." + section.toKey() + menu + "." + messageType;
+        return messageSource.getMessage(messageKey, null, new Locale(getLanguage(user)));
     }
 
     // convenience function for when passing just a name (of user or group, for example)

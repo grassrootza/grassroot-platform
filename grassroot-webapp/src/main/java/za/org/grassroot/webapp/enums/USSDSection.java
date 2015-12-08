@@ -5,7 +5,8 @@ package za.org.grassroot.webapp.enums;
  */
 public enum USSDSection {
 
-    HOME ("ussd"),
+    BASE("ussd"),
+    HOME ("home"),
     MEETINGS ("mtg"),
     VOTES ("vote"),
     LOGBOOK ("log"),

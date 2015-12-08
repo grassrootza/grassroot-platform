@@ -1,9 +1,13 @@
 package za.org.grassroot.webapp.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.MessageSource;
+import org.springframework.context.NoSuchMessageException;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.webapp.enums.USSDSection;
 
 import java.util.Locale;
 
@@ -11,6 +15,8 @@ import java.util.Locale;
  * Created by luke on 2015/12/04.
  */
 public class USSDUtil {
+
+    private static final Logger log = LoggerFactory.getLogger(USSDUtil.class);
 
     @Autowired
     MessageSource messageSource;
@@ -27,10 +33,28 @@ public class USSDUtil {
         return messageSource.getMessage(messageKey, null, new Locale(getLanguage(sessionUser)));
     }
 
-    // convenience function for when passing just a name (of user or group, for example)
+    protected String getMessage(USSDSection section, String menu, String messageType, User user) {
+        final String messageKey = "ussd." + section.toKey() + menu + "." + messageType;
+        try {
+            return messageSource.getMessage(messageKey, null, new Locale(getLanguage(user)));
+        } catch (NoSuchMessageException e) {
+            return messageSource.getMessage(messageKey, null, new Locale("en"));
+        }
+    }
+
+    // note: this should be deprecated ... should only use method that passes Section -- leaving for moment though
     protected String getMessage(String section, String menuKey, String messageLocation, String parameter, User sessionUser) {
-        final String messageKey = "ussd." + section + "." + menuKey + "." + messageLocation;
-        return messageSource.getMessage(messageKey, new String[]{ parameter }, new Locale(getLanguage(sessionUser)));
+        return getMessage(USSDSection.fromString(section), menuKey, messageLocation, parameter, sessionUser);
+    }
+
+    // convenience function for when passing just a name (of user or group, for example)
+    protected String getMessage(USSDSection section, String menuKey, String messageLocation, String parameter, User sessionUser) {
+        final String messageKey = "ussd." + section.toKey() + menuKey + "." + messageLocation;
+        try {
+            return messageSource.getMessage(messageKey, new String[]{parameter}, new Locale(getLanguage(sessionUser)));
+        } catch(NoSuchMessageException e) {
+            return messageSource.getMessage(messageKey, new String[]{parameter}, new Locale("en"));
+        }
     }
 
     protected String getMessage(String section, String menuKey, String messageLocation, String[] parameters, User sessionUser) {

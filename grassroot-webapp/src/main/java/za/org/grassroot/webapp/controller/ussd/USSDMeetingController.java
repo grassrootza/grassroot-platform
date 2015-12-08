@@ -46,8 +46,8 @@ public class USSDMeetingController extends USSDController {
     USSDEventUtil eventUtil;
 
     private Logger log = LoggerFactory.getLogger(getClass());
-
     private static final String path = homePath + meetingMenus;
+    private static final USSDSection thisSection = USSDSection.MEETINGS;
 
     private static final String
             newGroupMenu = "newgroup",
@@ -92,17 +92,23 @@ public class USSDMeetingController extends USSDController {
     public Request meetingOrg(@RequestParam(value= phoneNumber, required=true) String inputNumber,
                               @RequestParam(value="newMtg", required=false) boolean newMeeting) throws URISyntaxException {
 
+        log.info("Timing a core menu ... meeting start menu entering ...");
+
         User user;
         try { user = userManager.findByInputNumber(inputNumber); }
         catch (NoSuchElementException e) { return noUserError; }
 
+        log.info("Timing a core menu ... meeting start menu has user ... ");
+
         USSDMenu returnMenu;
+
         if (newMeeting || eventManager.getUpcomingEventsUserCreated(user).size() == 0) {
-            returnMenu = ussdGroupUtil.askForGroupAllowCreateNew(user, USSDSection.MEETINGS, nextMenu(startMenu), groupHandlingMenu, null);
+            returnMenu = ussdGroupUtil.askForGroupAllowCreateNew(user, USSDSection.MEETINGS, nextMenu(startMenu), newGroupMenu, null);
         } else {
-            returnMenu = eventUtil.askForMeeting(user, manageMeetingMenu, startMenu);
+            returnMenu = eventUtil.askForMeeting(user, startMenu, manageMeetingMenu, startMenu + "?newMtg=1");
         }
 
+        log.info("Timing a core menu ... meeting start menu handing over to menu builder ...");
         return menuBuilder(returnMenu);
     }
 
@@ -317,7 +323,7 @@ public class USSDMeetingController extends USSDController {
     @ResponseBody
     public Request newGroup(@RequestParam(value= phoneNumber, required = true) String inputNumber) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber, meetingMenus + newGroupMenu);
-        return menuBuilder(ussdGroupUtil.createGroupPrompt(user, USSDSection.MEETINGS, groupHandlingMenu));
+        return menuBuilder(ussdGroupUtil.createGroupPrompt(user, thisSection, groupHandlingMenu));
     }
 
     /*
@@ -344,7 +350,7 @@ public class USSDMeetingController extends USSDController {
         String userInput = (priorInput != null) ? priorInput : userResponse;
         String includeEvent = (eventId != null) ? ("&" + eventIdParam + eventId) : "";
         User user = userManager.findByInputNumber(inputNumber, USSDUrlUtil.
-                saveMenuUrlWithInput(USSDSection.MEETINGS, groupHandlingMenu, groupIdUrlSuffix + groupId + includeEvent, userInput));
+                saveMenuUrlWithInput(thisSection, groupHandlingMenu, groupIdUrlSuffix + groupId + includeEvent, userInput));
 
         if (!userInput.trim().equals("0")) {
             thisMenu = (groupId == null) ? ussdGroupUtil.addNumbersToNewGroup(user, USSDSection.MEETINGS, userInput, groupHandlingMenu) :
@@ -377,7 +383,7 @@ public class USSDMeetingController extends USSDController {
     @RequestMapping(value = path + subjectMenu)
     @ResponseBody
     public Request getSubject(@RequestParam(value= phoneNumber, required=true) String inputNumber,
-                              @RequestParam(value= eventIdParam, required=true) Long eventId,
+                              @RequestParam(value= eventIdParam, required=false) Long eventId,
                               @RequestParam(value= groupIdParam, required=false) Long groupId,
                               @RequestParam(value= interruptedFlag, required=false) boolean interrupted,
                               @RequestParam(value="revising", required=false) boolean revising) throws URISyntaxException {

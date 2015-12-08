@@ -21,6 +21,7 @@ public class USSDMenuUtil {
     private static final Logger log = LoggerFactory.getLogger(USSDMenuUtil.class);
 
     private static final String baseURI = System.getenv("APP_URL") + "/ussd/";
+    private static final int enumLength = ("1. ").length();
 
     public static List<Option> createMenu(Map<String, String> menuOptions) throws URISyntaxException {
         List<Option> menuToBuild = new ArrayList<>();
@@ -60,7 +61,6 @@ public class USSDMenuUtil {
 
     public static boolean checkMenuLength(USSDMenu menuToCheck, boolean firstMenu) {
 
-        Integer enumLength = ("1. ").length();
         Integer characterLimit = firstMenu ? 140 : 160;
 
         log.info("Menu with prompt message ... " + menuToCheck.getPromptMessage());

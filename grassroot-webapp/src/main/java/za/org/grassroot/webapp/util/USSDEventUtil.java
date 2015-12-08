@@ -43,13 +43,13 @@ public class USSDEventUtil extends USSDUtil {
 
     // todo: generalize to askForEvent so we can use this for votes
     // todo: paginate
-    public USSDMenu askForMeeting(User sessionUser, String existingUrl, String newUrl) {
+    public USSDMenu askForMeeting(User sessionUser, String callingMenu, String existingUrl, String newUrl) {
 
-        String mtgKey = USSDSection.MEETINGS.toKey();
-        String meetingMenus = USSDSection.MEETINGS.toPath();
+        final USSDSection mtgSection = USSDSection.MEETINGS;
+        final String meetingMenus = mtgSection.toPath();
 
-        USSDMenu askMenu = new USSDMenu(getMessage(mtgKey, newUrl, promptKey + ".new-old", sessionUser));
-        String newMeetingOption = getMessage(mtgKey, newUrl, optionsKey + "new", sessionUser);
+        USSDMenu askMenu = new USSDMenu(getMessage(mtgSection, callingMenu, promptKey + ".new-old", sessionUser));
+        String newMeetingOption = getMessage(mtgSection, callingMenu, optionsKey + "new", sessionUser);
 
         Integer enumLength = "X. ".length();
         Integer lastOptionBuffer = enumLength + newMeetingOption.length();
@@ -57,6 +57,7 @@ public class USSDEventUtil extends USSDUtil {
         List<Event> upcomingEvents = eventManager.getPaginatedEventsCreatedByUser(sessionUser, 0, 3);
 
         for (Event event : upcomingEvents) {
+            // todo: need to reduce the number of DB calls here, a lot, including superfluous calls to minimumDataAvailable
             Map<String, String> eventDescription = eventManager.getEventDescription(event);
             if (eventDescription.get("minimumData").equals("true")) {
                 String menuLine = eventDescription.get("groupName") + ": " + eventDescription.get("dateTimeString");
@@ -66,7 +67,7 @@ public class USSDEventUtil extends USSDUtil {
             }
         }
 
-        askMenu.addMenuOption(meetingMenus + newUrl + "?newMtg=true", newMeetingOption);
+        askMenu.addMenuOption(meetingMenus + newUrl, newMeetingOption);
 
         return askMenu;
     }

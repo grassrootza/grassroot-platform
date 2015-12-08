@@ -122,7 +122,8 @@ public class EventManager implements EventManagementService {
 
     @Override
     public Event createMeeting(User createdByUser, Long groupId) {
-        return createNewEvent(createdByUser, EventType.Meeting, true, "", groupManager.loadGroup(groupId), false, 0);
+        // note: this method is only called from USSD, so, for now, setting reminder minutes to zero
+        return createNewEvent(createdByUser, EventType.Meeting, true, "", groupManager.loadGroup(groupId), false, -1);
     }
 
     @Override
@@ -715,7 +716,7 @@ public class EventManager implements EventManagementService {
         final boolean priorEventComplete = minimumDataAvailable(beforeEvent);
         final boolean priorEventBlocked = beforeEvent.isSendBlocked();
         final boolean priorEventIncompleteOrBlocked = !priorEventBlocked || priorEventBlocked;
-        final boolean sendBlockFlipped = beforeEvent.isSendBlocked() && !changedEvent.isSendBlocked(); // need to set here else issues
+        boolean addedNewEventToQueue = false; // need this else we trigger both send new event and changed event (since minimum equals has to be triggered on flipping send block)
 
         Event savedEvent = eventRepository.save(changedEvent);
 
@@ -740,14 +741,16 @@ public class EventManager implements EventManagementService {
             //clear the users cache so that they can pickup the new event
             cacheUtilService.clearRsvpCacheForUser(savedEvent.getCreatedByUser(),savedEvent.getEventType());
             jmsTemplateProducerService.sendWithNoReply("clear-groupcache",new EventDTO(savedEvent));
+            addedNewEventToQueue = true;
         }
 
         /*
         Check if we need to send an update notification
         This occurs if the prior event is complete (even if blocked), and if something changed
+        There may be a more elegant way to make sure it's not confused and both adds and changes than the boolean, but works for now (may need to rework & clarify whole logic in future)
          */
 
-        if (priorEventComplete && savedEventOkayToSend) {
+        if (priorEventComplete && savedEventOkayToSend && !addedNewEventToQueue) {
             // let's send out a change notification if something changed in minimum required values
             if (!savedEvent.minimumEquals(beforeEvent)) {
                 // todo: figure out a way to reach back past the last change to check if this time change really does happen
