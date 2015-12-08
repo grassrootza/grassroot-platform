@@ -11,6 +11,7 @@ import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Ehcache;
 
 import org.springframework.context.annotation.*;
+import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.access.PermissionEvaluator;
 import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
@@ -30,6 +31,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import za.org.grassroot.core.*;
 import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.repository.PermissionRepository;
+import za.org.grassroot.core.security.CustomPermissionFactory;
 
 import javax.sql.DataSource;
 import java.io.IOException;
@@ -50,6 +53,12 @@ public class GrassRootCoreConfig {
 
     @Autowired
     DataSource dataSource;
+
+    @Autowired
+    PermissionRepository permissionRepository;
+
+    @Autowired
+    ConfigurableEnvironment environment;
 
     @Bean
     public PasswordEncoder getPasswordEncoder() {
@@ -88,8 +97,8 @@ public class GrassRootCoreConfig {
     }
 
     @Bean
-    public DefaultPermissionFactory aclPermissionFactory() {
-        return new DefaultPermissionFactory();
+    public PermissionFactory aclPermissionFactory() {
+        return new CustomPermissionFactory(permissionRepository);
     }
 
     @Bean
@@ -118,6 +127,13 @@ public class GrassRootCoreConfig {
     @Bean
     public MutableAclService aclService() throws CacheException, IOException {
         JdbcMutableAclService aclService = new JdbcMutableAclService(dataSource, aclLookupStrategy(), aclCache());
+
+        if(!environment.acceptsProfiles(GrassRootApplicationProfiles.INMEMORY))
+        {
+            aclService.setClassIdentityQuery("select currval(pg_get_serial_sequence('acl_class', 'id'))");
+            aclService.setSidIdentityQuery("select currval(pg_get_serial_sequence('acl_sid', 'id'))");
+        }
+
         return aclService;
     }
 
@@ -127,7 +143,7 @@ public class GrassRootCoreConfig {
     }
 
     @Bean
-    public  MethodSecurityExpressionHandler expressionHandler() throws IOException {
+    public  MethodSecurityExpressionHandler expressionHandler(ConfigurableEnvironment environment) throws IOException {
 
         DefaultMethodSecurityExpressionHandler methodSecurityExpressionHandler =  new  DefaultMethodSecurityExpressionHandler();
         methodSecurityExpressionHandler.setPermissionEvaluator(permissionEvaluator());
