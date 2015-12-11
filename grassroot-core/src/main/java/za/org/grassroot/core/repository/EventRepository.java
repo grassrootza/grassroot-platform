@@ -55,4 +55,18 @@ where e.canceled = FALSE
 
     @Query(value = "SELECT * FROM event e WHERE start_date_time  between  (current_timestamp - INTERVAL '1 hour') and current_timestamp AND e.event_type = 1 AND e.canceled = FALSE AND (SELECT count(*) FROM event_log el WHERE el.event_log_type = 7 AND e.id = el.event_id) = 0", nativeQuery = true)
     List<Event> findUnsentVoteResults();
+
+    /*
+    Some queries to find a user's events : leaving query stub in, as the property traversal by JPA may be expensive, and may want to do counts later
+     */
+    // @Query(value = "SELECT * FROM event e WHERE applies_to_group IN (SELECT group_id FROM group_user_membership ")
+    List<Event> findByAppliesToGroupGroupMembers(User user);
+
+    List<Event> findByAppliesToGroupGroupMembersAndEventTypeAndCanceledOrderByEventStartDateTimeDesc(User user, EventType type, boolean canceled);
+    List<Event> findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled(User user, EventType eventType, Date startTime, boolean cancelled);
+    List<Event> findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeLessThanAndCanceled(User user, EventType eventType, Date starTime, boolean cancelled);
+
+    Page<Event> findByAppliesToGroupGroupMembersAndEventTypeAndCanceledOrderByEventStartDateTimeDesc(User user, EventType type, boolean canceled, Pageable page);
+    Page<Event> findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled(User user, EventType eventType, Date starTime, boolean cancelled, Pageable page);
+    Page<Event> findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeLessThanAndCanceled(User user, EventType eventType, Date starTime, boolean cancelled, Pageable page);
 }

@@ -16,6 +16,7 @@ import za.org.grassroot.webapp.util.USSDMenuUtil;
 import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.net.URISyntaxException;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -69,7 +70,8 @@ public class USSDController {
             previousMenu = USSDUrlUtil.previousMenu,
             yesOrNoParam = USSDUrlUtil.yesOrNoParam,
             interruptedFlag = USSDUrlUtil.interruptedFlag,
-            interruptedInput = USSDUrlUtil.interruptedInput;
+            interruptedInput = USSDUrlUtil.interruptedInput,
+            revisingFlag = USSDUrlUtil.revisingFlag;
 
     protected static final String
             startMenu = "start",
@@ -90,6 +92,10 @@ public class USSDController {
             promptKey = "prompt",
             errorPromptKey = "prompt.error",
             optionsKey = "options.";
+
+    protected static final DateTimeFormatter dateTimeFormat = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
+    protected static final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("EEE d MMM");
+    protected static final DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("h:mm a");
 
     /*
     Stubs to the utility methods, for readability in the sub-classes
@@ -151,6 +157,11 @@ public class USSDController {
     protected String getMessage(String section, String menuKey, String messageLocation, String[] parameters, User sessionUser) {
         final String messageKey = "ussd." + section + "." + menuKey + "." + messageLocation;
         return messageSource.getMessage(messageKey, parameters, new Locale(getLanguage(sessionUser)));
+    }
+
+    protected String getMessage(USSDSection section, String menu, String messageType, String[] parameters, User user) {
+        final String messageKey = "ussd." + section.toKey() + menu + "." + messageType;
+        return messageSource.getMessage(messageKey, parameters, new Locale(getLanguage(user)));
     }
 
     // for convenience, sometimes easier to read this way than passing around user instance

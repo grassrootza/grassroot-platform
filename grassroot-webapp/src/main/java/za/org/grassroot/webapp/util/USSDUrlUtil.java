@@ -26,12 +26,14 @@ public class USSDUrlUtil {
             previousMenu = "prior_menu",
             yesOrNoParam = "confirmed",
             interruptedFlag = "interrupted",
-            interruptedInput = "prior_input"; // may want to change this last one
+            interruptedInput = "prior_input",
+            revisingFlag = "revising"; // may want to change this last one
 
     public static final String
             groupIdUrlSuffix = ("?" + groupIdParam + "="),
             eventIdUrlSuffix = ("?" + eventIdParam + "="),
-            setInterruptedFlag = "&" + interruptedFlag + "=1";
+            setInterruptedFlag = "&" + interruptedFlag + "=1",
+            setRevisingFlag = "&" + revisingFlag + "=1";
 
     public static String assemblePaginatedURI(String menuPrompt, String existingGroupUri, String newGroupUri, Integer pageNumber) {
         String newGroupParameter = (newGroupUri != null) ? "&newUri=" + encodeParameter(newGroupUri) : "";
@@ -73,6 +75,10 @@ public class USSDUrlUtil {
 
     public static String saveVoteMenu(String menu, Long eventId) {
         return USSDSection.VOTES.toPath() + menu + "?eventId=" + eventId + setInterruptedFlag; // include the +1
+    }
+
+    public static String backVoteUrl(String menu, Long eventId) {
+        return USSDSection.VOTES.toPath() + menu + "?eventId=" + eventId + setRevisingFlag;
     }
 
 }

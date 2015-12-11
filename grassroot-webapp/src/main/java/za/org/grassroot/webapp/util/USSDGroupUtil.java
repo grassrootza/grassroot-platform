@@ -62,11 +62,12 @@ public class USSDGroupUtil extends USSDUtil {
     public USSDMenu askForGroupNoInlineNew(User sessionUser, USSDSection section, String promptIfExisting, String promptIfEmpty,
                                            String urlIfExisting, String urlIfEmpty, String nonGroupParams) throws URISyntaxException {
         USSDMenu groupMenu;
-        // todo: replace the getter with a less expensive call
+        // todo: replace the getter with a less expensive call, plus filter for permissions
         if(sessionUser.getGroupsPartOf().isEmpty()) {
             groupMenu = new USSDMenu(promptIfEmpty);
-            groupMenu.addMenuOption(urlIfEmpty, getMessage(section.toKey(), groupKeyForMessages, "options.new", sessionUser));
-            groupMenu.addMenuOption("exit", getMessage("exit", sessionUser));
+            groupMenu.addMenuOption(urlIfEmpty, getMessage(section, groupKeyForMessages, "options.new", sessionUser));
+            groupMenu.addMenuOption("start", getMessage("start", sessionUser));
+            groupMenu.addMenuOption("exit", getMessage("exit.option", sessionUser));
         } else {
             String existingGroupUri = section.toPath() + urlIfExisting + ((nonGroupParams == null) ? "" : nonGroupParams);
             groupMenu = userGroupMenuPageOne(sessionUser, promptIfExisting, existingGroupUri, null);

@@ -551,16 +551,10 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
-    public List<Event> getUpcomingEvents(User requestingUser) {
+    public List<Event> getUpcomingEvents(User requestingUser, EventType type) {
         // todo: at some point we will need this to be efficient ... for now, doing a very slow kludge, and going to avoid using the method
-
-        List<Event> upcomingEvents = new ArrayList<>();
-
-        for (Group group : requestingUser.getGroupsPartOf()) {
-            upcomingEvents.addAll(getUpcomingEvents(group));
-        }
-
-        return upcomingEvents;
+        return eventRepository.findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled
+                (requestingUser, type, new Date(), false);
     }
 
     @Override
@@ -571,9 +565,59 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
-    public boolean hasUpcomingEvents(User requestingUser) {
+    public int userHasEventsToView(User user, EventType type) {
+        // todo: this is three DB pings, less expensive than prior iterations over groups, but still expensive, replace with query
+        if (!userHasEventsToView(user, type, false)) return -9;
+
+        int returnFlag = 0;
+        returnFlag -= userHasPastEventsToView(user, type) ? 1 : 0;
+        returnFlag += userHasFutureEventsToView(user, type) ? 1 : 0;
+        return returnFlag;
+
+    }
+
+    @Override
+    public boolean userHasEventsToView(User user, EventType type, boolean upcomingOnly) {
+        return upcomingOnly ? userHasFutureEventsToView(user, type) :
+                eventRepository.findByAppliesToGroupGroupMembersAndEventTypeAndCanceledOrderByEventStartDateTimeDesc(user, type, false).isEmpty();
+    }
+
+    @Override
+    public boolean userHasPastEventsToView(User user, EventType type) {
+        // todo: in future performance tweaking, may turn this into a direct count query
+        return eventRepository.
+                findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeLessThanAndCanceled(user, type, new Date(), false).
+                isEmpty();
+    }
+
+    @Override
+    public boolean userHasFutureEventsToView(User user, EventType type) {
+        // todo: as above, probably want to turn this into a count query
+        return eventRepository.
+                findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled(user, type, new Date(), false).
+                isEmpty();
+    }
+
+    @Override
+    public Page<Event> getEventsUserCanView(User user, EventType type, int pastPresentOrBoth, int pageNumber, int pageSize) {
+        // todo: filter for permissions, maybe
+        if (pastPresentOrBoth == -1) {
+            return eventRepository.findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeLessThanAndCanceled(
+                    user, type, new Date(), false, new PageRequest(pageNumber, pageSize));
+        } else if (pastPresentOrBoth == 1) {
+            return eventRepository.findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled(
+                    user, type, new Date(), false, new PageRequest(pageNumber, pageSize));
+        } else {
+            // todo: think about setting a lower bound (e.g., one year ago)
+            return eventRepository.findByAppliesToGroupGroupMembersAndEventTypeAndCanceledOrderByEventStartDateTimeDesc(
+                    user, type, false, new PageRequest(pageNumber, pageSize));
+        }
+    }
+
+    @Override
+    public boolean hasUpcomingEvents(User requestingUser, EventType type) {
         // likewise, if we start using this at outset of meetings menu, need to make it fast, possibly a query
-        return getUpcomingEvents(requestingUser).size() != 0;
+        return getUpcomingEvents(requestingUser, type).size() != 0;
     }
 
     @Override
@@ -645,12 +689,16 @@ public class EventManager implements EventManagementService {
     @Override
     public Map<String, Integer> getVoteResults(Event vote) {
 
+        // todo: check this works ...
+
         Map<String, Integer> results = new HashMap<>();
+        int totalAsked = groupManager.getGroupSize(vote.getAppliesToGroup(), vote.isIncludeSubGroups());
         RSVPTotalsDTO totalsDTO = eventLogManagementService.getVoteResultsForEvent(vote);
 
         results.put("yes", totalsDTO.getYes());
         results.put("no", totalsDTO.getNo());
         results.put("abstained", totalsDTO.getNumberOfUsers() - totalsDTO.getYes() - totalsDTO.getNo());
+        results.put("no_reply", totalAsked - totalsDTO.getNumberOfUsers());
         results.put("possible", totalsDTO.getNumberOfUsers());
 
         return results;

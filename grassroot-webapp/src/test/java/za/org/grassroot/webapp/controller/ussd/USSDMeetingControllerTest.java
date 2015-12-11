@@ -626,19 +626,18 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         User testUser = new User(testUserPhone);
         Event testMeeting = new Event("test meeting", testUser);
         testMeeting.setId(1L);
+        testMeeting.setEventLocation("JoziHub");
         String urlToSave = "mtg/changeLocation?eventId=1";
-        Map<String, String> testDescription = new HashMap<>();
-        testDescription.put("location", "JoziHub");
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        when(eventManagementServiceMock.getEventDescription(testMeeting.getId())).thenReturn(testDescription);
+        when(eventManagementServiceMock.loadEvent(testMeeting.getId())).thenReturn(testMeeting);
 
         mockMvc.perform(get(path + "changeLocation").param(phoneParam, testUserPhone).param("eventId", "" + testMeeting.getId())).
                 andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(anyString(), anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(eventManagementServiceMock, times(1)).getEventDescription(anyLong());
+        verify(eventManagementServiceMock, times(1)).loadEvent(anyLong());
         verifyNoMoreInteractions(eventManagementServiceMock);
         verifyZeroInteractions(groupManagementServiceMock);
 

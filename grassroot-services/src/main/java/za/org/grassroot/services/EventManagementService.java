@@ -53,7 +53,7 @@ public interface EventManagementService {
     Event createVote(Event vote);
 
     /*
-    Methods to find and load events
+    Methods to find and load events, first by group
      */
 
     public Event loadEvent(Long eventId);
@@ -78,6 +78,10 @@ public interface EventManagementService {
 
     List<Event> getUpcomingEvents(Group group);
 
+    /*
+    Methods to get upcoming or prior events which user can view or manage
+     */
+
     List<Event> getOutstandingRSVPForUser(Long userId);
 
     List<Event> getOutstandingVotesForUser(Long userId);
@@ -90,9 +94,21 @@ public interface EventManagementService {
 
     List<Event> getUpcomingEventsUserCreated(User requestingUser);
 
-    List<Event> getUpcomingEvents(User requestingUser);
+    List<Event> getUpcomingEvents(User requestingUser, EventType type);
 
     List<Event> getPaginatedEventsCreatedByUser(User sessionUser, int pageNumber, int pageSize);
+
+    // -1 : past events; 0: both directions; +1 : future events; -9 no events
+    int userHasEventsToView(User user, EventType type);
+
+    boolean userHasEventsToView(User user, EventType type, boolean upcomingOnly);
+
+    boolean userHasPastEventsToView(User user, EventType type);
+
+    boolean userHasFutureEventsToView(User user, EventType type);
+
+    // third argument: past events = -1 ; future events = 1; both directions = 0;
+    Page<Event> getEventsUserCanView(User user, EventType type, int pastPresentOrBoth, int pageNumber, int pageSize);
 
     /*
     Methods to set and update events
@@ -138,7 +154,7 @@ public interface EventManagementService {
 
     Map<User, EventRSVPResponse> getRSVPResponses(Event event);
 
-    boolean hasUpcomingEvents(User requestingUser);
+    boolean hasUpcomingEvents(User requestingUser, EventType type);
 
     String[] populateNotificationFields(Event event);
 
