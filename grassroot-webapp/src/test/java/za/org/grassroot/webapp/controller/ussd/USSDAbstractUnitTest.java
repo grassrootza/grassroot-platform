@@ -46,6 +46,10 @@ public abstract class USSDAbstractUnitTest {
     @InjectMocks
     protected USSDGroupUtil ussdGroupUtil;
 
+    protected static final String base = "/ussd/";
+    protected static final String userChoiceParam = "request";
+    protected static final String interruptedChoice = "1";
+
     protected HandlerExceptionResolver exceptionResolver() {
         SimpleMappingExceptionResolver exceptionResolver = new SimpleMappingExceptionResolver();
         Properties statusCodes = new Properties();

@@ -13,12 +13,16 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.util.USSDEventUtil;
 import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -27,6 +31,7 @@ import java.util.List;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.saveVoteMenu;
 
 
@@ -66,7 +71,7 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
     }
 
     @Test
-    public void voteStartMenuHasGroupsNoUpcomingVotes() throws Exception {
+    public void voteStartMenuHasGroupsNoUpcomingOrOldVotes() throws Exception {
 
         List<Group> testGroups = Arrays.asList(new Group("tg1", testUser),
                                                new Group("tg2", testUser),
@@ -75,16 +80,18 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
         Page<Group> pageTestGroups = new PageImpl<Group>(testGroups);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(groupManagementServiceMock.canUserCallVoteOnAnyGroup(testUser)).thenReturn(true);
+        when(eventManagementServiceMock.userHasEventsToView(testUser, EventType.Vote)).thenReturn(-9);
+        when(groupManagementServiceMock.hasActiveGroupsPartOf(testUser)).thenReturn(true);
         when(groupManagementServiceMock.getPageOfActiveGroups(testUser, 0, 3)).thenReturn(pageTestGroups);
 
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
-        // verify(groupManagementServiceMock, times(1)).canUserCallVoteOnAnyGroup(testUser);
-        // verify(groupManagementServiceMock, times(1)).getPageOfActiveGroups(any(User.class), anyInt(), anyInt());
-        // verifyNoMoreInteractions(groupManagementServiceMock);
-
+        verify(groupManagementServiceMock, times(1)).hasActiveGroupsPartOf(testUser);
+        verify(groupManagementServiceMock, times(1)).getPageOfActiveGroups(any(User.class), anyInt(), anyInt());
+        verifyNoMoreInteractions(groupManagementServiceMock);
+        verify(eventManagementServiceMock, times(1)).userHasEventsToView(testUser, EventType.Vote);
+        verifyNoMoreInteractions(eventManagementServiceMock);
     }
 
     @Test
@@ -93,13 +100,16 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
         testUser.setGroupsPartOf(new ArrayList<>());
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(groupManagementServiceMock.canUserCallVoteOnAnyGroup(testUser)).thenReturn(false);
+        when(eventManagementServiceMock.userHasEventsToView(testUser, EventType.Vote)).thenReturn(-9);
+        when(groupManagementServiceMock.hasActiveGroupsPartOf(testUser)).thenReturn(false);
 
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
-        // verify(groupManagementServiceMock, times(1)).canUserCallVoteOnAnyGroup(any(User.class));
-        // verifyNoMoreInteractions(groupManagementServiceMock);
+        verify(eventManagementServiceMock, times(1)).userHasEventsToView(testUser, EventType.Vote);
+        verifyNoMoreInteractions(eventManagementServiceMock);
+        verify(groupManagementServiceMock, times(1)).hasActiveGroupsPartOf(testUser);
+        verifyNoMoreInteractions(groupManagementServiceMock);
 
     }
 
@@ -109,21 +119,47 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
      */
 
     @Test
+    public void selectNewVoteWithGroupsShouldWork() throws Exception {
+        String urlToSave = USSDSection.VOTES.toPath() + "new";
+        Page<Group> pageTestGroups = new PageImpl<Group>(Arrays.asList(new Group("tg1", testUser), new Group("tg2", testUser)));
+        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
+        when(groupManagementServiceMock.hasActiveGroupsPartOf(testUser)).thenReturn(true);
+        when(groupManagementServiceMock.getPageOfActiveGroups(testUser, 0, 3)).thenReturn(pageTestGroups);
+
+        mockMvc.perform(get(path + "new").param(phoneParam, testUserPhone)).andExpect(status().isOk());
+        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1")).andExpect(status().isOk());
+
+        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
+        verifyNoMoreInteractions(userManagementServiceMock);
+        verify(groupManagementServiceMock, times(2)).hasActiveGroupsPartOf(testUser);
+        verify(groupManagementServiceMock, times(2)).getPageOfActiveGroups(testUser, 0, 3);
+        verifyNoMoreInteractions(groupManagementServiceMock);
+    }
+
+    @Test
     public void askForIssueShouldWork() throws Exception {
 
         Group testGroup = new Group("tg", testUser);
         testGroup.setId(1L);
         Event testVote = new Event(testUser, EventType.Vote, true);
         testVote.setId(1L);
+        String interruptedUrl = saveVoteMenu("issue", 1L);
+        String revisingUrl = backVoteUrl("issue", 1L);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone, interruptedUrl)).thenReturn(testUser);
         when(eventManagementServiceMock.createVote(testUser, testGroup.getId())).thenReturn(testVote);
 
         mockMvc.perform(get(path + "issue").param(phoneParam, testUserPhone).param("groupId", "" + testGroup.getId())).
                 andExpect(status().isOk());
+        mockMvc.perform(get(base + interruptedUrl).param(phoneParam, testUserPhone).param("request", "1")).
+                andExpect(status().isOk());
+        mockMvc.perform(get(base + revisingUrl).param(phoneParam, testUserPhone).param("request", "2")).
+                andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
-        verify(userManagementServiceMock, times(1)).setLastUssdMenu(testUser, saveVoteMenu("issue", 1L));
+        verify(userManagementServiceMock, times(1)).setLastUssdMenu(testUser, interruptedUrl);
+        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, interruptedUrl);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventManagementServiceMock, times(1)).createVote(testUser, testGroup.getId());
         verifyNoMoreInteractions(eventManagementServiceMock);
@@ -135,24 +171,25 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
 
         Event testVote = new Event(testUser, EventType.Vote, true);
         testVote.setId(1L);
-        String savedUrl = saveVoteMenu("time", 1L);
+        String interruptedUrl = saveVoteMenu("time", 1L);
+        String revisingUrl = backVoteUrl("time", 1L);
 
-        when(userManagementServiceMock.findByInputNumber(testUserPhone, savedUrl)).thenReturn(testUser);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone, interruptedUrl)).thenReturn(testUser);
 
         mockMvc.perform(get(path + "time").param(phoneParam, testUserPhone).param("eventId", "" + testVote.getId()).
                 param("request", "test vote")).andExpect(status().isOk());
+        mockMvc.perform(get(base + interruptedUrl).param(phoneParam, testUserPhone).param("request", "1")).
+                andExpect(status().isOk());
+        mockMvc.perform(get(base + revisingUrl).param(phoneParam, testUserPhone).param("request", "3")).
+                andExpect(status().isOk());
 
-        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, savedUrl);
+        verify(userManagementServiceMock, times(3)).findByInputNumber(testUserPhone, interruptedUrl);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventManagementServiceMock, times(1)).setSubject(testVote.getId(), "test vote");
         verifyNoMoreInteractions(eventManagementServiceMock);
 
-        log.info("URL we will be passing back ... " + get(savedUrl).param(phoneParam, testUserPhone).param("request", "1").toString());
+        log.info("URL we will be passing back ... " + get(interruptedUrl).param(phoneParam, testUserPhone).param("request", "1").toString());
 
-        // finally: check the interruption and resume still works
-        mockMvc.perform(get("/ussd/" + savedUrl).param(phoneParam, testUserPhone).param("request", "1")).andExpect(status().isOk());
-        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, savedUrl);
-        verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventManagementServiceMock, times(1)).setSubject(testVote.getId(), "test vote");
         verifyNoMoreInteractions(eventManagementServiceMock);
 
@@ -163,19 +200,19 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
 
         Event testVote = new Event(testUser, EventType.Vote, true);
         testVote.setId(1L);
-        String savedUrl = saveVoteMenu("time_custom", 1L);
+        String interruptedUrl = saveVoteMenu("time_custom", 1L);
 
-        when(userManagementServiceMock.findByInputNumber(testUserPhone, savedUrl)).thenReturn(testUser);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone, interruptedUrl)).thenReturn(testUser);
 
         mockMvc.perform(get(path + "time_custom").param(phoneParam, testUserPhone).param("eventId", "" + testVote.getId())).
                 andExpect(status().isOk());
 
-        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, savedUrl);
+        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, interruptedUrl);
         verifyNoMoreInteractions(userManagementServiceMock);
 
         // check interruption and resume works
-        mockMvc.perform(get("/ussd/" + savedUrl).param(phoneParam, testUserPhone).param("request", "1")).andExpect(status().isOk());
-        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, savedUrl);
+        mockMvc.perform(get("/ussd/" + interruptedUrl).param(phoneParam, testUserPhone).param("request", "1")).andExpect(status().isOk());
+        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, interruptedUrl);
         verifyNoMoreInteractions(userManagementServiceMock);
         // check event interaction
 
@@ -188,25 +225,34 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
         testVote.setName("test vote");
         testVote.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.now().plusDays(7)));
         testVote.setId(1L);
-        String savedUrl = saveVoteMenu("confirm", 1L);
+        String interruptedUrl = saveVoteMenu("confirm", 1L);
+        LocalDateTime tomorrow5pm = LocalDateTime.of(LocalDate.now().plusDays(1), LocalTime.of(17, 0));
 
-        // todo: fix these up
-        when(userManagementServiceMock.findByInputNumber(testUserPhone, savedUrl)).thenReturn(testUser);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone, interruptedUrl)).thenReturn(testUser);
         when(eventManagementServiceMock.loadEvent(testVote.getId())).thenReturn(testVote);
         when(eventManagementServiceMock.setEventTimestamp(anyLong(), any(Timestamp.class))).thenReturn(testVote);
+        when(eventManagementServiceMock.setSubject(testVote.getId(), "Revised subject")).thenReturn(testVote);
 
-        // todo: the range of variations for this, in particular different times
+        LocalDateTime in7minutes = LocalDateTime.now().plusMinutes(7L).truncatedTo(ChronoUnit.SECONDS);
         mockMvc.perform(get(path + "confirm").param(phoneParam, testUserPhone).param("eventId", "" + testVote.getId()).
                 param("request", "1").param("field", "standard").param("time", "instant")).andExpect(status().isOk());
+        mockMvc.perform(get(path + "confirm").param(phoneParam, testUserPhone).param("eventId", "" + testVote.getId()).
+                param("request", "Tomorrow 5pm").param("field", "custom")).andExpect(status().isOk());
+        testVote.setEventStartDateTime(Timestamp.valueOf(tomorrow5pm));
+        mockMvc.perform(get(path + "confirm").param(phoneParam, testUserPhone).param("eventId", "" + testVote.getId()).
+                param("request", "Revised subject").param("field", "issue")).andExpect(status().isOk());
+        mockMvc.perform(get(base + interruptedUrl).param(phoneParam, testUserPhone).param("request", "1")).
+                andExpect(status().isOk());
 
-        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, savedUrl);
+        verify(userManagementServiceMock, times(4)).findByInputNumber(testUserPhone, interruptedUrl);
         verifyNoMoreInteractions(userManagementServiceMock);
-        //verify(eventManagementServiceMock, times(1)).loadEvent(testVote.getId());
-        //verifyNoMoreInteractions(eventManagementServiceMock);
+        verify(eventManagementServiceMock, times(1)).setEventTimestamp(testVote.getId(), Timestamp.valueOf(in7minutes));
+        verify(eventManagementServiceMock, times(1)).setEventTimestamp(testVote.getId(), Timestamp.valueOf(tomorrow5pm));
+        verify(eventManagementServiceMock, times(1)).setSubject(testVote.getId(), "Revised subject");
+        verify(eventManagementServiceMock, times(3)).setSendBlock(testVote.getId());
+        verify(eventManagementServiceMock, times(1)).loadEvent(testVote.getId());
+        verifyNoMoreInteractions(eventManagementServiceMock);
 
-        // check that interruption works (and do so for all the variations as well
-        mockMvc.perform(get("/ussd/" + savedUrl).param(phoneParam, testUserPhone).param("request", "1")).andExpect(status().isOk());
-        // verifications
 
     }
 

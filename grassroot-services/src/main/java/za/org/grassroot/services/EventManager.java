@@ -567,8 +567,8 @@ public class EventManager implements EventManagementService {
     @Override
     public int userHasEventsToView(User user, EventType type) {
         // todo: this is three DB pings, less expensive than prior iterations over groups, but still expensive, replace with query
+        log.info("Checking what events the user has to view ... ");
         if (!userHasEventsToView(user, type, false)) return -9;
-
         int returnFlag = 0;
         returnFlag -= userHasPastEventsToView(user, type) ? 1 : 0;
         returnFlag += userHasFutureEventsToView(user, type) ? 1 : 0;
@@ -578,14 +578,16 @@ public class EventManager implements EventManagementService {
 
     @Override
     public boolean userHasEventsToView(User user, EventType type, boolean upcomingOnly) {
+        // todo: this may be _very_ expensive if Hibernate is looping through lists, replace with a query pronto
+        log.info("Checking on the repository ... ");
         return upcomingOnly ? userHasFutureEventsToView(user, type) :
-                eventRepository.findByAppliesToGroupGroupMembersAndEventTypeAndCanceledOrderByEventStartDateTimeDesc(user, type, false).isEmpty();
+                !eventRepository.findByAppliesToGroupGroupMembersAndEventTypeAndCanceledOrderByEventStartDateTimeDesc(user, type, false).isEmpty();
     }
 
     @Override
     public boolean userHasPastEventsToView(User user, EventType type) {
         // todo: in future performance tweaking, may turn this into a direct count query
-        return eventRepository.
+        return !eventRepository.
                 findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeLessThanAndCanceled(user, type, new Date(), false).
                 isEmpty();
     }
@@ -593,7 +595,7 @@ public class EventManager implements EventManagementService {
     @Override
     public boolean userHasFutureEventsToView(User user, EventType type) {
         // todo: as above, probably want to turn this into a count query
-        return eventRepository.
+        return !eventRepository.
                 findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled(user, type, new Date(), false).
                 isEmpty();
     }
@@ -602,10 +604,10 @@ public class EventManager implements EventManagementService {
     public Page<Event> getEventsUserCanView(User user, EventType type, int pastPresentOrBoth, int pageNumber, int pageSize) {
         // todo: filter for permissions, maybe
         if (pastPresentOrBoth == -1) {
-            return eventRepository.findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeLessThanAndCanceled(
+            return eventRepository.findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeLessThanAndCanceledOrderByEventStartDateTimeDesc(
                     user, type, new Date(), false, new PageRequest(pageNumber, pageSize));
         } else if (pastPresentOrBoth == 1) {
-            return eventRepository.findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled(
+            return eventRepository.findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeGreaterThanAndCanceledOrderByEventStartDateTimeDesc(
                     user, type, new Date(), false, new PageRequest(pageNumber, pageSize));
         } else {
             // todo: think about setting a lower bound (e.g., one year ago)
@@ -681,6 +683,11 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
+    public String getGroupName(Event event) {
+        return event.getAppliesToGroup().getName("");
+    }
+
+    @Override
     public Long getNextOutstandingVote(User sessionUser) {
         // todo: rapid check that this will not return null (current use cases are safe, future might not be)
         return getOutstandingVotesForUser(sessionUser).get(0).getId();
@@ -702,6 +709,11 @@ public class EventManager implements EventManagementService {
         results.put("possible", totalsDTO.getNumberOfUsers());
 
         return results;
+    }
+
+    @Override
+    public RSVPTotalsDTO getVoteResultsDTO(Event vote) {
+        return eventLogManagementService.getVoteResultsForEvent(vote);
     }
 
     @Override

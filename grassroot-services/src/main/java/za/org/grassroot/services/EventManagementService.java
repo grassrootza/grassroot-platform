@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 
@@ -168,6 +169,8 @@ public interface EventManagementService {
 
     double getCostOfMessages(Event event);
 
+    String getGroupName(Event event);
+
     /*
     Methods to retrieve information about votes
      */
@@ -175,6 +178,8 @@ public interface EventManagementService {
     Long getNextOutstandingVote(User sessionUser);
 
     Map<String, Integer> getVoteResults(Event vote);
+
+    RSVPTotalsDTO getVoteResultsDTO(Event vote);
 
     Integer getNumberYesVotes(Event vote);
 

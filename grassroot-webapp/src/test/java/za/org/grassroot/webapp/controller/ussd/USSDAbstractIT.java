@@ -71,7 +71,6 @@ public class USSDAbstractIT extends AbstractTransactionalJUnit4SpringContextTest
     @Value("${local.server.port}")
     int port;
 
-
     //protected RestTemplate template = new TestRestTemplate(TestRestTemplate.HttpClientOption.ENABLE_REDIRECTS);
     protected RestTemplate template = new TestRestTemplate();
     protected UriComponentsBuilder base = UriComponentsBuilder.newInstance().scheme("https").host("localhost").port(port);

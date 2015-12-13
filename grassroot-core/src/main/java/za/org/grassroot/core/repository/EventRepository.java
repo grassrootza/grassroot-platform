@@ -67,6 +67,6 @@ where e.canceled = FALSE
     List<Event> findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeLessThanAndCanceled(User user, EventType eventType, Date starTime, boolean cancelled);
 
     Page<Event> findByAppliesToGroupGroupMembersAndEventTypeAndCanceledOrderByEventStartDateTimeDesc(User user, EventType type, boolean canceled, Pageable page);
-    Page<Event> findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled(User user, EventType eventType, Date starTime, boolean cancelled, Pageable page);
-    Page<Event> findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeLessThanAndCanceled(User user, EventType eventType, Date starTime, boolean cancelled, Pageable page);
+    Page<Event> findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeGreaterThanAndCanceledOrderByEventStartDateTimeDesc(User user, EventType eventType, Date startTime, boolean cancelled, Pageable page);
+    Page<Event> findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeLessThanAndCanceledOrderByEventStartDateTimeDesc(User user, EventType eventType, Date startTime, boolean cancelled, Pageable page);
 }

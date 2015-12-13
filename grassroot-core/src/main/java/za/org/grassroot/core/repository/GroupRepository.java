@@ -66,4 +66,5 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     @Query(value = "with distinct_root as (select distinct q1.root, q1.id as member from (select g.id, getroot(g.id) as root from group_profile g, group_user_membership gu where gu.user_id = ?1 and gu.group_id = g.id  ) as q1) select distinct (getchildren(root)).*, root  from distinct_root order by root,parent", nativeQuery = true)
     List<Object[]> getGroupMemberTree(Long userId);
 
+
 }

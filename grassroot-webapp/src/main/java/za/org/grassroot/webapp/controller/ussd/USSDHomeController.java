@@ -23,6 +23,7 @@ import za.org.grassroot.webapp.enums.USSDResponseTypes;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Option;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
+import za.org.grassroot.webapp.util.USSDEventUtil;
 
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
@@ -40,6 +41,9 @@ public class USSDHomeController extends USSDController {
 
     @Autowired
     EventLogManagementService eventLogManagementService;
+
+    @Autowired
+    USSDEventUtil eventUtil;
 
     Logger log = LoggerFactory.getLogger(getClass());
     private static final String path = homePath + "/";
@@ -359,7 +363,7 @@ public class USSDHomeController extends USSDController {
     }
 
     /*
-    Helper methods, for group pagination, etc.
+    Helper methods, for group pagination, event pagination, etc.
      */
 
     @RequestMapping(value = path + "group_page")
@@ -377,6 +381,21 @@ public class USSDHomeController extends USSDController {
         return menuBuilder(ussdGroupUtil.
                 userGroupMenuPaginated(userManager.findByInputNumber(inputNumber), prompt, existingUri, newUri, pageNumber));
 
+    }
+
+    @RequestMapping(value = path + "event_page")
+    @ResponseBody
+    public Request eventPaginationHelper(@RequestParam(value = phoneNumber) String inputNumber,
+                                         @RequestParam(value = "section") String section,
+                                         @RequestParam(value = "prompt") String prompt,
+                                         @RequestParam(value = "page") Integer pageNumber,
+                                         @RequestParam(value = "nextUrl") String nextUrl,
+                                         @RequestParam(value = "pastPresentBoth") Integer pastPresentBoth,
+                                         @RequestParam(value = "includeGroupName") boolean includeGroupName) throws URISyntaxException {
+        // toto: error handling on the section
+        return menuBuilder(eventUtil.listPaginatedEvents(
+                userManager.findByInputNumber(inputNumber), USSDSection.fromString(section),
+                prompt, nextUrl, includeGroupName, pastPresentBoth, pageNumber));
     }
 
     @RequestMapping(value = { path + U404, path + logMenus})

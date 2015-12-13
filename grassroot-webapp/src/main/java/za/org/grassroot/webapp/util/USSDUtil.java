@@ -18,6 +18,9 @@ public class USSDUtil {
 
     private static final Logger log = LoggerFactory.getLogger(USSDUtil.class);
 
+    // we use this for truncating lists of votes, meetings, etc -- roughly 50 chars for prompt, 5 chars for ellipsis & enum
+    private static final int maxSafeListOptionLength = ((160 - 50) / 3) - 5;
+
     @Autowired
     MessageSource messageSource;
 
@@ -27,6 +30,11 @@ public class USSDUtil {
             optionsKey = "options.";
 
     public void setMessageSource(MessageSource messageSource) { this.messageSource = messageSource; }
+
+    protected String checkAndTruncateMenuOption(String option) {
+        if (option.length() <= maxSafeListOptionLength) return option;
+        else return option.substring(0, maxSafeListOptionLength) + "...";
+    }
 
     protected String getMessage(String section, String menuKey, String messageLocation, User sessionUser) {
         final String messageKey = "ussd." + section + "." + menuKey + "." + messageLocation;
