@@ -2,6 +2,7 @@ package za.org.grassroot.services;
 
 import za.org.grassroot.core.domain.LogBook;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -15,6 +16,10 @@ public interface LogBookService {
     List<LogBook> getAllReplicatedEntriesForGroup(Long groupId, boolean completed);
 
     LogBook create(Long createdByUserId, Long groupId, String message);
+
+    LogBook create(Long createdByUserId, Long groupId, String message, Date actionByDate);
+
+    LogBook create(Long createdByUserId, Long groupId, String message, Date actionByDate, Long assignToUserId);
 
     LogBook create(Long createdByUserId, Long groupId, String message, boolean replicateToSubGroups);
 }

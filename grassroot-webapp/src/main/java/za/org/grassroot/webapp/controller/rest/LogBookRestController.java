@@ -2,6 +2,7 @@ package za.org.grassroot.webapp.controller.rest;
 
 import org.apache.commons.logging.Log;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -19,6 +20,7 @@ import za.org.grassroot.webapp.model.rest.LogBookDTO;
 import za.org.grassroot.webapp.model.rest.UserDTO;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -59,6 +61,23 @@ public class LogBookRestController {
         return new LogBookDTO(logBookService.create(userid,groupid,message,replicate));
     }
 
+    @RequestMapping(value = "/addwithdate/{userid}/{groupid}/{message}/{actionByDate}", method = RequestMethod.POST)
+    public LogBookDTO addWithDate(@PathVariable("userid") Long userid,
+                          @PathVariable("groupid") Long groupid,
+                          @PathVariable("message") String message,
+                          @PathVariable("actionByDate") @DateTimeFormat(pattern="yyyy-MM-dd HH:mm:ss") Date actionByDate) {
+        return new LogBookDTO(logBookService.create(userid,groupid,message,actionByDate));
+    }
+
+    @RequestMapping(value = "/addwithdateandassign/{userid}/{groupid}/{message}/{actionByDate}/{assignedToUserId}", method = RequestMethod.POST)
+    public LogBookDTO addWithDateAndAssign(@PathVariable("userid") Long userid,
+                                  @PathVariable("groupid") Long groupid,
+                                  @PathVariable("message") String message,
+                                  @PathVariable("actionByDate") @DateTimeFormat(pattern="yyyy-MM-dd HH:mm:ss") Date actionByDate,
+                                  @PathVariable("assignedToUserId") Long assignedToUserId) {
+        return new LogBookDTO(logBookService.create(userid,groupid,message,actionByDate,assignedToUserId));
+    }
+
     @RequestMapping(value = "/listreplicated/{groupid}", method = RequestMethod.GET)
     public List<LogBookDTO> list_replicated(@PathVariable("groupid") Long groupid) {
         List<LogBookDTO> list = new ArrayList<>();
@@ -79,5 +98,6 @@ public class LogBookRestController {
         }
         return list;
     }
- // dummy think I forgot to push
+
+
 }

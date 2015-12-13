@@ -12,7 +12,6 @@ import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -300,6 +299,10 @@ public class DateTimeUtil {
 
     public static Date processDateString(String dateString) {
         return processDateString(dateString, new SimpleDateFormat("dd/MM/yyyy HH:mm a"));
+    }
+
+    public static int numberOfMinutesForDays(int days) {
+        return 60*24*days;
     }
 
 }

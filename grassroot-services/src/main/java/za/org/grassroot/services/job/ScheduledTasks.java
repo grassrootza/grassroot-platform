@@ -5,10 +5,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.dto.EventWithTotals;
+import za.org.grassroot.core.dto.LogBookDTO;
 import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.repository.EventRepository;
+import za.org.grassroot.core.repository.LogBookRepository;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.EventLogManagementService;
 
@@ -39,6 +42,9 @@ public class ScheduledTasks {
 
     @Autowired
     GenericJmsTemplateProducerService jmsTemplateProducerService;
+
+    @Autowired
+    LogBookRepository logBookRepository;
 
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendReminders() {
@@ -87,4 +93,23 @@ public class ScheduledTasks {
 
     }
 
+    @Scheduled(fixedRate = 300000) //runs every 5 minutes
+    public void sendLogBookReminders() {
+        log.info("sendLogBookReminders...starting");
+        int count = 0;
+        try {
+
+            List<LogBook> logBookList = logBookRepository.findLogBookReminders();
+            // queue to logbook-reminders
+
+            for (LogBook l : logBookList) {
+                jmsTemplateProducerService.sendWithNoReply("logbook-reminders", new LogBookDTO(l));
+                count++;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        log.info("sendLogBookReminders..." + count + "...queued to logbook-reminders");
+
+    }
 }

@@ -3,11 +3,14 @@ package za.org.grassroot.services.consumer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.*;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.repository.LogBookLogRepository;
+import za.org.grassroot.core.repository.LogBookRepository;
+import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.domain.MessageProtocol;
 import za.org.grassroot.integration.services.MessageSendingService;
 import za.org.grassroot.services.EventLogManagementService;
@@ -44,6 +47,15 @@ public class EventNotificationConsumer {
 
     @Autowired
     CacheUtilService cacheUtilService;
+
+    @Autowired
+    LogBookRepository logBookRepository;
+
+    @Autowired
+    UserRepository userRepository;
+
+    @Autowired
+    LogBookLogRepository logBookLogRepository;
 
     @JmsListener(destination = "event-added", containerFactory = "messagingJmsContainerFactory",
             concurrency = "5")
@@ -115,6 +127,33 @@ public class EventNotificationConsumer {
         for (User user : getAllUsersForGroup(event.getEventObject())) {
             sendMeetingReminderMessage(user, event);
         }
+
+    }
+
+    @JmsListener(destination = "logbook-reminders", containerFactory = "messagingJmsContainerFactory",
+            concurrency = "3")
+    public void sendLogBookReminder(LogBookDTO logBookDTO) {
+        log.info("sendLogBookReminder...logBook..." + logBookDTO);
+
+        Group  group = groupManagementService.getGroupById(logBookDTO.getGroupId());
+        if (logBookDTO.getAssignedToUserId() != 0) {
+            sendLogBookReminderMessage(userRepository.findOne(logBookDTO.getAssignedToUserId()), group, logBookDTO);
+
+        } else {
+            for (User user : group.getGroupMembers()) {
+                sendLogBookReminderMessage(user, group, logBookDTO);
+            }
+        }
+        // reduce number of reminders to send and calculate new reminder minutes
+        LogBook logBook = logBookRepository.findOne(logBookDTO.getId());
+        logBook.setNumberOfRemindersLeftToSend(logBook.getNumberOfRemindersLeftToSend() - 1);
+        if (logBook.getReminderMinutes() < 0) {
+            logBook.setReminderMinutes(DateTimeUtil.numberOfMinutesForDays(7));
+        } else {
+            logBook.setReminderMinutes(logBook.getReminderMinutes() + DateTimeUtil.numberOfMinutesForDays(7));
+        }
+        logBook = logBookRepository.save(logBook);
+
 
     }
     @JmsListener(destination = "manual-reminder", containerFactory = "messagingJmsContainerFactory",
@@ -248,5 +287,12 @@ public class EventNotificationConsumer {
 
     }
 
+    private void sendLogBookReminderMessage(User user,Group group, LogBookDTO logBookDTO) {
+        log.info("sendLogBookReminderMessage...user..." + user.getPhoneNumber() + "...logbook..." + logBookDTO.getMessage());
+        String message = meetingNotificationService.createLogBookReminderMessage(user,group,logBookDTO);
+        messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
+        logBookLogRepository.save(new LogBookLog(logBookDTO.getId(),message,user.getId(),group.getId(),user.getPhoneNumber()));
+
+    }
 }
 

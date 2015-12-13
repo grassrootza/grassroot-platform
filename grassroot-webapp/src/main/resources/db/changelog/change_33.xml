@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ 
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.0.xsd">
+
+	<changeSet id="change_33" author="aakil">
+		<comment>logbooklog entity</comment>
+		<sqlFile path="db/scripts/script_33.sql" splitStatements="false" />
+		<rollback>
+            <sqlFile  path="db/scripts/script_33_rollback.sql"/>
+        </rollback>
+
+	</changeSet>
+</databaseChangeLog>

@@ -8,8 +8,10 @@ import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.stereotype.Component;
 import org.springframework.ui.velocity.VelocityEngineUtils;
 import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.EventDTO;
+import za.org.grassroot.core.dto.LogBookDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.FormatUtil;
 
@@ -52,6 +54,12 @@ public class MeetingNotificationManager implements MeetingNotificationService {
     }
 
     @Override
+    public String createLogBookReminderMessage(User user, Group group, LogBookDTO logBookDTO) {
+        Locale locale = getUserLocale(user);
+        return messageSourceAccessor.getMessage("sms.logbook.reminder", populateLogBookFields(user, group, logBookDTO), locale);
+    }
+
+    @Override
     public String createChangeMeetingNotificationMessage(User user, EventDTO event) {
         // TODO think if there's a simple way to work out which variable has changed and only send that
         Locale locale = getUserLocale(user);
@@ -80,7 +88,7 @@ public class MeetingNotificationManager implements MeetingNotificationService {
     public String createVoteResultsMessage(User user, EventDTO event, double yes, double no, double abstain, double noReply) {
         Locale locale = getUserLocale(user);
         String messageKey = "sms.vote.send.results";
-        return messageSourceAccessor.getMessage(messageKey, populateFields(user, event,yes,no,abstain,noReply), locale);
+        return messageSourceAccessor.getMessage(messageKey, populateFields(user, event, yes, no, abstain, noReply), locale);
     }
 
     @Override
@@ -99,7 +107,7 @@ public class MeetingNotificationManager implements MeetingNotificationService {
     }
 
     private String[] populateFields(User user, EventDTO event) {
-        return populateFields(user,event,0D,0D,0D,0D);
+        return populateFields(user, event, 0D, 0D, 0D, 0D);
     }
 
     private String[] populateFields(User user, EventDTO event, double yes, double no, double abstain, double noReply) {
@@ -125,5 +133,20 @@ public class MeetingNotificationManager implements MeetingNotificationService {
 
         return eventVariables;
 
+    }
+
+    private String[] populateLogBookFields(User user, Group group, LogBookDTO logBookDTO) {
+        String salutation = (group.hasName()) ? group.getGroupName() : "GrassRoot";
+        SimpleDateFormat sdf = new SimpleDateFormat("EEE d MMM, h:mm a");
+        String dateString = "no date specified";
+        if (logBookDTO.getActionByDate() != null) {
+            dateString = sdf.format(logBookDTO.getActionByDate());
+        }
+        String[] variables = new String[]{
+                salutation,
+                logBookDTO.getMessage(),
+                dateString
+        };
+        return variables;
     }
 }

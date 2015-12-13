@@ -39,34 +39,43 @@ public class LogBookManager implements LogBookService {
 
     @Override
     public List<LogBook> getAllReplicatedEntriesForGroup(Long groupId, boolean completed) {
-        return logBookRepository.findAllByReplicatedGroupIdAndCompleted(groupId,completed);
+        return logBookRepository.findAllByReplicatedGroupIdAndCompleted(groupId, completed);
     }
 
     @Override
     public LogBook create(Long createdByUserId, Long groupId, String message) {
-        return createLogBookEntry(createdByUserId,groupId,message,null,0L,0L,0,0);
+        return createLogBookEntry(createdByUserId, groupId, message, null, 0L, 0L, 0, 0);
     }
 
     @Override
+    public LogBook create(Long createdByUserId, Long groupId, String message, Date actionByDate) {
+        return createLogBookEntry(createdByUserId, groupId, message, actionByDate, 0L, 0L, 0, 0);
+    }
+
+    @Override
+    public LogBook create(Long createdByUserId, Long groupId, String message, Date actionByDate, Long assignToUserId) {
+        return createLogBookEntry(createdByUserId, groupId, message, actionByDate, assignToUserId, 0L, 0, 0);
+    }
+    @Override
     public LogBook create(Long createdByUserId, Long groupId, String message, boolean replicateToSubGroups) {
         if (replicateToSubGroups) {
-            return createLogBookEntryReplicate(createdByUserId,groupId,message,null,0L,0,0);
+            return createLogBookEntryReplicate(createdByUserId, groupId, message, null, 0L, 0, 0);
 
         } else {
-            return createLogBookEntry(createdByUserId,groupId,message,null,0L,0L,0,0);
+            return createLogBookEntry(createdByUserId, groupId, message, null, 0L, 0L, 0, 0);
 
         }
     }
 
     private LogBook createLogBookEntryReplicate(Long createdByUserId, Long groupId, String message, Date actionByDate,
-                                                Long assignedToUserId,  int reminderMinutes,
+                                                Long assignedToUserId, int reminderMinutes,
                                                 int numberOfRemindersLeftToSend) {
         log.info("createLogBookEntryReplicate...parentGroup..." + groupId);
 
         LogBook parentLogBook = new LogBook();
-        for ( Group group : groupManagementService.findGroupAndSubGroupsById(groupId)) {
+        for (Group group : groupManagementService.findGroupAndSubGroupsById(groupId)) {
             log.info("createLogBookEntryReplicate...groupid..." + group.getId() + "...parentGroup..." + groupId);
-            LogBook lb = createLogBookEntry(createdByUserId, group.getId(),message,actionByDate,assignedToUserId,groupId,reminderMinutes,numberOfRemindersLeftToSend);
+            LogBook lb = createLogBookEntry(createdByUserId, group.getId(), message, actionByDate, assignedToUserId, groupId, reminderMinutes, numberOfRemindersLeftToSend);
             if (group.getId() == groupId) {
                 parentLogBook = lb;
             }
@@ -86,14 +95,16 @@ public class LogBookManager implements LogBookService {
         if (numberOfRemindersLeftToSend == 0) {
             numberOfRemindersLeftToSend = 3;
         }
-
+        /*
+        Minus value will send a reminder before actionByDate, Plus value will send a reminder x minutes after
+        actionByDate
+         */
         if (reminderMinutes == 0) {
-            reminderMinutes = 1440; // think it is 24 hours
+            reminderMinutes = -1440; // think it is 24 hours
         }
 
         logBook.setAssignedToUserId(assignedToUserId);
         logBook.setMessage(message);
-        //todo test if actiondate can be set to null without any issues
         logBook.setActionByDate(actionByDate);
         logBook.setCreatedByUserId(createdByUserId);
         logBook.setGroupId(groupId);
