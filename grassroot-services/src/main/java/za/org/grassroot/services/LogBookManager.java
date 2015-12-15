@@ -8,6 +8,8 @@ import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.LogBookRepository;
 
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
@@ -26,6 +28,11 @@ public class LogBookManager implements LogBookService {
     @Autowired
     GroupManagementService groupManagementService;
 
+
+    @Override
+    public LogBook load(Long logBookId) {
+        return logBookRepository.findOne(logBookId);
+    }
 
     @Override
     public List<LogBook> getAllLogBookEntriesForGroup(Long groupId) {
@@ -65,6 +72,14 @@ public class LogBookManager implements LogBookService {
             return createLogBookEntry(createdByUserId, groupId, message, null, 0L, 0L, 0, 0);
 
         }
+    }
+
+    @Override
+    public LogBook setDueDate(Long logBookId, LocalDateTime actionByDateTime) {
+        LogBook logBook = load(logBookId);
+        Date date = Date.from(Timestamp.valueOf(actionByDateTime).toInstant()); // extremely round-about, change
+        logBook.setActionByDate(date);
+        return logBookRepository.save(logBook);
     }
 
     private LogBook createLogBookEntryReplicate(Long createdByUserId, Long groupId, String message, Date actionByDate,

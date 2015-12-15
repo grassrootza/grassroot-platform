@@ -36,7 +36,7 @@ public class USSDGroupController extends USSDController {
      * Starting the group management menu flow here
      */
 
-    Logger log = LoggerFactory.getLogger(this.getClass());
+    private static final Logger log = LoggerFactory.getLogger(USSDGroupController.class);
 
     private static final String existingGroupMenu = "menu",
             createGroupMenu = "create",
