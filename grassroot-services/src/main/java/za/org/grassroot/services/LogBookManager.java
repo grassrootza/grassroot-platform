@@ -82,6 +82,20 @@ public class LogBookManager implements LogBookService {
         return logBookRepository.save(logBook);
     }
 
+    @Override
+    public LogBook setAssignedToUser(Long logBookId, Long assignedToUserId) {
+        LogBook logBook = load(logBookId);
+        logBook.setAssignedToUserId(assignedToUserId);
+        return logBookRepository.save(logBook);
+    }
+
+    @Override
+    public LogBook setMessage(Long logBookId, String message) {
+        LogBook logBook = load(logBookId);
+        logBook.setMessage(message);
+        return logBookRepository.save(logBook);
+    }
+
     private LogBook createLogBookEntryReplicate(Long createdByUserId, Long groupId, String message, Date actionByDate,
                                                 Long assignedToUserId, int reminderMinutes,
                                                 int numberOfRemindersLeftToSend) {

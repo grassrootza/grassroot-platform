@@ -17,6 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
@@ -41,6 +42,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private GroupManagementService groupManagementService;
 
     @Autowired
     private PasswordTokenService passwordTokenService;
@@ -245,6 +249,12 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public List<User> searchByDisplayName(String displayName) {
         return userRepository.findByDisplayNameContaining(displayName);
+    }
+
+    @Override
+    public List<User> searchByGroupAndNameNumber(Long groupId, String nameOrNumber) {
+        return userRepository.findByGroupsPartOfAndDisplayNameContainingOrPhoneNumberContaining(
+                groupManagementService.loadGroup(groupId), nameOrNumber, nameOrNumber);
     }
 
     @Override

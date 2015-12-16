@@ -21,6 +21,7 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
  */
 import javax.transaction.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -178,6 +179,53 @@ public class UserRepositoryTest {
         assertNotNull(userfromDb);
         assertEquals(userfromDb.getId(), user.getId());
         assertFalse(userfromDb.getRoles().contains(role));
+    }
+
+    @Test
+    @Rollback
+    public void shouldFindUsersByStringsAndGroup() {
+        assertThat(userRepository.count(), is(0L));
+
+        String phoneBase = "080111000";
+
+        User user1 = userRepository.save(new User(phoneBase + "1", "tester1"));
+        User user2 = userRepository.save(new User(phoneBase + "2", "anonymous"));
+        User user3 = userRepository.save(new User(phoneBase + "3", "tester2"));
+        User user4 = userRepository.save(new User("0701110001", "tester3"));
+        User user5 = userRepository.save(new User("0701110002", "no name"));
+
+        Group testGroup = groupRepository.save(new Group("test group", user1));
+        testGroup.getGroupMembers().add(user1);
+        testGroup.getGroupMembers().add(user2);
+        testGroup = groupRepository.save(testGroup);
+
+        List<User> usersByPhone = userRepository.findByPhoneNumberContaining(phoneBase);
+        List<User> usersByDisplay = userRepository.findByDisplayNameContaining("tester");
+        List<User> usersByBoth = userRepository.findByDisplayNameContainingOrPhoneNumberContaining("tester", phoneBase);
+        List<User> usersByBothAndGroup = userRepository.
+                findByGroupsPartOfAndDisplayNameContainingOrPhoneNumberContaining(testGroup, "tester", "tester");
+
+        assertThat(userRepository.count(), is(5L));
+        assertFalse(usersByPhone.isEmpty());
+        assertFalse(usersByDisplay.isEmpty());
+        assertFalse(usersByBoth.isEmpty());
+        assertFalse(usersByBothAndGroup.isEmpty());
+
+        assertThat(usersByPhone.size(), is(3));
+        assertThat(usersByDisplay.size(), is(3));
+        assertThat(usersByBoth.size(), is(4));
+        assertThat(usersByBothAndGroup.size(), is(1));
+
+        assertTrue(usersByPhone.containsAll(Arrays.asList(user1, user2, user3)));
+        assertTrue(usersByDisplay.containsAll(Arrays.asList(user1, user3, user4)));
+        assertTrue(usersByBoth.containsAll(Arrays.asList(user1, user2, user3, user4)));
+        assertTrue(usersByBothAndGroup.contains(user1));
+
+        assertFalse(usersByPhone.contains(user4));
+        assertFalse(usersByDisplay.contains(user2));
+        assertFalse(usersByBoth.contains(user5));
+        assertFalse(usersByBothAndGroup.contains(user2));
+
     }
 
 }

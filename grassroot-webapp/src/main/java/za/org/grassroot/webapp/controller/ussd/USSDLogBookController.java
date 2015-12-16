@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
-import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.LogBookService;
@@ -14,8 +13,10 @@ import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
 import java.net.URISyntaxException;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
+import java.util.List;
+
+import static za.org.grassroot.webapp.util.USSDUrlUtil.encodeParameter;
+import static za.org.grassroot.webapp.util.USSDUrlUtil.saveLogMenu;
 
 /**
  * Created by luke on 2015/12/15.
@@ -29,7 +30,7 @@ public class USSDLogBookController extends USSDController {
 
     private static final String path = homePath + logMenus;
     private static final String groupMenu = "group", subjectMenu = "subject", dueDateMenu = "due_date",
-            assignMenu = "assign", pickUserMenu = "pick_user", confirmMenu = "confirm";
+            assignMenu = "assign", searchUserMenu = "search_user", pickUserMenu = "pick_user", confirmMenu = "confirm", send = "send";
 
     private static final String logBookParam = "logbookid", logBookUrlSuffix = "?" + logBookParam + "=";
 
@@ -46,6 +47,10 @@ public class USSDLogBookController extends USSDController {
 
     private String nextOrConfirmUrl(String nextMenu, Long logBookdId, boolean revising) {
         return revising ? returnUrl(confirmMenu, logBookdId) : returnUrl(nextMenu, logBookdId);
+    }
+
+    private String backUrl(String menu, Long logBookId) {
+        return returnUrl(menu, logBookId) + "&" + revisingFlag + "=1";
     }
 
     @RequestMapping(path + startMenu)
@@ -76,6 +81,7 @@ public class USSDLogBookController extends USSDController {
                                  @RequestParam(value = logBookParam, required = false) Long logBookId) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
         if (!revising) logBookId = logBookService.create(user.getId(), groupId, userInput).getId();
+        user.setLastUssdMenu(saveLogMenu(dueDateMenu, logBookId));
         return menuBuilder(new USSDMenu(menuPrompt(dueDateMenu, user), nextOrConfirmUrl(assignMenu, logBookId, revising)));
     }
 
@@ -85,7 +91,7 @@ public class USSDLogBookController extends USSDController {
                                     @RequestParam(value = logBookParam) Long logBookId,
                                     @RequestParam(value = userInputParam) String userInput,
                                     @RequestParam(value = revisingFlag) boolean revising) throws URISyntaxException {
-        User user = userManager.findByInputNumber(inputNumber);
+        User user = userManager.findByInputNumber(inputNumber, saveLogMenu(assignMenu, logBookId));
         if (!revising) logBookService.setDueDate(logBookId, DateTimeUtil.parseDateTime(userInput));
         USSDMenu menu = new USSDMenu(menuPrompt(assignMenu, user));
         menu.addMenuOption(returnUrl(confirmMenu, logBookId), getMessage(thisSection, assignMenu, optionsKey + "group", user));
@@ -93,28 +99,89 @@ public class USSDLogBookController extends USSDController {
         return menuBuilder(menu);
     }
 
+    @RequestMapping(path + searchUserMenu)
+    @ResponseBody
+    public Request searchForUser(@RequestParam(value = phoneNumber) String inputNumber,
+                                 @RequestParam(value = logBookParam) Long logBookId) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber, saveLogMenu(searchUserMenu, logBookId));
+        USSDMenu menu = new USSDMenu(menuPrompt(searchUserMenu, user), returnUrl(pickUserMenu, logBookId));
+        return menuBuilder(menu);
+    }
+
     @RequestMapping(path + pickUserMenu)
     @ResponseBody
     public Request askForUserAssigned(@RequestParam(value = phoneNumber) String inputNumber,
                                       @RequestParam(value = logBookParam) Long logBookId,
-                                      @RequestParam(value = revisingFlag) boolean revising) throws URISyntaxException {
-        // todo: figure out how to make this work, in the parsing
-        return null;
+                                      @RequestParam(value = userInputParam) String userInput,
+                                      @RequestParam(value = revisingFlag, required = false) boolean revising,
+                                      @RequestParam(value = "prior_input", required = false) String priorInput) throws URISyntaxException {
+
+        userInput = (priorInput != null) ? priorInput : userInput;
+        User user = userManager.findByInputNumber(inputNumber, saveLogMenu(pickUserMenu, logBookId)
+                + "&prior_input=" + encodeParameter(userInput));
+        Long groupId = logBookService.load(logBookId).getGroupId();
+        List<User> possibleUsers = userManager.searchByGroupAndNameNumber(groupId, userInput);
+
+        USSDMenu menu;
+        if (possibleUsers.isEmpty()) {
+            menu = new USSDMenu(getMessage(thisSection, pickUserMenu, promptKey + ".no-users", user));
+        } else {
+            menu = new USSDMenu(getMessage(thisSection, pickUserMenu, promptKey, user));
+            for (User possibleUser : possibleUsers) {
+                if (menu.getMenuCharLength() < 100) { // should give us space for at least 10 options, but just in case
+                    menu.addMenuOption(returnUrl(confirmMenu, logBookId) + "&assignUserId=" + possibleUser.getId(),
+                                       possibleUser.nameToDisplay());
+                } else {
+                    break; // todo: there is almost certainly a more elegant way to do this
+                }
+            }
+        }
+        menu.addMenuOption(returnUrl(searchUserMenu, logBookId), getMessage(thisSection, pickUserMenu, optionsKey + "back", user));
+        menu.addMenuOption(returnUrl(searchUserMenu, logBookId), getMessage(thisSection, pickUserMenu, optionsKey + "none", user));
+        return menuBuilder(menu);
     }
 
     @RequestMapping(path + confirmMenu)
     @ResponseBody
     public Request confirmLogBookEntry(@RequestParam(value = phoneNumber) String inputNumber,
-                                       @RequestParam(value = logBookParam) Long logBookId) {
+                                       @RequestParam(value = logBookParam) Long logBookId,
+                                       @RequestParam(value = userInputParam) String userInput,
+                                       @RequestParam(value = previousMenu, required = false) String priorMenu,
+                                       @RequestParam(value = "assignUserId", required = false) Long assignUserId) throws URISyntaxException {
         // todo: need a "complete" flag
-        return null;
+
+        User user = userManager.findByInputNumber(inputNumber, saveLogMenu(confirmMenu, logBookId));
+        if (assignUserId != null && assignUserId != 0) {
+            logBookService.setAssignedToUser(logBookId, assignUserId);
+        } else if (priorMenu != null && !priorMenu.trim().equals("")) {
+            switch (previousMenu) {
+                case subjectMenu:
+                    logBookService.setMessage(logBookId, userInput);
+                    break;
+                case dueDateMenu:
+                    logBookService.setDueDate(logBookId, DateTimeUtil.parseDateTime(userInput)); // todo: much more work on this
+                    break;
+            }
+        }
+
+        String promptMessage = getMessage(thisSection, confirmMenu, promptKey, user); // todo: make this vary with assignment etc
+
+        USSDMenu menu = new USSDMenu(promptMessage);
+        menu.addMenuOption(returnUrl(send, logBookId), getMessage(thisSection, confirmMenu, optionsKey + "send", user));
+        menu.addMenuOption(backUrl(subjectMenu, logBookId), getMessage(thisSection, confirmMenu, optionsKey + "subject", user));
+        menu.addMenuOption(backUrl(dueDateMenu, logBookId), getMessage(thisSection, confirmMenu, optionsKey + "duedate", user));
+        menu.addMenuOption(backUrl(assignMenu, logBookId), getMessage(thisSection, confirmMenu, optionsKey + "assign", user));
+
+        return menuBuilder(menu);
     }
 
-    @RequestMapping(path)
+    @RequestMapping(path + send)
     @ResponseBody
     public Request finishLogBookEntry(@RequestParam(value = phoneNumber) String inputNumber,
-                                      @RequestParam(value = logBookParam) Long logBookId) {
-        // todo: set "complete"
-        return null;
+                                      @RequestParam(value = logBookParam) Long logBookId) throws URISyntaxException {
+
+        // todo: set "complete" and send out notice that entry has been added
+        User user = userManager.findByInputNumber(inputNumber, null);
+        return menuBuilder(new USSDMenu(menuPrompt(send, user), optionsHomeExit(user)));
     }
 }

@@ -101,4 +101,8 @@ public class USSDUrlUtil {
         return USSDSection.VOTES.toPath() + menu + "?eventId=" + eventId + setRevisingFlag;
     }
 
+    public static String saveLogMenu(String menu, Long logBookId) {
+        return USSDSection.LOGBOOK.toPath() + menu + "?logBookId=" + logBookId + setInterruptedFlag;
+    }
+
 }

@@ -29,4 +29,8 @@ public interface LogBookService {
     LogBook create(Long createdByUserId, Long groupId, String message, boolean replicateToSubGroups);
 
     LogBook setDueDate(Long logBookId, LocalDateTime actionByDateTime);
+
+    LogBook setAssignedToUser(Long logBookId, Long assignedToUserId);
+
+    LogBook setMessage(Long logBookId, String message);
 }
