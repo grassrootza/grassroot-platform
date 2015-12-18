@@ -301,7 +301,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     public boolean needsToRenameSelf(User sessionUser) {
-        return sessionUser.needsToRenameSelf(5); // 5 min gap as placeholder for now, to make more a session count if possible
+        return sessionUser.needsToRenameSelf(10); // 5 min gap as placeholder for now, to make more a session count if possible
     }
 
     @Override
@@ -402,6 +402,12 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public User setLastUssdMenu(User sessionUser, String lastUssdMenu) {
         sessionUser.setLastUssdMenu(lastUssdMenu);
         return userRepository.save(sessionUser);
+    }
+
+    @Override
+    public User setDisplayName(User user, String displayName) {
+        user.setDisplayName(displayName);
+        return userRepository.save(user);
     }
 
     @Override

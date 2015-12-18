@@ -13,10 +13,7 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.handler.SimpleMappingExceptionResolver;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
-import za.org.grassroot.services.EventLogManagementService;
-import za.org.grassroot.services.EventManagementService;
-import za.org.grassroot.services.GroupManagementService;
-import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.util.USSDGroupUtil;
 import za.org.grassroot.webapp.util.USSDUtil;
 
@@ -42,6 +39,9 @@ public abstract class USSDAbstractUnitTest {
 
     @Mock
     protected EventLogManagementService eventLogManagementServiceMock;
+
+    @Mock
+    protected LogBookService logBookServiceMock;
 
     @InjectMocks
     protected USSDGroupUtil ussdGroupUtil;

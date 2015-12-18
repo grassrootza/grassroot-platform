@@ -2,6 +2,7 @@ package za.org.grassroot.core.domain;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -25,7 +26,7 @@ public class LogBook {
 
     @Basic
     @Column(name="created_date_time", insertable = true, updatable = false)
-    private Date createdDateTime;
+    private Timestamp createdDateTime;
     @Basic
     @Column(name="created_by_user_id")
     private Long createdByUserId;
@@ -40,7 +41,7 @@ public class LogBook {
     private Long completedByUserId;
     @Basic
     @Column(name="completed_date")
-    private Date completedDate;
+    private Timestamp completedDate;
     @Basic
     @Column
     private String message;
@@ -52,7 +53,7 @@ public class LogBook {
     private Long replicatedGroupId;
     @Basic
     @Column(name="action_by_date")
-    private Date actionByDate;
+    private Timestamp actionByDate;
     /*
     Minus value will send a reminder before actionByDate, Plus value will send a reminder x minutes after
     actionByDate
@@ -69,7 +70,7 @@ public class LogBook {
     @PrePersist
     public void updateTimeStamps() {
         if (createdDateTime == null) {
-            createdDateTime = new Date();
+            createdDateTime = Timestamp.valueOf(LocalDateTime.now());
         }
     }
 
@@ -79,13 +80,13 @@ public class LogBook {
     public LogBook() {
     }
 
-    public LogBook(Long groupId, String message, Date actionByDate) {
+    public LogBook(Long groupId, String message, Timestamp actionByDate) {
         this.groupId = groupId;
         this.message = message;
         this.actionByDate = actionByDate;
     }
 
-    public LogBook(Long groupId, String message, Date actionByDate, Long assignedToUserId) {
+    public LogBook(Long groupId, String message, Timestamp actionByDate, Long assignedToUserId) {
         this.groupId = groupId;
         this.message = message;
         this.actionByDate = actionByDate;
@@ -100,11 +101,11 @@ public class LogBook {
         this.id = id;
     }
 
-    public Date getCreatedDateTime() {
+    public Timestamp getCreatedDateTime() {
         return createdDateTime;
     }
 
-    public void setCreatedDateTime(Date createdDateTime) {
+    public void setCreatedDateTime(Timestamp createdDateTime) {
         this.createdDateTime = createdDateTime;
     }
 
@@ -140,11 +141,11 @@ public class LogBook {
         this.completedByUserId = completedByUserId;
     }
 
-    public Date getCompletedDate() {
+    public Timestamp getCompletedDate() {
         return completedDate;
     }
 
-    public void setCompletedDate(Date completedDate) {
+    public void setCompletedDate(Timestamp completedDate) {
         this.completedDate = completedDate;
     }
 
@@ -172,11 +173,11 @@ public class LogBook {
         this.replicatedGroupId = replicatedGroupId;
     }
 
-    public Date getActionByDate() {
+    public Timestamp getActionByDate() {
         return actionByDate;
     }
 
-    public void setActionByDate(Date actionByDate) {
+    public void setActionByDate(Timestamp actionByDate) {
         this.actionByDate = actionByDate;
     }
 

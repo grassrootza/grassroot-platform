@@ -191,6 +191,10 @@ public class DateTimeUtil {
     Quick useful methods for adding hours and minutes to dates and timestamps
      */
 
+    public static Timestamp addHoursFromNow(int numberOfHours) {
+        return Timestamp.valueOf(LocalDateTime.now().plusHours(numberOfHours));
+    }
+
     public static Date addHoursToDate(Date date, int numberOfHours) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(date);

@@ -7,6 +7,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.*;
 
 //todo: reconsider if language should be nullable, or not null and set to "en" by default (when set not nullable, broke tests)
@@ -276,7 +277,7 @@ public class User implements UserDetails {
 
     public boolean needsToRenameSelf(Integer timeLimit) {
         if (hasName()) return false;
-        Timestamp minutesAgo = new Timestamp(System.currentTimeMillis() - (timeLimit * 60 * 1000));
+        Timestamp minutesAgo = Timestamp.valueOf(LocalDateTime.now().minusMinutes(timeLimit));
         if (createdDateTime == null || createdDateTime.after(minutesAgo))
             return false;
         return true;

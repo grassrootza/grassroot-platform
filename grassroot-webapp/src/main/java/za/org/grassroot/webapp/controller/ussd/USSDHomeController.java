@@ -59,7 +59,7 @@ public class USSDHomeController extends USSDController {
 
         homeMenu.addMenuOption(meetingMenus + startMenu, getMessage(homeKey, startMenu, optionsKey + mtgKey, menuLang));
         homeMenu.addMenuOption(voteMenus + startMenu, getMessage(homeKey, startMenu, optionsKey + voteKey, menuLang));
-        homeMenu.addMenuOption(logMenus, getMessage(homeKey, startMenu, optionsKey + logKey, menuLang));
+        homeMenu.addMenuOption(logMenus + startMenu, getMessage(homeKey, startMenu, optionsKey + logKey, menuLang));
         homeMenu.addMenuOption(groupMenus + startMenu, getMessage(homeKey, startMenu, optionsKey + groupKey, menuLang));
         homeMenu.addMenuOption(userMenus + startMenu, getMessage(homeKey, startMenu, optionsKey + userKey, menuLang));
 
@@ -147,9 +147,6 @@ public class USSDHomeController extends USSDController {
         String returnUrl = sessionUser.getLastUssdMenu();
         log.info("The user was interrupted somewhere ...Here's the URL: " + returnUrl);
 
-        // try { returnUrl = URLEncoder.encode(sessionUser.getLastUssdMenu(), "UTF-8"); }
-        // catch (Exception e) { returnUrl = sessionUser.getLastUssdMenu(); }
-
         USSDMenu promptMenu = new USSDMenu(getMessage(homeKey, startMenu, promptKey + "-interrupted", sessionUser));
         promptMenu.addMenuOption(returnUrl, getMessage(homeKey, startMenu, "interrupted.resume", sessionUser));
         promptMenu.addMenuOption(startMenu + "_force", getMessage(homeKey, startMenu, "interrupted.start", sessionUser));
@@ -167,7 +164,7 @@ public class USSDHomeController extends USSDController {
 
     private boolean userResponseNeeded(User sessionUser) {
         log.info("Checking if user needs to respond to anything, either a vote or an RSVP ...");
-        return userManager.needsToVoteOrRSVP(sessionUser);
+        return userManager.needsToVoteOrRSVP(sessionUser) || userManager.needsToRenameSelf(sessionUser);
 
         /* For the moment, removing the group rename and user rename, as is overloading the start menu
         and use cases seem limited (users also getting confused). Will re-evaluate later.
@@ -185,7 +182,7 @@ public class USSDHomeController extends USSDController {
         }
         if (userManager.needsToRSVP(sessionUser)) return USSDResponseTypes.MTG_RSVP;
         if (userManager.needsToRenameSelf(sessionUser)) return USSDResponseTypes.RENAME_SELF;
-        if (groupManager.needsToRenameGroup(sessionUser)) return USSDResponseTypes.NAME_GROUP;
+        // if (groupManager.needsToRenameGroup(sessionUser)) return USSDResponseTypes.NAME_GROUP; // disabled for now
 
         return USSDResponseTypes.NONE;
 
@@ -332,8 +329,7 @@ public class USSDHomeController extends USSDController {
         if (userName.equals("0") || userName.trim().equals("")) {
             welcomeMessage = getMessage(homeKey, startMenu, promptKey, sessionUser);
         } else {
-            sessionUser.setDisplayName(userName);
-            sessionUser = userManager.save(sessionUser);
+            sessionUser = userManager.setDisplayName(sessionUser, userName);
             welcomeMessage = getMessage(homeKey, startMenu, promptKey + "-rename-do", sessionUser.nameToDisplay(), sessionUser);
         }
         return menuBuilder(welcomeMenu(welcomeMessage, sessionUser));
@@ -398,7 +394,7 @@ public class USSDHomeController extends USSDController {
                 prompt, nextUrl, includeGroupName, pastPresentBoth, pageNumber));
     }
 
-    @RequestMapping(value = { path + U404, path + logMenus})
+    @RequestMapping(value = path + U404)
     @ResponseBody
     public Request notBuilt(@RequestParam(value= phoneNumber) String inputNumber) throws URISyntaxException {
         // String errorMessage = "Sorry! We haven't built that yet. We're working on it.";

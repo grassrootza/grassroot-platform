@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.LogBookService;
@@ -148,21 +149,20 @@ public class USSDLogBookController extends USSDController {
                                        @RequestParam(value = userInputParam) String userInput,
                                        @RequestParam(value = previousMenu, required = false) String priorMenu,
                                        @RequestParam(value = "assignUserId", required = false) Long assignUserId) throws URISyntaxException {
+
         // todo: need a "complete" flag
+        // todo: handle interruptions
+
+        boolean assignToUser = (assignUserId != null && assignUserId != 0);
+        boolean revising = (priorMenu != null && !priorMenu.trim().equals(""));
 
         User user = userManager.findByInputNumber(inputNumber, saveLogMenu(confirmMenu, logBookId));
-        if (assignUserId != null && assignUserId != 0) {
-            logBookService.setAssignedToUser(logBookId, assignUserId);
-        } else if (priorMenu != null && !priorMenu.trim().equals("")) {
-            switch (previousMenu) {
-                case subjectMenu:
-                    logBookService.setMessage(logBookId, userInput);
-                    break;
-                case dueDateMenu:
-                    logBookService.setDueDate(logBookId, DateTimeUtil.parseDateTime(userInput)); // todo: much more work on this
-                    break;
-            }
-        }
+        LogBook logBook = logBookService.load(logBookId);
+
+        if (revising) updateLogBookEntry(logBookId, priorMenu, userInput);
+        if (assignToUser) logBookService.setAssignedToUser(logBookId, assignUserId);
+
+        String formattedDueDate = dateFormat.format(logBook.getActionByDate().toLocalDateTime());
 
         String promptMessage = getMessage(thisSection, confirmMenu, promptKey, user); // todo: make this vary with assignment etc
 
@@ -183,5 +183,16 @@ public class USSDLogBookController extends USSDController {
         // todo: set "complete" and send out notice that entry has been added
         User user = userManager.findByInputNumber(inputNumber, null);
         return menuBuilder(new USSDMenu(menuPrompt(send, user), optionsHomeExit(user)));
+    }
+
+    private void updateLogBookEntry(Long logBookId, String field, String value) {
+        switch (field) {
+            case subjectMenu:
+                logBookService.setMessage(logBookId, value);
+                break;
+            case dueDateMenu:
+                logBookService.setDueDate(logBookId, DateTimeUtil.parseDateTime(value)); // todo: split these, as in meetings
+                break;
+        }
     }
 }

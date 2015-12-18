@@ -29,7 +29,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Created by luke on 2015/11/20.
  */
-@RunWith(MockitoJUnitRunner.class)
 public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
     private static final Logger log = LoggerFactory.getLogger(USSDHomeControllerTest.class);
@@ -302,15 +301,15 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
                 andExpect(status().isOk());
 
         testUser.setDisplayName(testUserName); // necessary else when/then doesn't work within controller
-        when(userManagementServiceMock.save(testUser)).thenReturn(testUser);
+        when(userManagementServiceMock.setDisplayName(testUser, testUserName)).thenReturn(testUser);
 
         mockMvc.perform(get("/ussd/rename-start").param(phoneParameter, phoneForTests).param("request", testUserName)).
                 andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).loadOrSaveUser(phoneForTests);
         verify(userManagementServiceMock, times(1)).findByInputNumber(phoneForTests);
-        // verify(userManagementServiceMock, times(1)).needsToRenameSelf(testUser); // since disabled at present
-        verify(userManagementServiceMock, times(1)).save(testUser);
+        verify(userManagementServiceMock, times(2)).needsToRenameSelf(testUser); // need to cut this down to 1 call
+        verify(userManagementServiceMock, times(1)).setDisplayName(testUser, testUserName);
 
     }
 
