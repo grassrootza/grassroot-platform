@@ -18,8 +18,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
+import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 
 import javax.transaction.Transactional;
 import java.util.*;
@@ -47,6 +49,10 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Autowired
     private EventManagementService eventManagementService;
+
+    @Autowired
+    GenericJmsTemplateProducerService jmsTemplateProducerService;
+
 
     @Override
     public User createUserProfile(User userProfile) {
@@ -369,6 +375,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public User setInitiatedSession(User sessionUser) {
         sessionUser.setHasInitiatedSession(true);
+        jmsTemplateProducerService.sendWithNoReply("welcome-messages", new UserDTO(sessionUser));
         return userRepository.save(sessionUser);
     }
 

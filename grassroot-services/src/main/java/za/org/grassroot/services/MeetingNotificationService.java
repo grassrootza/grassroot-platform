@@ -5,6 +5,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.dto.LogBookDTO;
+import za.org.grassroot.core.dto.UserDTO;
 
 import java.util.Map;
 
@@ -29,4 +30,6 @@ public interface MeetingNotificationService {
     Helper method to produce messages in different languages, for confirmation screens
      */
     public String createMeetingReminderMessage(String locale, User user, EventDTO event);
+
+    String createWelcomeMessage(String messageId, UserDTO userDTO);
 }

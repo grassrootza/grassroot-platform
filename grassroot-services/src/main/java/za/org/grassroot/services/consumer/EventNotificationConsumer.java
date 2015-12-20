@@ -1,6 +1,7 @@
 package za.org.grassroot.services.consumer;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.*;
@@ -56,6 +57,19 @@ public class EventNotificationConsumer {
 
     @Autowired
     LogBookLogRepository logBookLogRepository;
+
+    /*
+    change this to add messages or stop messages altogether by leaving it empty.
+     */
+    private final String[] welcomeMessages = new String[] {
+    };
+
+/*
+    private final String[] welcomeMessages = new String[] {
+            "sms.welcome.1",
+            "sms.welcome.2"
+    };
+*/
 
     @JmsListener(destination = "event-added", containerFactory = "messagingJmsContainerFactory",
             concurrency = "5")
@@ -184,6 +198,28 @@ public class EventNotificationConsumer {
 
 
     }
+    @JmsListener(destination = "generic-async", containerFactory = "messagingJmsContainerFactory",
+            concurrency = "3")
+    public void genericAsyncProcessor(GenericAsyncDTO genericAsyncDTO) {
+        log.info("genericAsyncProcessor...identifier..." + genericAsyncDTO.getIdentifier() + "...object..." + genericAsyncDTO.getObject().toString());
+        switch (genericAsyncDTO.getIdentifier()) {
+            case "welcome-messages":
+                sendWelcomeMessages((UserDTO) genericAsyncDTO.getObject());
+                break;
+            default:
+                log.info("genericAsyncProcessor NO implementation for..." + genericAsyncDTO.getIdentifier());
+        }
+
+    }
+
+    private void sendWelcomeMessages(UserDTO userDTO) {
+        log.info("sendWelcomeMessages..." + userDTO + "...messages..." + welcomeMessages);
+        for (String messageId : welcomeMessages) {
+            String message = meetingNotificationService.createWelcomeMessage(messageId,userDTO);
+            messageSendingService.sendMessage(message,userDTO.getPhoneNumber(),MessageProtocol.SMS);
+        }
+    }
+
     private void sendVoteResultsToUser(User user, EventWithTotals eventWithTotals) {
         //generate message based on user language
         EventDTO event = eventWithTotals.getEventDTO();
