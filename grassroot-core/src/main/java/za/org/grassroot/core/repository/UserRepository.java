@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 
 import java.util.List;
@@ -23,6 +24,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     List<User> findByPhoneNumberContaining(String phoneNumber);
     List<User> findByDisplayNameContaining(String displayName);
+    List<User> findByDisplayNameContainingOrPhoneNumberContaining(String userInput, String phoneNumber);
+    List<User> findByGroupsPartOfAndDisplayNameContainingOrPhoneNumberContaining(Group group, String userInput, String phoneNumber);
 
     User findByUsername(String username);
     /*

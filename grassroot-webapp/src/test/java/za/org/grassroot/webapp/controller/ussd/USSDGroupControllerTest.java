@@ -11,6 +11,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.net.URLEncoder;
 import java.sql.Timestamp;
@@ -23,6 +24,8 @@ import java.util.List;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static za.org.grassroot.webapp.util.USSDUrlUtil.saveGroupMenu;
+import static za.org.grassroot.webapp.util.USSDUrlUtil.saveGroupMenuWithParams;
 
 /**
  * Created by luke on 2015/11/28.
@@ -65,10 +68,12 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         testUser.setGroupsPartOf(Arrays.asList(testGroup));
         Page<Group> groupPage = new PageImpl<Group>(Arrays.asList(testGroup));
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+        when(groupManagementServiceMock.hasActiveGroupsPartOf(testUser)).thenReturn(true);
         when(groupManagementServiceMock.getPageOfActiveGroups(testUser, 0, 3)).thenReturn(groupPage);
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
+        verify(groupManagementServiceMock, times(1)).hasActiveGroupsPartOf(testUser);
         verify(groupManagementServiceMock, times(1)).getPageOfActiveGroups(testUser, 0, 3);
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
@@ -77,18 +82,21 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     @Test
     public void existingGroupMenuShouldWork() throws Exception {
         resetTestGroup();
-        String urlToSave = "group/menu?groupId=" + testGroup.getId();
+        String urlToSave = saveGroupMenu("menu", testGroup.getId());
+
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(groupManagementServiceMock.isGroupCreatedByUser(testGroup.getId(), testUser)).thenReturn(false); // but note length issues
         when(groupManagementServiceMock.canUserMakeGroupInactive(testUser, testGroup.getId())).thenReturn(false);
 
         mockMvc.perform(get(path + "menu").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
                 andExpect(status().isOk());
+        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param(userChoiceParam, interruptedChoice)).
+                andExpect(status().isOk());
 
-        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
+        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupManagementServiceMock, times(1)).isGroupCreatedByUser(testGroup.getId(), testUser);
-        verify(groupManagementServiceMock, times(1)).canUserMakeGroupInactive(testUser, testGroup.getId());
+        verify(groupManagementServiceMock, times(2)).isGroupCreatedByUser(testGroup.getId(), testUser);
+        verify(groupManagementServiceMock, times(2)).canUserMakeGroupInactive(testUser, testGroup.getId());
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
@@ -96,14 +104,18 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     @Test
     public void renameExistingGroupMenuShouldWork() throws Exception {
         resetTestGroup();
-        String urlToSave = "group/rename?groupId=" + testGroup.getId();
+        String urlToSave = saveGroupMenuWithParams("rename", testGroup.getId(), "");
+
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(groupManagementServiceMock.loadGroup(testGroup.getId())).thenReturn(testGroup);
         mockMvc.perform(get(path + "rename").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
                 andExpect(status().isOk());
-        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
+        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param(userChoiceParam, interruptedChoice)).
+                andExpect(status().isOk());
+
+        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupManagementServiceMock, times(1)).loadGroup(testGroup.getId());
+        verify(groupManagementServiceMock, times(2)).loadGroup(testGroup.getId());
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
@@ -111,6 +123,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     @Test
     public void renameConfirmShouldWork() throws Exception {
         // todo: test prior input & new group ranges
+
         resetTestGroup();
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
         when(groupManagementServiceMock.loadGroup(testGroup.getId())).thenReturn(testGroup);
@@ -128,16 +141,22 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     @Test
     public void groupNewTokenPromptShouldWork() throws Exception {
         resetTestGroup();
-        String urlToSave = "group/token?groupId=" + testGroup.getId();
+        String urlToSave = saveGroupMenu("token", testGroup.getId());
+
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(groupManagementServiceMock.loadGroup(testGroup.getId())).thenReturn(testGroup);
         when(groupManagementServiceMock.groupHasValidToken(testGroup)).thenReturn(false);
+
         mockMvc.perform(get(path + "token").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
                 andExpect(status().isOk());
-        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
+        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param(userChoiceParam, interruptedChoice)).
+                andExpect(status().isOk());
+
+
+        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupManagementServiceMock, times(1)).loadGroup(testGroup.getId());
-        verify(groupManagementServiceMock, times(1)).groupHasValidToken(testGroup);
+        verify(groupManagementServiceMock, times(2)).loadGroup(testGroup.getId());
+        verify(groupManagementServiceMock, times(2)).groupHasValidToken(testGroup);
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
@@ -194,14 +213,22 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     public void closeTokenShouldWork() throws Exception {
         resetTestGroup();
         testGroup.setGroupTokenCode("123");
-        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+        String urlToSave = saveGroupMenu("token-close", testGroup.getId());
+
+        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
 
         mockMvc.perform(get(path + "token-close").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
                 andExpect(status().isOk());
+        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param(userChoiceParam, interruptedChoice)).
+                andExpect(status().isOk());
         mockMvc.perform(get(path + "token-close").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString).
                 param("confirmed", "yes")).andExpect(status().isOk());
+        mockMvc.perform(get(path + "token-close").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString).
+                param("confirmed", "no")).andExpect(status().isOk());
 
-        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone);
+        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
+        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, null);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupManagementServiceMock, times(1)).invalidateGroupToken(testGroup.getId());
         verifyNoMoreInteractions(groupManagementServiceMock);
@@ -212,11 +239,15 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     public void addNumberPromptShouldWork() throws Exception {
         // todo: once permissions implemented, add tests for error throwing if user doesn't have permission
         resetTestGroup();
-        String urlToSave = "group/addnumber?groupId=" + testGroup.getId();
+        String urlToSave = saveGroupMenu("addnumber", testGroup.getId());
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
+
         mockMvc.perform(get(path + "addnumber").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
                 andExpect(status().isOk());
-        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
+        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param(userChoiceParam, interruptedChoice)).
+                andExpect(status().isOk());
+
+        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
@@ -238,11 +269,13 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     @Test
     public void unsubscribePromptShouldWork() throws Exception {
         resetTestGroup();
-        String urlToSave = "group/unsubscribe?groupId=" + testGroup.getId();
+        String urlToSave = saveGroupMenu("unsubscribe", testGroup.getId());
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         mockMvc.perform(get(path + "unsubscribe").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
                 andExpect(status().isOk());
-        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
+        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param(userChoiceParam, interruptedChoice)).
+                andExpect(status().isOk());
+        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         // note: not verifying zero group interactions as may add them in future
         verifyZeroInteractions(eventManagementServiceMock);
     }
@@ -263,33 +296,42 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     @Test
     public void consolidateMenuShoudlWorkIfNoCandidates() throws Exception {
         resetTestGroup();
-        String urlToSave = "group/merge?groupId=" + testGroup.getId();
+        String urlToSave = saveGroupMenu("merge", testGroup.getId());
         List<Group> emptyList = new ArrayList<>();
+
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(groupManagementServiceMock.getMergeCandidates(testUser, testGroup.getId())).thenReturn(emptyList);
+
         mockMvc.perform(get(path + "merge").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
                 andExpect(status().isOk());
-        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
+        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param(userChoiceParam, interruptedChoice)).
+                andExpect(status().isOk());
+
+        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupManagementServiceMock, times(1)).getMergeCandidates(testUser, testGroup.getId());
+        verify(groupManagementServiceMock, times(2)).getMergeCandidates(testUser, testGroup.getId());
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
 
     @Test
     public void consolidateMenuShouldWorkWithCandidates() throws Exception {
-        resetTestGroup();;
-        String urlToSave = "group/merge?groupId=" + testGroup.getId();
+        resetTestGroup();
+        String urlToSave = saveGroupMenu("merge", testGroup.getId());
         Group unnamedTestGroup = new Group("", testUser);
         unnamedTestGroup.setCreatedDateTime(Timestamp.valueOf(LocalDateTime.now()));
         List<Group> testList = Arrays.asList(unnamedTestGroup, new Group("tg1", testUser), new Group("tg2", testUser));
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(groupManagementServiceMock.getMergeCandidates(testUser, testGroup.getId())).thenReturn(testList);
+
         mockMvc.perform(get(path + "merge").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
                 andExpect(status().isOk());
-        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
+        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param(userChoiceParam, interruptedChoice)).
+                andExpect(status().isOk());
+
+        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupManagementServiceMock, times(1)).getMergeCandidates(testUser, testGroup.getId());
+        verify(groupManagementServiceMock, times(2)).getMergeCandidates(testUser, testGroup.getId());
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(groupManagementServiceMock);
     }

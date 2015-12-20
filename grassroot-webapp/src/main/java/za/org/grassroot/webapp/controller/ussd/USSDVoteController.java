@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.NoSuchUserException;
@@ -25,6 +26,7 @@ import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Map;
 
@@ -62,6 +64,7 @@ public class USSDVoteController extends USSDController {
 
         User user = userManager.findByInputNumber(inputNumber);
         int hasVotesToView = eventManager.userHasEventsToView(user, EventType.Vote);
+        log.info("Checked for votes to view ... got integer: " + hasVotesToView);
         USSDMenu menu;
 
         if (hasVotesToView >= -1) {
@@ -73,7 +76,7 @@ public class USSDVoteController extends USSDController {
                 menu.addMenuOption(voteMenus + "old", getMessage(thisSection, startMenu, optionsKey + "old", user));
         } else {
             String groupsExistPrompt = getMessage(voteKey, "group", promptKey, user);
-            String groupsDontExistPrompt = getMessage(voteKey, startMenu, promptKey + "-nogroup", user);
+            String groupsDontExistPrompt = getMessage(voteKey, "group", promptKey + "-nogroup", user);
             menu = ussdGroupUtil.askForGroupNoInlineNew(user, thisSection, groupsExistPrompt, groupsDontExistPrompt,
                                                         "issue", groupMenus + "create", null);
         }
@@ -88,7 +91,7 @@ public class USSDVoteController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber, voteMenus + "new");
 
         String groupsExistPrompt = getMessage(voteKey, "group", promptKey, user);
-        String groupsDontExistPrompt = getMessage(voteKey, startMenu, promptKey + "-nogroup", user);
+        String groupsDontExistPrompt = getMessage(voteKey, "group", promptKey + "-nogroup", user);
 
         return menuBuilder(ussdGroupUtil.askForGroupNoInlineNew(user, thisSection, groupsExistPrompt, groupsDontExistPrompt,
                                                                 "issue", groupMenus + "create", null));
@@ -101,17 +104,23 @@ public class USSDVoteController extends USSDController {
     @RequestMapping(value = path + "issue")
     @ResponseBody
     public Request votingIssue(@RequestParam(value = phoneNumber) String inputNumber,
-                               @RequestParam(value = groupIdParam) Long groupId,
+                               @RequestParam(value = groupIdParam, required = false) Long groupId,
                                @RequestParam(value = eventIdParam, required = false) Long eventId,
-                               @RequestParam(value = interruptedFlag, required=false) boolean interrupted,
+                               @RequestParam(value = interruptedFlag, required = false) boolean interrupted,
                                @RequestParam(value = revisingFlag, required = false) boolean revising) throws URISyntaxException {
 
-        User user = userManager.findByInputNumber(inputNumber);
+        User user;
 
-        eventId = (interrupted || revising) ? eventId : eventManager.createVote(user, groupId).getId();
+        if (interrupted || revising) {
+            user = userManager.findByInputNumber(inputNumber, saveVoteMenu("issue", 1L));
+        } else {
+            user = userManager.findByInputNumber(inputNumber);
+            eventId = eventManager.createVote(user, groupId).getId();
+            userManager.setLastUssdMenu(user, saveVoteMenu("issue", eventId));
+        }
+
         String nextUrl = (!revising) ? voteMenus + "time" + eventIdUrlSuffix + eventId :
                 voteMenus + "confirm" + eventIdUrlSuffix + eventId + "&field=issue";
-        userManager.setLastUssdMenu(user, saveVoteMenu("issue", eventId));
 
         USSDMenu menu = new USSDMenu(getMessage(voteKey, "issue", promptKey, user), nextUrl);
         return menuBuilder(menu);
@@ -214,7 +223,7 @@ public class USSDVoteController extends USSDController {
     @ResponseBody
     public Request viewOpenVotes(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
         // todo: consider doing a save and return
-        User user = userManager.findByInputNumber(inputNumber);
+        User user = userManager.findByInputNumber(inputNumber, voteMenus + "open");
         String prompt = getMessage(thisSection, "open", promptKey, user);
         return menuBuilder(eventUtil.listUpcomingEvents(user, thisSection, prompt, "details?back=open"));
     }
@@ -222,9 +231,9 @@ public class USSDVoteController extends USSDController {
     @RequestMapping(value = path + "old")
     @ResponseBody
     public Request viewOldVotes(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
-        User user = userManager.findByInputNumber(inputNumber);
+        User user = userManager.findByInputNumber(inputNumber, voteMenus + "old");
         String prompt = getMessage(thisSection, "old", promptKey, user);
-        return menuBuilder(eventUtil.listPriorEvents(user, thisSection, prompt, "details?back=old"));
+        return menuBuilder(eventUtil.listPriorEvents(user, thisSection, prompt, voteMenus + "details?back=old", true));
     }
 
     @RequestMapping(value = path + "details")
@@ -234,19 +243,21 @@ public class USSDVoteController extends USSDController {
                                    @RequestParam(value = "back") String backMenu) throws URISyntaxException {
         // todo: decide whether to allow users to change the closing time (& permissions, of course)
         // todo: have some way of counting reminders and only allow once unless paid account
-        User user = userManager.findByInputNumber(inputNumber);
+        // todo: reconsider whether to save URL here, might want to set back to null
+
+        User user = userManager.findByInputNumber(inputNumber, saveVoteMenu("details", eventId));
         Event vote = eventManager.loadEvent(eventId);
         boolean futureEvent = vote.getEventStartDateTime().toLocalDateTime().isAfter(LocalDateTime.now());
 
-        Map<String, Integer> results = eventManager.getVoteResults(vote);
-        String[] fields = new String[]{ vote.getAppliesToGroup().getName(""), vote.getName(),
-                                        "" + results.get("yes"), "" + results.get("no"), "" + results.get("abstained"), "" + results.get("no_reply")};
-        String prompt = getMessage(thisSection, "details", promptKey, fields, user);
-        USSDMenu menu = new USSDMenu(prompt);
-        if (futureEvent) {
-            menu.addMenuOption("reminder" + eventIdUrlSuffix + eventId,
-                               getMessage(thisSection, "details", optionsKey + "remidner", user));
-        }
+        RSVPTotalsDTO voteResults = eventManager.getVoteResultsDTO(vote);
+        String[] fields = new String[]{ vote.getAppliesToGroup().getName(""), vote.getName(), "" + voteResults.getYes(),
+                "" + voteResults.getNo(), "" + voteResults.getMaybe(), "" + voteResults.getNumberNoRSVP()};
+        USSDMenu menu = new USSDMenu(getMessage(thisSection, "details", promptKey, fields, user));
+
+        menu.addMenuOption(voteMenus + backMenu, getMessage(thisSection, "details", optionsKey + "back", user));
+        if (futureEvent)
+            menu.addMenuOption("reminder" + eventIdUrlSuffix + eventId, getMessage(thisSection, "details", optionsKey + "reminder", user));
+
         return menuBuilder(menu);
     }
 
@@ -254,10 +265,12 @@ public class USSDVoteController extends USSDController {
     @ResponseBody
     public Request sendVoteReminderConfirm(@RequestParam(value = phoneNumber) String inputNumber,
                                            @RequestParam(value = eventIdParam) Long eventId) throws URISyntaxException {
-        User user = userManager.findByInputNumber(inputNumber);
+
+        // todo: mention how many people will get the reminder
+        User user = userManager.findByInputNumber(inputNumber, saveVoteMenu("reminder", eventId));
         Event vote = eventManager.loadEvent(eventId);
 
-        USSDMenu menu = new USSDMenu("Are you sure?");
+        USSDMenu menu = new USSDMenu(getMessage(thisSection, "reminder", promptKey, user));
         menu.addMenuOptions(optionsYesNo(user, voteMenus + "reminder-do?eventId=" + eventId,
                                          voteMenus + "details?eventId=" + eventId));
 
@@ -271,9 +284,9 @@ public class USSDVoteController extends USSDController {
 
         // use meeting reminder functions
         User user = userManager.findByInputNumber(inputNumber, null);
-        Event vote = eventManager.loadEvent(eventId);
+        eventManager.sendManualReminder(eventManager.loadEvent(eventId), "");
+        return menuBuilder(new USSDMenu(getMessage(thisSection, "reminder-do", promptKey, user), optionsHomeExit(user)));
 
-        return menuBuilder(new USSDMenu("Done", optionsHomeExit(user)));
     }
 
 
@@ -291,7 +304,7 @@ public class USSDVoteController extends USSDController {
 
         switch (time) {
             case "instant":
-                proposedDateTime = LocalDateTime.now().plusMinutes(7L);
+                proposedDateTime = LocalDateTime.now().plusMinutes(7L).truncatedTo(ChronoUnit.SECONDS);
                 break;
             case "hour":
                 proposedDateTime = LocalDateTime.now().plusHours(1L);

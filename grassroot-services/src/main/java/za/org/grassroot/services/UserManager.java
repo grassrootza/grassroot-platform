@@ -17,6 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.repository.UserRepository;
@@ -43,6 +44,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private GroupManagementService groupManagementService;
 
     @Autowired
     private PasswordTokenService passwordTokenService;
@@ -254,6 +258,12 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
+    public List<User> searchByGroupAndNameNumber(Long groupId, String nameOrNumber) {
+        return userRepository.findByGroupsPartOfAndDisplayNameContainingOrPhoneNumberContaining(
+                groupManagementService.loadGroup(groupId), nameOrNumber, nameOrNumber);
+    }
+
+    @Override
     public User reformatPhoneNumber(User sessionUser) {
         String correctedPhoneNumber = PhoneNumberUtil.convertPhoneNumber(sessionUser.getPhoneNumber());
         sessionUser.setPhoneNumber(correctedPhoneNumber);
@@ -297,7 +307,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     public boolean needsToRenameSelf(User sessionUser) {
-        return sessionUser.needsToRenameSelf(5); // 5 min gap as placeholder for now, to make more a session count if possible
+        return sessionUser.needsToRenameSelf(10); // 5 min gap as placeholder for now, to make more a session count if possible
     }
 
     @Override
@@ -399,6 +409,12 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public User setLastUssdMenu(User sessionUser, String lastUssdMenu) {
         sessionUser.setLastUssdMenu(lastUssdMenu);
         return userRepository.save(sessionUser);
+    }
+
+    @Override
+    public User setDisplayName(User user, String displayName) {
+        user.setDisplayName(displayName);
+        return userRepository.save(user);
     }
 
     @Override

@@ -21,12 +21,15 @@ import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
+import static za.org.grassroot.webapp.util.USSDUrlUtil.saveMeetingMenu;
 
 /**
  * @author luke on 2015/08/14.
@@ -97,6 +100,7 @@ public class USSDMeetingController extends USSDController {
 
         USSDMenu returnMenu;
 
+        // todo: replace with call to hasUpcomingEvents plus permission filter
         if (newMeeting || eventManager.getUpcomingEventsUserCreated(user).size() == 0) {
             returnMenu = ussdGroupUtil.askForGroupAllowCreateNew(user, USSDSection.MEETINGS, nextMenu(startMenu), newGroupMenu, null);
         } else {
@@ -137,27 +141,41 @@ public class USSDMeetingController extends USSDController {
                                @RequestParam(value= groupIdParam, required=false) Long groupId,
                                @RequestParam(value= eventIdParam, required=false) Long eventId,
                                @RequestParam(value= userInputParam, required=false) String userResponse,
-                               @RequestParam(value = interruptedFlag, required = false) boolean interrupted,
+                               @RequestParam(value= interruptedFlag, required = false) boolean interrupted,
                                @RequestParam(value= interruptedInput, required=false) String priorInput) throws URISyntaxException {
 
         USSDMenu thisMenu;
 
         // if priorInput exists, we have been interrupted, so use that as userInput, else use what is passed as 'request'
-        String userInput = (priorInput != null) ? priorInput : userResponse;
-        String includeEvent = (eventId != null) ? ("&" + eventIdParam + eventId) : "";
-        User user = userManager.findByInputNumber(inputNumber, USSDUrlUtil.
-                saveMenuUrlWithInput(thisSection, groupHandlingMenu, groupIdUrlSuffix + groupId + includeEvent, userInput));
+        String userInput = (priorInput != null) ? USSDUrlUtil.decodeParameter(priorInput) : userResponse;
+        String includeGroup = (groupId != null) ? groupIdUrlSuffix + groupId : ""; // there is no case where eventId is not null but groupId is
+        String includeEvent = (eventId != null) ? ("&" + eventIdParam + "=" + eventId) : "";
+
+        String urlToSave = USSDUrlUtil.saveMenuUrlWithInput(thisSection, groupHandlingMenu, includeGroup + includeEvent, userInput);
+        log.info("In group handling menu, have saved this URL: " + urlToSave);
+
+        User user = userManager.findByInputNumber(inputNumber, urlToSave);
 
         if (!userInput.trim().equals("0")) {
-            thisMenu = (groupId == null) ? ussdGroupUtil.addNumbersToNewGroup(user, USSDSection.MEETINGS, userInput, groupHandlingMenu) :
-                    ussdGroupUtil.addNumbersToExistingGroup(user, groupId, USSDSection.MEETINGS, userInput, groupHandlingMenu);
+            thisMenu = new USSDMenu(true);
+            if (groupId == null) {
+                groupId = ussdGroupUtil.addNumbersToNewGroup(user, USSDSection.MEETINGS, thisMenu, userInput, groupHandlingMenu);
+                userManager.setLastUssdMenu(user, USSDUrlUtil.
+                        saveMenuUrlWithInput(thisSection, groupHandlingMenu, groupIdUrlSuffix + groupId, userInput));
+            } else {
+                thisMenu = ussdGroupUtil.addNumbersToExistingGroup(user, groupId, USSDSection.MEETINGS, userInput, groupHandlingMenu);
+            }
         } else {
             thisMenu = new USSDMenu(true);
             if (groupId == null) {
                 thisMenu.setPromptMessage(getMessage(mtgKey, groupHandlingMenu, promptKey + ".no-group", user));
                 thisMenu.setNextURI(meetingMenus + groupHandlingMenu);
             } else {
-                if (eventId == null) eventId = eventManager.createMeeting(inputNumber, groupId).getId();
+                if (eventId == null) {
+                    eventId = eventManager.createMeeting(inputNumber, groupId).getId();
+                    userManager.setLastUssdMenu(user, USSDUrlUtil.saveMenuUrlWithInput(thisSection, groupHandlingMenu,
+                                                                                       includeGroup + "&eventId=" + eventId, userInput));
+                }
                 thisMenu.setPromptMessage(getMessage(mtgKey, nextMenu(startMenu), promptKey, user));
                 thisMenu.setNextURI(meetingMenus + nextMenu(nextMenu(startMenu)) + eventIdUrlSuffix + eventId
                                             + "&" + previousMenu + "=" + nextMenu(startMenu));
@@ -185,7 +203,7 @@ public class USSDMeetingController extends USSDController {
                               @RequestParam(value="revising", required=false) boolean revising) throws URISyntaxException {
 
         if (!interrupted && !revising) eventId = eventManager.createMeeting(inputNumber, groupId).getId();
-        User sessionUser = userManager.findByInputNumber(inputNumber, USSDUrlUtil.saveMeetingMenu(subjectMenu, eventId, revising));
+        User sessionUser = userManager.findByInputNumber(inputNumber, saveMeetingMenu(subjectMenu, eventId, revising));
         String promptMessage = getMessage(mtgKey, subjectMenu, promptKey, sessionUser);
         String nextUrl = (!revising) ? nextUrl(subjectMenu, eventId) : confirmUrl(subjectMenu, eventId);
         return menuBuilder(new USSDMenu(promptMessage, nextUrl));
@@ -195,14 +213,14 @@ public class USSDMeetingController extends USSDController {
     @ResponseBody
     public Request getPlace(@RequestParam(value= phoneNumber, required=true) String inputNumber,
                             @RequestParam(value= eventIdParam, required=true) Long eventId,
-                            @RequestParam(value= previousMenu, required=true) String passedValueKey,
+                            @RequestParam(value= previousMenu, required=false) String passedValueKey,
                             @RequestParam(value= userInputParam, required=true) String passedValue,
                             @RequestParam(value="interrupted", required=false) boolean interrupted,
                             @RequestParam(value="revising", required=false) boolean revising) throws URISyntaxException {
 
         // todo: add error and exception handling
 
-        User sessionUser = userManager.findByInputNumber(inputNumber, USSDUrlUtil.saveMeetingMenu(placeMenu, eventId, revising));
+        User sessionUser = userManager.findByInputNumber(inputNumber, saveMeetingMenu(placeMenu, eventId, revising));
         if (!interrupted) eventUtil.updateEvent(eventId, passedValueKey, passedValue);
         String promptMessage = getMessage(mtgKey, placeMenu, promptKey, sessionUser);
         String nextUrl = (!revising) ? nextUrl(placeMenu, eventId) : confirmUrl(placeMenu, eventId);
@@ -217,7 +235,7 @@ public class USSDMeetingController extends USSDController {
                            @RequestParam(value= userInputParam, required=true) String passedValue,
                            @RequestParam(value="interrupted", required=false) boolean interrupted) throws URISyntaxException {
 
-        User sessionUser = userManager.findByInputNumber(inputNumber, USSDUrlUtil.saveMeetingMenu(timeMenu, eventId, false));
+        User sessionUser = userManager.findByInputNumber(inputNumber, saveMeetingMenu(timeMenu, eventId, false));
         if (!interrupted) eventUtil.updateEvent(eventId, passedValueKey, passedValue);
         String promptMessage = getMessage(mtgKey, timeMenu, promptKey, sessionUser);
         String nextUrl = meetingMenus + nextMenu(timeMenu) + eventIdUrlSuffix + eventId + "&" + previousMenu + "=" + timeMenu;
@@ -233,7 +251,7 @@ public class USSDMeetingController extends USSDController {
                                   @RequestParam(value="next_menu", required = true) String nextMenu) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber,
-                                                  USSDUrlUtil.saveMeetingMenu(timeOnly + "?next_menu=" + nextMenu, eventId, false));
+                                                  saveMeetingMenu(timeOnly + "?next_menu=" + nextMenu, eventId, false));
 
         Event meeting = eventManager.loadEvent(eventId);
         String currentlySetTime = meeting.getEventStartDateTime().toLocalDateTime().format(DateTimeUtil.preferredTimeFormat);
@@ -255,7 +273,7 @@ public class USSDMeetingController extends USSDController {
 
         if (nextMenu == null) nextMenu = priorMenu;
         User user = userManager.findByInputNumber(inputNumber,
-                                                  USSDUrlUtil.saveMeetingMenu(dateOnly + "?next_menu=" + nextMenu, eventId, false));
+                                                  saveMeetingMenu(dateOnly + "?next_menu=" + nextMenu, eventId, false));
 
         Event meeting = eventManager.loadEvent(eventId);
         String currentDate = meeting.getEventStartDateTime().toLocalDateTime().format(DateTimeUtil.preferredDateFormat);
@@ -279,7 +297,7 @@ public class USSDMeetingController extends USSDController {
 
         // todo: refactor and optimize this so it doesn't use so many getters, etc. Could be quite slow if many users.
 
-        User sessionUser = userManager.findByInputNumber(inputNumber, USSDUrlUtil.saveMeetingMenu(confirmMenu, eventId, false));
+        User sessionUser = userManager.findByInputNumber(inputNumber, saveMeetingMenu(confirmMenu, eventId, false));
 
         // make sure we don't send out the invites before the user has confirmed
         // todo: handle error if date parser finds nothing (e.g., user made a mistake and entered "J" or similar)

@@ -268,6 +268,11 @@ public class GroupManager implements GroupManagementService {
         return groupRepository.findByGroupMembersAndActive(sessionUser, true);
     }
 
+    @Override
+    public boolean hasActiveGroupsPartOf(User user) {
+        return !getPageOfActiveGroups(user, 0, 1).getContent().isEmpty();
+    }
+
     /*@Override
     public List<Group> getPaginatedGroups(User sessionUser, int pageNumber, int pageSize) {
         return getPageOfGroups(sessionUser, pageNumber, pageSize).getContent();

@@ -47,8 +47,9 @@ public class USSDGroupUtil extends USSDUtil {
     public USSDMenu askForGroupAllowCreateNew(User sessionUser, USSDSection section, String nextUrl,
                                               String newGroupUrl, String nonGroupParams) throws URISyntaxException {
 
+        // todo: the groupManager call is probably quite expensive, replace with a count query (non trivial, at least for me)
         USSDMenu groupMenu;
-        if (sessionUser.getGroupsPartOf().isEmpty()) {
+        if (!groupManager.hasActiveGroupsPartOf(sessionUser)) {
             groupMenu = createGroupPrompt(sessionUser, section, newGroupUrl);
         } else {
             String prompt = getMessage(section, groupKeyForMessages, promptKey + ".existing", sessionUser);
@@ -62,8 +63,8 @@ public class USSDGroupUtil extends USSDUtil {
     public USSDMenu askForGroupNoInlineNew(User sessionUser, USSDSection section, String promptIfExisting, String promptIfEmpty,
                                            String urlIfExisting, String urlIfEmpty, String nonGroupParams) throws URISyntaxException {
         USSDMenu groupMenu;
-        // todo: replace the getter with a less expensive call, plus filter for permissions
-        if(sessionUser.getGroupsPartOf().isEmpty()) {
+        // todo: replace the getter with a less expensive call (boolean query -- non-trivial), plus filter for permissions
+        if(!groupManager.hasActiveGroupsPartOf(sessionUser)) {
             groupMenu = new USSDMenu(promptIfEmpty);
             groupMenu.addMenuOption(urlIfEmpty, getMessage(section, groupKeyForMessages, "options.new", sessionUser));
             groupMenu.addMenuOption("start", getMessage("start", sessionUser));
@@ -73,6 +74,15 @@ public class USSDGroupUtil extends USSDUtil {
             groupMenu = userGroupMenuPageOne(sessionUser, promptIfExisting, existingGroupUri, null);
         }
         return groupMenu;
+    }
+
+    // helper method which will use some defaults
+    public USSDMenu askForGroupNoInlineNew(User user, USSDSection section, String menuIfExisting) throws URISyntaxException {
+        final String promptIfExisting = getMessage(section, groupKeyForMessages, promptKey, user);
+        final String urlIfExisting = section.toPath() + menuIfExisting;
+        final String promptIfEmpty = getMessage(section, groupKeyForMessages, promptKey + ".empty", user);
+        final String urlIfEmpty = USSDSection.GROUP_MANAGER.toPath() + "create";
+        return askForGroupNoInlineNew(user, section, promptIfExisting, promptIfEmpty, urlIfExisting, urlIfEmpty, "");
     }
 
     public USSDMenu userGroupMenuPageOne(User user, String prompt, String existingGroupUrl, String newGroupUrl) throws URISyntaxException {
@@ -85,10 +95,10 @@ public class USSDGroupUtil extends USSDUtil {
         Page<Group> groupsPartOf = groupManager.getPageOfActiveGroups(user, pageNumber, PAGE_LENGTH);
         menu = addListOfGroupsToMenu(menu, urlForExistingGroups, groupsPartOf.getContent(), user);
         if (groupsPartOf.hasNext())
-            menu.addMenuOption(USSDUrlUtil.assemblePaginatedURI(prompt, urlForExistingGroups, urlForNewGroup, pageNumber + 1),
+            menu.addMenuOption(USSDUrlUtil.paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, pageNumber + 1),
                                "More groups"); // todo: i18n
         if (groupsPartOf.hasPrevious())
-            menu.addMenuOption(USSDUrlUtil.assemblePaginatedURI(prompt, urlForExistingGroups, urlForNewGroup, pageNumber - 1),
+            menu.addMenuOption(USSDUrlUtil.paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, pageNumber - 1),
                                "Back"); // todo: i18n
         if (urlForNewGroup != null)
             menu.addMenuOption(urlForNewGroup, getMessage(groupKeyForMessages, "create", "option", user));
@@ -118,34 +128,37 @@ public class USSDGroupUtil extends USSDUtil {
         return thisMenu;
     }
 
-    public USSDMenu addNumbersToNewGroup(User user, USSDSection section, String userInput, String returnUrl) throws URISyntaxException {
-        USSDMenu menu;
+    public Long addNumbersToNewGroup(User user, USSDSection section, USSDMenu menu, String userInput, String returnUrl) throws URISyntaxException {
+        Long groupId;
         final Map<String, List<String>> enteredNumbers = PhoneNumberUtil.splitPhoneNumbers(userInput);
         log.info("addNumbersToNewGroup ... with user input ... " + userInput);
         if (enteredNumbers.get(validNumbers).isEmpty()) {
-            menu = new USSDMenu(true);
             menu.setPromptMessage(getMessage(section, groupKeyForMessages, promptKey + ".error",
                                              String.join(", ", enteredNumbers.get(invalidNumbers)), user));
             menu.setNextURI(section.toPath() + returnUrl);
+            groupId = 0L;
         } else {
-            log.info("Okay we have some valid numbers, adding them ... ");
+            log.info("About to create group with these numbers ... " + enteredNumbers.get(validNumbers).toString() + ".... created by this user: " + user.toString());
             Group createdGroup = groupManager.createNewGroup(user, enteredNumbers.get(validNumbers));
-            menu = checkForErrorsAndSetPrompt(user, section, createdGroup.getId(), enteredNumbers.get(invalidNumbers), returnUrl, true);
+            log.info("Okay, we created this group ... " + createdGroup);
+            checkForErrorsAndSetPrompt(user, section, menu, createdGroup.getId(), enteredNumbers.get(invalidNumbers), returnUrl, true);
+            groupId = createdGroup.getId();
         }
-        return menu;
+        return groupId;
     }
 
+    // note: we might think of adding a 'interrupted' check here, but addNumbersToGroup checks for duplicates anyway, and that sort of
+    // thing should probably be optimized in services rather than worked around here.
     public USSDMenu addNumbersToExistingGroup(User user, Long groupId, USSDSection section, String userInput, String returnUrl)
             throws URISyntaxException {
         Map<String, List<String>> enteredNumbers = PhoneNumberUtil.splitPhoneNumbers(userInput);
         groupManager.addNumbersToGroup(groupId, enteredNumbers.get(validNumbers));
-        return checkForErrorsAndSetPrompt(user, section, groupId, enteredNumbers.get(invalidNumbers), returnUrl, false);
+        return checkForErrorsAndSetPrompt(user, section, new USSDMenu(true), groupId, enteredNumbers.get(invalidNumbers), returnUrl, false);
     }
 
-    private USSDMenu checkForErrorsAndSetPrompt(User user, USSDSection section, Long groupId, List<String> invalidNumbers,
+    private USSDMenu checkForErrorsAndSetPrompt(User user, USSDSection section, USSDMenu menu, Long groupId, List<String> invalidNumbers,
                                                 String returnUrl, boolean newGroup) {
         log.info("Inside checkForErrorsAndSetPrompt ... with invalid numbers ... " + invalidNumbers.toString());
-        USSDMenu menu = new USSDMenu(true);
         String addedOrCreated = newGroup ? ".created" : ".added";
         String prompt = invalidNumbers.isEmpty() ? getMessage(section, groupKeyForMessages, promptKey + addedOrCreated, user) :
                 getMessage(section, groupKeyForMessages, promptKey + ".error", String.join(", ", invalidNumbers), user);

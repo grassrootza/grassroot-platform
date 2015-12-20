@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.MessageSource;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Event;
@@ -31,7 +30,8 @@ public class USSDEventUtil extends USSDUtil {
     EventManagementService eventManager;
 
     private static final String eventIdParameter = "eventId";
-    private static final String eventIdUrlEnding = "?" + eventIdParameter + "=";
+    private static final String eventIdFirstParam = "?" + eventIdParameter + "=";
+    private static final String eventIdLaterParam = "&" + eventIdParameter + "=";
 
     private static final String subjectMenu = "subject", placeMenu = "place", timeMenu = "time",
             timeOnly = "time_only", dateOnly = "date_only";
@@ -66,7 +66,7 @@ public class USSDEventUtil extends USSDUtil {
             if (eventDescription.get("minimumData").equals("true")) {
                 String menuLine = eventDescription.get("groupName") + ": " + eventDescription.get("dateTimeString");
                 if (askMenu.getMenuCharLength() + enumLength + menuLine.length() + lastOptionBuffer < 160) {
-                    askMenu.addMenuOption(meetingMenus + existingUrl + eventIdUrlEnding + event.getId(), menuLine);
+                    askMenu.addMenuOption(meetingMenus + existingUrl + eventIdFirstParam + event.getId(), menuLine);
                 }
             }
         }
@@ -76,33 +76,35 @@ public class USSDEventUtil extends USSDUtil {
 
     public USSDMenu listUpcomingEvents(User user, USSDSection section, String prompt, String nextUrl) {
         // todo: page back and forward
-        // todo: a means to alter how event subject is described (e.g., pass in a key)
         EventType eventType = mapSectionType.get(section);
         USSDMenu menu = new USSDMenu(prompt);
         Page<Event> events = eventManager.getEventsUserCanView(user, eventType, 1, 0, pageSize);
-        for (Event event: events) {
-            menu.addMenuOption(nextUrl + eventIdUrlEnding + event.getId(), event.getName());
+        return addListOfEventsToMenu(menu, nextUrl, events.getContent(), user, false);
+    }
+
+    public USSDMenu listPriorEvents(User user, USSDSection section, String prompt, String nextUrl, boolean withGroup) {
+        return listPaginatedEvents(user, section, prompt, nextUrl, withGroup, -1, 0);
+    }
+
+    public USSDMenu listPaginatedEvents(User user, USSDSection section, String prompt, String nextUrl,
+                                        boolean includeGroupName, int pastPresentBoth, int pageNumber) {
+        Page<Event> events = eventManager.getEventsUserCanView(user, mapSectionType.get(section), pastPresentBoth, pageNumber, pageSize);
+        USSDMenu menu = new USSDMenu(prompt);
+        menu = addListOfEventsToMenu(menu, nextUrl, events.getContent(), user, includeGroupName);
+        if (events.hasNext())
+            menu.addMenuOption(USSDUrlUtil.paginatedEventUrl(prompt, section, nextUrl, pastPresentBoth, includeGroupName, pageNumber + 1), "More");
+        if (events.hasPrevious())
+            menu.addMenuOption(USSDUrlUtil.paginatedEventUrl(prompt, section, nextUrl, pastPresentBoth, includeGroupName, pageNumber - 1), "Back");
+        return menu;
+    }
+
+    private USSDMenu addListOfEventsToMenu(USSDMenu menu, String nextMenuUrl, List<Event> events, User user, boolean includeGroupName) {
+        final String formedUrl = nextMenuUrl + ((nextMenuUrl.contains("?")) ? eventIdLaterParam : eventIdFirstParam);
+        for (Event event : events) {
+            String descriptor = (includeGroupName ? eventManager.getGroupName(event) + ": " : "Subject: ") + event.getName();
+            menu.addMenuOption(formedUrl + event.getId(), checkAndTruncateMenuOption(descriptor));
         }
         return menu;
-    }
-
-    public USSDMenu listPriorEvents(User user, USSDSection section, String prompt, String nextUrl) {
-        EventType eventType = mapSectionType.get(section);
-        USSDMenu menu = new USSDMenu(prompt);
-        Page<Event> events = eventManager.getEventsUserCanView(user, eventType, -1, 0, pageSize);
-        for (Event event : events)
-            menu.addMenuOption(nextUrl + eventIdUrlEnding + event.getId(), event.getName());
-        return menu;
-    }
-
-    public boolean userHasEventsToView(User user, USSDSection section, boolean upcomingOnly) {
-        EventType eventType = mapSectionType.get(section);
-        return eventManager.userHasEventsToView(user, eventType, upcomingOnly);
-    }
-
-    public Page<Event> askForEventsUserCanManage(User user, USSDSection section, boolean upcomingOnly) {
-        EventType eventType = mapSectionType.get(section);
-        return null;
     }
 
     public Event updateEvent(Long eventId, String lastMenuKey, String passedValue) {

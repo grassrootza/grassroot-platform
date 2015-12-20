@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import za.org.grassroot.webapp.enums.USSDSection;
 
 import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.Map;
 
@@ -35,10 +36,17 @@ public class USSDUrlUtil {
             setInterruptedFlag = "&" + interruptedFlag + "=1",
             setRevisingFlag = "&" + revisingFlag + "=1";
 
-    public static String assemblePaginatedURI(String menuPrompt, String existingGroupUri, String newGroupUri, Integer pageNumber) {
+    public static String paginatedGroupUrl(String menuPrompt, String existingGroupUri, String newGroupUri, Integer pageNumber) {
         String newGroupParameter = (newGroupUri != null) ? "&newUri=" + encodeParameter(newGroupUri) : "";
         return "group_page?prompt=" + encodeParameter(menuPrompt) + "&existingUri=" + encodeParameter(existingGroupUri)
                 + newGroupParameter + "&page=" + pageNumber;
+    }
+
+    public static String paginatedEventUrl(String menuPrompt, USSDSection section, String viewEventUrl,
+                                           int pastPresentBoth, boolean includeGroupName, Integer pageNumber) {
+        return "event_page?section=" + section.toString() + "&prompt=" + encodeParameter(menuPrompt) +
+                "&nextUrl=" + encodeParameter(viewEventUrl) + "&pastPresentBoth=" + pastPresentBoth + "&includeGroupName=" + includeGroupName
+                + "&page=" + pageNumber;
     }
 
     public static String encodeParameter(String stringToEncode) {
@@ -46,6 +54,14 @@ public class USSDUrlUtil {
             return URLEncoder.encode(stringToEncode, "UTF-8");
         } catch (UnsupportedEncodingException e) { // todo: handle errors better
             return stringToEncode;
+        }
+    }
+
+    public static String decodeParameter(String stringToDecode) {
+        try {
+            return URLDecoder.decode(stringToDecode, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            return stringToDecode;
         }
     }
 
@@ -59,7 +75,7 @@ public class USSDUrlUtil {
 
     // note: this expects the entityId string fully formed (e.g., "groupId=1"), else have to create many duplicate methods
     public static String saveMenuUrlWithInput(USSDSection section, String menu, String entityId, String input) {
-        String divisor = (entityId == null) ? "?" : entityId; // if we are passed groupId=1, or similar, it comes with the "?" character
+        String divisor = (entityId == null || entityId.equals("")) ? "?" : entityId; // if we are passed groupId=1, or similar, it comes with the "?" character
         String inputToSave = (input == null) ? "" : encodeParameter(input);
         return section.toPath() + menu + divisor + setInterruptedFlag + "&" + interruptedInput + "=" + inputToSave;
     }
@@ -73,12 +89,20 @@ public class USSDUrlUtil {
         return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupId=" + groupId + setInterruptedFlag;
     }
 
+    public static String saveGroupMenuWithParams(String menu, Long groupId, String params) {
+        return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupId=" + groupId + setInterruptedFlag + params;
+    }
+
     public static String saveVoteMenu(String menu, Long eventId) {
         return USSDSection.VOTES.toPath() + menu + "?eventId=" + eventId + setInterruptedFlag; // include the +1
     }
 
     public static String backVoteUrl(String menu, Long eventId) {
         return USSDSection.VOTES.toPath() + menu + "?eventId=" + eventId + setRevisingFlag;
+    }
+
+    public static String saveLogMenu(String menu, Long logBookId) {
+        return USSDSection.LOGBOOK.toPath() + menu + "?logBookId=" + logBookId + setInterruptedFlag;
     }
 
 }

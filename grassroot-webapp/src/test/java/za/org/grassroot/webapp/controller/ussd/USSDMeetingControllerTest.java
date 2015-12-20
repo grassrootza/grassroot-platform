@@ -13,6 +13,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.util.USSDEventUtil;
 import za.org.grassroot.webapp.util.USSDUrlUtil;
 
@@ -24,6 +25,7 @@ import java.util.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static za.org.grassroot.webapp.util.USSDUrlUtil.saveMenuUrlWithInput;
 
 /**
  * Created by luke on 2015/11/26.
@@ -37,6 +39,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     private static final String phoneParam = "msisdn";
 
     private static final String path = "/ussd/mtg/";
+    private static final USSDSection thisSection = USSDSection.MEETINGS;
 
     @InjectMocks
     USSDMeetingController ussdMeetingController;
@@ -74,7 +77,9 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
+        verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventManagementServiceMock, times(1)).getUpcomingEventsUserCreated(any(User.class));
+        verifyNoMoreInteractions(eventManagementServiceMock);
 
     }
 
@@ -94,12 +99,16 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(eventManagementServiceMock.getUpcomingEventsUserCreated(testUser)).thenReturn(emptyMeetingList);
+        when(groupManagementServiceMock.hasActiveGroupsPartOf(testUser)).thenReturn(true);
         when(groupManagementServiceMock.getPageOfActiveGroups(testUser, 0, 3)).thenReturn(groupPage);
 
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
+        verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupManagementServiceMock, times(1)).getPageOfActiveGroups(any(User.class), anyInt(), anyInt());
+        verify(eventManagementServiceMock, times(1)).getUpcomingEventsUserCreated(testUser);
+        verifyNoMoreInteractions(eventManagementServiceMock);
 
     }
 
@@ -124,14 +133,17 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     public void newGroupPromptShouldWork() throws Exception {
 
         User testUser = new User(testUserPhone);
+        String urlToSave = USSDSection.MEETINGS.toPath() + "newgroup";
 
-        when(userManagementServiceMock.findByInputNumber(eq(testUserPhone), anyString())).thenReturn(testUser);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
 
-        mockMvc.perform(get(path + "newgroup").param(phoneParam, testUserPhone).param("eventId", "0")).
-                andExpect(status().isOk());
+        mockMvc.perform(get(path + "newgroup").param(phoneParam, testUserPhone)).andExpect(status().isOk());
+        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1")).andExpect(status().isOk());
 
-        verify(userManagementServiceMock, times(1)).findByInputNumber(anyString(), anyString());
+        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
+        verifyZeroInteractions(groupManagementServiceMock);
+        verifyZeroInteractions(eventManagementServiceMock);
 
     }
 
@@ -147,15 +159,24 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         User testUser = new User(testUserPhone);
         Group testGroup = new Group("", testUser);
         testGroup.setId(1L);
+        String firstUrlToSave = saveMenuUrlWithInput(thisSection, "group", "", "0801112345");
+        String secondUrlToSave = saveMenuUrlWithInput(thisSection, "group", "?groupId=" + testGroup.getId(), "0801112345");
 
-        when(userManagementServiceMock.findByInputNumber(eq(testUserPhone), anyString())).thenReturn(testUser);
-        when(groupManagementServiceMock.createNewGroup(testUser, Arrays.asList("0801112345"))).thenReturn(testGroup);
+        log.info("Running the test, where the url to save is ... " + firstUrlToSave);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone, firstUrlToSave)).thenReturn(testUser);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone, secondUrlToSave)).thenReturn(testUser);
+        when(groupManagementServiceMock.createNewGroup(eq(testUser), anyListOf(String.class))).thenReturn(testGroup);
 
-        mockMvc.perform(get(path + "group").param(phoneParam, testUserPhone).param("eventId", "1").
-                param("request", "0801112345")).andExpect(status().isOk());
+        mockMvc.perform(get(path + "group").param(phoneParam, testUserPhone).param("request", "0801112345")).
+                andExpect(status().isOk());
+        mockMvc.perform(get(base + secondUrlToSave).param(phoneParam, testUserPhone).param("request", "1")).
+                andExpect(status().isOk());
 
-        verify(userManagementServiceMock, times(1)).findByInputNumber(anyString(), anyString());
+        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, firstUrlToSave);
+        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, secondUrlToSave);
+        verify(userManagementServiceMock, times(1)).setLastUssdMenu(testUser, secondUrlToSave);
         verify(groupManagementServiceMock, times(1)).createNewGroup(testUser, Arrays.asList("0801112345"));
+        verify(groupManagementServiceMock, times(1)).addNumbersToGroup(testGroup.getId(), Arrays.asList("0801112345"));
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(groupManagementServiceMock);
 
@@ -167,16 +188,21 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         User testUser = new User(testUserPhone);
         Group testGroup = new Group("", testUser);
         testGroup.setId(1L);
+        String numbersToInput = "0801112345 080111234";
+        String urlToSave = saveMenuUrlWithInput(thisSection, "group", "?groupId=" + testGroup.getId(), numbersToInput);
+        log.info("Testing adding numbers to existing group, with this Url to save ..." + urlToSave);
 
-        when(userManagementServiceMock.findByInputNumber(eq(testUserPhone), anyString())).thenReturn(testUser);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
 
         // note: deliberately pass a badly formed number and then check that only the well-formed one is passed to services
-        mockMvc.perform(get(path + "group").param(phoneParam, testUserPhone).param("eventId", "1").
-                param("groupId", "" + testGroup.getId()).param("request", "0801112345 080111234")).andExpect(status().isOk());
+        mockMvc.perform(get(path + "group").param(phoneParam, testUserPhone).param("groupId", "" + testGroup.getId()).
+                param("request", numbersToInput)).andExpect(status().isOk());
+        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1")).
+                andExpect(status().isOk());
 
-        verify(userManagementServiceMock, times(1)).findByInputNumber(anyString(), anyString());
+        verify(userManagementServiceMock, times(2)).findByInputNumber(anyString(), anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupManagementServiceMock, times(1)).addNumbersToGroup(testGroup.getId(), Arrays.asList("0801112345"));
+        verify(groupManagementServiceMock, times(2)).addNumbersToGroup(testGroup.getId(), Arrays.asList("0801112345"));
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
 
@@ -190,14 +216,22 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         testGroup.setId(1L);
         Event testMeeting = new Event("unit test", testUser, testGroup);
         testMeeting.setId(1L);
+        String urlToSave = saveMenuUrlWithInput(thisSection, "group", "?groupId=" + testGroup.getId(), "0");
+        String urlToSave2 = saveMenuUrlWithInput(thisSection, "group",
+                                                 "?groupId=" + testGroup.getId() + "&eventId=" + testMeeting.getId(), "0");
 
-        when(userManagementServiceMock.findByInputNumber(eq(testUserPhone), anyString())).thenReturn(testUser);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave2)).thenReturn(testUser);
         when(eventManagementServiceMock.createMeeting(testUserPhone, 1L)).thenReturn(testMeeting);
 
         mockMvc.perform(get(path + "group").param(phoneParam, testUserPhone).param("groupId", "" + testGroup.getId()).
                 param("request", "0")).andExpect(status().isOk());
+        mockMvc.perform(get(base + urlToSave2).param(phoneParam, testUserPhone).param("request", "1")).
+                andExpect(status().isOk());
 
-        verify(userManagementServiceMock, times(1)).findByInputNumber(anyString(), anyString());
+        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
+        verify(userManagementServiceMock, times(1)).setLastUssdMenu(testUser, urlToSave2);
+        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave2);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventManagementServiceMock, times(1)).createMeeting(testUserPhone, testGroup.getId());
         verifyNoMoreInteractions(eventManagementServiceMock);
@@ -209,13 +243,16 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     public void enteringNoValidNumbersShouldGiveError() throws Exception {
 
         User testUser = new User(testUserPhone);
+        String urlToSave = saveMenuUrlWithInput(thisSection, "group", "", "0");
 
-        when(userManagementServiceMock.findByInputNumber(eq(testUserPhone), anyString())).thenReturn(testUser);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
 
-        mockMvc.perform(get(path + "group").param(phoneParam, testUserPhone).param("eventId", "1").
-                param("request", "0")).andExpect(status().isOk());
+        mockMvc.perform(get(path + "group").param(phoneParam, testUserPhone).param("request", "0")).
+                andExpect(status().isOk());
+        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1")).
+                andExpect(status().isOk());
 
-        verify(userManagementServiceMock, times(1)).findByInputNumber(anyString(), anyString());
+        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyZeroInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
@@ -260,13 +297,14 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         mockMvc.perform(get(path + "subject").param(phoneParam, testUserPhone).param("eventId", "1").
                 param("groupId", "" + testGroup.getId()).param("prior_menu", "group")).andExpect(status().isOk());
+        mockMvc.perform(get(base + urlToCheck).param(phoneParam, testUserPhone).param("request", "1")).
+                andExpect(status().isOk());
 
-        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToCheck);
+        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToCheck);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventManagementServiceMock, times(1)).createMeeting(testUserPhone, testGroup.getId());
         verifyNoMoreInteractions(eventManagementServiceMock);
         verifyZeroInteractions(groupManagementServiceMock);
-
     }
 
     @Test
@@ -279,8 +317,10 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         mockMvc.perform(get(path + "place").param(phoneParam, testUserPhone).param("eventId", "1").
                 param("prior_menu", "subject").param("request", "unit test")).andExpect(status().isOk());
+        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1")).
+                andExpect(status().isOk());
 
-        verify(userManagementServiceMock, times(1)).findByInputNumber(anyString(), anyString());
+        verify(userManagementServiceMock, times(2)).findByInputNumber(anyString(), anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventManagementServiceMock, times(1)).setSubject(1L, "unit test");
         verifyNoMoreInteractions(eventManagementServiceMock);
@@ -297,8 +337,10 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         mockMvc.perform(get(path + "time").param(phoneParam, testUserPhone).param("eventId", "1").
                 param("prior_menu", "place").param("request", "JoziHub")).andExpect(status().isOk());
+        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1")).
+                andExpect(status().isOk());
 
-        verify(userManagementServiceMock, times(1)).findByInputNumber(anyString(), anyString());
+        verify(userManagementServiceMock, times(2)).findByInputNumber(anyString(), anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventManagementServiceMock, times(1)).setLocation(1L, "JoziHub");
         verifyNoMoreInteractions(eventManagementServiceMock);

@@ -19,6 +19,7 @@ import za.org.grassroot.webapp.model.rest.GroupDTO;
 import za.org.grassroot.webapp.model.rest.LogBookDTO;
 import za.org.grassroot.webapp.model.rest.UserDTO;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -65,7 +66,7 @@ public class LogBookRestController {
     public LogBookDTO addWithDate(@PathVariable("userid") Long userid,
                           @PathVariable("groupid") Long groupid,
                           @PathVariable("message") String message,
-                          @PathVariable("actionByDate") @DateTimeFormat(pattern="yyyy-MM-dd HH:mm:ss") Date actionByDate) {
+                          @PathVariable("actionByDate") @DateTimeFormat(pattern="yyyy-MM-dd HH:mm:ss") Timestamp actionByDate) {
         return new LogBookDTO(logBookService.create(userid,groupid,message,actionByDate));
     }
 
@@ -73,7 +74,7 @@ public class LogBookRestController {
     public LogBookDTO addWithDateAndAssign(@PathVariable("userid") Long userid,
                                   @PathVariable("groupid") Long groupid,
                                   @PathVariable("message") String message,
-                                  @PathVariable("actionByDate") @DateTimeFormat(pattern="yyyy-MM-dd HH:mm:ss") Date actionByDate,
+                                  @PathVariable("actionByDate") @DateTimeFormat(pattern="yyyy-MM-dd HH:mm:ss") Timestamp actionByDate,
                                   @PathVariable("assignedToUserId") Long assignedToUserId) {
         return new LogBookDTO(logBookService.create(userid,groupid,message,actionByDate,assignedToUserId));
     }
