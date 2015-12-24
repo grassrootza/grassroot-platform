@@ -49,6 +49,11 @@ public class UserRestController {
 
     }
 
+    @RequestMapping(value = "/setinitiatedsession/{userId}", method = RequestMethod.POST)
+    public UserDTO setInitiatedSession(@PathVariable("userId") Long userId) {
+        return new UserDTO(userManagementService.setInitiatedSession(userManagementService.loadUser(userId)));
+
+    }
 
 
 }

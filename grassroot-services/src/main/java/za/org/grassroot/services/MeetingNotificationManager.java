@@ -12,6 +12,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.dto.LogBookDTO;
+import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.FormatUtil;
 
@@ -97,11 +98,20 @@ public class MeetingNotificationManager implements MeetingNotificationService {
         return messageSourceAccessor.getMessage("sms.mtg.send.reminder", populateFields(user, event), locale);
     }
 
+    @Override
+    public String createWelcomeMessage(String messageId, UserDTO userDTO) {
+        return messageSourceAccessor.getMessage(messageId, populateWelcomeFields(userDTO), getUserLocale(userDTO.getLanguageCode()));
+    }
+
     private Locale getUserLocale(User user) {
-        if (user.getLanguageCode() == null || user.getLanguageCode().trim().equals("")) {
+        return getUserLocale(user.getLanguageCode());
+    }
+
+    private Locale getUserLocale(String languageCode) {
+        if (languageCode == null || languageCode.trim().equals("")) {
             return Locale.ENGLISH;
         } else {
-            return new Locale(user.getLanguageCode());
+            return new Locale(languageCode);
         }
 
     }
@@ -148,5 +158,14 @@ public class MeetingNotificationManager implements MeetingNotificationService {
                 dateString
         };
         return variables;
+    }
+
+    private String[] populateWelcomeFields(UserDTO userDTO) {
+        return new String[] {
+                userDTO.getDisplayName(),
+                userDTO.getFirstName(),
+                userDTO.getLastName(),
+                userDTO.getPhoneNumber()
+        };
     }
 }

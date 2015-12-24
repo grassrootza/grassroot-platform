@@ -6,15 +6,14 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.LogBook;
-import za.org.grassroot.core.dto.EventDTO;
-import za.org.grassroot.core.dto.EventWithTotals;
-import za.org.grassroot.core.dto.LogBookDTO;
-import za.org.grassroot.core.dto.RSVPTotalsDTO;
+import za.org.grassroot.core.dto.*;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.LogBookRepository;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.EventLogManagementService;
 
+import javax.jms.Message;
+import javax.jms.ObjectMessage;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -110,6 +109,30 @@ public class ScheduledTasks {
             e.printStackTrace();
         }
         log.info("sendLogBookReminders..." + count + "...queued to logbook-reminders");
+
+    }
+
+    /*
+    The reason for the bit of queue indirection is to create a bit of a delay, after the user setup is complete
+    and before we start sending the welcome messages
+     */
+    @Scheduled(fixedRate = 900000) //runs every 15 minutes
+    public void queueWelcomeMessages() {
+        log.info("queueWelcomeMessages...starting");
+        int count = 0;
+        // wrap in try catch so that the scheduled thread does not die with any error
+        try {
+            // fetch all the messages from the "welcome-messages" queue and queue it for processing
+            Message message;
+            while ((message = jmsTemplateProducerService.receiveMessage("welcome-messages")) != null) {
+                ObjectMessage objMessage = (ObjectMessage) message;
+                jmsTemplateProducerService.sendWithNoReply("generic-async",new GenericAsyncDTO("welcome-messages",objMessage.getObject()));
+                count++;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        log.info("queueWelcomeMessages..." + count + "...queued to generic-async");
 
     }
 }
