@@ -47,7 +47,7 @@ public class USSDHomeController extends USSDController {
 
     Logger log = LoggerFactory.getLogger(getClass());
     private static final String path = homePath + "/";
-    private static final USSDSection home = USSDSection.BASE;
+    private static final USSDSection thisSection = USSDSection.HOME;
 
     private static final String keyRsvp = "rsvp", keyRenameStart = "rename-start", keyGroupNameStart = "group-start";
     private static final int hashPosition = Integer.valueOf(System.getenv("USSD_CODE_LENGTH"));
@@ -109,7 +109,7 @@ public class USSDHomeController extends USSDController {
 
     private USSDMenu askForLanguage(User sessionUser) {
 
-        String prompt = getMessage(homeKey, startMenu, promptKey + "-language", sessionUser);
+        String prompt = getMessage(thisSection, startMenu, promptKey + "-language", sessionUser);
         String nextUrl = "start_language";
         USSDMenu promptMenu = new USSDMenu(prompt);
 
@@ -147,9 +147,9 @@ public class USSDHomeController extends USSDController {
         String returnUrl = sessionUser.getLastUssdMenu();
         log.info("The user was interrupted somewhere ...Here's the URL: " + returnUrl);
 
-        USSDMenu promptMenu = new USSDMenu(getMessage(homeKey, startMenu, promptKey + "-interrupted", sessionUser));
-        promptMenu.addMenuOption(returnUrl, getMessage(homeKey, startMenu, "interrupted.resume", sessionUser));
-        promptMenu.addMenuOption(startMenu + "_force", getMessage(homeKey, startMenu, "interrupted.start", sessionUser));
+        USSDMenu promptMenu = new USSDMenu(getMessage(thisSection, startMenu, promptKey + "-interrupted", sessionUser));
+        promptMenu.addMenuOption(returnUrl, getMessage(thisSection, startMenu, "interrupted.resume", sessionUser));
+        promptMenu.addMenuOption(startMenu + "_force", getMessage(thisSection, startMenu, "interrupted.start", sessionUser));
 
         // set the user's "last USSD menu" back to null, so avoids them always coming back here
         userManager.resetLastUssdMenu(sessionUser);
@@ -202,12 +202,12 @@ public class USSDHomeController extends USSDController {
             Group groupToJoin = groupManager.getGroupByToken(trailingDigits);
             groupManager.addGroupMember(groupToJoin, sessionUser);
             String prompt = (groupToJoin.hasName()) ?
-                    getMessage(homeKey, startMenu, promptKey + ".group.token.named", groupToJoin.getGroupName(), sessionUser) :
-                    getMessage(homeKey, startMenu, promptKey + ".group.token.unnamed", sessionUser);
+                    getMessage(thisSection, startMenu, promptKey + ".group.token.named", groupToJoin.getGroupName(), sessionUser) :
+                    getMessage(thisSection, startMenu, promptKey + ".group.token.unnamed", sessionUser);
             returnMenu = welcomeMenu(prompt, sessionUser);
         } else {
             System.out.println("Whoops, couldn't find the code");
-            returnMenu = welcomeMenu(getMessage(homeKey, startMenu, promptKey + ".unknown.request", sessionUser), sessionUser);
+            returnMenu = welcomeMenu(getMessage(thisSection, startMenu, promptKey + ".unknown.request", sessionUser), sessionUser);
         }
 
         return returnMenu;
@@ -220,8 +220,8 @@ public class USSDHomeController extends USSDController {
 
     private USSDMenu defaultStartMenu(User sessionUser) throws URISyntaxException {
 
-        String welcomeMessage = sessionUser.hasName() ? getMessage(homeKey, startMenu, promptKey + "-named", sessionUser.getName(""), sessionUser) :
-                    getMessage(homeKey, startMenu, promptKey, sessionUser);
+        String welcomeMessage = sessionUser.hasName() ? getMessage(thisSection, startMenu, promptKey + "-named", sessionUser.getName(""), sessionUser) :
+                    getMessage(thisSection, startMenu, promptKey, sessionUser);
         return welcomeMenu(welcomeMessage, sessionUser);
 
     }
@@ -242,7 +242,7 @@ public class USSDHomeController extends USSDController {
                 final String voteUri = "vote" + eventIdUrlSuffix + voteId + "&response=";
                 final String optionMsgKey = voteKey + "." + optionsKey;
 
-                startMenu.setPromptMessage(getMessage(homeKey, USSDController.startMenu, promptKey + "-vote", promptFields, sessionUser));
+                startMenu.setPromptMessage(getMessage(thisSection, USSDController.startMenu, promptKey + "-vote", promptFields, sessionUser));
 
                 startMenu.addMenuOption(voteUri + "yes", getMessage(optionMsgKey + "yes", sessionUser));
                 startMenu.addMenuOption(voteUri + "no", getMessage(optionMsgKey + "no", sessionUser));
@@ -254,21 +254,21 @@ public class USSDHomeController extends USSDController {
                 String[] meetingDetails = eventManager.populateNotificationFields(meeting);
 
                 // if the composed message is longer than 120 characters, we are going to go over, so return a shortened message
-                String defaultPrompt = getMessage(homeKey, USSDController.startMenu, promptKey + "-" + keyRsvp, meetingDetails, sessionUser);
+                String defaultPrompt = getMessage(thisSection, USSDController.startMenu, promptKey + "-" + keyRsvp, meetingDetails, sessionUser);
                 if (defaultPrompt.length() > 120)
-                    defaultPrompt = getMessage(homeKey, USSDController.startMenu, promptKey + "-" + keyRsvp + ".short", meetingDetails, sessionUser);
+                    defaultPrompt = getMessage(thisSection, USSDController.startMenu, promptKey + "-" + keyRsvp + ".short", meetingDetails, sessionUser);
 
                 String optionUri = keyRsvp + eventIdUrlSuffix + meeting.getId();
                 startMenu.setPromptMessage(defaultPrompt);
                 startMenu.setMenuOptions(new LinkedHashMap<>(optionsYesNo(sessionUser, optionUri, optionUri)));
                 break;
             case RENAME_SELF:
-                startMenu.setPromptMessage(getMessage(homeKey, USSDController.startMenu, promptKey + "-rename", sessionUser));
+                startMenu.setPromptMessage(getMessage(thisSection, USSDController.startMenu, promptKey + "-rename", sessionUser));
                 startMenu.setFreeText(true);
                 startMenu.setNextURI(keyRenameStart);
                 break;
             case NAME_GROUP:
-                startMenu.setPromptMessage(getMessage(homeKey, USSDController.startMenu, promptKey + "-group-rename", sessionUser));
+                startMenu.setPromptMessage(getMessage(thisSection, USSDController.startMenu, promptKey + "-group-rename", sessionUser));
                 startMenu.setFreeText(true);
                 startMenu.setNextURI(keyGroupNameStart + groupIdUrlSuffix + groupManager.groupToRename(sessionUser));
                 break;
@@ -314,7 +314,7 @@ public class USSDHomeController extends USSDController {
         User sessionUser = userManager.findByInputNumber(inputNumber);
         eventLogManagementService.rsvpForEvent(voteId, inputNumber, EventRSVPResponse.fromString(response));
 
-        return menuBuilder(new USSDMenu(getMessage(homeKey, startMenu, promptKey, "vote-recorded", sessionUser),
+        return menuBuilder(new USSDMenu(getMessage(thisSection, startMenu, promptKey, "vote-recorded", sessionUser),
                                         optionsHomeExit(sessionUser)));
 
     }
@@ -327,10 +327,10 @@ public class USSDHomeController extends USSDController {
         User sessionUser = userManager.findByInputNumber(inputNumber);
         String welcomeMessage;
         if (userName.equals("0") || userName.trim().equals("")) {
-            welcomeMessage = getMessage(homeKey, startMenu, promptKey, sessionUser);
+            welcomeMessage = getMessage(thisSection, startMenu, promptKey, sessionUser);
         } else {
             sessionUser = userManager.setDisplayName(sessionUser, userName);
-            welcomeMessage = getMessage(homeKey, startMenu, promptKey + "-rename-do", sessionUser.nameToDisplay(), sessionUser);
+            welcomeMessage = getMessage(thisSection, startMenu, promptKey + "-rename-do", sessionUser.nameToDisplay(), sessionUser);
         }
         return menuBuilder(welcomeMenu(welcomeMessage, sessionUser));
     }
@@ -346,12 +346,12 @@ public class USSDHomeController extends USSDController {
         User sessionUser = userManager.findByInputNumber(inputNumber);
         String welcomeMessage;
         if (groupName.equals("0") || groupName.trim().equals("")) {
-            welcomeMessage = getMessage(homeKey, startMenu, promptKey, sessionUser);
+            welcomeMessage = getMessage(thisSection, startMenu, promptKey, sessionUser);
         } else {
             Group groupToRename = groupManager.loadGroup(groupId);
             groupToRename.setGroupName(groupName);
             groupToRename = groupManager.saveGroup(groupToRename);
-            welcomeMessage = getMessage(homeKey, startMenu, promptKey + "-group-do", sessionUser.nameToDisplay(), sessionUser);
+            welcomeMessage = getMessage(thisSection, startMenu, promptKey + "-group-do", sessionUser.nameToDisplay(), sessionUser);
         }
 
         return menuBuilder(welcomeMenu(welcomeMessage, sessionUser));

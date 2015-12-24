@@ -68,7 +68,7 @@ public class USSDLogBookController extends USSDController {
                                  @RequestParam(value = revisingFlag, required = false) boolean revising,
                                  @RequestParam(value = logBookParam, required = false) Long logBookId) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
-        String nextUri = (revising) ? logMenus + dueDateMenu + groupIdUrlSuffix + groupId : returnUrl(confirmMenu, logBookId);
+        String nextUri = (!revising) ? logMenus + dueDateMenu + groupIdUrlSuffix + groupId : returnUrl(confirmMenu, logBookId);
         USSDMenu menu = new USSDMenu(getMessage(thisSection, subjectMenu, promptKey, user), nextUri);
         return menuBuilder(menu);
     }
@@ -91,12 +91,12 @@ public class USSDLogBookController extends USSDController {
     public Request askForAssignment(@RequestParam(value = phoneNumber) String inputNumber,
                                     @RequestParam(value = logBookParam) Long logBookId,
                                     @RequestParam(value = userInputParam) String userInput,
-                                    @RequestParam(value = revisingFlag) boolean revising) throws URISyntaxException {
+                                    @RequestParam(value = revisingFlag, required=false) boolean revising) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber, saveLogMenu(assignMenu, logBookId));
         if (!revising) logBookService.setDueDate(logBookId, DateTimeUtil.parseDateTime(userInput));
         USSDMenu menu = new USSDMenu(menuPrompt(assignMenu, user));
         menu.addMenuOption(returnUrl(confirmMenu, logBookId), getMessage(thisSection, assignMenu, optionsKey + "group", user));
-        menu.addMenuOption(returnUrl(pickUserMenu, logBookId), getMessage(thisSection, assignMenu, optionsKey + "user", user));
+        menu.addMenuOption(returnUrl(searchUserMenu, logBookId), getMessage(thisSection, assignMenu, optionsKey + "user", user));
         return menuBuilder(menu);
     }
 
@@ -157,16 +157,19 @@ public class USSDLogBookController extends USSDController {
         boolean revising = (priorMenu != null && !priorMenu.trim().equals(""));
 
         User user = userManager.findByInputNumber(inputNumber, saveLogMenu(confirmMenu, logBookId));
-        LogBook logBook = logBookService.load(logBookId);
 
         if (revising) updateLogBookEntry(logBookId, priorMenu, userInput);
         if (assignToUser) logBookService.setAssignedToUser(logBookId, assignUserId);
 
+        // todo: trim the message and other things (for char limit)
+        LogBook logBook = logBookService.load(logBookId);
         String formattedDueDate = dateFormat.format(logBook.getActionByDate().toLocalDateTime());
+        String assignedUser = (assignToUser) ? userManager.getDisplayName(logBook.getAssignedToUserId()) : "";
+        String[] promptFields = new String[] { logBook.getMessage(), groupManager.getGroupName(logBook.getGroupId()),
+                formattedDueDate, assignedUser };
 
-        String promptMessage = getMessage(thisSection, confirmMenu, promptKey, user); // todo: make this vary with assignment etc
-
-        USSDMenu menu = new USSDMenu(promptMessage);
+        String assignedKey = (assignToUser) ? ".assigned" : ".unassigned";
+        USSDMenu menu = new USSDMenu(getMessage(thisSection, confirmMenu, promptKey + assignedKey, promptFields, user));
         menu.addMenuOption(returnUrl(send, logBookId), getMessage(thisSection, confirmMenu, optionsKey + "send", user));
         menu.addMenuOption(backUrl(subjectMenu, logBookId), getMessage(thisSection, confirmMenu, optionsKey + "subject", user));
         menu.addMenuOption(backUrl(dueDateMenu, logBookId), getMessage(thisSection, confirmMenu, optionsKey + "duedate", user));

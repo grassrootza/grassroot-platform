@@ -79,10 +79,9 @@ public class USSDGroupUtil extends USSDUtil {
     // helper method which will use some defaults
     public USSDMenu askForGroupNoInlineNew(User user, USSDSection section, String menuIfExisting) throws URISyntaxException {
         final String promptIfExisting = getMessage(section, groupKeyForMessages, promptKey, user);
-        final String urlIfExisting = section.toPath() + menuIfExisting;
         final String promptIfEmpty = getMessage(section, groupKeyForMessages, promptKey + ".empty", user);
         final String urlIfEmpty = USSDSection.GROUP_MANAGER.toPath() + "create";
-        return askForGroupNoInlineNew(user, section, promptIfExisting, promptIfEmpty, urlIfExisting, urlIfEmpty, "");
+        return askForGroupNoInlineNew(user, section, promptIfExisting, promptIfEmpty, menuIfExisting, urlIfEmpty, "");
     }
 
     public USSDMenu userGroupMenuPageOne(User user, String prompt, String existingGroupUrl, String newGroupUrl) throws URISyntaxException {

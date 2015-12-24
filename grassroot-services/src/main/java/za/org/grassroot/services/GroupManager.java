@@ -174,6 +174,13 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
+    public Group createNewGroupWithCreatorAsMember(User creatingUser, String groupName) {
+        Group group = new Group(groupName, creatingUser);
+        group.addMember(creatingUser);
+        return groupRepository.save(group);
+    }
+
+    @Override
     public Group createNewGroup(User creatingUser, List<String> phoneNumbers) {
 
         // todo: consider some way to check if group "exists", needs a solid "equals" logic
@@ -240,6 +247,11 @@ public class GroupManager implements GroupManagementService {
         } else {
             return group;
         }
+    }
+
+    @Override
+    public Group renameGroup(Long groupId, String newGroupName) {
+        return renameGroup(loadGroup(groupId), newGroupName);
     }
 
     @Override
@@ -574,6 +586,20 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
+    public Group mergeGroupsLeaveActive(Long firstGroupId, Long secondGroupId) {
+        return mergeGroups(loadGroup(firstGroupId), loadGroup(secondGroupId), false);
+    }
+
+    @Override
+    public Group mergeGroupsIntoNew(Long firstGroupId, Long secondGroupId, String newGroupName, User creatingUser) {
+        Group consolidatedGroup = new Group(newGroupName, creatingUser);
+        Set<User> setOfMembers = new HashSet<>(loadGroup(firstGroupId).getGroupMembers());
+        setOfMembers.addAll(loadGroup(secondGroupId).getGroupMembers());
+        consolidatedGroup.setGroupMembers(new ArrayList<>(setOfMembers));
+        return saveGroup(consolidatedGroup);
+    }
+
+    @Override
     public Group mergeGroups(Group groupA, Group groupB) {
         return mergeGroups(groupA, groupB, true);
     }
@@ -598,6 +624,7 @@ public class GroupManager implements GroupManagementService {
     @Override
     public Group mergeGroupsSpecifyOrder(Group groupInto, Group groupFrom, boolean setFromGroupInactive) {
 
+        // todo: optimize this, almost certainly very slow
         for (User user : groupFrom.getGroupMembers()) {
             addGroupMember(groupInto, user);
         }
@@ -708,6 +735,11 @@ public class GroupManager implements GroupManagementService {
     @Override
     public boolean isGroupCreatedByUser(Long groupId, User user) {
         return (loadGroup(groupId).getCreatedByUser() == user);
+    }
+
+    @Override
+    public String getGroupName(Long groupId) {
+        return loadGroup(groupId).getName("");
     }
 
     @Override

@@ -34,7 +34,8 @@ public class USSDUrlUtil {
             groupIdUrlSuffix = ("?" + groupIdParam + "="),
             eventIdUrlSuffix = ("?" + eventIdParam + "="),
             setInterruptedFlag = "&" + interruptedFlag + "=1",
-            setRevisingFlag = "&" + revisingFlag + "=1";
+            setRevisingFlag = "&" + revisingFlag + "=1",
+            addInterruptedInput = "&" + interruptedInput + "=";
 
     public static String paginatedGroupUrl(String menuPrompt, String existingGroupUri, String newGroupUri, Integer pageNumber) {
         String newGroupParameter = (newGroupUri != null) ? "&newUri=" + encodeParameter(newGroupUri) : "";
@@ -93,6 +94,10 @@ public class USSDUrlUtil {
         return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupId=" + groupId + setInterruptedFlag + params;
     }
 
+    public static String saveGroupMenuWithInput(String menu, Long groupId, String input) {
+        return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupId=" + groupId + addInterruptedInput + encodeParameter(input);
+    }
+
     public static String saveVoteMenu(String menu, Long eventId) {
         return USSDSection.VOTES.toPath() + menu + "?eventId=" + eventId + setInterruptedFlag; // include the +1
     }
@@ -103,6 +108,10 @@ public class USSDUrlUtil {
 
     public static String saveLogMenu(String menu, Long logBookId) {
         return USSDSection.LOGBOOK.toPath() + menu + "?logBookId=" + logBookId + setInterruptedFlag;
+    }
+
+    public static String groupMenuWithId(String menu, Long groupId) {
+        return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupId=" + groupId;
     }
 
 }

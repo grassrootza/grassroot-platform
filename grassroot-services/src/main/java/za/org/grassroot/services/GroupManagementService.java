@@ -25,6 +25,8 @@ public interface GroupManagementService {
 
     public Group createNewGroup(Long creatingUserId, List<String> phoneNumbers);
 
+    public Group createNewGroupWithCreatorAsMember(User creatingUser, String groupName);
+
     /*
     Methods to load, find, save groups
     */
@@ -59,6 +61,8 @@ public interface GroupManagementService {
 
     public boolean isGroupCreatedByUser(Long groupId, User user);
 
+    public String getGroupName(Long groupId);
+
     /*
     Methods to find, and add group members
      */
@@ -90,6 +94,8 @@ public interface GroupManagementService {
     public Long groupToRename(User sessionUser);
 
     public Group renameGroup(Group group, String newGroupName);
+
+    public Group renameGroup(Long groupId, String newGroupName);
 
     public List<Group> groupsOnWhichCanCallVote(User user);
 
@@ -181,6 +187,10 @@ public interface GroupManagementService {
     public Group setGroupInactive(Long groupId);
 
     public Group mergeGroups(Long firstGroupId, Long secondGroupId);
+
+    public Group mergeGroupsLeaveActive(Long firstGroupId, Long secondGroupId);
+
+    public Group mergeGroupsIntoNew(Long firstGroupId, Long secondGroupId, String newGroupName, User creatingUser);
 
     public Group mergeGroups(Group firstGroup, Group secondGroup);
 

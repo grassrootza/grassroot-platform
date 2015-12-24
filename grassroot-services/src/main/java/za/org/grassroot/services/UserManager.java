@@ -411,6 +411,11 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
+    public String getDisplayName(Long userId) {
+        return loadUser(userId).nameToDisplay();
+    }
+
+    @Override
     public User setUserLanguage(User sessionUser, String locale) {
         sessionUser.setLanguageCode(locale);
         return userRepository.save(sessionUser);

@@ -93,6 +93,8 @@ public interface UserManagementService {
 
     User setDisplayName(User user, String displayName);
 
+    String getDisplayName(Long userId);
+
     User setUserLanguage(User sessionUser, String locale);
 
     User setUserLanguage(Long userId, String locale);

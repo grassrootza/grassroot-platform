@@ -75,8 +75,8 @@ public class USSDVoteController extends USSDController {
             if (hasVotesToView <= 0)
                 menu.addMenuOption(voteMenus + "old", getMessage(thisSection, startMenu, optionsKey + "old", user));
         } else {
-            String groupsExistPrompt = getMessage(voteKey, "group", promptKey, user);
-            String groupsDontExistPrompt = getMessage(voteKey, "group", promptKey + "-nogroup", user);
+            String groupsExistPrompt = getMessage(thisSection, "group", promptKey, user);
+            String groupsDontExistPrompt = getMessage(thisSection, "group", promptKey + "-nogroup", user);
             menu = ussdGroupUtil.askForGroupNoInlineNew(user, thisSection, groupsExistPrompt, groupsDontExistPrompt,
                                                         "issue", groupMenus + "create", null);
         }
@@ -90,8 +90,8 @@ public class USSDVoteController extends USSDController {
 
         User user = userManager.findByInputNumber(inputNumber, voteMenus + "new");
 
-        String groupsExistPrompt = getMessage(voteKey, "group", promptKey, user);
-        String groupsDontExistPrompt = getMessage(voteKey, "group", promptKey + "-nogroup", user);
+        String groupsExistPrompt = getMessage(thisSection, "group", promptKey, user);
+        String groupsDontExistPrompt = getMessage(thisSection, "group", promptKey + "-nogroup", user);
 
         return menuBuilder(ussdGroupUtil.askForGroupNoInlineNew(user, thisSection, groupsExistPrompt, groupsDontExistPrompt,
                                                                 "issue", groupMenus + "create", null));
@@ -122,7 +122,7 @@ public class USSDVoteController extends USSDController {
         String nextUrl = (!revising) ? voteMenus + "time" + eventIdUrlSuffix + eventId :
                 voteMenus + "confirm" + eventIdUrlSuffix + eventId + "&field=issue";
 
-        USSDMenu menu = new USSDMenu(getMessage(voteKey, "issue", promptKey, user), nextUrl);
+        USSDMenu menu = new USSDMenu(getMessage(thisSection, "issue", promptKey, user), nextUrl);
         return menuBuilder(menu);
 
     }
@@ -143,7 +143,7 @@ public class USSDVoteController extends USSDController {
 
         if (!interrupted && !revising) eventManager.setSubject(eventId, issue);
 
-        USSDMenu menu = new USSDMenu(getMessage(voteKey, "time", promptKey, user));
+        USSDMenu menu = new USSDMenu(getMessage(thisSection, "time", promptKey, user));
 
         String nextUrl = voteMenus + "confirm" + eventIdUrlSuffix + eventId + "&field=standard&time=";
         String optionKey = voteKey + ".time." + optionsKey;
@@ -167,7 +167,7 @@ public class USSDVoteController extends USSDController {
                                     @RequestParam(value = revisingFlag, required = false) boolean revising) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber, saveVoteMenu("time_custom", eventId));
-        USSDMenu menu = new USSDMenu(getMessage(voteKey, "time", promptKey + "-custom", user));
+        USSDMenu menu = new USSDMenu(getMessage(thisSection, "time", promptKey + "-custom", user));
         menu.setFreeText(true);
         menu.setNextURI(voteMenus + "confirm" + eventIdUrlSuffix + eventId + "&field=custom");
 
@@ -211,7 +211,7 @@ public class USSDVoteController extends USSDController {
             promptFields = new String[]{vote.getName(), "at " + vote.getEventStartDateTime().toLocalDateTime().format(dateTimeFormat)};
         }
 
-        USSDMenu menu = new USSDMenu(getMessage(voteKey, "confirm", promptKey, promptFields, user));
+        USSDMenu menu = new USSDMenu(getMessage(thisSection, "confirm", promptKey, promptFields, user));
         menu.addMenuOption(voteMenus + "send" + eventIdUrlSuffix + eventId, getMessage(thisSection, "confirm", optionsKey + "yes", user));
         menu.addMenuOption(backVoteUrl("issue", eventId), getMessage(thisSection, "confirm", optionsKey + "topic", user));
         menu.addMenuOption(backVoteUrl("time", eventId), getMessage(thisSection, "confirm", optionsKey + "time", user));

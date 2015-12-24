@@ -138,25 +138,15 @@ public class USSDController {
     i18n helper methods
      */
 
-    protected String getMessage(String section, String menuKey, String messageLocation, User sessionUser) {
-        final String messageKey = "ussd." + section + "." + menuKey + "." + messageLocation;
-        return messageSource.getMessage(messageKey, null, new Locale(getLanguage(sessionUser)));
-    }
-
     protected String getMessage(USSDSection section, String menu, String messageType, User user) {
         final String messageKey = "ussd." + section.toKey() + menu + "." + messageType;
         return messageSource.getMessage(messageKey, null, new Locale(getLanguage(user)));
     }
 
     // convenience function for when passing just a name (of user or group, for example)
-    protected String getMessage(String section, String menuKey, String messageLocation, String parameter, User sessionUser) {
-        final String messageKey = "ussd." + section + "." + menuKey + "." + messageLocation;
+    protected String getMessage(USSDSection section, String menuKey, String messageLocation, String parameter, User sessionUser) {
+        final String messageKey = "ussd." + section.toKey() + menuKey + "." + messageLocation;
         return messageSource.getMessage(messageKey, new String[]{ parameter }, new Locale(getLanguage(sessionUser)));
-    }
-
-    protected String getMessage(String section, String menuKey, String messageLocation, String[] parameters, User sessionUser) {
-        final String messageKey = "ussd." + section + "." + menuKey + "." + messageLocation;
-        return messageSource.getMessage(messageKey, parameters, new Locale(getLanguage(sessionUser)));
     }
 
     protected String getMessage(USSDSection section, String menu, String messageType, String[] parameters, User user) {

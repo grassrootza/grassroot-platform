@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
+import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
 import java.net.URISyntaxException;
@@ -25,6 +26,7 @@ public class USSDUserController extends USSDController {
 
     private static final String keyStart = "start", keyName = "name";
     private static final String keyLanguage = "language", keyPhone = "phone";
+    private static final USSDSection thisSection = USSDSection.USER_PROFILE;
 
     /**
      * Starting the user profile management flow here
@@ -36,11 +38,11 @@ public class USSDUserController extends USSDController {
 
         User sessionUser = userManager.findByInputNumber(inputNumber);
 
-        USSDMenu thisMenu = new USSDMenu(getMessage(userKey, startMenu, promptKey, sessionUser));
+        USSDMenu thisMenu = new USSDMenu(getMessage(thisSection, startMenu, promptKey, sessionUser));
 
-        thisMenu.addMenuOption(userMenus + keyName, getMessage(userKey, startMenu, optionsKey + keyName, sessionUser));
-        thisMenu.addMenuOption(userMenus + keyLanguage, getMessage(userKey, startMenu, optionsKey + keyLanguage, sessionUser));
-        thisMenu.addMenuOption(userMenus + keyPhone, getMessage(userKey, startMenu, optionsKey + keyPhone, sessionUser));
+        thisMenu.addMenuOption(userMenus + keyName, getMessage(thisSection, startMenu, optionsKey + keyName, sessionUser));
+        thisMenu.addMenuOption(userMenus + keyLanguage, getMessage(thisSection, startMenu, optionsKey + keyLanguage, sessionUser));
+        thisMenu.addMenuOption(userMenus + keyPhone, getMessage(thisSection, startMenu, optionsKey + keyPhone, sessionUser));
 
         return menuBuilder(thisMenu);
     }
@@ -56,9 +58,9 @@ public class USSDUserController extends USSDController {
         catch (NoSuchElementException e) { return noUserError; }
 
         if (sessionUser.hasName()) {
-            thisMenu.setPromptMessage(getMessage(userKey, keyName, promptKey + ".named", sessionUser.getDisplayName(), sessionUser));
+            thisMenu.setPromptMessage(getMessage(thisSection, keyName, promptKey + ".named", sessionUser.getDisplayName(), sessionUser));
         } else {
-            thisMenu.setPromptMessage(getMessage(userKey, keyName, promptKey + ".unnamed", sessionUser));
+            thisMenu.setPromptMessage(getMessage(thisSection, keyName, promptKey + ".unnamed", sessionUser));
         }
 
         return menuBuilder(thisMenu);
@@ -78,7 +80,7 @@ public class USSDUserController extends USSDController {
         sessionUser.setDisplayName(newName);
         sessionUser = userManager.save(sessionUser);
 
-        return menuBuilder(new USSDMenu(getMessage(userKey, keyName + doSuffix, promptKey, sessionUser), optionsHomeExit(sessionUser)));
+        return menuBuilder(new USSDMenu(getMessage(thisSection, keyName + doSuffix, promptKey, sessionUser), optionsHomeExit(sessionUser)));
     }
 
     @RequestMapping(value = homePath + userMenus + keyLanguage)
@@ -89,7 +91,7 @@ public class USSDUserController extends USSDController {
         try { sessionUser = userManager.findByInputNumber(inputNumber); }
         catch (NoSuchElementException e) { return noUserError; }
 
-        USSDMenu thisMenu = new USSDMenu(getMessage(userKey, keyLanguage, promptKey, sessionUser));
+        USSDMenu thisMenu = new USSDMenu(getMessage(thisSection, keyLanguage, promptKey, sessionUser));
 
         for (Map.Entry<String, String> entry : userManager.getImplementedLanguages().entrySet()) {
             thisMenu.addMenuOption(userMenus + keyLanguage + doSuffix + "?language=" + entry.getKey(), entry.getValue());
@@ -110,7 +112,7 @@ public class USSDUserController extends USSDController {
         sessionUser.setLanguageCode(language);
         sessionUser = userManager.save(sessionUser);
 
-        return menuBuilder(new USSDMenu(getMessage(userKey, keyLanguage + doSuffix, promptKey, sessionUser),
+        return menuBuilder(new USSDMenu(getMessage(thisSection, keyLanguage + doSuffix, promptKey, sessionUser),
                                         optionsHomeExit(sessionUser)));
     }
 
