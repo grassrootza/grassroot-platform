@@ -350,7 +350,6 @@ public class Event implements Serializable {
         if (name != null ? !name.equals(o.getName()) : o.getName() != null) return false;
 
         // last, check if other event is send blocked, and if so, this being true means equal, being false means not, so just return that
-        if (o.isSendBlocked()) return sendBlocked;
 
         return true;
 

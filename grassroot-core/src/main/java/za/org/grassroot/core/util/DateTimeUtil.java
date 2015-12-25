@@ -29,7 +29,7 @@ public class DateTimeUtil {
     // todo: replace with getters
     public static final DateTimeFormatter preferredDateFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy");
     public static final DateTimeFormatter preferredTimeFormat = DateTimeFormatter.ofPattern("HH:mm");
-    public static final DateTimeFormatter preferredDateTimeFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:MM");
+    public static final DateTimeFormatter preferredDateTimeFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
 
     private static final String possibleTimeDelims = "[-, :]+";
     private static final Joiner timeJoiner = Joiner.on(":").skipNulls();

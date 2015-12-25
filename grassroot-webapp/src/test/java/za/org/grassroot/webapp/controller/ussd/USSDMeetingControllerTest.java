@@ -25,7 +25,9 @@ import java.util.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static za.org.grassroot.webapp.util.USSDUrlUtil.saveMeetingMenu;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.saveMenuUrlWithInput;
+import static za.org.grassroot.webapp.util.USSDUrlUtil.saveMtgMenuWithAction;
 
 /**
  * Created by luke on 2015/11/26.
@@ -291,7 +293,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         testMeeting.setAppliesToGroup(testGroup);
         testMeeting.setId(1L);
 
-        String urlToCheck = USSDUrlUtil.saveMeetingMenu("subject", 1L, false);
+        String urlToCheck = saveMeetingMenu("subject", 1L, false);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToCheck)).thenReturn(testUser);
         when(eventManagementServiceMock.createMeeting(testUserPhone, testGroup.getId())).thenReturn(testMeeting);
 
@@ -311,7 +313,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     public void settingLocationShouldWork() throws Exception {
 
         User testUser = new User(testUserPhone);
-        String urlToSave = USSDUrlUtil.saveMeetingMenu("place", 1L, false);
+        String urlToSave = saveMeetingMenu("place", 1L, false);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
 
@@ -331,7 +333,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     public void settingDateTimeShouldWork() throws Exception {
 
         User testUser = new User(testUserPhone);
-        String urlToSave = USSDUrlUtil.saveMeetingMenu("time", 1L, false);
+        String urlToSave = saveMeetingMenu("time", 1L, false);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
 
@@ -353,7 +355,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     public void confirmationMenuShouldWork() throws Exception {
 
         User testUser = new User(testUserPhone);
-        String urlToSave = USSDUrlUtil.saveMeetingMenu("confirm", 1L, false);
+        String urlToSave = saveMeetingMenu("confirm", 1L, false);
 
         Event meetingForTest = new Event("unit test", testUser);
         meetingForTest.setEventLocation("JoziHub");
@@ -382,7 +384,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     @Test
     public void meetingChangeTimeShouldWork() throws Exception {
         User testUser = new User(testUserPhone);
-        String urlToSave = USSDUrlUtil.saveMeetingMenu("time_only?next_menu=confirm", 1L, false);
+        String urlToSave = saveMeetingMenu("time_only", 1L, false) + "?next_menu=confirm";
         Event meetingForTest = new Event("unit test", testUser);
         meetingForTest.setId(1L);
         meetingForTest.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.now()));
@@ -402,7 +404,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     @Test
     public void meetingChangeDateShouldWork() throws Exception {
         User testUser = new User(testUserPhone);
-        String urlToSave = USSDUrlUtil.saveMeetingMenu("date_only?next_menu=confirm", 1L, false);
+        String urlToSave = saveMeetingMenu("date_only", 1L, false) + "?next_menu=confirm";
         Event meetingForTest = new Event("unit test", testUser);
         meetingForTest.setId(1L);
         meetingForTest.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.now()));
@@ -431,7 +433,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         LocalDateTime forTimestamp = DateTimeUtil.parseDateTime("Tomorrow 7am");
         meetingForTest.setEventStartDateTime(Timestamp.valueOf(forTimestamp));
 
-        String urlToSave = USSDUrlUtil.saveMeetingMenu("confirm", 1L, false);
+        String urlToSave = saveMeetingMenu("confirm", 1L, false);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(eventManagementServiceMock.setSendBlock(1L)).thenReturn(meetingForTest);
@@ -468,7 +470,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         LocalDateTime forTimestamp = DateTimeUtil.parseDateTime("Tomorrow 7am");
         testMeeting.setEventStartDateTime(Timestamp.valueOf(forTimestamp));
 
-        String urlToSave = USSDUrlUtil.saveMeetingMenu("confirm", 1L, false);
+        String urlToSave = saveMeetingMenu("confirm", 1L, false);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(eventManagementServiceMock.setSendBlock(1L)).thenReturn(testMeeting);
@@ -573,7 +575,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         Event testMeeting = new Event("test meeeting", testUser);
         testMeeting.setId(1L);
         testMeeting.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.now()));
-        String urlToSave = USSDUrlUtil.saveMeetingMenu("date_only?next_menu=changeDateTime", 1L, false);
+        String urlToSave = saveMeetingMenu("date_only", 1L, false) + "?next_menu=changeDateTime";
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(eventManagementServiceMock.loadEvent(testMeeting.getId())).thenReturn(testMeeting);
@@ -596,7 +598,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         Event testMeeting = new Event("test meeeting", testUser);
         testMeeting.setId(1L);
         testMeeting.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.now()));
-        String urlToSave = USSDUrlUtil.saveMeetingMenu("time_only?next_menu=changeDateTime", 1L, false);
+        String urlToSave = saveMeetingMenu("time_only", 1L, false) + "?next_menu=changeDateTime";
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(eventManagementServiceMock.loadEvent(testMeeting.getId())).thenReturn(testMeeting);
@@ -618,15 +620,14 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         User testUser = new User(testUserPhone);
         Event testMeeting = new Event("test meeting", testUser);
         testMeeting.setId(1L);
-        testMeeting.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.of(2016, 06, 16, 9, 0)));
+        testMeeting.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.of(2015, 06, 15, 10, 0))); // switch year soon!
 
-        String dateUrlToSave = "mtg/changeDateTime?eventId=1&action=date_only&interrupted=1";
-        String timeUrlToSave = "mtg/changeDateTime?eventId=1&action=time_only&interrupted=1";
+        String dateUrlToSave = saveMtgMenuWithAction("changeDateTime", testMeeting.getId(), "date_only");
+        String timeUrlToSave = saveMtgMenuWithAction("changeDateTime", testMeeting.getId(), "time_only");
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, dateUrlToSave)).thenReturn(testUser);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, timeUrlToSave)).thenReturn(testUser);
-        when(eventManagementServiceMock.changeMeetingTime(testMeeting.getId(), "09:00")).thenReturn(testMeeting);
-        when(eventManagementServiceMock.changeMeetingDate(testMeeting.getId(), "16-06-2015")).thenReturn(testMeeting); // note year issue
+        when(eventManagementServiceMock.loadEvent(testMeeting.getId())).thenReturn(testMeeting);
 
         mockMvc.perform(get(path + "changeDateTime").param(phoneParam, testUserPhone).param("eventId", "" + testMeeting.getId()).
                 param("action", "time_only").param("request", "09:00")).andExpect(status().isOk());
@@ -636,9 +637,9 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(eq(testUserPhone), anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(eventManagementServiceMock, times(1)).changeMeetingTime(testMeeting.getId(), "09:00");
-        verify(eventManagementServiceMock, times(1)).changeMeetingDate(testMeeting.getId(), "16-06-2015"); // watch year
-        verify(eventManagementServiceMock, times(2)).setSendBlock(testMeeting.getId());
+        verify(eventManagementServiceMock, times(2)).loadEvent(testMeeting.getId());
+        verify(eventManagementServiceMock, times(1)).storeDateTimeString(testMeeting.getId(), "15-06-2015 09:00"); // year!
+        verify(eventManagementServiceMock, times(1)).storeDateTimeString(testMeeting.getId(), "16-06-2015 10:00"); // year!
         verifyNoMoreInteractions(eventManagementServiceMock);
     }
 
@@ -653,11 +654,11 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
 
         mockMvc.perform(get(path + "modify-do").param(phoneParam, testUserPhone).param("eventId", "" + testMeeting.getId()).
-                param("action", "changeDateTime").param("input", "16-06-2015 09:00")).andExpect(status().isOk());
+                param("action", "changeDateTime").param("value", "16-06-2015 09:00")).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(eventManagementServiceMock, times(1)).removeSendBlock(testMeeting.getId());
+        verify(eventManagementServiceMock, times(1)).setEventTimestampToStoredString(testMeeting.getId());
         verifyNoMoreInteractions(eventManagementServiceMock);
 
     }
@@ -725,8 +726,6 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(actionsAndInputs.size())).findByInputNumber(eq(testUserPhone), anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(eventManagementServiceMock, times(1)).setSendBlock(testMeeting.getId());
-        verify(eventManagementServiceMock, times(1)).setLocation(testMeeting.getId(), "Braam");
         verifyNoMoreInteractions(eventManagementServiceMock);
 
     }
@@ -741,17 +740,17 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
 
         mockMvc.perform(get(path + "modify-do").param(phoneParam, testUserPhone).param("eventId", "" + testMeeting.getId()).
-                param("action", "changeLocation").param("input", "Braam")).andExpect(status().isOk());
+                param("action", "changeLocation").param("value", "Braam")).andExpect(status().isOk());
 
         mockMvc.perform(get(path + "modify-do").param(phoneParam, testUserPhone).param("eventId", "" + testMeeting.getId()).
-                param("action", "cancel").param("input", "Braam")).andExpect(status().isOk());
+                param("action", "cancel").param("value", "Braam")).andExpect(status().isOk());
 
         Timestamp modifiedTimestamp = Timestamp.valueOf(DateTimeUtil.parseDateTime("Sunday 9am"));
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(anyString(), eq(null));
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(eventManagementServiceMock, times(1)).removeSendBlock(testMeeting.getId());
         verify(eventManagementServiceMock, times(1)).cancelEvent(testMeeting.getId());
+        verify(eventManagementServiceMock, times(1)).setLocation(testMeeting.getId(), "Braam");
         verifyNoMoreInteractions(eventManagementServiceMock);
 
     }

@@ -29,7 +29,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
-import static za.org.grassroot.webapp.util.USSDUrlUtil.saveMeetingMenu;
+import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 
 /**
  * @author luke on 2015/08/14.
@@ -248,18 +248,22 @@ public class USSDMeetingController extends USSDController {
     public Request changeTimeOnly(@RequestParam(value= phoneNumber, required = true) String inputNumber,
                                   @RequestParam(value= eventIdParam, required = true) Long eventId,
                                   @RequestParam(value= previousMenu, required= false) String priorMenu,
-                                  @RequestParam(value="next_menu", required = true) String nextMenu) throws URISyntaxException {
+                                  @RequestParam(value="next_menu", required = false) String nextMenu,
+                                  @RequestParam(value="load_string", required = false) boolean loadString) throws URISyntaxException {
 
-        User user = userManager.findByInputNumber(inputNumber,
-                                                  saveMeetingMenu(timeOnly + "?next_menu=" + nextMenu, eventId, false));
+        if (nextMenu == null) nextMenu = priorMenu;
+        User user = userManager.findByInputNumber(inputNumber, saveMeetingMenu(timeOnly, eventId, false) + "?next_menu=" + nextMenu);
 
-        Event meeting = eventManager.loadEvent(eventId);
-        String currentlySetTime = meeting.getEventStartDateTime().toLocalDateTime().format(DateTimeUtil.preferredTimeFormat);
-        String passingField = (nextMenu.equals(confirmMenu)) ? previousMenu : "action";
+        String currentlySetTime = (!loadString) ?
+                eventManager.loadEvent(eventId).getEventStartDateTime().toLocalDateTime().format(DateTimeUtil.preferredTimeFormat) :
+                eventManager.getDateTimeFromString(eventId).format(DateTimeUtil.preferredTimeFormat);
+
+        String passingField = "&" + ((nextMenu.equals(confirmMenu)) ? previousMenu : "action") + "=" + timeOnly;
+        String loadFlag = (loadString) ? "&load_string=1" : "";
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, "change", "time." + promptKey, currentlySetTime, user));
         menu.setFreeText(true);
-        menu.setNextURI(meetingMenus + nextMenu + eventIdUrlSuffix + eventId + "&" + passingField + "=" + timeOnly + "&revising=1");
+        menu.setNextURI(mtgMenu(nextMenu, eventId) + passingField + loadFlag);
 
         return menuBuilder(menu);
     }
@@ -269,19 +273,23 @@ public class USSDMeetingController extends USSDController {
     public Request changeDateOnly(@RequestParam(value= phoneNumber, required = true) String inputNumber,
                                   @RequestParam(value= eventIdParam, required = true) Long eventId,
                                   @RequestParam(value= previousMenu, required = false) String priorMenu,
-                                  @RequestParam(value="next_menu", required = false) String nextMenu) throws URISyntaxException {
+                                  @RequestParam(value="next_menu", required = false) String nextMenu,
+                                  @RequestParam(value="load_string", required = false) boolean loadString) throws URISyntaxException {
 
         if (nextMenu == null) nextMenu = priorMenu;
-        User user = userManager.findByInputNumber(inputNumber,
-                                                  saveMeetingMenu(dateOnly + "?next_menu=" + nextMenu, eventId, false));
+        User user = userManager.findByInputNumber(inputNumber, saveMeetingMenu(dateOnly, eventId, false) + "?next_menu=" + nextMenu);
 
-        Event meeting = eventManager.loadEvent(eventId);
-        String currentDate = meeting.getEventStartDateTime().toLocalDateTime().format(DateTimeUtil.preferredDateFormat);
-        String passingField = (nextMenu.equals(confirmMenu)) ? previousMenu : "action"; // modify & confirm screens name params differently
+        String currentDate = (!loadString) ?
+                eventManager.loadEvent(eventId).getEventStartDateTime().toLocalDateTime().format(DateTimeUtil.preferredDateFormat) :
+                eventManager.getDateTimeFromString(eventId).format(DateTimeUtil.preferredDateFormat);
+
+        // modify & confirm screens name params differently & during modification we have to pass along that we are using the string
+        String passingField = "&" + ((nextMenu.equals(confirmMenu)) ? previousMenu : "action") + "=" + dateOnly;
+        String loadFlag = (loadString) ? "&load_string=1" : "";
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, "change", "date." + promptKey, currentDate, user));
         menu.setFreeText(true);
-        menu.setNextURI(meetingMenus + nextMenu + eventIdUrlSuffix + eventId + "&" + passingField + "=" + dateOnly + "&revising=1");
+        menu.setNextURI(mtgMenu(nextMenu, eventId) + passingField + loadFlag);
 
         return menuBuilder(menu);
     }
@@ -292,8 +300,7 @@ public class USSDMeetingController extends USSDController {
                                   @RequestParam(value= eventIdParam, required=true) Long eventId,
                                   @RequestParam(value= previousMenu, required=true) String priorMenuName,
                                   @RequestParam(value= userInputParam, required=true) String passedValue,
-                                  @RequestParam(value="interrupted", required=false) boolean interrupted,
-                                  @RequestParam(value="revising", required=false) boolean revising) throws URISyntaxException {
+                                  @RequestParam(value="interrupted", required=false) boolean interrupted) throws URISyntaxException {
 
         // todo: refactor and optimize this so it doesn't use so many getters, etc. Could be quite slow if many users.
 
@@ -448,7 +455,7 @@ public class USSDMeetingController extends USSDController {
 
     /*
     This menu allows to change date and time one by one but not to have to send two reminders if changing both
-    It needs a separate case int the updateEvent switch statement, or else we use the parser for no reason
+    It needs a separate case in the updateEvent switch statement, or else we use the parser for no reason
      */
     @RequestMapping(value = path + changeDateAndTime)
     @ResponseBody
@@ -456,26 +463,45 @@ public class USSDMeetingController extends USSDController {
                                    @RequestParam(value= eventIdParam, required = true) Long eventId,
                                    @RequestParam(value= userInputParam, required = true) String userInput,
                                    @RequestParam(value="action", required = true) String action,
-                                   @RequestParam(value="interrupted", required = false) boolean interrupted) throws URISyntaxException {
+                                   @RequestParam(value= interruptedFlag, required = false) boolean interrupted,
+                                   @RequestParam(value="load_string", required = false) boolean load_string) throws URISyntaxException {
 
-        User user = userManager.findByInputNumber(inputNumber, meetingMenus + changeDateAndTime + eventIdUrlSuffix + eventId +
-                "&action=" + action + "&interrupted=1");
+        User user = userManager.findByInputNumber(inputNumber, saveMtgMenuWithAction(changeDateAndTime, eventId, action));
 
-        Event meeting = (interrupted) ? eventManager.loadEvent(eventId) : eventUtil.updateEventAndBlockSend(eventId, action, userInput);
-        LocalDateTime newDateTime = meeting.getEventStartDateTime().toLocalDateTime();
+        // todo: probably want to straighten out / harmonize use of Timestamp / ValueOf
+        Timestamp modifyingTimestamp = (!load_string) ? eventManager.loadEvent(eventId).getEventStartDateTime() :
+                Timestamp.valueOf(DateTimeUtil.parsePreformattedString(eventManager.loadEvent(eventId).getDateTimeString()));
+        LocalDateTime newDateTime;
+        String otherMenu;
+
+        if (action.equals(timeOnly)) {
+            String formattedTime = DateTimeUtil.reformatTimeInput(userInput);
+            log.info("Modifying time ... Here is what we got back ... " + formattedTime);
+            newDateTime = DateTimeUtil.changeTimestampTimes(modifyingTimestamp, formattedTime).toLocalDateTime();
+            log.info("Modifying time ... The minutes on the modified stamp are ... " + newDateTime.getMinute());
+            otherMenu = dateOnly;
+        } else {
+            String formattedDate = DateTimeUtil.reformatDateInput(userInput);
+            newDateTime = DateTimeUtil.changeTimestampDates(modifyingTimestamp, formattedDate).toLocalDateTime();
+            otherMenu = timeOnly;
+        }
+
         String formattedDate = newDateTime.format(dateFormat);
         String formattedTime = newDateTime.format(timeFormat);
+        String newDateTimeString = newDateTime.format(DateTimeUtil.preferredDateTimeFormat);
+
+        log.info("Modifying time or date ... formatted string is ... " + newDateTimeString);
+
+        if (!interrupted) eventManager.storeDateTimeString(eventId, newDateTimeString);
 
         String[] promptFields = (action.equals(timeOnly)) ? new String[] { formattedTime, formattedDate } :
                 new String[] { formattedDate, formattedTime };
 
-        String otherMenu = (action.equals(timeOnly)) ? dateOnly : timeOnly;
         USSDMenu menu = new USSDMenu(getMessage(thisSection, changeDateAndTime, promptKey + "." + action, promptFields, user));
 
-        String sendUrl = meetingMenus + modifyConfirm + doSuffix + eventIdUrlSuffix + eventId + "&action=" + changeDateAndTime +
-                "&input=" + USSDUrlUtil.encodeParameter(newDateTime.format(DateTimeUtil.preferredDateTimeFormat));
-        String otherUrl = meetingMenus + otherMenu + eventIdUrlSuffix + eventId + "&next_menu=" + changeDateAndTime;
-        String backUrl = meetingMenus + action + eventIdUrlSuffix + eventId + "&next_menu=" + changeDateAndTime;
+        String sendUrl = assembleModifySendUrl(eventId, changeDateAndTime, newDateTimeString);
+        String otherUrl = mtgMenu(otherMenu, eventId) + "&next_menu=" + changeDateAndTime + "&load_string=1";
+        String backUrl = mtgMenu(action, eventId) + "&next_menu=" + changeDateAndTime + ((load_string) ? "&load_string=1" : "");
 
         menu.addMenuOption(sendUrl, getMessage(thisSection, changeDateAndTime, optionsKey + "confirm", user));
         menu.addMenuOption(otherUrl, getMessage(thisSection, changeDateAndTime, optionsKey + otherMenu, user));
@@ -497,22 +523,24 @@ public class USSDMeetingController extends USSDController {
         User sessionUser = userManager.findByInputNumber(inputNumber, meetingMenus + modifyConfirm + eventIdUrlSuffix + eventId
                 + "&action=" + action + "&prior_input=" + USSDUrlUtil.encodeParameter(userInput));
 
-        USSDMenu menu = new USSDMenu();
-        String sendUrl = meetingMenus + modifyConfirm + doSuffix + eventIdUrlSuffix + eventId + "&action=" + action;
+        USSDMenu menu;
+        String sendUrl;
         String backUrl = meetingMenus + action + eventIdUrlSuffix + eventId + "&next_menu=" + modifyConfirm;
 
         log.info("Updating a meeting via USSD ... action parameter is " + action + " and user input is: " + userInput);
 
         switch (action) {
             case cancelMeeting:
-                menu.setPromptMessage(getMessage(thisSection, cancelMeeting, "prompt", sessionUser));
+                menu = new USSDMenu(getMessage(thisSection, cancelMeeting, "prompt", sessionUser));
+                sendUrl = assembleModifySendUrl(eventId, action, "");
                 break;
             case changeMeetingLocation:
-                menu.setPromptMessage(getMessage(thisSection, modifyConfirm, changeMeetingLocation + "." + promptKey, userInput, sessionUser));
-                eventUtil.updateEventAndBlockSend(eventId, placeMenu, userInput);
+                menu = new USSDMenu(getMessage(thisSection, modifyConfirm, changeMeetingLocation + "." + promptKey, userInput, sessionUser));
+                sendUrl = assembleModifySendUrl(eventId, changeMeetingLocation, userInput);
                 break;
             default:
-                menu.setPromptMessage(getMessage(thisSection, modifyConfirm, "error", sessionUser));
+                menu = new USSDMenu(getMessage(thisSection, modifyConfirm, "error", sessionUser));
+                sendUrl = meetingMenus + manageMeetingMenu + eventIdUrlSuffix + eventId;
                 break;
         }
 
@@ -522,17 +550,25 @@ public class USSDMeetingController extends USSDController {
 
     }
 
+    private String assembleModifySendUrl(Long eventId, String action, String value) {
+        return mtgMenuWithAction(modifyConfirm + doSuffix, eventId, action) + "&value=" + encodeParameter(value);
+    }
+
     @RequestMapping(value=path + modifyConfirm + doSuffix)
     public Request modifyMeetingSend(@RequestParam(value= phoneNumber) String inputNumber,
                                      @RequestParam(value= eventIdParam) Long eventId,
-                                     @RequestParam("action") String action,
-                                     @RequestParam(value="input", required = false) String confirmedValue) throws URISyntaxException {
+                                     @RequestParam(value= "action") String action,
+                                     @RequestParam(value= "value", required = false) String confirmedValue) throws URISyntaxException {
 
         User sessionUser = userManager.findByInputNumber(inputNumber, null);
         String menuPrompt = getMessage(thisSection, modifyConfirm, action + ".done", sessionUser);
 
         switch (action) {
-            case "error":
+            case changeDateAndTime:
+                eventUtil.updateEvent(eventId, changeDateAndTime, confirmedValue);
+                break;
+            case changeMeetingLocation:
+                eventUtil.updateEvent(eventId, placeMenu, confirmedValue);
                 break;
             case cancelMeeting:
                 eventManager.cancelEvent(eventId);

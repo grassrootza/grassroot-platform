@@ -125,7 +125,11 @@ public interface EventManagementService {
 
     public Event setDateTimeString(Long eventId, String dateTimeString);
 
+    public Event storeDateTimeString(Long eventId, String dateTimeString);
+
     public Event setEventTimestamp(Long eventId, Timestamp eventDateTime);
+
+    public Event setEventTimestampToStoredString(Long eventId);
 
     public Event setEventReminderMinutes(Long eventId, Integer minutes);
 
@@ -170,6 +174,8 @@ public interface EventManagementService {
     double getCostOfMessages(Event event);
 
     String getGroupName(Event event);
+
+    LocalDateTime getDateTimeFromString(Long eventId);
 
     /*
     Methods to retrieve information about votes

@@ -27,6 +27,7 @@ import za.org.grassroot.services.util.CacheUtilService;
 import javax.persistence.EntityManager;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -250,12 +251,26 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
+    public Event storeDateTimeString(Long eventId, String dateTimeString) {
+        // helper method to just store this, used in USSD when moving back and forth while modifying date and time
+        Event eventToUpdate = eventRepository.findOne(eventId);
+        eventToUpdate.setDateTimeString(dateTimeString);
+        return eventRepository.save(eventToUpdate);
+    }
+
+    @Override
     public Event setEventTimestamp(Long eventId, Timestamp eventDateTime) {
         log.info("Setting event timestamp, passed: " + eventDateTime.toString());
         Event eventToUpdate = eventRepository.findOne(eventId);
         Event beforeEvent = SerializationUtils.clone(eventToUpdate);
         eventToUpdate.setEventStartDateTime(eventDateTime);
         return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
+    }
+
+    @Override
+    public Event setEventTimestampToStoredString(Long eventId) {
+        return setEventTimestamp(eventId, Timestamp.valueOf(
+                DateTimeUtil.parsePreformattedString(loadEvent(eventId).getDateTimeString())));
     }
 
     @Override
@@ -688,6 +703,12 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
+    public LocalDateTime getDateTimeFromString(Long eventId) {
+        // todo: some error/exception handling, in case this is called by a badly behaved method
+        return DateTimeUtil.parsePreformattedString(loadEvent(eventId).getDateTimeString());
+    }
+
+    @Override
     public Long getNextOutstandingVote(User sessionUser) {
         // todo: rapid check that this will not return null (current use cases are safe, future might not be)
         return getOutstandingVotesForUser(sessionUser).get(0).getId();
@@ -775,7 +796,7 @@ public class EventManager implements EventManagementService {
         // a bit verbose but the logic here is complex and final booleans are cheap so rather explicating
         final boolean priorEventComplete = minimumDataAvailable(beforeEvent);
         final boolean priorEventBlocked = beforeEvent.isSendBlocked();
-        final boolean priorEventIncompleteOrBlocked = !priorEventBlocked || priorEventBlocked;
+        final boolean priorEventIncompleteOrBlocked = !priorEventComplete || priorEventBlocked;
         boolean addedNewEventToQueue = false; // need this else we trigger both send new event and changed event (since minimum equals has to be triggered on flipping send block)
 
         Event savedEvent = eventRepository.save(changedEvent);
@@ -813,7 +834,6 @@ public class EventManager implements EventManagementService {
         if (priorEventComplete && savedEventOkayToSend && !addedNewEventToQueue) {
             // let's send out a change notification if something changed in minimum required values
             if (!savedEvent.minimumEquals(beforeEvent)) {
-                // todo: figure out a way to reach back past the last change to check if this time change really does happen
                 boolean startTimeChanged = false;
                 if (!beforeEvent.getEventStartDateTime().equals(savedEvent.getEventStartDateTime()))
                     startTimeChanged = true;

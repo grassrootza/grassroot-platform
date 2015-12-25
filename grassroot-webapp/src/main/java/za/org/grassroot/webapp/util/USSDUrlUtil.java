@@ -86,6 +86,10 @@ public class USSDUrlUtil {
         return USSDSection.MEETINGS.toPath() + menu + "?eventId=" + eventId + setInterruptedFlag;
     }
 
+    public static String saveMtgMenuWithAction(String menu, Long eventId, String action) {
+        return USSDSection.MEETINGS.toPath() + menu + "?eventId=" + eventId + "&action=" + action + setInterruptedFlag;
+    }
+
     public static String saveGroupMenu(String menu, Long groupId) {
         return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupId=" + groupId + setInterruptedFlag;
     }
@@ -108,6 +112,14 @@ public class USSDUrlUtil {
 
     public static String saveLogMenu(String menu, Long logBookId) {
         return USSDSection.LOGBOOK.toPath() + menu + "?logBookId=" + logBookId + setInterruptedFlag;
+    }
+
+    public static String mtgMenu(String menu, Long eventId) {
+        return USSDSection.MEETINGS.toPath() + menu + "?eventId=" + eventId;
+    }
+
+    public static String mtgMenuWithAction(String menu, Long eventId, String action) {
+        return USSDSection.MEETINGS.toPath() + menu + "?eventId=" + eventId + "&action=" + action;
     }
 
     public static String groupMenuWithId(String menu, Long groupId) {

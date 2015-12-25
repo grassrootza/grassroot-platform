@@ -34,7 +34,7 @@ public class USSDEventUtil extends USSDUtil {
     private static final String eventIdLaterParam = "&" + eventIdParameter + "=";
 
     private static final String subjectMenu = "subject", placeMenu = "place", timeMenu = "time",
-            timeOnly = "time_only", dateOnly = "date_only";
+            timeOnly = "time_only", dateOnly = "date_only", changeDateTime = "changeDateTime";
     private static final int pageSize = 3;
 
     private static final Map<USSDSection, EventType> mapSectionType =
@@ -130,6 +130,9 @@ public class USSDEventUtil extends USSDUtil {
                 String formattedDate = DateTimeUtil.reformatDateInput(passedValue);
                 log.info("This is what we got back ... " + formattedDate);
                 eventToReturn = eventManager.changeMeetingDate(eventId, formattedDate);
+                break;
+            case changeDateTime:
+                eventToReturn = eventManager.setEventTimestampToStoredString(eventId);
                 break;
             default:
                 eventToReturn = eventManager.loadEvent(eventId);
