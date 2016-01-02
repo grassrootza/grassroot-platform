@@ -475,18 +475,18 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(eventManagementServiceMock.setSendBlock(1L)).thenReturn(testMeeting);
         // as above, specifying string makes sure it gets formatted appropriately (keep an eye on year though)
-        when(eventManagementServiceMock.changeMeetingDate(1L, "16-06-2015")).thenReturn(testMeeting);
+        when(eventManagementServiceMock.changeMeetingDate(1L, "16-06-2016")).thenReturn(testMeeting);
 
         // todo : test for just YY, once done
         List<String> bloomVariations = Arrays.asList("16-06", "16 06", "16/06", "16-6", "16 6", "16/6",
-                                                     "16-06-2015", "16 06 2015", "16/06/2015", "16-6-2015", "16/6/2015");
+                                                     "16-06-2016", "16 06 2016", "16/06/2016", "16-6-2016", "16/6/2016");
 
         for (String date : bloomVariations) {
             mockMvc.perform(get(path + "confirm").param(phoneParam, testUserPhone).param("eventId", "1").
                     param("prior_menu", "date_only").param("revising", "1").param("request", date)).andExpect(status().isOk());
         }
 
-        verify(eventManagementServiceMock, times(bloomVariations.size())).changeMeetingDate(1L, "16-06-2015");
+        verify(eventManagementServiceMock, times(bloomVariations.size())).changeMeetingDate(1L, "16-06-2016");
 
     }
 
@@ -620,7 +620,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         User testUser = new User(testUserPhone);
         Event testMeeting = new Event("test meeting", testUser);
         testMeeting.setId(1L);
-        testMeeting.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.of(2015, 06, 15, 10, 0))); // switch year soon!
+        testMeeting.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.of(2016, 06, 15, 10, 0))); // switch year soon!
 
         String dateUrlToSave = saveMtgMenuWithAction("changeDateTime", testMeeting.getId(), "date_only");
         String timeUrlToSave = saveMtgMenuWithAction("changeDateTime", testMeeting.getId(), "time_only");
@@ -638,8 +638,8 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(2)).findByInputNumber(eq(testUserPhone), anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventManagementServiceMock, times(2)).loadEvent(testMeeting.getId());
-        verify(eventManagementServiceMock, times(1)).storeDateTimeString(testMeeting.getId(), "15-06-2015 09:00"); // year!
-        verify(eventManagementServiceMock, times(1)).storeDateTimeString(testMeeting.getId(), "16-06-2015 10:00"); // year!
+        verify(eventManagementServiceMock, times(1)).storeDateTimeString(testMeeting.getId(), "15-06-2016 09:00");
+        verify(eventManagementServiceMock, times(1)).storeDateTimeString(testMeeting.getId(), "16-06-2016 10:00");
         verifyNoMoreInteractions(eventManagementServiceMock);
     }
 
@@ -654,7 +654,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
 
         mockMvc.perform(get(path + "modify-do").param(phoneParam, testUserPhone).param("eventId", "" + testMeeting.getId()).
-                param("action", "changeDateTime").param("value", "16-06-2015 09:00")).andExpect(status().isOk());
+                param("action", "changeDateTime").param("value", "16-06-2016 09:00")).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
         verifyNoMoreInteractions(userManagementServiceMock);

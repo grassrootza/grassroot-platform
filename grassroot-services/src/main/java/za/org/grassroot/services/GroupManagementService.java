@@ -141,6 +141,8 @@ public interface GroupManagementService {
 
     public boolean hasSubGroups(Group group);
 
+    public List<User> getUsersInGroupNotSubGroups(Long groupId);
+
     public List<User> getAllUsersInGroupAndSubGroups(Long groupId);
 
     public List<User> getAllUsersInGroupAndSubGroups(Group group);

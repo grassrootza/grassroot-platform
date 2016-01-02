@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import za.org.grassroot.core.domain.LogBook;
 
+import java.sql.Timestamp;
 import java.util.List;
 
 /**
@@ -13,6 +14,8 @@ public interface LogBookRepository extends JpaRepository<LogBook, Long> {
 
     List<LogBook> findAllByGroupId(Long groupId);
     List<LogBook> findAllByGroupIdAndCompleted(Long groupId, boolean completed);
+    List<LogBook> findAllByGroupIdAndCompletedAndActionByDateGreaterThan(Long groupId, boolean completed, Timestamp dueDate);
+
     List<LogBook> findAllByAssignedToUserId(Long assignToUserId);
     List<LogBook> findAllByAssignedToUserIdAndCompleted(Long assignToUserId, boolean completed);
     List<LogBook> findAllByReplicatedGroupId(Long replicatedGroupId);

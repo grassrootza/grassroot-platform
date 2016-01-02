@@ -1,0 +1,111 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+  <title>GrassRoot - Confirm logbook entry</title>
+<script>
+
+
+
+</script>
+</head>
+<body>
+
+<div layout:fragment="header">
+  <h2>Confirm entry</h2>
+</div>
+<div layout:fragment="overview">Confirm entry to group logbook</div>
+
+<div layout:fragment="content">
+  <div layout:fragment="messages"></div>
+  <div class="well">
+    <form th:object="${entry}" th:action="@{/log/record}" method="post" autocomplete="off" class="form-horizontal">
+
+      <div class="form-group">
+        <label for="group" class="col-md-2 control-label">Group: </label>
+        <div class="col-md-4">
+          <input type="hidden" th:field="*{groupId}" th:value="${group.id}" />
+          <span th:text="${group.groupName}" id="group">Group name</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="name" class="col-md-2 control-label">Entry to be recorded</label>
+        <div class="col-md-4">
+          <input th:field="*{message}" type="text" class="form-control" id="name" readonly="readonly" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div th:fragment="date-picker">
+          <label for="datepicker" class="col-md-2 control-label">Deadline for action to be completed</label>
+          <div class="col-md-4">
+            <div class="input-group date" id="datepicker">
+              <input th:field="*{actionByDate}" th:value="*{actionByDate}" type="text" class="form-control" readonly="readonly" />
+                    <span class="input-group-addon">
+                        <span class="glyphicon glyphicon-calendar"></span>
+                    </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- note: no practical way to do user assignment for cascading entries (groups must do individually -->
+      <div th:switch="${subGroups}">
+
+        <div th:case="false" class="form-group">
+          <label for="assignToUser" class="col-md-2 control-label">Assign to a group member?</label>
+          <div class="col-md-4">
+            <input name="assignToUser" type="checkbox" id="assignToUser" class="form-control" />
+          </div>
+        </div>
+
+        <div id="assignMemberPicker" class="form-group hidden">
+          <label for="assignedUser" class="col-md-2 control-label">Assign to member:</label>
+          <div class="col-md-4">
+            <select th:field="*{assignedToUserId}" id="assignedUser" class="form-control">
+              <option th:each="member: ${groupMembers}"
+                      th:value="${member.id}"
+                      th:text="${member.nameToDisplay()}">Member name</option>
+            </select>
+          </div>
+        </div>
+
+        <div th:case="true" class="form-group">
+          <div class="col-md-2 control-label">Subgroup replication:</div>
+          <div class="col-md-4">
+            <p>This logbook entry will be replicated for <span th:text="${numberSubGroups}">X</span> subgroups, involving
+              <span th:text="${numberMembers}">Y</span> members.</p>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="form-group">
+        <div class="col-md-8">
+          <button type="submit" class="btn btn-primary">Record action</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="header-container" layout:fragment="script-container">
+  <script>
+
+    $(document).ready(function() {
+
+      var defTime = new Date();
+      defTime.setTime(defTime.getTime() + 5*60*1000);
+
+      $('#assignToUser').change(function(){
+        $('#assignMemberPicker').toggleClass('hidden show');
+      });
+
+    });
+  </script>
+
+</div>
+
+</body>
+</html>

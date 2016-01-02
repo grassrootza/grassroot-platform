@@ -17,6 +17,8 @@ public interface LogBookService {
 
     List<LogBook> getAllLogBookEntriesForGroup(Long groupId);
 
+    List<LogBook> getAllLogBookEntriesForGroup(Long groupId, boolean completed);
+
     List<LogBook> getAllReplicatedEntriesForGroup(Long groupId);
 
     List<LogBook> getAllReplicatedEntriesForGroup(Long groupId, boolean completed);
@@ -29,6 +31,8 @@ public interface LogBookService {
 
     LogBook create(Long createdByUserId, Long groupId, String message, boolean replicateToSubGroups);
 
+    LogBook create(LogBook logBookToSave, boolean replicateToSubGroups);
+
     LogBook setDueDate(Long logBookId, LocalDateTime actionByDateTime);
 
     LogBook setAssignedToUser(Long logBookId, Long assignedToUserId);
@@ -38,4 +42,16 @@ public interface LogBookService {
     boolean isAssignedToUser(LogBook logBook);
 
     LogBook setMessage(Long logBookId, String message);
+
+    /*
+    Set of methods to deal with marking complete, depending on what has been specified in the view layer
+     */
+
+    LogBook setCompleted(Long logBookId, Long completedByUserId);
+
+    LogBook setCompletedWithDate(Long logBookId, Long completedByUserId, Timestamp completedDate);
+
+    LogBook setCompleted(Long logBookId, Timestamp completedDate);
+
+    LogBook setCompleted(Long logBookId);
 }

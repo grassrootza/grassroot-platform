@@ -334,6 +334,11 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
+    public List<User> getUsersInGroupNotSubGroups(Long groupId) {
+        return loadGroup(groupId).getGroupMembers();
+    }
+
+    @Override
     public Group getGroupById(Long groupId) {
         return groupRepository.findOne(groupId);
     }

@@ -1,0 +1,133 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+  <title>GrassRoot - Mark action completed</title>
+<script>
+
+
+
+</script>
+</head>
+<body>
+
+<div layout:fragment="header">
+  <h2>Mark action completed</h2>
+</div>
+<div layout:fragment="overview">Mark as completed the action, <span th:text="${entry.message}">description</span></div>
+
+<div layout:fragment="content">
+  <div layout:fragment="messages"></div>
+  <div class="well">
+    <form th:action="@{complete-do}" method="get" autocomplete="off" class="form-horizontal">
+      <input type="hidden" name="logBookId" th:value="${entry.id}" />
+
+      <div class="form-group">
+        <label for="name" class="col-md-2 control-label">Action description:</label>
+        <div class="col-md-4">
+          <h5 id="name"><span th:text="${entry.message}">Message</span></h5>
+        </div>
+      </div>
+
+      <div class="form-group" th:if="${hasAssignedUser}">
+        <label for="userAssigned" class="col-md-2 control-label">Assigned to member:</label>
+        <div class="col-md-4">
+          <h5 id="userAssigned"><span th:text="${assignedUser.nameToDisplay()}"></span></h5>
+        </div>
+      </div>
+
+      <div class="form-group" th:if="${hasAssignedUser}">
+        <label for="completedByAssigned" class="col-md-2 control-label">Completed by assigned member?</label>
+        <div class="col-md-4">
+          <input name="completedByAssigned" type="checkbox" id="completedByAssigned" class="form-control" checked="checked" />
+        </div>
+      </div>
+
+      <div class="form-group" th:unless="${hasAssignedUser}">
+        <label for="designateCompletingUser" class="col-md-2 control-label">Designate which member completed action?</label>
+        <div class="col-md-4">
+          <input name="completedByUser" type="checkbox" id="designateCompletingUser" class="form-control" />
+        </div>
+      </div>
+
+      <div class="form-group hidden" id="completingUserPicker">
+        <label for="completingUser" class="col-md-2 control-label">Select member:</label>
+        <div class="col-md-4">
+          <select name="completingUserId" id="completingUser" class="form-control">
+            <option th:each="member: ${groupMembers}"
+                    th:value="${member.id}"
+                    th:text="${member.nameToDisplay()}">Member name</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="setCompletedDate" class="col-md-2 control-label">Specify date completed (default is today)?</label>
+        <div class="col-md-4">
+          <input name="specifyCompletedDate" type="checkbox" id="setCompletedDate" class="form-control" />
+        </div>
+      </div>
+
+      <div class="form-group hidden" id="completedDatePicker">
+        <div th:fragment="date-picker">
+          <label for="datepicker" class="col-md-2 control-label">Date completed:</label>
+          <div class="col-md-4">
+            <div class="input-group date" id="datepicker">
+              <input name="completedOnDate" type="text" class="form-control" />
+                    <span class="input-group-addon">
+                        <span class="glyphicon glyphicon-calendar"></span>
+                    </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- todo: figure out if we want to have the possibility of marking the replicated/sub-group entries marked all at once -->
+
+      <div class="form-group">
+        <div class="col-md-8">
+          <button type="submit" class="btn btn-primary">Mark completed</button>
+        </div>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<!-- todo: make datetimepicker just date -->
+<div class="header-container" layout:fragment="script-container">
+  <script>
+
+    $(document).ready(function() {
+
+      var defTime = new Date();
+      defTime.setTime(defTime.getTime() + 5*60*1000);
+
+      $('#datepicker').datetimepicker({
+        format: 'DD/MM/YYYY h:mm A',
+        widgetPositioning: {
+          horizontal: 'right'
+        },
+        sideBySide:true,
+        maxDate: defTime
+      });
+
+      $('#completedByAssigned').change(function(){
+        $('#completingUserPicker').toggleClass('hidden show');
+      });
+
+      $('#designateCompletingUser').change(function(){
+        $('#completingUserPicker').toggleClass('hidden show');
+      });
+
+      $('#setCompletedDate').change(function(){
+        $('#completedDatePicker').toggleClass('hidden show');
+      });
+
+    });
+  </script>
+
+</div>
+
+</body>
+</html>

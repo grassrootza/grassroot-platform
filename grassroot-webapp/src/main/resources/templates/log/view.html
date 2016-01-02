@@ -1,0 +1,68 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+  <title>GrassRoot - View Group Logbook</title>
+</head>
+<body>
+
+<div layout:fragment="header">
+  <h2>Logbook for group <span  th:text="${group.groupName}">View Logbook</span></h2>
+</div>
+<div layout:fragment="overview">View logbook entries for group <span th:value="${group.groupName}">name</span>.</div>
+
+<div layout:fragment="content">
+  <div layout:fragment="messages"></div>
+
+  <div class="well">
+    <div class="row list-group">
+      <h3>Uncompleted actions:</h3>:
+    </div>
+    <div class="row list-group-item">
+      <table class="table table-striped">
+        <thead>
+          <th>Date entered</th>
+          <th>Description</th>
+          <th>Due date</th>
+          <th></th>
+        </thead>
+        <tbody>
+        <tr th:each="entry : ${incompleteEntries}">
+          <td><span th:text="${#dates.format(entry.createdDateTime, 'dd MMM yyyy')}">Date time</span></td>
+          <td><a th:href="@{details(logBookId=${entry.id})}"><span th:text="${entry.message}">Description</span></a></td>
+          <td><span th:text="${#dates.format(entry.actionByDate, 'dd MMM yyyy, HH:mm')}">Due date</span></td>
+          <td><a th:href="@{complete(logBookId=${entry.id})}"><button class="info">Mark complete</button></a></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="well" th:unless="${#lists.isEmpty(completedEntries)}">
+    <div class="row list-group">
+      <h3>Completed actions:</h3>
+    </div>
+    <div class="row list-group-item">
+      <table class="table table-striped">
+        <thead>
+          <th>Date entered</th>
+          <th>Description</th>
+          <th>Date completed</th>
+          <th>Completed by member</th>
+        </thead>
+        <tbody>
+        <tr th:each="entry: ${completedEntries}">
+          <td><span th:text="${#dates.format(entry.createdDateTime, 'dd MMM yyyy')}">Date time created</span></td>
+          <td><span th:text="${entry.message}">Description</span></td>
+          <td><span th:text="${#dates.format(entry.completedDate, 'dd MMM yyyy')}">Completed date</span></td>
+          <td>Some member</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

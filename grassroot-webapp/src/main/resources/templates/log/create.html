@@ -1,0 +1,105 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+  <title>GrassRoot - Record an action</title>
+<script>
+
+
+
+</script>
+</head>
+
+<!-- TODO: Figure out if there is a way to do user assignment on this same page, using a dynamic option box
+      that fills in from the group selected above ... For now, doing that on confirm page -->
+
+<body>
+
+<div layout:fragment="header">
+  <h2>Record an action</h2>
+</div>
+<div layout:fragment="overview">Add a decision or action to the group logbook</div>
+
+<div layout:fragment="content">
+  <div layout:fragment="messages"></div>
+  <div class="well">
+    <form th:object="${entry}" th:action="@{/log/confirm}" method="post" autocomplete="off" class="form-horizontal">
+
+      <div class="form-group">
+        <label for="group" class="col-md-2 control-label">Group: </label>
+        <div th:switch="${groupSpecified}" class="col-md-4">
+          <div th:case="false" class="">
+            <select th:field="*{groupId}" id="selectedgroup" class="form-control">
+              <option th:each="group: ${possibleGroups}"
+                      th:value="${group.id}"
+                      th:text="${group.groupName}">Groupname</option>
+            </select>
+          </div>
+          <div th:case="true" class="col-md-4">
+            <input type="hidden" th:field="*{groupId}" th:value="${group.getId()}" />
+            <span th:text="${group.groupName}" id="group">Group name</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="name" class="col-md-2 control-label">Entry to be recorded</label>
+        <div class="col-md-4">
+          <input th:field="*{message}" type="text" class="form-control" id="name" placeholder="The action or decision to record" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div th:fragment="date-picker">
+          <label for="datepicker" class="col-md-2 control-label">Deadline for action to be completed</label>
+          <div class="col-md-4">
+            <div class="input-group date" id="datepicker">
+              <input th:field="*{actionByDate}" type="text" class="form-control" />
+                    <span class="input-group-addon">
+                        <span class="glyphicon glyphicon-calendar"></span>
+                    </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="subgroups" class="col-md-2 control-label">Cascade to sub-groups?</label>
+        <div class="col-md-4">
+          <input name="subGroups" type="checkbox" id="subgroups" class="form-control"/>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div class="col-md-8">
+          <button type="submit" class="btn btn-primary">Record action</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="header-container" layout:fragment="script-container">
+  <script>
+
+    $(document).ready(function() {
+
+      var defTime = new Date();
+      defTime.setTime(defTime.getTime() + 5*60*1000);
+
+      $('#datepicker').datetimepicker({
+        format: 'DD/MM/YYYY h:mm A',
+        widgetPositioning: {
+          horizontal: 'right'
+        },
+        sideBySide:true,
+        minDate: defTime
+      });
+
+    });
+  </script>
+
+</div>
+
+</body>
+</html>

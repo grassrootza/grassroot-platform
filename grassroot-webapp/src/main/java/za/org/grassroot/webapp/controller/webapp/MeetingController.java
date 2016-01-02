@@ -46,9 +46,6 @@ public class MeetingController extends BaseController {
     @Autowired
     EventLogManagementService eventLogManagementService;
 
-    @Autowired
-    MeetingNotificationService meetingNotificationService; // for confirmation screens
-
     @RequestMapping("/meeting/view")
     public String viewMeetingDetails(Model model, @RequestParam("eventId") Long eventId) {
 
