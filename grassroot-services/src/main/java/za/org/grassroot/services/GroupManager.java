@@ -229,8 +229,9 @@ public class GroupManager implements GroupManagementService {
 
     @Override
     public boolean needsToRenameGroup(User sessionUser) {
+        // todo: reach back further than just the last created group ... any group that's unnamed
         Group lastCreatedGroup = getLastCreatedGroup(sessionUser);
-        return (lastCreatedGroup != null && !lastCreatedGroup.hasName());
+        return (lastCreatedGroup != null && lastCreatedGroup.isActive() && !lastCreatedGroup.hasName());
     }
 
     @Override
