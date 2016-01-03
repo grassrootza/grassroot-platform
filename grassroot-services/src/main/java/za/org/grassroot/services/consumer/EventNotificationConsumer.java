@@ -62,14 +62,10 @@ public class EventNotificationConsumer {
     change this to add messages or stop messages altogether by leaving it empty.
      */
     private final String[] welcomeMessages = new String[] {
-    };
-
-/*
-    private final String[] welcomeMessages = new String[] {
             "sms.welcome.1",
-            "sms.welcome.2"
+            "sms.welcome.2",
+            "sms.welcome.3"
     };
-*/
 
     @JmsListener(destination = "event-added", containerFactory = "messagingJmsContainerFactory",
             concurrency = "5")

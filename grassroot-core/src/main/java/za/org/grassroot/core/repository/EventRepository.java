@@ -26,6 +26,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
 
     List<Event> findByAppliesToGroup(Group group);
+    List<Event> findByAppliesToGroupOrderByEventStartDateTimeDesc(Group group);
 
     List<Event> findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(Group group, Date startTime, boolean cancelled);
     List<Event> findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceledAndEventType(Group group, Date startTime, boolean cancelled, EventType eventType);

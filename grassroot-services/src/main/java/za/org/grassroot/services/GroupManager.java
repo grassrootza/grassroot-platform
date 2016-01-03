@@ -234,8 +234,15 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public Long groupToRename(User sessionUser) {
-        return getLastCreatedGroup(sessionUser).getId();
+    public Group groupToRename(User sessionUser) {
+        return getLastCreatedGroup(sessionUser);
+    }
+
+    @Override
+    public boolean canGroupBeSetInactive(Group group, User user) {
+        // todo: checking of permissions, etc etc
+        if (group.hasName()) return false;
+        return true;
     }
 
     @Override
@@ -570,6 +577,11 @@ public class GroupManager implements GroupManagementService {
             return getAllUsersInGroupAndSubGroups(group).size();
         }
 
+    }
+
+    @Override
+    public Integer getGroupSize(Long groupId, boolean includeSubGroups) {
+        return getGroupSize(loadGroup(groupId), includeSubGroups);
     }
 
     @Override

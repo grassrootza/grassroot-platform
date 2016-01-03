@@ -65,6 +65,8 @@ public interface EventManagementService {
 
     List<Event> findByAppliesToGroupAndStartingAfter(Group group, Date date);
 
+    boolean doesGroupHaveMinimumDataEvents(Group group);
+
     List<Event> findUpcomingMeetingsForGroup(Group group, Date date);
 
     List<Event> findUpcomingVotesForGroup(Group group, Date date);

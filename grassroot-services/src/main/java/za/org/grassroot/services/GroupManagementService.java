@@ -91,7 +91,9 @@ public interface GroupManagementService {
 
     public boolean needsToRenameGroup(User sessionUser);
 
-    public Long groupToRename(User sessionUser);
+    public Group groupToRename(User sessionUser);
+
+    public boolean canGroupBeSetInactive(Group group, User user);
 
     public Group renameGroup(Group group, String newGroupName);
 
@@ -179,6 +181,8 @@ public interface GroupManagementService {
     public void assignDefaultLanguage(Group group, User user);
 
     public Integer getGroupSize(Group group, boolean includeSubGroups);
+
+    public Integer getGroupSize(Long groupId, boolean includeSubGroups);
 
     /*
     Methods to consolidate groups, and to manage active / inactive

@@ -20,6 +20,7 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.*;
 
 import static org.mockito.Mockito.*;
@@ -261,12 +262,14 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         testUser.setHasInitiatedSession(true);
         Group testGroup = new Group("", testUser);
         testGroup.setId(0L);
+        testGroup.setCreatedDateTime(Timestamp.valueOf(LocalDateTime.now()));
 
         when(userManagementServiceMock.loadOrSaveUser(phoneForTests)).thenReturn(testUser);
         when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
         when(groupManagementServiceMock.needsToRenameGroup(testUser)).thenReturn(true);
         when(groupManagementServiceMock.loadGroup(testGroup.getId())).thenReturn(testGroup);
         when(groupManagementServiceMock.saveGroup(testGroup)).thenReturn(testGroup);
+        when(groupManagementServiceMock.groupToRename(testUser)).thenReturn(testGroup);
 
         // todo: work out how to verify that it actually returned the prompt to rename the group
         mockMvc.perform(get(openingMenu).param(phoneParameter, testUser.getPhoneNumber())).
@@ -277,9 +280,8 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(1)).loadOrSaveUser(phoneForTests);
         verify(userManagementServiceMock, times(1)).findByInputNumber(phoneForTests);
-        verify(groupManagementServiceMock, times(1)).loadGroup(testGroup.getId());
         verify(groupManagementServiceMock, times(1)).saveGroup(testGroup);
-        // verify(groupManagementServiceMock, times(1)).needsToRenameGroup(testUser); removing until we add this back
+        verify(groupManagementServiceMock, times(2)).needsToRenameGroup(testUser);
     }
 
     /*
@@ -308,7 +310,6 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(1)).loadOrSaveUser(phoneForTests);
         verify(userManagementServiceMock, times(1)).findByInputNumber(phoneForTests);
-        verify(userManagementServiceMock, times(2)).needsToRenameSelf(testUser); // need to cut this down to 1 call
         verify(userManagementServiceMock, times(1)).setDisplayName(testUser, testUserName);
 
     }

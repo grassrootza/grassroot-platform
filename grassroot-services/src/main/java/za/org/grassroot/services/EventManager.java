@@ -372,6 +372,14 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
+    public boolean doesGroupHaveMinimumDataEvents(Group group) {
+        // todo: check / refine this to be more (much more) efficient
+        List<Event> lastEvents = eventRepository.findByAppliesToGroupOrderByEventStartDateTimeDesc(group);
+        if (lastEvents == null || lastEvents.isEmpty()) return false;
+        return minimumDataAvailable(lastEvents.get(0));
+    }
+
+    @Override
     public List<Event> findUpcomingMeetingsForGroup(Group group, Date date) {
         return eventRepository.findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceledAndEventType(group, date, false, EventType.Meeting);
     }
