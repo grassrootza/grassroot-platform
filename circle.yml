@@ -1,6 +1,9 @@
 machine:
   java:
     version: oraclejdk8
+  environment:
+    USSD_CODE_LENGTH: 9
+    APP_URL: http://localhost:8080
 test:
   post:
     - mkdir -p $CIRCLE_TEST_REPORTS/junit/

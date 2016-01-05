@@ -56,6 +56,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
     @Before
     public void setUp() {
+
         mockMvc = MockMvcBuilders.standaloneSetup(ussdHomeController)
                 .setHandlerExceptionResolvers(exceptionResolver())
                 .setValidator(validator())
