@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.web.context.AbstractSecurityWebApplicationInitializer;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -23,11 +24,13 @@ import za.org.grassroot.integration.services.SmsSendingService;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+
 
 /**
  * Created by luke on 2015/09/11.
@@ -45,11 +48,16 @@ public class MeetingController extends BaseController {
 
     @Autowired
     EventLogManagementService eventLogManagementService;
+    
+    
 
     @RequestMapping("/meeting/view")
     public String viewMeetingDetails(Model model, @RequestParam("eventId") Long eventId) {
 
         Event meeting = eventManagementService.loadEvent(eventId);
+        
+       // int rsvpYesTotal = eventManagementService.getListOfUsersThatRSVPYesForEvent(meeting).size();
+        
 
         model.addAttribute("meeting", meeting);
         model.addAttribute("rsvpYesTotal", eventManagementService.getListOfUsersThatRSVPYesForEvent(meeting).size());
@@ -334,5 +342,12 @@ public class MeetingController extends BaseController {
         return minuteOptions;
 
     }
+    @Override
+    public User getUserProfile(){
+    	return super.getUserProfile();
+    }
+    
+  
+    
 
 }
