@@ -480,9 +480,9 @@ public class USSDHomeController extends USSDController {
     @RequestMapping(value = path + "exit")
     @ResponseBody
     public Request exitScreen(@RequestParam(value= phoneNumber) String inputNumber) throws URISyntaxException {
-        userManager.resetLastUssdMenu(userManager.loadOrSaveUser(inputNumber));
-        String exitMessage = getMessage("exit." + promptKey, userManager.loadOrSaveUser(inputNumber));
-        return menuBuilder(new USSDMenu(exitMessage)); // todo: check if methods can handle empty list of options
+        User user = userManager.findByInputNumber(inputNumber, null);
+        String exitMessage = getMessage("exit." + promptKey, user);
+        return menuBuilder(new USSDMenu(exitMessage));
     }
 
     @RequestMapping(value = path + "test_question")

@@ -51,6 +51,8 @@ public interface LogBookService {
 
     LogBook setCompleted(Long logBookId, Long completedByUserId);
 
+    LogBook setCompleted(Long logBookId, Long completedByUserId, String completedDate);
+
     LogBook setCompletedWithDate(Long logBookId, Long completedByUserId, Timestamp completedDate);
 
     LogBook setCompleted(Long logBookId, Timestamp completedDate);

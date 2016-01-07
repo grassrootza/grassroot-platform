@@ -84,6 +84,13 @@ public class USSDGroupUtil extends USSDUtil {
         return askForGroupNoInlineNew(user, section, promptIfExisting, promptIfEmpty, menuIfExisting, urlIfEmpty, "");
     }
 
+    // similar helper method
+    public USSDMenu askForGroupNoInlineNew(User user, USSDSection section, String menuIfExisting, String promptIfNotEmpty) throws URISyntaxException {
+        final String promptIfEmpty = getMessage(section, groupKeyForMessages, promptKey + ".empty", user);
+        final String urlIfEmpty = USSDSection.GROUP_MANAGER.toPath() + "create";
+        return askForGroupNoInlineNew(user, section, promptIfNotEmpty, promptIfEmpty, menuIfExisting, urlIfEmpty, "");
+    }
+
     public USSDMenu userGroupMenuPageOne(User user, String prompt, String existingGroupUrl, String newGroupUrl) throws URISyntaxException {
         return userGroupMenuPaginated(user, prompt, existingGroupUrl, newGroupUrl, 0);
     }
@@ -123,6 +130,7 @@ public class USSDGroupUtil extends USSDUtil {
 
     public USSDMenu createGroupPrompt(User user, USSDSection section, String nextUrl) throws URISyntaxException {
         USSDMenu thisMenu = new USSDMenu(getMessage(section, groupKeyForMessages, promptKey + ".create", user));
+        thisMenu.setFreeText(true);
         thisMenu.setNextURI(nextUrl);
         return thisMenu;
     }

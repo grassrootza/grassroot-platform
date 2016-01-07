@@ -7,8 +7,10 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.LogBookRepository;
+import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
@@ -131,6 +133,17 @@ public class LogBookManager implements LogBookService {
     @Override
     public LogBook setCompleted(Long logBookId, Long completedByUserId) {
         return setCompletedWithDate(logBookId, completedByUserId, Timestamp.valueOf(LocalDateTime.now()));
+    }
+
+    @Override
+    public LogBook setCompleted(Long logBookId, Long completedByUserId, String completedDate) {
+        if (completedDate != null) {
+            Timestamp timestamp = Timestamp.valueOf(LocalDateTime.parse(completedDate, DateTimeUtil.preferredDateFormat));
+            return (completedByUserId == null) ? setCompleted(logBookId, timestamp) :
+                    setCompletedWithDate(logBookId, completedByUserId, timestamp);
+        } else {
+            return (completedByUserId == null) ? setCompleted(logBookId) : setCompleted(logBookId, completedByUserId);
+        }
     }
 
     @Override
