@@ -58,6 +58,11 @@ public class LogBookManager implements LogBookService {
     }
 
     @Override
+    public List<LogBook> getAllReplicatedEntriesForGroupAndMessage(Long groupId, String message) {
+        return logBookRepository.findAllByReplicatedGroupIdAndMessage(groupId, message);
+    }
+
+    @Override
     public LogBook create(Long createdByUserId, Long groupId, String message) {
         return createLogBookEntry(createdByUserId, groupId, message, null, 0L, 0L, 0, 0);
     }

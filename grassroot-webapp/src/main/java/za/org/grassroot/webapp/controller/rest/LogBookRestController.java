@@ -100,5 +100,16 @@ public class LogBookRestController {
         return list;
     }
 
+    @RequestMapping(value = "/listreplicatedbymessage/{groupid}/{message}", method = RequestMethod.GET)
+    public List<LogBookDTO> list_replicated(@PathVariable("groupid") Long groupid,
+                                            @PathVariable("message") String message) {
+        List<LogBookDTO> list = new ArrayList<>();
+        List<LogBook> replicated = logBookService.getAllReplicatedEntriesForGroupAndMessage(groupid,message);
+        for (LogBook l : replicated) {
+            list.add(new LogBookDTO(l));
+        }
+        return list;
+    }
+
 
 }

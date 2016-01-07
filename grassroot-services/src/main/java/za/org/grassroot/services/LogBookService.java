@@ -23,6 +23,8 @@ public interface LogBookService {
 
     List<LogBook> getAllReplicatedEntriesForGroup(Long groupId, boolean completed);
 
+    List<LogBook> getAllReplicatedEntriesForGroupAndMessage(Long groupId, String message);
+
     LogBook create(Long createdByUserId, Long groupId, String message);
 
     LogBook create(Long createdByUserId, Long groupId, String message, Timestamp actionByDate);
