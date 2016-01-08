@@ -3,11 +3,15 @@ package za.org.grassroot.webapp.controller.webapp;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.powermock.api.mockito.PowerMockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.boot.test.SpringApplicationContextLoader;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.web.FilterChainProxy;
 import org.springframework.security.web.context.AbstractSecurityWebApplicationInitializer;
@@ -33,6 +37,11 @@ import javax.annotation.Resource;
 
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.services.EventManagementService;
+import za.org.grassroot.services.GroupManagementService;
+import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.webapp.Application;
+
 import org.junit.runner.RunWith;
 import org.springframework.security.web.debug.DebugFilter;
 
@@ -47,28 +56,37 @@ import org.springframework.security.web.debug.DebugFilter;
 
 public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
-	private static final Logger log = LoggerFactory.getLogger(MeetingControllerTest.class);
+	private static final Logger logger= LoggerFactory.getLogger(MeetingControllerTest.class);
 
+	
+    @Mock
+    protected UserManagementService userManagementServiceMock;
+
+    @Mock
+    protected GroupManagementService groupManagementServiceMock;
+
+    @Mock
+    protected EventManagementService eventManagementServiceMock;
 
 	
 	@Autowired 
 	private FilterChainProxy springSecurityFilterChain; 
 	
 	@Autowired
-	protected WebApplicationContext wac;
+	protected WebApplicationContext webAppContext;
+	
+	@InjectMocks
+	private MeetingController meetingController;
 
+	
 	
 
 	@Before
-	public void setUp() throws Exception {
+	public void setUp()  {
+		MockitoAnnotations.initMocks(this);
+		setUp(meetingController);
 		
-		
-
-		mockMvc = MockMvcBuilders.
-			    webAppContextSetup(wac).addFilters(springSecurityFilterChain)
-			  .apply(springSecurity()).build();
-				
-
+	
 	
 
 	}

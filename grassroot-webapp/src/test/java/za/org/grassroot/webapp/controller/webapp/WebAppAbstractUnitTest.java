@@ -15,18 +15,27 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
+import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.handler.SimpleMappingExceptionResolver;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
+import org.thymeleaf.spring4.expression.Mvc;
 
 import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.LogBookService;
 import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.webapp.Application;
 import za.org.grassroot.webapp.MVCConfig;
+import za.org.grassroot.webapp.controller.BaseController;
+
+import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.boot.test.SpringApplicationContextLoader;
+
 
 /*
  * @author Paballo Ditshego
@@ -35,71 +44,39 @@ import za.org.grassroot.webapp.MVCConfig;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @WebAppConfiguration
-
-
-
-@ContextConfiguration (classes = {MVCConfig.class,SecurityConfig.class})
-public class WebAppAbstractUnitTest {
+@SpringApplicationConfiguration(classes = Application.class)
+public abstract class WebAppAbstractUnitTest {
 	
 	protected MockMvc mockMvc;
 
-    @Mock
-    protected UserManagementService userManagementServiceMock;
 
-    @Mock
-    protected GroupManagementService groupManagementServiceMock;
-
-    @Mock
-    protected EventManagementService eventManagementServiceMock;
 
     @Mock
     protected EventLogManagementService eventLogManagementServiceMock;
     
     @Mock
     protected LogBookService logBookServiceMock;
+    
+    @Autowired
+    protected WebApplicationContext webApplicationContext;
    
     
     
     
     
-    @Autowired
-    @Qualifier("messageSource")
-    MessageSource messageSource;
-    
-    
-    
-    protected HandlerExceptionResolver exceptionResolver() {
-        SimpleMappingExceptionResolver exceptionResolver = new SimpleMappingExceptionResolver();
-        Properties statusCodes = new Properties();
-
-        statusCodes.put("error/404", "404");
-        statusCodes.put("error/error", "500");
-
-        exceptionResolver.setStatusCodes(statusCodes);
-        return exceptionResolver;
-    }
-
-    protected LocalValidatorFactoryBean validator() {
-        return new LocalValidatorFactoryBean();
-    }
-
-    protected ViewResolver viewResolver() {
+    protected void setUp(){
+    	mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
     	
-        InternalResourceViewResolver viewResolver = new InternalResourceViewResolver();
-
-       
-        viewResolver.setPrefix("/pages");
-        viewResolver.setSuffix(".html");
-
-        return viewResolver;
     }
     
     
+    protected void setUp(BaseController baseController){
+    	mockMvc = MockMvcBuilders.standaloneSetup(baseController).build();
+    	
+    }
     
-
-	protected MessageSource getMessageSource() {
-		return messageSource;
-	}
+    
+   
 
 	
 	
