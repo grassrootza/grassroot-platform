@@ -27,6 +27,8 @@ public interface LogBookService {
 
     LogBook create(Long createdByUserId, Long groupId, String message);
 
+    LogBook create(Long createdByUserId, Long groupId, boolean recorded);
+
     LogBook create(Long createdByUserId, Long groupId, String message, Timestamp actionByDate);
 
     LogBook create(Long createdByUserId, Long groupId, String message, Timestamp actionByDate, Long assignToUserId);
@@ -44,6 +46,8 @@ public interface LogBookService {
     boolean isAssignedToUser(LogBook logBook);
 
     LogBook setMessage(Long logBookId, String message);
+
+    LogBook setRecorded(Long logBookId, boolean recorded);
 
     /*
     Set of methods to deal with marking complete, depending on what has been specified in the view layer

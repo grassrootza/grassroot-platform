@@ -96,6 +96,7 @@ public class LogBookController extends BaseController {
         log.info("The confirmed logBookEntry that we are recording is ... " + logBookEntry);
 
         logBookEntry.setCreatedByUserId(getUserProfile().getId());
+        logBookEntry.setRecorded(true);
         if (!assignToUser || subGroups) logBookEntry.setAssignedToUserId(null);
 
         logBookService.create(logBookEntry, subGroups);

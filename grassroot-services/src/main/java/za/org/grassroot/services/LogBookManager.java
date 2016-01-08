@@ -38,15 +38,15 @@ public class LogBookManager implements LogBookService {
 
     @Override
     public List<LogBook> getAllLogBookEntriesForGroup(Long groupId) {
-        return logBookRepository.findAllByGroupId(groupId);
+        return logBookRepository.findAllByGroupIdAndRecorded(groupId, true);
     }
 
     @Override
     public List<LogBook> getAllLogBookEntriesForGroup(Long groupId, boolean completed) {
         // use an old timestamp both so we prune the really old entries, and to get around half-formed ("null due date") entries
         log.info("Getting all logBook entries for groupId ... " + groupId + " ... and completed state: " + completed);
-        return logBookRepository.findAllByGroupIdAndCompletedAndActionByDateGreaterThan(
-                groupId, completed, Timestamp.valueOf(LocalDateTime.now().minusYears(1L)));
+        return logBookRepository.findAllByGroupIdAndCompletedAndRecordedAndActionByDateGreaterThan(
+                groupId, completed, true, Timestamp.valueOf(LocalDateTime.now().minusYears(1L)));
     }
 
     @Override
@@ -66,17 +66,23 @@ public class LogBookManager implements LogBookService {
 
     @Override
     public LogBook create(Long createdByUserId, Long groupId, String message) {
-        return createLogBookEntry(createdByUserId, groupId, message, null, 0L, 0L, 0, 0);
+        return createLogBookEntry(createdByUserId, groupId, message, null, 0L, 0L, 0, 0, true);
+    }
+
+    @Override
+    public LogBook create(Long createdByUserId, Long groupId, boolean recorded) {
+        // we only call this from USSD
+        return createLogBookEntry(createdByUserId, groupId, null, null, 0L, 0L, 0, 0, false);
     }
 
     @Override
     public LogBook create(Long createdByUserId, Long groupId, String message, Timestamp actionByDate) {
-        return createLogBookEntry(createdByUserId, groupId, message, actionByDate, 0L, 0L, 0, 0);
+        return createLogBookEntry(createdByUserId, groupId, message, actionByDate, 0L, 0L, 0, 0, true);
     }
 
     @Override
     public LogBook create(Long createdByUserId, Long groupId, String message, Timestamp actionByDate, Long assignToUserId) {
-        return createLogBookEntry(createdByUserId, groupId, message, actionByDate, assignToUserId, 0L, 0, 0);
+        return createLogBookEntry(createdByUserId, groupId, message, actionByDate, assignToUserId, 0L, 0, 0, true);
     }
     @Override
     public LogBook create(Long createdByUserId, Long groupId, String message, boolean replicateToSubGroups) {
@@ -84,7 +90,7 @@ public class LogBookManager implements LogBookService {
             return createLogBookEntryReplicate(createdByUserId, groupId, message, null, 0L, 0, 0);
 
         } else {
-            return createLogBookEntry(createdByUserId, groupId, message, null, 0L, 0L, 0, 0);
+            return createLogBookEntry(createdByUserId, groupId, message, null, 0L, 0L, 0, 0, true);
 
         }
     }
@@ -131,6 +137,15 @@ public class LogBookManager implements LogBookService {
     }
 
     @Override
+    public LogBook setRecorded(Long logBookId, boolean recorded) {
+        // todo save and check changes akin to message sending for events
+        LogBook logBook = load(logBookId);
+        logBook.setRecorded(recorded);
+        return logBookRepository.save(logBook);
+    }
+
+    // todo: tidy these up on a refactor, there's quite a bit of redundancy
+    @Override
     public LogBook setCompleted(Long logBookId, Long completedByUserId) {
         return setCompletedWithDate(logBookId, completedByUserId, Timestamp.valueOf(LocalDateTime.now()));
     }
@@ -148,21 +163,7 @@ public class LogBookManager implements LogBookService {
 
     @Override
     public LogBook setCompletedWithDate(Long logBookId, Long completedByUserId, Timestamp completedDate) {
-        // todo: checks to make sure not already completed, possibly also do a check for permissions here
-        LogBook logBook = logBookRepository.findOne(logBookId);
-        logBook.setCompleted(true);
-        logBook.setCompletedByUserId(completedByUserId);
-        logBook.setCompletedDate(completedDate);
-        return logBookRepository.save(logBook);
-    }
-
-    @Override
-    public LogBook setCompleted(Long logBookId, Timestamp completedDate) {
-        LogBook logBook = logBookRepository.findOne(logBookId);
-        logBook.setCompleted(true);
-        logBook.setCompletedByUserId(logBook.getAssignedToUserId()); // if no user assigned, then both are null, as we want
-        logBook.setCompletedDate(completedDate);
-        return logBookRepository.save(logBook);
+        return setCompleted(logBookRepository.findOne(logBookId), completedByUserId, completedDate);
     }
 
     @Override
@@ -170,17 +171,34 @@ public class LogBookManager implements LogBookService {
         return setCompleted(logBookId, Timestamp.valueOf(LocalDateTime.now()));
     }
 
+    @Override
+    public LogBook setCompleted(Long logBookId, Timestamp completedDate) {
+        // if no user assigned, then logBook.getId() returns null, which is set as completed user, which is as wanted
+        LogBook logBook = logBookRepository.findOne(logBookId);
+        return setCompleted(logBook, logBook.getId(), completedDate);
+    }
+
+    private LogBook setCompleted(LogBook logBook, Long completedByUserId, Timestamp completedDate) {
+        // todo: checks to make sure not already completed, possibly also do a check for permissions here
+        if (!logBook.isRecorded()) { throw new LogBookUnrecordedException(); }
+        logBook.setCompleted(true);
+        logBook.setCompletedByUserId(completedByUserId);
+        logBook.setCompletedDate(completedDate);
+        return logBookRepository.save(logBook);
+    }
+
     private LogBook createLogBookEntryReplicate(Long createdByUserId, Long groupId, String message, Timestamp actionByDate,
                                                 Long assignedToUserId, int reminderMinutes,
                                                 int numberOfRemindersLeftToSend) {
 
+        // note: this is only going to be called from web app, so we just set 'recorded' to true
         log.info("createLogBookEntryReplicate...parentGroup..." + groupId);
 
         LogBook parentLogBook = new LogBook();
         for (Group group : groupManagementService.findGroupAndSubGroupsById(groupId)) {
             log.info("createLogBookEntryReplicate...groupid..." + group.getId() + "...parentGroup..." + groupId);
             LogBook lb = createLogBookEntry(createdByUserId, group.getId(), message, actionByDate, assignedToUserId,
-                                            groupId, reminderMinutes, numberOfRemindersLeftToSend);
+                                            groupId, reminderMinutes, numberOfRemindersLeftToSend, true);
             if (group.getId() == groupId) {
                 parentLogBook = lb;
             }
@@ -201,7 +219,7 @@ public class LogBookManager implements LogBookService {
      */
     private LogBook createLogBookEntry(Long createdByUserId, Long groupId, String message, Timestamp actionByDate,
                                        Long assignedToUserId, Long replicatedGroupId, int reminderMinutes,
-                                       int numberOfRemindersLeftToSend) {
+                                       int numberOfRemindersLeftToSend, boolean recorded) {
         LogBook logBook = new LogBook();
         if (numberOfRemindersLeftToSend == 0) {
             numberOfRemindersLeftToSend = 3;
@@ -222,6 +240,7 @@ public class LogBookManager implements LogBookService {
         logBook.setNumberOfRemindersLeftToSend(numberOfRemindersLeftToSend);
         logBook.setReminderMinutes(reminderMinutes);
         logBook.setReplicatedGroupId(replicatedGroupId);
+        logBook.setRecorded(recorded);
 
         return logBookRepository.save(logBook);
     }

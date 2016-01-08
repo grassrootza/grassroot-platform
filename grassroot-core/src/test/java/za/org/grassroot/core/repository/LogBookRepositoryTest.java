@@ -58,7 +58,7 @@ public class LogBookRepositoryTest {
         Group groupUnrelated = groupRepository.save(new Group("not related logbook", user));
         LogBook lb1 = logBookRepository.save(new LogBook(group.getId(),"just do it", DateTimeUtil.addHoursFromNow(2)));
         LogBook lbUnrelated = logBookRepository.save(new LogBook(groupUnrelated.getId(),"just do it too", DateTimeUtil.addHoursFromNow(2)));
-        List<LogBook> list = logBookRepository.findAllByGroupIdAndCompleted(group.getId(),false);
+        List<LogBook> list = logBookRepository.findAllByGroupIdAndCompletedAndRecorded(group.getId(),false, true);
         assertEquals(1,list.size());
         assertEquals(lb1.getId(),list.get(0).getId());
     }
@@ -70,11 +70,11 @@ public class LogBookRepositoryTest {
         Group group = groupRepository.save(new Group("test logbook", user));
         LogBook lb1 = logBookRepository.save(new LogBook(group.getId(),"just do it", DateTimeUtil.addHoursFromNow(2)));
         LogBook lb2 = logBookRepository.save(new LogBook(group.getId(),"just do it too", DateTimeUtil.addHoursFromNow(2)));
-        List<LogBook> list = logBookRepository.findAllByGroupIdAndCompleted(group.getId(),false);
+        List<LogBook> list = logBookRepository.findAllByGroupIdAndCompletedAndRecorded(group.getId(),false, true);
         assertEquals(2,list.size());
         lb1.setCompleted(true);
         lb1 = logBookRepository.save(lb1);
-        list = logBookRepository.findAllByGroupIdAndCompleted(group.getId(),false);
+        list = logBookRepository.findAllByGroupIdAndCompletedAndRecorded(group.getId(),false, true);
         assertEquals(1,list.size());
     }
 
@@ -85,11 +85,11 @@ public class LogBookRepositoryTest {
         Group group = groupRepository.save(new Group("test logbook", user));
         LogBook lb1 = logBookRepository.save(new LogBook(group.getId(),"just do it", DateTimeUtil.addHoursFromNow(2), user.getId()));
         LogBook lb2 = logBookRepository.save(new LogBook(group.getId(),"not assigned", DateTimeUtil.addHoursFromNow(2)));
-        List<LogBook> list = logBookRepository.findAllByAssignedToUserId(user.getId());
+        List<LogBook> list = logBookRepository.findAllByAssignedToUserIdAndRecorded(user.getId(), true);
         assertEquals(1,list.size());
         lb2.setAssignedToUserId(user.getId());
         lb2 = logBookRepository.save(lb2);
-        list = logBookRepository.findAllByAssignedToUserId(user.getId());
+        list = logBookRepository.findAllByAssignedToUserIdAndRecorded(user.getId(), true);
         assertEquals(2,list.size());
     }
 
@@ -100,11 +100,11 @@ public class LogBookRepositoryTest {
         Group group = groupRepository.save(new Group("test logbook", user));
         LogBook lb1 = logBookRepository.save(new LogBook(group.getId(),"just do it", DateTimeUtil.addHoursFromNow(2),user.getId()));
         LogBook lb2 = logBookRepository.save(new LogBook(group.getId(),"not assigned", DateTimeUtil.addHoursFromNow(2),user.getId()));
-        List<LogBook> list = logBookRepository.findAllByAssignedToUserIdAndCompleted(user.getId(),true);
+        List<LogBook> list = logBookRepository.findAllByAssignedToUserIdAndRecordedAndCompleted(user.getId(),true,true);
         assertEquals(0,list.size());
         lb2.setCompleted(true);
         lb2 = logBookRepository.save(lb2);
-        list = logBookRepository.findAllByAssignedToUserIdAndCompleted(user.getId(),true);
+        list = logBookRepository.findAllByAssignedToUserIdAndRecordedAndCompleted(user.getId(),true, true);
         assertEquals(1,list.size());
     }
 

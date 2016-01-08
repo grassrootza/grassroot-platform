@@ -13,16 +13,21 @@ import java.util.List;
 public interface LogBookRepository extends JpaRepository<LogBook, Long> {
 
     List<LogBook> findAllByGroupId(Long groupId);
-    List<LogBook> findAllByGroupIdAndCompleted(Long groupId, boolean completed);
-    List<LogBook> findAllByGroupIdAndCompletedAndActionByDateGreaterThan(Long groupId, boolean completed, Timestamp dueDate);
+    List<LogBook> findAllByGroupIdAndRecorded(Long groupId, boolean recorded);
 
-    List<LogBook> findAllByAssignedToUserId(Long assignToUserId);
-    List<LogBook> findAllByAssignedToUserIdAndCompleted(Long assignToUserId, boolean completed);
+    // note: no way a non-recorded action gets to completion (manager throws an exception), so adding that would be redundant
+    List<LogBook> findAllByGroupIdAndCompletedAndRecorded(Long groupId, boolean completed, boolean recorded);
+    List<LogBook> findAllByGroupIdAndCompletedAndRecordedAndActionByDateGreaterThan(Long groupId, boolean completed, boolean recorded, Timestamp dueDate);
+
+    List<LogBook> findAllByAssignedToUserIdAndRecorded(Long assignToUserId, boolean recorded);
+    List<LogBook> findAllByAssignedToUserIdAndRecordedAndCompleted(Long assignToUserId, boolean recorded, boolean completed);
+
+    // similarly to above: replicate group function only possible via web app, hence always recorded as true
     List<LogBook> findAllByReplicatedGroupId(Long replicatedGroupId);
     List<LogBook> findAllByReplicatedGroupIdAndCompleted(Long replicatedGroupId, boolean completed);
     List<LogBook> findAllByReplicatedGroupIdAndMessage(Long replicatedGroupId, String message);
 
-    @Query(value = "select * from log_book l where l.action_by_date is not null and l.completed = false and l.number_of_reminders_left_to_send > 0 and (l.action_by_date + l.reminder_minutes * INTERVAL '1 minute') < current_timestamp", nativeQuery = true)
+    @Query(value = "select * from log_book l where l.action_by_date is not null and l.completed = false and l.recorded = true and l.number_of_reminders_left_to_send > 0 and (l.action_by_date + l.reminder_minutes * INTERVAL '1 minute') < current_timestamp", nativeQuery = true)
     List<LogBook> findLogBookReminders();
 
 }

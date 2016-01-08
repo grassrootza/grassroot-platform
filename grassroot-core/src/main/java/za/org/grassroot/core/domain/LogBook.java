@@ -64,6 +64,12 @@ public class LogBook {
     @Basic
     @Column(name="number_of_reminders_left_to_send")
     private int numberOfRemindersLeftToSend;
+    /*
+    Field to distinguish half done entries from USSD, to make sure don't display in record lists (defaults to true)
+     */
+    @Basic
+    @Column(name="recorded")
+    private boolean recorded;
 
 
     @PreUpdate
@@ -84,6 +90,7 @@ public class LogBook {
         this.groupId = groupId;
         this.message = message;
         this.actionByDate = actionByDate;
+        this.recorded = true;
     }
 
     public LogBook(Long groupId, String message, Timestamp actionByDate, Long assignedToUserId) {
@@ -91,6 +98,14 @@ public class LogBook {
         this.message = message;
         this.actionByDate = actionByDate;
         this.assignedToUserId = assignedToUserId;
+        this.recorded = true;
+    }
+
+    public LogBook(Long groupId, String message, Timestamp actionByDate, boolean recorded) {
+        this.groupId = groupId;
+        this.message = message;
+        this.actionByDate = actionByDate;
+        this.recorded = recorded;
     }
 
     public Long getId() {
@@ -197,6 +212,10 @@ public class LogBook {
         this.numberOfRemindersLeftToSend = numberOfRemindersLeftToSend;
     }
 
+    public boolean isRecorded() { return recorded; }
+
+    public void setRecorded(boolean recorded) { this.recorded = recorded; }
+
     @Override
     public String toString() {
         return "LogBook{" +
@@ -213,6 +232,7 @@ public class LogBook {
                 ", actionByDate=" + actionByDate +
                 ", reminderMinutes=" + reminderMinutes +
                 ", numberOfRemindersLeftToSend=" + numberOfRemindersLeftToSend +
+                ", recorded=" + recorded +
                 '}';
     }
 }
