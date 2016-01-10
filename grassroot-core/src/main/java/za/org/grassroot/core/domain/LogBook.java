@@ -108,6 +108,17 @@ public class LogBook {
         this.recorded = recorded;
     }
 
+    // constructor only used when replicating down group hierarchies, so that createdDateTime timestamps don't have nanosecond variance
+    public LogBook(Long createdByUserId, Timestamp createdDateTime, Long groupId, Long replicatedGroupId, String message, Timestamp actionByDate) {
+        this.createdByUserId = createdByUserId;
+        this.createdDateTime = createdDateTime;
+        this.groupId = groupId;
+        this.replicatedGroupId = replicatedGroupId;
+        this.message = message;
+        this.actionByDate = actionByDate;
+        this.recorded = true;
+    }
+
     public Long getId() {
         return id;
     }

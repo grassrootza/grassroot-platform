@@ -21,6 +21,7 @@ import za.org.grassroot.webapp.controller.BaseController;
 import javax.servlet.http.HttpServletRequest;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
@@ -30,6 +31,7 @@ import java.util.List;
 public class LogBookController extends BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(LogBookController.class);
+    private static final DateTimeFormatter pickerParser = DateTimeFormatter.ofPattern("dd/MM/yyyy h:mm a");
 
     @Autowired
     GroupManagementService groupManagementService;
@@ -70,6 +72,7 @@ public class LogBookController extends BaseController {
                                       @RequestParam(value="subGroups", required=false) boolean subGroups, HttpServletRequest request) {
 
         log.info("The potential logBookEntry passed back to us ... " + logBookEntry);
+        log.info("Value of subGroups passed ... " + subGroups);
         Group groupSelected = groupManagementService.loadGroup(logBookEntry.getGroupId());
         model.addAttribute("group", groupSelected);
         model.addAttribute("subGroups", subGroups);
@@ -94,10 +97,11 @@ public class LogBookController extends BaseController {
                                      HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
         log.info("The confirmed logBookEntry that we are recording is ... " + logBookEntry);
+        log.info("Whether or not to replicate ... subGroups ..." + subGroups);
 
         logBookEntry.setCreatedByUserId(getUserProfile().getId());
         logBookEntry.setRecorded(true);
-        if (!assignToUser || subGroups) logBookEntry.setAssignedToUserId(null);
+        if (!assignToUser || subGroups) logBookEntry.setAssignedToUserId(null); // todo: in future version allow assignment per subgroup
 
         logBookService.create(logBookEntry, subGroups);
         addMessage(redirectAttributes, MessageType.SUCCESS, "log.creation.success", request);
@@ -125,22 +129,46 @@ public class LogBookController extends BaseController {
         return "log/view";
     }
 
-    @RequestMapping(value = "/log/view/details")
+    @RequestMapping(value = "/log/details")
     public String viewLogBookDetails(Model model, @RequestParam(value="logBookId", required=true) Long logBookId) {
 
         // todo: be able to view "children" of the log book once design changed to allow it (replicate by logbook rather than group)
 
         log.info("Finding details about logbook entry with Id ..." + logBookId);
+
         LogBook logBookEntry = logBookService.load(logBookId);
+
+        log.info("Retrieved logBook entry with these details ... " + logBookEntry);
+
         model.addAttribute("entry", logBookEntry);
         model.addAttribute("group", groupManagementService.loadGroup(logBookEntry.getGroupId()));
         model.addAttribute("creatingUser", userManagementService.loadUser(logBookEntry.getCreatedByUserId()));
         model.addAttribute("isComplete", logBookEntry.isCompleted());
 
-        if(logBookEntry.getAssignedToUserId() != null)
+        if(logBookEntry.getAssignedToUserId() != null && logBookEntry.getAssignedToUserId() != 0L)
             model.addAttribute("assignedToUser", userManagementService.loadUser(logBookEntry.getAssignedToUserId()));
-        if(logBookEntry.isCompleted())
+        if(logBookEntry.isCompleted() && logBookEntry.getCompletedByUserId() != 0) {
+            log.info("Entry is marked as completed, by user: " + userManagementService.loadUser(logBookEntry.getCompletedByUserId()));
             model.addAttribute("completedByUser", userManagementService.loadUser(logBookEntry.getCompletedByUserId()));
+        }
+
+        if (logBookService.hasReplicatedEntries(logBookEntry)) {
+            log.info("Found replicated entries ... adding them to model");
+            List<LogBook> replicatedEntries = logBookService.getAllReplicatedEntriesFromParentLogBook(logBookEntry);
+            log.info("Here are the replicated entries ... " + replicatedEntries);
+            List<Group> relevantSubGroups = groupManagementService.getListGroupsFromLogbooks(replicatedEntries);
+            model.addAttribute("hasReplicatedEntries", true);
+            model.addAttribute("replicatedEntries", replicatedEntries);
+            model.addAttribute("replicatedGroups", relevantSubGroups);
+            log.info("Here are the groups ... " + relevantSubGroups);
+        }
+
+        if (logBookEntry.getReplicatedGroupId() != null && logBookEntry.getReplicatedGroupId() != 0) {
+            log.info("This one is replicated from a parent logBook entry ...");
+            LogBook parentEntry = logBookService.getParentLogBookEntry(logBookEntry);
+            model.addAttribute("parentEntry", parentEntry);
+            model.addAttribute("parentEntryGroup", groupManagementService.loadGroup(logBookEntry.getReplicatedGroupId()));
+        }
 
         return "log/details";
     }
@@ -149,10 +177,11 @@ public class LogBookController extends BaseController {
     public String completeLogBookForm(Model model, @RequestParam(value="logBookId", required=true) Long logBookId) {
 
         LogBook logBookEntry = logBookService.load(logBookId);
+        boolean assignedEntry = logBookEntry.getAssignedToUserId() != null && logBookEntry.getAssignedToUserId() != 0;
         model.addAttribute("entry", logBookEntry);
-        model.addAttribute("hasAssignedUser", logBookEntry.getAssignedToUserId() != null);
         model.addAttribute("groupMembers", groupManagementService.getUsersInGroupNotSubGroups(logBookEntry.getGroupId()));
-        if (logBookEntry.getAssignedToUserId() != null)
+        model.addAttribute("hasAssignedUser", assignedEntry);
+        if (assignedEntry)
             model.addAttribute("assignedUser", userManagementService.loadUser(logBookEntry.getAssignedToUserId()));
 
         return "log/complete";
@@ -168,14 +197,18 @@ public class LogBookController extends BaseController {
                                            @RequestParam(value="completedOnDate", required=false) String completedOnDate,
                                            HttpServletRequest request) {
 
+        // todo: refactor this quite a bit
         log.info("Marking logbook entry as completed ... ");
 
         LogBook completedEntry;
-        Timestamp completedDate = Timestamp.valueOf(LocalDateTime.now());
+        Timestamp completedDate = (setCompletedDate) ? Timestamp.valueOf(LocalDateTime.parse(completedOnDate, pickerParser)) : null;
+
         if (completedByAssigned || !designateCompletor) {
+            log.info("No user assigned, so either setting as complete today or specifying a completion date");
             completedEntry = (setCompletedDate) ? logBookService.setCompleted(logBookId, completedDate) :
                     logBookService.setCompleted(logBookId);
         } else {
+            log.info("User assigned, so marking it accordingly");
             completedEntry = (setCompletedDate) ? logBookService.setCompletedWithDate(logBookId, completedByUserId, completedDate):
                     logBookService.setCompleted(logBookId, completedByUserId);
         }

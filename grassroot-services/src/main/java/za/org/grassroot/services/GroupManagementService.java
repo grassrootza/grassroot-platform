@@ -3,6 +3,7 @@ package za.org.grassroot.services;
 import org.springframework.data.domain.Page;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 
@@ -40,6 +41,8 @@ public interface GroupManagementService {
     public List<Group> getGroupsPartOf(User sessionUser);
 
     public List<Group> getActiveGroupsPartOf(User sessionUser);
+
+    public List<Group> getListGroupsFromLogbooks(List<LogBook> logBooks);
 
     public boolean hasActiveGroupsPartOf(User user);
 

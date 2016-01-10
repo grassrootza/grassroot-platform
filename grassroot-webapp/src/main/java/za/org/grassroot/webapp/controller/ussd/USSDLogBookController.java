@@ -290,8 +290,8 @@ public class USSDLogBookController extends USSDController {
         USSDMenu menu;
         if (logBook.isCompleted()) {
             String completedDate = dateFormat.format(logBook.getCompletedDate().toLocalDateTime());
-            String userCompleted = logBook.getCompletedByUserId() == null ? "" : "by " +
-                    userManager.loadUser(logBook.getCompletedByUserId()).nameToDisplay();
+            String userCompleted = (logBook.getCompletedByUserId() == null || logBook.getCompletedByUserId() == 0L) ? "" :
+                    "by " + userManager.loadUser(logBook.getCompletedByUserId()).nameToDisplay();
             String[] fields = new String[]{ createdDate, dueDate, completedDate, userCompleted };
             menu = new USSDMenu(getMessage(thisSection, viewEntryDates, promptKey + ".complete", fields, user));
         } else {
@@ -407,6 +407,7 @@ public class USSDLogBookController extends USSDController {
                                        @RequestParam(value = "completed_date", required = false) String completedDate) throws URISyntaxException {
         // todo: check permissions
         User user = userManager.findByInputNumber(inputNumber, saveLogMenu(setCompleteMenu, logBookId));
+        if (completedByUserId == null) completedByUserId = 0L;
         logBookService.setCompleted(logBookId, completedByUserId, completedDate);
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, setCompleteMenu, promptKey, user));

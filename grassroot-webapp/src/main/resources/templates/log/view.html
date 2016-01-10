@@ -7,16 +7,18 @@
 <body>
 
 <div layout:fragment="header">
-  <h2>Logbook for group <span  th:text="${group.groupName}">View Logbook</span></h2>
+  <h2><mark><span th:text="${group.groupName}">Group name</span></mark>: logbook of actions recorded</h2>
 </div>
-<div layout:fragment="overview">View logbook entries for group <span th:value="${group.groupName}">name</span>.</div>
+<div layout:fragment="overview">
+  <a th:href="@{create(groupId=${group.id})}"><button class="btn-primary">Record a new entry</button></a>
+</div>
 
 <div layout:fragment="content">
   <div layout:fragment="messages"></div>
 
-  <div class="well">
+  <div class="well" th:unless="${#lists.isEmpty(incompleteEntries)}">
     <div class="row list-group">
-      <h3>Uncompleted actions:</h3>:
+      <h3>Uncompleted actions:</h3>
     </div>
     <div class="row list-group-item">
       <table class="table table-striped">
@@ -53,7 +55,7 @@
         <tbody>
         <tr th:each="entry: ${completedEntries}">
           <td><span th:text="${#dates.format(entry.createdDateTime, 'dd MMM yyyy')}">Date time created</span></td>
-          <td><span th:text="${entry.message}">Description</span></td>
+          <td><a th:href="@{details(logBookId=${entry.id})}"><span th:text="${entry.message}">Description</span></a></td>
           <td><span th:text="${#dates.format(entry.completedDate, 'dd MMM yyyy')}">Completed date</span></td>
           <td>Some member</td>
         </tr>

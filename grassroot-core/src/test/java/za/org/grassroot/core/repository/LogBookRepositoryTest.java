@@ -108,4 +108,9 @@ public class LogBookRepositoryTest {
         assertEquals(1,list.size());
     }
 
+    @Test
+    public void shouldSaveAndRetrieveReplicatedEntries() {
+        // todo: write the test
+    }
+
 }

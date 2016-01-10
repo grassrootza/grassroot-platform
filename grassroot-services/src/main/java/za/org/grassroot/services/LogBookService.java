@@ -25,6 +25,14 @@ public interface LogBookService {
 
     List<LogBook> getAllReplicatedEntriesForGroupAndMessage(Long groupId, String message);
 
+    boolean hasReplicatedEntries(LogBook logBook);
+
+    List<LogBook> getAllReplicatedEntriesFromParentLogBook(LogBook logBook);
+
+    boolean hasParentLogBookEntry(LogBook logBook);
+
+    LogBook getParentLogBookEntry(LogBook logBook);
+
     LogBook create(Long createdByUserId, Long groupId, String message);
 
     LogBook create(Long createdByUserId, Long groupId, boolean recorded);

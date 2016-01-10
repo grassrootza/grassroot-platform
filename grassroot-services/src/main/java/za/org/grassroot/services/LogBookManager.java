@@ -2,17 +2,13 @@ package za.org.grassroot.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
-import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.LogBookRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.sql.Timestamp;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -23,6 +19,13 @@ import java.util.logging.Logger;
 public class LogBookManager implements LogBookService {
 
     private Logger log = Logger.getLogger(getClass().getCanonicalName());
+
+    /*
+        Minus value will send a reminder before actionByDate, Plus value will send a reminder x minutes after
+        actionByDate.
+    */
+
+    private static final int defaultReminderMinutes = -1440;
 
     @Autowired
     LogBookRepository logBookRepository;
@@ -62,6 +65,32 @@ public class LogBookManager implements LogBookService {
     @Override
     public List<LogBook> getAllReplicatedEntriesForGroupAndMessage(Long groupId, String message) {
         return logBookRepository.findAllByReplicatedGroupIdAndMessage(groupId, message);
+    }
+
+    @Override
+    public boolean hasReplicatedEntries(LogBook logBook) {
+        // todo: replace this with a more efficient direct query (e.g., just a straight count on replicated_group_id
+        return !getAllReplicatedEntriesFromParentLogBook(logBook).isEmpty();
+    }
+
+    @Override
+    public List<LogBook> getAllReplicatedEntriesFromParentLogBook(LogBook logBook) {
+        return logBookRepository.findAllByReplicatedGroupIdAndMessageAndCreatedDateTimeOrderByGroupIdAsc(logBook.getGroupId(), logBook.getMessage(),
+                                                                                                         logBook.getCreatedDateTime());
+    }
+
+    @Override
+    public boolean hasParentLogBookEntry(LogBook logBook) {
+        return (logBook.getReplicatedGroupId() != null && logBook.getReplicatedGroupId() != 0);
+    }
+
+    @Override
+    public LogBook getParentLogBookEntry(LogBook logBook) {
+        // todo error handling just in case something went wrong on insert and the repository call comes back empty
+        Long parentLogBookGroupId = logBook.getReplicatedGroupId();
+        if (parentLogBookGroupId == null || parentLogBookGroupId == 0) return null;
+        else return logBookRepository.findByGroupIdAndMessageAndCreatedDateTime(parentLogBookGroupId, logBook.getMessage(),
+                                                                                logBook.getCreatedDateTime()).get(0);
     }
 
     @Override
@@ -175,7 +204,7 @@ public class LogBookManager implements LogBookService {
     public LogBook setCompleted(Long logBookId, Timestamp completedDate) {
         // if no user assigned, then logBook.getId() returns null, which is set as completed user, which is as wanted
         LogBook logBook = logBookRepository.findOne(logBookId);
-        return setCompleted(logBook, logBook.getId(), completedDate);
+        return setCompleted(logBook, 0L, completedDate);
     }
 
     private LogBook setCompleted(LogBook logBook, Long completedByUserId, Timestamp completedDate) {
@@ -191,16 +220,19 @@ public class LogBookManager implements LogBookService {
                                                 Long assignedToUserId, int reminderMinutes,
                                                 int numberOfRemindersLeftToSend) {
 
-        // note: this is only going to be called from web app, so we just set 'recorded' to true
         log.info("createLogBookEntryReplicate...parentGroup..." + groupId);
 
-        LogBook parentLogBook = new LogBook();
+        // note: when we search on replicatedGroupId we want only the replicated entries, i.e., not
+        LogBook parentLogBook = createLogBookEntry(createdByUserId, groupId, message, actionByDate, assignedToUserId,
+                                                   null, reminderMinutes, numberOfRemindersLeftToSend, true);
+        Timestamp commonCreatedDateTime = parentLogBook.getCreatedDateTime(); // so nanoseconds don't throw later queries
+
+        // note: getGroupAndSubGroups is a much faster method (a recursive query) than getSubGroups, hence use it and just skip parent
         for (Group group : groupManagementService.findGroupAndSubGroupsById(groupId)) {
             log.info("createLogBookEntryReplicate...groupid..." + group.getId() + "...parentGroup..." + groupId);
-            LogBook lb = createLogBookEntry(createdByUserId, group.getId(), message, actionByDate, assignedToUserId,
-                                            groupId, reminderMinutes, numberOfRemindersLeftToSend, true);
-            if (group.getId() == groupId) {
-                parentLogBook = lb;
+            if (group.getId() != groupId) {
+                LogBook lb = createReplicatedLogBookEntry(createdByUserId, commonCreatedDateTime, group.getId(), groupId, message,
+                                                          actionByDate, assignedToUserId, reminderMinutes, numberOfRemindersLeftToSend);
             }
         }
 
@@ -221,15 +253,14 @@ public class LogBookManager implements LogBookService {
                                        Long assignedToUserId, Long replicatedGroupId, int reminderMinutes,
                                        int numberOfRemindersLeftToSend, boolean recorded) {
         LogBook logBook = new LogBook();
-        if (numberOfRemindersLeftToSend == 0) {
-            numberOfRemindersLeftToSend = 3;
+        if (assignedToUserId == null) {
+            assignedToUserId = 0L; // else run into errors with event consumer
         }
-        /*
-        Minus value will send a reminder before actionByDate, Plus value will send a reminder x minutes after
-        actionByDate
-         */
+        if (numberOfRemindersLeftToSend == 0) {
+            numberOfRemindersLeftToSend = 3; // todo: replace with a logic based on group paid / not paid
+        }
         if (reminderMinutes == 0) {
-            reminderMinutes = -1440; // think it is 24 hours
+            reminderMinutes = defaultReminderMinutes;
         }
 
         logBook.setAssignedToUserId(assignedToUserId);
@@ -244,4 +275,22 @@ public class LogBookManager implements LogBookService {
 
         return logBookRepository.save(logBook);
     }
+
+    private LogBook createReplicatedLogBookEntry(Long createdByUserId, Timestamp commonCreatedDateTime, Long groupId,
+                                                 Long replicatedGroupId, String message, Timestamp actionByDate, Long assignedToUserId,
+                                                 int reminderMinutes, int numberOfRemindersLeftToSend) {
+        LogBook logBook = new LogBook(createdByUserId, commonCreatedDateTime, groupId, replicatedGroupId, message, actionByDate);
+        logBook.setAssignedToUserId(assignedToUserId);
+        if (numberOfRemindersLeftToSend == 0) {
+            numberOfRemindersLeftToSend = 3;
+        }
+        if (reminderMinutes == 0) {
+            reminderMinutes = defaultReminderMinutes;
+        }
+        logBook.setNumberOfRemindersLeftToSend(numberOfRemindersLeftToSend);
+        logBook.setReminderMinutes(reminderMinutes);
+        logBook.setAssignedToUserId(0L); // cannot cascade this, can adjust later -- leaving null throws errors in consumers
+        return logBookRepository.save(logBook);
+    }
+
 }

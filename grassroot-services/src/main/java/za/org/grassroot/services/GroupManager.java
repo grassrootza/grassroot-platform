@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.dto.NewGroupMember;
@@ -286,6 +287,16 @@ public class GroupManager implements GroupManagementService {
     @Override
     public List<Group> getActiveGroupsPartOf(User sessionUser) {
         return groupRepository.findByGroupMembersAndActive(sessionUser, true);
+    }
+
+    @Override
+    public List<Group> getListGroupsFromLogbooks(List<LogBook> logBooks) {
+        // seems like doing it this way more efficient than running lots of group fetch queries, but need to test/verify
+        log.info("Got a list of logbooks ... look like this: " + logBooks);
+        List<Long> ids = new ArrayList<>();
+        for (LogBook entry : logBooks) { ids.add(entry.getGroupId()); }
+        log.info("And now we have this list of Ids ... " + ids);
+        return groupRepository.findAllByIdInOrderByIdAsc(ids);
     }
 
     @Override
