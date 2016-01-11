@@ -11,6 +11,7 @@ import org.springframework.security.acls.domain.PrincipalSid;
 //import org.springframework.security.acls.model.*;
 import org.springframework.security.acls.model.*;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.Group;
@@ -51,16 +52,28 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
             log.info("ZOG: Adding them to this user ... " + user.toString());
             log.info("ZOG: Adding this set of permissions ... " + groupPermissions);
 
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user.getUsername(),
-                    user.getPassword(), user.getAuthorities());
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                authentication = new UsernamePasswordAuthenticationToken(user,
+                        user.getPassword(), user.getAuthorities());
+
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
 
             ObjectIdentity objectIdentity = new ObjectIdentityImpl(Group.class, group.getId());
             Sid sid = new PrincipalSid(user.getUsername());
 
-            MutableAcl acl = mutableAclService.createAcl(objectIdentity);
+            MutableAcl acl;
 
-            acl = (MutableAcl) mutableAclService.readAclById(objectIdentity);
+            try {
+                acl = (MutableAcl) mutableAclService.readAclById(objectIdentity);
+            } catch (NotFoundException e) {
+
+                acl = mutableAclService.createAcl(objectIdentity);
+                acl = (MutableAcl) mutableAclService.readAclById(objectIdentity);
+
+            }
 
             /**************************************************************
              * Grant some permissions via an access control entry (ACE)
@@ -74,6 +87,7 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
 
 
         } catch (Exception e) {
+            log.error("Could not add group permissions for user", e);
             throw new RuntimeException("Could not add group permissions for user", e);
         }
 

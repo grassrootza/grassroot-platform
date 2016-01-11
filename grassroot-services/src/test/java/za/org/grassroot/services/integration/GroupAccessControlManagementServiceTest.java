@@ -97,7 +97,12 @@ public class GroupAccessControlManagementServiceTest {
         groupAccessControlManagementService.removeUserGroupPermissions(group, user, groupRole.getPermissions());
 
         assertFalse(groupAccessControlManagementService.hasGroupPermission(somePermission, group, user));
+
+        //Add Permissions again to verify what happens
+        groupAccessControlManagementService.addUserGroupPermissions(group, user, groupRole.getPermissions());
     }
+
+
 
 
 }
