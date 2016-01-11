@@ -94,6 +94,16 @@ public class BaseController {
         request.getSession().setAttribute(MESSAGES_KEY, messages);
     }
 
+    //Methods to help with standalone unit testing
+
+    public void setMessageSource(MessageSource messageSource){
+        this.messageSource = messageSource;
+        this.messageSourceAccessor = new MessageSourceAccessor(messageSource);
+
+    }
+
+
+
 
     /**
      *
