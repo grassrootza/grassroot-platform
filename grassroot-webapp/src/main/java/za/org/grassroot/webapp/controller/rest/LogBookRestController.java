@@ -66,17 +66,17 @@ public class LogBookRestController {
     public LogBookDTO addWithDate(@PathVariable("userid") Long userid,
                           @PathVariable("groupid") Long groupid,
                           @PathVariable("message") String message,
-                          @PathVariable("actionByDate") @DateTimeFormat(pattern="yyyy-MM-dd HH:mm:ss") Timestamp actionByDate) {
-        return new LogBookDTO(logBookService.create(userid,groupid,message,actionByDate));
+                          @PathVariable("actionByDate") @DateTimeFormat(pattern="yyyy-MM-dd HH:mm:ss") Date actionByDate) {
+        return new LogBookDTO(logBookService.create(userid,groupid,message,new Timestamp(actionByDate.getTime())));
     }
 
     @RequestMapping(value = "/addwithdateandassign/{userid}/{groupid}/{message}/{actionByDate}/{assignedToUserId}", method = RequestMethod.POST)
     public LogBookDTO addWithDateAndAssign(@PathVariable("userid") Long userid,
                                   @PathVariable("groupid") Long groupid,
                                   @PathVariable("message") String message,
-                                  @PathVariable("actionByDate") @DateTimeFormat(pattern="yyyy-MM-dd HH:mm:ss") Timestamp actionByDate,
+                                  @PathVariable("actionByDate") @DateTimeFormat(pattern="yyyy-MM-dd HH:mm:ss") Date actionByDate,
                                   @PathVariable("assignedToUserId") Long assignedToUserId) {
-        return new LogBookDTO(logBookService.create(userid,groupid,message,actionByDate,assignedToUserId));
+        return new LogBookDTO(logBookService.create(userid,groupid,message,new Timestamp(actionByDate.getTime()),assignedToUserId));
     }
 
     @RequestMapping(value = "/listreplicated/{groupid}", method = RequestMethod.GET)

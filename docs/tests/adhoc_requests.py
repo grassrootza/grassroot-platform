@@ -69,6 +69,10 @@ def listReplicatedMessage(groupid, message):
     post_url = host + "/api/logbook/listreplicatedbymessage/"  + str(groupid) + "/" + message
     return requests.get(post_url,None, verify=False).json()
 
+def createAccount(userid,groupid,accountname):
+    post_url = host + "/api/account/add/"  + str(userid) + "/" + str(groupid) + "/" + str(accountname)
+    return requests.post(post_url,None, verify=False).json()
+
 #print cancel_event(5166)
 #user = add_user("0823333332")
 #user = add_user("0821111111")
@@ -80,10 +84,11 @@ def listReplicatedMessage(groupid, message):
 #print upcomingVotes(231)
 #print votesPerGroupForEvent(194,5103)
 #print addLogBook(1,85,"X must do Y")
-print addLogBook(1,88,"Somebody must Y",True) # has sub groups
+#print addLogBook(1,88,"Somebody must Y",True) # has sub groups
 #print addLogBook(1,85,"Somebody must do X",True) # no subgroups
 #print listReplicated(88,False)
 #print addLogBookWithDateAndAssign(1,21,"aakil must do Y","2015-12-13 08:45:00",588)
 #print addLogBookWithDate(1,21,"someone must do Y","2015-12-13 08:45:00")
 #print setInitiatedSession(588)
-print(listReplicatedMessage(88,"Somebody must X"))
+#print(listReplicatedMessage(88,"Somebody must X"))
+#print(createAccount(1,21,"acc 21"))

@@ -4,8 +4,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
+import za.org.grassroot.core.dto.LogBookDTO;
 import za.org.grassroot.core.repository.LogBookRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -33,6 +35,8 @@ public class LogBookManager implements LogBookService {
     @Autowired
     GroupManagementService groupManagementService;
 
+    @Autowired
+    GenericJmsTemplateProducerService jmsTemplateProducerService;
 
     @Override
     public LogBook load(Long logBookId) {
@@ -273,7 +277,9 @@ public class LogBookManager implements LogBookService {
         logBook.setReplicatedGroupId(replicatedGroupId);
         logBook.setRecorded(recorded);
 
-        return logBookRepository.save(logBook);
+        LogBook savedLogbook = logBookRepository.save(logBook);
+        jmsTemplateProducerService.sendWithNoReply("new-logbook",new LogBookDTO(savedLogbook));
+        return  savedLogbook;
     }
 
     private LogBook createReplicatedLogBookEntry(Long createdByUserId, Timestamp commonCreatedDateTime, Long groupId,
@@ -290,7 +296,9 @@ public class LogBookManager implements LogBookService {
         logBook.setNumberOfRemindersLeftToSend(numberOfRemindersLeftToSend);
         logBook.setReminderMinutes(reminderMinutes);
         logBook.setAssignedToUserId(0L); // cannot cascade this, can adjust later -- leaving null throws errors in consumers
-        return logBookRepository.save(logBook);
+        LogBook savedLogbook = logBookRepository.save(logBook);
+        jmsTemplateProducerService.sendWithNoReply("new-logbook",new LogBookDTO(savedLogbook));
+        return  savedLogbook;
     }
 
 }

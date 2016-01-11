@@ -14,10 +14,7 @@ import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.domain.MessageProtocol;
 import za.org.grassroot.integration.services.MessageSendingService;
-import za.org.grassroot.services.EventLogManagementService;
-import za.org.grassroot.services.EventManagementService;
-import za.org.grassroot.services.GroupManagementService;
-import za.org.grassroot.services.MeetingNotificationService;
+import za.org.grassroot.services.*;
 import za.org.grassroot.services.util.CacheUtilService;
 
 import java.util.List;
@@ -57,6 +54,9 @@ public class EventNotificationConsumer {
 
     @Autowired
     LogBookLogRepository logBookLogRepository;
+
+    @Autowired
+    AccountManagementService accountManagementService;
 
     /*
     change this to add messages or stop messages altogether by leaving it empty.
@@ -140,6 +140,10 @@ public class EventNotificationConsumer {
 
     }
 
+    /*
+    N.B.
+    If logic changes here also see method sendNewLogbookNotification if it must change there as well
+     */
     @JmsListener(destination = "logbook-reminders", containerFactory = "messagingJmsContainerFactory",
             concurrency = "3")
     public void sendLogBookReminder(LogBookDTO logBookDTO) {
@@ -204,6 +208,32 @@ public class EventNotificationConsumer {
                 break;
             default:
                 log.info("genericAsyncProcessor NO implementation for..." + genericAsyncDTO.getIdentifier());
+        }
+
+    }
+
+    @JmsListener(destination = "new-logbook", containerFactory = "messagingJmsContainerFactory",
+            concurrency = "1")
+    public void sendNewLogbookNotification(LogBookDTO logBookDTO) {
+        log.info("sendNewLogbookNotification...id..." + logBookDTO.getId());
+        Group  group = groupManagementService.getGroupById(logBookDTO.getGroupId());
+        Account account = accountManagementService.findAccountForGroup(group);
+
+        if (account != null && account.isLogbookExtraMessages()) {
+            //send messages to paid for groups using the same logic as the reminders - sendLogBookReminder method
+            //so if you make changes here also make the changes there
+            if (logBookDTO.getAssignedToUserId() != 0) {
+                sendNewLogbookNotificationMessage(userRepository.findOne(logBookDTO.getAssignedToUserId()), group, logBookDTO);
+
+            } else {
+                for (User user : group.getGroupMembers()) {
+                    sendNewLogbookNotificationMessage(user, group, logBookDTO);
+                }
+            }
+
+
+        } else {
+            log.info("sendNewLogbookNotification...id..." + logBookDTO.getId() + "...NOT a paid for group..." + group.getId());
         }
 
     }
@@ -326,5 +356,13 @@ public class EventNotificationConsumer {
         logBookLogRepository.save(new LogBookLog(logBookDTO.getId(),message,user.getId(),group.getId(),user.getPhoneNumber()));
 
     }
+    private void sendNewLogbookNotificationMessage(User user,Group group, LogBookDTO logBookDTO) {
+        log.info("sendNewLogbookNotificationMessage...user..." + user.getPhoneNumber() + "...logbook..." + logBookDTO.getMessage());
+        String message = meetingNotificationService.createNewLogBookNotificationMessage(user,group,logBookDTO);
+        messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
+        logBookLogRepository.save(new LogBookLog(logBookDTO.getId(),message,user.getId(),group.getId(),user.getPhoneNumber()));
+
+    }
+
 }
 
