@@ -73,8 +73,7 @@ public class LogBookManager implements LogBookService {
 
     @Override
     public boolean hasReplicatedEntries(LogBook logBook) {
-        // todo: replace this with a more efficient direct query (e.g., just a straight count on replicated_group_id
-        return !getAllReplicatedEntriesFromParentLogBook(logBook).isEmpty();
+        return logBookRepository.countReplicatedEntries(logBook.getGroupId(), logBook.getMessage(), logBook.getCreatedDateTime()) != 0;
     }
 
     @Override

@@ -29,6 +29,7 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     one level only
      */
     List<Group> findByParent(Group parent);
+    List<Group> findByParentOrderByIdAsc(Group parent);
     /*
     Find all the groups that a user is part of, with pagination
      */

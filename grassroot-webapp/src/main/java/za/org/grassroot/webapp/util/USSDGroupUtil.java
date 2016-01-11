@@ -49,6 +49,7 @@ public class USSDGroupUtil extends USSDUtil {
 
         // todo: the groupManager call is probably quite expensive, replace with a count query (non trivial, at least for me)
         USSDMenu groupMenu;
+        log.info("Inside askForGroupAllowCreateNew ... newGroupUrl is ..." + newGroupUrl);
         if (!groupManager.hasActiveGroupsPartOf(sessionUser)) {
             groupMenu = createGroupPrompt(sessionUser, section, newGroupUrl);
         } else {
@@ -129,6 +130,7 @@ public class USSDGroupUtil extends USSDUtil {
 
 
     public USSDMenu createGroupPrompt(User user, USSDSection section, String nextUrl) throws URISyntaxException {
+        log.info("Constructing prompt for new group's name, with url ... " + nextUrl);
         USSDMenu thisMenu = new USSDMenu(getMessage(section, groupKeyForMessages, promptKey + ".create", user));
         thisMenu.setFreeText(true);
         thisMenu.setNextURI(nextUrl);

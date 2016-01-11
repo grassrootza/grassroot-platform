@@ -32,7 +32,7 @@ public interface LogBookRepository extends JpaRepository<LogBook, Long> {
     @Query(value = "select * from log_book l where l.action_by_date is not null and l.completed = false and l.recorded = true and l.number_of_reminders_left_to_send > 0 and (l.action_by_date + l.reminder_minutes * INTERVAL '1 minute') < current_timestamp", nativeQuery = true)
     List<LogBook> findLogBookReminders();
 
-    @Query(value = "select count(*) from log_book l where l.replicated_group_id=?1 and l.message=?2", nativeQuery = true)
-    int countReplicatedEntries(Long groupId, String message);
+    @Query(value = "select count(*) from log_book l where l.replicated_group_id=?1 and l.message=?2 and l.created_date_time=?3", nativeQuery = true)
+    int countReplicatedEntries(Long groupId, String message, Timestamp createdDateTime);
 
 }
