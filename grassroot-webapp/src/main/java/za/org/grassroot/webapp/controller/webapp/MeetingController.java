@@ -7,13 +7,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.web.context.AbstractSecurityWebApplicationInitializer;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
@@ -23,16 +21,19 @@ import za.org.grassroot.integration.services.SmsSendingService;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+
 /**
  * Created by luke on 2015/09/11.
  */
 @Controller
+@SessionAttributes("meeting")
 public class MeetingController extends BaseController {
 
     Logger log = LoggerFactory.getLogger(MeetingController.class);
@@ -45,18 +46,25 @@ public class MeetingController extends BaseController {
 
     @Autowired
     EventLogManagementService eventLogManagementService;
+    
+    
 
     @RequestMapping("/meeting/view")
     public String viewMeetingDetails(Model model, @RequestParam("eventId") Long eventId) {
 
         Event meeting = eventManagementService.loadEvent(eventId);
+        
+        int rsvpYesTotal = eventManagementService.getListOfUsersThatRSVPYesForEvent(meeting).size();
+        Set<Map.Entry<User, EventRSVPResponse>> rsvpResponses =
+                eventManagementService.getRSVPResponses(meeting).entrySet();
+        
 
         model.addAttribute("meeting", meeting);
-        model.addAttribute("rsvpYesTotal", eventManagementService.getListOfUsersThatRSVPYesForEvent(meeting).size());
-        model.addAttribute("rsvpResponses", eventManagementService.getRSVPResponses(meeting).entrySet());
+        model.addAttribute("rsvpYesTotal", rsvpYesTotal);
+        model.addAttribute("rsvpResponses", rsvpResponses);
 
-        log.info("Number of yes RSVPd: " + eventManagementService.getListOfUsersThatRSVPYesForEvent(meeting).size());
-        log.info("Size of response map: " + eventManagementService.getRSVPResponses(meeting).size());
+        log.info("Number of yes RSVPd: " + rsvpYesTotal);
+        log.info("Size of response map: " + rsvpResponses);
 
         return "meeting/view";
     }
@@ -72,6 +80,7 @@ public class MeetingController extends BaseController {
         User sessionUser = getUserProfile();
         Event meeting = eventManagementService.createMeeting(sessionUser);
 
+
         if (groupId != null) {
             log.info("Came here from a group");
             model.addAttribute("group", groupManagementService.loadGroup(groupId));
@@ -82,6 +91,7 @@ public class MeetingController extends BaseController {
             model.addAttribute("userGroups", groupManagementService.getGroupsPartOf(sessionUser)); // todo: or just use user.getGroupsPartOf?
             groupSpecified = false;
         }
+
 
         // defaulting to this until we are comfortable that reminders are robust and use cases are sorted out
         meeting = eventManagementService.setEventNoReminder(meeting.getId());
@@ -104,10 +114,9 @@ public class MeetingController extends BaseController {
         // todo: check that we have all the needed information and/or add a confirmation screen
         // todo: put this data transformation else where:Maybe Wrapper?
 
-        meeting.setDateTimeString(new SimpleDateFormat("E d MMM HH:mm").format(meeting.getEventStartDateTime()));
 
-        log.info("The timestamp is: " + meeting.getEventStartDateTime().toString());
-        log.info("The string is: " + meeting.getDateTimeString());
+
+
 
         log.info("The event passed back to us: " + meeting.toString());
 
@@ -254,7 +263,7 @@ public class MeetingController extends BaseController {
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "/meeting/free", method = RequestMethod.POST, params = { "confirmed" })
+    @RequestMapping(value = "/meeting/free", method = RequestMethod.POST, params = {"confirmed"})
     public String sendFreeMsg(Model model, @RequestParam(value="entityId") Long groupId, @RequestParam(value="message") String message,
                               @RequestParam(value="includeSubGroups", required=false) boolean includeSubgroups,
                               RedirectAttributes redirectAttributes, HttpServletRequest request) {
@@ -268,6 +277,7 @@ public class MeetingController extends BaseController {
         boolean messageSent = eventManagementService.sendManualReminder(dummyEvent, message);
 
         log.info("We just sent a free form message with result: " + messageSent);
+
 
         redirectAttributes.addAttribute("groupId", groupId);
         addMessage(redirectAttributes, MessageType.SUCCESS, "sms.message.sent", request);
@@ -290,9 +300,14 @@ public class MeetingController extends BaseController {
 
         eventLogManagementService.rsvpForEvent(meeting, user, EventRSVPResponse.YES);
 
+
+        int rsvpYesTotal = eventManagementService.getListOfUsersThatRSVPYesForEvent(meeting).size();
+        Set<Map.Entry<User, EventRSVPResponse>> rsvpResponses =
+                eventManagementService.getRSVPResponses(meeting).entrySet();
+
         model.addAttribute("meeting", meeting);
-        model.addAttribute("rsvpYesTotal", eventManagementService.getListOfUsersThatRSVPYesForEvent(meeting).size());
-        model.addAttribute("rsvpResponses", eventManagementService.getRSVPResponses(meeting).entrySet());
+        model.addAttribute("rsvpYesTotal", rsvpYesTotal);
+        model.addAttribute("rsvpResponses", rsvpResponses);
 
         addMessage(model, MessageType.SUCCESS, "meeting.rsvp.yes", request);
 
@@ -334,5 +349,9 @@ public class MeetingController extends BaseController {
         return minuteOptions;
 
     }
+
+    
+  
+    
 
 }
