@@ -68,8 +68,8 @@ public class USSDLogBookController extends USSDController {
     public Request askNewOld(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
         USSDMenu thisMenu = new USSDMenu(getMessage(thisSection, startMenu, promptKey, user));
-        thisMenu.addMenuOption(logMenus + groupMenu + "&new=1", getMessage(thisSection, startMenu, optionsKey + "new", user));
-        thisMenu.addMenuOption(logMenus + groupMenu + "&new=0", getMessage(thisSection, startMenu, optionsKey + "old", user));
+        thisMenu.addMenuOption(logMenus + groupMenu + "?new=1", getMessage(thisSection, startMenu, optionsKey + "new", user));
+        thisMenu.addMenuOption(logMenus + groupMenu + "?new=0", getMessage(thisSection, startMenu, optionsKey + "old", user));
         return menuBuilder(thisMenu);
     }
 
