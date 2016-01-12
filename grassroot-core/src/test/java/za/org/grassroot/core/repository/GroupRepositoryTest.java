@@ -283,6 +283,23 @@ public class GroupRepositoryTest {
         assertFalse(group2.isPaidFor());
     }
 
+    @Test
+    public void shouldRetrieveFromListOfIds() {
+        assertThat(groupRepository.count(), is(0L));
+        User user = userRepository.save(new User("3331115555"));
+        Group testGroup1 = groupRepository.save(new Group("gc1", user));
+        Group testGroup2 = groupRepository.save(new Group("gc2", user));
+        Group testGroup3 = groupRepository.save(new Group("gc3", user));
+
+        List<Long> ids = Arrays.asList(testGroup3.getId(), testGroup1.getId());
+        List<Group> retrievedGroups = groupRepository.findAllByIdInOrderByIdAsc(ids);
+
+        assertFalse(retrievedGroups.isEmpty());
+        assertThat(retrievedGroups.get(0), is(testGroup1));
+        assertThat(retrievedGroups.get(1), is(testGroup3));
+        assertFalse(retrievedGroups.contains(testGroup2));
+    }
+
 }
 
 

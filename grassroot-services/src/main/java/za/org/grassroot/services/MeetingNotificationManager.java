@@ -61,6 +61,17 @@ public class MeetingNotificationManager implements MeetingNotificationService {
     }
 
     @Override
+    public String createNewLogBookNotificationMessage(User user, Group group, LogBookDTO logBookDTO) {
+        Locale locale = getUserLocale(user);
+        if (logBookDTO.getAssignedToUserId() != 0) {
+            return messageSourceAccessor.getMessage("sms.logbook.new.assigned", populateLogBookFields(user, group, logBookDTO), locale);
+
+        } else {
+            return messageSourceAccessor.getMessage("sms.logbook.new.notassigned", populateLogBookFields(user, group, logBookDTO), locale);
+        }
+    }
+
+    @Override
     public String createChangeMeetingNotificationMessage(User user, EventDTO event) {
         // TODO think if there's a simple way to work out which variable has changed and only send that
         Locale locale = getUserLocale(user);
@@ -155,7 +166,8 @@ public class MeetingNotificationManager implements MeetingNotificationService {
         String[] variables = new String[]{
                 salutation,
                 logBookDTO.getMessage(),
-                dateString
+                dateString,
+                user.getDisplayName()
         };
         return variables;
     }

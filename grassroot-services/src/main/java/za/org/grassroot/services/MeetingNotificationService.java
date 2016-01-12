@@ -18,6 +18,8 @@ public interface MeetingNotificationService {
 
     String createLogBookReminderMessage(User user, Group group, LogBookDTO logBookDTO);
 
+    String createNewLogBookNotificationMessage(User user, Group group, LogBookDTO logBookDTO);
+
     public String createChangeMeetingNotificationMessage(User user, EventDTO event);
 
     public String createCancelMeetingNotificationMessage(User user, EventDTO event);

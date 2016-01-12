@@ -49,6 +49,7 @@ public class USSDGroupUtil extends USSDUtil {
 
         // todo: the groupManager call is probably quite expensive, replace with a count query (non trivial, at least for me)
         USSDMenu groupMenu;
+        log.info("Inside askForGroupAllowCreateNew ... newGroupUrl is ..." + newGroupUrl);
         if (!groupManager.hasActiveGroupsPartOf(sessionUser)) {
             groupMenu = createGroupPrompt(sessionUser, section, newGroupUrl);
         } else {
@@ -82,6 +83,13 @@ public class USSDGroupUtil extends USSDUtil {
         final String promptIfEmpty = getMessage(section, groupKeyForMessages, promptKey + ".empty", user);
         final String urlIfEmpty = USSDSection.GROUP_MANAGER.toPath() + "create";
         return askForGroupNoInlineNew(user, section, promptIfExisting, promptIfEmpty, menuIfExisting, urlIfEmpty, "");
+    }
+
+    // similar helper method
+    public USSDMenu askForGroupNoInlineNew(User user, USSDSection section, String menuIfExisting, String promptIfNotEmpty) throws URISyntaxException {
+        final String promptIfEmpty = getMessage(section, groupKeyForMessages, promptKey + ".empty", user);
+        final String urlIfEmpty = USSDSection.GROUP_MANAGER.toPath() + "create";
+        return askForGroupNoInlineNew(user, section, promptIfNotEmpty, promptIfEmpty, menuIfExisting, urlIfEmpty, "");
     }
 
     public USSDMenu userGroupMenuPageOne(User user, String prompt, String existingGroupUrl, String newGroupUrl) throws URISyntaxException {
@@ -122,7 +130,9 @@ public class USSDGroupUtil extends USSDUtil {
 
 
     public USSDMenu createGroupPrompt(User user, USSDSection section, String nextUrl) throws URISyntaxException {
+        log.info("Constructing prompt for new group's name, with url ... " + nextUrl);
         USSDMenu thisMenu = new USSDMenu(getMessage(section, groupKeyForMessages, promptKey + ".create", user));
+        thisMenu.setFreeText(true);
         thisMenu.setNextURI(nextUrl);
         return thisMenu;
     }

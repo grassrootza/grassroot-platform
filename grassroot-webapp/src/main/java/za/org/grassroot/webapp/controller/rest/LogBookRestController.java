@@ -66,17 +66,17 @@ public class LogBookRestController {
     public LogBookDTO addWithDate(@PathVariable("userid") Long userid,
                           @PathVariable("groupid") Long groupid,
                           @PathVariable("message") String message,
-                          @PathVariable("actionByDate") @DateTimeFormat(pattern="yyyy-MM-dd HH:mm:ss") Timestamp actionByDate) {
-        return new LogBookDTO(logBookService.create(userid,groupid,message,actionByDate));
+                          @PathVariable("actionByDate") @DateTimeFormat(pattern="yyyy-MM-dd HH:mm:ss") Date actionByDate) {
+        return new LogBookDTO(logBookService.create(userid,groupid,message,new Timestamp(actionByDate.getTime())));
     }
 
     @RequestMapping(value = "/addwithdateandassign/{userid}/{groupid}/{message}/{actionByDate}/{assignedToUserId}", method = RequestMethod.POST)
     public LogBookDTO addWithDateAndAssign(@PathVariable("userid") Long userid,
                                   @PathVariable("groupid") Long groupid,
                                   @PathVariable("message") String message,
-                                  @PathVariable("actionByDate") @DateTimeFormat(pattern="yyyy-MM-dd HH:mm:ss") Timestamp actionByDate,
+                                  @PathVariable("actionByDate") @DateTimeFormat(pattern="yyyy-MM-dd HH:mm:ss") Date actionByDate,
                                   @PathVariable("assignedToUserId") Long assignedToUserId) {
-        return new LogBookDTO(logBookService.create(userid,groupid,message,actionByDate,assignedToUserId));
+        return new LogBookDTO(logBookService.create(userid,groupid,message,new Timestamp(actionByDate.getTime()),assignedToUserId));
     }
 
     @RequestMapping(value = "/listreplicated/{groupid}", method = RequestMethod.GET)
@@ -94,6 +94,17 @@ public class LogBookRestController {
                                             @PathVariable("completed") boolean completed) {
         List<LogBookDTO> list = new ArrayList<>();
         List<LogBook> replicated = logBookService.getAllReplicatedEntriesForGroup(groupid,completed);
+        for (LogBook l : replicated) {
+            list.add(new LogBookDTO(l));
+        }
+        return list;
+    }
+
+    @RequestMapping(value = "/listreplicatedbymessage/{groupid}/{message}", method = RequestMethod.GET)
+    public List<LogBookDTO> list_replicated(@PathVariable("groupid") Long groupid,
+                                            @PathVariable("message") String message) {
+        List<LogBookDTO> list = new ArrayList<>();
+        List<LogBook> replicated = logBookService.getAllReplicatedEntriesForGroupAndMessage(groupid,message);
         for (LogBook l : replicated) {
             list.add(new LogBookDTO(l));
         }

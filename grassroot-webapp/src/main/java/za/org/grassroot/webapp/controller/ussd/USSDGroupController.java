@@ -59,8 +59,7 @@ public class USSDGroupController extends USSDController {
         // in case went "back" from menu in middle of create group
         User sessionUser = (interrupted) ? userManager.findByInputNumber(inputNumber, null) : userManager.findByInputNumber(inputNumber);
         return menuBuilder(ussdGroupUtil.askForGroupAllowCreateNew(sessionUser, USSDSection.GROUP_MANAGER,
-                                                                   existingGroupMenu, createGroupMenu, null));
-
+                                                                   existingGroupMenu, groupMenus + createGroupMenu + doSuffix, null));
     }
 
     /*
@@ -116,6 +115,7 @@ public class USSDGroupController extends USSDController {
                                        @RequestParam(value="interrupted", required=false) boolean interrupted,
                                        @RequestParam(value= groupIdParam, required=false) Long groupId) throws URISyntaxException {
 
+        log.info("Inside createGroupMenu ... going to name it ... " + groupName);
         User user = userManager.findByInputNumber(inputNumber);
 
         Group createdGroup = (interrupted) ?    groupManager.loadGroup(groupId) :

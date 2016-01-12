@@ -65,6 +65,10 @@ public class Account implements Serializable {
     @Column(name="relayable")
     private boolean relayableMessages;
 
+    @Basic
+    @Column(name="logbook_extra")
+    private boolean logbookExtraMessages;
+
     /*
     Constructors
      */
@@ -90,6 +94,7 @@ public class Account implements Serializable {
         this.enabled = true;
         this.freeFormMessages = true;
         this.relayableMessages = true;
+        this.logbookExtraMessages = true;
 
     }
 
@@ -99,6 +104,7 @@ public class Account implements Serializable {
         this.enabled = enabled;
         this.freeFormMessages = enabled;
         this.relayableMessages = enabled;
+        this.logbookExtraMessages = enabled;
 
     }
 
@@ -110,8 +116,8 @@ public class Account implements Serializable {
         this.primaryEmail = primaryEmail;
 
         this.enabled = enabled;
-        this.freeFormMessages = freeFormMessages;
-        this.relayableMessages = relayableMessages;
+        this.freeFormMessages = enabled;
+        this.relayableMessages = enabled;
 
     }
 
@@ -186,6 +192,10 @@ public class Account implements Serializable {
     public void setRelayableMessages(boolean relayableMessages) {
         this.relayableMessages = relayableMessages;
     }
+
+    public boolean isLogbookExtraMessages() { return logbookExtraMessages; }
+
+    public void setLogbookExtraMessages(boolean logbookExtraMessages) { this.logbookExtraMessages = logbookExtraMessages; }
 
     /*
     Helper methods for adding and removing administrators and groups

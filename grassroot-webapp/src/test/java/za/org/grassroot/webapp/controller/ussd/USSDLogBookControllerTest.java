@@ -55,7 +55,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
     }
 
     @Test
-    public void openingMenuShouldWorkWithGroup() throws Exception {
+    public void groupSelectMenuShouldWorkWithGroup() throws Exception {
 
         List<Group> testGroups = Arrays.asList(new Group("tg1", testUser),
                                                new Group("tg2", testUser),
@@ -67,7 +67,8 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         when(groupManagementServiceMock.hasActiveGroupsPartOf(testUser)).thenReturn(true);
         when(groupManagementServiceMock.getPageOfActiveGroups(testUser, 0, 3)).thenReturn(pageOfGroups);
 
-        mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
+        mockMvc.perform(get(path + "group").param(phoneParam, testUserPhone).param("new", "1")).
+                andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupManagementServiceMock, times(1)).hasActiveGroupsPartOf(testUser);
@@ -77,12 +78,13 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
     }
 
     @Test
-    public void openingMenuShouldWorkWithNoGroup() throws Exception {
+    public void groupSelectMenuShouldWorkWithNoGroup() throws Exception {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(groupManagementServiceMock.hasActiveGroupsPartOf(testUser)).thenReturn(false);
 
-        mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
+        mockMvc.perform(get(path + "group").param(phoneParam, testUserPhone).param("new", "1")).
+                andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupManagementServiceMock, times(1)).hasActiveGroupsPartOf(testUser);

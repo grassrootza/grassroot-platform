@@ -29,6 +29,7 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     one level only
      */
     List<Group> findByParent(Group parent);
+    List<Group> findByParentOrderByIdAsc(Group parent);
     /*
     Find all the groups that a user is part of, with pagination
      */
@@ -49,6 +50,7 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     Find all groups, with pagination--for system admin
      */
     Page<Group> findAll(Pageable pageable);
+    List<Group> findAllByIdInOrderByIdAsc(List<Long> ids);
 
     /*
     Find the max(groupTokenCode) in table
@@ -65,6 +67,5 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
 
     @Query(value = "with distinct_root as (select distinct q1.root, q1.id as member from (select g.id, getroot(g.id) as root from group_profile g, group_user_membership gu where gu.user_id = ?1 and gu.group_id = g.id  ) as q1) select distinct (getchildren(root)).*, root  from distinct_root order by root,parent", nativeQuery = true)
     List<Object[]> getGroupMemberTree(Long userId);
-
 
 }
