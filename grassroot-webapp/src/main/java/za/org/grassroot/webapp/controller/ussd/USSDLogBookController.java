@@ -251,15 +251,17 @@ public class USSDLogBookController extends USSDController {
 
             if(doneEntries){
 
-                menu  = new USSDMenu(getMessage(thisSection, listEntriesMenu, promptKey + ".actioncomplete_noentry", user));
+                menu  = new USSDMenu(getMessage(thisSection, listEntriesMenu,  ".actioncomplete_noentry", user));
 
             }
             else{
-                  menu = new USSDMenu(getMessage(thisSection, listEntriesMenu, promptKey + ".actionincomplete_noentry", user));
+                  menu = new USSDMenu(getMessage(thisSection, listEntriesMenu, ".actionincomplete_noentry", user));
 
             }
 
             menu.addMenuOption(logMenus + entryTypeMenu,getMessage("options.back", user));
+            menu.addMenuOptions(optionsHomeExit(user));
+
 
 
         }else {
