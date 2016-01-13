@@ -245,7 +245,7 @@ public class USSDLogBookController extends USSDController {
 
         // todo: more intelligent way to calculate truncation, as well as do pagination
         // todo: decide whether to use the 'completedByDate' if displaying completed entries
-        USSDMenu menu = null;
+        USSDMenu menu;
 
         if(entries.isEmpty() ){
 
@@ -260,7 +260,6 @@ public class USSDLogBookController extends USSDController {
             }
 
             menu.addMenuOption(logMenus + entryTypeMenu,getMessage("options.back", user));
-            menu.addMenuOption("exit", getMessage("exit.options",user));
 
 
         }else {
