@@ -16,9 +16,9 @@ import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import java.net.URISyntaxException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import static za.org.grassroot.webapp.util.USSDUrlUtil.encodeParameter;
-import static za.org.grassroot.webapp.util.USSDUrlUtil.saveGroupMenu;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.saveLogMenu;
 
 /**
@@ -80,7 +80,7 @@ public class USSDLogBookController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber);
         USSDMenu thisMenu = newEntry ? ussdGroupUtil.askForGroupNoInlineNew(user, thisSection, subjectMenu) :
                 ussdGroupUtil.askForGroupNoInlineNew(user, thisSection, entryTypeMenu,
-                                                     getMessage(thisSection, groupMenu, promptKey + ".existing", user));
+                        getMessage(thisSection, groupMenu, promptKey + ".existing", user));
         return menuBuilder(thisMenu);
     }
 
@@ -114,7 +114,7 @@ public class USSDLogBookController extends USSDController {
     public Request askForAssignment(@RequestParam(value = phoneNumber) String inputNumber,
                                     @RequestParam(value = logBookParam) Long logBookId,
                                     @RequestParam(value = userInputParam) String userInput,
-                                    @RequestParam(value = revisingFlag, required=false) boolean revising) throws URISyntaxException {
+                                    @RequestParam(value = revisingFlag, required = false) boolean revising) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber, saveLogMenu(assignMenu, logBookId));
         if (!revising) logBookService.setDueDate(logBookId, DateTimeUtil.parseDateTime(userInput));
         USSDMenu menu = new USSDMenu(menuPrompt(assignMenu, user));
@@ -154,7 +154,7 @@ public class USSDLogBookController extends USSDController {
             for (User possibleUser : possibleUsers) {
                 if (menu.getMenuCharLength() < 100) { // should give us space for at least 10 options, but just in case
                     menu.addMenuOption(returnUrl(confirmMenu, logBookId) + "&assignUserId=" + possibleUser.getId(),
-                                       possibleUser.nameToDisplay());
+                            possibleUser.nameToDisplay());
                 } else {
                     break; // todo: there is almost certainly a more elegant way to do this
                 }
@@ -188,8 +188,8 @@ public class USSDLogBookController extends USSDController {
         LogBook logBook = logBookService.load(logBookId);
         String formattedDueDate = dateFormat.format(logBook.getActionByDate().toLocalDateTime());
         String assignedUser = (assignToUser) ? userManager.getDisplayName(logBook.getAssignedToUserId()) : "";
-        String[] promptFields = new String[] { logBook.getMessage(), groupManager.getGroupName(logBook.getGroupId()),
-                formattedDueDate, assignedUser };
+        String[] promptFields = new String[]{logBook.getMessage(), groupManager.getGroupName(logBook.getGroupId()),
+                formattedDueDate, assignedUser};
 
         String assignedKey = (assignToUser) ? ".assigned" : ".unassigned";
         USSDMenu menu = new USSDMenu(getMessage(thisSection, confirmMenu, promptKey + assignedKey, promptFields, user));
@@ -219,6 +219,7 @@ public class USSDLogBookController extends USSDController {
     @ResponseBody
     public Request pickLogBookEntryType(@RequestParam(value = phoneNumber) String inputNumber,
                                         @RequestParam(value = groupIdParam) Long groupId) throws URISyntaxException {
+
         // todo: if either complete or incomplete is empty, skip this menu
         // todo: consider intermediate option of past due date but not yet done
         User user = userManager.findByInputNumber(inputNumber);
@@ -236,7 +237,7 @@ public class USSDLogBookController extends USSDController {
                                    @RequestParam(value = "done") boolean doneEntries) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber,
-                                                  logMenus + listEntriesMenu + groupIdUrlSuffix + groupId + "&done=" + doneEntries);
+                logMenus + listEntriesMenu + groupIdUrlSuffix + groupId + "&done=" + doneEntries);
 
 
         String urlBase = logMenus + viewEntryMenu + logBookUrlSuffix;
@@ -246,31 +247,24 @@ public class USSDLogBookController extends USSDController {
         // todo: more intelligent way to calculate truncation, as well as do pagination
         // todo: decide whether to use the 'completedByDate' if displaying completed entries
         USSDMenu menu;
+        if (entries.isEmpty()) {
 
-        if(entries.isEmpty() ){
+            if (doneEntries) {
+                menu = new USSDMenu(getMessage(thisSection, listEntriesMenu, ".complete.noentry", user));
 
-            if(doneEntries){
-
-                menu  = new USSDMenu(getMessage(thisSection, listEntriesMenu,  ".actioncomplete_noentry", user));
-
+            } else {
+                menu = new USSDMenu(getMessage(thisSection, listEntriesMenu, ".incomplete.noentry", user));
             }
-            else{
-                  menu = new USSDMenu(getMessage(thisSection, listEntriesMenu, ".actionincomplete_noentry", user));
-
-            }
-
-            menu.addMenuOption(logMenus + entryTypeMenu,getMessage("options.back", user));
+            menu.addMenuOption(logMenus + entryTypeMenu, getMessage("options.back", user));
             menu.addMenuOptions(optionsHomeExit(user));
 
 
-
-        }else {
+        } else {
 
             menu = new USSDMenu(getMessage(thisSection, listEntriesMenu, promptKey, user));
 
             for (LogBook entry : entries) {
-                String description = entry.getMessage().substring(0, 10) + "..., due:" +
-                        dateFormat.format(entry.getActionByDate().toLocalDateTime());
+                String description = truncateEntryDescription(entry);
                 menu.addMenuOption(urlBase + entry.getId(), description);
             }
         }
@@ -288,11 +282,11 @@ public class USSDLogBookController extends USSDController {
 
         // todo: check permissions before deciding what options to display
         menu.addMenuOption(returnUrl(viewEntryDates, logBookId),
-                           getMessage(thisSection, viewEntryMenu, optionsKey + "dates", user));
+                getMessage(thisSection, viewEntryMenu, optionsKey + "dates", user));
 
         if (logBook.isCompleted()) {
             menu.addMenuOption(returnUrl(viewAssignment, logBookId),
-                               getMessage(thisSection, viewEntryMenu, optionsKey + "viewcomplete", user));
+                    getMessage(thisSection, viewEntryMenu, optionsKey + "viewcomplete", user));
         } else {
             if (logBook.getAssignedToUserId() != null && logBook.getAssignedToUserId() != 0)
                 menu.addMenuOption(returnUrl(viewAssignment, logBookId), getMessage(thisSection, viewEntryMenu, optionsKey + "assigned", user));
@@ -318,10 +312,10 @@ public class USSDLogBookController extends USSDController {
             String completedDate = dateFormat.format(logBook.getCompletedDate().toLocalDateTime());
             String userCompleted = (logBook.getCompletedByUserId() == null || logBook.getCompletedByUserId() == 0L) ? "" :
                     "by " + userManager.loadUser(logBook.getCompletedByUserId()).nameToDisplay();
-            String[] fields = new String[]{ createdDate, dueDate, completedDate, userCompleted };
+            String[] fields = new String[]{createdDate, dueDate, completedDate, userCompleted};
             menu = new USSDMenu(getMessage(thisSection, viewEntryDates, promptKey + ".complete", fields, user));
         } else {
-            String[] fields = new String[]{ createdDate, dueDate };
+            String[] fields = new String[]{createdDate, dueDate};
             menu = new USSDMenu(getMessage(thisSection, viewEntryDates, promptKey + ".incomplete", fields, user));
         }
 
@@ -340,18 +334,18 @@ public class USSDLogBookController extends USSDController {
         USSDMenu menu;
 
         String assignedFragment = (logBook.getAssignedToUserId() == null || logBook.getAssignedToUserId() == 0) ?
-                getMessage(thisSection, viewAssignment, "group", user):
+                getMessage(thisSection, viewAssignment, "group", user) :
                 userManager.loadUser(logBook.getAssignedToUserId()).nameToDisplay();
         String completedFragment = logBook.isCompleted() ?
-                getMessage(thisSection, viewAssignment, "complete", dateFormat.format(logBook.getCompletedDate().toLocalDateTime()), user):
+                getMessage(thisSection, viewAssignment, "complete", dateFormat.format(logBook.getCompletedDate().toLocalDateTime()), user) :
                 getMessage(thisSection, viewAssignment, "incomplete", dateFormat.format(logBook.getActionByDate().toLocalDateTime()), user);
 
         menu = new USSDMenu(getMessage(thisSection, viewAssignment, promptKey,
-                                       new String[]{ assignedFragment, completedFragment }, user));
+                new String[]{assignedFragment, completedFragment}, user));
 
         menu.addMenuOption(logMenus + viewEntryMenu + logBookUrlSuffix + logBookId, getMessage(optionsKey + "back", user));
         if (!logBook.isCompleted()) menu.addMenuOption(logMenus + setCompleteMenu + logBookUrlSuffix + logBookId,
-                           getMessage(thisSection.toKey() + optionsKey + setCompleteMenu, user)); // todo: check permissions
+                getMessage(thisSection.toKey() + optionsKey + setCompleteMenu, user)); // todo: check permissions
         menu.addMenuOptions(optionsHomeExit(user));
         return menuBuilder(menu);
     }
@@ -366,17 +360,17 @@ public class USSDLogBookController extends USSDController {
         LogBook logBook = logBookService.load(logBookId);
 
         USSDMenu menu = (logBook.getAssignedToUserId() != null && logBook.getAssignedToUserId() != 0) ?
-            new USSDMenu(getMessage(thisSection, setCompleteMenu, promptKey + ".assigned",
-                                    userManager.loadUser(logBook.getAssignedToUserId()).nameToDisplay(), user)) :
-            new USSDMenu(getMessage(thisSection, setCompleteMenu, promptKey + ".unassigned", user));
+                new USSDMenu(getMessage(thisSection, setCompleteMenu, promptKey + ".assigned",
+                        userManager.loadUser(logBook.getAssignedToUserId()).nameToDisplay(), user)) :
+                new USSDMenu(getMessage(thisSection, setCompleteMenu, promptKey + ".unassigned", user));
 
         String urlEnd = logBookUrlSuffix + logBookId;
         menu.addMenuOption(logMenus + setCompleteMenu + doSuffix + urlEnd,
-                           getMessage(thisSection, setCompleteMenu, optionsKey + "confirm", user));
+                getMessage(thisSection, setCompleteMenu, optionsKey + "confirm", user));
         menu.addMenuOption(logMenus + completingUser + urlEnd,
-                           getMessage(thisSection, setCompleteMenu, optionsKey + "assign", user));
+                getMessage(thisSection, setCompleteMenu, optionsKey + "assign", user));
         menu.addMenuOption(logMenus + completedDate + urlEnd,
-                           getMessage(thisSection, setCompleteMenu, optionsKey + "date", user));
+                getMessage(thisSection, setCompleteMenu, optionsKey + "date", user));
         menu.addMenuOption(logMenus + viewEntryMenu + urlEnd, getMessage(optionsKey + "back", user));
 
         return menuBuilder(menu);
@@ -406,7 +400,7 @@ public class USSDLogBookController extends USSDController {
                                       @RequestParam(value = logBookParam) Long logBookId) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber, saveLogMenu(completedDate, logBookId));
         return menuBuilder(new USSDMenu(getMessage(thisSection, completedDate, promptKey, user),
-                                     returnUrl(confirmCompleteDate, logBookId)));
+                returnUrl(confirmCompleteDate, logBookId)));
     }
 
     @RequestMapping(path + confirmCompleteDate)
@@ -464,7 +458,7 @@ public class USSDLogBookController extends USSDController {
             while (menu.getMenuCharLength() < 100 && iterator.hasNext()) {
                 User possibleUser = iterator.next();
                 menu.addMenuOption(returnUrl(nextMenu, logBookId) + "&assignUserId=" + possibleUser.getId(),
-                                   possibleUser.nameToDisplay());
+                        possibleUser.nameToDisplay());
             }
         } else {
             menu = new USSDMenu(getMessage(thisSection, pickUserMenu, promptKey + ".no-users", user));
@@ -474,6 +468,26 @@ public class USSDLogBookController extends USSDController {
         menu.addMenuOption(returnUrl(nextMenu, logBookId), getMessage(thisSection, pickUserMenu, optionsKey + "none", user));
 
         return menu;
+    }
+
+
+    private String truncateEntryDescription(LogBook entry) {
+        // There is a  much better way to do this, working out the kinks in my head
+        String dueByDay = "..., due:" +
+                dateFormat.format(entry.getActionByDate().toLocalDateTime());
+        StringBuilder stringBuilder = new StringBuilder();
+        Pattern pattern = Pattern.compile(" ");
+        int maxLength = 30 - dueByDay.length();
+
+        for (String word : pattern.split(entry.getMessage())) {
+            if ((stringBuilder.length() + word.length() + 1) > maxLength) {
+                break;
+            } else
+                stringBuilder.append(word).append(" ");
+        }
+        return stringBuilder.append(dueByDay).toString();
+
+
     }
 
 
