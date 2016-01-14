@@ -234,19 +234,45 @@ public class USSDLogBookController extends USSDController {
     public Request listEntriesMenu(@RequestParam(value = phoneNumber) String inputNumber,
                                    @RequestParam(value = groupIdParam) Long groupId,
                                    @RequestParam(value = "done") boolean doneEntries) throws URISyntaxException {
+
         User user = userManager.findByInputNumber(inputNumber,
                                                   logMenus + listEntriesMenu + groupIdUrlSuffix + groupId + "&done=" + doneEntries);
-        USSDMenu menu = new USSDMenu(getMessage(thisSection, listEntriesMenu, promptKey, user));
+
 
         String urlBase = logMenus + viewEntryMenu + logBookUrlSuffix;
-        List<LogBook> entries = logBookService.getAllLogBookEntriesForGroup(groupId, doneEntries); //todo: check sorting on this
+        List<LogBook> entries = logBookService.getAllLogBookEntriesForGroup(groupId, doneEntries);
+        //todo: check sorting on this
 
         // todo: more intelligent way to calculate truncation, as well as do pagination
         // todo: decide whether to use the 'completedByDate' if displaying completed entries
-        for (LogBook entry : entries) {
-            String description = entry.getMessage().substring(0, 10) + "..., due:" +
-                    dateFormat.format(entry.getActionByDate().toLocalDateTime());
-            menu.addMenuOption(urlBase + entry.getId(), description);
+        USSDMenu menu;
+
+        if(entries.isEmpty() ){
+
+            if(doneEntries){
+
+                menu  = new USSDMenu(getMessage(thisSection, listEntriesMenu,  ".actioncomplete_noentry", user));
+
+            }
+            else{
+                  menu = new USSDMenu(getMessage(thisSection, listEntriesMenu, ".actionincomplete_noentry", user));
+
+            }
+
+            menu.addMenuOption(logMenus + entryTypeMenu,getMessage("options.back", user));
+            menu.addMenuOptions(optionsHomeExit(user));
+
+
+
+        }else {
+
+            menu = new USSDMenu(getMessage(thisSection, listEntriesMenu, promptKey, user));
+
+            for (LogBook entry : entries) {
+                String description = entry.getMessage().substring(0, 10) + "..., due:" +
+                        dateFormat.format(entry.getActionByDate().toLocalDateTime());
+                menu.addMenuOption(urlBase + entry.getId(), description);
+            }
         }
 
         return menuBuilder(menu);

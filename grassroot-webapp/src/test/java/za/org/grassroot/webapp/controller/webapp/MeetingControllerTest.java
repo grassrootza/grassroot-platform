@@ -77,8 +77,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(view().name("meeting/view"))
                 .andExpect(model().attribute("meeting", hasProperty("id", is(id))))
                 .andExpect(model().attribute("rsvpYesTotal", equalTo(listOfDummyYesResponses.size())))
-                .andExpect(model().attribute("rsvpResponses", hasItems(dummyResponsesMap.entrySet().toArray())))
-        ;
+                .andExpect(model().attribute("rsvpResponses", hasItems(dummyResponsesMap.entrySet().toArray())));
 
 
         verify(eventManagementServiceMock, times(1)).loadEvent(id);

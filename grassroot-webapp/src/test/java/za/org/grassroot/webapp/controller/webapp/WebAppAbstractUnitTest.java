@@ -42,13 +42,9 @@ public abstract class WebAppAbstractUnitTest {
         baseController.setMessageSource(messageSource());
         mockMvc = MockMvcBuilders.standaloneSetup(baseController).build();
 
-
-
-
     }
 
     protected void mockAuthentication() {
-
 
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(testUserPhone, "12345");
