@@ -290,6 +290,11 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
+    public List<User> getGroupMembersSortedById(Group group) {
+        return userRepository.findByGroupsPartOfOrderByIdAsc(group);
+    }
+
+    @Override
     public boolean userExist(String phoneNumber) {
         return userRepository.existsByPhoneNumber(phoneNumber);
     }

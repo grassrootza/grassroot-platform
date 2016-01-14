@@ -1,0 +1,15 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+  <meta charset="UTF-8" />
+  <title>Viewing account</title>
+</head>
+<body>
+This page loaded. You can view these accounts:
+<ul>
+  <li th:each="account : ${accounts}">
+    <a th:href="@{view(accountId=${account.id})}"><span th:text="${account.accountName}"></span></a>
+  </li>
+</ul>
+</body>
+</html>

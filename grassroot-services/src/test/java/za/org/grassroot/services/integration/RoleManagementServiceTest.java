@@ -5,6 +5,8 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
@@ -75,6 +77,10 @@ public class RoleManagementServiceTest extends AbstractTransactionalJUnit4Spring
     @Test
     public void shouldAssignDefaultPermissions() {
 
+        /* UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken("27810002222", "12345");
+        SecurityContextHolder.getContext().setAuthentication(authentication); */
+
         User user1 = userManagementService.loadOrSaveUser("27810002222");
         User user2 = userManagementService.loadOrSaveUser("27810002223");
         User user3 = userManagementService.loadOrSaveUser("27810002224");
@@ -85,9 +91,29 @@ public class RoleManagementServiceTest extends AbstractTransactionalJUnit4Spring
 
         Group group = groupManagementService.createNewGroup(user1, "test group");
 
-        // roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, group, user1);
+        // roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, group, user1); // todo: fix authentication
         // roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_COMMITTEE_MEMBER, group, user2);
         // roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, group, user3);
+
+    }
+
+    @Test
+    public void shouldReturnCorrectGroupRoles() {
+
+        User user1 = userManagementService.loadOrSaveUser("27810005555");
+        Group group1 = groupManagementService.createNewGroupWithCreatorAsMember(user1, "test group 1");
+        Group group2 = groupManagementService.createNewGroupWithCreatorAsMember(user1, "test group 2");
+
+        Role role1 = roleManagementService.addRoleToGroup(BaseRoles.ROLE_ORDINARY_MEMBER, group1);
+        Role role2 = roleManagementService.addRoleToGroup(BaseRoles.ROLE_COMMITTEE_MEMBER, group2);
+
+        roleManagementService.addStandardRoleToUser(role1, user1);
+        roleManagementService.addStandardRoleToUser(role2, user1);
+
+        Role roleFromGroup1 = roleManagementService.getUserRoleInGroup(user1, group1);
+        Role roleFromGroup2 = roleManagementService.getUserRoleInGroup(user1, group2);
+
+        // assertNotNull(roleFromGroup1); // todo: get test transactions to work, same integration problem here as elsewhere
 
     }
 

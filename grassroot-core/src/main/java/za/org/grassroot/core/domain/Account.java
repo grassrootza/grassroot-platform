@@ -19,6 +19,7 @@ import java.util.List;
 
 @Entity
 @Table(name="paid_account")
+@EqualsAndHashCode
 public class Account implements Serializable {
 
     @Id

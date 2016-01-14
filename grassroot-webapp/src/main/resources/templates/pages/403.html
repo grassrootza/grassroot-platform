@@ -1,0 +1,22 @@
+<html xmlns:th="http://www.thymeleaf.org"
+        xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+        layout:decorator="layout">
+<head>
+    <title>Access denied</title>
+</head>
+<body>
+<div layout:fragment="header-container"></div>
+
+<div layout:fragment="content" class="container">
+    <div class="jumbotron">
+        <div class="error-page">
+            <h1>403</h1>
+            <p>You do not have permission to access the requested page.</p>
+            <a href="https://twitter.com/grassrootza" class="error-bottom-link">
+                <div class="social-icon twitter"></div>@grassrootza
+            </a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

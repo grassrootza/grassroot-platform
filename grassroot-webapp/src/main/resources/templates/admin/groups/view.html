@@ -7,7 +7,7 @@
 <body>
 
 <div layout:fragment="header">
-  <h2>Group: <span  th:text="${groupModifier.groupName}">Group</span></h2>
+  <h2>Group: <span  th:text="${group.groupName}">Group</span></h2>
 </div>
 <div layout:fragment="overview">View group</div>
 
@@ -16,8 +16,6 @@
 
   <!-- Major todo: add in user permissions about changing names & groups &c. -->
   <div class="well">
-    <form  th:object="${groupModifier}" th:action="@{/admin/groups/modify}" method="post" autocomplete="on" class="form-horizontal">
-      <input type="hidden" th:field="*{group.id}" th:value="${groupModifier.group.id}" />
       <div class="row">
       <h2>Group members</h2>
     </div>
@@ -30,25 +28,41 @@
         <th></th>
         </thead>
         <tbody>
-        <tr th:each="member, iterStat : *{addedMembers}">
-          <td><span th:text="${member.displayName}"></span></td>
-          <td><span th:text="${member.phoneNumber}"></span></td>
-          <td>
-            <select th:name="role_+${member.id}">
-              <option value="">Not set</option>
-              <option value="ROLE_GROUP_ORGANIZER">Group organizer</option>
-              <option value="ROLE_COMMITTEE_MEMBER">Committee member</option>
-              <option value="ROLE_ORDINARY_MEMBER">Ordinary member</option>
-            </select>
-          </td>
-          <td>
-            <button type="submit" name="changeRole" class="btn btn-info" aria-label="Change role" th:value="${member.id}">Change role</button>
-          </td>
+        <tr th:each="member, iterStat : ${members}">
+
+          <form  th:action="@{change_role}" method="post" autocomplete="on" class="form-horizontal">
+            <input type="hidden" name="groupId" th:value="${group.id}" />
+            <input type="hidden" name="userId" th:value="${member.user.id}" />
+
+            <td><span th:text="${member.user.displayName}"></span></td>
+            <td><span th:text="${member.user.phoneNumber}"></span></td>
+
+            <td>
+              <select name="roleName">
+                <option th:each="role : ${roles}"
+                        th:value="${role[0]}"
+                        th:text="${role[1]}"
+                        th:selected="${#strings.equals(member.roleName, role[0])}"></option>
+              </select>
+            </td>
+
+            <td>
+              <button type="submit" class="btn btn-info" aria-label="Change role">Change role</button>
+            </td>
+          </form>
+
         </tr>
         </tbody>
       </table>
-      </div>
-    </form>
+    </div>
+
+    <!-- Scratch, holder
+
+    <option value="">Not set</option>
+                <option value="ROLE_GROUP_ORGANIZER">Group organizer</option>
+                <option th:selected="${#strings.equals(member.roleName, 'ROLE_COMMITTEE_MEMBER')}" value="ROLE_COMMITTEE_MEMBER">Committee member</option>
+                <option value="ROLE_ORDINARY_MEMBER">Ordinary member</option> -->
+
     <!-- <form th:action="@{modify}" method="post">
       <input type="hidden" name="groupId" th:value="${groupModifier.id}" />
       <div class="row">

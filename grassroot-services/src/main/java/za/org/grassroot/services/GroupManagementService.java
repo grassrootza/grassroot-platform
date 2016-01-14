@@ -30,6 +30,7 @@ public interface GroupManagementService {
 
     /*
     Methods to load, find, save groups
+    todo: clean up redundancy
     */
 
     public Group loadGroup(Long groupId);

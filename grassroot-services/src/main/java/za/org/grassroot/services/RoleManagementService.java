@@ -73,9 +73,9 @@ public interface RoleManagementService {
     Role removePermissionFromRole(Role role, Permission permission);
 
     /*
-    Deprecated:
-
-    Role createGroupRole(String roleName, Long groupId, String groupName);
+    Methods to retrieve roles for user in group
      */
+
+    Role getUserRoleInGroup(User user, Group group);
 
 }

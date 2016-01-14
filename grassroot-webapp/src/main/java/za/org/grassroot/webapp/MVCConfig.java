@@ -111,6 +111,7 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
         public void customize(ConfigurableEmbeddedServletContainer factory) {
             factory.addErrorPages(new ErrorPage(HttpStatus.NOT_FOUND, "/404"));
             factory.addErrorPages(new ErrorPage(HttpStatus.INTERNAL_SERVER_ERROR, "/500"));
+            factory.addErrorPages(new ErrorPage(HttpStatus.FORBIDDEN, "/403"));
         }
 
     }

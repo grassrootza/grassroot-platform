@@ -1,10 +1,10 @@
 package za.org.grassroot.webapp.controller.webapp;
 
+import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -13,18 +13,15 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import za.org.grassroot.core.domain.Account;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
+import za.org.grassroot.webapp.model.web.MemberWrapper;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by luke on 2015/10/08.
@@ -50,6 +47,11 @@ public class AdminController extends BaseController {
 
     @Autowired
     RoleManagementService roleManagementService;
+
+    // todo: move this map somewhere
+/*    private static final Map<String, String> groupRoles = ImmutableMap.of(BaseRoles.ROLE_ORDINARY_MEMBER, "Ordinary member",
+                                                                          BaseRoles.ROLE_COMMITTEE_MEMBER, "Committee member",
+                                                                          BaseRoles.ROLE_GROUP_ORGANIZER, "Group organizer");*/
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/admin/home")
@@ -193,10 +195,20 @@ public class AdminController extends BaseController {
     public String adminViewGroup(Model model, @RequestParam("groupId") Long groupId) {
 
         Group group = groupManagementService.loadGroup(groupId);
-        GroupWrapper groupModifier = new GroupWrapper();
-        groupModifier.populate(group);
 
-        model.addAttribute("groupModifier", groupModifier);
+        List<String[]> groupRoles = Arrays.asList(new String[]{"NULL", "Not set"},
+                                                  new String[]{BaseRoles.ROLE_ORDINARY_MEMBER, "Ordinary member"},
+                                                  new String[]{BaseRoles.ROLE_COMMITTEE_MEMBER, "Committee member"},
+                                                  new String[]{BaseRoles.ROLE_GROUP_ORGANIZER, "Group organizer"});
+
+        List<MemberWrapper> members = new ArrayList<>();
+        for (User user : userManagementService.getGroupMembersSortedById(group))
+            members.add(new MemberWrapper(user, group, roleManagementService.getUserRoleInGroup(user, group)));
+
+        model.addAttribute("group", group);
+        model.addAttribute("members", members);
+        model.addAttribute("roles", groupRoles);
+
         return "admin/groups/view";
     }
 
@@ -204,13 +216,13 @@ public class AdminController extends BaseController {
     Group admin methods to adjust roles
      */
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/admin/groups/modify", params={"changeRole"})
-    public String changeGroupRole(Model model, @RequestParam("group.id") Long groupId, @RequestParam("changeRole") Long userId, HttpServletRequest request) {
+    @RequestMapping(value = "/admin/groups/change_role")
+    public String changeGroupRole(Model model, @RequestParam("groupId") Long groupId, @RequestParam("userId") Long userId,
+                                  @RequestParam("roleName") String roleName, HttpServletRequest request) {
 
         User userToModify = userManagementService.loadUser(userId);
         log.info("Found this user ... " + userToModify);
         Group group = groupManagementService.loadGroup(groupId);
-        String roleName = request.getParameter("role_" + userId);
 
         log.info("Role name retrieved: " + roleName);
         log.info("About to do role assignment etc ... Role: " + roleName + " ... to user ... " + userToModify.nameToDisplay() +
@@ -219,7 +231,7 @@ public class AdminController extends BaseController {
         roleManagementService.addDefaultRoleToGroupAndUser(roleName, group, userToModify);
 
         addMessage(model, MessageType.INFO, "admin.done", request);
-        return "admin/groups/view";
+        return adminViewGroup(model, groupId);
     }
 
     /**
