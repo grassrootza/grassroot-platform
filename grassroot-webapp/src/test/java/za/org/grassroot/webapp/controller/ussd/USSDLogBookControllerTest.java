@@ -3,14 +3,20 @@ package za.org.grassroot.webapp.controller.ussd;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.repository.UserRepository;
 
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -32,6 +38,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
     private static final Long testLogBookId = 1L;
     private static final String testId = "" + testLogBookId;
+    private static final Long dummyId = 1L;
 
     private static final String path = "/ussd/log/";
 
@@ -39,6 +46,11 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
     @InjectMocks
     USSDLogBookController ussdLogBookController;
+
+    @Mock
+    UserRepository userRepository;
+
+
 
     @Before
     public void setUp() {
@@ -65,7 +77,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(groupManagementServiceMock.hasActiveGroupsPartOf(testUser)).thenReturn(true);
-        when(groupManagementServiceMock.getPageOfActiveGroups(testUser, 0, 3)).thenReturn(pageOfGroups);
+        when(groupManagementServiceMock.getPageOfActiveGroups(testUser,0, 3)).thenReturn(pageOfGroups);
 
         mockMvc.perform(get(path + "group").param(phoneParam, testUserPhone).param("new", "1")).
                 andExpect(status().isOk());
@@ -91,6 +103,38 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         verifyNoMoreInteractions(groupManagementServiceMock);
 
     }
+    /*
+
+    @Test
+    public void listEntriesMenuShouldWorkWithPageNumberSpecified() throws Exception{
+
+
+        String message = "some message about meeting some other people to" +
+                " discuss something important about the community";
+        Timestamp now = Timestamp.valueOf(LocalDateTime.now());
+        List<LogBook> testLogBooks = Arrays.asList(new LogBook(dummyId,message,now),
+                new LogBook(2L,message,now), new LogBook(3L,message,now), new LogBook(4L,message,now),
+                new LogBook(5L,message,now));
+
+        Page<LogBook> dummyPageOfGroups = new PageImpl<>(testLogBooks);
+
+
+        when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
+
+        when(userRepository.save(testUser)).thenReturn(testUser);
+
+        when(logBookServiceMock.getAllLogBookEntriesForGroup(dummyId,0,3,true)).thenReturn(dummyPageOfGroups);
+
+        mockMvc.perform(get(path+"list").param(phoneParam, testUserPhone).param("groupId", String.valueOf(dummyId))
+
+                .param("done",String.valueOf(true))).andExpect(status().isOk());
+
+        verify(logBookServiceMock,times(1)).getAllLogBookEntriesForGroup(dummyId,0,3,true);
+        verifyNoMoreInteractions(logBookServiceMock);
+
+
+
+    }*/
 
 
 

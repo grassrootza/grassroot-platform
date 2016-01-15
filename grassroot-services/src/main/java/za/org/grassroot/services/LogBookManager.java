@@ -1,6 +1,9 @@
 package za.org.grassroot.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
@@ -55,6 +58,14 @@ public class LogBookManager implements LogBookService {
         return logBookRepository.findAllByGroupIdAndCompletedAndRecordedAndActionByDateGreaterThan(
                 groupId, completed, true, Timestamp.valueOf(LocalDateTime.now().minusYears(1L)));
     }
+
+    @Override
+    public Page<LogBook> getAllLogBookEntriesForGroup(Long groupId, int pageNumber, int pageSize, boolean completed) {
+        return logBookRepository.findAllByGroupIdAndCompletedAndRecordedAndActionByDateGreaterThan(groupId,
+                new PageRequest(pageNumber,pageSize),completed, true,
+                Timestamp.valueOf(LocalDateTime.now().minusYears(1L)));
+    }
+
 
     @Override
     public List<LogBook> getAllReplicatedEntriesForGroup(Long groupId) {

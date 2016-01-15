@@ -3,6 +3,7 @@ package za.org.grassroot.webapp.controller.ussd;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.LogBook;
@@ -42,6 +43,8 @@ public class USSDLogBookController extends USSDController {
             confirmCompleteDate = "confirm_date", confirmComplete = "confirm_complete";
 
     private static final String logBookParam = "logbookid", logBookUrlSuffix = "?" + logBookParam + "=";
+
+    private static final int PAGE_LENGTH = 3;
 
     @Autowired
     LogBookService logBookService;
@@ -234,39 +237,49 @@ public class USSDLogBookController extends USSDController {
     @ResponseBody
     public Request listEntriesMenu(@RequestParam(value = phoneNumber) String inputNumber,
                                    @RequestParam(value = groupIdParam) Long groupId,
-                                   @RequestParam(value = "done") boolean doneEntries) throws URISyntaxException {
+                                   @RequestParam(value = "done") boolean doneEntries,
+                                   @RequestParam(value = "pageNumber", required = false) Integer pageNumber) throws URISyntaxException {
 
-        User user = userManager.findByInputNumber(inputNumber,
-                logMenus + listEntriesMenu + groupIdUrlSuffix + groupId + "&done=" + doneEntries);
+      User user = userManager.findByInputNumber(inputNumber,
+              logMenus + listEntriesMenu + groupIdUrlSuffix + groupId + "&done=" + doneEntries);
+      // User user = new User("", "someUser"); //needed when testing
+
 
 
         String urlBase = logMenus + viewEntryMenu + logBookUrlSuffix;
-        List<LogBook> entries = logBookService.getAllLogBookEntriesForGroup(groupId, doneEntries);
+        pageNumber = (pageNumber==null)? 0:pageNumber;
+        Page<LogBook> entries = logBookService.getAllLogBookEntriesForGroup(groupId, pageNumber,PAGE_LENGTH, doneEntries);
+
         //todo: check sorting on this
 
-        // todo: more intelligent way to calculate truncation, as well as do pagination
         // todo: decide whether to use the 'completedByDate' if displaying completed entries
         USSDMenu menu;
-        if (entries.isEmpty()) {
-
+        if (!entries.hasContent()) {
             if (doneEntries) {
-                menu = new USSDMenu(getMessage(thisSection, listEntriesMenu, ".complete.noentry", user));
-
+                menu = new USSDMenu(getMessage(thisSection, listEntriesMenu, "complete.noentry", user));
             } else {
-                menu = new USSDMenu(getMessage(thisSection, listEntriesMenu, ".incomplete.noentry", user));
+                menu = new USSDMenu(getMessage(thisSection, listEntriesMenu, "incomplete.noentry", user));
             }
-            menu.addMenuOption(logMenus + entryTypeMenu, getMessage("options.back", user));
+            menu.addMenuOption(logMenus + entryTypeMenu+groupIdUrlSuffix+groupId, getMessage("options.back", user));
             menu.addMenuOptions(optionsHomeExit(user));
 
-
         } else {
-
-            menu = new USSDMenu(getMessage(thisSection, listEntriesMenu, promptKey, user));
-
+           menu = new USSDMenu(getMessage(thisSection, listEntriesMenu, promptKey, user));
             for (LogBook entry : entries) {
                 String description = truncateEntryDescription(entry);
                 menu.addMenuOption(urlBase + entry.getId(), description);
             }
+
+            if(entries.hasNext()){
+                String nextPageUri =  logMenus + listEntriesMenu + groupIdUrlSuffix + groupId + "&done=" + doneEntries +"&pageNumber=" +(pageNumber+1);
+                menu.addMenuOption(nextPageUri, getMessage(thisSection,listEntriesMenu,"more", user) );
+            }
+            if(entries.hasPrevious()) {
+                String previousPageUri = logMenus + listEntriesMenu + groupIdUrlSuffix + groupId + "&done=" + doneEntries +"&pageNumber=" +(pageNumber-1);
+               menu.addMenuOption(previousPageUri, getMessage(thisSection,listEntriesMenu,"previous", user));
+            }
+
+
         }
 
         return menuBuilder(menu);
@@ -472,23 +485,28 @@ public class USSDLogBookController extends USSDController {
 
 
     private String truncateEntryDescription(LogBook entry) {
-        // There is a  much better way to do this, working out the kinks in my head
+
         String dueByDay = "..., due:" +
                 dateFormat.format(entry.getActionByDate().toLocalDateTime());
         StringBuilder stringBuilder = new StringBuilder();
         Pattern pattern = Pattern.compile(" ");
-        int maxLength = 30 - dueByDay.length();
-
+       // int maxLength = 30 - dueByDay.length();
+        int maxLength = 30 ;
         for (String word : pattern.split(entry.getMessage())) {
-            if ((stringBuilder.length() + word.length() + 1) > maxLength) {
+            if ((stringBuilder.toString().length()  + 1) > maxLength) {
                 break;
             } else
                 stringBuilder.append(word).append(" ");
         }
-        return stringBuilder.append(dueByDay).toString();
+
+        return stringBuilder.toString();
 
 
     }
 
 
-}
+
+
+
+    }
+
