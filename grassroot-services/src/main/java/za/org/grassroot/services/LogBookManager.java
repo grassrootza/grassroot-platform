@@ -116,11 +116,11 @@ public class LogBookManager implements LogBookService {
     public LogBook create(Long createdByUserId, Long groupId, String message, Timestamp actionByDate, Long assignToUserId) {
         return createLogBookEntry(createdByUserId, groupId, message, actionByDate, assignToUserId, 0L, 0, 0, true);
     }
+
     @Override
     public LogBook create(Long createdByUserId, Long groupId, String message, boolean replicateToSubGroups) {
         if (replicateToSubGroups) {
             return createLogBookEntryReplicate(createdByUserId, groupId, message, null, 0L, 0, 0);
-
         } else {
             return createLogBookEntry(createdByUserId, groupId, message, null, 0L, 0L, 0, 0, true);
 
@@ -132,7 +132,7 @@ public class LogBookManager implements LogBookService {
     public LogBook create(LogBook logBookToSave, boolean replicateToSubGroups) {
         // todo: proper checks and validation
         if (!replicateToSubGroups)
-            return logBookRepository.save(logBookToSave);
+            return createLogBookEntry(logBookToSave);
         else
             return createLogBookEntryReplicate(logBookToSave);
     }
@@ -173,6 +173,12 @@ public class LogBookManager implements LogBookService {
         // todo save and check changes akin to message sending for events
         LogBook logBook = load(logBookId);
         logBook.setRecorded(recorded);
+        return logBookRepository.save(logBook);
+    }
+
+    @Override
+    public LogBook save(LogBook logBook) {
+        // note: may want to put logic into this like eventsManager .. at present only one view uses it, so may be okay
         return logBookRepository.save(logBook);
     }
 
@@ -242,10 +248,17 @@ public class LogBookManager implements LogBookService {
         return parentLogBook;
     }
 
+    // helper methods for signature simplification
     private LogBook createLogBookEntryReplicate(LogBook logBook) {
         return createLogBookEntryReplicate(logBook.getCreatedByUserId(), logBook.getGroupId(), logBook.getMessage(),
                                            logBook.getActionByDate(), logBook.getAssignedToUserId(), logBook.getReminderMinutes(),
                                            logBook.getNumberOfRemindersLeftToSend());
+    }
+
+    private LogBook createLogBookEntry(LogBook logBook) {
+        return createLogBookEntry(logBook.getCreatedByUserId(), logBook.getGroupId(), logBook.getMessage(), logBook.getActionByDate(),
+                                  logBook.getAssignedToUserId(), logBook.getReplicatedGroupId(), logBook.getReminderMinutes(),
+                                  logBook.getNumberOfRemindersLeftToSend(), logBook.isRecorded());
     }
 
     /*

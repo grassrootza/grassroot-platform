@@ -83,16 +83,6 @@ public class HomeController extends BaseController {
          Recursive construction in the view node will turn each of these into a tree with a root node as the top level
          group. There may be a more efficient way to do this than the groupManagement call (and/or optimizing within it
          */
-
-        List<Group> topLevelGroups = groupManagementService.getActiveTopLevelGroups(user);
-        List<GroupViewNode> groupViewNodes = new ArrayList<>();
-        log.info("getHomePage...tree starting...");
-        for (Group group : topLevelGroups) {
-            log.debug("Creating a group node from group: " + group.getGroupName());
-            groupViewNodes.add(new GroupViewNode(group, user, groupManagementService));
-        }
-        log.info("getHomePage...tree ending...");
-
         // start of SQL tree
 
         log.info("getHomePage...NEW tree starting...");
@@ -129,7 +119,6 @@ public class HomeController extends BaseController {
         // end of SQL tree
 
         model.addAttribute("userGroups", groupManagementService.getActiveGroupsPartOf(user));
-        model.addAttribute("groupTrees", groupViewNodes);
         model.addAttribute("groupTreesSql", groupViewNodeSqls);
 
         // get lists of outstanding RSVPs and votes

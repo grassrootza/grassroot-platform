@@ -7,6 +7,38 @@
     <meta property="og:title" content="grassroot.org.za"/>
     <meta property="og:image" content="/img/grass.png"/>
     <meta property="og:description" content="The GrassRoot Platform."/>
+
+  <style>
+    .just-padding {
+    padding: 15px;
+    }
+
+    .list-group.list-group-root {
+    padding: 0;
+    overflow: hidden;
+    }
+
+    .list-group.list-group-root .list-group {
+    margin-bottom: 0;
+    }
+
+    .list-group.list-group-root .list-group-item {
+    border-radius: 0;
+    border-width: 1px 0 0 0;
+    }
+
+    .list-group.list-group-root > .list-group-item:first-child {
+    border-top-width: 0;
+    }
+
+    .list-group.list-group-root > .list-group > .list-group-item {
+    padding-left: 30px;
+    }
+
+    .list-group.list-group-root > .list-group > .list-group > .list-group-item {
+    padding-left: 45px;
+    }
+  </style>
 </head>
 
 <body>
@@ -176,38 +208,17 @@
     </div>
   </div>
 
-  <!-- Trying out the group tree view idea -->
-
-  <div th:if="${not #lists.isEmpty(groupTrees)}">
-    <div class="well">
-      <h3>Groups in tree view:</h3>
-      <div th:each="groupTree: ${groupTrees}" class="bs-component">
-        <div class="list-group">
-          <div class="list-group-item">
-            <span th:text="${groupTree.groupName}">Group name</span>
-            <ul th:fragment="fragment_node(groupTree)">
-              <li th:each="subGroup : ${groupTree.Subgroups}" th:inline="text">
-                [[${subGroup.groupName}]] ([[${subGroup.level}]])
-                <ul th:replace="this::fragment_node(${subGroup})" th:unless="${groupTree.isTerminal()}"></ul>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- Trying out the group tree view idea - sql version -->
 
   <div th:if="${not #lists.isEmpty(groupTreesSql)}">
     <div class="well">
-      <h3>Groups in tree view SQL:</h3>
-      <div th:each="groupTreeSql: ${groupTreesSql}" class="bs-component">
-        <div class="list-group">
-          <div class="list-group-item">
+      <div class="just-padding">
+        <h3>Groups in tree view:</h3>
+        <div class="list-group list-group-root well">
+          <div th:each="groupTreeSql: ${groupTreesSql}" class="list-group-item">
             <span th:text="${groupTreeSql.groupName}">Group name</span>
             <ul th:fragment="fragment_nodeSql(groupTreeSql)">
-              <li th:each="subGroupSql : ${groupTreeSql.Subgroups}" th:inline="text">
+              <li th:each="subGroupSql : ${groupTreeSql.Subgroups}" th:inline="text" class="list-group-item">
                 [[${subGroupSql.groupName}]] ([[${subGroupSql.level}]])
                 <ul th:replace="this::fragment_node(${subGroupSql})" th:unless="${groupTreeSql.isTerminal()}"></ul>
               </li>

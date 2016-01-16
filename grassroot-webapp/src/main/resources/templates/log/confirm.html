@@ -50,7 +50,15 @@
         </div>
       </div>
 
-      <!-- note: no practical way to do user assignment for cascading entries (groups must do individually -->
+      <div class="form-group">
+        <label for="remindertime" class="col-md-2 control-label">Reminder will be sent out:</label>
+        <div class="col-md-4">
+          <input type="hidden" th:field="*{reminderMinutes}" th:value="*{reminderMinutes}" />
+          <input type="text" readonly="readonly" id="remindertime" th:value="${reminderTime}" />
+        </div>
+      </div>
+
+      <!-- note: in future may want a pop a way to do user assignment even when cascading into subgroups -->
       <div th:switch="${subGroups}">
 
         <div th:case="false" class="form-group">

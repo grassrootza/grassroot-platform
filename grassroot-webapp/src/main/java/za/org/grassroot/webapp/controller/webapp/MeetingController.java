@@ -197,7 +197,7 @@ public class MeetingController extends BaseController {
 
             model.addAttribute("message", message);
             model.addAttribute("recipients", eventManagementService.getNumberInvitees(meeting));
-            model.addAttribute("cost", eventManagementService.getCostOfMessages(meeting));
+            model.addAttribute("cost", eventManagementService.getCostOfMessagesDefault(meeting));
             return "meeting/remind_confirm";
 
         } else {

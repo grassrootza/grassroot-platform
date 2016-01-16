@@ -19,7 +19,7 @@
 <div layout:fragment="content">
   <div layout:fragment="messages"></div>
   <div class="well">
-    <form th:action="@{complete-do}" method="get" autocomplete="off" class="form-horizontal">
+    <form th:action="@{complete-do}" method="post" autocomplete="off" class="form-horizontal">
       <input type="hidden" name="logBookId" th:value="${entry.id}" />
 
       <div class="form-group">

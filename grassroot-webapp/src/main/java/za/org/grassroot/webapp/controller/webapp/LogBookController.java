@@ -3,6 +3,7 @@ package za.org.grassroot.webapp.controller.webapp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -22,7 +23,9 @@ import javax.servlet.http.HttpServletRequest;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by luke on 2016/01/02.
@@ -73,6 +76,7 @@ public class LogBookController extends BaseController {
 
         log.info("The potential logBookEntry passed back to us ... " + logBookEntry);
         log.info("Value of subGroups passed ... " + subGroups);
+
         Group groupSelected = groupManagementService.loadGroup(logBookEntry.getGroupId());
         model.addAttribute("group", groupSelected);
         model.addAttribute("subGroups", subGroups);
@@ -85,6 +89,8 @@ public class LogBookController extends BaseController {
         } else {
             model.addAttribute("groupMembers", groupSelected.getGroupMembers());
         }
+
+        model.addAttribute("reminderTime", reminderTimeDescriptions().get(logBookEntry.getReminderMinutes()));
 
         return "log/confirm";
 
@@ -188,7 +194,7 @@ public class LogBookController extends BaseController {
     }
 
     // todo: check that this user has permission to mark the logbook entry as completed
-    @RequestMapping(value = "/log/complete-do", method = RequestMethod.GET)
+    @RequestMapping(value = "/log/complete-do", method = RequestMethod.POST)
     public String markLogBookEntryComplete(Model model, @RequestParam(value="logBookId", required=true) Long logBookId,
                                            @RequestParam(value="completedByAssigned", required=false) boolean completedByAssigned,
                                            @RequestParam(value="designateCompletingUser", required=false) boolean designateCompletor,
@@ -217,6 +223,65 @@ public class LogBookController extends BaseController {
 
         addMessage(model, MessageType.SUCCESS, "log.completed.done", request);
         return viewGroupLogBook(model, completedEntry.getGroupId());
+    }
+
+    // todo : more permissions than just the below!
+    @RequestMapping("/log/modify")
+    public String modifyLogBookEntry(Model model, @RequestParam(value="logBookId", required = true) Long logBookId) {
+        LogBook logBook = logBookService.load(logBookId);
+        Group group = groupManagementService.loadGroup(logBook.getGroupId());
+        if (!group.getGroupMembers().contains(getUserProfile())) throw new AccessDeniedException("");
+
+        model.addAttribute("logBook", logBook);
+        model.addAttribute("group", group);
+        model.addAttribute("groupMembers", group.getGroupMembers());
+        model.addAttribute("reminderTime", reminderTimeDescriptions().get(logBook.getReminderMinutes()));
+        model.addAttribute("reminderTimeOptions", reminderTimeDescriptions());
+
+        if (logBook.getAssignedToUserId() != null && logBook.getAssignedToUserId() != 0)
+            model.addAttribute("assignedUser", userManagementService.loadUser(logBook.getAssignedToUserId()));
+
+        return "log/modify";
+    }
+
+    // todo: permission checking
+    @RequestMapping(value = "/log/modify", method = RequestMethod.POST)
+    public String changeLogBookEntry(Model model, @ModelAttribute("logBook") LogBook logBook,
+                                     @RequestParam(value = "assignToUser", required = false) boolean assignToUser, HttpServletRequest request) {
+
+        // may consider doing some of this in services layer, but main point is can't just use logBook entity passed
+        // back from form as thymeleaf whacks all the attributes we don't explicitly code into hidden inputs
+
+        LogBook savedLogBook = logBookService.load(logBook.getId());
+        if (!logBook.getMessage().equals(savedLogBook.getMessage()))
+            savedLogBook.setMessage(logBook.getMessage());
+
+        if (!logBook.getActionByDate().equals(savedLogBook.getActionByDate()))
+            savedLogBook.setActionByDate(logBook.getActionByDate());
+
+        if (logBook.getReminderMinutes() != savedLogBook.getReminderMinutes())
+            savedLogBook.setReminderMinutes(logBook.getReminderMinutes());
+
+        log.info("Are we going to assigned this to a user? ... " + assignToUser);
+        if (!assignToUser)
+            savedLogBook.setAssignedToUserId(0L);
+        else
+            savedLogBook.setAssignedToUserId(logBook.getAssignedToUserId());
+
+        savedLogBook = logBookService.save(savedLogBook);
+
+        addMessage(model, MessageType.SUCCESS, "log.modified.done", request);
+        return viewLogBookDetails(model, savedLogBook.getId());
+    }
+
+    private Map<Integer, String> reminderTimeDescriptions() {
+        // could have created this once off, but doing it through function, for i18n later
+        Map<Integer, String> descriptions = new LinkedHashMap<>();
+        descriptions.put(-60, "On due date");
+        descriptions.put(-1440, "One day before");
+        descriptions.put(-2880, "Two days before");
+        descriptions.put(-10080, "A week before deadline");
+        return descriptions;
     }
 
 }

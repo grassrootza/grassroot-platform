@@ -64,6 +64,16 @@
       </div>
 
       <div class="form-group">
+        <label for="remindertime" class="col-md-2 control-lavel">Send a reminder:</label>
+        <div class="col-md-4" id="remindertime">
+            <p><input type="radio" th:field="*{reminderMinutes}" value="-60"/>On due date</p>
+            <p><input type="radio" th:field="*{reminderMinutes}" value="-1440"/>One day before</p>
+            <p><input type="radio" th:field="*{reminderMinutes}" value="-2880"/>Two days before</p>
+            <p><input type="radio" th:field="*{reminderMinutes}" value="-10080"/>One week before</p>
+        </div>
+      </div>
+
+      <div class="form-group">
         <label for="subgroups" class="col-md-2 control-label">Cascade to sub-groups?</label>
         <div class="col-md-4">
           <input name="subGroups" type="checkbox" id="subgroups" class="form-control"/>
