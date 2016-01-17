@@ -6,9 +6,9 @@
     </cache>
 
     <cache name="userRSVP"
-           maxEntriesLocalHeap="200"
+           maxEntriesLocalHeap="2000"
            eternal="false"
-           timeToIdleSeconds="120" timeToLiveSeconds="300"
+           timeToIdleSeconds="1200"
             >
     </cache>
 
