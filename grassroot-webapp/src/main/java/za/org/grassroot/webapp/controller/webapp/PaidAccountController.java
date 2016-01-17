@@ -9,17 +9,18 @@ import org.springframework.security.web.servletapi.SecurityContextHolderAwareReq
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import za.org.grassroot.core.domain.Account;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.PaidGroup;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.services.AccountManagementService;
+import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import java.security.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -39,6 +40,9 @@ public class PaidAccountController extends BaseController {
 
     @Autowired
     GroupManagementService groupManagementService;
+
+    @Autowired
+    EventManagementService eventManagementService;
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping("/index")
@@ -67,8 +71,23 @@ public class PaidAccountController extends BaseController {
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "/view/logs", method = RequestMethod.POST)
-    public String viewPaidAccountLogs(Model model, @ModelAttribute("account") Account account) {
+    @RequestMapping(value = "/group/view")
+    public String viewPaidAccountLogs(Model model, @RequestParam("accountId") Long accountId,
+                                      @RequestParam Long paidGroupId, HttpServletRequest request) {
+        Account account = accountManagementService.loadAccount(accountId);
+        if (!sessionUserHasAccountPermission(account, request)) throw new AccessDeniedException("");
+
+        Long timeStart = System.currentTimeMillis();
+        PaidGroup paidGroupRecord = accountManagementService.loadPaidGroupEntity(paidGroupId);
+        Group underlyingGroup = paidGroupRecord.getGroup();
+
+        List<Event> meetingsLastMonth = eventManagementService.getEventsForGroupInTimePeriod(underlyingGroup, EventType.Meeting,
+                                                                                             LocalDateTime.now().minusMonths(1L), LocalDateTime.now());
+        List<Event> votesLastMonth = eventManagementService.getEventsForGroupInTimePeriod(underlyingGroup, EventType.Vote,
+                                                                                          LocalDateTime.now().minusMonths(1L), LocalDateTime.now());
+        Long timeEnd = System.currentTimeMillis();
+        log.info(String.format("Loaded a bunch of stuff for group ... %s, and it took %d msecs", underlyingGroup.getGroupName(), timeEnd - timeStart));
+
         return "paid_account/view_logs";
     }
 
@@ -129,6 +148,7 @@ public class PaidAccountController extends BaseController {
     /*
         quick private helper method to do role & permission check
         major todo: cut down the db calls -- the isInRole check takes 0ms, the getUserProfile... takes 19ms!!
+        major todo: move this to a service and call it via @preauthorize
     */
     private boolean sessionUserHasAccountPermission(Account account, HttpServletRequest request) {
         log.info("This user is in system admin role ..." + request.isUserInRole("ROLE_SYSTEM_ADMIN"));

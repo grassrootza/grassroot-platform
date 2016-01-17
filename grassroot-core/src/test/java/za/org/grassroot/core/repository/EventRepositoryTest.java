@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -21,6 +22,7 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -283,6 +285,62 @@ public class EventRepositoryTest {
         List<Event> events4 = eventRepository.
                 findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeLessThanAndCanceled(user, EventType.Meeting, new Date(), false);
         assertTrue(events4.isEmpty());
+    }
+
+    @Test
+    public void shouldFindEventsByGroupBetweenTimestamps() {
+
+        assertThat(eventRepository.count(), is(0L));
+        User user = userRepository.save(new User("0813330000"));
+        Group group1 = groupRepository.save(new Group("tg1", user));
+        Group group2 = groupRepository.save(new Group("tg2", user));
+
+        Event event1 = eventRepository.save(new Event("test", user, group1));
+        event1.setEventType(EventType.Meeting);
+        event1.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.now().minusWeeks(1L)));
+        event1 = eventRepository.save(event1);
+
+        Event event2 = eventRepository.save(new Event("test2", user, group1));
+        event2.setEventType(EventType.Meeting);
+        event2.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.now().minusWeeks(5L)));
+        event2 = eventRepository.save(event2);
+
+        Event event3 = eventRepository.save(new Event("test3", user, group1));
+        event3.setEventType(EventType.Vote);
+        event3.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.now().minusWeeks(1L)));
+        event3 = eventRepository.save(event3);
+
+        Event event4 = eventRepository.save(new Event("test4", user, group2));
+        event4.setEventType(EventType.Meeting);
+        event4.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.now().minusWeeks(1L)));
+        event4 = eventRepository.save(event4);
+
+        Timestamp now = Timestamp.valueOf(LocalDateTime.now());
+        Timestamp oneMonthBack = Timestamp.valueOf(LocalDateTime.now().minusMonths(1L));
+        Timestamp twoMonthsBack = Timestamp.valueOf(LocalDateTime.now().minusMonths(2L));
+
+        List<Event> test1 = eventRepository.
+                findByAppliesToGroupAndEventTypeAndEventStartDateTimeBetween(group1, EventType.Meeting, oneMonthBack, now);
+        List<Event> test2 = eventRepository.
+                findByAppliesToGroupAndEventTypeAndEventStartDateTimeBetween(group1, EventType.Meeting, twoMonthsBack, oneMonthBack);
+        List<Event> test3 = eventRepository.
+                findByAppliesToGroupAndEventTypeAndEventStartDateTimeBetween(group1, EventType.Vote, oneMonthBack, now);
+        List<Event> test4 = eventRepository.
+                findByAppliesToGroupAndEventTypeAndEventStartDateTimeBetween(group2, EventType.Meeting, oneMonthBack, now);
+        List<Event> test5 = eventRepository.
+                findByAppliesToGroupAndEventStartDateTimeBetween(group1, oneMonthBack, now, new Sort(Sort.Direction.ASC, "EventStartDateTime"));
+
+        assertNotNull(test1);
+        assertEquals(test1, Arrays.asList(event1));
+        assertNotNull(test2);
+        assertEquals(test2, Arrays.asList(event2));
+        assertNotNull(test3);
+        assertEquals(test3, Arrays.asList(event3));
+        assertNotNull(test4);
+        assertEquals(test4, Arrays.asList(event4));
+        assertNotNull(test5);
+        assertEquals(test5, Arrays.asList(event1, event3));
+
     }
 
 }

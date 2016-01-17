@@ -45,6 +45,10 @@ public interface LogBookService {
 
     LogBook create(LogBook logBookToSave, boolean replicateToSubGroups);
 
+    /*
+    Methods for setting properties
+     */
+
     LogBook setDueDate(Long logBookId, LocalDateTime actionByDateTime);
 
     LogBook setAssignedToUser(Long logBookId, Long assignedToUserId);
@@ -56,6 +60,8 @@ public interface LogBookService {
     LogBook setMessage(Long logBookId, String message);
 
     LogBook setRecorded(Long logBookId, boolean recorded);
+
+    LogBook save(LogBook logBook);
 
     /*
     Set of methods to deal with marking complete, depending on what has been specified in the view layer

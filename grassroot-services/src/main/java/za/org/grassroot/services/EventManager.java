@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
@@ -97,19 +98,17 @@ public class EventManager implements EventManagementService {
                            groupManager.getGroupById(appliesToGroupId), includeSubGroups);
     }
 
+    /* These appear not to be used anymore, hence commenting out ... to reduce clutter in the service interface
+
     @Override
     public Event createEvent(String name, Long createdByUserId, Long appliesToGroupId) {
         return createEvent(name, createdByUserId, appliesToGroupId, false);
     }
 
-    /*
-    Depending on the user flow in the USSD/web interface, we might not know the group at a point when we want to create
-    the event, hence generating this method and the one that follows
-     */
     @Override
     public Event createEvent(String name, User createdByUser) {
         return createNewEvent(createdByUser, EventType.Meeting, true, name, null, false, 0);
-    }
+    }*/
 
     @Override
     public Event createMeeting(User createdByUser) {
@@ -125,11 +124,6 @@ public class EventManager implements EventManagementService {
     public Event createMeeting(User createdByUser, Long groupId) {
         // note: this method is only called from USSD, so, for now, setting reminder minutes to zero
         return createNewEvent(createdByUser, EventType.Meeting, true, "", groupManager.loadGroup(groupId), false, -1);
-    }
-
-    @Override
-    public Event createVote(User createdByUser) {
-        return createVote("", createdByUser);
     }
 
     @Override
@@ -200,11 +194,6 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
-    public Event getLastCreatedEvent(User creatingUser) {
-        return eventRepository.findFirstByCreatedByUserOrderByIdDesc(creatingUser);
-    }
-
-    @Override
     public Event setSubject(Long eventId, String subject) {
         Event eventToUpdate = eventRepository.findOne(eventId);
         Event beforeEvent = SerializationUtils.clone(eventToUpdate);
@@ -225,12 +214,6 @@ public class EventManager implements EventManagementService {
             eventToUpdate.setAppliesToGroup(groupManager.loadGroup(groupId));
             return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
         }
-    }
-
-    @Override
-    public Event setGroup(Event event, Long groupId) {
-        // helper method for web application, as this is most natural signature for that call -- to do as above
-        return setGroup(event.getId(), groupId);
     }
 
     @Override
@@ -371,13 +354,14 @@ public class EventManager implements EventManagementService {
         return eventRepository.findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(group, date, false);
     }
 
+    /* as above, old method now deprecated, with no uses, so commenting out to reduce clutter
     @Override
     public boolean doesGroupHaveMinimumDataEvents(Group group) {
         // todo: check / refine this to be more (much more) efficient
         List<Event> lastEvents = eventRepository.findByAppliesToGroupOrderByEventStartDateTimeDesc(group);
         if (lastEvents == null || lastEvents.isEmpty()) return false;
         return minimumDataAvailable(lastEvents.get(0));
-    }
+    } */
 
     @Override
     public List<Event> findUpcomingMeetingsForGroup(Group group, Date date) {
@@ -475,7 +459,7 @@ public class EventManager implements EventManagementService {
     private List<Event> getOutstandingResponseForUser(User user, EventType eventType) {
         log.info("getOutstandingResponseForUser..." + user.getPhoneNumber() + "...type..." + eventType.toString());
 
-        List<Event> outstandingRSVPs = cacheUtilService.getOutstandingResponseForUser(user,eventType);
+        List<Event> outstandingRSVPs = cacheUtilService.getOutstandingResponseForUser(user, eventType);
 
         if (outstandingRSVPs == null) {
             // fetch from the database
@@ -695,17 +679,6 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
-    public double getCostOfMessages(Event event, double costPerMessage) {
-        // this will also get more sophisticated, and important, as message sending methods multiply, accounts become real, etc
-        return getNumberInvitees(event) * costPerMessage;
-    }
-
-    @Override
-    public double getCostOfMessages(Event event) {
-        return getCostOfMessages(event, SMS_COST);
-    }
-
-    @Override
     public String getGroupName(Event event) {
         return event.getAppliesToGroup().getName("");
     }
@@ -745,6 +718,8 @@ public class EventManager implements EventManagementService {
         return eventLogManagementService.getVoteResultsForEvent(vote);
     }
 
+    /* Better to use the above (getRSVPTotalsDTO ... or get the map of strings, than the below
+
     @Override
     public Integer getNumberYesVotes(Event vote) {
         return getVoteResults(vote).get("yes");
@@ -768,7 +743,7 @@ public class EventManager implements EventManagementService {
     @Override
     public Integer getTotalPossibleVotes(Event vote) {
         return getVoteResults(vote).get("possible");
-    }
+    } */
 
     /*
     If message is blank then the reminder generated by the template will be used
@@ -794,6 +769,61 @@ public class EventManager implements EventManagementService {
     public String getDefaultLocaleReminderMessage(User user, Event event) {
         return getReminderMessageForConfirmation("en", user, event);
     }
+
+    /**
+     * SECTION:
+     * major todo: consider refactoring these into a "eventAnalyticalService" or similar, to make this class less sprawling
+     */
+
+
+    @Override
+    public List<Event> getEventsForGroupInTimePeriod(Group group, EventType eventType, LocalDateTime periodStart, LocalDateTime periodEnd) {
+        return eventRepository.
+                findByAppliesToGroupAndEventTypeAndEventStartDateTimeBetween(group, eventType, Timestamp.valueOf(periodStart), Timestamp.valueOf(periodEnd));
+    }
+
+    @Override
+    public int countEventsForGroupInTimePeriod(Group group, EventType eventType, LocalDateTime periodStart, LocalDateTime periodEnd) {
+        // todo: replace this with a count query
+        return getEventsForGroupInTimePeriod(group, eventType, periodStart, periodEnd).size();
+    }
+
+    @Override
+    public int countNumberMessagesForGroupInTimePeriod(Group group, EventType eventType, LocalDateTime periodStart, LocalDateTime periodEnd) {
+        return 0;
+    }
+
+    @Override
+    public double getCostOfMessagesForEvent(Event event, double costPerMessage) {
+        // todo: replace with a query and count on eventLog
+        return getNumberInvitees(event) * costPerMessage;
+    }
+
+    @Override
+    public double getCostOfMessagesDefault(Event event) {
+        return getCostOfMessagesForEvent(event, SMS_COST);
+    }
+
+    @Override
+    public double getCostOfMessagesForGroupInPeriod(Group group, EventType eventType, LocalDateTime periodStart, LocalDateTime periodEnd) {
+        return 0;
+    }
+
+    @Override
+    public double getTotalCostGroupInPeriod(Group group, LocalDateTime periodStart, LocalDateTime periodEnd) {
+        // todo: a repository method that doesn't bother with event type ...
+        Sort sort = new Sort(Sort.Direction.ASC, "EventStartDateTime");
+        List<Event> events = eventRepository.findByAppliesToGroupAndEventStartDateTimeBetween(group, Timestamp.valueOf(periodStart),
+                                                                                              Timestamp.valueOf(periodEnd), sort);
+        double costCounter = 0;
+        for (Event event : events)
+            costCounter += getCostOfMessagesDefault(event);
+        return costCounter;
+    }
+
+    /**
+     * SECTION: Core methods for saving events and triggering message send
+     */
 
     private Event saveandCheckChanges(EventDTO beforeEvent, Event changedEvent) {
 
