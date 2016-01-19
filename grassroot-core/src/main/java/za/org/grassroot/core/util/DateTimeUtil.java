@@ -40,8 +40,13 @@ public class DateTimeUtil {
 
     private static final LocalDateTime veryLongTimeAway = LocalDateTime.of(2099, 12, 31, 23, 59);
 
-    public static LocalDateTime getVeryLongTimeAway() { return veryLongTimeAway; }
-    public static Timestamp getVeryLongTimestamp() { return Timestamp.valueOf(veryLongTimeAway); }
+    public static LocalDateTime getVeryLongTimeAway() {
+        return veryLongTimeAway;
+    }
+
+    public static Timestamp getVeryLongTimestamp() {
+        return Timestamp.valueOf(veryLongTimeAway);
+    }
 
         /*
         Inserting method to parse date time user input and, if it can be parsed, set the timestamp accordingly.
@@ -72,6 +77,11 @@ public class DateTimeUtil {
     public static LocalDateTime parsePreformattedString(String formattedValue) {
         // todo: exception handling just in case someone uses this / passes it badly
         return LocalDateTime.parse(formattedValue, preferredDateTimeFormat);
+    }
+
+    public static LocalDateTime parsePreformattedDate(String formattedValue, int hour, int minute) {
+
+        return LocalDateTime.of(LocalDate.parse(formattedValue,preferredDateFormat),LocalTime.of(hour, minute));
     }
 
     /*
@@ -111,7 +121,7 @@ public class DateTimeUtil {
             try {
                 String digitSubString = matcherNoDelims.group(0);
                 int hourDigits = digitSubString.length() - 2;
-                int hours = Integer.parseInt(digitSubString.substring(0, hourDigits)) + (pmStringEntered ? 12 :0);
+                int hours = Integer.parseInt(digitSubString.substring(0, hourDigits)) + (pmStringEntered ? 12 : 0);
                 int minutes = Integer.parseInt(digitSubString.substring(hourDigits, hourDigits + 2));
                 reformattedTime = timeJoiner.join(new String[]{String.format("%02d", hours), String.format("%02d", minutes)});
                 log.info("Finished up with digits and we have: " + reformattedTime);
@@ -168,18 +178,18 @@ public class DateTimeUtil {
             log.info("Looks like we have a valid date string ... " + dateOnly);
             List<String> dividedUp = Lists.newArrayList(Splitter.on(CharMatcher.anyOf(possibleDateDelims)).omitEmptyStrings().split(dateOnly));
             log.info("And now it's sliced apart into this list ... " + dividedUp.toString());
-            formattedResponse = dateJoiner.join(new String[]{   String.format("%02d", Integer.parseInt(dividedUp.get(0))),
-                                                                String.format("%02d", Integer.parseInt(dividedUp.get(1))),
-                                                                dividedUp.get(2)});
+            formattedResponse = dateJoiner.join(new String[]{String.format("%02d", Integer.parseInt(dividedUp.get(0))),
+                    String.format("%02d", Integer.parseInt(dividedUp.get(1))),
+                    dividedUp.get(2)});
         } else if (noYearMatcher.find()) {
             String dateOnly = noYearMatcher.group(0);
             log.info("We have a valid dd-MM string, it looks like ... " + dateOnly);
             List<String> dividedUp = Lists.newArrayList(Splitter.on(CharMatcher.anyOf(possibleDateDelims)).omitEmptyStrings().split(dateOnly));
             log.info("Now it's sliced apart into this list ..." + dividedUp.toString());
             // todo: make the year switch over to next year if date/month is in advance of today
-            formattedResponse = dateJoiner.join(new String[]{   String.format("%02d", Integer.parseInt(dividedUp.get(0))),
-                                                                String.format("%02d", Integer.parseInt(dividedUp.get(1))),
-                                                                Year.now().toString()});
+            formattedResponse = dateJoiner.join(new String[]{String.format("%02d", Integer.parseInt(dividedUp.get(0))),
+                    String.format("%02d", Integer.parseInt(dividedUp.get(1))),
+                    Year.now().toString()});
         } else {
             formattedResponse = parseDateTime(userResponse).format(preferredDateFormat);
         }
@@ -238,7 +248,7 @@ public class DateTimeUtil {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(date);
         calendar.add(Calendar.HOUR, 1);
-        calendar.set(Calendar.MINUTE,0);
+        calendar.set(Calendar.MINUTE, 0);
         calendar.set(Calendar.SECOND, 0);
         calendar.set(Calendar.MILLISECOND, 0);
         return calendar.getTime();
@@ -249,13 +259,14 @@ public class DateTimeUtil {
         calendar.setTime(date);
         calendar.set(Calendar.MINUTE, 0);
         calendar.set(Calendar.SECOND, 0);
-        calendar.set(Calendar.MILLISECOND,0);
+        calendar.set(Calendar.MILLISECOND, 0);
         return calendar.getTime();
     }
 
     /*
     Methods to alter dates without altering times, necessarily
      */
+
 
     public static Timestamp changeTimestampDates(Timestamp timestamp, String revisedDateString) {
         LocalDate revisedDate;
@@ -264,13 +275,13 @@ public class DateTimeUtil {
         } catch (DateTimeParseException e) {
             revisedDate = LocalDate.from(parseDateTime(revisedDateString));
         }
-        return(Timestamp.valueOf(
+        return (Timestamp.valueOf(
                 changeDatesWithoutChangingTime(timestamp.toLocalDateTime(), revisedDate.atStartOfDay())));
     }
 
     public static LocalDateTime changeDatesWithoutChangingTime(LocalDateTime origDateTime, LocalDateTime revisedDateTime) {
         return changeDatesWithoutChangingTime(origDateTime, revisedDateTime.getYear(),
-                                             revisedDateTime.getMonthValue(), revisedDateTime.getDayOfMonth());
+                revisedDateTime.getMonthValue(), revisedDateTime.getDayOfMonth());
     }
 
     public static LocalDateTime changeDatesWithoutChangingTime(LocalDateTime origDateTime, int year, int month, int dayOfMonth) {
@@ -285,7 +296,7 @@ public class DateTimeUtil {
             revisedTime = LocalTime.from(parseDateTime(revisedTimeString));
         }
         return Timestamp.valueOf(changeTimesWithoutChangingDates(timestamp.toLocalDateTime(),
-                                                                 revisedTime.getHour(), revisedTime.getMinute()));
+                revisedTime.getHour(), revisedTime.getMinute()));
     }
 
     public static LocalDateTime changeTimesWithoutChangingDates(LocalDateTime origDateTime, int hour, int minute) {
@@ -296,9 +307,12 @@ public class DateTimeUtil {
     Simple method to turn strings from HTML date-time-picker into a Timestamp, if not done within Thymeleaf
      */
     public static Date processDateString(String dateString, SimpleDateFormat sdf) {
-        try { return (dateString == null || dateString.trim().equals("")) ?
-                null : sdf.parse(dateString); }
-        catch (Exception e) { return null; }
+        try {
+            return (dateString == null || dateString.trim().equals("")) ?
+                    null : sdf.parse(dateString);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public static Date processDateString(String dateString) {
@@ -306,7 +320,7 @@ public class DateTimeUtil {
     }
 
     public static int numberOfMinutesForDays(int days) {
-        return 60*24*days;
+        return 60 * 24 * days;
     }
 
 }

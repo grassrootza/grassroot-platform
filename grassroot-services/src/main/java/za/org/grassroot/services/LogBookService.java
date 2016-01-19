@@ -1,5 +1,7 @@
 package za.org.grassroot.services;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import za.org.grassroot.core.domain.LogBook;
 
 import java.sql.Timestamp;
@@ -19,6 +21,8 @@ public interface LogBookService {
 
     List<LogBook> getAllLogBookEntriesForGroup(Long groupId, boolean completed);
 
+    Page<LogBook> getAllLogBookEntriesForGroup(Long groupId, int pageNumber,int pageSize, boolean completed);
+
     List<LogBook> getAllReplicatedEntriesForGroup(Long groupId);
 
     List<LogBook> getAllReplicatedEntriesForGroup(Long groupId, boolean completed);
@@ -30,6 +34,8 @@ public interface LogBookService {
     List<LogBook> getAllReplicatedEntriesFromParentLogBook(LogBook logBook);
 
     boolean hasParentLogBookEntry(LogBook logBook);
+
+
 
     LogBook getParentLogBookEntry(LogBook logBook);
 
