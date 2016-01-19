@@ -79,9 +79,9 @@ public class DateTimeUtil {
         return LocalDateTime.parse(formattedValue, preferredDateTimeFormat);
     }
 
-    public static LocalDateTime parsePreformattedDate(String formattedValue) {
-        String value = formattedValue + " 00:00";
-        return LocalDateTime.parse(value, preferredDateTimeFormat);
+    public static LocalDateTime parsePreformattedDate(String formattedValue, int hour, int minute) {
+
+        return LocalDateTime.of(LocalDate.parse(formattedValue,preferredDateFormat),LocalTime.of(hour, minute));
     }
 
     /*

@@ -45,6 +45,8 @@ public class USSDLogBookController extends USSDController {
     private static final String logBookParam = "logbookid", logBookUrlSuffix = "?" + logBookParam + "=";
 
     private static final int PAGE_LENGTH = 3;
+    private static final int hour =13;
+    private static final int minute =0;
 
     @Autowired
     LogBookService logBookService;
@@ -110,7 +112,7 @@ public class USSDLogBookController extends USSDController {
                                  @RequestParam(value = interruptedInput, required = false) String priorInput) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
-        userInput = (interrupted) ? priorInput : userInput;
+        userInput = (priorInput!=null) ? priorInput : userInput;
         if (!revising) logBookService.setMessage(logBookId, userInput);
         user.setLastUssdMenu(saveLogMenu(dueDateMenu, logBookId, userInput));
         return menuBuilder(new USSDMenu(menuPrompt(dueDateMenu, user), nextOrConfirmUrl(assignMenu, logBookId, revising)));
@@ -126,11 +128,11 @@ public class USSDLogBookController extends USSDController {
                                     @RequestParam(value = interruptedInput, required = false) String priorInput) throws URISyntaxException {
 
 
-        userInput = (interrupted) ? priorInput : userInput;
+        userInput = (priorInput !=null) ? priorInput : userInput;
         User user = userManager.findByInputNumber(inputNumber, saveLogMenu(assignMenu, logBookId, userInput));
         String formattedDateString =  DateTimeUtil.reformatDateInput(userInput);
         if (!revising) logBookService.setDueDate(logBookId, DateTimeUtil.parsePreformattedDate(
-                formattedDateString));
+                formattedDateString, hour,minute));
         USSDMenu menu = new USSDMenu(menuPrompt(assignMenu, user));
         menu.addMenuOption(returnUrl(confirmMenu, logBookId), getMessage(thisSection, assignMenu, optionsKey + "group", user));
         menu.addMenuOption(returnUrl(searchUserMenu, logBookId), getMessage(thisSection, assignMenu, optionsKey + "user", user));
@@ -488,14 +490,12 @@ public class USSDLogBookController extends USSDController {
 
     private String truncateEntryDescription(LogBook entry) {
 
-        String dueByDay = "..., due:" +
-                dateFormat.format(entry.getActionByDate().toLocalDateTime());
         StringBuilder stringBuilder = new StringBuilder();
         Pattern pattern = Pattern.compile(" ");
-        // int maxLength = 30 - dueByDay.length();
+
         int maxLength = 30;
         for (String word : pattern.split(entry.getMessage())) {
-            if ((stringBuilder.toString().length() + 1) > maxLength) {
+            if ((stringBuilder.toString().length()+word.length() + 1) > maxLength) {
                 break;
             } else
                 stringBuilder.append(word).append(" ");

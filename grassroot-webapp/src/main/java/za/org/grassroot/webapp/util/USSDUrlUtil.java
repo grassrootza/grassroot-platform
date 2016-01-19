@@ -115,8 +115,7 @@ public class USSDUrlUtil {
     }
 
     public static String saveLogMenu(String menu, Long logBookId, String priorInput){
-        return USSDSection.LOGBOOK.toPath() + menu + "?logbookid=" + logBookId +
-                setInterruptedFlag+addInterruptedInput+encodeParameter(priorInput);
+        return saveLogMenu(menu,logBookId)+addInterruptedInput+encodeParameter(priorInput);
 
     }
 
