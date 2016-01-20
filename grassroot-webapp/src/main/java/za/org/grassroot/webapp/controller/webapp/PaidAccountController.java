@@ -5,24 +5,25 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestWrapper;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.SessionAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.AccountManagementService;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupManagementService;
-import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
-import java.security.Timestamp;
+import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
@@ -34,6 +35,7 @@ import java.util.List;
 public class PaidAccountController extends BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(PaidAccountController.class);
+    private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd-M-yyyy");
 
     @Autowired
     AccountManagementService accountManagementService;
@@ -72,24 +74,74 @@ public class PaidAccountController extends BaseController {
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/group/view")
-    public String viewPaidAccountLogs(Model model, @RequestParam("accountId") Long accountId,
-                                      @RequestParam Long paidGroupId, HttpServletRequest request) {
+    public String viewPaidAccountLogs(Model model, @RequestParam Long accountId, @RequestParam Long paidGroupId,
+                                      @RequestParam(value = "monthToView", required = false) String monthToView, HttpServletRequest request) {
+
         Account account = accountManagementService.loadAccount(accountId);
         if (!sessionUserHasAccountPermission(account, request)) throw new AccessDeniedException("");
 
-        Long timeStart = System.currentTimeMillis();
+        final LocalDateTime beginDate;
+        final LocalDateTime endDate;
+        final String dateDescription;
+
+        if (monthToView == null) {
+            beginDate = LocalDateTime.now().minusMonths(1L); // todo: maybe make these coincide with prior month
+            endDate = LocalDateTime.now();
+            dateDescription = "Meetings and votes held since " + beginDate.format(DateTimeFormatter.ofPattern("dd MMM yyyy"));
+        } else {
+            beginDate = LocalDate.parse("01-" + monthToView, dtf).atStartOfDay();
+            endDate = beginDate.plusMonths(1L);
+            dateDescription = "Meetings and votes held in " + beginDate.format(DateTimeFormatter.ofPattern("MMM yyyy"));
+            log.info(String.format("Getting records between %s and a month later", beginDate.format(DateTimeUtil.preferredDateFormat)));
+        }
+
+        final Long timeStart = System.currentTimeMillis();
         PaidGroup paidGroupRecord = accountManagementService.loadPaidGroupEntity(paidGroupId);
         Group underlyingGroup = paidGroupRecord.getGroup();
+        addRecordsToModel("meetingsInPeriod", model, underlyingGroup, EventType.Meeting, beginDate, endDate);
+        addRecordsToModel("votesInPeriod", model, underlyingGroup, EventType.Vote, beginDate, endDate);
+        final Long timeEnd = System.currentTimeMillis();
 
-        List<Event> meetingsLastMonth = eventManagementService.getEventsForGroupInTimePeriod(underlyingGroup, EventType.Meeting,
-                                                                                             LocalDateTime.now().minusMonths(1L), LocalDateTime.now());
-        List<Event> votesLastMonth = eventManagementService.getEventsForGroupInTimePeriod(underlyingGroup, EventType.Vote,
-                                                                                          LocalDateTime.now().minusMonths(1L), LocalDateTime.now());
-        Long timeEnd = System.currentTimeMillis();
         log.info(String.format("Loaded a bunch of stuff for group ... %s, and it took %d msecs", underlyingGroup.getGroupName(), timeEnd - timeStart));
+
+        model.addAttribute("account", account);
+        model.addAttribute("group", underlyingGroup);
+        model.addAttribute("paidGroupRecord", paidGroupRecord);
+        model.addAttribute("dateDescription", dateDescription);
+        model.addAttribute("beginDate", beginDate.toLocalDate());
+        model.addAttribute("monthsToView", groupManagementService.getMonthsGroupActive(underlyingGroup));
 
         return "paid_account/view_logs";
     }
+
+    /*@PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/group/view/historical")
+    public String viewMonthLogs(Model model, @RequestParam Long accountId, @RequestParam Long paidGroupId,
+                                     @RequestParam String monthToView, HttpServletRequest request) {
+
+        Account account = accountManagementService.loadAccount(accountId); //todo : just put this in the session ...
+        if (!sessionUserHasAccountPermission(account, request)) throw new AccessDeniedException("");
+
+        final Long timeStart = System.currentTimeMillis();
+        final PaidGroup paidGroupRecord = accountManagementService.loadPaidGroupEntity(paidGroupId);
+        final Group underlyingGroup = paidGroupRecord.getGroup();
+        final LocalDateTime beginDate = LocalDate.parse("01-" + monthToView, dtf).atStartOfDay();
+        final LocalDateTime endDate = beginDate.plusMonths(1L);
+
+        addRecordsToModel("meetingsInPeriod", model, underlyingGroup, EventType.Meeting, beginDate, endDate);
+        addRecordsToModel("votesInPeriod", model, underlyingGroup, EventType.Vote, beginDate, endDate);
+        final Long timeEnd = System.currentTimeMillis();
+
+        log.info(String.format("Loaded historical records for group %s, and it took %d msecs", underlyingGroup.getGroupName(), timeEnd - timeStart));
+
+        model.addAttribute("account", account);
+        model.addAttribute("group", underlyingGroup);
+        model.addAttribute("paidGroupRecord", paidGroupRecord);
+        model.addAttribute("startDate", Timestamp.valueOf(beginDate));
+        model.addAttribute("monthsToView", groupManagementService.getMonthsGroupActive(underlyingGroup));
+
+        return "paid_account/view_logs";
+    }*/
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/group/designate")
@@ -169,6 +221,12 @@ public class PaidAccountController extends BaseController {
         Long endTime = System.currentTimeMillis();
         log.info(String.format("Fetched list of groups that can be designated, took %d ms", endTime - startTime));
         return groupsPartOf;
+    }
+
+    private Model addRecordsToModel(String attr, Model model, Group group, EventType type, LocalDateTime start, LocalDateTime end) {
+        List<Event> eventsInPeriod = eventManagementService.getEventsForGroupInTimePeriod(group, type, start, end);
+        model.addAttribute(attr, eventsInPeriod);
+        return model;
     }
 
 }

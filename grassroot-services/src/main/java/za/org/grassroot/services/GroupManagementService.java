@@ -1,6 +1,7 @@
 package za.org.grassroot.services;
 
 import org.springframework.data.domain.Page;
+import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
@@ -8,6 +9,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.List;
 
@@ -34,6 +36,9 @@ public interface GroupManagementService {
     */
 
     public Group loadGroup(Long groupId);
+
+    // @PreAuthorize("hasAnyRole('ROLE_GROUP_ORGANIZER',) and hasPermission(#id, ' za.org.grassroot.core.domain.Group', 'GROUP_PERMISSION_UPDATE_GROUP_DETAILS')")
+    public Group secureLoadGroup(Long id);
 
     public List<Group> getGroupsFromUser(User sessionUser);
 
@@ -235,6 +240,8 @@ public interface GroupManagementService {
     List<Group> getGroupsFiltered(User createdByUser, Integer minGroupSize, Date createdAfterDate, Date createdBeforeDate);
 
     List<GroupTreeDTO> getGroupsMemberOfTree(Long userId);
+
+    List<LocalDate> getMonthsGroupActive(Group group);
 
     /*
         Recursive query better to use than recursive code calls

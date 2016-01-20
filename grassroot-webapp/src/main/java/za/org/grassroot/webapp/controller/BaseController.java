@@ -1,10 +1,13 @@
 package za.org.grassroot.webapp.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.MessageSourceAccessor;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -30,6 +33,8 @@ import java.util.Locale;
  */
 @Controller
 public class BaseController {
+
+    private static final Logger log = LoggerFactory.getLogger(BaseController.class);
 
     public static final String MESSAGES_KEY        = "successMessages";
     public static final String ERRORS_MESSAGES_KEY = "errors";
@@ -63,8 +68,18 @@ public class BaseController {
     protected User getUserProfile() {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return userManagementService.fetchUserByUsername(authentication.getName());
+        log.info("BaseController: authentication properties ... authenticated: " + authentication.isAuthenticated() + " ... and principal ... " + authentication.getPrincipal());
+        if (authentication.isAuthenticated() && authentication.getPrincipal() != null) {
+            return (User) authentication.getPrincipal();
+        }
+        throw new AuthenticationServiceException("Invalid logged in user profile");
     }
+
+    /* protected User getUserProfile() {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return userManagementService.fetchUserByUsername(authentication.getName());
+    }*/
 
     public String getMessage(String id) {
         Locale locale = LocaleContextHolder.getLocale();
