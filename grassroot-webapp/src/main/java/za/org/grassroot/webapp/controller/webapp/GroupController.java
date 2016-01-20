@@ -32,6 +32,7 @@ import java.util.Map;
  */
 @Controller
 @RequestMapping("/group/")
+@SessionAttributes({"groupCreator", "groupModifier"})
 public class GroupController extends BaseController {
 
     Logger log = LoggerFactory.getLogger(GroupController.class);
@@ -127,7 +128,7 @@ public class GroupController extends BaseController {
         model.addAttribute("groupVotes", eventManagementService.getUpcomingVotes(group));
         model.addAttribute("subGroups", groupManagementService.getSubGroups(group));
         model.addAttribute("openToken", groupManagementService.groupHasValidToken(group));
-        model.addAttribute("canDeleteGroup", groupManagementService.canUserMakeGroupInactive(getUserProfile(), group));
+        model.addAttribute("canDeleteGroup", groupManagementService.canUserMakeGroupInactive(user, group));
         model.addAttribute("canMergeWithOthers", groupManagementService.isGroupCreatedByUser(groupId, user));
 
         return "group/view";
@@ -142,9 +143,13 @@ public class GroupController extends BaseController {
 
         GroupWrapper groupCreator;
 
-        if (parentId != null && groupManagementService.loadGroup(parentId) != null) {
+        if (parentId != null) {
             Group parent = groupManagementService.loadGroup(parentId);
-            groupCreator = new GroupWrapper(parent);
+            if(parent!=null){
+                groupCreator = new GroupWrapper(parent);
+            }else {
+                groupCreator = new GroupWrapper();
+            }
         } else {
             groupCreator = new GroupWrapper();
         }
@@ -159,7 +164,7 @@ public class GroupController extends BaseController {
     public String createGroup(Model model, @ModelAttribute("groupCreator") @Validated GroupWrapper groupCreator,
                               BindingResult bindingResult, HttpServletRequest request, RedirectAttributes redirectAttributes)
     {
-        try {
+
 
             if (bindingResult.hasErrors()) {
                 model.addAttribute("groupCreator", groupCreator);
@@ -200,20 +205,19 @@ public class GroupController extends BaseController {
             redirectAttributes.addAttribute("groupId", groupToSave.getId());
             return "redirect:view";
 
-        } catch (Exception e)  {
-            log.error("Exception thrown: " + e.toString());
-            addMessage(model,MessageType.ERROR,"group.creation.error",request);
-            return "group/create";
-        }
+
     }
 
     @RequestMapping(value = "create", params={"addMember"})
     public String addMember(Model model, @ModelAttribute("groupCreator") @Validated GroupWrapper groupCreator,
                             BindingResult bindingResult, HttpServletRequest request) {
         if (bindingResult.hasErrors()) {
+
+            log.debug("binding_error", "");
             // print out the error
             addMessage(model, MessageType.ERROR, "user.enter.error.phoneNumber.invalid", request);
         } else {
+            log.debug("binding_error", "");
             groupCreator.setAddedMembers(addMember(groupCreator));
         }
         return "group/create";
@@ -279,7 +283,7 @@ public class GroupController extends BaseController {
     public String modifyGroupDo(Model model, @ModelAttribute("groupModifier") @Validated GroupWrapper groupModifier,
                                 BindingResult bindingResult, HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
-        try {
+        // try {
 
             if (bindingResult.hasErrors()) {
                 model.addAttribute("groupModifier", groupModifier);
@@ -314,11 +318,11 @@ public class GroupController extends BaseController {
             redirectAttributes.addAttribute("groupId", savedGroup.getId());
             return "redirect:view";
 
-        } catch (Exception e)  {
-            log.error("Exception thrown: " + e.toString());
+       /* } catch (Exception e)  {
+           log.error("Exception thrown: " + e.toString());
             addMessage(model,MessageType.ERROR,"group.creation.error",request);
             return "group/modify";
-        }
+        }*/
     }
 
     /*

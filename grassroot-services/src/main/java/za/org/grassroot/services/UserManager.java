@@ -8,8 +8,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.authentication.AuthenticationServiceException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -259,9 +257,10 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     public List<User> searchByGroupAndNameNumber(Long groupId, String nameOrNumber) {
-        return userRepository.findByGroupsPartOfAndDisplayNameContainingOrPhoneNumberContaining(
+        return userRepository.findByGroupsPartOfAndDisplayNameIgnoreCaseOrPhoneNumberContaining(
                 groupManagementService.loadGroup(groupId), nameOrNumber, nameOrNumber);
     }
+
 
     @Override
     public User reformatPhoneNumber(User sessionUser) {
