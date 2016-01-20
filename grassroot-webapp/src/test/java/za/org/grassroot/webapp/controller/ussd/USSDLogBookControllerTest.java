@@ -17,6 +17,7 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -45,15 +46,11 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
 
     private static final String path = "/ussd/log/";
-
-    private User testUser;
-
     @InjectMocks
     USSDLogBookController ussdLogBookController;
-
     @Mock
     UserRepository userRepository;
-
+    private User testUser;
 
     @Before
     public void setUp() {
@@ -136,19 +133,15 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         Group dummyGroup = new Group("", testUser);
         dummyGroup.setId(dummyId);
         LogBook dummyLogBook = new LogBook();
-
-
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(logBookServiceMock.create(testUser.getId(), dummyGroup.getId(), false)).thenReturn(dummyLogBook);
         mockMvc.perform(get(path + "subject").param("msisdn", testUserPhone).param("revising", String.valueOf(false)).param("logbookid",
                 String.valueOf(dummyId)).param("groupId", String.valueOf(dummyId)))
                 .andExpect(status().isOk());
-
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verify(logBookServiceMock, times(1)).create(testUser.getId(), dummyGroup.getId(), false);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(logBookServiceMock);
-
     }
 
     @Test
@@ -200,10 +193,8 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
                 .param("msisdn", testUserPhone).param("prior_input", "1").param("interrupted", String.valueOf(true))
                 .param("request", "1"))
                 .andExpect(status().isOk());
-
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-
     }
 
     @Test
@@ -229,15 +220,35 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
     }
 
     @Test
-    public void confirmLogEntryBookWorksAfterInterruption() throws Exception {
+    public void confirmLogEntryBookWorksWhenAssignedToUser() throws Exception {
 
         LogBook dummyLogBook = new LogBook();
+        Group testGroup = new Group("", testUser);
+        testGroup.setGroupName("testGroup");
+        testGroup.setId(dummyId);
+        testUser.setDisplayName("Paballo");
         dummyLogBook.setId(dummyId);
         dummyLogBook.setGroupId(dummyId);
         dummyLogBook.setMessage(dummyUserInput);
-
-        String urlTosave = "log/confirm?logbookid=1&interrupted=1&prior_input=1&";
-
+        dummyLogBook.setActionByDate(Timestamp.from(Instant.now()));
+        dummyLogBook.setAssignedToUserId(testUser.getId());
+        String urlToSave = "log/confirm?logbookid=1&interrupted=1&prior_input=1&assignUserId=1";
+        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
+        when(logBookServiceMock.setAssignedToUser(dummyLogBook.getId(), testUser.getId())).thenReturn(dummyLogBook);
+        when(logBookServiceMock.load(dummyLogBook.getId())).thenReturn(dummyLogBook);
+        when(userManagementServiceMock.getDisplayName(testUser.getId())).thenReturn(testUser.getDisplayName());
+        when(groupManagementServiceMock.getGroupName(dummyLogBook.getGroupId())).thenReturn(testGroup.getGroupName());
+        mockMvc.perform(get(path + "confirm").param(logBookIdParam, String.valueOf(dummyLogBook.getId()))
+                .param("msisdn", testUserPhone).param("assignUserId", String.valueOf(testUser.getId()))
+                .param("request", "1"));
+        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
+        verify(logBookServiceMock, times(1)).setAssignedToUser(dummyLogBook.getId(), testUser.getId());
+        verify(logBookServiceMock, times(1)).load(dummyLogBook.getId());
+        verify(userManagementServiceMock, times(1)).getDisplayName(testUser.getId());
+        verify(groupManagementServiceMock, times(1)).getGroupName(dummyLogBook.getId());
+        verifyNoMoreInteractions(userManagementServiceMock);
+        verifyNoMoreInteractions(logBookServiceMock);
+        verifyNoMoreInteractions(groupManagementServiceMock);
 
     }
 
@@ -246,27 +257,35 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
         LogBook dummyLogBook = new LogBook();
         dummyLogBook.setId(dummyId);
-
         List<String> bloomVariations = Arrays.asList("16-06", "16 06", "16/06", "16-6", "16 6", "16/6",
                 "16-06-2016", "16 06 2016", "16/06/2016", "16-6-2016", "16/6/2016");
+        for (String date : bloomVariations) {
+            String urlToSave = "log/assign?logbookid=1&interrupted=1&prior_input=" + USSDUrlUtil.encodeParameter(date);
+            String formattedDateString = DateTimeUtil.reformatDateInput(date).trim();
+            when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
+            when(logBookServiceMock.setDueDate(dummyLogBook.getId(), DateTimeUtil.parsePreformattedDate(
+                    formattedDateString, hour, minutes)))
+                    .thenReturn(dummyLogBook);
+            mockMvc.perform(get(path + "assign").param("logbookid", String.valueOf(dummyLogBook.getId()))
+                    .param("msisdn", testUserPhone).param("prior_input", date).param("interrupted",
+                            String.valueOf(true)).param("request", "1").param("revising", String.valueOf(false)))
+                    .andExpect(status().isOk());
+        }
+    }
 
-       for(String date:bloomVariations) {
-          String urlToSave = "log/assign?logbookid=1&interrupted=1&prior_input="+ USSDUrlUtil.encodeParameter(date);
-           String formattedDateString = DateTimeUtil.reformatDateInput(date).trim();
-           when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-           when(logBookServiceMock.setDueDate(dummyLogBook.getId(), DateTimeUtil.parsePreformattedDate(
-                   formattedDateString, hour, minutes)))
-                   .thenReturn(dummyLogBook);
+    @Test
+    public void finishLogBookShouldWork() throws Exception {
 
-           mockMvc.perform(get(path + "assign").param("logbookid", String.valueOf(dummyLogBook.getId()))
-                   .param("msisdn", testUserPhone).param("prior_input", date).param("interrupted",
-                           String.valueOf(true)).param("request", "1").param("revising", String.valueOf(false)))
-                   .andExpect(status().isOk());
-
-       }
-
-
-
+        LogBook dummyLogBook = new LogBook();
+        dummyLogBook.setId(dummyId);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
+        when(logBookServiceMock.setRecorded(dummyLogBook.getId(), true)).thenReturn(dummyLogBook);
+        mockMvc.perform(get(path + "send").param(logBookIdParam, String.valueOf(dummyLogBook.getId()))
+                .param("msisdn", testUserPhone)).andExpect(status().isOk());
+        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
+        verify(logBookServiceMock, times(1)).setRecorded(dummyLogBook.getId(), true);
+        verifyNoMoreInteractions(userManagementServiceMock);
+        verifyNoMoreInteractions(logBookServiceMock);
     }
 
 
