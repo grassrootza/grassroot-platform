@@ -49,4 +49,8 @@ public interface EventLogManagementService {
     RSVPTotalsDTO getVoteResultsForEvent(Event event);
 
     List<RSVPTotalsPerGroupDTO> getVoteTotalsPerGroup(Long startingGroup, Long event);
+
+    public List<EventLog> getNonRSVPEventLogsForEvent(Event event);
+
+    int countNonRSVPEventLogsForEvent(Event event);
 }

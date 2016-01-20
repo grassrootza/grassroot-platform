@@ -795,8 +795,7 @@ public class EventManager implements EventManagementService {
 
     @Override
     public double getCostOfMessagesForEvent(Event event, double costPerMessage) {
-        // todo: replace with a query and count on eventLog
-        return getNumberInvitees(event) * costPerMessage;
+        return eventLogManagementService.countNonRSVPEventLogsForEvent(event) * costPerMessage;
     }
 
     @Override

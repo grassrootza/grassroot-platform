@@ -5,8 +5,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.access.prepost.PostFilter;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -16,16 +14,12 @@ import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Group;
-
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
-import za.org.grassroot.webapp.validation.GroupWrapperValidator;
-import za.org.grassroot.webapp.validation.UserValidator;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
@@ -68,8 +62,9 @@ public class GroupController extends BaseController {
     public String viewGroupIndex(Model model, @RequestParam("groupId") Long groupId) {
 
         // todo: all sorts of user/group permission checking
-        Group group = groupManagementService.secureLoadGroup(groupId);
         User user = getUserProfile();
+        log.info("Loading group, user has this role ..." + user.getRoles());
+        Group group = groupManagementService.secureLoadGroup(groupId);
 
         // at low user numbers, this is taking 0 msec, but keeping the logs in so we have a record
         Long startTime = System.currentTimeMillis();
@@ -200,7 +195,7 @@ public class GroupController extends BaseController {
 
         // todo: replace getGroupMembers with actual thing
         Group group = groupManagementService.loadGroup(groupId);
-        if (!group.getGroupMembers().contains(getUserProfile())) throw new AccessDeniedException("");
+        if (!isUserPartOfGroup(getUserProfile(), group)) throw new AccessDeniedException("");
 
         log.info("Okay, modifying this group: " + group.toString());
 
@@ -255,7 +250,7 @@ public class GroupController extends BaseController {
             groupToUpdate = groupManagementService.renameGroup(groupToUpdate, groupModifier.getGroupName());
 
             // todo: again, do proper permission check and / or getUserProfile() isn't causing inefficiency
-            if (!groupToUpdate.getGroupMembers().contains(getUserProfile())) throw new AccessDeniedException("");
+            if (!isUserPartOfGroup(getUserProfile(), groupToUpdate)) throw new AccessDeniedException("");
 
             // we have to do a work around of thymeleaf here, which obliterates all the data that we don't create hidden
             // fields to store, so that the users we get back only have display names, id's and phone numbers
@@ -335,7 +330,7 @@ public class GroupController extends BaseController {
     public String newToken(Model model, @RequestParam("groupId") Long groupId) {
 
         Group group = groupManagementService.loadGroup(groupId);
-        if (!group.getGroupMembers().contains(getUserProfile())) throw new AccessDeniedException("");
+        if (!isUserPartOfGroup(getUserProfile(), group)) throw new AccessDeniedException("");
         model.addAttribute("group", group);
         return "group/new_token";
     }

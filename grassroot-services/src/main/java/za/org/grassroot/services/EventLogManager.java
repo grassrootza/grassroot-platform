@@ -188,6 +188,18 @@ public class EventLogManager implements EventLogManagementService {
 
         return list;
     }
+
+    @Override
+    public List<EventLog> getNonRSVPEventLogsForEvent(Event event) {
+        return eventLogRepository.findByEventAndEventLogTypeNot(event, EventLogType.EventRSVP);
+    }
+
+    @Override
+    public int countNonRSVPEventLogsForEvent(Event event) {
+        // todo: might want to make this a count query
+        return getNonRSVPEventLogsForEvent(event).size();
+    }
+
 //    private void recursiveTotalsAdd(Event event, Group parentGroup, RSVPTotalsDTO rsvpTotalsDTO ) {
 //
 //        for (Group childGroup : groupRepository.findByParent(parentGroup)) {
