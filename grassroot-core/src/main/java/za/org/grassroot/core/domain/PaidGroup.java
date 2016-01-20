@@ -55,6 +55,14 @@ public class PaidGroup {
     private Timestamp expireDateTime;
 
     /*
+    Since we want to be able to recall records matched to an account even when it is deactivated, we set account to null
+    and then set this archivedAccountId to the prior accountId
+     */
+    @Basic
+    @Column(name="archived_account_id")
+    private Long archivedAccountId;
+
+    /*
     Constructors
      */
 
@@ -150,4 +158,8 @@ public class PaidGroup {
     }
 
     public void setExpireDateTime(Timestamp expireDateTime) { this.expireDateTime = expireDateTime; }
+
+    public Long getArchivedAccountId() { return archivedAccountId; }
+
+    public void setArchivedAccountId(Long archivedAccountId) { this.archivedAccountId = archivedAccountId; }
 }

@@ -2,6 +2,7 @@ package za.org.grassroot.core.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -10,6 +11,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
 
+import java.sql.Timestamp;
 import java.util.Date;
 import java.util.List;
 
@@ -70,4 +72,10 @@ where e.canceled = FALSE
     Page<Event> findByAppliesToGroupGroupMembersAndEventTypeAndCanceledOrderByEventStartDateTimeDesc(User user, EventType type, boolean canceled, Pageable page);
     Page<Event> findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeGreaterThanAndCanceledOrderByEventStartDateTimeDesc(User user, EventType eventType, Date startTime, boolean cancelled, Pageable page);
     Page<Event> findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeLessThanAndCanceledOrderByEventStartDateTimeDesc(User user, EventType eventType, Date startTime, boolean cancelled, Pageable page);
+
+    /*
+    Queries for analysis, i.e., counting and retrieving how many events took place in a certain period
+     */
+    List<Event> findByAppliesToGroupAndEventStartDateTimeBetween(Group group, Timestamp start, Timestamp end, Sort sort);
+    List<Event> findByAppliesToGroupAndEventTypeAndEventStartDateTimeBetween(Group group, EventType type, Timestamp startDateTime, Timestamp endDateTime);
 }

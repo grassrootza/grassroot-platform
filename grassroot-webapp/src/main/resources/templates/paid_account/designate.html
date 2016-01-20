@@ -1,0 +1,40 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Adding group to account</title>
+</head>
+
+<body>
+
+<div layout:fragment="header">
+  <h2><span  th:text="${account.accountName}">account name</span></h2>
+</div>
+
+<div layout:fragment="overview">Designate a group as paid for by your account</div>
+
+<div layout:fragment="content">
+  <div class="well">
+    <form th:action="@{designate}" method="post">
+      <input type="hidden" name="accountId" th:value="${account.id}" />
+      <div class="form-group">
+        <label for="groupSelector" class="col-md-2 control-label">Group:</label>
+        <div class="col=md-4">
+          <select name="groupId" id="groupSelector">
+            <option th:each="group : ${candidateGroups}"
+                    th:value="${group.id}"
+                    th:text="${group.getName('')}">
+            </option>
+          </select>
+        </div>
+        <button type="submit" class="btn-primary">Submit</button>
+        <a th:href="@{/paid_account/view(accountId=${account.id})}">Back</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+</body>
+</html>

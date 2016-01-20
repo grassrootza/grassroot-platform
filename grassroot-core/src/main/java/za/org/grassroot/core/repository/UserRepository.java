@@ -27,6 +27,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByDisplayNameContainingOrPhoneNumberContaining(String userInput, String phoneNumber);
     List<User> findByGroupsPartOfAndDisplayNameContainingOrPhoneNumberContaining(Group group, String userInput, String phoneNumber);
 
+    List<User> findByGroupsPartOfOrderByIdAsc(Group group);
+
     User findByUsername(String username);
     /*
     See if the phone number exists, before adding it

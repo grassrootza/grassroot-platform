@@ -9,6 +9,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.RoleRepository;
 
 import javax.transaction.Transactional;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -152,6 +153,10 @@ public class RoleManager implements  RoleManagementService {
 
         Role role;
 
+        log.info("Flushing user roles ... starting with them as ... " + user.getRoles());
+        user = flushUserRolesInGroup(user, group);
+        log.info("User roles flushed, now with ... " + user.getRoles());
+
         if (fetchGroupRole(roleName, group) == null) {
             // create the role with default permissions and add it to the group
             role = new Role(roleName, group.getId(), group.getGroupName());
@@ -195,6 +200,33 @@ public class RoleManager implements  RoleManagementService {
     @Override
     public Role removePermissionFromRole(Role role, Permission permission) {
         return null;
+    }
+
+    @Override
+    public Role getUserRoleInGroup(User user, Group group) {
+        log.info("Searching for user role in group ...");
+        if (!groupManagementService.isUserInGroup(group, user))
+            throw new RuntimeException("Get user role in group: Error! User not in group");
+
+        // todo: roles are eagerly loaded so this should not be too expensive, but keep an eye on its performance
+        log.info("Iterating through roles for user ... " + user.nameToDisplay() + " ... in group ... " + group.getGroupName());
+        for (Role role : user.getRoles()) {
+            if (role.isGroupRole() && (role.getGroupReferenceId() == group.getId())) {
+                log.info("Found the role, returning it as ... " + role);
+                return role;
+            }
+        }
+
+        return null; // if the user has not been given a role in the group, this is what we return
+    }
+
+    private User flushUserRolesInGroup(User user, Group group) {
+        List<Role> oldRoles = new ArrayList<>(user.getRoles());
+        for (Role role: oldRoles) {
+            if (role.isGroupRole() && (role.getGroupReferenceId() == group.getId()))
+                user.removeRole(role);
+        }
+        return user;
     }
 
     /*

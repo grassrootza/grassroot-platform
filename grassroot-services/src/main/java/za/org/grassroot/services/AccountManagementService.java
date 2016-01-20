@@ -2,6 +2,7 @@ package za.org.grassroot.services;
 
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.PaidGroup;
 import za.org.grassroot.core.domain.User;
 
 import java.util.List;
@@ -38,22 +39,22 @@ public interface AccountManagementService {
     List<Account> loadAllAccounts();
 
     /*
-    Methods to designate groups as paid for by accounts
+    Methods to designate groups as paid for by accounts (and remove the designation)
      */
 
     Group addGroupToAccount(Account account, Group group, User addingUser);
 
     Account findAccountForGroup(Group group);
 
-    /*
-    Methods to remove 'paid for' flag from groups
-     */
-
-    Group removeGroupFromAccount(Account account, Group group, User removingUser);
+    Account removeGroupFromAccount(Account account, PaidGroup group, User removingUser);
 
     /*
     Methods to aggregate information about groups paid for by an account
      */
+
+    List<PaidGroup> getGroupsPaidForByAccount(Account account);
+
+    PaidGroup loadPaidGroupEntity(Long paidGroupId);
 
     /*
     Methods to handle billing for institutional accounts

@@ -12,6 +12,8 @@ import za.org.grassroot.core.repository.AccountRepository;
 import za.org.grassroot.core.repository.PaidGroupRepository;
 
 import javax.transaction.Transactional;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -137,9 +139,32 @@ public class AccountManager implements AccountManagementService {
     }
 
     @Override
-    public Group removeGroupFromAccount(Account account, Group group, User removingUser) {
-        // todo: figure out best way to find paidGroup when given group so can remove from account
+    public Account removeGroupFromAccount(Account account, PaidGroup paidGroupRecord, User removingUser) {
+        Group group = paidGroupRecord.getGroup();
+
+        paidGroupRecord.setExpireDateTime(Timestamp.valueOf(LocalDateTime.now()));
+        paidGroupRecord.setRemovedByUser(removingUser);
+        paidGroupRecord.setArchivedAccountId(account.getId());
+        paidGroupRecord.setAccount(getNullAccount());
+
+        account.removePaidGroup(paidGroupRecord);
         group.setPaidFor(false);
-        return groupManagementService.saveGroup(group);
+
+        paidGroupRepository.save(paidGroupRecord);
+        log.info("PaidGroup entity now ... " + paidGroupRecord);
+        groupManagementService.saveGroup(group);
+        return accountRepository.save(account);
     }
+
+    @Override
+    public List<PaidGroup> getGroupsPaidForByAccount(Account account) {
+        return paidGroupRepository.findByAccount(account);
+    }
+
+    @Override
+    public PaidGroup loadPaidGroupEntity(Long paidGroupId) {
+        return paidGroupRepository.findOne(paidGroupId);
+    }
+
+    private Account getNullAccount() { return accountRepository.findOne(0L); }
 }
