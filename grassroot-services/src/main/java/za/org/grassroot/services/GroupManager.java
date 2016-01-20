@@ -19,6 +19,7 @@ import za.org.grassroot.services.util.TokenGeneratorService;
 
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -57,6 +58,11 @@ public class GroupManager implements GroupManagementService {
     @Override
     public Group loadGroup(Long groupId) {
         return groupRepository.findOne(groupId);
+    }
+
+    @Override
+    public Group secureLoadGroup(Long id) {
+        return loadGroup(id);
     }
 
     @Override
@@ -780,6 +786,23 @@ public class GroupManager implements GroupManagementService {
         }
         return list;
     }
+
+    @Override
+    public List<LocalDate> getMonthsGroupActive(Group group) {
+        // todo: make this somewhat more sophisticated, including checking for active/inactive months, paid months etc
+        LocalDate groupStartDate = group.getCreatedDateTime().toLocalDateTime().toLocalDate();
+        LocalDate today = LocalDate.now();
+        LocalDate monthIterator = LocalDate.of(groupStartDate.getYear(), groupStartDate.getMonth(), 1);
+        List<LocalDate> months = new ArrayList<>();
+
+        while (monthIterator.isBefore(today)) {
+            months.add(monthIterator);
+            monthIterator = monthIterator.plusMonths(1L);
+        }
+
+        return months;
+    }
+
     /*
     Recursive query better to use than recursive code calls
      */
