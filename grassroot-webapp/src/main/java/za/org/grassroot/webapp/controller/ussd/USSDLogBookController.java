@@ -29,25 +29,20 @@ import static za.org.grassroot.webapp.util.USSDUrlUtil.saveLogMenu;
 @RestController
 public class USSDLogBookController extends USSDController {
 
+    public static final String assignUserID = "assignUserId";
     private static final Logger log = LoggerFactory.getLogger(USSDLogBookController.class);
     private static final USSDSection thisSection = USSDSection.LOGBOOK;
-
     private static final String path = homePath + logMenus;
-
     private static final String groupMenu = "group", subjectMenu = "subject", dueDateMenu = "due_date",
             assignMenu = "assign", searchUserMenu = "search_user", pickUserMenu = "pick_user", confirmMenu = "confirm", send = "send";
-
     private static final String entryTypeMenu = "type", listEntriesMenu = "list", viewEntryMenu = "view", viewEntryDates = "view_dates",
             viewAssignment = "view_assigned", setCompleteMenu = "set_complete", viewCompleteMenu = "view_complete",
             completingUser = "choose_completor", pickCompletor = "pick_completor", completedDate = "date_completed",
             confirmCompleteDate = "confirm_date", confirmComplete = "confirm_complete";
-
     private static final String logBookParam = "logbookid", logBookUrlSuffix = "?" + logBookParam + "=";
-
     private static final int PAGE_LENGTH = 3;
     private static final int hour =13;
     private static final int minute =0;
-
     @Autowired
     LogBookService logBookService;
 
@@ -94,9 +89,11 @@ public class USSDLogBookController extends USSDController {
     public Request askForSubject(@RequestParam(value = phoneNumber) String inputNumber,
                                  @RequestParam(value = groupIdParam, required = false) Long groupId,
                                  @RequestParam(value = revisingFlag, required = false) boolean revising,
-                                 @RequestParam(value = logBookParam, required = false) Long logBookId) throws URISyntaxException {
+                                 @RequestParam(value = logBookParam, required = false) Long logBookId,
+                                 @RequestParam(value = interruptedFlag, required=false) boolean interrupted) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
-        if (!revising) logBookId = logBookService.create(user.getId(), groupId, false).getId(); //
+        if (!revising) logBookId = logBookService.create(user.getId(), groupId, false).getId();
+        user.setLastUssdMenu(saveLogMenu(subjectMenu,logBookId));
         String nextUri = (!revising) ? returnUrl(dueDateMenu, logBookId) : returnUrl(confirmMenu, logBookId);
         USSDMenu menu = new USSDMenu(getMessage(thisSection, subjectMenu, promptKey, user), nextUri);
         return menuBuilder(menu);
@@ -187,17 +184,17 @@ public class USSDLogBookController extends USSDController {
                                        @RequestParam(value = logBookParam) Long logBookId,
                                        @RequestParam(value = userInputParam) String userInput,
                                        @RequestParam(value = previousMenu, required = false) String priorMenu,
-                                       @RequestParam(value = "assignUserId", required = false) Long assignUserId,
+                                       @RequestParam(value = assignUserID, required = false) Long assignUserId,
                                        @RequestParam(value = interruptedFlag, required = false) boolean interrupted,
                                        @RequestParam(value = interruptedInput, required = false) String priorInput) throws URISyntaxException {
 
         // todo: need a "complete" flag
-        // todo: handle interruptions
 
         boolean assignToUser = (assignUserId != null && assignUserId != 0);
         userInput = (priorInput != null) ? priorInput : userInput;
         boolean revising = (priorMenu != null && !priorMenu.trim().equals("") && !interrupted);
-        User user = userManager.findByInputNumber(inputNumber, saveLogMenu(confirmMenu, logBookId, userInput));
+        User user = userManager.findByInputNumber(inputNumber, saveLogMenu(confirmMenu, logBookId, userInput)
+                + "&assignUserId=" + assignUserId);
         if (revising) updateLogBookEntry(logBookId, priorMenu, userInput);
         if (assignToUser) logBookService.setAssignedToUser(logBookId, assignUserId);
 
@@ -440,7 +437,7 @@ public class USSDLogBookController extends USSDController {
     @ResponseBody
     public Request setLogBookEntryDone(@RequestParam(value = phoneNumber) String inputNumber,
                                        @RequestParam(value = logBookParam) Long logBookId,
-                                       @RequestParam(value = "assignUserId", required = false) Long completedByUserId,
+                                       @RequestParam(value = assignUserID, required = false) Long completedByUserId,
                                        @RequestParam(value = "completed_date", required = false) String completedDate) throws URISyntaxException {
         // todo: check permissions
         User user = userManager.findByInputNumber(inputNumber, saveLogMenu(setCompleteMenu, logBookId));

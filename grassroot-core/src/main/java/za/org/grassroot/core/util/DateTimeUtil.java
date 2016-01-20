@@ -24,29 +24,21 @@ import java.util.regex.Pattern;
  */
 public class DateTimeUtil {
 
-    private static Logger log = Logger.getLogger("DateTimeUtil");
-
     // todo: replace with getters
     public static final DateTimeFormatter preferredDateFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy");
     public static final DateTimeFormatter preferredTimeFormat = DateTimeFormatter.ofPattern("HH:mm");
     public static final DateTimeFormatter preferredDateTimeFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
-
     private static final String possibleTimeDelims = "[-, :]+";
     private static final Joiner timeJoiner = Joiner.on(":").skipNulls();
     private static final Pattern timeWithDelims = Pattern.compile("\\d{1,2}" + possibleTimeDelims + "\\d\\d");
     private static final Pattern timeWithoutDelims = Pattern.compile("\\d{3,4}");
     private static final Pattern timeHourOnly = Pattern.compile("\\d{1,2}[am|pm]?");
     private static final Pattern neededOutput = Pattern.compile("\\d{2}:\\d{2}");
-
     private static final LocalDateTime veryLongTimeAway = LocalDateTime.of(2099, 12, 31, 23, 59);
-
-    public static LocalDateTime getVeryLongTimeAway() {
-        return veryLongTimeAway;
-    }
-
-    public static Timestamp getVeryLongTimestamp() {
-        return Timestamp.valueOf(veryLongTimeAway);
-    }
+    private static final String possibleDateDelims = "[- /.]";
+    // todo: make this a bit better in terms of requiring matches
+    private static final Pattern dateVariationWithYear = Pattern.compile("\\d{1,2}[- /.]\\d{1,2}[- /.]\\d{4}$");
+    private static final Pattern getDateVariationWithOutYear = Pattern.compile("\\d{1,2}[- /.]\\d{1,2}");
 
         /*
         Inserting method to parse date time user input and, if it can be parsed, set the timestamp accordingly.
@@ -55,6 +47,25 @@ public class DateTimeUtil {
         todo: work on handling methods / customize the util library to handle local languages
         todo: make sure the timezone is being set properly
          */
+        private static final Pattern neededDateOutput = Pattern.compile("^(0?[1-9]|[12][0-9]|3[01])-(0?[1-9]|1[012])-^(19|20)\\d\\d$");
+    private static final Joiner dateJoiner = Joiner.on("-").skipNulls();
+    private static Logger log = Logger.getLogger("DateTimeUtil");
+
+    /*
+    Helper method to deal with messy user input of a time string, more strict but also more likely to be accurate than
+    free form parsing above. The menu prompt does give the preferred format of HH:mm, but never know, so check for a
+    range of possible delimiters, and three basic patterns -- 15:30, 3:30 pm, 1530. Since there may be stuff around the
+    outside, all we care about is finding a match, not the whole input matching, and then whether we have to add 12 to
+    hour if 'pm' has been entered. We check for those, then give up if none work
+     */
+
+    public static LocalDateTime getVeryLongTimeAway() {
+        return veryLongTimeAway;
+    }
+
+    public static Timestamp getVeryLongTimestamp() {
+        return Timestamp.valueOf(veryLongTimeAway);
+    }
 
     public static LocalDateTime parseDateTime(String passedValue) {
 
@@ -80,17 +91,8 @@ public class DateTimeUtil {
     }
 
     public static LocalDateTime parsePreformattedDate(String formattedValue, int hour, int minute) {
-
         return LocalDateTime.of(LocalDate.parse(formattedValue,preferredDateFormat),LocalTime.of(hour, minute));
     }
-
-    /*
-    Helper method to deal with messy user input of a time string, more strict but also more likely to be accurate than
-    free form parsing above. The menu prompt does give the preferred format of HH:mm, but never know, so check for a
-    range of possible delimiters, and three basic patterns -- 15:30, 3:30 pm, 1530. Since there may be stuff around the
-    outside, all we care about is finding a match, not the whole input matching, and then whether we have to add 12 to
-    hour if 'pm' has been entered. We check for those, then give up if none work
-     */
 
     // todo: major refactor of this
     public static String reformatTimeInput(String userResponse) {
@@ -158,13 +160,6 @@ public class DateTimeUtil {
         }
 
     }
-
-    private static final String possibleDateDelims = "[- /.]";
-    // todo: make this a bit better in terms of requiring matches
-    private static final Pattern dateVariationWithYear = Pattern.compile("\\d{1,2}[- /.]\\d{1,2}[- /.]\\d{4}$");
-    private static final Pattern getDateVariationWithOutYear = Pattern.compile("\\d{1,2}[- /.]\\d{1,2}");
-    private static final Pattern neededDateOutput = Pattern.compile("^(0?[1-9]|[12][0-9]|3[01])-(0?[1-9]|1[012])-^(19|20)\\d\\d$");
-    private static final Joiner dateJoiner = Joiner.on("-").skipNulls();
 
     public static String reformatDateInput(String userResponse) {
         // todo: as above, make this process properly ... for now, shortcut is to use natural language parser
