@@ -89,9 +89,11 @@ public class USSDLogBookController extends USSDController {
     public Request askForSubject(@RequestParam(value = phoneNumber) String inputNumber,
                                  @RequestParam(value = groupIdParam, required = false) Long groupId,
                                  @RequestParam(value = revisingFlag, required = false) boolean revising,
-                                 @RequestParam(value = logBookParam, required = false) Long logBookId) throws URISyntaxException {
+                                 @RequestParam(value = logBookParam, required = false) Long logBookId,
+                                 @RequestParam(value = interruptedFlag, required=false) boolean interrupted) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
-        if (!revising) logBookId = logBookService.create(user.getId(), groupId, false).getId(); //
+        if (!revising) logBookId = logBookService.create(user.getId(), groupId, false).getId();
+        user.setLastUssdMenu(saveLogMenu(subjectMenu,logBookId));
         String nextUri = (!revising) ? returnUrl(dueDateMenu, logBookId) : returnUrl(confirmMenu, logBookId);
         USSDMenu menu = new USSDMenu(getMessage(thisSection, subjectMenu, promptKey, user), nextUri);
         return menuBuilder(menu);
