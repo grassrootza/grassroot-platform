@@ -43,6 +43,7 @@ public class USSDLogBookController extends USSDController {
             confirmCompleteDate = "confirm_date", confirmComplete = "confirm_complete";
 
     private static final String logBookParam = "logbookid", logBookUrlSuffix = "?" + logBookParam + "=";
+    private static final String priorMenuSuffix = "&" + previousMenu + "=";
 
     private static final int PAGE_LENGTH = 3;
     private static final int hour =13;
@@ -59,8 +60,9 @@ public class USSDLogBookController extends USSDController {
         return logMenus + nextMenu + logBookUrlSuffix + logBookId;
     }
 
-    private String nextOrConfirmUrl(String nextMenu, Long logBookdId, boolean revising) {
-        return revising ? returnUrl(confirmMenu, logBookdId) : returnUrl(nextMenu, logBookdId);
+    private String nextOrConfirmUrl(String thisMenu, String nextMenu, Long logBookdId, boolean revising) {
+        return revising ? returnUrl(confirmMenu, logBookdId) + priorMenuSuffix + thisMenu :
+                returnUrl(nextMenu, logBookdId);
     }
 
     private String backUrl(String menu, Long logBookId) {
@@ -96,10 +98,10 @@ public class USSDLogBookController extends USSDController {
                                  @RequestParam(value = revisingFlag, required = false) boolean revising,
                                  @RequestParam(value = logBookParam, required = false) Long logBookId) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
-        if (!revising) logBookId = logBookService.create(user.getId(), groupId, false).getId();
-        user.setLastUssdMenu(saveLogMenu(inputNumber, logBookId));
-        String nextUri = (!revising) ? returnUrl(dueDateMenu, logBookId) : returnUrl(confirmMenu, logBookId);
-        USSDMenu menu = new USSDMenu(getMessage(thisSection, subjectMenu, promptKey, user), nextUri);
+        if (logBookId == null) logBookId = logBookService.create(user.getId(), groupId, false).getId();
+        userManager.setLastUssdMenu(user, saveLogMenu(subjectMenu, logBookId));
+        USSDMenu menu = new USSDMenu(getMessage(thisSection, subjectMenu, promptKey, user),
+                                     nextOrConfirmUrl(subjectMenu, dueDateMenu, logBookId, revising));
         return menuBuilder(menu);
     }
 
@@ -115,7 +117,9 @@ public class USSDLogBookController extends USSDController {
         userInput = (interrupted) ? priorInput : userInput;
         User user = userManager.findByInputNumber(inputNumber, saveLogMenu(dueDateMenu, logBookId, userInput));
         if (!revising) logBookService.setMessage(logBookId, userInput);
-        return menuBuilder(new USSDMenu(menuPrompt(dueDateMenu, user), nextOrConfirmUrl(assignMenu, logBookId, revising)));
+        String urlSuffix = revising ? "&prior_menu=" + dueDateMenu : "";
+        return menuBuilder(new USSDMenu(menuPrompt(dueDateMenu, user),
+                                        nextOrConfirmUrl(dueDateMenu, assignMenu, logBookId, revising)));
     }
 
     @RequestMapping(path + assignMenu)
@@ -133,8 +137,10 @@ public class USSDLogBookController extends USSDController {
         if (!revising) logBookService.setDueDate(logBookId, DateTimeUtil.parsePreformattedDate(
                 formattedDateString, hour,minute));
         USSDMenu menu = new USSDMenu(menuPrompt(assignMenu, user));
-        menu.addMenuOption(returnUrl(confirmMenu, logBookId), getMessage(thisSection, assignMenu, optionsKey + "group", user));
-        menu.addMenuOption(returnUrl(searchUserMenu, logBookId), getMessage(thisSection, assignMenu, optionsKey + "user", user));
+        menu.addMenuOption(returnUrl(confirmMenu, logBookId),
+                           getMessage(thisSection, assignMenu, optionsKey + "group", user));
+        menu.addMenuOption(returnUrl(searchUserMenu, logBookId),
+                           getMessage(thisSection, assignMenu, optionsKey + "user", user));
         return menuBuilder(menu);
     }
 
@@ -195,10 +201,12 @@ public class USSDLogBookController extends USSDController {
         boolean assignToUser = (assignUserId != null && assignUserId != 0);
         userInput = interrupted ? priorInput : userInput;
         boolean revising = (priorMenu != null && !priorMenu.trim().equals("") && !interrupted);
-        final String urlSuffix = ((previousMenu != null) ? "&" + previousMenu + "=" + priorMenu : "") +
+
+        final String urlSuffix = ((priorInput != null) ? priorMenuSuffix  + priorMenu : "") +
                 ((assignUserId != null) ? "&assignUserId=" + assignUserId : "");
 
         User user = userManager.findByInputNumber(inputNumber, saveLogMenu(confirmMenu, logBookId, userInput) + urlSuffix);
+
         if (revising) updateLogBookEntry(logBookId, priorMenu, userInput);
         if (assignToUser) logBookService.setAssignedToUser(logBookId, assignUserId);
 
@@ -467,7 +475,9 @@ public class USSDLogBookController extends USSDController {
                 logBookService.setMessage(logBookId, value);
                 break;
             case dueDateMenu:
-                logBookService.setDueDate(logBookId, DateTimeUtil.parseDateTime(value)); // todo: split these, as in meetings
+                String formattedDateString =  DateTimeUtil.reformatDateInput(value);
+                logBookService.setDueDate(logBookId, DateTimeUtil.parsePreformattedDate(
+                        formattedDateString, hour,minute));
                 break;
         }
     }

@@ -136,15 +136,16 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         Group dummyGroup = new Group("", testUser);
         dummyGroup.setId(dummyId);
         LogBook dummyLogBook = new LogBook();
+        dummyLogBook.setId(dummyId);
 
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(logBookServiceMock.create(testUser.getId(), dummyGroup.getId(), false)).thenReturn(dummyLogBook);
-        mockMvc.perform(get(path + "subject").param("msisdn", testUserPhone).param("revising", String.valueOf(false)).param("logbookid",
-                String.valueOf(dummyId)).param("groupId", String.valueOf(dummyId)))
+        mockMvc.perform(get(path + "subject").param("msisdn", testUserPhone).param("groupId", String.valueOf(dummyId)))
                 .andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
+        verify(userManagementServiceMock, times(1)).setLastUssdMenu(testUser, saveLogMenu("subject", dummyId));
         verify(logBookServiceMock, times(1)).create(testUser.getId(), dummyGroup.getId(), false);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(logBookServiceMock);
@@ -189,7 +190,6 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
                 DateTimeUtil.reformatDateInput(priorInput).trim(), hour, minutes));
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(logBookServiceMock);
-
 
     }
 

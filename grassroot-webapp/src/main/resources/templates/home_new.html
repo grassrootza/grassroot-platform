@@ -1,0 +1,58 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+    <title>GrassRoot Platform</title>
+    <meta property="og:title" content="grassroot.org.za"/>
+    <meta property="og:image" content="/img/grass.png"/>
+    <meta property="og:description" content="The GrassRoot Platform."/>
+</head>
+
+<body>
+
+<div layout:fragment="header">
+    <!--<h2 th:text="#{home.welcome.message}">welcome headline</h2>-->
+</div>
+<div layout:fragment="overview"></div>
+
+<div layout:fragment="content">
+    <!-- Central text header -->
+  <div class="well">
+    <div class="row">
+      <h1 th:text="#{web.home.banner}">Meet, vote, act</h1>
+      <!-- Insert user's name -->
+      <h2 th:text="#{web.home.welcome(${currentUser.firstName})}">Welcome to GrassRoot, Luke</h2>
+    </div>
+  </div>
+
+  <!-- This page only exists if the user has no groups, so just tell them how to create or join a group -->
+
+  <div class="well">
+    <div class="row row-centered">
+      <div class="col-md-12 col-centered">
+        <h3>Create or join a group to get started</h3>
+        <h4>You can start by creating your own group, searching by name for groups that have marked themselves public, or
+            entering a group's 'joining code' if you know it:</h4>
+      </div>
+    </div>
+    <div class="row row-centered">
+      <form th:action="@{/group/search}" method="post">
+        <div class="form-group">
+          <div class="col-md-4 col-centered">
+            <input name="searchTerm" type="text" class="form-control" id="name" placeholder="Enter join code or name to search" />
+          </div>
+          <div class="col-md-4 col-centered">
+            <button type="submit" class="btn btn-primary">Search by name or code</button>
+          </div>
+          <div class="col-md-4 col-centered">
+            <a th:href="@{/group/create}"><button class="btn btn-primary">Create a new group</button></a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+</div>
+</body>
+</html>

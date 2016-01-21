@@ -163,14 +163,18 @@ public class GroupManager implements GroupManagementService {
         if (currentGroup.getGroupMembers().contains(newMember)) {
             return currentGroup;
         } else {
-            currentGroup.addMember(newMember);
+            // todo: consider putting some of the persistence roles in the async part of things
 
+            currentGroup.addMember(newMember);
             if (hasDefaultLanguage(currentGroup) && !newMember.isHasInitiatedSession())
                 assignDefaultLanguage(currentGroup, newMember);
 
+            currentGroup = groupRepository.save(currentGroup);
+            newMember = userManager.save(newMember); // so that this is isntantly double-sided, else getting access control errors
+
             jmsTemplateProducerService.sendWithNoReply(EventChangeType.USER_ADDED.toString(),new NewGroupMember(currentGroup,newMember));
 
-            return groupRepository.save(currentGroup);
+            return currentGroup;
         }
     }
 

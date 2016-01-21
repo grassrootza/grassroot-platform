@@ -1,0 +1,102 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+    <title>GrassRoot Platform</title>
+    <meta property="og:title" content="grassroot.org.za"/>
+    <meta property="og:image" content="/img/grass.png"/>
+    <meta property="og:description" content="The GrassRoot Platform."/>
+</head>
+
+<body>
+
+<div layout:fragment="header">
+    <!--<h2 th:text="#{home.welcome.message}">welcome headline</h2>-->
+</div>
+<div layout:fragment="overview"></div>
+
+<div layout:fragment="content">
+    <!-- Central text header -->
+  <div class="well">
+    <div class="row">
+      <h1 th:text="#{web.home.banner}">Meet, vote, act</h1>
+      <!-- Insert user's name -->
+      <h2>Group search results</h2>
+    </div>
+  </div>
+
+  <!-- So far, only access this page from the -->
+
+  <div class="well" th:if="${noCandidates}">
+    Sorry, we didn't find anything. Try searching again:
+    <div class="row row-centered">
+      <form th:action="@{search}" method="post">
+        <div class="form-group">
+          <div class="col-md-4 col-centered">
+            <input name="searchTerm" type="text" class="form-control" id="name" placeholder="The issue for the vote" />
+          </div>
+          <div class="col-md-4 col-centered">
+            <button type="submit" class="btn btn-primary">Search by name or code</button>
+          </div>
+          <div class="col-md-4 col-centered">
+            <a th:href="@{/group/create}"><button class="btn btn-primary">Create a new group</button></a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="well" th:if="${group != null}">
+    <div class="row row-centered">
+      <div class="col-md-12 col-centered">
+        <h3>Join code matched</h3>
+        <h4>We found the group, <span th:text="${group.groupName}">name</span>. Join?</h4>
+      </div>
+    </div>
+    <div class="row row-centered">
+      <form th:action="@{join}" method="post">
+        <input type="hidden" name="groupId" th:value="${group.id}" />
+        <div class="form-group">
+          <button type="submit" class="btn btn-primary">Join</button>
+          <a th:href="@{/home}">No, back</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="well" th:unless="${groupCandidates == null}">
+    <div class="row row-centered">
+      <div class="col-md-12 col-centered">
+        <h3>Found group candidates</h3>
+        <h4>We found a few groups. Please select which one to join:</h4>
+      </div>
+      <div class="col-md-12 col-centered">
+        <div  th:each="group,iterStat : ${groupCandidates}" class="bs-component">
+          <div class="list-group">
+            <div class="list-group-item">
+              <div class="row">
+                <div class="col-lg-6">
+                  <h4  class="list-group-item-heading">
+                    <span th:text="${group.getName('')}" class="text-primary">Group name</span>
+                  </h4>
+                  <div class="least-content"><span th:text="${group.getGroupMembers().size()}"></span> Members</div>
+                  <p class="list-group-item-text">Est. <span th:text="${#calendars.format(group.getCreatedDateTime(),'dd MMMM yyyy')}">13 May 2011</span></p>
+                </div>
+                <div class="col-lg-6">
+                  <form th:action="@{/group/join}" method="post">
+                    <input type="hidden" name="groupId" th:value="${group.id}" />
+                    <button type="submit" class="btn btn-primary">Join group</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+            <div class="list-group-separator"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
