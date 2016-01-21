@@ -132,21 +132,27 @@ public class PaidAccountController extends BaseController {
         return "paid_account/designate";
     }
 
-    /*@PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/group/search")
     public String searchForGroup(Model model, @RequestParam Long accountId, @RequestParam String searchTerm,
-                                 @RequestParam boolean searchByToken, HttpServletRequest request) {
+                                 @RequestParam boolean tokenSearch, HttpServletRequest request) {
         Account account = accountManagementService.loadAccount(accountId);
         if (!sessionUserHasAccountPermission(account, request)) throw new AccessDeniedException("");
         model.addAttribute("account", account);
-        List<Group> groupCandidates = new ArrayList<>();
-        model.addAttribute("groups", groupCandidates);
+        model.addAttribute("tokenSearch", tokenSearch);
+
+        if (tokenSearch) {
+            model.addAttribute("groupFound", groupManagementService.getGroupByToken(searchTerm));
+        } else {
+            model.addAttribute("groupCandidates", groupManagementService.findDiscoverableGroups(searchTerm));
+        }
+
         return "paid_account/find_group";
-    }*/
+    }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/group/designate", method = RequestMethod.POST)
-    public String doDesignation(Model model, @RequestParam("accountId") Long accountId, @RequestParam("groupId") Long groupId,
+    public String doDesignation(Model model, @RequestParam Long accountId, @RequestParam Long groupId,
                                 HttpServletRequest request) {
         // todo: some form of confirmation screen
         Account account = accountManagementService.loadAccount(accountId);
@@ -158,8 +164,8 @@ public class PaidAccountController extends BaseController {
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/group/remove")
-    public String confirmRemovePaidFor(Model model, @RequestParam("accountId") Long accountId,
-                                       @RequestParam("paidGroupId") Long paidGroupId, HttpServletRequest request) {
+    public String confirmRemovePaidFor(Model model, @RequestParam Long accountId, @RequestParam Long paidGroupId,
+                                       HttpServletRequest request) {
         Account account = accountManagementService.loadAccount(accountId);
         if (!sessionUserHasAccountPermission(account, request)) throw new AccessDeniedException("");
         PaidGroup paidGroupEntity = accountManagementService.loadPaidGroupEntity(paidGroupId);

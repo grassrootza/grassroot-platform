@@ -72,6 +72,7 @@
           <!-- todo: make select box dynamic, so it only shows up if the user ticks the button -->
           <label for="tokenDaysValid">How long should it stay open?</label>
           <select th:field="*{tokenDaysValid}" id="tokenDaysValid">
+            <option value="0">Permanent (can be closed anytime)</option>
             <div class="col-lg-4" th:include="fragments :: daySelector"></div>
           </select>
         </div>

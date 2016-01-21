@@ -149,7 +149,7 @@ public class EventNotificationConsumer {
     public void sendLogBookReminder(LogBookDTO logBookDTO) {
         log.info("sendLogBookReminder...logBook..." + logBookDTO);
 
-        Group  group = groupManagementService.getGroupById(logBookDTO.getGroupId());
+        Group  group = groupManagementService.loadGroup(logBookDTO.getGroupId());
         if (logBookDTO.getAssignedToUserId() != 0) {
             sendLogBookReminderMessage(userRepository.findOne(logBookDTO.getAssignedToUserId()), group, logBookDTO);
 
@@ -216,7 +216,7 @@ public class EventNotificationConsumer {
             concurrency = "1")
     public void sendNewLogbookNotification(LogBookDTO logBookDTO) {
         log.info("sendNewLogbookNotification...id..." + logBookDTO.getId());
-        Group  group = groupManagementService.getGroupById(logBookDTO.getGroupId());
+        Group  group = groupManagementService.loadGroup(logBookDTO.getGroupId());
         Account account = accountManagementService.findAccountForGroup(group);
 
         if (account != null && account.isLogbookExtraMessages()) {

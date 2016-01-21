@@ -51,6 +51,11 @@ public class Group implements Serializable {
      */
     private boolean active;
 
+    /*
+    Adding a 'discoverable' field, so group owners can mark if they want others to be able to find them
+     */
+    private boolean discoverable;
+
     @Basic
     @Column(name = "name", nullable = false, length = 50)
     public String getGroupName() {
@@ -164,6 +169,11 @@ public class Group implements Serializable {
 
     public void setActive(boolean active) { this.active = active; }
 
+    @Column(name = "discoverable")
+    public boolean isDiscoverable() { return discoverable; }
+
+    public void setDiscoverable(boolean discoverable) { this.discoverable = discoverable;}
+
 
     @OneToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "group_roles",
@@ -177,6 +187,7 @@ public class Group implements Serializable {
     public void setGroupRoles(Set<Role> groupRoles) {
         this.groupRoles = groupRoles;
     }
+
     @PreUpdate
     @PrePersist
     public void updateTimeStamps() {
@@ -198,6 +209,7 @@ public class Group implements Serializable {
         this.groupName = groupName;
         this.createdByUser = createdByUser;
         this.active = true;
+        this.discoverable = false;
     }
 
     public Group(String groupName, User createdByUser, Group parent) {
@@ -205,6 +217,7 @@ public class Group implements Serializable {
         this.createdByUser = createdByUser;
         this.parent = parent;
         this.active = true;
+        this.discoverable = false;
     }
 
     public Group(String groupName, User createdByUser, boolean paidFor) {
@@ -212,6 +225,7 @@ public class Group implements Serializable {
         this.createdByUser = createdByUser;
         this.paidFor = paidFor;
         this.active = true;
+        this.discoverable = false;
     }
 
     public Group(String groupName, User createdByUser, Group parent, boolean paidFor) {
@@ -220,6 +234,7 @@ public class Group implements Serializable {
         this.parent = parent;
         this.paidFor = paidFor;
         this.active = true;
+        this.discoverable = false;
     }
 
     /*
@@ -265,6 +280,8 @@ public class Group implements Serializable {
                 ", createdDateTime=" + createdDateTime +
                 ", createdByUser=" + createdByUser +
                 ", reminderMinutes=" + reminderMinutes +
+                ", active=" + active +
+                ", discoverable=" + discoverable +
                 ", version=" + version +
 //                ", groupMembers=" + groupMembers +
                 ", parent=" + parent +

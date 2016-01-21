@@ -96,7 +96,8 @@ public class USSDLogBookController extends USSDController {
                                  @RequestParam(value = revisingFlag, required = false) boolean revising,
                                  @RequestParam(value = logBookParam, required = false) Long logBookId) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
-        if (!revising) logBookId = logBookService.create(user.getId(), groupId, false).getId(); //
+        if (!revising) logBookId = logBookService.create(user.getId(), groupId, false).getId();
+        user.setLastUssdMenu(saveLogMenu(inputNumber, logBookId));
         String nextUri = (!revising) ? returnUrl(dueDateMenu, logBookId) : returnUrl(confirmMenu, logBookId);
         USSDMenu menu = new USSDMenu(getMessage(thisSection, subjectMenu, promptKey, user), nextUri);
         return menuBuilder(menu);
@@ -111,10 +112,9 @@ public class USSDLogBookController extends USSDController {
                                  @RequestParam(value = interruptedFlag, required = false) boolean interrupted,
                                  @RequestParam(value = interruptedInput, required = false) String priorInput) throws URISyntaxException {
 
-        User user = userManager.findByInputNumber(inputNumber);
-        userInput = (priorInput!=null) ? priorInput : userInput;
+        userInput = (interrupted) ? priorInput : userInput;
+        User user = userManager.findByInputNumber(inputNumber, saveLogMenu(dueDateMenu, logBookId, userInput));
         if (!revising) logBookService.setMessage(logBookId, userInput);
-        user.setLastUssdMenu(saveLogMenu(dueDateMenu, logBookId, userInput));
         return menuBuilder(new USSDMenu(menuPrompt(dueDateMenu, user), nextOrConfirmUrl(assignMenu, logBookId, revising)));
     }
 
@@ -127,8 +127,7 @@ public class USSDLogBookController extends USSDController {
                                     @RequestParam(value = interruptedFlag, required = false) boolean interrupted,
                                     @RequestParam(value = interruptedInput, required = false) String priorInput) throws URISyntaxException {
 
-
-        userInput = (priorInput !=null) ? priorInput : userInput;
+        userInput = interrupted ? priorInput : userInput;
         User user = userManager.findByInputNumber(inputNumber, saveLogMenu(assignMenu, logBookId, userInput));
         String formattedDateString =  DateTimeUtil.reformatDateInput(userInput);
         if (!revising) logBookService.setDueDate(logBookId, DateTimeUtil.parsePreformattedDate(
@@ -154,10 +153,10 @@ public class USSDLogBookController extends USSDController {
     public Request askForUserAssigned(@RequestParam(value = phoneNumber) String inputNumber,
                                       @RequestParam(value = logBookParam) Long logBookId,
                                       @RequestParam(value = userInputParam) String userInput,
-                                      @RequestParam(value = revisingFlag, required = false) boolean revising,
+                                      @RequestParam(value = interruptedFlag, required = false) boolean interrupted,
                                       @RequestParam(value = interruptedInput, required = false) String priorInput) throws URISyntaxException {
 
-        userInput = (priorInput != null) ? priorInput : userInput;
+        userInput = interrupted ? priorInput : userInput;
         User user = userManager.findByInputNumber(inputNumber, saveLogMenu(pickUserMenu, logBookId, userInput));
         Long groupId = logBookService.load(logBookId).getGroupId();
         List<User> possibleUsers = userManager.searchByGroupAndNameNumber(groupId, userInput);
@@ -191,13 +190,15 @@ public class USSDLogBookController extends USSDController {
                                        @RequestParam(value = interruptedFlag, required = false) boolean interrupted,
                                        @RequestParam(value = interruptedInput, required = false) String priorInput) throws URISyntaxException {
 
-        // todo: need a "complete" flag
         // todo: handle interruptions
 
         boolean assignToUser = (assignUserId != null && assignUserId != 0);
-        userInput = (priorInput != null) ? priorInput : userInput;
+        userInput = interrupted ? priorInput : userInput;
         boolean revising = (priorMenu != null && !priorMenu.trim().equals("") && !interrupted);
-        User user = userManager.findByInputNumber(inputNumber, saveLogMenu(confirmMenu, logBookId, userInput));
+        final String urlSuffix = ((previousMenu != null) ? "&" + previousMenu + "=" + priorMenu : "") +
+                ((assignUserId != null) ? "&assignUserId=" + assignUserId : "");
+
+        User user = userManager.findByInputNumber(inputNumber, saveLogMenu(confirmMenu, logBookId, userInput) + urlSuffix);
         if (revising) updateLogBookEntry(logBookId, priorMenu, userInput);
         if (assignToUser) logBookService.setAssignedToUser(logBookId, assignUserId);
 
@@ -205,6 +206,7 @@ public class USSDLogBookController extends USSDController {
         LogBook logBook = logBookService.load(logBookId);
         String formattedDueDate = dateFormat.format(logBook.getActionByDate().toLocalDateTime());
         String assignedUser = (assignToUser) ? userManager.getDisplayName(logBook.getAssignedToUserId()) : "";
+
         String[] promptFields = new String[]{logBook.getMessage(), groupManager.getGroupName(logBook.getGroupId()),
                 formattedDueDate, assignedUser};
 
@@ -223,7 +225,6 @@ public class USSDLogBookController extends USSDController {
     public Request finishLogBookEntry(@RequestParam(value = phoneNumber) String inputNumber,
                                       @RequestParam(value = logBookParam) Long logBookId) throws URISyntaxException {
 
-        // todo: set "complete" and send out notice that entry has been added, if extra logbook messages are enabled
         User user = userManager.findByInputNumber(inputNumber, null);
         logBookService.setRecorded(logBookId, true);
         return menuBuilder(new USSDMenu(menuPrompt(send, user), optionsHomeExit(user)));
@@ -319,7 +320,7 @@ public class USSDLogBookController extends USSDController {
     public Request viewLogBookDates(@RequestParam(value = phoneNumber) String inputNumber,
                                     @RequestParam(value = logBookParam) Long logBookId) throws URISyntaxException {
 
-        User user = userManager.findByInputNumber(inputNumber, saveLogMenu(viewEntryDates, logBookId));
+        User user = userManager.findByInputNumber(inputNumber, null);
         LogBook logBook = logBookService.load(logBookId);
         String createdDate = dateFormat.format(logBook.getCreatedDateTime().toLocalDateTime());
         String dueDate = dateFormat.format(logBook.getActionByDate().toLocalDateTime());
@@ -345,7 +346,8 @@ public class USSDLogBookController extends USSDController {
     @ResponseBody
     public Request viewLogBookAssignment(@RequestParam(value = phoneNumber) String inputNumber,
                                          @RequestParam(value = logBookParam) Long logBookId) throws URISyntaxException {
-        User user = userManager.findByInputNumber(inputNumber, saveLogMenu(viewAssignment, logBookId));
+
+        User user = userManager.findByInputNumber(inputNumber, null);
         LogBook logBook = logBookService.load(logBookId);
 
         USSDMenu menu;
@@ -406,8 +408,11 @@ public class USSDLogBookController extends USSDController {
     @ResponseBody
     public Request pickCompletor(@RequestParam(value = phoneNumber) String inputNumber,
                                  @RequestParam(value = logBookParam) Long logBookId,
-                                 @RequestParam(value = userInputParam) String userInput) throws URISyntaxException {
-        User user = userManager.findByInputNumber(inputNumber, saveLogMenu(pickCompletor, logBookId) + "&prior_input=" + userInput);
+                                 @RequestParam(value = userInputParam) String userInput,
+                                 @RequestParam(value = interruptedFlag) boolean interrupted,
+                                 @RequestParam(value = interruptedInput) String prior_input) throws URISyntaxException {
+        userInput = interrupted ? prior_input : userInput;
+        User user = userManager.findByInputNumber(inputNumber, saveLogMenu(pickCompletor, logBookId, userInput));
         return menuBuilder(pickUserFromGroup(logBookId, userInput, setCompleteMenu + doSuffix, completingUser, user));
     }
 
@@ -424,9 +429,12 @@ public class USSDLogBookController extends USSDController {
     @ResponseBody
     public Request confirmCompletedDate(@RequestParam(value = phoneNumber) String inputNumber,
                                         @RequestParam(value = logBookUrlSuffix) Long logBookId,
-                                        @RequestParam(value = userInputParam) String userInput) throws URISyntaxException {
+                                        @RequestParam(value = userInputParam) String userInput,
+                                        @RequestParam(value = interruptedFlag) boolean interrupted,
+                                        @RequestParam(value = interruptedInput) String priorInput) throws URISyntaxException {
 
-        User user = userManager.findByInputNumber(inputNumber, saveLogMenu(confirmComplete, logBookId) + "&prior_input=" + userInput);
+        userInput = interrupted ? priorInput : userInput;
+        User user = userManager.findByInputNumber(inputNumber, saveLogMenu(confirmComplete, logBookId, userInput));
         String formattedResponse = DateTimeUtil.reformatDateInput(userInput);
         String confirmUrl = returnUrl(setCompleteMenu + doSuffix, logBookId) + "&completed_date=" + encodeParameter(formattedResponse);
 
@@ -443,7 +451,7 @@ public class USSDLogBookController extends USSDController {
                                        @RequestParam(value = "assignUserId", required = false) Long completedByUserId,
                                        @RequestParam(value = "completed_date", required = false) String completedDate) throws URISyntaxException {
         // todo: check permissions
-        User user = userManager.findByInputNumber(inputNumber, saveLogMenu(setCompleteMenu, logBookId));
+        User user = userManager.findByInputNumber(inputNumber, null);
         if (completedByUserId == null) completedByUserId = 0L;
         logBookService.setCompleted(logBookId, completedByUserId, completedDate);
 

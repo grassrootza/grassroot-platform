@@ -39,7 +39,7 @@ public class AccountRestController {
                           @PathVariable("groupid") Long groupid,
                           @PathVariable("accountname") String accountname) {
         Account account = accountManagementService.createAccount(accountname);
-        accountManagementService.addGroupToAccount(account,groupManagementService.getGroupById(groupid),userRepository.findOne(userid));
+        accountManagementService.addGroupToAccount(account,groupManagementService.loadGroup(groupid),userRepository.findOne(userid));
         return "Created " + account.toString();
     }
 

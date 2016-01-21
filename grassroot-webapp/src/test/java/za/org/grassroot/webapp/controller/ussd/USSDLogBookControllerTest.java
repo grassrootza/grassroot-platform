@@ -24,6 +24,7 @@ import java.util.List;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static za.org.grassroot.webapp.util.USSDUrlUtil.saveLogMenu;
 
 /**
  * Created by luke on 2015/12/18.
@@ -42,7 +43,6 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
     private static final String dummyUserInput = "blah blah blah blah";
     private static final int hour = 13;
     private static final int minutes = 0;
-
 
     private static final String path = "/ussd/log/";
 
@@ -155,12 +155,14 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
     public void askForDueDateShouldWorkAfterInterruption() throws Exception {
 
         LogBook dummyLogBook = new LogBook();
-        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+        String urlToSave = saveLogMenu("due_date", dummyId, dummyUserInput);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).
+                thenReturn(testUser);
         when(logBookServiceMock.setMessage(dummyId, dummyUserInput)).thenReturn(dummyLogBook);
         mockMvc.perform(get(path + "due_date").param("logbookid", String.valueOf(dummyId)).param("msisdn", testUserPhone)
                 .param("prior_input", dummyUserInput).param("interrupted", String.valueOf(true))
                 .param("revising", String.valueOf(false)).param("request", "1")).andExpect(status().isOk());
-        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
+        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
         verify(logBookServiceMock, times(1)).setMessage(dummyId, dummyUserInput);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(logBookServiceMock);

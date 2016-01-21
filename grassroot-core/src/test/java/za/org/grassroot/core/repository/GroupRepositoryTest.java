@@ -300,6 +300,28 @@ public class GroupRepositoryTest {
         assertFalse(retrievedGroups.contains(testGroup2));
     }
 
+    @Test
+    public void shouldFindByDiscoverable() {
+        assertThat(groupRepository.count(), is(0L));
+        User user = userRepository.save(new User("0881110000"));
+        Group testGroup1 = groupRepository.save(new Group("test group 1", user));
+        Group testGroup2 = groupRepository.save(new Group("other test", user));
+        testGroup1.setDiscoverable(true);
+        testGroup1 = groupRepository.save(testGroup1);
+
+        List<Group> firstList = groupRepository.findByGroupNameContainingAndDiscoverable("test", true);
+        assertNotNull(firstList);
+        assertThat(firstList.size(), is(1));
+        assertTrue(firstList.contains(testGroup1));
+        assertFalse(firstList.contains(testGroup2));
+
+        List<Group> secondList = groupRepository.findByGroupNameContainingAndDiscoverable("1", true);
+        assertNotNull(secondList);
+        assertThat(secondList.size(), is(1));
+        assertTrue(secondList.contains(testGroup1));
+        assertFalse(secondList.contains(testGroup2));
+    }
+
 }
 
 

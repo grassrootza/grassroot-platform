@@ -26,6 +26,7 @@
         <!-- todo : make this a fragment so can reuse it in group creation, etc -->
         <div class="col-md-4">
           <select name="days" id="daysValid">
+            <option value="0">Permanent (can be closed anytime)</option>
             <div th:include="fragments :: daySelector"></div>
           </select>
         </div>

@@ -115,7 +115,7 @@ public class USSDUrlUtil {
     }
 
     public static String saveLogMenu(String menu, Long logBookId, String priorInput){
-        return saveLogMenu(menu,logBookId)+addInterruptedInput+encodeParameter(priorInput);
+        return saveLogMenu(menu,logBookId)+ addInterruptedInput + encodeParameter(priorInput);
 
     }
 
