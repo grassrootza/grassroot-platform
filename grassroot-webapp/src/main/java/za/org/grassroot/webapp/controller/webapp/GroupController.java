@@ -102,9 +102,13 @@ public class GroupController extends BaseController {
 
         GroupWrapper groupCreator;
 
-        if (parentId != null && groupManagementService.loadGroup(parentId) != null) {
+        if (parentId != null) {
             Group parent = groupManagementService.loadGroup(parentId);
-            groupCreator = new GroupWrapper(parent);
+            if(parent!=null){
+                groupCreator = new GroupWrapper(parent);
+            }else {
+                groupCreator = new GroupWrapper();
+            }
         } else {
             groupCreator = new GroupWrapper();
         }

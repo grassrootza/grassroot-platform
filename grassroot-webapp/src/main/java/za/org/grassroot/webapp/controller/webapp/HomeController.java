@@ -79,6 +79,7 @@ public class HomeController extends BaseController {
 
         User user = userManagementService.fetchUserByUsername(userDetails.getUsername());
 
+
         /*
          Recursive construction in the view node will turn each of these into a tree with a root node as the top level
          group. There may be a more efficient way to do this than the groupManagement call (and/or optimizing within it

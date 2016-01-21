@@ -42,7 +42,7 @@ public class USSDLogBookController extends USSDController {
     private static final String logBookParam = "logbookid", logBookUrlSuffix = "?" + logBookParam + "=";
     private static final int PAGE_LENGTH = 3;
     private static final int hour =13;
-    private static final int minute =0;
+    private static final int minute =00;
     @Autowired
     LogBookService logBookService;
 
@@ -193,8 +193,8 @@ public class USSDLogBookController extends USSDController {
         boolean assignToUser = (assignUserId != null && assignUserId != 0);
         userInput = (priorInput != null) ? priorInput : userInput;
         boolean revising = (priorMenu != null && !priorMenu.trim().equals("") && !interrupted);
-        User user = userManager.findByInputNumber(inputNumber, saveLogMenu(confirmMenu, logBookId, userInput)
-                + "&assignUserId=" + assignUserId);
+        User user = userManager.findByInputNumber(inputNumber,saveLogMenu(confirmMenu, logBookId, userInput,assignUserId));
+
         if (revising) updateLogBookEntry(logBookId, priorMenu, userInput);
         if (assignToUser) logBookService.setAssignedToUser(logBookId, assignUserId);
 
@@ -486,10 +486,8 @@ public class USSDLogBookController extends USSDController {
 
 
     private String truncateEntryDescription(LogBook entry) {
-
         StringBuilder stringBuilder = new StringBuilder();
         Pattern pattern = Pattern.compile(" ");
-
         int maxLength = 30;
         for (String word : pattern.split(entry.getMessage())) {
             if ((stringBuilder.toString().length()+word.length() + 1) > maxLength) {
@@ -497,12 +495,6 @@ public class USSDLogBookController extends USSDController {
             } else
                 stringBuilder.append(word).append(" ");
         }
-
         return stringBuilder.toString();
-
-
     }
-
-
-
 }
