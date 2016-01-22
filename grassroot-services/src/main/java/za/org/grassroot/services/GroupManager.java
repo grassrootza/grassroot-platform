@@ -82,13 +82,12 @@ public class GroupManager implements GroupManagementService {
         return groupRepository.save(groupToSave);
     }
 
-    @Override
+    /* @Override
     public void deleteGroup(Group groupToDelete) {
-        /*
-        there are issues with cascading if we delete the group before removing all users, hence doing it this way
-        which will be quite slow, but this function should almost never be used, so not a major issue, for now, and
-        rather safe than sorry on deletion.
-         */
+
+        //there are issues with cascading if we delete the group before removing all users, hence doing it this way
+        //which will be quite slow, but this function should almost never be used, so not a major issue, for now, and
+        //rather safe than sorry on deletion.
 
         List<User> members = new ArrayList<>(groupToDelete.getGroupMembers());
         log.info("We are now going to delete a group ... first, we unsubscribe " + members.size() + " members");
@@ -100,12 +99,12 @@ public class GroupManager implements GroupManagementService {
         log.info("Group members removed ... " + groupToDelete.getGroupMembers().size() + " members left. Proceeding to delete");
 
         groupRepository.delete(groupToDelete);
-    }
+    }*/
 
 
     @Override
     public Group addGroupMember(Long currentGroupId, Long newMemberId) {
-        return addGroupMember(getGroupById(currentGroupId), userManager.getUserById(newMemberId));
+        return addGroupMember(loadGroup(currentGroupId), userManager.getUserById(newMemberId));
     }
 
     @Override
@@ -306,6 +305,11 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
+    public List<Group> findDiscoverableGroups(String groupName) {
+        return groupRepository.findByGroupNameContainingAndDiscoverable(groupName, true);
+    }
+
+    @Override
     public boolean hasActiveGroupsPartOf(User user) {
         return !getPageOfActiveGroups(user, 0, 1).getContent().isEmpty();
     }
@@ -364,13 +368,11 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public Group getGroupById(Long groupId) {
-        return groupRepository.findOne(groupId);
-    }
-
-    @Override
     public Group getGroupByToken(String groupToken) {
-        return groupRepository.findByGroupTokenCode(groupToken);
+        Group groupToReturn = groupRepository.findByGroupTokenCode(groupToken);
+        if (groupToReturn == null) return null;
+        if (groupToReturn.getTokenExpiryDateTime().before(Timestamp.valueOf(LocalDateTime.now()))) return null;
+        return groupToReturn;
     }
 
     @Override
@@ -392,18 +394,21 @@ public class GroupManager implements GroupManagementService {
         // todo: checks for whether the code already exists, and/or existing validity of group
 
         log.info("Generating a new group token, for group: " + group.getId());
+        if (daysValid == 0) {
+            group = generateGroupToken(group);
+        } else {
+            Integer daysMillis = 24 * 60 * 60 * 1000;
+            Timestamp expiryDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis() + daysValid * daysMillis);
 
-        Integer daysMillis = 24 * 60 * 60 * 1000;
-        Timestamp expiryDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis() + daysValid * daysMillis);
+            group.setGroupTokenCode(generateCodeString());
+            group.setTokenExpiryDateTime(expiryDateTime);
 
-        group.setGroupTokenCode(generateCodeString());
-        group.setTokenExpiryDateTime(expiryDateTime);
+            log.info("Group code generated: " + group.getGroupTokenCode());
 
-        log.info("Group code generated: " + group.getGroupTokenCode());
+            group = groupRepository.save(group);
 
-        group = groupRepository.save(group);
-
-        log.info("Group code after save: " + group.getGroupTokenCode());
+            log.info("Group code after save: " + group.getGroupTokenCode());
+        }
 
         return group;
     }

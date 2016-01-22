@@ -118,6 +118,8 @@ public class USSDUrlUtil {
         return saveLogMenu(menu,logBookId)+addInterruptedInput+encodeParameter(priorInput);
     }
 
+
+
     public static String saveLogMenu(String menu, Long logBookId, String priorInput, Long assignUserId){
         return saveLogMenu(menu,logBookId,priorInput)  + "&assignUserId=" + assignUserId;
     }
@@ -133,9 +135,11 @@ public class USSDUrlUtil {
     public static String groupMenuWithId(String menu, Long groupId) {
         return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupId=" + groupId;
     }
-    public static String logViewExistingUrl(String menu, Long groupId, boolean done){
-        return USSDSection.LOGBOOK.toPath() +menu +"?groupId=" +groupId+"&done="+done;
+    public static String logViewExistingUrl(String menu, Long groupId, Boolean done, Integer pageNumber){
+        return USSDSection.LOGBOOK.toPath() +menu +"?groupId=" +groupId+"&done="+done +"&pageNumber=" +pageNumber;
 
     }
-
+   public static String saveLogMenu(String menu,Long logBookId,String priorInput, String previousMenu, Long assignUserId) {
+     return  saveLogMenu(menu,logBookId,priorInput) +"&prior_menu=" +previousMenu+"&assignUserId="+assignUserId;
+   }
 }

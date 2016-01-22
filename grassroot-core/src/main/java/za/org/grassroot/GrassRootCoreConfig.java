@@ -139,7 +139,9 @@ public class GrassRootCoreConfig {
 
     @Bean
     public PermissionEvaluator permissionEvaluator() throws IOException {
-        return new AclPermissionEvaluator(aclService());
+        AclPermissionEvaluator permissionEvaluator = new AclPermissionEvaluator(aclService());
+        permissionEvaluator.setPermissionFactory(aclPermissionFactory());
+        return permissionEvaluator;
     }
 
     @Bean

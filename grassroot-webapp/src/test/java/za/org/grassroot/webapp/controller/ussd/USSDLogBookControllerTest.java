@@ -19,12 +19,16 @@ import za.org.grassroot.webapp.util.USSDUrlUtil;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.Month;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static za.org.grassroot.webapp.util.USSDUrlUtil.saveLogMenu;
+import static za.org.grassroot.webapp.util.USSDUrlUtil.userInputParam;
 
 /**
  * Created by luke on 2015/12/18.
@@ -36,6 +40,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
     private static final String testUserPhone = "0601110001";
     private static final String phoneParam = "msisdn";
     private static final String logBookIdParam = "logbookid";
+    public static final String assignUserID = "assignUserId";
 
     private static final Long testLogBookId = 1L;
     private static final Long dummyId = 1L;
@@ -48,7 +53,6 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
             viewAssignment = "view_assigned", setCompleteMenu = "set_complete", viewCompleteMenu = "view_complete",
             completingUser = "choose_completor", pickCompletor = "pick_completor", completedDate = "date_completed",
             confirmCompleteDate = "confirm_date", confirmComplete = "confirm_complete";
-
 
     private static final String path = "/ussd/log/";
     @InjectMocks
@@ -116,7 +120,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
                 new LogBook(2L, message, now), new LogBook(3L, message, now), new LogBook(4L, message, now),
                 new LogBook(5L, message, now));
         Page<LogBook> dummyPageOfGroups = new PageImpl<>(testLogBooks);
-        String urlToSave = USSDUrlUtil.logViewExistingUrl(listEntriesMenu,dummyId,true);
+        String urlToSave = USSDUrlUtil.logViewExistingUrl(listEntriesMenu,dummyId,true,0);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(logBookServiceMock.getAllLogBookEntriesForGroup(dummyId, 0, 3, true)).thenReturn(dummyPageOfGroups);
         mockMvc.perform(get(path + listEntriesMenu).param(phoneParam, testUserPhone).param("groupId", String.valueOf(dummyId))
@@ -148,12 +152,14 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
     public void askForDueDateShouldWorkAfterInterruption() throws Exception {
 
         LogBook dummyLogBook = new LogBook();
-        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+        String urlToSave = saveLogMenu("due_date", dummyId, dummyUserInput);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).
+                thenReturn(testUser);
         when(logBookServiceMock.setMessage(dummyId, dummyUserInput)).thenReturn(dummyLogBook);
         mockMvc.perform(get(path + dueDateMenu).param(logBookIdParam, String.valueOf(dummyId)).param(phoneParam, testUserPhone)
                 .param("prior_input", dummyUserInput).param("interrupted", String.valueOf(true))
                 .param("revising", String.valueOf(false)).param("request", "1")).andExpect(status().isOk());
-        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
+        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
         verify(logBookServiceMock, times(1)).setMessage(dummyId, dummyUserInput);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(logBookServiceMock);
@@ -164,7 +170,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
         LogBook dummyLogBook = new LogBook();
         dummyLogBook.setId(dummyId);
-        String priorInput = "20/1";
+        String priorInput = "20 02";
         String urlToSave= USSDUrlUtil.saveLogMenu(assignMenu,dummyId,priorInput);
         String formattedDateString = DateTimeUtil.reformatDateInput(priorInput).trim();
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
@@ -226,13 +232,13 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         Group testGroup = new Group("", testUser);
         testGroup.setGroupName("testGroup");
         testGroup.setId(dummyId);
-        testUser.setDisplayName("Paballo");
+        testUser.setDisplayName("testUser");
         dummyLogBook.setId(dummyId);
         dummyLogBook.setGroupId(dummyId);
         dummyLogBook.setMessage(dummyUserInput);
         dummyLogBook.setActionByDate(Timestamp.from(Instant.now()));
         dummyLogBook.setAssignedToUserId(testUser.getId());
-        String urlToSave = USSDUrlUtil.saveLogMenu(confirmMenu,dummyId,"1",testUser.getId());
+        String urlToSave = USSDUrlUtil.saveLogMenu(confirmMenu,dummyId,"1","",testUser.getId());
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(logBookServiceMock.setAssignedToUser(dummyLogBook.getId(), testUser.getId())).thenReturn(dummyLogBook);
         when(logBookServiceMock.load(dummyLogBook.getId())).thenReturn(dummyLogBook);
@@ -288,5 +294,199 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         verifyNoMoreInteractions(logBookServiceMock);
     }
 
+    @Test
+    public void viewEntryMenuWorks() throws Exception{
+
+        LogBook dummyLogBook = new LogBook();
+        dummyLogBook.setId(dummyId);
+        dummyLogBook.setCompleted(true);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone,saveLogMenu(viewEntryMenu,dummyId))).thenReturn(testUser);
+        when(logBookServiceMock.load(dummyLogBook.getId())).thenReturn(dummyLogBook);
+        mockMvc.perform(get(path+viewEntryMenu).param(logBookIdParam,String.valueOf(dummyLogBook.getId()))
+                .param(phoneParam,testUserPhone)).andExpect(status().isOk());
+        verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,saveLogMenu(viewEntryMenu,dummyId));
+        verify(logBookServiceMock,times(1)).load(dummyLogBook.getId());
+        verifyNoMoreInteractions(userManagementServiceMock);
+        verifyNoMoreInteractions(logBookServiceMock);
+    }
+    @Test
+    public void viewLogBookDatesWorksWhenActionInComplete() throws Exception{
+        LogBook dummyLogBook = new LogBook();
+        dummyLogBook.setId(dummyId);
+        dummyLogBook.setCompleted(false);
+        dummyLogBook.setCreatedDateTime(Timestamp.from(Instant.now()));
+        dummyLogBook.setActionByDate(Timestamp.valueOf(LocalDateTime.of(2016, Month.JANUARY,20,12,0)));
+        dummyLogBook.setCompletedByUserId(dummyId);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone,null)).thenReturn(testUser);
+        when(logBookServiceMock.load(dummyId)).thenReturn(dummyLogBook);
+       // when(userManagementServiceMock.loadUser(dummyId)).thenReturn(testUser);
+        mockMvc.perform(get(path+viewEntryDates).param(logBookIdParam,String.valueOf(dummyLogBook.getId()))
+                .param(phoneParam, testUserPhone)).andExpect(status().isOk());
+        verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,null);
+        verify(logBookServiceMock,times(1)).load(dummyLogBook.getId());
+       // verify(userManagementServiceMock,times(1)).loadUser(dummyId);
+        verifyNoMoreInteractions(userManagementServiceMock);
+        verifyNoMoreInteractions(logBookServiceMock);
+
+    }
+    @Test
+    public void viewLogBookDatesWorksWhenActionCompleted() throws Exception{
+        LogBook dummyLogBook = new LogBook();
+        dummyLogBook.setId(dummyId);
+        dummyLogBook.setCompleted(true);
+        dummyLogBook.setCreatedDateTime(Timestamp.from(Instant.now()));
+        dummyLogBook.setCompletedDate(Timestamp.from(Instant.now()));
+        dummyLogBook.setActionByDate(Timestamp.valueOf(LocalDateTime.of(2016, Month.JANUARY,20,12,0)));
+        dummyLogBook.setCompletedByUserId(dummyId);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone,null)).thenReturn(testUser);
+        when(logBookServiceMock.load(dummyId)).thenReturn(dummyLogBook);
+         when(userManagementServiceMock.loadUser(dummyId)).thenReturn(testUser);
+        mockMvc.perform(get(path+viewEntryDates).param(logBookIdParam,String.valueOf(dummyLogBook.getId()))
+                .param(phoneParam, testUserPhone)).andExpect(status().isOk());
+        verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,null);
+        verify(logBookServiceMock,times(1)).load(dummyLogBook.getId());
+         verify(userManagementServiceMock,times(1)).loadUser(dummyId);
+        verifyNoMoreInteractions(userManagementServiceMock);
+        verifyNoMoreInteractions(logBookServiceMock);
+
+    }
+
+    @Test
+
+    public void viewLogBookDatesWhenActionNotComplete() throws Exception{
+        LogBook dummyLogBook = new LogBook();
+        dummyLogBook.setId(dummyId);
+        dummyLogBook.setCompleted(false);
+        dummyLogBook.setCreatedDateTime(Timestamp.from(Instant.now()));
+        dummyLogBook.setActionByDate(Timestamp.valueOf(LocalDateTime.of(2016, Month.JANUARY,20,12,0)));
+        when(userManagementServiceMock.findByInputNumber(testUserPhone,null)).thenReturn(testUser);
+        when(logBookServiceMock.load(dummyId)).thenReturn(dummyLogBook);
+        mockMvc.perform(get(path+viewEntryDates).param(logBookIdParam,String.valueOf(dummyLogBook.getId()))
+                .param(phoneParam, testUserPhone)).andExpect(status().isOk());
+        verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,null);
+        verify(logBookServiceMock,times(1)).load(dummyLogBook.getId());
+        verifyNoMoreInteractions(userManagementServiceMock);
+        verifyNoMoreInteractions(logBookServiceMock);
+    }
+
+    @Test
+    public void viewLogBookAssignmentWorks() throws Exception{
+        LogBook dummyLogBook = new LogBook();
+        dummyLogBook.setId(dummyId);
+        dummyLogBook.setCompleted(true);
+        dummyLogBook.setCreatedDateTime(Timestamp.from(Instant.now()));
+        dummyLogBook.setCompletedDate(Timestamp.from(Instant.now()));
+        dummyLogBook.setActionByDate(Timestamp.valueOf(LocalDateTime.of(2016, Month.JANUARY,20,12,0)));
+        dummyLogBook.setCompletedByUserId(dummyId);
+        dummyLogBook.setAssignedToUserId(dummyId);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone,null)).thenReturn(testUser);
+        when(userManagementServiceMock.loadUser(dummyLogBook.getAssignedToUserId())).thenReturn(testUser);
+        when(logBookServiceMock.load(dummyId)).thenReturn(dummyLogBook);
+        mockMvc.perform(get(path+viewAssignment).param(phoneParam,testUserPhone)
+                .param(logBookIdParam,String.valueOf(dummyLogBook.getId()))).andExpect(status().isOk());
+        verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,null);
+        verify(logBookServiceMock,times(1)).load(dummyLogBook.getId());
+        verify(userManagementServiceMock,times(1)).loadUser(dummyLogBook.getAssignedToUserId());
+        verifyNoMoreInteractions(userManagementServiceMock);
+        verifyNoMoreInteractions(logBookServiceMock);
+
+    }
+    @Test
+    public void setLogBookEntryCompleteWorks() throws Exception{
+        LogBook dummyLogBook = new LogBook();
+        dummyLogBook.setId(dummyId);
+        dummyLogBook.setCompleted(true);
+        dummyLogBook.setCreatedDateTime(Timestamp.from(Instant.now()));
+        dummyLogBook.setCompletedDate(Timestamp.from(Instant.now()));
+        dummyLogBook.setActionByDate(Timestamp.valueOf(LocalDateTime.of(2016, Month.JANUARY,20,12,0)));
+        dummyLogBook.setCompletedByUserId(dummyId);
+        dummyLogBook.setAssignedToUserId(dummyId);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone,saveLogMenu(setCompleteMenu,dummyLogBook.getId()))).thenReturn(testUser);
+        when(userManagementServiceMock.loadUser(dummyLogBook.getAssignedToUserId())).thenReturn(testUser);
+        when(logBookServiceMock.load(dummyId)).thenReturn(dummyLogBook);
+        mockMvc.perform(get(path+setCompleteMenu).param(phoneParam,testUserPhone)
+                .param(logBookIdParam,String.valueOf(dummyLogBook.getId()))).andExpect(status().isOk());
+        verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,
+                saveLogMenu(setCompleteMenu,dummyLogBook.getId()));
+        verify(userManagementServiceMock,times(1)).loadUser(dummyLogBook.getAssignedToUserId());
+        verify(logBookServiceMock,times(1)).load(dummyId);
+        verifyNoMoreInteractions(userManagementServiceMock);
+        verifyNoMoreInteractions(logBookServiceMock);
+
+    }
+    @Test
+    public void selectCompletingUserWorks() throws Exception{
+        LogBook dummyLogBook = new LogBook();
+        dummyLogBook.setId(dummyId);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone,saveLogMenu(completingUser
+                ,dummyLogBook.getId()))).thenReturn(testUser);
+        mockMvc.perform(get(path+completingUser).param(phoneParam,testUserPhone)
+                .param(logBookIdParam,String.valueOf(dummyLogBook.getId()))).andExpect(status().isOk());
+        verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,
+                saveLogMenu(completingUser,dummyLogBook.getId()));
+        verifyNoMoreInteractions(userManagementServiceMock);
+    }
+    @Test
+    public void pickCompletorWorks() throws Exception{
+        LogBook dummyLogBook = new LogBook();
+        dummyLogBook.setId(dummyId);
+        dummyLogBook.setGroupId(dummyId);
+        List<User> testPossibleUsers = Arrays.asList(testUser);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone,saveLogMenu(pickCompletor,dummyId,testUserPhone)))
+                .thenReturn(testUser);
+        when(userManagementServiceMock.searchByGroupAndNameNumber(dummyLogBook.getGroupId(),testUserPhone))
+                .thenReturn(testPossibleUsers);
+        when(logBookServiceMock.load(dummyId)).thenReturn(dummyLogBook);
+        mockMvc.perform(get(path+pickCompletor).param(phoneParam,testUserPhone)
+                .param(logBookIdParam,String.valueOf(dummyId)).param("request",testUserPhone)).andExpect(status().isOk());
+        verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,
+                saveLogMenu(pickCompletor,dummyId,testUserPhone));
+        verify(userManagementServiceMock,times(1)).searchByGroupAndNameNumber(dummyLogBook.getGroupId(),testUserPhone);
+        verify(logBookServiceMock,times(1)).load(dummyLogBook.getId());
+        verifyNoMoreInteractions(userManagementServiceMock);
+
+    }
+    @Test
+    public void enterCompletedDateWorks() throws Exception{
+        when(userManagementServiceMock.findByInputNumber(testUserPhone,saveLogMenu(completedDate,dummyId)))
+                .thenReturn(testUser);
+        mockMvc.perform(get(path+completedDate).param(phoneParam,testUserPhone).
+                param(logBookIdParam,String.valueOf(dummyId))).andExpect(status().isOk());
+
+    }
+    @Test
+    public void confirmCompletedDateWorks() throws Exception{
+
+        LogBook dummyLogBook = new LogBook();
+        dummyLogBook.setId(dummyId);
+        String priorInput = "20 01";
+        when(userManagementServiceMock.findByInputNumber(testUserPhone, saveLogMenu(confirmCompleteDate,dummyId,
+                priorInput))).thenReturn(testUser);
+        mockMvc.perform(get(path+confirmCompleteDate).param(phoneParam,testUserPhone)
+                .param(logBookIdParam,String.valueOf(dummyId)).param(userInputParam,priorInput))
+                .andExpect(status().isOk());
+        verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,
+                saveLogMenu(confirmCompleteDate,dummyId,priorInput));
+        verifyNoMoreInteractions(userManagementServiceMock);
+
+    }
+    @Test
+    public void setLogBookEntryDoneWorks() throws Exception{
+        LogBook dummyLogBook = new LogBook();
+        dummyLogBook.setId(dummyId);
+        dummyLogBook.setCompletedByUserId(2L);
+        String completed_date = "20/2";
+        when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
+        when(logBookServiceMock.setCompleted(dummyId, 2L, DateTimeUtil.reformatDateInput(completed_date))).
+                thenReturn(dummyLogBook);
+        mockMvc.perform(get(path+setCompleteMenu+"-do").param(phoneParam,testUserPhone).param(logBookIdParam,
+                String.valueOf(dummyLogBook.getId())).param("completed_date",completed_date).param(assignUserID,
+                String.valueOf(2L))).andExpect(status().isOk());
+        verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,null);
+        verify(logBookServiceMock,times(1)).setCompleted(dummyId,2L,DateTimeUtil.reformatDateInput(completed_date));
+        verifyNoMoreInteractions(userManagementServiceMock);
+        verifyNoMoreInteractions(logBookServiceMock);
+
+    }
 
 }

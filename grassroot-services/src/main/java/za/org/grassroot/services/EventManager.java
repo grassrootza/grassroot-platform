@@ -95,7 +95,7 @@ public class EventManager implements EventManagementService {
     @Override
     public Event createEvent(String name, Long createdByUserId, Long appliesToGroupId, boolean includeSubGroups) {
         return createEvent(name, userManagementService.getUserById(createdByUserId),
-                           groupManager.getGroupById(appliesToGroupId), includeSubGroups);
+                           groupManager.loadGroup(appliesToGroupId), includeSubGroups);
     }
 
     /* These appear not to be used anymore, hence commenting out ... to reduce clutter in the service interface
@@ -795,8 +795,7 @@ public class EventManager implements EventManagementService {
 
     @Override
     public double getCostOfMessagesForEvent(Event event, double costPerMessage) {
-        // todo: replace with a query and count on eventLog
-        return getNumberInvitees(event) * costPerMessage;
+        return eventLogManagementService.countNonRSVPEventLogsForEvent(event) * costPerMessage;
     }
 
     @Override

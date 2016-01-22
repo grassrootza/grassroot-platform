@@ -1,0 +1,1 @@
+ALTER TABLE group_column DROP COLUMN discoverable;

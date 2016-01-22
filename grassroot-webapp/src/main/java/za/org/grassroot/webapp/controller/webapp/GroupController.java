@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -61,16 +60,17 @@ public class GroupController extends BaseController {
     @InitBinder("groupModifier")
     private void initModifierBinder(WebDataBinder binder) { binder.setValidator(groupWrapperValidator); }
 
-    // @PreAuthorize("hasAuthority('GROUP_PERMISSION_SEE_MEMBER_DETAILS')")
+    // @PreAuthorize("hasPermission(#groupId, ' za.org.grassroot.core.domain.Group', 'GROUP_PERMISSION_UPDATE_GROUP_DETAILS')")
     @RequestMapping("/group/view")
     public String viewGroupIndex(Model model, @RequestParam("groupId") Long groupId) {
 
         // todo: all sorts of user/group permission checking
-        Group group = groupManagementService.secureLoadGroup(groupId);
         User user = getUserProfile();
+        log.info("Loading group, user has this role ..." + user.getRoles());
 
-        // at low user numbers, this is taking 0 msec, but keeping the logs in so we have a record
+        // at low user numbers, this is taking ~0 msec, but keeping the logs in so we have a record
         Long startTime = System.currentTimeMillis();
+        Group group = groupManagementService.loadGroup(groupId); // change to secureLoadGroup once retro permissions done
         if (!isUserPartOfGroup(getUserProfile(), group)) throw new AccessDeniedException("");
         Long endTime = System.currentTimeMillis();
         log.info(String.format("Checking group membership took ... %d msec", endTime - startTime));
@@ -201,7 +201,7 @@ public class GroupController extends BaseController {
 
         // todo: replace getGroupMembers with actual thing
         Group group = groupManagementService.loadGroup(groupId);
-        if (!group.getGroupMembers().contains(getUserProfile())) throw new AccessDeniedException("");
+        if (!isUserPartOfGroup(getUserProfile(), group)) throw new AccessDeniedException("");
 
         log.info("Okay, modifying this group: " + group.toString());
 
@@ -256,7 +256,7 @@ public class GroupController extends BaseController {
             groupToUpdate = groupManagementService.renameGroup(groupToUpdate, groupModifier.getGroupName());
 
             // todo: again, do proper permission check and / or getUserProfile() isn't causing inefficiency
-            if (!groupToUpdate.getGroupMembers().contains(getUserProfile())) throw new AccessDeniedException("");
+            if (!isUserPartOfGroup(getUserProfile(), groupToUpdate)) throw new AccessDeniedException("");
 
             // we have to do a work around of thymeleaf here, which obliterates all the data that we don't create hidden
             // fields to store, so that the users we get back only have display names, id's and phone numbers
@@ -336,7 +336,7 @@ public class GroupController extends BaseController {
     public String newToken(Model model, @RequestParam("groupId") Long groupId) {
 
         Group group = groupManagementService.loadGroup(groupId);
-        if (!group.getGroupMembers().contains(getUserProfile())) throw new AccessDeniedException("");
+        if (!isUserPartOfGroup(getUserProfile(), group)) throw new AccessDeniedException("");
         model.addAttribute("group", group);
         return "group/new_token";
     }
@@ -366,7 +366,10 @@ public class GroupController extends BaseController {
 
         switch (action) {
             case "create":
-                group = groupManagementService.generateGroupToken(group, days);
+                if (days == 0)
+                    group = groupManagementService.generateGroupToken(group);
+                else
+                    group = groupManagementService.generateGroupToken(group, days);
                 log.info("New token created with value: " + group.getGroupTokenCode());
                 addMessage(redirectAttributes, MessageType.SUCCESS, "group.token.creation.success",
                            new Object[]{group.getGroupTokenCode()}, request);

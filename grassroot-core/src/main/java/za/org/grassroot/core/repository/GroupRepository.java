@@ -53,6 +53,11 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     List<Group> findAllByIdInOrderByIdAsc(List<Long> ids);
 
     /*
+    Couple of methods to be able to discover groups, as long as those have opted in
+     */
+    List<Group> findByGroupNameContainingAndDiscoverable(String nameFragment, boolean discoverable);
+
+    /*
     Find the max(groupTokenCode) in table
     N.B. remove this when we stop using integer values
      */

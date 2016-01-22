@@ -15,6 +15,8 @@ public interface EventLogRepository extends JpaRepository<EventLog, Long> {
 
     List<EventLog> findByEventLogTypeAndEventAndUser(EventLogType eventLogType, Event event, User user);
 
+    List<EventLog> findByEventAndEventLogTypeNot(Event event, EventLogType eventLogType);
+
     /*
     See if the notification was already sent before sending it
     */

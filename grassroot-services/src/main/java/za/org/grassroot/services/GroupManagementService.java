@@ -19,7 +19,7 @@ import java.util.List;
 public interface GroupManagementService {
 
     /*
-    Methods to create groups
+    Methods to create, save and name groups
      */
 
     public Group createNewGroup(User creatingUser, String groupName);
@@ -30,15 +30,24 @@ public interface GroupManagementService {
 
     public Group createNewGroupWithCreatorAsMember(User creatingUser, String groupName);
 
+    public Group saveGroup(Group groupToSave);
+
+    public Group renameGroup(Group group, String newGroupName);
+
+    public Group renameGroup(Long groupId, String newGroupName);
+
+
     /*
-    Methods to load, find, save groups
+    Methods to load and find groups
     todo: clean up redundancy
     */
 
+    @PreAuthorize("hasPermission(#id, 'za.org.grassroot.core.domain.Group', 'GROUP_PERMISSION_UPDATE_GROUP_DETAILS')")
+    public Group secureLoadGroup(Long id);
+
     public Group loadGroup(Long groupId);
 
-    // @PreAuthorize("hasAnyRole('ROLE_GROUP_ORGANIZER',) and hasPermission(#id, ' za.org.grassroot.core.domain.Group', 'GROUP_PERMISSION_UPDATE_GROUP_DETAILS')")
-    public Group secureLoadGroup(Long id);
+    public String getGroupName(Long groupId);
 
     public List<Group> getGroupsFromUser(User sessionUser);
 
@@ -48,29 +57,11 @@ public interface GroupManagementService {
 
     public List<Group> getActiveGroupsPartOf(User sessionUser);
 
-    public List<Group> getListGroupsFromLogbooks(List<LogBook> logBooks);
-
-    public boolean hasActiveGroupsPartOf(User user);
-
-    // public List<Group> getPaginatedGroups(User sessionUser, int pageNumber, int pageSize);
-
-    // public Page<Group> getPageOfGroups(User sessionUser, int pageNumber, int pageSize);
-
     public Page<Group> getPageOfActiveGroups(User sessionUser, int pageNumber, int pageSize);
 
-    public Group getGroupById(Long groupId);
+    public List<Group> getListGroupsFromLogbooks(List<LogBook> logBooks);
 
-    public Group saveGroup(Group groupToSave);
-
-    public void deleteGroup(Group groupToDelete);
-
-    public boolean canUserMakeGroupInactive(User user, Group group);
-
-    public boolean canUserMakeGroupInactive(User user, Long groupId);
-
-    public boolean isGroupCreatedByUser(Long groupId, User user);
-
-    public String getGroupName(Long groupId);
+    public List<Group> findDiscoverableGroups(String groupName);
 
     /*
     Methods to find, and add group members
@@ -104,9 +95,13 @@ public interface GroupManagementService {
 
     public boolean canGroupBeSetInactive(Group group, User user);
 
-    public Group renameGroup(Group group, String newGroupName);
+    public boolean hasActiveGroupsPartOf(User user);
 
-    public Group renameGroup(Long groupId, String newGroupName);
+    public boolean canUserMakeGroupInactive(User user, Group group);
+
+    public boolean canUserMakeGroupInactive(User user, Long groupId);
+
+    public boolean isGroupCreatedByUser(Long groupId, User user);
 
     public List<Group> groupsOnWhichCanCallVote(User user);
 

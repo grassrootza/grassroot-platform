@@ -45,10 +45,10 @@
         </thead>
         <tbody>
         <tr th:each="meeting : ${meetingsInPeriod}">
-          <td><span th:text="${#dates.format(meeting.eventStartDateTime, 'dd MMM yyyy')}">Date time</span></td>
-          <td><mark><span th:text="${meeting.name}">Description</span></mark></td>
-          <td><span th:text="${meeting.eventLocation}">Due date</span></td>
-          <td><!-- todo need a wrapper class for this, also maybe costs --></td>
+          <td><span th:text="${#dates.format(meeting.eventDateTime, 'dd MMM yyyy')}">Date time</span></td>
+          <td><mark><span th:text="${meeting.eventDescription}">Description</span></mark></td>
+          <td><span th:text="${meeting.event.eventLocation}">Place</span></td>
+          <td><span th:text="${meeting.numberMessages}">X</span></td>
         </tr>
         </tbody>
       </table>
@@ -69,10 +69,14 @@
         </thead>
         <tbody>
         <tr th:each="vote: ${votesInPeriod}">
-          <td><span th:text="${#dates.format(vote.eventStartDateTime, 'dd MMM yyyy')}">Date time closed</span></td>
-          <td><mark><span th:text="${vote.name}">Subject</span></mark></td>
-          <td><!-- todo : build a wrapper for this --></td>
-          <td><!-- todo : likewise, build a wrapper for this --></td>
+          <td><span th:text="${#dates.format(vote.eventDateTime, 'dd MMM yyyy')}">Date time closed</span></td>
+          <td><mark><span th:text="${vote.eventDescription}">Subject</span></mark></td>
+          <td>
+            <span th:text="${#numbers.formatDecimal(vote.percentageYesResponses, 1, 0)}">Some number</span>% yes
+            (<span th:text="${vote.numberYesResponses}">X</span> yes of <span th:text="${vote.eventResponses.numberOfUsers}">
+            Y</span> users)
+          </td>
+          <td><span th:text="${vote.numberMessages}"></span></td>
         </tr>
         </tbody>
       </table>
