@@ -439,7 +439,7 @@ public class USSDLogBookController extends USSDController {
         String confirmUrl = returnUrl(setCompleteMenu + doSuffix, logBookId) + "&completed_date=" + encodeParameter(formattedResponse);
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, confirmCompleteDate, promptKey, formattedResponse, user));
-        menu.addMenuOption(logMenus + confirmUrl, getMessage(thisSection, confirmCompleteDate, optionsKey + "yes", formattedResponse, user));
+        menu.addMenuOption(confirmUrl, getMessage(thisSection, confirmCompleteDate, optionsKey + "yes", formattedResponse, user));
         menu.addMenuOption(returnUrl(completedDate, logBookId), getMessage(thisSection, confirmCompleteDate, optionsKey + "no", user));
         return menuBuilder(menu);
     }
