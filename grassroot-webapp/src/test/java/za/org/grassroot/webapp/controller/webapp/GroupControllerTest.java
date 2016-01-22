@@ -401,7 +401,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
                       .param("groupId2", String.valueOf(0L)).param("order", orders[i])).andExpect(model()
                       .attribute("groupInto", hasProperty("id", is(1L)))).andExpect(model()
                       .attribute("groupFrom", hasProperty("id", is(0L))));
-                   //   andExpect(model().attribute());
+                      // andExpect(model().attribute("numberFrom"));
           }
               else{
                   mockMvc.perform(post("/group/consolidate/confirm").param("groupId1", String.valueOf(1L))
@@ -410,6 +410,8 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
                           .attribute("groupFrom", hasProperty("id", is(1L))));
               }
               }
+      //   verify(groupManagementServiceMock, times(1)).orderPairByNumberMembers(1L,0L);
+
 
       }
 
