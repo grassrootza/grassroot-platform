@@ -233,12 +233,12 @@ public class MeetingController extends BaseController {
         User sessionUser = getUserProfile();
 
         if (groupId != null) {
-            System.out.println("Came here from a group");
             model.addAttribute("group", groupManagementService.loadGroup(groupId));
             groupSpecified = true;
         } else {
-            System.out.println("No group selected, pass the list of possible");
-            model.addAttribute("userGroups", groupManagementService.getActiveGroupsPartOf(sessionUser)); // todo: or just use user.getGroupsPartOf?
+            List<Group> activeGroups = groupManagementService.getActiveGroupsPartOf(sessionUser);
+            model.addAttribute("userGroups", activeGroups);
+            log.info("ZOG: MTG: userGroups ..." + activeGroups);
             groupSpecified = false;
         }
         model.addAttribute("groupSpecified", groupSpecified); // slightly redundant, but use it to tell Thymeleaf what to do

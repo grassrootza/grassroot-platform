@@ -162,7 +162,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
     }
 
-    @Test
+    /*@Test
     public void modifyGroupWorks() throws Exception {
         Group dummyGroup = new Group();
         dummyGroup.addMember(sessionTestUser);
@@ -170,7 +170,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         mockMvc.perform(post("/group/modify").param("group_modify", "").param("groupId", String.valueOf(dummyId)))
                 .andExpect(status().isOk()).andExpect(view().name("group/modify"))
                 .andExpect(model().attribute("groupModifier", instanceOf(GroupWrapper.class)));
-    }
+    }*/
 
     @Test
     public void removeMemberWorks() throws Exception {

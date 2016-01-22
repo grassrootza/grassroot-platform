@@ -7,10 +7,6 @@ import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.test.context.support.WithMockUser;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.domain.Group;
@@ -122,13 +118,13 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         Group dummyGroup = new Group("", sessionTestUser);
         dummyGroup.setId(dummyId);
         dummyGroups.add(dummyGroup);
-        when(groupManagementServiceMock.getGroupsPartOf(sessionTestUser)).thenReturn(
+        when(groupManagementServiceMock.getActiveGroupsPartOf(sessionTestUser)).thenReturn(
                 dummyGroups);
         mockMvc.perform(get("/meeting/free")).andExpect(status()
                 .isOk()).andExpect((view().name("meeting/free"))
         ).andExpect(model().attribute("userGroups", hasItem(dummyGroup)))
                 .andExpect(model().attribute("groupSpecified", is(false)));
-        verify(groupManagementServiceMock, times(1)).getGroupsPartOf(sessionTestUser);
+        verify(groupManagementServiceMock, times(1)).getActiveGroupsPartOf(sessionTestUser);
         verifyZeroInteractions(eventManagementServiceMock);
         verifyZeroInteractions(eventLogManagementServiceMock);
         verifyNoMoreInteractions(userManagementServiceMock);
@@ -179,7 +175,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         when(userManagementServiceMock.fetchUserByUsername(testUserPhone)).thenReturn(sessionTestUser);
         when(eventManagementServiceMock.createMeeting(sessionTestUser)).thenReturn(dummyMeeting);
         when(eventManagementServiceMock.setEventNoReminder(dummyMeeting.getId())).thenReturn(dummyMeeting);
-        when(groupManagementServiceMock.getGroupsPartOf(sessionTestUser)).thenReturn(
+        when(groupManagementServiceMock.getActiveGroupsPartOf(sessionTestUser)).thenReturn(
                 dummyGroups);
         mockMvc.perform(get("/meeting/create").with(user(testUserPhone))).andExpect(status().isOk())
                 .andExpect((view().name("meeting/create"))
@@ -189,7 +185,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(model().attribute("reminderOptions", hasItem(oneDay)));
         verify(eventManagementServiceMock, times(1)).createMeeting(sessionTestUser);
         verify(eventManagementServiceMock, times(1)).setEventNoReminder(dummyMeeting.getId());
-        verify(groupManagementServiceMock, times(1)).getGroupsPartOf(sessionTestUser);
+        verify(groupManagementServiceMock, times(1)).getActiveGroupsPartOf(sessionTestUser);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyNoMoreInteractions(eventManagementServiceMock);
@@ -334,13 +330,17 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void sendFreeFormWorksWithoutGroupId() throws Exception{
         Group testGroup = new Group("",sessionTestUser);
-        List<Group> dummyGroups = Arrays.asList(new Group("", sessionTestUser));
-        when(groupManagementServiceMock.getGroupsPartOf(sessionTestUser)).thenReturn(dummyGroups);
+        List<Group> dummyGroups = Arrays.asList(testGroup);
+
+        when(groupManagementServiceMock.getActiveGroupsPartOf(sessionTestUser)).thenReturn(dummyGroups);
+        sessionTestUser.setGroupsPartOf(dummyGroups);
+
         mockMvc.perform(get("/meeting/free")).andExpect(status().isOk())
                 .andExpect(view().name("meeting/free")).andExpect(model()
                 .attribute("userGroups", hasItem(testGroup)))
                 .andExpect(model().attribute("groupSpecified", is(false)));
-        verify(groupManagementServiceMock, times(1)).getGroupsPartOf(sessionTestUser);
+
+        verify(groupManagementServiceMock, times(1)).getActiveGroupsPartOf(sessionTestUser);
         verifyZeroInteractions(eventManagementServiceMock);
         verifyZeroInteractions(eventLogManagementServiceMock);
         verifyNoMoreInteractions(userManagementServiceMock);
