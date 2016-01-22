@@ -31,13 +31,12 @@ import java.util.Map;
  * @author Lesetse Kimwaga
  */
 @Controller
-<<<<<<< HEAD
-@SessionAttributes({"groupCreator", "groupModifier"})
 
-=======
+
+
 @RequestMapping("/group/")
 @SessionAttributes({"groupCreator", "groupModifier"})
->>>>>>> upstream/master
+
 public class GroupController extends BaseController {
 
     Logger log = LoggerFactory.getLogger(GroupController.class);
