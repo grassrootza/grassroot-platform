@@ -499,8 +499,6 @@ public class USSDLogBookController extends USSDController {
     }
 
 
-
-
     private String truncateEntryDescription(LogBook entry) {
         StringBuilder stringBuilder = new StringBuilder();
         Pattern pattern = Pattern.compile(" ");
