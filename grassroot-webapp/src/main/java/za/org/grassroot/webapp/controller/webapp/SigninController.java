@@ -42,6 +42,9 @@ public class SigninController {
     @Autowired
     AuthenticationUtil authenticationUtil;
 
+    @Autowired
+    HomeController homeController;
+
     //private Authentication authentication;
 
     @RequestMapping(value = "/login", method = RequestMethod.GET)
@@ -95,6 +98,7 @@ public class SigninController {
     public ModelAndView autoLogonUser(HttpServletRequest request, Model model) {
         logger.info("autoLogonUser...");
         try {
+            Long startTime = System.currentTimeMillis();
             request.getSession();//ensure that the session exists
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
@@ -102,11 +106,9 @@ public class SigninController {
             //authentication = new RememberMeAuthenticationToken(userDetails.getUsername(), userDetails, userDetails.getAuthorities());
             authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            logger.info("autoLogonUser...return...ModelAndView...home");
-            // todo: check if this is possibly inefficient (may involve redundant DB calls?)
-            model.addAttribute("userGroups", groupManagementService.getActiveGroupsPartOf(
-                    userManagementService.fetchUserByUsername(userDetails.getUsername())));
-            return new ModelAndView("home", model.asMap());
+            Long endTime = System.currentTimeMillis();
+            logger.info(String.format("autoLogonUser...return...ModelAndView...home ... took %d ms", endTime - startTime));
+            return homeController.generateHomePage(model);
         } catch (Exception e) {
             throw new AuthenticationServiceException("Problem  auto logging user", e);
         }

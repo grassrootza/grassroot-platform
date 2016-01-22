@@ -3,8 +3,6 @@ package za.org.grassroot.webapp.controller.webapp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -18,9 +16,7 @@ import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.util.AuthenticationUtil;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupManagementService;
-import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
-import za.org.grassroot.webapp.model.web.GroupViewNode;
 import za.org.grassroot.webapp.model.web.GroupViewNodeSql;
 
 import javax.servlet.http.HttpServletRequest;
@@ -59,25 +55,28 @@ public class HomeController extends BaseController {
 
     @RequestMapping("/")
     public ModelAndView getRootPage(Model model, HttpServletRequest request) {
+
         log.debug("Getting home page");
+
         if (signinController.isRememberMeAuthenticated()) {
             return signinController.autoLogonUser(request, model);
         }
+
         if (signinController.isAuthenticated()) {
-            model.addAttribute("userGroups", groupManagementService.getActiveGroupsPartOf(getUserProfile()));
-            return new ModelAndView("home", model.asMap());
+            return generateHomePage(model);
         }
 
         return new ModelAndView("index", model.asMap());
     }
 
-
     @RequestMapping("/home")
-    public String getHomePage(Model model, @ModelAttribute("currentUser") UserDetails userDetails) {
-
+    public ModelAndView getHomePage(Model model, @ModelAttribute("currentUser") UserDetails userDetails) {
         authenticationUtil.debugAuthentication();
+        return generateHomePage(model);
+    }
 
-        User user = userManagementService.fetchUserByUsername(userDetails.getUsername());
+    public ModelAndView generateHomePage(Model model) {
+
 
 
         /*
@@ -86,8 +85,37 @@ public class HomeController extends BaseController {
          */
         // start of SQL tree
 
+        Long startTime = System.currentTimeMillis();
+        ModelAndView homePageModelAndView;
+        User user = getUserProfile();
+
+        if (groupManagementService.hasActiveGroupsPartOf(user)) {
+            homePageModelAndView = getHomePageUserHasGroups(model, user);
+        } else {
+            homePageModelAndView = getHomePageUserHasNoGroups(model, user);
+        }
+
+        Long endTime = System.currentTimeMillis();
+        log.info(String.format("Home page generated ... took %d msec", endTime - startTime));
+        return homePageModelAndView;
+
+
+    }
+
+    private ModelAndView getHomePageUserHasNoGroups(Model model, User user) {
+        return new ModelAndView("home_new", model.asMap());
+    }
+
+    private ModelAndView getHomePageUserHasGroups(Model model, User user) {
+
+        Long startTime = System.currentTimeMillis();
         log.info("getHomePage...NEW tree starting...");
         treeList = groupManagementService.getGroupsMemberOfTree(user.getId());
+
+        /*
+         Recursive construction in the view node will turn each of these into a tree with a root node as the top level
+         group. This is done through a recursive SQL query rather than via the group list
+        */
 
         List<GroupViewNodeSql> groupViewNodeSqls = new ArrayList<>();
         nodeCount = treeList.size();
@@ -114,24 +142,28 @@ public class HomeController extends BaseController {
         // add the last record
         groupViewNodeSqls.add(nodeSql);
 
-
-        log.info("getHomePage...NEW tree ending...");
+        Long endTime = System.currentTimeMillis();
+        log.info(String.format("getHomePage...NEW tree ending... took %d msec", endTime - startTime));
 
         // end of SQL tree
 
+        Long startTime2 = System.currentTimeMillis();
         model.addAttribute("userGroups", groupManagementService.getActiveGroupsPartOf(user));
         model.addAttribute("groupTreesSql", groupViewNodeSqls);
 
         // get lists of outstanding RSVPs and votes
         List<Event> meetingsToRsvp = eventManagementService.getOutstandingRSVPForUser(user);
         List<Event> votesToAnswer = eventManagementService.getOutstandingVotesForUser(user);
+        Long endTime2 = System.currentTimeMillis();
+
+        log.info(String.format("Retrieved the events for the user ... took %d msecs", endTime2 - startTime2));
 
         model.addAttribute("meetingRsvps", meetingsToRsvp);
         model.addAttribute("votesToAnswer", votesToAnswer);
 
-        return "home";
-    }
+        return new ModelAndView("home", model.asMap());
 
+    }
 
     private GroupViewNodeSql recursiveTreeSubnodes(GroupViewNodeSql parentNode) {
 

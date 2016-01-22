@@ -13,6 +13,7 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.logging.Logger;
@@ -202,7 +203,7 @@ public class LogBookManager implements LogBookService {
     @Override
     public LogBook setCompleted(Long logBookId, Long completedByUserId, String completedDate) {
         if (completedDate != null) {
-            Timestamp timestamp = Timestamp.valueOf(LocalDateTime.parse(completedDate, DateTimeUtil.preferredDateFormat));
+            Timestamp timestamp = Timestamp.valueOf(LocalDate.parse(completedDate, DateTimeUtil.preferredDateFormat).atStartOfDay());
             return (completedByUserId == null) ? setCompleted(logBookId, timestamp) :
                     setCompletedWithDate(logBookId, completedByUserId, timestamp);
         } else {

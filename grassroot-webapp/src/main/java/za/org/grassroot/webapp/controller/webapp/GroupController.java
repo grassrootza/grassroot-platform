@@ -31,8 +31,13 @@ import java.util.Map;
  * @author Lesetse Kimwaga
  */
 @Controller
+<<<<<<< HEAD
 @SessionAttributes({"groupCreator", "groupModifier"})
 
+=======
+@RequestMapping("/group/")
+@SessionAttributes({"groupCreator", "groupModifier"})
+>>>>>>> upstream/master
 public class GroupController extends BaseController {
 
     Logger log = LoggerFactory.getLogger(GroupController.class);
@@ -60,8 +65,55 @@ public class GroupController extends BaseController {
     @InitBinder("groupModifier")
     private void initModifierBinder(WebDataBinder binder) { binder.setValidator(groupWrapperValidator); }
 
+    private boolean isUserPartOfGroup(User sessionUser, Group group) {
+        // todo: do this from cache so it's not slow ...
+        User userFromDb = userManagementService.getUserById(sessionUser.getId());
+        return userFromDb.getGroupsPartOf().contains(group);
+    }
+
+    @PreAuthorize("hasAnyRole('ROLE_DOESNT_EXIST')")
+    private Group secureLoadGroup(Long id) {
+        log.info("Inside secureLoadGroup ...");
+        return groupManagementService.loadGroup(id);
+    }
+
+    /*
+    First method is for users brand new and without any group membership, and/or later for any user, to find & join group
+     */
+
+    // todo: work out how to prevent a computer just cycling through all possible numbers on the token code
+
+    @RequestMapping(value = "search", method = RequestMethod.POST)
+    public String searchForGroup(Model model, @RequestParam String searchTerm) {
+        Group groupByToken = groupManagementService.getGroupByToken(searchTerm);
+        if (groupByToken != null) {
+            model.addAttribute("group", groupByToken);
+        } else {
+            // todo: deal with case sensitivity
+            List<Group> possibleGroups = groupManagementService.findDiscoverableGroups(searchTerm);
+            if (!possibleGroups.isEmpty())
+                model.addAttribute("groupCandidates", possibleGroups);
+            else
+                model.addAttribute("noCandidates", true);
+        }
+        return "group/results";
+    }
+
+    @RequestMapping(value = "join", method = RequestMethod.POST)
+    public String joinGroup(Model model, @RequestParam Long groupId, HttpServletRequest request) {
+        // todo: think through security, privacy, etc
+        groupManagementService.addGroupMember(groupId, getUserProfile().getId());
+        addMessage(model, MessageType.SUCCESS, "group.join.success", request);
+        return viewGroupIndex(model, groupId);
+    }
+
+    /*
+    Next methods are to view a group, core part of interface
+     */
+
+
     // @PreAuthorize("hasPermission(#groupId, ' za.org.grassroot.core.domain.Group', 'GROUP_PERMISSION_UPDATE_GROUP_DETAILS')")
-    @RequestMapping("/group/view")
+    @RequestMapping("view")
     public String viewGroupIndex(Model model, @RequestParam("groupId") Long groupId) {
 
         // todo: all sorts of user/group permission checking
@@ -70,6 +122,7 @@ public class GroupController extends BaseController {
 
         // at low user numbers, this is taking ~0 msec, but keeping the logs in so we have a record
         Long startTime = System.currentTimeMillis();
+        // Group group = secureLoadGroup(groupId);
         Group group = groupManagementService.loadGroup(groupId); // change to secureLoadGroup once retro permissions done
         if (!isUserPartOfGroup(getUserProfile(), group)) throw new AccessDeniedException("");
         Long endTime = System.currentTimeMillis();
@@ -87,17 +140,11 @@ public class GroupController extends BaseController {
         return "group/view";
     }
 
-    private boolean isUserPartOfGroup(User sessionUser, Group group) {
-        // todo: do this from cache so it's not slow ...
-        User userFromDb = userManagementService.getUserById(sessionUser.getId());
-        return userFromDb.getGroupsPartOf().contains(group);
-    }
-
     /*
     Group creation methods
      */
 
-    @RequestMapping("/group/create")
+    @RequestMapping("create")
     public String startGroupIndex(Model model, @RequestParam(value="parent", required=false) Long parentId) {
 
         GroupWrapper groupCreator;
@@ -119,7 +166,7 @@ public class GroupController extends BaseController {
         return "group/create";
     }
 
-    @RequestMapping(value = "/group/create", method = RequestMethod.POST)
+    @RequestMapping(value = "create", method = RequestMethod.POST)
     public String createGroup(Model model, @ModelAttribute("groupCreator") @Validated GroupWrapper groupCreator,
                               BindingResult bindingResult, HttpServletRequest request, RedirectAttributes redirectAttributes)
     {
@@ -167,7 +214,7 @@ public class GroupController extends BaseController {
 
     }
 
-    @RequestMapping(value = "/group/create", params={"addMember"})
+    @RequestMapping(value = "create", params={"addMember"})
     public String addMember(Model model, @ModelAttribute("groupCreator") @Validated GroupWrapper groupCreator,
                             BindingResult bindingResult, HttpServletRequest request) {
         if (bindingResult.hasErrors()) {
@@ -183,7 +230,7 @@ public class GroupController extends BaseController {
     }
 
 
-    @RequestMapping(value = "/group/create", params={"removeMember"})
+    @RequestMapping(value = "create", params={"removeMember"})
     public String removeMember(Model model, @ModelAttribute("groupCreator") GroupWrapper groupCreator,
                                @RequestParam("removeMember") Integer memberId) {
 
@@ -196,7 +243,7 @@ public class GroupController extends BaseController {
     Major todo: permissions, throughout
      */
 
-    @RequestMapping(value = "/group/modify", method = RequestMethod.POST, params={"group_modify"})
+    @RequestMapping(value = "modify", method = RequestMethod.POST, params={"group_modify"})
     public String modifyGroup(Model model, @RequestParam("groupId") Long groupId) {
 
         // todo: replace getGroupMembers with actual thing
@@ -215,7 +262,7 @@ public class GroupController extends BaseController {
 
     }
 
-    @RequestMapping(value = "/group/modify", params={"addMember"})
+    @RequestMapping(value = "modify", params={"addMember"})
     public String addMemberModify(Model model, @ModelAttribute("groupModifier") @Validated GroupWrapper groupModifier,
                                   BindingResult bindingResult, HttpServletRequest request) {
         // todo: check permissions
@@ -228,7 +275,7 @@ public class GroupController extends BaseController {
     }
 
 
-    @RequestMapping(value = "/group/modify", params={"removeMember"})
+    @RequestMapping(value = "modify", params={"removeMember"})
     public String removeMemberModify(Model model, @ModelAttribute("groupModifier") GroupWrapper groupModifier,
                                @RequestParam("removeMember") Integer memberId) {
 
@@ -238,7 +285,7 @@ public class GroupController extends BaseController {
     }
 
 
-    @RequestMapping(value = "/group/modify", method = RequestMethod.POST)
+    @RequestMapping(value = "modify", method = RequestMethod.POST)
     public String modifyGroupDo(Model model, @ModelAttribute("groupModifier") @Validated GroupWrapper groupModifier,
                                 BindingResult bindingResult, HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
@@ -288,29 +335,6 @@ public class GroupController extends BaseController {
     Helper methods for handling user addition and updating
      */
 
-    /* private Group addMemberGroup(Group group, User member, boolean overwrite) {
-
-        if (member.getPhoneNumber() != null && !member.getPhoneNumber().trim().equals("")) {
-            User memberToAdd = userManagementService.loadOrSaveUser(member.getPhoneNumber());
-            if (member.getDisplayName() != null && (overwrite || !memberToAdd.hasName())) {
-                memberToAdd.setDisplayName(member.getDisplayName());
-                memberToAdd = userManagementService.save(memberToAdd);
-            }
-
-            // todo: allow phone number change, so mistakes can be corrected, but close this off soon (find a UX solution)
-            if (overwrite) {
-                memberToAdd.setPhoneNumber(PhoneNumberUtil.convertPhoneNumber(member.getPhoneNumber()));
-                memberToAdd.setUsername( memberToAdd.getPhoneNumber());
-            }
-
-            group.addMember(memberToAdd);
-
-        }
-
-        return group;
-
-    } */
-
     private List<User> addMember(GroupWrapper groupWrapper) {
 
         List<User> groupMembers = groupWrapper.getAddedMembers();
@@ -332,7 +356,7 @@ public class GroupController extends BaseController {
     Methods for handling join tokens
      */
 
-    @RequestMapping(value = "/group/modify", method = RequestMethod.POST, params={"token_create"})
+    @RequestMapping(value = "modify", method = RequestMethod.POST, params={"token_create"})
     public String newToken(Model model, @RequestParam("groupId") Long groupId) {
 
         Group group = groupManagementService.loadGroup(groupId);
@@ -341,7 +365,7 @@ public class GroupController extends BaseController {
         return "group/new_token";
     }
 
-    @RequestMapping(value = "/group/modify", method = RequestMethod.POST, params={"token_extend"})
+    @RequestMapping(value = "modify", method = RequestMethod.POST, params={"token_extend"})
     public String extendToken(Model model, @RequestParam("groupId") Long groupId) {
 
         Group group = groupManagementService.loadGroup(groupId);
@@ -349,7 +373,7 @@ public class GroupController extends BaseController {
         return "group/extend_token";
     }
 
-    @RequestMapping(value = "/group/modify", method = RequestMethod.POST, params={"token_cancel"})
+    @RequestMapping(value = "modify", method = RequestMethod.POST, params={"token_cancel"})
     public String cancelToken(Model model, @RequestParam("groupId") Long groupId) {
 
         Group group = groupManagementService.loadGroup(groupId);
@@ -357,7 +381,7 @@ public class GroupController extends BaseController {
         return "group/close_token";
     }
 
-    @RequestMapping(value = "/group/token", method = RequestMethod.POST)
+    @RequestMapping(value = "token", method = RequestMethod.POST)
     public String createGroupToken(Model model, @RequestParam("groupId") Long groupId, @RequestParam("action") String action,
                                    @RequestParam(value="days", required=false) Integer days,
                                    HttpServletRequest request, RedirectAttributes redirectAttributes) {
@@ -389,7 +413,7 @@ public class GroupController extends BaseController {
 
     }
 
-    @RequestMapping(value = "/group/modify", params={"group_language"})
+    @RequestMapping(value = "modify", params={"group_language"})
     public String requestGroupLanguage(Model model, @RequestParam("groupId") Long groupId) {
 
         Group group = groupManagementService.loadGroup(groupId);
@@ -403,7 +427,7 @@ public class GroupController extends BaseController {
 
     }
 
-    @RequestMapping(value = "/group/language", method = RequestMethod.POST)
+    @RequestMapping(value = "language", method = RequestMethod.POST)
     public String setGroupLanguage(Model model, @RequestParam("groupId") Long groupId, @RequestParam("locale") String locale,
                                    @RequestParam(value = "includeSubGroups", required = false) boolean includeSubGroups,
                                    RedirectAttributes redirectAttributes, HttpServletRequest request) {
@@ -430,7 +454,7 @@ public class GroupController extends BaseController {
     Methods for handling group linking to a parent (as observing that users often create group first, link later)
      */
 
-    @RequestMapping(value="/group/parent")
+    @RequestMapping(value="parent")
     public String listPossibleParents(Model model, @RequestParam("groupId") Long groupId,
                                       HttpServletRequest request, RedirectAttributes redirectAttributes) {
         // todo: check permissions, handle exceptions (in fact, on view group page), etc.
@@ -468,7 +492,7 @@ public class GroupController extends BaseController {
         }
     }
 
-    @RequestMapping(value="/group/link", method=RequestMethod.POST)
+    @RequestMapping(value="link", method=RequestMethod.POST)
     public String linkToParent(Model model, @RequestParam("groupId") Long groupId, @RequestParam("parentId") Long parentId,
                                RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
@@ -492,7 +516,7 @@ public class GroupController extends BaseController {
     todo: add role authorizations, etc
      */
 
-    @RequestMapping(value = "group/consolidate/select")
+    @RequestMapping(value = "consolidate/select")
     public String selectConsolidate(Model model, @RequestParam("groupId") Long groupId,
                                     RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
@@ -511,7 +535,7 @@ public class GroupController extends BaseController {
     }
 
 
-    @RequestMapping(value = "group/consolidate/confirm", method = RequestMethod.POST)
+    @RequestMapping(value = "consolidate/confirm", method = RequestMethod.POST)
     public String consolidateGroupsConfirm(Model model, @RequestParam("groupId1") Long groupId1, @RequestParam("groupId2") Long groupId2,
                                            @RequestParam("order") String order, @RequestParam(value="leaveActive", required=false) boolean leaveActive,
                                            HttpServletRequest request) {
@@ -548,7 +572,7 @@ public class GroupController extends BaseController {
         return "group/consolidate_confirm";
     }
 
-    @RequestMapping(value = "group/consolidate/do", method = RequestMethod.POST)
+    @RequestMapping(value = "consolidate/do", method = RequestMethod.POST)
     public String consolidateGroupsDo(Model model, @RequestParam("groupInto") Long groupIdInto, @RequestParam("groupFrom") Long groupIdFrom,
                                       @RequestParam(value="leaveActive", required=false) boolean leaveActive, RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
@@ -566,7 +590,7 @@ public class GroupController extends BaseController {
     Simple method to delete a group, if it was recently created and this is the creating user, after a confirmation screen
     todo: add Spring Security annotations to stop unauthorized users from even accessing the URLs
      */
-    @RequestMapping(value = "group/modify", params={"group_delete"})
+    @RequestMapping(value = "modify", params={"group_delete"})
     public String confirmDelete(Model model, @RequestParam("groupId") Long groupId, HttpServletRequest request) {
 
         User user = getUserProfile();
@@ -582,7 +606,7 @@ public class GroupController extends BaseController {
 
     }
 
-    @RequestMapping(value = "group/delete")
+    @RequestMapping(value = "delete")
     public String deleteGroup(Model model, @RequestParam("groupId") Long groupId, @RequestParam("confirm_field") String confirmText,
                               HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
@@ -599,24 +623,23 @@ public class GroupController extends BaseController {
 
     }
 
-    @RequestMapping(value = "group/unsubscribe")
+    @RequestMapping(value = "unsubscribe")
     public String unsubscribeGroup(Model model, @RequestParam("groupId") Long groupId) {
 
         Group group = groupManagementService.loadGroup(groupId);
-
         // todo: check if the user is part of the group
         model.addAttribute("group", group);
         return "group/unsubscribe_confirm";
 
     }
 
-    @RequestMapping(value = "group/unsubscribe", method = RequestMethod.POST)
+    @RequestMapping(value = "unsubscribe", method = RequestMethod.POST)
     public String unsubGroup(Model model, @RequestParam("groupId") Long groupId, @RequestParam("confirm_field") String confirmText,
                              HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
         // todo: again, check the user is part of the group and/or do error handling
         Group group = groupManagementService.loadGroup(groupId);
-        User user = getUserProfile();
+        User user = userManagementService.loadUser(getUserProfile().getId()); // else equals in "is user in group" fails
 
         if (groupManagementService.isUserInGroup(group, user) && confirmText.toLowerCase().equals("unsubscribe")) {
             groupManagementService.removeGroupMember(group, user);

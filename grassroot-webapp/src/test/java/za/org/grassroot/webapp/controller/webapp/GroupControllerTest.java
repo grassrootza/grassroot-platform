@@ -45,6 +45,10 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void viewGroupIndexWorks() throws Exception {
+<<<<<<< HEAD
+=======
+
+>>>>>>> upstream/master
         Group dummyGroup = new Group();
         dummyGroup.setId(dummyId);
         Group dummySubGroup = new Group();
@@ -57,6 +61,10 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         List<Group> testGroupspartOf = new ArrayList<>();
         testGroupspartOf.add(dummyGroup);
         sessionTestUser.setGroupsPartOf(testGroupspartOf);
+<<<<<<< HEAD
+=======
+
+>>>>>>> upstream/master
         when(userManagementServiceMock.getUserById(sessionTestUser.getId())).thenReturn(sessionTestUser);
         when(groupManagementServiceMock.loadGroup(dummyGroup.getId())).thenReturn(dummyGroup);
         when(groupManagementServiceMock.hasParent(dummyGroup)).thenReturn(false);
@@ -66,6 +74,10 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(groupManagementServiceMock.groupHasValidToken(dummyGroup)).thenReturn(false);
         when(groupManagementServiceMock.canUserMakeGroupInactive(sessionTestUser, dummyGroup)).thenReturn(true);
         when(groupManagementServiceMock.isGroupCreatedByUser(dummyGroup.getId(), sessionTestUser)).thenReturn(true);
+<<<<<<< HEAD
+=======
+
+>>>>>>> upstream/master
         mockMvc.perform(get("/group/view").param("groupId", String.valueOf(dummyGroup.getId()))).andExpect(view().name("group/view"))
                 .andExpect(model().attribute("group", hasProperty("id", is(dummyId)))).andExpect(model()
                 .attribute("groupMeetings", hasItem(dummyMeeting))).andExpect(model().attribute("groupVotes",
@@ -159,6 +171,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
     }
 
+<<<<<<< HEAD
     @Test
     public void modifyGroupWorks() throws Exception {
         Group dummyGroup = new Group();
@@ -167,15 +180,25 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         testGroupPartOf.add(dummyGroup);
         sessionTestUser.setGroupsPartOf(testGroupPartOf);
         when(userManagementServiceMock.getUserById(sessionTestUser.getId())).thenReturn(sessionTestUser);
+=======
+    /*@Test
+    public void modifyGroupWorks() throws Exception {
+        Group dummyGroup = new Group();
+        dummyGroup.addMember(sessionTestUser);
+>>>>>>> upstream/master
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(dummyGroup);
         mockMvc.perform(post("/group/modify").param("group_modify", "").param("groupId", String.valueOf(dummyId)))
                 .andExpect(status().isOk()).andExpect(view().name("group/modify"))
                 .andExpect(model().attribute("groupModifier", instanceOf(GroupWrapper.class)));
+<<<<<<< HEAD
         verify(userManagementServiceMock, times(1)).getUserById(sessionTestUser.getId());
         verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(groupManagementServiceMock);
     }
+=======
+    }*/
+>>>>>>> upstream/master
 
     @Test
     public void removeMemberWorks() throws Exception {
@@ -335,6 +358,10 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(model().attribute("groupId", is(String.valueOf(dummyId))));
         verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
         verify(groupManagementServiceMock, times(1)).getGroupsFromUser(sessionTestUser);
+<<<<<<< HEAD
+=======
+        // verify(groupManagementServiceMock,times(1)).isGroupAlsoParent(testChildGroup,testParentGroup);
+>>>>>>> upstream/master
         verifyNoMoreInteractions(groupManagementServiceMock);
 
     }
@@ -390,6 +417,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         verifyNoMoreInteractions(userManagementServiceMock);
     }
 
+<<<<<<< HEAD
     @Test
     public void consolidateGroupConfirmWorks() throws Exception {
         Group testGroupInto = new Group();
@@ -429,11 +457,47 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
 
   /*  @Test
+=======
+     @Test
+      public void consolidateGroupConfirmWorks() throws Exception{
+          Group testGroupInto = new Group();
+          testGroupInto.setId(1L);
+          Group testGroupFrom = new Group();
+          testGroupFrom.setId(0L);
+          Long[] orderedIds ={1L,0L};
+          String[] orders ={"small_to_large","2_into_1","1_into_2"};
+          when(groupManagementServiceMock.orderPairByNumberMembers(1L,0L)).thenReturn(orderedIds);
+          when(groupManagementServiceMock.loadGroup(orderedIds[0])).thenReturn(testGroupInto);
+          when(groupManagementServiceMock.loadGroup(orderedIds[1])).thenReturn(testGroupFrom);
+          for(int i=0; i<orders.length; i++){
+              if(i<2){
+              mockMvc.perform(post("/group/consolidate/confirm").param("groupId1", String.valueOf(1L))
+                      .param("groupId2", String.valueOf(0L)).param("order", orders[i])).andExpect(model()
+                      .attribute("groupInto", hasProperty("id", is(1L)))).andExpect(model()
+                      .attribute("groupFrom", hasProperty("id", is(0L))));
+                      // andExpect(model().attribute("numberFrom"));
+          }
+              else{
+                  mockMvc.perform(post("/group/consolidate/confirm").param("groupId1", String.valueOf(1L))
+                          .param("groupId2", String.valueOf(0L)).param("order", orders[i])).andExpect(model()
+                          .attribute("groupInto", hasProperty("id", is(0L)))).andExpect(model()
+                          .attribute("groupFrom", hasProperty("id", is(1L))));
+              }
+              }
+      //   verify(groupManagementServiceMock, times(1)).orderPairByNumberMembers(1L,0L);
+
+
+      }
+
+
+   /* @Test
+>>>>>>> upstream/master
     public void groupsConsolidateDoWorks() throws Exception {
         Group testGroupInto = new Group();
         testGroupInto.setId(0L);
         Group testGroupFrom = new Group();
         testGroupFrom.setId(1L);
+<<<<<<< HEAD
 
         List<User> membersGroupFrom = new ArrayList<>();
         membersGroupFrom.add(new User());
@@ -535,4 +599,24 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         verifyNoMoreInteractions(groupManagementServiceMock);
 
     }
+=======
+        Group testConsolidatedCroup = new Group();
+        testConsolidatedCroup.setId(2L);
+        List<User> membersGroupFrom = new ArrayList<>();
+        membersGroupFrom.add(new User());
+        membersGroupFrom.add(sessionTestUser);
+        Integer[] testUserSize = {5,7};
+        when(groupManagementServiceMock.mergeGroupsSpecifyOrder(testGroupFrom,testGroupInto,false))
+                .thenReturn(testConsolidatedCroup);
+        when(groupManagementServiceMock.loadGroup(testGroupFrom.getId())).thenReturn(testGroupFrom);
+        when(groupManagementServiceMock.getGroupSize(testConsolidatedCroup,false)).thenReturn(12);
+        mockMvc.perform(post("/group/consolidate/do").param("groupInto",String.valueOf(testGroupInto.getId()))
+                .param("groupFrom", String.valueOf(testGroupFrom.getId())).param("leaveActive", String.valueOf(true)))
+                .andExpect(model().attribute("groupId", is(testConsolidatedCroup.getId())))
+                .andExpect(flash().attributeExists(BaseController.MessageType.SUCCESS.getMessageKey()))
+                .andExpect(view().name("redirect:/group/view"));
+
+    }*/
+
+>>>>>>> upstream/master
 }
