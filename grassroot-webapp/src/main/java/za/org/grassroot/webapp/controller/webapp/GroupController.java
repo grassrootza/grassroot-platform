@@ -66,8 +66,9 @@ public class GroupController extends BaseController {
         return userFromDb.getGroupsPartOf().contains(group);
     }
 
-    @PreAuthorize("hasPermission(#id, 'za.org.grassroot.core.domain.Group', GROUP_PERMISSION_UPDATE_GROUP_DETAILS)")
+    @PreAuthorize("hasAnyRole('ROLE_DOESNT_EXIST')")
     private Group secureLoadGroup(Long id) {
+        log.info("Inside secureLoadGroup ...");
         return groupManagementService.loadGroup(id);
     }
 

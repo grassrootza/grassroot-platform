@@ -428,7 +428,7 @@ public class USSDLogBookController extends USSDController {
     @RequestMapping(path + confirmCompleteDate)
     @ResponseBody
     public Request confirmCompletedDate(@RequestParam(value = phoneNumber) String inputNumber,
-                                        @RequestParam(value = logBookUrlSuffix) Long logBookId,
+                                        @RequestParam(value = logBookParam) Long logBookId,
                                         @RequestParam(value = userInputParam) String userInput,
                                         @RequestParam(value = interruptedFlag, required=false) boolean interrupted,
                                         @RequestParam(value = interruptedInput, required=false) String priorInput) throws URISyntaxException {
