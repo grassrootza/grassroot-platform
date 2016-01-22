@@ -115,7 +115,6 @@ public class USSDLogBookController extends USSDController {
         userInput = (interrupted) ? priorInput : userInput;
         User user = userManager.findByInputNumber(inputNumber, saveLogMenu(dueDateMenu, logBookId, userInput));
         if (!revising) logBookService.setMessage(logBookId, userInput);
-        String urlSuffix = revising ? "&prior_menu=" + dueDateMenu : "";
         return menuBuilder(new USSDMenu(menuPrompt(dueDateMenu, user),
                                         nextOrConfirmUrl(dueDateMenu, assignMenu, logBookId, revising)));
     }
@@ -410,8 +409,8 @@ public class USSDLogBookController extends USSDController {
     public Request pickCompletor(@RequestParam(value = phoneNumber) String inputNumber,
                                  @RequestParam(value = logBookParam) Long logBookId,
                                  @RequestParam(value = userInputParam) String userInput,
-                                 @RequestParam(value = interruptedFlag) boolean interrupted,
-                                 @RequestParam(value = interruptedInput) String prior_input) throws URISyntaxException {
+                                 @RequestParam(value = interruptedFlag, required = false) boolean interrupted,
+                                 @RequestParam(value = interruptedInput, required = false) String prior_input) throws URISyntaxException {
         userInput = interrupted ? prior_input : userInput;
         User user = userManager.findByInputNumber(inputNumber, saveLogMenu(pickCompletor, logBookId, userInput));
         return menuBuilder(pickUserFromGroup(logBookId, userInput, setCompleteMenu + doSuffix, completingUser, user));
@@ -431,8 +430,8 @@ public class USSDLogBookController extends USSDController {
     public Request confirmCompletedDate(@RequestParam(value = phoneNumber) String inputNumber,
                                         @RequestParam(value = logBookUrlSuffix) Long logBookId,
                                         @RequestParam(value = userInputParam) String userInput,
-                                        @RequestParam(value = interruptedFlag) boolean interrupted,
-                                        @RequestParam(value = interruptedInput) String priorInput) throws URISyntaxException {
+                                        @RequestParam(value = interruptedFlag, required=false) boolean interrupted,
+                                        @RequestParam(value = interruptedInput, required=false) String priorInput) throws URISyntaxException {
 
         userInput = interrupted ? priorInput : userInput;
         User user = userManager.findByInputNumber(inputNumber, saveLogMenu(confirmComplete, logBookId, userInput));

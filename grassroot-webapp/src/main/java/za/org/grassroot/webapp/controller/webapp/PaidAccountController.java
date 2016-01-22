@@ -71,8 +71,8 @@ public class PaidAccountController extends BaseController {
     public String viewPaidAccount(Model model, @RequestParam("accountId") Long accountId, HttpServletRequest request) {
         Account account = accountManagementService.loadAccount(accountId);
         log.info("We are checking against this account ..." + account);
-        if (!sessionUserHasAccountPermission(account, request))
-            throw new AccessDeniedException("Not an administrator for this account");
+        /*if (!sessionUserHasAccountPermission(account, request))
+            throw new AccessDeniedException("Not an administrator for this account");*/
         model.addAttribute("account", account);
         model.addAttribute("paidGroups", accountManagementService.getGroupsPaidForByAccount(account));
         return "paid_account/view";
