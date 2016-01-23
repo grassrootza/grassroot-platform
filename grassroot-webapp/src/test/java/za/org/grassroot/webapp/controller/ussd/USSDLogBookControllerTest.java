@@ -121,7 +121,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
                 new LogBook(5L, message, now));
         Page<LogBook> dummyPageOfGroups = new PageImpl<>(testLogBooks);
 
-        String urlToSave = USSDUrlUtil.logViewExistingUrl(listEntriesMenu,dummyId,true);
+        String urlToSave = USSDUrlUtil.logViewExistingUrl(listEntriesMenu,dummyId,true,0);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(logBookServiceMock.getAllLogBookEntriesForGroup(dummyId, 0, 3, true)).thenReturn(dummyPageOfGroups);
