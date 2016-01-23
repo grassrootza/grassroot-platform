@@ -107,7 +107,7 @@ public class GroupController extends BaseController {
      */
 
 
-    // @PreAuthorize("hasPermission(#groupId, ' za.org.grassroot.core.domain.Group', 'GROUP_PERMISSION_UPDATE_GROUP_DETAILS')")
+   // @PreAuthorize("hasPermission(#groupId, ' za.org.grassroot.core.domain.Group', 'GROUP_PERMISSION_UPDATE_GROUP_DETAILS')")
     @RequestMapping("view")
     public String viewGroupIndex(Model model, @RequestParam("groupId") Long groupId) {
 

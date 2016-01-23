@@ -46,4 +46,12 @@ public interface GroupAccessControlManagementService {
      */
     void updateUserGroupPermissions(Group group, User user, Set<Permission> groupPermissions);
 
+    /**
+     *
+     * @param groupId
+     * @param permission
+     * @return
+     */
+    Group loadGroup(Long groupId, Permission permission);
+
 }

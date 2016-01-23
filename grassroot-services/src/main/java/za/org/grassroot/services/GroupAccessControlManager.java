@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.PermissionEvaluator;
 import org.springframework.security.acls.domain.ObjectIdentityImpl;
 import org.springframework.security.acls.domain.PrincipalSid;
@@ -143,6 +144,27 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
             return false;
         }
 
+    }
+
+    /**
+     * @param groupId
+     * @param permission
+     * @return Group if the permission is granted
+     * @throws AccessDeniedException if the permission is NOT granted
+     */
+    @Override
+    public Group loadGroup(Long groupId, Permission permission) {
+
+        Group group = groupManagementService.loadGroup(groupId);
+
+        if (group == null) {
+            throw new IllegalArgumentException("Group '" + groupId + "' does not exist.");
+        }
+
+        if (!permissionEvaluator.hasPermission(SecurityContextHolder.getContext().getAuthentication(), group, permission)) {
+            throw new AccessDeniedException("Unauthorised access '" + permission.getAuthority() + "' for Group '" + group.getGroupName() + "'");
+        }
+        return group;
     }
 
     @Override
