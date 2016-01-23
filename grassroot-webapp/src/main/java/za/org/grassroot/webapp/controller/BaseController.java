@@ -17,7 +17,10 @@ import org.springframework.web.bind.ServletRequestDataBinder;
 import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.services.GroupAccessControlManagementService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.util.SqlTimestampPropertyEditor;
 
@@ -64,6 +67,9 @@ public class BaseController {
     @Autowired
     protected UserManagementService userManagementService;
 
+    @Autowired
+    protected GroupAccessControlManagementService groupAccessControlManagementService;
+
 
     protected User getUserProfile() {
 
@@ -80,6 +86,11 @@ public class BaseController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return userManagementService.fetchUserByUsername(authentication.getName());
     }*/
+
+    public Group loadGroup(Long groupId, Permission permission)
+    {
+        return  groupAccessControlManagementService.loadGroup(groupId,permission);
+    }
 
     public String getMessage(String id) {
         Locale locale = LocaleContextHolder.getLocale();
