@@ -3,6 +3,8 @@ package za.org.grassroot.core.enums;
 public enum GroupLogType {
     GROUP_ADDED("group added"),
     GROUP_REMOVED("group removed"),
+    GROUP_UPDATED("group updated"),
+    GROUP_RENAMED("group renamed"),
     GROUP_MEMBER_ADDED("group member added"),
     GROUP_MEMBER_REMOVED("group member removed"),
     SUBGROUP_ADDED("sub-group added"),

@@ -37,6 +37,10 @@ public class GroupLog implements Serializable {
     @Column
     private Long userOrSubGroupId;
 
+    @Basic
+    @Column
+    private String description;
+
     public GroupLog() {
     }
 
@@ -45,6 +49,14 @@ public class GroupLog implements Serializable {
         this.userId = userId;
         this.groupLogType = groupLogType;
         this.userOrSubGroupId = userOrSubGroupId;
+    }
+
+    public GroupLog(Long groupId, Long userId, GroupLogType groupLogType, Long userOrSubGroupId, String description) {
+        this.groupId = groupId;
+        this.userId = userId;
+        this.groupLogType = groupLogType;
+        this.userOrSubGroupId = userOrSubGroupId;
+        this.description = description;
     }
 
     @PreUpdate
@@ -103,6 +115,14 @@ public class GroupLog implements Serializable {
         this.userOrSubGroupId = userOrSubGroupId;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
     @Override
     public String toString() {
         return "GroupLog{" +
@@ -112,6 +132,7 @@ public class GroupLog implements Serializable {
                 ", userId=" + userId +
                 ", groupLogType=" + groupLogType +
                 ", userOrSubGroupId=" + userOrSubGroupId +
+                ", description='" + description + '\'' +
                 '}';
     }
 }
