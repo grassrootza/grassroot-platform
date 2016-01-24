@@ -30,7 +30,7 @@ public interface GroupManagementService {
 
     public Group createNewGroupWithCreatorAsMember(User creatingUser, String groupName);
 
-    public Group saveGroup(Group groupToSave);
+    public Group saveGroup(Group groupToSave, boolean createGroupLog, String description, Long changedByUserId);
 
     public Group renameGroup(Group group, String newGroupName);
 

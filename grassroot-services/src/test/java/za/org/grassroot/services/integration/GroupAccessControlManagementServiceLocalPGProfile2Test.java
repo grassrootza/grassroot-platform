@@ -55,7 +55,7 @@ public class GroupAccessControlManagementServiceLocalPGProfile2Test {
         assertThat(user.getUsername(), is(notNullValue()));
 
         Group group = new Group("Reds", user);
-        group = groupManagementService.saveGroup(group);
+        group = groupManagementService.saveGroup(group,false,"",0L);
 
 
         Role groupRole = new Role(BaseRoles.ROLE_GROUP_ORGANIZER, group.getId(), group.getGroupName());
