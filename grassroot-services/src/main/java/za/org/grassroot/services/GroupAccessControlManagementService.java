@@ -54,4 +54,13 @@ public interface GroupAccessControlManagementService {
      */
     Group loadGroup(Long groupId, Permission permission);
 
+
+    /**
+     *
+     * @param groupId
+     * @param permissionName
+     * @return
+     */
+    Group loadGroup(Long groupId, String permissionName);
+
 }
