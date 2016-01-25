@@ -34,4 +34,8 @@ public final class GrassRootApplicationProfiles {
      * Indicates that the application is running against local postgresql database.
      */
     public  final static String LOCAL_PG = "localpg";
+
+
+
+    public  final static String PRODUCTION = "production";
 }
