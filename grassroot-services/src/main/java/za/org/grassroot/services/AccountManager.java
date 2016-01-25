@@ -44,6 +44,7 @@ public class AccountManager implements AccountManagementService {
 
     private String accountAdminRole = "ROLE_ACCOUNT_ADMIN";
 
+
     @Override
     public Account createAccount(String accountName) {
         log.info("Okay, creating a bare bones account ... with name: " + accountName);
@@ -127,7 +128,7 @@ public class AccountManager implements AccountManagementService {
         account.addPaidGroup(paidGroup);
         account = accountRepository.save(account);
         group.setPaidFor(true);
-        return groupManagementService.saveGroup(group);
+        return groupManagementService.saveGroup(group, true, "Set paid for", addingUser.getId());
     }
 
     @Override
@@ -152,7 +153,7 @@ public class AccountManager implements AccountManagementService {
 
         paidGroupRepository.save(paidGroupRecord);
         log.info("PaidGroup entity now ... " + paidGroupRecord);
-        groupManagementService.saveGroup(group);
+        groupManagementService.saveGroup(group, true,"Remove paid for",removingUser.getId());
         return accountRepository.save(account);
     }
 
@@ -166,5 +167,7 @@ public class AccountManager implements AccountManagementService {
         return paidGroupRepository.findOne(paidGroupId);
     }
 
-    private Account getNullAccount() { return accountRepository.findOne(0L); }
+    private Account getNullAccount() {
+        return accountRepository.findOne(0L);
+    }
 }

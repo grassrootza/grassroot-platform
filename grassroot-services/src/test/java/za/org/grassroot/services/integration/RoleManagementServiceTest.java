@@ -58,7 +58,7 @@ public class RoleManagementServiceTest extends AbstractTransactionalJUnit4Spring
         Role organizerRole = roleManagementService.addRoleToGroup(BaseRoles.ROLE_GROUP_ORGANIZER, group);
         Permission addUserPermission = permissionsManagementService.findByName(BasePermissions.GROUP_PERMISSION_ADD_GROUP_MEMBER);
         organizerRole.setPermissions(permissionsManagementService.defaultGroupOrganizerPermissions());
-        groupManagementService.saveGroup(group);
+        groupManagementService.saveGroup(group,false,"",0L);
         assertNotNull(group.getGroupRoles());
         assertTrue(group.getGroupRoles().contains(organizerRole));
         assertNotNull(organizerRole.getPermissions());

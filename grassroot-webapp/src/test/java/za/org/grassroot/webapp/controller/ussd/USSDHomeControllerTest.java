@@ -269,7 +269,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
         when(groupManagementServiceMock.needsToRenameGroup(testUser)).thenReturn(true);
         when(groupManagementServiceMock.loadGroup(testGroup.getId())).thenReturn(testGroup);
-        when(groupManagementServiceMock.saveGroup(testGroup)).thenReturn(testGroup);
+        when(groupManagementServiceMock.saveGroup(testGroup,false,"",0L)).thenReturn(testGroup);
         when(groupManagementServiceMock.groupToRename(testUser)).thenReturn(testGroup);
 
         // todo: work out how to verify that it actually returned the prompt to rename the group
@@ -281,7 +281,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(1)).loadOrSaveUser(phoneForTests);
         verify(userManagementServiceMock, times(1)).findByInputNumber(phoneForTests);
-        verify(groupManagementServiceMock, times(1)).saveGroup(testGroup);
+        verify(groupManagementServiceMock, times(1)).saveGroup(testGroup,true,"Group renamed from  to Test Group", null);
         verify(groupManagementServiceMock, times(2)).needsToRenameGroup(testUser);
     }
 

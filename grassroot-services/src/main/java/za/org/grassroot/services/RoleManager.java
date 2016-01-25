@@ -36,6 +36,14 @@ public class RoleManager implements  RoleManagementService {
 
     @Autowired
     private GroupAccessControlManagementService groupAccessControlManagementService;
+    /*
+    N.B.
+
+    When we refactor to pass the user doing actions around so that it can be recorded then replace the
+    dontKnowTheUser whereever it is used with the actual user
+    */
+    private final Long dontKnowTheUser = 0L;
+
 
     @Override
     public Role createRole(Role role) {
@@ -134,7 +142,7 @@ public class RoleManager implements  RoleManagementService {
     public Role addRoleToGroup(Role role, Group group) {
         // todo: check for duplicates before doing this
         group.addRole(role);
-        groupManagementService.saveGroup(group);
+        groupManagementService.saveGroup(group,true, String.format("Added role %s to group",role.getName()),dontKnowTheUser);
         role.setGroup(group);
         return roleRepository.save(role);
     }
@@ -165,7 +173,7 @@ public class RoleManager implements  RoleManagementService {
             role = roleRepository.save(role);
             log.info("Role saved as ... " + role.describe());
             group.addRole(role);
-            groupManagementService.saveGroup(group);
+            groupManagementService.saveGroup(group,true, String.format("Added role %s to group",role.getName()),dontKnowTheUser);
             user.addRole(role);
             userManagementService.save(user);
         } else {
@@ -177,7 +185,7 @@ public class RoleManager implements  RoleManagementService {
                 role.setPermissions(permissionsManagementService.defaultPermissionsGroupRole(role.getName()));
             role = roleRepository.save(role);
             group.addRole(role);
-            groupManagementService.saveGroup(group);
+            groupManagementService.saveGroup(group,true, String.format("Added role %s to group",role.getName()),dontKnowTheUser);
             user.addRole(role);
             userManagementService.save(user);
         }
