@@ -77,6 +77,14 @@ public class HomeController extends BaseController {
 
     public ModelAndView generateHomePage(Model model) {
 
+
+
+        /*
+         Recursive construction in the view node will turn each of these into a tree with a root node as the top level
+         group. There may be a more efficient way to do this than the groupManagement call (and/or optimizing within it
+         */
+        // start of SQL tree
+
         Long startTime = System.currentTimeMillis();
         ModelAndView homePageModelAndView;
         User user = getUserProfile();
@@ -90,6 +98,7 @@ public class HomeController extends BaseController {
         Long endTime = System.currentTimeMillis();
         log.info(String.format("Home page generated ... took %d msec", endTime - startTime));
         return homePageModelAndView;
+
 
     }
 
