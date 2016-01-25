@@ -33,8 +33,12 @@ import java.util.Map;
  * @author Lesetse Kimwaga
  */
 @Controller
+
+
+
 @RequestMapping("/group/")
 @SessionAttributes({"groupCreator", "groupModifier"})
+
 public class GroupController extends BaseController {
 
     Logger log = LoggerFactory.getLogger(GroupController.class);
