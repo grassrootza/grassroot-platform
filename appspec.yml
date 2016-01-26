@@ -6,8 +6,8 @@ files:
 permissions:
    - object: /var/grassroot
      pattern: "**"
-     owner: ubuntu 
-     group: ubuntu
+     owner: root 
+     group: root
      mode: 755
      type:
        - file
