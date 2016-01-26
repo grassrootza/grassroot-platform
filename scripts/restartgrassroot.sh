@@ -9,6 +9,6 @@ if [[ -f /var/grassroot/.pid ]]; then
 	rm -f  /var/grassroot/.pid;
 fi
 
-nohup java -Dspring.profiles.active=production -jar /var/grassroot/grassroot-webapp/target/grassroot-webapp-1.0-SNAPSHOT.jar > /var/grassroot/grassroot-app.log 2>&1 &
-echo $! > /var/grassroot/.pid
+nohup java -Dspring.profiles.active=production -jar grassroot-webapp/target/grassroot-webapp-1.0-SNAPSHOT.jar > grassroot-app.log 2>&1 &
+echo $! > .pid
 cd $CURR
