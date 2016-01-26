@@ -6,17 +6,17 @@ files:
 permissions:
    - object: /var/grassroot
      pattern: "**"
-     owner: ubuntu 
-     group: ubuntu
+     owner: root 
+     group: root 
      mode: 755
      type:
        - file
 hooks:
    BeforeInstall:
     - location: scripts/installgrassroot.sh
-      runas: ubuntu 
+      runas: root 
     - location: scripts/startgrassroot.sh
-      runas:  ubuntu
+      runas: root 
    AfterInstall:
     - location: scripts/restartgrassroot.sh
-      runas:  ubuntu
+      runas: root 
