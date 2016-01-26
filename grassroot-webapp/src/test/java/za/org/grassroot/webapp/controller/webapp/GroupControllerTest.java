@@ -59,7 +59,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         List<Group> testGroupspartOf = new ArrayList<>();
         testGroupspartOf.add(dummyGroup);
         sessionTestUser.setGroupsPartOf(testGroupspartOf);
-
         when(userManagementServiceMock.getUserById(sessionTestUser.getId())).thenReturn(sessionTestUser);
         when(groupManagementServiceMock.loadGroup(dummyGroup.getId())).thenReturn(dummyGroup);
         when(groupManagementServiceMock.hasParent(dummyGroup)).thenReturn(false);
@@ -133,17 +132,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(groupManagementServiceMock);
     }
-    /*
-    @Test
-    public void createGroupFailsValidation() throws Exception{
-
-      GroupWrapper dummyGroupCreator = new GroupWrapper();
-      mockMvc.perform(post("/group/create").contentType(MediaType.APPLICATION_FORM_URLENCODED).param("groupName", "")
-              .sessionAttr("groupCreator", dummyGroupCreator)).andExpect(view().name("group/create"))
-              .andExpect(model().attribute("groupCreator", is(dummyGroupCreator)));
-
-    }*/
-
 
     @Test
     public void addMemberWorks() throws Exception {
@@ -164,7 +152,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(view().name("group/create"));
 
     }
-
 
     @Test
     public void modifyGroupWorks() throws Exception {
@@ -342,7 +329,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(model().attribute("groupId", is(String.valueOf(dummyId))));
         verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
         verify(groupManagementServiceMock, times(1)).getGroupsFromUser(sessionTestUser);
-        // verify(groupManagementServiceMock,times(1)).isGroupAlsoParent(testChildGroup,testParentGroup);
         verifyNoMoreInteractions(groupManagementServiceMock);
 
     }
@@ -390,9 +376,9 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(groupManagementServiceMock.getMergeCandidates(sessionTestUser, dummyId)).thenReturn(testCandidateGroups);
         mockMvc.perform(get("/group/consolidate/select").param("groupId", String.valueOf(dummyId)))
                 .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("view?groupId=1")).andExpect(view()
-                .name("redirect:view")).andExpect(model().attribute("groupId", String.valueOf(dummyId))).andExpect(flash().attributeExists(
+                .name("redirect:view")).andExpect(model().attribute("groupId", String.valueOf(dummyId)))
+                .andExpect(flash().attributeExists(
                 BaseController.MessageType.ERROR.getMessageKey()));
-        ;
         verify(groupManagementServiceMock, times(1)).getMergeCandidates(sessionTestUser, dummyId);
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyNoMoreInteractions(userManagementServiceMock);
@@ -416,87 +402,58 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         for (int i = 0; i < orders.length; i++) {
             if (i < 2) {
                 mockMvc.perform(post("/group/consolidate/confirm").param("groupId1", String.valueOf(1L))
-                        .param("groupId2", String.valueOf(0L)).param("order", orders[i])).andExpect(model()
+                        .param("groupId2", String.valueOf(0L)).param("order", orders[i])
+                        .param("leaveActive", String.valueOf(true))).andExpect(model()
                         .attribute("groupInto", hasProperty("id", is(1L)))).andExpect(model()
                         .attribute("groupFrom", hasProperty("id", is(0L)))).
-                        andExpect(model().attribute("numberFrom", is(testGroupFrom.getGroupMembers().size())));
+                        andExpect(model().attribute("numberFrom", is(testGroupFrom.getGroupMembers().size())))
+                        .andExpect(model().attribute("leaveActive", is(true)));
             } else {
                 mockMvc.perform(post("/group/consolidate/confirm").param("groupId1", String.valueOf(1L))
-                        .param("groupId2", String.valueOf(0L)).param("order", orders[i])).andExpect(model()
+                        .param("groupId2", String.valueOf(0L)).param("order", orders[i]).param("leaveActive",
+                                String.valueOf(true))).andExpect(model()
                         .attribute("groupInto", hasProperty("id", is(0L)))).andExpect(model()
                         .attribute("groupFrom", hasProperty("id", is(1L)))).
-                        andExpect(model().attribute("numberFrom", is(testGroupInto.getGroupMembers().size())));
+                        andExpect(model().attribute("numberFrom", is(testGroupInto.getGroupMembers().size())))
+                        .andExpect(model().attribute("leaveActive", is(true)));
             }
         }
         verify(groupManagementServiceMock, times(1)).orderPairByNumberMembers(1L, 0L);
         verify(groupManagementServiceMock, times(3)).loadGroup(orderedIds[0]);
         verify(groupManagementServiceMock, times(3)).loadGroup(orderedIds[1]);
+        verify(groupManagementServiceMock, times(2)).getGroupSize(testGroupFrom, false);
+        verify(groupManagementServiceMock, times(1)).getGroupSize(testGroupInto, false);
+        verifyNoMoreInteractions(groupManagementServiceMock);
 
 
     }
 
-
-  /*  @Test
-=======
-     @Test
-      public void consolidateGroupConfirmWorks() throws Exception{
-          Group testGroupInto = new Group();
-          testGroupInto.setId(1L);
-          Group testGroupFrom = new Group();
-          testGroupFrom.setId(0L);
-          Long[] orderedIds ={1L,0L};
-          String[] orders ={"small_to_large","2_into_1","1_into_2"};
-          when(groupManagementServiceMock.orderPairByNumberMembers(1L,0L)).thenReturn(orderedIds);
-          when(groupManagementServiceMock.loadGroup(orderedIds[0])).thenReturn(testGroupInto);
-          when(groupManagementServiceMock.loadGroup(orderedIds[1])).thenReturn(testGroupFrom);
-          for(int i=0; i<orders.length; i++){
-              if(i<2){
-              mockMvc.perform(post("/group/consolidate/confirm").param("groupId1", String.valueOf(1L))
-                      .param("groupId2", String.valueOf(0L)).param("order", orders[i])).andExpect(model()
-                      .attribute("groupInto", hasProperty("id", is(1L)))).andExpect(model()
-                      .attribute("groupFrom", hasProperty("id", is(0L))));
-                      // andExpect(model().attribute("numberFrom"));
-          }
-              else{
-                  mockMvc.perform(post("/group/consolidate/confirm").param("groupId1", String.valueOf(1L))
-                          .param("groupId2", String.valueOf(0L)).param("order", orders[i])).andExpect(model()
-                          .attribute("groupInto", hasProperty("id", is(0L)))).andExpect(model()
-                          .attribute("groupFrom", hasProperty("id", is(1L))));
-              }
-              }
-      //   verify(groupManagementServiceMock, times(1)).orderPairByNumberMembers(1L,0L);
-
-
-      }
-
-
-   /* @Test
->>>>>>> upstream/master
+    @Test
     public void groupsConsolidateDoWorks() throws Exception {
         Group testGroupInto = new Group();
         testGroupInto.setId(0L);
+        testGroupInto.addMember(new User());
         Group testGroupFrom = new Group();
+        testGroupFrom.addMember(sessionTestUser);
         testGroupFrom.setId(1L);
-<<<<<<< HEAD
-
-        List<User> membersGroupFrom = new ArrayList<>();
-        membersGroupFrom.add(new User());
-        membersGroupFrom.add(sessionTestUser);
-        Integer[] testUserSize = {5, 7};
-
-      //  when(groupManagementServiceMock.loadGroup(testGroupInto.getId())).thenReturn(testGroupInto);
         when(groupManagementServiceMock.loadGroup(testGroupFrom.getId())).thenReturn(testGroupFrom);
-        when(groupManagementServiceMock.mergeGroupsSpecifyOrder(testGroupInto, testGroupFrom, false))
+        when(groupManagementServiceMock.mergeGroupsSpecifyOrder(testGroupInto, testGroupFrom, !true))
                 .thenReturn(testGroupInto);
-        when(groupManagementServiceMock.getGroupSize(testGroupInto, false)).thenReturn(12);
+        when(groupManagementServiceMock.getGroupSize(testGroupInto, false)).thenReturn(1);
+        when(groupManagementServiceMock.loadGroup(testGroupInto.getId())).thenReturn(testGroupInto);
         mockMvc.perform(post("/group/consolidate/do").param("groupInto", String.valueOf(testGroupInto.getId()))
-                .param("groupFrom", String.valueOf(testGroupFrom.getId())).param("leaveActive", String.valueOf(false)))
-               // .andExpect(model().attribute("groupId", is(testConsolidatedCroup.getId())))
+                .param("groupFrom", String.valueOf(testGroupFrom.getId())).param("leaveActive", String.valueOf(true)))
+                .andExpect(model().attribute("groupId", is(String.valueOf(testGroupInto.getId()))))
                 .andExpect(flash().attributeExists(BaseController.MessageType.SUCCESS.getMessageKey()))
                 .andExpect(view().name("redirect:/group/view"));
+        verify(groupManagementServiceMock, times(1)).loadGroup(testGroupFrom.getId());
+        verify(groupManagementServiceMock, times(1)).loadGroup(testGroupInto.getId());
+        verify(groupManagementServiceMock, times(1)).mergeGroupsSpecifyOrder(testGroupInto, testGroupFrom, false);
+        verify(groupManagementServiceMock, times(1)).getGroupSize(testGroupInto, false);
+        verifyNoMoreInteractions(groupManagementServiceMock);
 
 
-    }*/
+    }
 
     @Test
     public void confirmDeleteWorks() throws Exception {
@@ -533,12 +490,10 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     public void deleteGroupWorksWithConfirmFieldValueInvalid() throws Exception {
 
         Group group = new Group();
-
         when(userManagementServiceMock.getUserById(sessionTestUser.getId())).thenReturn(sessionTestUser);
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(group);
         when(groupManagementServiceMock.canUserMakeGroupInactive(sessionTestUser, group)).thenReturn(true);
         when(groupManagementServiceMock.getLastTimeGroupActive(group)).thenReturn(LocalDateTime.now());
-
         List<Group> testGroupspartOf = new ArrayList<>();
         testGroupspartOf.add(group);
         sessionTestUser.setGroupsPartOf(testGroupspartOf);
@@ -550,7 +505,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         verify(groupManagementServiceMock, times(2)).canUserMakeGroupInactive(sessionTestUser, group);
         verify(groupManagementServiceMock, times(2)).loadGroup(dummyId);
         verifyNoMoreInteractions(userManagementServiceMock);
-        // verifyNoMoreInteractions(groupManagementServiceMock);
     }
 
     @Test
@@ -559,46 +513,33 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         testGroup.setId(dummyId);
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
         mockMvc.perform(get("/group/unsubscribe").param("groupId", String.valueOf(dummyId)))
-                .andExpect(status().isOk()).andExpect(model().attribute("group",hasProperty("id", is(1L))))
+                .andExpect(status().isOk()).andExpect(model().attribute("group", hasProperty("id", is(1L))))
                 .andExpect(view().name("group/unsubscribe_confirm"));
         verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
         verifyNoMoreInteractions(groupManagementServiceMock);
 
     }
+
     @Test
-    public void unSubgroupWorks() throws Exception{
+    public void unSubgroupWorks() throws Exception {
         Group testGroup = new Group();
         testGroup.setId(dummyId);
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
-        when(groupManagementServiceMock.isUserInGroup(testGroup,sessionTestUser)).thenReturn(true);
-        when(groupManagementServiceMock.removeGroupMember(testGroup,sessionTestUser)).thenReturn(testGroup);
-        mockMvc.perform(post("/group/unsubscribe").param("groupId",String.valueOf(dummyId))
+        when(userManagementServiceMock.loadUser(sessionTestUser.getId())).thenReturn(sessionTestUser);
+        when(groupManagementServiceMock.isUserInGroup(testGroup, sessionTestUser)).thenReturn(true);
+        when(groupManagementServiceMock.unsubscribeMember(testGroup, sessionTestUser)).thenReturn(testGroup);
+        when(groupManagementServiceMock.removeGroupMember(testGroup, sessionTestUser)).thenReturn(testGroup);
+        mockMvc.perform(post("/group/unsubscribe").param("groupId", String.valueOf(dummyId))
                 .param("confirm_field", "unsubscribe")).andExpect(status().is3xxRedirection())
-                .andExpect(view().name("redirect:/home")).andExpect(redirectedUrl("/home"));
-                //.andExpect(flash().attributeExists(BaseController.MessageType.SUCCESS.getMessageKey()));
-        /* verify(groupManagementServiceMock,times(1)).loadGroup(dummyId);
-        verify(groupManagementServiceMock,times(1)).isUserInGroup(anyObject(),anyObject());
-        verify(groupManagementServiceMock,times(1)).removeGroupMember(testGroup,sessionTestUser);
-        verifyNoMoreInteractions(groupManagementServiceMock);*/
+                .andExpect(view().name("redirect:/home")).andExpect(redirectedUrl("/home"))
+                .andExpect(flash().attributeExists(BaseController.MessageType.SUCCESS.getMessageKey()));
+        verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
+        verify(groupManagementServiceMock, times(1)).isUserInGroup(anyObject(), anyObject());
+        verify(groupManagementServiceMock, times(1)).unsubscribeMember(testGroup, sessionTestUser);
+        verify(userManagementServiceMock, times(1)).loadUser(sessionTestUser.getId());
+        verifyNoMoreInteractions(groupManagementServiceMock);
 
     }
 
-    /*        Group testConsolidatedCroup = new Group();
-        testConsolidatedCroup.setId(2L);
-        List<User> membersGroupFrom = new ArrayList<>();
-        membersGroupFrom.add(new User());
-        membersGroupFrom.add(sessionTestUser);
-        Integer[] testUserSize = {5,7};
-        when(groupManagementServiceMock.mergeGroupsSpecifyOrder(testGroupFrom,testGroupInto,false))
-                .thenReturn(testConsolidatedCroup);
-        when(groupManagementServiceMock.loadGroup(testGroupFrom.getId())).thenReturn(testGroupFrom);
-        when(groupManagementServiceMock.getGroupSize(testConsolidatedCroup,false)).thenReturn(12);
-        mockMvc.perform(post("/group/consolidate/do").param("groupInto",String.valueOf(testGroupInto.getId()))
-                .param("groupFrom", String.valueOf(testGroupFrom.getId())).param("leaveActive", String.valueOf(true)))
-                .andExpect(model().attribute("groupId", is(testConsolidatedCroup.getId())))
-                .andExpect(flash().attributeExists(BaseController.MessageType.SUCCESS.getMessageKey()))
-                .andExpect(view().name("redirect:/group/view"));
-
-    }*/
 
 }

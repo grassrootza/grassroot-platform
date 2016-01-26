@@ -59,7 +59,6 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(model().attribute("group",
                         hasProperty("id", is(1L))));
         verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
-        // verify(groupManagementServiceMock,times(1)).groupsOnWhichCanCallVote(sessionTestUser);
         verifyNoMoreInteractions(groupManagementServiceMock);
 
 
