@@ -21,6 +21,7 @@ public class GroupLog implements Serializable {
     @Basic
     @Column(name="created_date_time", insertable = true, updatable = false)
     private Date createdDateTime;
+
     @Basic
     @Column(name="group_id")
     private Long groupId;

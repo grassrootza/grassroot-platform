@@ -13,6 +13,7 @@ import za.org.grassroot.services.LogBookService;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
+import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.net.URISyntaxException;
 import java.util.Iterator;
@@ -40,8 +41,8 @@ public class USSDLogBookController extends USSDController {
             completingUser = "choose_completor", pickCompletor = "pick_completor", completedDate = "date_completed",
             confirmCompleteDate = "confirm_date", confirmComplete = "confirm_complete";
     private static final String logBookParam = "logbookid", logBookUrlSuffix = "?" + logBookParam + "=";
-    private static final String priorMenuSuffix = "&" + previousMenu + "=";
 
+    private static final String priorMenuSuffix = "&" + previousMenu + "=";
     private static final int PAGE_LENGTH = 3;
     private static final int hour =13;
     private static final int minute =00;
@@ -96,6 +97,7 @@ public class USSDLogBookController extends USSDController {
                                  @RequestParam(value = interruptedFlag, required=false) boolean interrupted) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
 
+
         if (logBookId == null) logBookId = logBookService.create(user.getId(), groupId, false).getId();
         userManager.setLastUssdMenu(user, saveLogMenu(subjectMenu, logBookId));
         USSDMenu menu = new USSDMenu(getMessage(thisSection, subjectMenu, promptKey, user),
@@ -130,7 +132,7 @@ public class USSDLogBookController extends USSDController {
 
         userInput = interrupted ? priorInput : userInput;
         User user = userManager.findByInputNumber(inputNumber, saveLogMenu(assignMenu, logBookId, userInput));
-        String formattedDateString =  DateTimeUtil.reformatDateInput(userInput);
+       String formattedDateString =  DateTimeUtil.reformatDateInput(userInput);
         if (!revising) logBookService.setDueDate(logBookId, DateTimeUtil.parsePreformattedDate(
                 formattedDateString, hour,minute));
         USSDMenu menu = new USSDMenu(menuPrompt(assignMenu, user));
@@ -195,7 +197,9 @@ public class USSDLogBookController extends USSDController {
 
         // todo: need a "complete" flag
         boolean assignToUser = (assignUserId != null && assignUserId != 0);
-        userInput = interrupted ? priorInput : userInput;
+        userInput = (priorInput !=null) ? priorInput : userInput;
+        priorMenu=(priorMenu!=null)?priorMenu:"";
+
         boolean revising = (priorMenu != null && !priorMenu.trim().equals("") && !interrupted);
         User user = userManager.findByInputNumber(inputNumber,saveLogMenu(confirmMenu, logBookId, userInput, assignUserId));
 
@@ -256,10 +260,10 @@ public class USSDLogBookController extends USSDController {
                                    @RequestParam(value = "pageNumber", required = false) Integer pageNumber) throws URISyntaxException {
 
 
-        User user = userManager.findByInputNumber(inputNumber,
-                logMenus + listEntriesMenu + groupIdUrlSuffix + groupId + "&done=" + doneEntries);
-        String urlBase = logMenus + viewEntryMenu + logBookUrlSuffix;
         pageNumber = (pageNumber == null) ? 0 : pageNumber;
+        User user = userManager.findByInputNumber(inputNumber,
+                USSDUrlUtil.logViewExistingUrl(listEntriesMenu,groupId,doneEntries,pageNumber));
+        String urlBase = logMenus + viewEntryMenu + logBookUrlSuffix;
         Page<LogBook> entries = logBookService.getAllLogBookEntriesForGroup(groupId, pageNumber, PAGE_LENGTH, doneEntries);
         //todo: check sorting on this
         USSDMenu menu;
@@ -410,7 +414,7 @@ public class USSDLogBookController extends USSDController {
                                  @RequestParam(value = logBookParam) Long logBookId,
                                  @RequestParam(value = userInputParam) String userInput,
                                  @RequestParam(value = interruptedFlag, required = false) boolean interrupted,
-                                 @RequestParam(value = interruptedInput, required = false) String prior_input) throws URISyntaxException {
+                                 @RequestParam(value = interruptedInput, required =false) String prior_input) throws URISyntaxException {
         userInput = interrupted ? prior_input : userInput;
         User user = userManager.findByInputNumber(inputNumber, saveLogMenu(pickCompletor, logBookId, userInput));
         return menuBuilder(pickUserFromGroup(logBookId, userInput, setCompleteMenu + doSuffix, completingUser, user));
@@ -430,11 +434,11 @@ public class USSDLogBookController extends USSDController {
     public Request confirmCompletedDate(@RequestParam(value = phoneNumber) String inputNumber,
                                         @RequestParam(value = logBookParam) Long logBookId,
                                         @RequestParam(value = userInputParam) String userInput,
-                                        @RequestParam(value = interruptedFlag, required=false) boolean interrupted,
-                                        @RequestParam(value = interruptedInput, required=false) String priorInput) throws URISyntaxException {
+                                        @RequestParam(value = interruptedFlag,required=false) boolean interrupted,
+                                        @RequestParam(value = interruptedInput, required =false) String priorInput) throws URISyntaxException {
 
-        userInput = interrupted ? priorInput : userInput;
-        User user = userManager.findByInputNumber(inputNumber, saveLogMenu(confirmComplete, logBookId, userInput));
+        userInput = (priorInput !=null) ? priorInput : userInput;
+        User user = userManager.findByInputNumber(inputNumber, saveLogMenu(confirmCompleteDate, logBookId, userInput));
         String formattedResponse = DateTimeUtil.reformatDateInput(userInput);
         String confirmUrl = returnUrl(setCompleteMenu + doSuffix, logBookId) + "&completed_date=" + encodeParameter(formattedResponse);
 
@@ -453,7 +457,7 @@ public class USSDLogBookController extends USSDController {
         // todo: check permissions
         User user = userManager.findByInputNumber(inputNumber, null);
         if (completedByUserId == null) completedByUserId = 0L;
-        logBookService.setCompleted(logBookId, completedByUserId, completedDate);
+        logBookService.setCompleted(logBookId, completedByUserId, DateTimeUtil.reformatDateInput(completedDate));
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, setCompleteMenu, promptKey, user));
         // todo: consider adding option to go back to either section start or group logbook start

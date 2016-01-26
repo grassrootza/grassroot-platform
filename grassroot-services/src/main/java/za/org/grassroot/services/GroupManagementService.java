@@ -10,6 +10,7 @@ import za.org.grassroot.core.dto.GroupTreeDTO;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -82,6 +83,8 @@ public interface GroupManagementService {
     public Group addNumberToGroup(Long groupId, String phoneNumber);
 
     public Group addNumbersToGroup(Long groupId, List<String> phoneNumbers);
+
+    public Group unsubscribeMember(Group group, User user);
 
     /*
     Methods to find if a user has an outstanding group management action to perform or groups on which they can perform it
@@ -187,6 +190,15 @@ public interface GroupManagementService {
     public Integer getGroupSize(Group group, boolean includeSubGroups);
 
     public Integer getGroupSize(Long groupId, boolean includeSubGroups);
+
+    /*
+    Three methods to get when a group last 'did' something, or else was modified
+     */
+    public LocalDateTime getLastTimeGroupActive(Group group);
+
+    public LocalDateTime getLastTimeGroupModified(Group group);
+
+    public LocalDateTime getLastTimeSubGroupActive(Group group);
 
     /*
     Methods to consolidate groups, and to manage active / inactive

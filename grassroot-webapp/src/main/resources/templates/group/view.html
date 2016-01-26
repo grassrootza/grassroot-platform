@@ -8,6 +8,7 @@
 
 <div layout:fragment="header">
   <h2>Group: <span  th:text="${group.groupName}">Group</span></h2>
+  <h3>Group last active on <span th:text="${#dates.format(lastActiveTime, 'dd MMM yyyy')}">date</span></h3>
   <div th:if="${hasParent}"><h3>This group has a parent. Its name is <span th:text="${group.parent.groupName}">parent</span></h3></div>
 </div>
 <div layout:fragment="overview">View Group and invite members</div>

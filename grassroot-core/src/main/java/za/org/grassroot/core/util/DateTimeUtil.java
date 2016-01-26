@@ -188,6 +188,7 @@ public class DateTimeUtil {
         } else {
             formattedResponse = parseDateTime(userResponse).format(preferredDateFormat);
         }
+        log.info("formatted"+formattedResponse);
 
         return formattedResponse;
     }
