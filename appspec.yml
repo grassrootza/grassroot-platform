@@ -14,7 +14,7 @@ permissions:
 hooks:
    BeforeInstall:
     - location: scripts/installgrassroot.sh
-      runas: ubuntu
+      runas: root 
     - location: scripts/startgrassroot.sh
       runas: ubuntu
    AfterInstall:
