@@ -1,0 +1,22 @@
+version: 0.0
+os: linux
+files:
+   - source: /
+     destination: /var/grassroot
+permissions:
+   - object: /var/grassroot
+     pattern: "**"
+     owner: ubuntu 
+     group: ubuntu
+     mode: 755
+     type:
+       - file
+hooks:
+   BeforeInstall:
+    - location: scripts/installgrassroot.sh
+      runas: ubuntu 
+    - location: scripts/startgrassroot.sh
+      runas:  ubuntu
+   AfterInstall:
+    - location: scripts/restartgrassroot.sh
+      runas:  ubuntu
