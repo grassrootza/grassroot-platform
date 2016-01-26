@@ -24,8 +24,7 @@ import za.org.grassroot.core.domain.User;
 
 import javax.transaction.Transactional;
 
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Lesetse Kimwaga
@@ -55,35 +54,25 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
 
         try {
 
-            log.info("ZOG: Adding permissions for this group ... " + group.toString());
-            log.info("ZOG: Adding them to this user ... " + user.toString());
-            log.info("ZOG: Adding this set of permissions ... " + groupPermissions);
+            log.info("ZOG: Adding permissions for this group ... {}", group.toString());
+            log.info("ZOG: Adding them to this user ... {}", user.toString());
+            log.info("ZOG: Adding this set of permissions ... {}", groupPermissions);
 
-
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            if (authentication == null || !authentication.isAuthenticated()) {
-                authentication = new UsernamePasswordAuthenticationToken(user,
-                        user.getPassword(), user.getAuthorities());
-
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-            }
 
             ObjectIdentity objectIdentity = new ObjectIdentityImpl(Group.class, group.getId());
             Sid sid = new PrincipalSid(user.getUsername());
 
-            MutableAcl acl;
-
-            try {
-                acl = (MutableAcl) mutableAclService.readAclById(objectIdentity);
-            } catch (NotFoundException e) {
-
-                acl = mutableAclService.createAcl(objectIdentity);
-                acl = (MutableAcl) mutableAclService.readAclById(objectIdentity);
-
-            }
 
             /**************************************************************
-             * Grant some permissions via an access control entry (ACE)
+             * Clear ALL permissions
+             **************************************************************/
+
+            removePermissions(objectIdentity, sid);
+
+            MutableAcl acl = getMutableAcl(objectIdentity);
+
+            /**************************************************************
+             * Grant Permissions via an access control entry (ACE)
              **************************************************************/
 
             for (Permission permission : groupPermissions) {
@@ -91,7 +80,6 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
                 acl.insertAce(acl.getEntries().size(), permission, sid, true);
                 mutableAclService.updateAcl(acl);
             }
-
 
         } catch (Exception e) {
             log.error("Could not add group permissions for user", e);
@@ -101,6 +89,30 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
 
     }
 
+    /**
+     * @param objectIdentity
+     * @return
+     */
+    private MutableAcl getMutableAcl(ObjectIdentity objectIdentity) {
+
+        try {
+            return (MutableAcl) mutableAclService.readAclById(objectIdentity);
+        } catch (NotFoundException e) {
+
+            MutableAcl acl = mutableAclService.createAcl(objectIdentity);
+            return (MutableAcl) mutableAclService.readAclById(objectIdentity);
+
+        }
+    }
+
+
+
+    /**
+     *
+     * @param group
+     * @param user
+     * @param groupPermissions
+     */
     @Override
     public void removeUserGroupPermissions(Group group, User user, Set<Permission> groupPermissions) {
 
@@ -122,6 +134,13 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
 
     }
 
+
+    /**
+     *
+     * @param acl
+     * @param permission
+     * @param sid
+     */
     private void deleteAce(MutableAcl acl, Permission permission, Sid sid) {
         List<AccessControlEntry> entries = ImmutableList.copyOf(acl.getEntries());
         int                      index   = 0;
@@ -134,6 +153,14 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
         }
     }
 
+
+    /**
+     *
+     * @param permission
+     * @param group
+     * @param user
+     * @return
+     */
     @Override
     public boolean hasGroupPermission(Permission permission, Group group, User user) {
 
@@ -146,7 +173,7 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
             return !acl.getEntries().isEmpty() && acl.isGranted(ImmutableList.of(permission), sids, false);
 
         } catch (NotFoundException nfe) {
-            log.warn("Returning false - No ACLs apply for this principal");
+            log.info("Returning false - No ACLs apply for this principal");
             return false;
         }
 
@@ -180,11 +207,57 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
         return loadGroup(groupId, (Permission) permission);
     }
 
-    @Override
-    public void updateUserGroupPermissions(Group group, User user, Set<Permission> groupPermissions) {
 
-        throw new RuntimeException("Not implemented yet");
+    /**
+     * @param objectIdentity
+     * @param sid
+     */
+    private void removePermissions(ObjectIdentity objectIdentity, Sid sid) {
+        try {
+
+            MutableAcl acl = getMutableAcl(objectIdentity);
+
+            while (hasPermissionsForRecipient(acl, sid)) {
+                for (int i = 0; i < acl.getEntries().size(); i++) {
+                    AccessControlEntry entry = acl.getEntries().get(i);
+                    Sid aclEntrySid = entry.getSid();
+                    if (aclEntrySid.equals(sid)) {
+                        acl.deleteAce(i);
+                        mutableAclService.updateAcl(acl);
+                        // break;
+                    }
+                }
+            }
+        } catch (NotFoundException e) {
+            log.info("No ACL's  for user to delete permissions");
+        }
     }
 
+    private boolean hasPermissionsForRecipient(MutableAcl acl, Sid sid) {
+        if (acl.getEntries() == null || acl.getEntries().isEmpty()) {
+            return false;
+        }
+
+        List<AccessControlEntry> accessControlEntries = acl.getEntries();
+        for (AccessControlEntry accessControlEntry : accessControlEntries) {
+            if (accessControlEntry.getSid().equals(sid)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Set<Permission> getAclPermissions(MutableAcl acl, Sid sid) {
+        Set<Permission> permissions = new HashSet<>();
+
+        List<AccessControlEntry> aceList = ImmutableList.copyOf(acl.getEntries());
+        for (AccessControlEntry accessControlEntry : aceList) {
+            Sid accessControlEntrySid = accessControlEntry.getSid();
+            if (accessControlEntrySid.equals(sid)) {
+                permissions.add((Permission) accessControlEntry.getPermission());
+            }
+        }
+        return permissions;
+    }
 
 }

@@ -8,6 +8,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -86,6 +89,14 @@ public class GroupAccessControlManagementServiceTest {
 
         groupRole = roleManagementService.createRole(groupRole);
         assertThat(groupRole.getPermissions(), hasSize(4));
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            authentication = new UsernamePasswordAuthenticationToken(user,
+                    user.getPassword(), user.getAuthorities());
+
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+        }
 
 
         groupAccessControlManagementService.addUserGroupPermissions(group, user, groupRole.getPermissions());
