@@ -23,7 +23,9 @@ import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 
 import javax.transaction.Transactional;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 
 /**
  * @author Lesetse Kimwaga
@@ -36,25 +38,18 @@ public class UserManager implements UserManagementService, UserDetailsService {
     private static final Logger log = LoggerFactory.getLogger(UserManager.class);
 
     private static final int PAGE_SIZE = 50;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private GroupManagementService groupManagementService;
-
-    @Autowired
-    private PasswordTokenService passwordTokenService;
-
-    @Autowired
-    private EventManagementService eventManagementService;
-
     @Autowired
     GenericJmsTemplateProducerService jmsTemplateProducerService;
-
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private GroupManagementService groupManagementService;
+    @Autowired
+    private PasswordTokenService passwordTokenService;
+    @Autowired
+    private EventManagementService eventManagementService;
 
     @Override
     public User createUserProfile(User userProfile) {
@@ -257,7 +252,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     public List<User> searchByGroupAndNameNumber(Long groupId, String nameOrNumber) {
-        return userRepository.findByGroupsPartOfAndDisplayNameIgnoreCaseOrPhoneNumberContaining(
+        return userRepository.findByGroupsPartOfAndDisplayNameContainingIgnoreCaseOrPhoneNumberContaining(
                 groupManagementService.loadGroup(groupId), nameOrNumber, nameOrNumber);
     }
 

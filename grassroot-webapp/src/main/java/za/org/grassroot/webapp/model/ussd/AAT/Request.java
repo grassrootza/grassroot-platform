@@ -8,22 +8,18 @@
 
 package za.org.grassroot.webapp.model.ussd.AAT;
 
+import javax.xml.bind.annotation.*;
 import java.util.List;
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlElementWrapper;
-import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
 public class Request {
 
-    final String headertext;
+    final public String headertext;
 
     @XmlElementWrapper
     @XmlElement(name = "option")
-    final List<Option> options;
+    final public List<Option> options;
 
     public Request() {
         headertext = null;

@@ -3,7 +3,6 @@ package za.org.grassroot.webapp.controller.webapp;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
-import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -20,7 +19,6 @@ import java.util.List;
 
 import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -164,9 +162,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void createMeetingIndexWorksWithGroupNotSpecified() throws Exception {
         ArrayList<Group> dummyGroups = new ArrayList<>();
-
         Group dummyGroup = new Group("", sessionTestUser);
-
         dummyGroup.setId(dummyId);
         dummyGroups.add(dummyGroup);
         Event dummyMeeting = new Event();
@@ -174,13 +170,10 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         List<String[]> minuteOptions = new ArrayList<>();
         String[] oneDay = new String[]{"" + 24 * 60, "One day ahead"};
         minuteOptions.add(oneDay);
-
         when(userManagementServiceMock.fetchUserByUsername(testUserPhone)).thenReturn(sessionTestUser);
-
         when(eventManagementServiceMock.createMeeting(sessionTestUser)).thenReturn(dummyMeeting);
         when(eventManagementServiceMock.setEventNoReminder(dummyMeeting.getId())).thenReturn(dummyMeeting);
         when(groupManagementServiceMock.getActiveGroupsPartOf(sessionTestUser)).thenReturn(dummyGroups);
-
         mockMvc.perform(get("/meeting/create")).andExpect(status().isOk())
                 .andExpect((view().name("meeting/create")))
                 .andExpect(model().attribute("groupSpecified", is(false)))
@@ -291,7 +284,6 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
     }
 
-
     @Test
     public void sendReminderWorks() throws Exception {
         Event dummyMeeting = new Event();
@@ -308,8 +300,6 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         verifyNoMoreInteractions(eventManagementServiceMock);
 
     }
-
-
     @Test
     public void sendFreeFormWorksWithGroupId() throws Exception {
         User testUser = new User("", "testUser");
@@ -332,21 +322,14 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void sendFreeFormWorksWithoutGroupId() throws Exception{
         Group testGroup = new Group("",sessionTestUser);
-
         List<Group> dummyGroups = Arrays.asList(new Group("", sessionTestUser));
         when(groupManagementServiceMock.getActiveGroupsPartOf(sessionTestUser)).thenReturn(dummyGroups);
-
-
-
         when(groupManagementServiceMock.getActiveGroupsPartOf(sessionTestUser)).thenReturn(dummyGroups);
         sessionTestUser.setGroupsPartOf(dummyGroups);
-
-
         mockMvc.perform(get("/meeting/free")).andExpect(status().isOk())
                 .andExpect(view().name("meeting/free")).andExpect(model()
                 .attribute("userGroups", hasItem(testGroup)))
                 .andExpect(model().attribute("groupSpecified", is(false)));
-
         verify(groupManagementServiceMock, times(2)).getActiveGroupsPartOf(sessionTestUser);
         verifyZeroInteractions(eventManagementServiceMock);
         verifyZeroInteractions(eventLogManagementServiceMock);
