@@ -78,4 +78,9 @@ where e.canceled = FALSE
      */
     List<Event> findByAppliesToGroupAndEventStartDateTimeBetween(Group group, Timestamp start, Timestamp end, Sort sort);
     List<Event> findByAppliesToGroupAndEventTypeAndEventStartDateTimeBetween(Group group, EventType type, Timestamp startDateTime, Timestamp endDateTime);
+
+    /*
+    Queries to find out when a group last had an event applied to it
+     */
+    Event findFirstByAppliesToGroupAndEventStartDateTimeNotNullOrderByEventStartDateTimeDesc(Group group);
 }

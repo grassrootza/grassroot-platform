@@ -208,6 +208,27 @@
     </div>
   </div>
 
+  <!-- form to allow joining a group, if it is flagged as discoverable -->
+  <div class="well">
+    <div class="row row-centered">
+      <div class="col-md-12 col-centered">
+        <h4>Join a group by entering its 'joining code' or searching by name among 'public' groups:</h4>
+      </div>
+    </div>
+    <div class="row row-centered">
+      <form th:action="@{/group/search}" method="post">
+        <div class="form-group">
+          <div class="col-md-4 col-centered">
+            <input name="searchTerm" type="text" class="form-control" id="name" placeholder="Enter join code or name to search" />
+          </div>
+          <div class="col-md-4 col-centered">
+            <button type="submit" class="btn btn-primary">Search by name or code</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Trying out the group tree view idea - sql version -->
 
   <div th:if="${not #lists.isEmpty(groupTreesSql)}">

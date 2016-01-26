@@ -6,14 +6,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.GroupLog;
-import za.org.grassroot.core.domain.LogBook;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.dto.NewGroupMember;
 import za.org.grassroot.core.enums.EventChangeType;
 import za.org.grassroot.core.enums.GroupLogType;
+import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.GroupLogRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.PaidGroupRepository;
@@ -24,6 +22,7 @@ import javax.transaction.Transactional;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 
 /**
@@ -62,6 +61,9 @@ public class GroupManager implements GroupManagementService {
 
     @Autowired
     GroupLogRepository groupLogRepository;
+
+    @Autowired
+    EventRepository eventRepository;
 
 
     /**
@@ -139,6 +141,15 @@ public class GroupManager implements GroupManagementService {
     @Override
     public Group removeGroupMember(Long groupId, User user) {
         return removeGroupMember(loadGroup(groupId), user);
+    }
+
+    @Override
+    public Group unsubscribeMember(Group group, User user) {
+        // with logging, this behaves different from standard remove member, though may consolidate in future
+        group.getGroupMembers().remove(user);
+        Group savedGroup = saveGroup(group, false, "", dontKnowTheUser);
+        GroupLog groupLog = groupLogRepository.save(new GroupLog(group.getId(), user.getId(), GroupLogType.GROUP_MEMBER_REMOVED, user.getId(), "Member unsubscribed from group"));
+        return savedGroup;
     }
 
     @Override
@@ -653,6 +664,39 @@ public class GroupManager implements GroupManagementService {
     @Override
     public Integer getGroupSize(Long groupId, boolean includeSubGroups) {
         return getGroupSize(loadGroup(groupId), includeSubGroups);
+    }
+
+    @Override
+    public LocalDateTime getLastTimeGroupActive(Group group) {
+        // todo: we should upgrade this to a slightly complex single query that checks both events and grouplogs at once
+        // for present, if it finds an event, returns the event, else returns the date of last modification, likely date of creation
+        Event lastEvent = eventRepository.findFirstByAppliesToGroupAndEventStartDateTimeNotNullOrderByEventStartDateTimeDesc(group);
+        if (lastEvent == null)
+            return getLastTimeGroupModified(group);
+        else
+            return lastEvent.getEventStartDateTime().toLocalDateTime();
+    }
+
+    @Override
+    public LocalDateTime getLastTimeGroupModified(Group group) {
+        // todo: change groupLog to use localdatetime
+        GroupLog latestGroupLog = groupLogRepository.findFirstByGroupIdOrderByCreatedDateTimeDesc(group.getId());
+        return (latestGroupLog != null) ? LocalDateTime.ofInstant(latestGroupLog.getCreatedDateTime().toInstant(), ZoneId.systemDefault()) :
+                group.getCreatedDateTime().toLocalDateTime();
+    }
+
+    @Override
+    public LocalDateTime getLastTimeSubGroupActive(Group group) {
+        // todo: try make this work with recursive call instead of highly inefficient code loop
+        LocalDateTime lastTimeActive = getLastTimeGroupActive(group);
+        if (hasSubGroups(group)) {
+            LocalDateTime currentChildLastActive;
+            for (Group child : getSubGroups(group)) {
+                currentChildLastActive = getLastTimeGroupActive(child);
+                lastTimeActive = (lastTimeActive.isAfter(currentChildLastActive)) ? lastTimeActive : currentChildLastActive;
+            }
+        }
+        return lastTimeActive;
     }
 
     @Override

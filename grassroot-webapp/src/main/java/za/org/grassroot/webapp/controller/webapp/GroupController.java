@@ -14,6 +14,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import za.org.grassroot.core.domain.BasePermissions;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.EventManagementService;
@@ -23,6 +24,7 @@ import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
 
 import javax.servlet.http.HttpServletRequest;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -31,8 +33,12 @@ import java.util.Map;
  * @author Lesetse Kimwaga
  */
 @Controller
+
+
+
 @RequestMapping("/group/")
 @SessionAttributes({"groupCreator", "groupModifier"})
+
 public class GroupController extends BaseController {
 
     Logger log = LoggerFactory.getLogger(GroupController.class);
@@ -66,10 +72,9 @@ public class GroupController extends BaseController {
         return userFromDb.getGroupsPartOf().contains(group);
     }
 
-    @PreAuthorize("hasAnyRole('ROLE_DOESNT_EXIST')")
     private Group secureLoadGroup(Long id) {
         log.info("Inside secureLoadGroup ...");
-        return groupManagementService.loadGroup(id);
+        return loadGroup(id, BasePermissions.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
     }
 
     /*
@@ -95,11 +100,11 @@ public class GroupController extends BaseController {
     }
 
     @RequestMapping(value = "join", method = RequestMethod.POST)
-    public String joinGroup(Model model, @RequestParam Long groupId, HttpServletRequest request) {
+    public String joinGroup(Model model, @RequestParam Long groupId, HttpServletRequest request, RedirectAttributes redirectAttributes) {
         // todo: think through security, privacy, etc
         groupManagementService.addGroupMember(groupId, getUserProfile().getId());
-        addMessage(model, MessageType.SUCCESS, "group.join.success", request);
-        return viewGroupIndex(model, groupId);
+        addMessage(redirectAttributes, MessageType.SUCCESS, "group.join.success", request);
+        return "redirect:/home"; // redirecting to group view is creating issues ... todo: fix those
     }
 
     /*
@@ -131,6 +136,9 @@ public class GroupController extends BaseController {
         model.addAttribute("openToken", groupManagementService.groupHasValidToken(group));
         model.addAttribute("canDeleteGroup", groupManagementService.canUserMakeGroupInactive(user, group));
         model.addAttribute("canMergeWithOthers", groupManagementService.isGroupCreatedByUser(groupId, user));
+
+        // todo: use Thyemeleaf Java 8 localdatetime library; also, use subgroup method, when that is less of a kludge
+        model.addAttribute("lastActiveTime", Timestamp.valueOf(groupManagementService.getLastTimeGroupActive(group)));
 
         return "group/view";
     }
@@ -637,7 +645,7 @@ public class GroupController extends BaseController {
         User user = userManagementService.loadUser(getUserProfile().getId()); // else equals in "is user in group" fails
 
         if (groupManagementService.isUserInGroup(group, user) && confirmText.toLowerCase().equals("unsubscribe")) {
-            groupManagementService.removeGroupMember(group, user);
+            groupManagementService.unsubscribeMember(group, user);
             addMessage(redirectAttributes, MessageType.SUCCESS, "group.unsubscribe.success", request);
         } else {
             addMessage(redirectAttributes, MessageType.ERROR, "group.unsubscribe.error", request);
