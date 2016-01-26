@@ -1,0 +1,36 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Glassroot USSD Emulator</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+</head>
+<body>
+<h1 th:text="${request.headertext}">title</h1>
+<div th:if="${request.options != null}">
+    <div th:switch="${display}">
+        <div th:case="false">
+            <form th:action="@{/emulator/view}" method="get">
+                <input type="hidden" name="link" th:value="${request.options[0].callback}"/>
+                <input type="text" name="request"/>
+                <input type="submit" value="Submit"/>
+            </form>
+        </div>
+        <div th:case="true">
+            <ol>
+                <th:block th:object="${request}">
+                    <li th:each="option : *{options}"><a th:text="${option.value}"
+                                                         th:href="@{/emulator/view(link=${option.callback})} "></a></li>
+                </th:block>
+            </ol>
+
+        </div>
+
+    </div>
+    <d th:text="${constructedUrl}"></d>
+
+
+</div>
+
+
+</body>
+</html>
