@@ -10,11 +10,15 @@ permissions:
      group: ubuntu 
      mode: 755
 hooks:
+   ApplicationStop:
+    - location: scripts/stopgrassroot.sh
+       runas: ubuntu
    BeforeInstall:
-    - location: scripts/installgrassroot.sh
+    - location: scripts/clearoldgrassroot.sh
+      runas: ubuntu
+   AfterInstall: 
+    - location: scripts/compilegrassroot.sh
       runas: ubuntu 
+   ApplicationStart:
     - location: scripts/startgrassroot.sh
       runas: ubuntu
-   AfterInstall:
-    - location: scripts/restartgrassroot.sh
-      runas: ubuntu 
