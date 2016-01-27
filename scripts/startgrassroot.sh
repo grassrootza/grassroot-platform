@@ -4,12 +4,7 @@
 . /etc/environment
 . /etc/grassroot
 CURR=$PWD
-cd ..
-if [[ -f /var/grassroot/.pid ]]; then
-	kill -s SIGINT `cat /var/grassroot/.pid`;
-	rm -f  /var/grassroot/.pid;
-fi
-
+cd /var/grassroot
 nohup java -Dspring.profiles.active=production -jar grassroot-webapp/target/grassroot-webapp-1.0-SNAPSHOT.jar > grassroot-app.log 2>&1 &
 echo $! > .pid
 cd $CURR
