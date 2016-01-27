@@ -12,7 +12,7 @@ permissions:
 hooks:
    ApplicationStop:
     - location: scripts/stopgrassroot.sh
-       runas: ubuntu
+      runas: ubuntu
    BeforeInstall:
     - location: scripts/clearoldgrassroot.sh
       runas: ubuntu
