@@ -15,6 +15,7 @@ import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.BasePermissions;
+import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.EventManagementService;
@@ -74,7 +75,7 @@ public class GroupController extends BaseController {
 
     private Group secureLoadGroup(Long id) {
         log.info("Inside secureLoadGroup ...");
-        return loadGroup(id, BasePermissions.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        return loadGroup(id, BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
     }
 
     /*
@@ -191,7 +192,7 @@ public class GroupController extends BaseController {
                         memberToAdd.setDisplayName(addedUser.getDisplayName());
                         memberToAdd = userManagementService.save(memberToAdd);
                     }
-                    groupManagementService.addGroupMember(groupToSave, memberToAdd);
+                    groupManagementService.addGroupMemberWithDefaultRole(groupToSave, memberToAdd, BaseRoles.ROLE_ORDINARY_MEMBER);
                 }
             }
 

@@ -32,7 +32,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import za.org.grassroot.core.*;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.repository.PermissionRepository;
+import za.org.grassroot.core.security.CustomAclAuthorizationStrategy;
 import za.org.grassroot.core.security.CustomPermissionFactory;
+import za.org.grassroot.core.security.CustomPermissionGrantingStrategy;
 
 import javax.sql.DataSource;
 import java.io.IOException;
@@ -87,7 +89,9 @@ public class GrassRootCoreConfig {
 
     @Bean
     public AclAuthorizationStrategy aclAuthorizationStrategy() {
-        return new AclAuthorizationStrategyImpl(administratorRole(),
+
+        return new CustomAclAuthorizationStrategy(aclPermissionFactory(),
+                administratorRole(),
                 administratorRole(),
                 administratorRole());
     }
@@ -108,7 +112,7 @@ public class GrassRootCoreConfig {
 
     @Bean
     public PermissionGrantingStrategy aclPermissionGrantingStrategy() {
-        return new DefaultPermissionGrantingStrategy(aclAuditLogger());
+        return new CustomPermissionGrantingStrategy(aclAuditLogger());
     }
 
     @Bean

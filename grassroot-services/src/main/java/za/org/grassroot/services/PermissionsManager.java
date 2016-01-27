@@ -1,5 +1,6 @@
 package za.org.grassroot.services;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,20 +19,34 @@ import java.util.*;
 @Transactional
 public class PermissionsManager implements PermissionsManagementService {
 
-    private static final List<String> defaultGroupOrganizerPermissions =
-            Arrays.asList(BasePermissions.GROUP_PERMISSION_ADD_GROUP_MEMBER, BasePermissions.GROUP_PERMISSION_AUTHORIZE_SUBGROUP,
-                          BasePermissions.GROUP_PERMISSION_DELETE_GROUP_MEMBER, BasePermissions.GROUP_PERMISSION_FORCE_ADD_MEMBER,
-                          BasePermissions.GROUP_PERMISSION_UPDATE_GROUP_DETAILS, BasePermissions.GROUP_PERMISSION_DELINK_SUBGROUP);
-
-    private static final List<String> defaultCommitteeMemberPermissions =
-            Arrays.asList(BasePermissions.GROUP_PERMISSION_ADD_GROUP_MEMBER, BasePermissions.GROUP_PERMISSION_FORCE_ADD_MEMBER,
-                          BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS, BasePermissions.GROUP_PERMISSION_CREATE_SUBGROUP);
-
     // todo: add GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY
-    private static final List<String> defaultOrdinaryMemberPermissions =
-            Arrays.asList(BasePermissions.GROUP_PERMISSION_CREATE_GROUP_MEETING, BasePermissions.GROUP_PERMISSION_CREATE_GROUP_VOTE,
-                          BasePermissions.GROUP_PERMISSION_READ_UPCOMING_EVENTS, BasePermissions.GROUP_PERMISSION_VIEW_MEETING_RSVPS,
-                          BasePermissions.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
+    private static final ImmutableList<String> defaultOrdinaryMemberPermissions =
+            new ImmutableList.Builder<String>().
+                    add(BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS).
+                    add(BasePermissions.GROUP_PERMISSION_CREATE_GROUP_MEETING).
+                    add(BasePermissions.GROUP_PERMISSION_CREATE_GROUP_VOTE).
+                    add(BasePermissions.GROUP_PERMISSION_READ_UPCOMING_EVENTS).
+                    add(BasePermissions.GROUP_PERMISSION_VIEW_MEETING_RSVPS).
+                    add(BasePermissions.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY).
+                    add(BasePermissions.GROUP_PERMISSION_CLOSE_OPEN_LOGBOOK).build();
+
+    private static final ImmutableList<String> defaultCommitteeMemberPermissions =
+            new ImmutableList.Builder<String>().addAll(defaultOrdinaryMemberPermissions).
+                    add(BasePermissions.GROUP_PERMISSION_ADD_GROUP_MEMBER).
+                    add(BasePermissions.GROUP_PERMISSION_FORCE_ADD_MEMBER).
+                    add(BasePermissions.GROUP_PERMISSION_CREATE_SUBGROUP).
+                    add(BasePermissions.GROUP_PERMISSION_AUTHORIZE_SUBGROUP).
+                    add(BasePermissions.GROUP_PERMISSION_DELEGATE_SUBGROUP_CREATION).build();
+
+    private static final ImmutableList<String> defaultGroupOrganizerPermissions =
+            new ImmutableList.Builder<String>().addAll(defaultCommitteeMemberPermissions).
+                    add(BasePermissions.GROUP_PERMISSION_ADD_GROUP_MEMBER).
+                    add(BasePermissions.GROUP_PERMISSION_AUTHORIZE_SUBGROUP).
+                    add(BasePermissions.GROUP_PERMISSION_DELETE_GROUP_MEMBER).
+                    add(BasePermissions.GROUP_PERMISSION_FORCE_ADD_MEMBER).
+                    add(BasePermissions.GROUP_PERMISSION_UPDATE_GROUP_DETAILS).
+                    add(BasePermissions.GROUP_PERMISSION_DELINK_SUBGROUP).
+                    add(BasePermissions.GROUP_PERMISSION_FORCE_DELETE_MEMBER).build();
 
     @Autowired
     private PermissionRepository permissionRepository;

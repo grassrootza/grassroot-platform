@@ -70,6 +70,19 @@ public class GroupRepositoryTest {
     }
 
     @Test
+    public void shouldSaveWithAddedMember() throws Exception {
+        assertThat(groupRepository.count(), is(0L));
+        User userForTest = userRepository.save(new User("0814441111"));
+        Group groupToCreate = groupRepository.save(new Group("testGroup", userForTest));
+        groupToCreate.addMember(userForTest);
+        groupToCreate = groupRepository.save(groupToCreate);
+        assertThat(groupRepository.count(), is(1L));
+        assertNotNull(groupToCreate);
+        assertThat(groupToCreate.getGroupMembers().size(), is(1));
+        assertThat(groupToCreate.getGroupMembers().contains(userForTest), is(true));
+    }
+
+    @Test
     public void shouldSaveAndFindByCreatedUser() throws Exception {
 
         Group groupToCreate = new Group();

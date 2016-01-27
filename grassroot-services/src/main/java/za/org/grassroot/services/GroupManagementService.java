@@ -25,6 +25,9 @@ public interface GroupManagementService {
 
     public Group createNewGroup(User creatingUser, String groupName);
 
+    // temporary method to test without breaking other things
+    public Group createNewGroupWithRole(User creatingUser, String groupName);
+
     public Group createNewGroup(User creatingUser, List<String> phoneNumbers);
 
     public Group createNewGroup(Long creatingUserId, List<String> phoneNumbers);
@@ -71,6 +74,8 @@ public interface GroupManagementService {
     public boolean isUserInGroup(Group group, User user);
 
     public Group addGroupMember(Group currentGroup, User newMember);
+
+    public Group addGroupMemberWithDefaultRole(Group group, User user, String roleName);
 
     public Group addGroupMember(Long currentGroupId, Long newMemberId);
 

@@ -305,12 +305,15 @@ public class USSDHomeController extends USSDController {
     private USSDMenu renameGroupAllowInactive(User user, Long groupId, String dateCreated) {
         USSDMenu thisMenu = new USSDMenu(getMessage(thisSection, startMenu, promptKey + "-group-options", dateCreated, user));
         thisMenu.setFreeText(false);
+
         thisMenu.addMenuOption(promptGroupRename + groupIdUrlSuffix + groupId,
                                getMessage(thisSection, startMenu, "group.options.rename", user));
         thisMenu.addMenuOption(promptConfirmGroupInactive + groupIdUrlSuffix + groupId,
                                getMessage(thisSection, startMenu, "group.options.inactive", user));
         thisMenu.addMenuOption(groupMenus + "merge" + groupIdUrlSuffix + groupId,
                                getMessage(thisSection, startMenu, "group.options.merge", user));
+        thisMenu.addMenuOption(startMenu + "_force", getMessage(thisSection, startMenu, "interrupted.start", user));
+
         return thisMenu;
     }
 

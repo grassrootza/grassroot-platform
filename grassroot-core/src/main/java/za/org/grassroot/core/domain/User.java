@@ -349,11 +349,13 @@ public class User implements UserDetails {
 
     public User(String phoneNumber) {
         this.phoneNumber = phoneNumber;
+        this.username = phoneNumber;
         this.languageCode = "en";
     }
 
     public User(String phoneNumber, String displayName) {
         this.phoneNumber = phoneNumber;
+        this.username = phoneNumber;
         this.displayName = displayName;
         this.languageCode = "en";
     }
