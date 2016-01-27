@@ -100,7 +100,7 @@ public class GroupManager implements GroupManagementService {
     public Group saveGroup(Group groupToSave, boolean createGroupLog, String description, Long changedByuserId) {
         Group group = groupRepository.save(groupToSave);
         if (createGroupLog) {
-            GroupLog groupLog = groupLogRepository.save(new GroupLog(groupToSave.getId(),dontKnowTheUser, GroupLogType.GROUP_UPDATED,changedByuserId,description));
+            GroupLog groupLog = groupLogRepository.save(new GroupLog(groupToSave.getId(),changedByuserId, GroupLogType.GROUP_UPDATED,0L,description));
         }
         return group;
     }
