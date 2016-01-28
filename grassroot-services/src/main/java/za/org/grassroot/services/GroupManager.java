@@ -65,8 +65,8 @@ public class GroupManager implements GroupManagementService {
     @Autowired
     EventRepository eventRepository;
 
-    @Autowired
-    RoleManagementService roleManagementService;
+    /*@Autowired
+    RoleManagementService roleManagementService;*/
 
     @Autowired
     PermissionsManagementService permissionsManager;
@@ -200,7 +200,7 @@ public class GroupManager implements GroupManagementService {
         return group;
     }
 
-    @Override
+    /*@Override
     public Group createNewGroupWithRole(User creatingUser, String groupName) {
         Long timeStart = System.currentTimeMillis();
         Group group = createNewGroup(creatingUser, groupName);
@@ -209,7 +209,7 @@ public class GroupManager implements GroupManagementService {
         Long timeEnd = System.currentTimeMillis();
         log.info(String.format("Creating a group with roles, overall time taken ... %d msecs", timeEnd - timeStart));
         return group;
-    }
+    }*/
 
     @Override
     public Group addGroupMember(Group currentGroup, User newMember) {
@@ -233,12 +233,12 @@ public class GroupManager implements GroupManagementService {
         }
     }
 
-    @Override
+    /* @Override
     public Group addGroupMemberWithDefaultRole(Group group, User user, String role) {
         group = addGroupMember(group, user);
         roleManagementService.addDefaultRoleToGroupAndUser(role, group, user);
         return group;
-    }
+    }*/
 
     @Override
     public Group createNewGroup(Long creatingUserId, List<String> phoneNumbers) {

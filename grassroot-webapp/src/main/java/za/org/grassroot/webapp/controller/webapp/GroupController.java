@@ -51,8 +51,8 @@ public class GroupController extends BaseController {
     @Autowired
     EventManagementService eventManagementService;
 
-    @Autowired
-    RoleManagementService roleManagementService;
+    /* @Autowired
+    RoleManagementService roleManagementService;*/
 
     @Autowired
     @Qualifier("groupWrapperValidator")
@@ -74,10 +74,10 @@ public class GroupController extends BaseController {
         return userFromDb.getGroupsPartOf().contains(group);
     }
 
-    private Group secureLoadGroup(Long id) {
+    /* private Group secureLoadGroup(Long id) {
         log.info("Inside secureLoadGroup ...");
         return loadGroup(id, BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
-    }
+    }*/
 
     /*
     First method is for users brand new and without any group membership, and/or later for any user, to find & join group
@@ -197,7 +197,7 @@ public class GroupController extends BaseController {
         timeStart = System.currentTimeMillis();
         User userCreator = userManagementService.getUserById(getUserProfile().getId());
         Group groupToSave = groupManagementService.createNewGroup(userCreator, groupCreator.getGroupName());
-        boolean creatorInGroup = false;
+        // boolean creatorInGroup = false;
         timeEnd = System.currentTimeMillis();
         log.info(String.format("User load & group creation: %d msecs", timeEnd - timeStart));
 
@@ -205,23 +205,26 @@ public class GroupController extends BaseController {
         for (User addedUser : groupCreator.getAddedMembers()) {
             if (addedUser.getPhoneNumber() != null && !addedUser.getPhoneNumber().trim().equals("")) {
                 User memberToAdd = userManagementService.loadOrSaveUser(addedUser.getPhoneNumber());
-                if (memberToAdd.getId() == userCreator.getId()) creatorInGroup = true;
+                // if (memberToAdd.getId() == userCreator.getId()) creatorInGroup = true;
                 if (!memberToAdd.hasName() && addedUser.getDisplayName() != null) {
                     memberToAdd.setDisplayName(addedUser.getDisplayName());
                     memberToAdd = userManagementService.save(memberToAdd);
                 }
-                // todo: incorporate group roles in "create form"
-                groupManagementService.addGroupMemberWithDefaultRole(groupToSave, memberToAdd, BaseRoles.ROLE_ORDINARY_MEMBER);
+                // groupManagementService.addGroupMemberWithDefaultRole(groupToSave, memberToAdd, BaseRoles.ROLE_ORDINARY_MEMBER);
+                groupManagementService.addGroupMember(groupToSave, memberToAdd);
             }
         }
+
         timeEnd = System.currentTimeMillis();
         log.info(String.format("Adding users to group: %d msecs", timeEnd - timeStart));
 
         timeStart = System.currentTimeMillis();
-        if (creatorInGroup) {
+
+        /* if (creatorInGroup) {
             log.info("Okay, the creator is a member ...");
             roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, groupToSave, userCreator);
-        }
+        }*/
+
         timeEnd = System.currentTimeMillis();
         log.info(String.format("Set up creator as group organizer: %d msecs", timeEnd - timeStart));
 
@@ -232,8 +235,9 @@ public class GroupController extends BaseController {
             groupToSave = groupManagementService.linkSubGroup(groupToSave, parentGroup);
         }
 
-        if (groupCreator.isDiscoverable())
-            groupToSave = groupManagementService.setGroupDiscoverable(groupToSave.getId(), true, userCreator);
+        // removing from master branch until more comfortable about interface and UX for this and security
+        /* if (groupCreator.isDiscoverable())
+            groupToSave = groupManagementService.setGroupDiscoverable(groupToSave.getId(), true, userCreator);*/
 
         if (groupCreator.getGenerateToken()) {
             log.info("Generating a join code for the newly created group");
@@ -245,7 +249,6 @@ public class GroupController extends BaseController {
         addMessage(redirectAttributes,MessageType.SUCCESS,"group.creation.success",new Object[]{groupToSave.getGroupName()},request);
         redirectAttributes.addAttribute("groupId", groupToSave.getId());
         return "redirect:view";
-
 
     }
 
