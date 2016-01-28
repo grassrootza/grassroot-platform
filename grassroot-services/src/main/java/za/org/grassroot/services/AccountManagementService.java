@@ -28,6 +28,8 @@ public interface AccountManagementService {
 
     Account setBillingEmail(Account account, String billingEmail);
 
+    Account adjustSettings(Account changedAccount);
+
     /*
     Methods to load, find and save institutional accounts
      */

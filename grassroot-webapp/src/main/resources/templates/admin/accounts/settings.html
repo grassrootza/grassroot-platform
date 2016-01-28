@@ -1,0 +1,51 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+  <title>GrassRoot - Adjust account settings</title>
+<script>
+
+
+
+</script>
+</head>
+<body>
+
+<div layout:fragment="header">
+  <h2>Adjust account features</h2>
+</div>
+<div layout:fragment="overview">Adjust what groups paid for by this account can do</div>
+
+<div layout:fragment="content">
+  <div layout:fragment="messages"></div>
+  <div class="well">
+    <form th:object="${account}" th:action="@{/admin/accounts/settings}" method="post" class="form-horizontal">
+      <!-- todo: provide an option to over-write the current primary email when doing this -->
+      <input type="hidden" th:field="*{id}" />
+      <div class="form-group">
+        <div class="col-md-4">
+          Free form messages:
+          <input type="checkbox" th:field="*{freeFormMessages}" />
+        </div>
+        <div class="col-md-4">
+          Relayable messages:
+          <input type="checkbox" th:field="*{relayableMessages}" />
+        </div>
+        <div class="col-md-4">
+          Log book extra messages:
+          <input type="checkbox" th:field="*{logbookExtraMessages}" />
+        </div>
+      </div>
+
+
+      <div class="form-group">
+        <div class="col-md-8">
+          <button type="submit" class="btn btn-primary">Change settings</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+</body>
+</html>

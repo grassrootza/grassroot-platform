@@ -65,9 +65,29 @@
         </div>
       </div>
       <div class="form-group">
+        <div class="col-md-4">
+          Free form messages:
+          <span class="glyphicon glyphicon-ok" th:if="${account.freeFormMessages}"></span>
+          <span class="glyphicon glyphicon-remove" th:unless="${account.freeFormMessages}"></span>
+        </div>
+        <div class="col-md-4">
+          Relayable messages:
+          <span class="glyphicon glyphicon-ok" th:if="${account.relayableMessages}"></span>
+          <span class="glyphicon glyphicon-remove" th:unless="${account.relayableMessages}"></span>
+        </div>
+        <div class="col-md-4">
+          Log book extra messages:
+          <span class="glyphicon glyphicon-ok" th:if="${account.logbookExtraMessages}"></span>
+          <span class="glyphicon glyphicon-remove" th:unless="${account.logbookExtraMessages}"></span>
+        </div>
+      </div>
+      <div class="form-group">
         <!-- <input type="hidden" name="accountId" th:value="{account.id}"/> -->
-        <div class="col-md-8">
+        <div class="col-md-6">
           <a href="" th:href="@{designate(accountId=${account.id})}"><button type="submit" class="btn btn-primary">Add an administrator</button></a>
+        </div>
+        <div class="col-md-6">
+          <a href="" th:href="@{settings(accountId=${account.id})}"><button type="submit" class="btn btn-primary">Change account settings</button></a>
         </div>
       </div>
     </div>
