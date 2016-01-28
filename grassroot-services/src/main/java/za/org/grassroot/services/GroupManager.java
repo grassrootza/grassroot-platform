@@ -68,6 +68,12 @@ public class GroupManager implements GroupManagementService {
     @Autowired
     RoleManagementService roleManagementService;
 
+    @Autowired
+    PermissionsManagementService permissionsManager;
+
+    @Autowired
+    GroupAccessControlManagementService accessControlService;
+
 
     /**
      * Have not yet created methods analogous to those in UserManager, as not sure if necessary
@@ -374,7 +380,7 @@ public class GroupManager implements GroupManagementService {
         List<Long> ids = new ArrayList<>();
         for (LogBook entry : logBooks) { ids.add(entry.getGroupId()); }
         log.info("And now we have this list of Ids ... " + ids);
-        return groupRepository.findAllByIdInOrderByIdAsc(ids);
+        return groupRepository.findAllByIdIn(ids);
     }
 
     @Override
@@ -533,6 +539,27 @@ public class GroupManager implements GroupManagementService {
         // todo: find a way to make this very, very fast--in some use cases, will be triggered by 10k+ users within seconds
         log.info("Looking for this token ... " + groupToken);
         return (groupRepository.findByGroupTokenCode(groupToken) != null);
+    }
+
+    @Override
+    public Group setGroupDiscoverable(Long groupId, boolean discoverable, User user) {
+        // todo: create a dedicated permission for this, and uncomment, when we have permission setting working on group create
+        // todo: once we have implemented 'request to join', will need to wire that up here
+        return setGroupDiscoverable(loadGroup(groupId), discoverable, user.getId());
+    }
+
+    @Override
+    public Group setGroupDiscoverable(Group group, boolean discoverable, Long userId) {
+        if (group.isDiscoverable() == discoverable) return group;
+        String logEntry = discoverable ? "Set group publicly discoverable" : "Set group hidden from public";
+        group.setDiscoverable(discoverable);
+        return saveGroup(group, true, logEntry, userId);
+    }
+
+    @Override
+    public boolean canUserModifyGroup(Group group, User user) {
+        Permission permission = permissionsManager.findByName(BasePermissions.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        return accessControlService.hasGroupPermission(permission, group, user);
     }
 
     private String generateCodeString() {
@@ -838,8 +865,8 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public Page<Group> getAllGroupsPaginated(Integer pageNumber, Integer pageSize) {
-        return groupRepository.findAll(new PageRequest(pageNumber, pageSize));
+    public Page<Group> getAllActiveGroupsPaginated(Integer pageNumber, Integer pageSize) {
+        return groupRepository.findAllByActiveOrderByIdAsc(true, new PageRequest(pageNumber, pageSize));
     }
 
     @Override

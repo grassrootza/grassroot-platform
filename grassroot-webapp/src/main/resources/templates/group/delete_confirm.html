@@ -23,7 +23,7 @@
       </div>
     </div>
     <div class="row">
-      <form th:action="@{/group/delete}" method="post" class="form-horizontal">
+      <form th:action="@{/group/delete}" method="post" class="form-horizontal" autocomplete="off">
         <input type="hidden" name="groupId" th:value="${group.id}" />
         <div class="form-group">
           <label for="confirm_field" class="col-lg-2 control-label">Confirm:</label>

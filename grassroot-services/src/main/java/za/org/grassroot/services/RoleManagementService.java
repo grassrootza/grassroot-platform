@@ -78,4 +78,6 @@ public interface RoleManagementService {
 
     Role getUserRoleInGroup(User user, Group group);
 
+    boolean doesUserHaveRoleInGroup(User user, Group group, String roleName);
+
 }

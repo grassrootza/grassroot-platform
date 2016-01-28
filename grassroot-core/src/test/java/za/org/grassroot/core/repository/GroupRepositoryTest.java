@@ -305,7 +305,7 @@ public class GroupRepositoryTest {
         Group testGroup3 = groupRepository.save(new Group("gc3", user));
 
         List<Long> ids = Arrays.asList(testGroup3.getId(), testGroup1.getId());
-        List<Group> retrievedGroups = groupRepository.findAllByIdInOrderByIdAsc(ids);
+        List<Group> retrievedGroups = groupRepository.findAllByIdIn(ids);
 
         assertFalse(retrievedGroups.isEmpty());
         assertThat(retrievedGroups.get(0), is(testGroup1));
