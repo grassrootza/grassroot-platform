@@ -58,7 +58,12 @@ public class GroupRestController {
                                 @PathVariable("groupId") Long groupId) {
         return new GroupDTO(groupManagementService.addGroupMember(groupId, userId));
     }
-
+    @RequestMapping(value = "/remove/userfromgroup/{userId}/{groupId}",
+            method = RequestMethod.POST)
+    public GroupDTO removeUserFromGroup(@PathVariable("userId") Long userId,
+                                   @PathVariable("groupId") Long groupId) {
+        return new GroupDTO(groupManagementService.removeGroupMember(groupId, userRepository.findOne(userId)));
+    }
     @RequestMapping(value = "/list/usersingroup/{groupId}",
             method = RequestMethod.GET)
     public List<UserDTO> listUsersInGroup(@PathVariable("groupId") Long groupId) {

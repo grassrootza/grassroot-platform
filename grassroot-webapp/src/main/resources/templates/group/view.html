@@ -11,7 +11,14 @@
   <h3>Group last active on <span th:text="${#dates.format(lastActiveTime, 'dd MMM yyyy')}">date</span></h3>
   <div th:if="${hasParent}"><h3>This group has a parent. Its name is <span th:text="${group.parent.groupName}">parent</span></h3></div>
 </div>
-<div layout:fragment="overview">View Group and invite members</div>
+<div th:if="${canAlter}" layout:fragment="overview">
+  <div th:if="${discoverable}">
+    This group is discoverable
+  </div>
+  <div th:unless="${discoverable}">
+    This group is not discoverable
+  </div>
+</div>
 
 <div layout:fragment="content">
   <div layout:fragment="messages"></div>
@@ -74,54 +81,6 @@
     </div>
   </div>
 
-  <!-- Major todo: add in user permissions about changing names & groups &c. -->
-  <div class="well">
-    <div class="row">
-      <h2>Group members</h2>
-    </div>
-    <div class="row">
-      <table class="table table-striped">
-        <thead>
-        <th>Member</th>
-        <td>Phone number</td>
-        </thead>
-        <tbody>
-        <tr th:each="member : ${group.groupMembers}">
-          <td><span th:text="${member.displayName}"></span></td>
-          <td><span th:text="${member.phoneNumber}"></span></td>
-        </tr>
-        </tbody>
-      </table>
-    </div>
-    <form th:action="@{modify}" method="post">
-      <input type="hidden" name="groupId" th:value="${group.id}" />
-      <div class="row">
-        <div class="col-lg-2" th:switch="${openToken}">
-          <div th:case="true">
-            <p class="text-strong">Group join code: *134*1994*<span th:text="${group.groupTokenCode}"></span>#</p>
-            <button type="submit" name="token_extend" class="btn btn-primary">Extend code</button>
-            <button type="submit" name="token_cancel" class="btn btn-danger">Close this code</button>
-          </div>
-          <div th:case="false">
-            <button type="submit" name="token_create" class="btn btn-success">Create a new join code ('token')</button>
-          </div>
-        </div>
-        <div class="col-lg-4">
-        <!-- Major todo: look up user's permissions before they can do this ... -->
-          <button type="submit" name="group_modify" class="btn btn-warning">Add and modify group members</button>
-        </div>
-        <div class="col-lg-4">
-          <button type="sumit" name="group_language" class="btn btn-info">Change group language</button>
-        </div>
-        <div th:if="${canDeleteGroup}" class="col-lg-4">
-          <button type="submit" name="group_delete" class="btn btn-warning">Delete group (only within 48 hours)</button>
-        </div>
-    </div>
-    </form>
-  </div>
-
-  <!-- todo: add button that will get all users from subgroups too and display them in one list -->
-
   <!-- First, buttons for common actions -->
   <!-- todo: make these a fragment, as we'll probably use a lot -->
 
@@ -142,16 +101,79 @@
     </div>
   </div>
 
+  <!-- Major todo: add in user permissions about changing names & groups &c. -->
   <div class="well">
     <div class="row">
-      <div class="col-md-6" th:if="${not hasParent}">
-        <a href="" th:href="@{/group/parent(groupId=${group.id})}"><button class="btn btn-success">Link this group to a parent</button></a>
-      </div>
-      <div class="col-md-6" th:if="${canMergeWithOthers}">
-        <a href="" th:href="@{/group/consolidate/select(groupId=${group.id})}"><button class="btn btn-success">Consolidate with another group</button></a>
-      </div>
+      <h2>Group members</h2>
+    </div>
+    <div class="row">
+      <table class="table table-striped">
+        <thead>
+        <th>Member</th>
+        <td>Phone number</td>
+        </thead>
+        <tbody>
+        <tr th:each="member : ${group.groupMembers}">
+          <td><span th:text="${member.displayName}"></span></td>
+          <td><span th:text="${member.phoneNumber}"></span></td>
+        </tr>
+        </tbody>
+      </table>
     </div>
   </div>
+
+  <div class="row">
+    <div class="col-lg-12">
+      <h3>Modify group:</h3>
+    </div>
+  </div>
+
+  <div th:if="${canAlter}" class="well">
+    <form th:action="@{modify}" method="post">
+      <input type="hidden" name="groupId" th:value="${group.id}" />
+      <div class="row form-group">
+        <div class="col-lg-3" th:switch="${openToken}">
+          <div th:case="true">
+            <p class="text-strong">Group join code: *134*1994*<span th:text="${group.groupTokenCode}"></span>#</p>
+            <button type="submit" name="token_extend" class="btn btn-primary">Extend code</button>
+            <button type="submit" name="token_cancel" class="btn btn-primary">Close this code</button>
+          </div>
+          <div th:case="false">
+            <button type="text" name="token_create" class="btn btn-default">Create a new join code ('token')</button>
+          </div>
+        </div>
+        <div class="col-lg-3">
+        <!-- Major todo: look up user's permissions before they can do this ... -->
+          <button type="submit" name="group_modify" class="btn btn-default">Add and modify group members</button>
+        </div>
+        <div class="col-lg-3">
+          <button type="submit" name="group_language" class="btn btn-default">Change group language</button>
+        </div>
+        <div class="col-lg-3">
+          <button type="submit" name="discoverable" class="btn btn-default">Change public/private options</button>
+        </div>
+      </div>
+    </form>
+    <div class="row form-group">
+        <div class="col-md-4" th:if="${not hasParent}">
+          <a href="" th:href="@{/group/parent(groupId=${group.id})}"><button class="btn btn-warning">Link this group to a parent</button></a>
+        </div>
+        <div class="col-md-4" th:if="${canMergeWithOthers}">
+          <a href="" th:href="@{/group/consolidate/select(groupId=${group.id})}"><button class="btn btn-warning">Consolidate with another group</button></a>
+        </div>
+        <div th:if="${canDeleteGroup}" class="col-md-4">
+          <form th:action="@{modify}" method="post">
+            <input type="hidden" name="groupId" th:value="${group.id}" />
+            <button type="submit" name="group_delete" class="btn btn-warning">Delete group (only within 48 hours)</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+
+  <!-- todo: add button that will get all users from subgroups too and display them in one list -->
+
+
 
   <!-- list subgroups -->
   <!-- todo: create a fragment to display a list of groups, to be used in a bunch of places -->

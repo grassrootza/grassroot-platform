@@ -19,7 +19,11 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.hasProperty;
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -84,7 +88,8 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         verify(groupManagementServiceMock, times(1)).getSubGroups(dummyGroup);
         verify(groupManagementServiceMock, times(1)).groupHasValidToken(dummyGroup);
         verify(groupManagementServiceMock, times(1)).canUserMakeGroupInactive(sessionTestUser, dummyGroup);
-        verify(groupManagementServiceMock, times(1)).isGroupCreatedByUser(dummyGroup.getId(), sessionTestUser);
+        verify(groupManagementServiceMock, times(1)).canUserModifyGroup(dummyGroup, sessionTestUser);
+        verify(groupManagementServiceMock, times(2)).isGroupCreatedByUser(dummyGroup.getId(), sessionTestUser);
         verify(groupManagementServiceMock, times(1)).getLastTimeGroupActive(dummyGroup);
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyNoMoreInteractions(eventManagementServiceMock);
@@ -118,9 +123,10 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void createGroupWorks() throws Exception {
         GroupWrapper dummyGroupCreator = new GroupWrapper();
-        dummyGroupCreator.setGroupName("DummyGroup");
+        dummyGroupCreator.setDiscoverable(false);
         Group dummyGroup = new Group(dummyGroupCreator.getGroupName(), sessionTestUser);
         dummyGroup.addMember(sessionTestUser);
+        when(userManagementServiceMock.getUserById(sessionTestUser.getId())).thenReturn(sessionTestUser);
         when(groupManagementServiceMock.createNewGroup(sessionTestUser, dummyGroupCreator.getGroupName()))
                 .thenReturn(dummyGroup);
         when((userManagementServiceMock.loadOrSaveUser(sessionTestUser.getPhoneNumber()))).thenReturn(sessionTestUser);
@@ -129,7 +135,9 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         mockMvc.perform(post("/group/create").sessionAttr("groupCreator", dummyGroupCreator)).andExpect(view()
                 .name("redirect:view")).andExpect(model().attribute("groupId", dummyGroup.getId()))
                 .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("view"));
-        verify(groupManagementServiceMock, times(1)).createNewGroup(sessionTestUser, dummyGroupCreator.getGroupName());
+
+        verify(groupManagementServiceMock, times(1)).createNewGroup(any(User.class), eq(dummyGroupCreator.getGroupName()));
+        verify(userManagementServiceMock, times(1)).getUserById(sessionTestUser.getId());
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(groupManagementServiceMock);
     }
@@ -546,10 +554,11 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(status().isOk()).andExpect(view().name("group/view"))
                 .andExpect(model()
                         .attributeExists(BaseController.MessageType.ERROR.getMessageKey()));
-        verify(userManagementServiceMock, times(1)).getUserById(sessionTestUser.getId());
-        verify(groupManagementServiceMock, times(2)).canUserMakeGroupInactive(sessionTestUser, group);
+        verify(userManagementServiceMock, times(2)).getUserById(sessionTestUser.getId());
+        verify(groupManagementServiceMock, times(1)).canUserMakeGroupInactive(sessionTestUser, group);
         verify(groupManagementServiceMock, times(2)).loadGroup(dummyId);
         verifyNoMoreInteractions(userManagementServiceMock);
+        // redirect to view causes all view method calls, no point repeating them here, but leaving verify written & commented
         // verifyNoMoreInteractions(groupManagementServiceMock);
     }
 

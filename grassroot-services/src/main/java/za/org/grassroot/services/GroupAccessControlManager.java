@@ -54,9 +54,9 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
 
         try {
 
-            log.info("ZOG: Adding permissions for this group ... {}", group.toString());
-            log.info("ZOG: Adding them to this user ... {}", user.toString());
-            log.info("ZOG: Adding this set of permissions ... {}", groupPermissions);
+            // log.info("ZOG: Adding permissions for this group ... {}", group.toString());
+            // log.info("ZOG: Adding them to this user ... {}", user.toString());
+            // log.info("ZOG: Adding this set of permissions ... {}", groupPermissions);
 
             ObjectIdentity objectIdentity = new ObjectIdentityImpl(Group.class, group.getId());
             Sid sid = new PrincipalSid(user.getUsername());
