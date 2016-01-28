@@ -413,8 +413,8 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
                         .param("groupId2", String.valueOf(0L)).param("order", orders[i]).param("leaveActive",
                                 String.valueOf(true))).andExpect(model()
                         .attribute("groupInto", hasProperty("id", is(0L)))).andExpect(model()
-                        .attribute("groupFrom", hasProperty("id", is(1L))))
-                        .andExpect(model().attribute("numberFrom", is(testGroupInto.getGroupMembers().size())))
+                        .attribute("groupFrom", hasProperty("id", is(1L)))).
+                        andExpect(model().attribute("numberFrom", is(testGroupInto.getGroupMembers().size())))
                         .andExpect(model().attribute("leaveActive", is(true)));
             }
         }
