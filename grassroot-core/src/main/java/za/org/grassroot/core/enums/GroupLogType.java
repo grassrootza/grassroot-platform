@@ -1,5 +1,7 @@
 package za.org.grassroot.core.enums;
-
+/*
+N.B. please remember to add new ones at the bottom
+ */
 public enum GroupLogType {
     GROUP_ADDED("group added"),
     GROUP_REMOVED("group removed"),
