@@ -65,6 +65,9 @@ public class GroupManager implements GroupManagementService {
     @Autowired
     EventRepository eventRepository;
 
+    @Autowired
+    RoleManagementService roleManagementService;
+
 
     /**
      * Have not yet created methods analogous to those in UserManager, as not sure if necessary
@@ -97,7 +100,7 @@ public class GroupManager implements GroupManagementService {
     public Group saveGroup(Group groupToSave, boolean createGroupLog, String description, Long changedByuserId) {
         Group group = groupRepository.save(groupToSave);
         if (createGroupLog) {
-            GroupLog groupLog = groupLogRepository.save(new GroupLog(groupToSave.getId(),dontKnowTheUser, GroupLogType.GROUP_UPDATED,changedByuserId,description));
+            GroupLog groupLog = groupLogRepository.save(new GroupLog(groupToSave.getId(),changedByuserId, GroupLogType.GROUP_UPDATED,0L,description));
         }
         return group;
     }
@@ -185,8 +188,22 @@ public class GroupManager implements GroupManagementService {
 
     @Override
     public Group createNewGroup(User creatingUser, String groupName) {
+        Long timeStart = System.currentTimeMillis();
         Group group = groupRepository.save(new Group(groupName, creatingUser));
         GroupLog groupLog = groupLogRepository.save(new GroupLog(group.getId(),creatingUser.getId(),GroupLogType.GROUP_ADDED,0L));
+        Long timeEnd = System.currentTimeMillis();
+        log.info(String.format("Creating a group without roles, time taken ... %d msecs", timeEnd - timeStart));
+        return group;
+    }
+
+    @Override
+    public Group createNewGroupWithRole(User creatingUser, String groupName) {
+        Long timeStart = System.currentTimeMillis();
+        Group group = createNewGroup(creatingUser, groupName);
+        addGroupMember(group, creatingUser);
+        roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, group, creatingUser);
+        Long timeEnd = System.currentTimeMillis();
+        log.info(String.format("Creating a group with roles, overall time taken ... %d msecs", timeEnd - timeStart));
         return group;
     }
 
@@ -213,10 +230,18 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
+    public Group addGroupMemberWithDefaultRole(Group group, User user, String role) {
+        group = addGroupMember(group, user);
+        roleManagementService.addDefaultRoleToGroupAndUser(role, group, user);
+        return group;
+    }
+
+    @Override
     public Group createNewGroup(Long creatingUserId, List<String> phoneNumbers) {
         return createNewGroup(userManager.getUserById(creatingUserId), phoneNumbers);
     }
 
+    // bugs!
     @Override
     public Group createNewGroupWithCreatorAsMember(User creatingUser, String groupName) {
         Group group = new Group(groupName, creatingUser);
@@ -859,7 +884,7 @@ public class GroupManager implements GroupManagementService {
     public boolean canUserMakeGroupInactive(User user, Group group) {
         // todo: Integrate with permission checking -- for now, just checking if group created by user in last 48 hours
         // todo: the time checking would be so much easier if we use Joda or Java 8 DateTime ...
-        boolean createdByUser = (group.getCreatedByUser() == user);
+        boolean createdByUser = (group.getCreatedByUser().getId() == user.getId()); // full equals doesn't work on session-loaded user
         Timestamp thresholdTime = new Timestamp(Calendar.getInstance().getTimeInMillis() - (48 * 60 * 60 * 1000));
         boolean groupCreatedSinceThreshold = (group.getCreatedDateTime().after(thresholdTime));
         return (createdByUser && groupCreatedSinceThreshold);

@@ -123,7 +123,7 @@ public class USSDMeetingController extends USSDController {
     @ResponseBody
     public Request newGroup(@RequestParam(value= phoneNumber, required = true) String inputNumber) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber, meetingMenus + newGroupMenu);
-        return menuBuilder(ussdGroupUtil.createGroupPrompt(user, thisSection, groupHandlingMenu));
+        return menuBuilder(ussdGroupUtil.createGroupPrompt(user, thisSection, meetingMenus + groupHandlingMenu));
     }
 
     /*
