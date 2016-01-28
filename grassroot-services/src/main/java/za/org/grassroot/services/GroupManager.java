@@ -127,9 +127,7 @@ public class GroupManager implements GroupManagementService {
 
     @Override
     public Group addGroupMember(Long currentGroupId, Long newMemberId) {
-        Group group = addGroupMember(loadGroup(currentGroupId), userManager.getUserById(newMemberId));
-        GroupLog groupLog = groupLogRepository.save(new GroupLog(currentGroupId,dontKnowTheUser,GroupLogType.GROUP_MEMBER_ADDED,newMemberId));
-        return group;
+        return addGroupMember(loadGroup(currentGroupId), userManager.getUserById(newMemberId));
     }
 
     @Override
