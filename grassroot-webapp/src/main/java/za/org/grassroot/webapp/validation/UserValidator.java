@@ -1,5 +1,7 @@
 package za.org.grassroot.webapp.validation;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.ValidationUtils;
@@ -17,6 +19,8 @@ import za.org.grassroot.core.util.PhoneNumberUtil;
 @Component("userValidator")
 public class UserValidator implements Validator {
 
+    private static final Logger log = LoggerFactory.getLogger(UserValidator.class);
+
     @Override
     public boolean supports(Class<?> clazz) {return User.class.equals(clazz); }
 
@@ -31,6 +35,7 @@ public class UserValidator implements Validator {
 
         if (!errors.hasErrors()) {
 
+            log.info("Checking this inputNumber ... " +inputedUser.getPhoneNumber());
             if (!PhoneNumberUtil.testInputNumber(inputedUser.getPhoneNumber())) {
                 errors.rejectValue("phoneNumber", "user.enter.error.phoneNumber.invalid");
             }

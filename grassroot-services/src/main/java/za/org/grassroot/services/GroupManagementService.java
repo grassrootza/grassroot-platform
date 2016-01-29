@@ -25,8 +25,7 @@ public interface GroupManagementService {
 
     public Group createNewGroup(User creatingUser, String groupName);
 
-    // temporary method to test without breaking other things
-    public Group createNewGroupWithRole(User creatingUser, String groupName);
+    // public Group createNewGroupWithRole(User creatingUser, String groupName);
 
     public Group createNewGroup(User creatingUser, List<String> phoneNumbers);
 
@@ -75,7 +74,7 @@ public interface GroupManagementService {
 
     public Group addGroupMember(Group currentGroup, User newMember);
 
-    public Group addGroupMemberWithDefaultRole(Group group, User user, String roleName);
+//    public Group addGroupMemberWithDefaultRole(Group group, User user, String roleName);
 
     public Group addGroupMember(Long currentGroupId, Long newMemberId);
 
@@ -116,7 +115,7 @@ public interface GroupManagementService {
     public boolean canUserCallVoteOnAnyGroup(User user);
 
     /*
-    Methods to work with group joining tokens
+    Methods to work with group joining tokens and group discovery
      */
 
     public Group getGroupByToken(String groupToken);
@@ -140,6 +139,13 @@ public interface GroupManagementService {
     public boolean groupHasValidToken(Group group);
 
     public boolean tokenExists(String groupToken);
+
+    // @PreAuthorize("hasPermission(#groupId, 'za.org.grassroot.core.domain.Group', 'GROUP_PERMISSION_UPDATE_GROUP_DETAILS')")
+    public Group setGroupDiscoverable(Long groupId, boolean discoverable, User user);
+
+    public Group setGroupDiscoverable(Group group, boolean discoverable, Long userId);
+
+    public boolean canUserModifyGroup(Group group, User user);
 
     /*
     Methods do deal with sub groups and parent groups
@@ -247,7 +253,7 @@ public interface GroupManagementService {
 
     List<Group> getAllGroups();
 
-    Page<Group> getAllGroupsPaginated(Integer pageNumber, Integer pageSize);
+    Page<Group> getAllActiveGroupsPaginated(Integer pageNumber, Integer pageSize);
 
     List<Group> getGroupsFiltered(User createdByUser, Integer minGroupSize, Date createdAfterDate, Date createdBeforeDate);
 

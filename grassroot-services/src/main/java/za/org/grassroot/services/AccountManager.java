@@ -89,6 +89,15 @@ public class AccountManager implements AccountManagementService {
         return accountRepository.save(account);
     }
 
+    @Override
+    public Account adjustSettings(Account changedAccount) {
+        Account savedAccount = accountRepository.findOne(changedAccount.getId());
+        savedAccount.setFreeFormMessages(changedAccount.isFreeFormMessages());
+        savedAccount.setRelayableMessages(changedAccount.isRelayableMessages());
+        savedAccount.setLogbookExtraMessages(changedAccount.isLogbookExtraMessages());
+        return accountRepository.save(savedAccount);
+    }
+
     /*
     Helper function to make sure second side of relationship & admin role added to user
      */

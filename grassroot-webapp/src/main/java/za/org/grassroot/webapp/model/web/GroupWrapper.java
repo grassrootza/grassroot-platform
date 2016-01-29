@@ -25,6 +25,7 @@ public class GroupWrapper {
 
     String parentName;
 
+    boolean discoverable;
     boolean generateToken;
     Integer tokenDaysValid;
 
@@ -35,6 +36,7 @@ public class GroupWrapper {
     public GroupWrapper() {
         this.group = new Group();
         this.generateToken = false;
+        this.discoverable = false;
     }
 
     public GroupWrapper(Group parentGroup) {
@@ -47,6 +49,7 @@ public class GroupWrapper {
         this.parentId = parentGroup.getId();
         this.parentName = parentGroup.getGroupName();
         this.addedMembers.addAll(parentGroup.getGroupMembers());
+        this.discoverable = parentGroup.isDiscoverable();
     }
 
     public Group getGroup() { return group; }
@@ -83,6 +86,10 @@ public class GroupWrapper {
 
     public List<User> getAddedMembers() { return addedMembers; }
 
+    public boolean isDiscoverable() { return discoverable; }
+
+    public void setDiscoverable(boolean discoverable) { this.discoverable = discoverable; }
+
     /* Constructors
     One for a group without a parent, one for a group with a parent
      */
@@ -113,6 +120,7 @@ public class GroupWrapper {
         this.group = groupToModify;
         this.groupName = group.getGroupName();
         this.parentGroup = group.getParent();
+        this.discoverable = group.isDiscoverable();
 
         if (parentGroup != null) {
             this.hasParent = true;

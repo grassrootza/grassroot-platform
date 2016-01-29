@@ -27,6 +27,23 @@
           <input th:field="*{groupName}" type="text" class="form-control" id="groupName" placeholder="Group Name"/>
         </div>
       </div>
+      <!-- Note: removing this option from group create until comfortable it's clear to users, and roles/permissions in place -->
+      <!-- <div class="form-group">
+        <div class="row">
+          <label for="discoverable" class="col-lg-2 control-label">
+            <p class="list-group-item-text">Make group public?</p>
+          </label>
+          <div class="col-lg-4">
+            <input type="checkbox" th:field="*{discoverable}" class="form-control" id="discoverable" />
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-lg-6 control-label text-center">
+            <small><mark>NB</mark>Ticking this box will allow anyone to find and join your group. Select it only if you wish your
+            group to be open.</small>
+          </div>
+        </div>
+      </div> -->
       <div class="form-group col-lg-10 col-lg-offset-2">
         <table class="table col-md-8" id="member-input">
           <thead>
@@ -64,19 +81,19 @@
             <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
             Add another member</button>
         </div>
-        <div class="col-lg-8">
+      </div>
+        <!-- <div class="col-lg-8">
           <label for="generateToken" class="col-lg-4 control-label">Create a joining code?</label>
           <div class="col-lg-4">
             <input th:checked="${generateToken}" type="checkbox" class="form-control" id="generateToken" name="generateToken"/>
           </div>
-          <!-- todo: make select box dynamic, so it only shows up if the user ticks the button -->
           <label for="tokenDaysValid">How long should it stay open?</label>
           <select th:field="*{tokenDaysValid}" id="tokenDaysValid">
             <option value="0">Permanent (can be closed anytime)</option>
             <div class="col-lg-4" th:include="fragments :: daySelector"></div>
           </select>
         </div>
-      </div>
+      </div> -->
       <div class="form-group">
         <div class="col-lg-8">
           <a th:href="@{/home}" role="button" class="btn btn-default">Cancel</a>

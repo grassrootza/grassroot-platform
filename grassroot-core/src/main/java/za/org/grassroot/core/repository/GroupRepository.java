@@ -50,7 +50,8 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     Find all groups, with pagination--for system admin
      */
     Page<Group> findAll(Pageable pageable);
-    List<Group> findAllByIdInOrderByIdAsc(List<Long> ids);
+    Page<Group> findAllByActiveOrderByIdAsc(boolean active, Pageable pageable);
+    List<Group> findAllByIdIn(List<Long> ids);
 
     /*
     Couple of methods to be able to discover groups, as long as those have opted in

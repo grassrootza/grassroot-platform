@@ -219,6 +219,8 @@ public class EventNotificationConsumer {
         Group  group = groupManagementService.loadGroup(logBookDTO.getGroupId());
         Account account = accountManagementService.findAccountForGroup(group);
 
+        log.info("Found this account for the group ..." + (account == null ? " none" : account.getAccountName()));
+
         if (account != null && account.isLogbookExtraMessages()) {
             //send messages to paid for groups using the same logic as the reminders - sendLogBookReminder method
             //so if you make changes here also make the changes there

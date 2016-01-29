@@ -1,6 +1,5 @@
 package za.org.grassroot.webapp.controller.webapp;
 
-import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +16,6 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
-import za.org.grassroot.webapp.model.web.GroupWrapper;
 import za.org.grassroot.webapp.model.web.MemberWrapper;
 
 import javax.servlet.http.HttpServletRequest;
@@ -144,7 +142,7 @@ public class AdminController extends BaseController {
 
             model.addAttribute("paginated", true);
             model.addAttribute("countBase", page * GROUP_PAGE_SIZE);
-            Page<Group> groupList = groupManagementService.getAllGroupsPaginated(page, GROUP_PAGE_SIZE);
+            Page<Group> groupList = groupManagementService.getAllActiveGroupsPaginated(page, GROUP_PAGE_SIZE);
 
             Integer previousPage = (groupList.hasPrevious()) ? page - 1 : -1;
             Integer nextPage = (groupList.hasNext()) ? page + 1 : -1;
@@ -328,6 +326,20 @@ public class AdminController extends BaseController {
         log.info("Added the role to the user and saved them");
 
         return listAccounts(model);
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/admin/accounts/settings")
+    public String viewAccountSettings(Model model, @RequestParam Long accountId) {
+        model.addAttribute("account", accountManagementService.loadAccount(accountId));
+        return "admin/accounts/settings";
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/admin/accounts/settings", method = RequestMethod.POST)
+    public String changeAccountSettings(Model model, @ModelAttribute Account account) {
+        Account savedAccount = accountManagementService.adjustSettings(account);
+        return adminViewAccount(model, account.getId());
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")

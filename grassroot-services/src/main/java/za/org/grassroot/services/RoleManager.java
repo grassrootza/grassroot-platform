@@ -81,7 +81,7 @@ public class RoleManager implements  RoleManagementService {
 
     @Override
     public Role fetchStandardRoleByName(String name) {
-        log.info("Attempting to fetch a standard role from this role name ... " + name);
+        // log.info("Attempting to fetch a standard role from this role name ... " + name);
         List<Role> roles = roleRepository.findByNameAndRoleType(name, Role.RoleType.STANDARD);
         //we really should have one standard Role
         log.info("Found these roles: " + roles);
@@ -90,7 +90,7 @@ public class RoleManager implements  RoleManagementService {
 
     @Override
     public Role fetchGroupRoleByName(String name) {
-        log.info("Fetching group role through this name ... " + name);
+        // log.info("Fetching group role through this name ... " + name);
         List<Role> roles = roleRepository.findByNameAndRoleType(name, Role.RoleType.GROUP);
         // as above, should have at least one group role
         return !roles.isEmpty() ? roles.get(0) : null;
@@ -161,17 +161,17 @@ public class RoleManager implements  RoleManagementService {
 
         Role role;
 
-        log.info("Flushing user roles ... starting with them as ... " + user.getRoles());
+        // log.info("Flushing user roles ... starting with them as ... " + user.getRoles());
         user = flushUserRolesInGroup(user, group);
-        log.info("User roles flushed, now with ... " + user.getRoles());
+        // log.info("User roles flushed, now with ... " + user.getRoles());
 
         if (fetchGroupRole(roleName, group) == null) {
             // create the role with default permissions and add it to the group
             role = new Role(roleName, group.getId(), group.getGroupName());
-            log.info("Created this new role: " + role.describe());
+            // log.info("Created this new role: " + role.describe());
             role.setPermissions(permissionsManagementService.defaultPermissionsGroupRole(roleName));
             role = roleRepository.save(role);
-            log.info("Role saved as ... " + role.describe());
+            // log.info("Role saved as ... " + role.describe());
             group.addRole(role);
             groupManagementService.saveGroup(group,true, String.format("Added role %s to group",role.getName()),dontKnowTheUser);
             user.addRole(role);
@@ -180,7 +180,7 @@ public class RoleManager implements  RoleManagementService {
             // role exists, just make sure it has a set of permissions and add it to user and group
             // todo: work out what to do if role has a non-BaseRoles name and permissions set is empty (throw a fit)
             role = fetchGroupRole(roleName, group);
-            log.info("Retrieved the following role: " + role.toString());
+            // log.info("Retrieved the following role: " + role.toString());
             if (role.getPermissions() == null || role.getPermissions().isEmpty())
                 role.setPermissions(permissionsManagementService.defaultPermissionsGroupRole(role.getName()));
             role = roleRepository.save(role);
@@ -226,6 +226,12 @@ public class RoleManager implements  RoleManagementService {
         }
 
         return null; // if the user has not been given a role in the group, this is what we return
+    }
+
+    @Override
+    public boolean doesUserHaveRoleInGroup(User user, Group group, String roleName) {
+        Role role = fetchGroupRoleByName(roleName);
+        return (getUserRoleInGroup(user, group) == role);
     }
 
     private User flushUserRolesInGroup(User user, Group group) {
