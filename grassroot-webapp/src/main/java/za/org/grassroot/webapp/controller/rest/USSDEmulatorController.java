@@ -24,7 +24,6 @@ import java.security.cert.X509Certificate;
  * Created by paballo on 2016/01/27.
  */
 
-
 @Controller
 @RequestMapping("/emulator/")
 public class USSDEmulatorController extends BaseController {
@@ -36,7 +35,7 @@ public class USSDEmulatorController extends BaseController {
  
 
     @RequestMapping(value = "view", method = RequestMethod.GET)
-    private String emulateUSSD(Model model, @RequestParam(value = linkParam, required = false) String link,
+    public String emulateUSSD(Model model, @RequestParam(value = linkParam, required = false) String link,
                                @RequestParam(value = inputStringParam, required = false) String inputString) {
 
         if (link == null) {
@@ -51,7 +50,7 @@ public class USSDEmulatorController extends BaseController {
         model.addAttribute("display", display);
         model.addAttribute("request", request);
         try {
-            model.addAttribute("constructedUrl", targetUrl.toURL());
+            model.addAttribute("url", targetUrl.toURL());
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }

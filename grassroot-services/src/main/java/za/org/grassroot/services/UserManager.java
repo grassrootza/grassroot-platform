@@ -252,8 +252,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     public List<User> searchByGroupAndNameNumber(Long groupId, String nameOrNumber) {
-        return userRepository.findByGroupsPartOfAndDisplayNameContainingIgnoreCaseOrPhoneNumberContaining(
-                groupManagementService.loadGroup(groupId), nameOrNumber, nameOrNumber);
+        return userRepository.findByGroupsPartOfAndDisplayNameContainingIgnoreCaseOrPhoneNumberLike(
+                groupManagementService.loadGroup(groupId), "%"+nameOrNumber+"%", "%"+nameOrNumber+"%");
     }
 
 
