@@ -148,6 +148,8 @@ public class HomeController extends BaseController {
         // end of SQL tree
 
         Long startTime2 = System.currentTimeMillis();
+        List<Group> usergroups = groupManagementService.getActiveGroupsPartOf(user);
+
         model.addAttribute("userGroups", groupManagementService.getActiveGroupsPartOf(user));
         model.addAttribute("groupTreesSql", groupViewNodeSqls);
 

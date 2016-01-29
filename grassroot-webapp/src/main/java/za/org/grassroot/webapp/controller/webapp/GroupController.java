@@ -129,8 +129,9 @@ public class GroupController extends BaseController {
         log.info(String.format("Checking group membership took ... %d msec", endTime - startTime));
 
         startTime = System.currentTimeMillis();
-        boolean hasUpdatePermission = (groupManagementService.canUserModifyGroup(group, user) ||
-                groupManagementService.isGroupCreatedByUser(groupId, user));
+        boolean isUserCreatedGroup = groupManagementService.isGroupCreatedByUser(groupId,user);
+        boolean hasUpdatePermission = (groupManagementService.canUserModifyGroup(group, user) || isUserCreatedGroup);
+
         // boolean hasUpdatePermission = groupManagementService.isGroupCreatedByUser(groupId, user);
         endTime = System.currentTimeMillis();
         log.info(String.format("Checking if update permission took ... %d msec", endTime - startTime));
@@ -145,7 +146,7 @@ public class GroupController extends BaseController {
         if (hasUpdatePermission) {
             model.addAttribute("canAlter", hasUpdatePermission);
             model.addAttribute("canDeleteGroup", groupManagementService.canUserMakeGroupInactive(user, group));
-            model.addAttribute("canMergeWithOthers", groupManagementService.isGroupCreatedByUser(groupId, user)); // replace w/ permission later
+            model.addAttribute("canMergeWithOthers", isUserCreatedGroup); // replace w/ permission later
             model.addAttribute("isDiscoverable", group.isDiscoverable());
         }
 

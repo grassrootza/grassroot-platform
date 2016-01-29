@@ -26,7 +26,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByDisplayNameContainingOrPhoneNumberContaining(String userInput, String phoneNumber);
     List<User> findByGroupsPartOfAndDisplayNameContainingOrPhoneNumberContaining(Group group, String userInput, String phoneNumber);
 
-    List<User> findByGroupsPartOfAndDisplayNameContainingIgnoreCaseOrPhoneNumberContaining(Group group, String userInput, String phoneNumber);
+    List<User> findByGroupsPartOfAndDisplayNameContainingIgnoreCaseOrPhoneNumberLike(Group group, String userInput, String phoneNumber);
 
 
     List<User> findByGroupsPartOfOrderByIdAsc(Group group);
