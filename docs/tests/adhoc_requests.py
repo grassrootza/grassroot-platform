@@ -1,6 +1,8 @@
 __author__ = 'aakilomar'
 
 import requests, json, time
+from timeit import default_timer as timer
+
 requests.packages.urllib3.disable_warnings()
 
 host = "https://localhost:8443"
@@ -73,6 +75,35 @@ def createAccount(userid,groupid,accountname):
     post_url = host + "/api/account/add/"  + str(userid) + "/" + str(groupid) + "/" + str(accountname)
     return requests.post(post_url,None, verify=False).json()
 
+def ussdStart(phonenumber,enteredUssd):
+    post_url = host + "/ussd/start?msisdn="  + str(phonenumber)
+    return requests.get(post_url,None, verify=False)
+
+def add_user_to_group(userid,groupid):
+    post_url = host + "/api/group/add/usertogroup/" + str(userid) + "/" + str(groupid)
+    return requests.post(post_url,None, verify=False).json()
+
+def remove_user_from_group(userid,groupid):
+    post_url = host + "/api/group/remove/userfromgroup/" + str(userid) + "/" + str(groupid)
+    return requests.post(post_url,None, verify=False).json()
+
+def get_user_join_group(userid,groupid):
+    post_url = host + "/api/group/get/userjoingroup/" + str(userid) + "/" + str(groupid)
+    return requests.post(post_url,None, verify=False).content
+
+def rsvpRequired(userid):
+    post_url = host + "/api/event/rsvprequired/" + str(userid)
+    return requests.get(post_url,None, verify=False).json()
+
+def voteRequired(userid):
+    post_url = host + "/api/event/voterequired/" + str(userid)
+    return requests.get(post_url,None, verify=False).json()
+
+def add_event(userid,groupid, name):
+    post_url = host + "/api/event/add/" + str(userid) + "/" + str(groupid) + "/" + name
+    return requests.post(post_url,None, verify=False).json()
+
+
 #print cancel_event(5166)
 #user = add_user("0823333332")
 #user = add_user("0821111111")
@@ -92,3 +123,17 @@ def createAccount(userid,groupid,accountname):
 #print setInitiatedSession(588)
 #print(listReplicatedMessage(88,"Somebody must X"))
 #print(createAccount(1,21,"acc 21"))
+
+
+#for i in range(1,7,1):
+##    start = timer()
+#    print ussdStart("0826607134","")
+#    end = timer()
+#    print(end - start)
+#print add_user_to_group(588,82)
+#print remove_user_from_group(588,82)
+#print get_user_join_group(588,82)
+#print voteRequired(817)
+print rsvpRequired(817)
+
+print "klaarie"
