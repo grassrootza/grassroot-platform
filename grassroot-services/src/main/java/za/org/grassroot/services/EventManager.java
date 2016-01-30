@@ -20,6 +20,7 @@ import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.EventRepository;
+import za.org.grassroot.core.repository.GroupLogRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
@@ -69,6 +70,9 @@ public class EventManager implements EventManagementService {
 
     @Autowired
     MeetingNotificationService meetingNotificationService;
+
+    @Autowired
+    GroupLogRepository groupLogRepository;
 
     private final static double SMS_COST = 0.2; // might move to message services
 
@@ -483,6 +487,15 @@ public class EventManager implements EventManagementService {
                                 //rsvp
                                 if ((eventType == EventType.Meeting && event.getCreatedByUser().getId() != user.getId())
                                         || eventType != EventType.Meeting) {
+
+                                    //N.B. remove this if statement if you want to allow votes for people that joined the group late
+                                    if (eventType == EventType.Vote) {
+                                        Timestamp joined = groupLogRepository.getGroupJoinedDate(group.getId(),user.getId());
+                                        if (joined.after(event.getCreatedDateTime())) {
+                                            log.info(String.format("Excluding vote %s for %s as the user joined group %s after the vote was called",event.getName(),user.getPhoneNumber(),group.getId()));
+                                            continue;
+                                        }
+                                    }
                                     if (!eventLogManagementService.userRsvpForEvent(event, user)) {
                                         //see if we added it already as the user can be in multiple groups in a group structure
                                         if (eventMap.get(event.getId()) == null) {

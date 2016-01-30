@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.repository.GroupLogRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
@@ -14,7 +15,9 @@ import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.webapp.model.rest.GroupDTO;
 import za.org.grassroot.webapp.model.rest.UserDTO;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -36,6 +39,9 @@ public class GroupRestController {
 
     @Autowired
     GroupRepository groupRepository;
+
+    @Autowired
+    GroupLogRepository groupLogRepository;
 
     @RequestMapping(value = "/add/{userid}/{phonenumbers}", method = RequestMethod.POST)
     public GroupDTO add(@PathVariable("userid") Long userid,@PathVariable("phonenumbers") String phoneNumbers) {
@@ -64,6 +70,16 @@ public class GroupRestController {
                                    @PathVariable("groupId") Long groupId) {
         return new GroupDTO(groupManagementService.removeGroupMember(groupId, userRepository.findOne(userId)));
     }
+
+    @RequestMapping(value = "/get/userjoingroup/{userId}/{groupId}",
+            method = RequestMethod.POST)
+    public String getUserJoinGroup(@PathVariable("userId") Long userId,
+                                 @PathVariable("groupId") Long groupId) {
+        Timestamp ts = groupLogRepository.getGroupJoinedDate(groupId,userId);
+        log.info("getUserJoinGroup..." + ts.toLocaleString());
+        return ts.toString();
+    }
+
     @RequestMapping(value = "/list/usersingroup/{groupId}",
             method = RequestMethod.GET)
     public List<UserDTO> listUsersInGroup(@PathVariable("groupId") Long groupId) {
