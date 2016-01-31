@@ -57,19 +57,19 @@ public class USSDAbstractIT extends AbstractTransactionalJUnit4SpringContextTest
     private Logger log = Logger.getLogger(getClass().getCanonicalName());
 
     @Autowired
-    UserManagementService userManager;
+    protected UserManagementService userManager;
 
     @Autowired
-    GroupManagementService groupManager;
+    protected GroupManagementService groupManager;
 
     @Autowired
-    EventManagementService eventManager;
+    protected EventManagementService eventManager;
 
     @Autowired
-    EventLogManagementService eventLogManager;
+    protected EventLogManagementService eventLogManager;
 
     @Value("${local.server.port}")
-    int port;
+    protected int port;
 
     //protected RestTemplate template = new TestRestTemplate(TestRestTemplate.HttpClientOption.ENABLE_REDIRECTS);
     protected RestTemplate template = new TestRestTemplate();

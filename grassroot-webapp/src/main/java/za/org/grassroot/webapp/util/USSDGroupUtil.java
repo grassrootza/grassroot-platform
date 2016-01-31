@@ -29,7 +29,7 @@ public class USSDGroupUtil extends USSDUtil {
     private static final Logger log = LoggerFactory.getLogger(USSDGroupUtil.class);
 
     @Autowired
-    GroupManagementService groupManager;
+    private GroupManagementService groupManager;
 
     private static final String groupKeyForMessages = "group";
     private static final String groupIdParameter = "groupId";

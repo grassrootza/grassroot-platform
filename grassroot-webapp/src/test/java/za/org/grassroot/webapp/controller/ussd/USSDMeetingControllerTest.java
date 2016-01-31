@@ -44,10 +44,10 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     private static final USSDSection thisSection = USSDSection.MEETINGS;
 
     @InjectMocks
-    USSDMeetingController ussdMeetingController;
+    private USSDMeetingController ussdMeetingController;
 
     @InjectMocks
-    USSDEventUtil ussdEventUtil;
+    private USSDEventUtil ussdEventUtil;
 
     @Before
     public void setUp() {

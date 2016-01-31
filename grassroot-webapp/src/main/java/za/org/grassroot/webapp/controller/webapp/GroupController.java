@@ -627,6 +627,7 @@ public class GroupController extends BaseController {
                 orderedIds = groupManagementService.orderPairByNumberMembers(groupId1, groupId2);
                 groupInto = groupManagementService.loadGroup(orderedIds[0]);
                 groupFrom = groupManagementService.loadGroup(orderedIds[1]);
+                break;
         }
 
         model.addAttribute("groupInto", groupInto);

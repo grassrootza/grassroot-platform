@@ -41,16 +41,16 @@ public class PaidAccountController extends BaseController {
     private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd-M-yyyy");
 
     @Autowired
-    AccountManagementService accountManagementService;
+    private AccountManagementService accountManagementService;
 
     @Autowired
-    GroupManagementService groupManagementService;
+    private GroupManagementService groupManagementService;
 
     @Autowired
-    EventManagementService eventManagementService;
+    private EventManagementService eventManagementService;
 
     @Autowired
-    EventLogManagementService eventLogService;
+    private EventLogManagementService eventLogService;
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping("/index")

@@ -19,11 +19,10 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -400,7 +399,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("view?groupId=1")).andExpect(view()
                 .name("redirect:view")).andExpect(model().attribute("groupId", String.valueOf(dummyId))).andExpect(flash().attributeExists(
                 BaseController.MessageType.ERROR.getMessageKey()));
-        ;
+
         verify(groupManagementServiceMock, times(1)).getMergeCandidates(sessionTestUser, dummyId);
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyNoMoreInteractions(userManagementServiceMock);

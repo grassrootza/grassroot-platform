@@ -1,6 +1,5 @@
 package za.org.grassroot.webapp.controller.ussd;
 
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -15,9 +14,7 @@ import org.springframework.web.servlet.handler.SimpleMappingExceptionResolver;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.util.USSDGroupUtil;
-import za.org.grassroot.webapp.util.USSDUtil;
 
-import java.util.List;
 import java.util.Properties;
 
 /**

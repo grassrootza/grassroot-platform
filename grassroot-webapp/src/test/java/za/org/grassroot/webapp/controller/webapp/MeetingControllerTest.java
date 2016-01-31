@@ -77,7 +77,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     public void TestCreateMeetingWorks() throws Exception {
         Event dummyMeeting = new Event();
         dummyMeeting.setId(1L);
-        Group dummyGroup = new Group();;
+        Group dummyGroup = new Group();
         dummyGroup.setId(dummyId);
         when(eventManagementServiceMock.updateEvent(dummyMeeting)).thenReturn(
                 dummyMeeting);

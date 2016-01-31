@@ -548,6 +548,7 @@ public class USSDGroupController extends USSDController {
                 break;
             default:
                 returnGroupId = groupManager.mergeGroups(firstGroupId, secondGroupId).getId();
+                break;
         }
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, mergeGroupMenu + doSuffix, promptKey, user));

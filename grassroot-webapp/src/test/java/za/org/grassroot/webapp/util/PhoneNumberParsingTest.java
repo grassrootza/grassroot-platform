@@ -15,7 +15,7 @@ import static org.junit.Assert.*;
  */
 public class PhoneNumberParsingTest {
 
-    Logger log = LoggerFactory.getLogger(PhoneNumberParsingTest.class);
+    private static final Logger log = LoggerFactory.getLogger(PhoneNumberParsingTest.class);
 
     @Test
     public void testPhoneNumberParse() throws Exception {

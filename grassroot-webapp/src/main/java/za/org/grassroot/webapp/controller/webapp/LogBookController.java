@@ -37,10 +37,10 @@ public class LogBookController extends BaseController {
     private static final DateTimeFormatter pickerParser = DateTimeFormatter.ofPattern("dd/MM/yyyy h:mm a");
 
     @Autowired
-    GroupManagementService groupManagementService;
+    private GroupManagementService groupManagementService;
 
     @Autowired
-    LogBookService logBookService;
+    private LogBookService logBookService;
 
     /**
      * SECTION: Views and methods for creating logbook entries

@@ -45,7 +45,7 @@ public class USSDVoteController extends USSDController {
     private static final Logger log = LoggerFactory.getLogger(USSDVoteController.class);
 
     @Autowired
-    USSDEventUtil eventUtil;
+    private USSDEventUtil eventUtil;
 
     private static final String path = homePath + voteMenus;
     private static final USSDSection thisSection = USSDSection.VOTES;
@@ -205,6 +205,7 @@ public class USSDVoteController extends USSDController {
                     break;
                 default:
                     promptFields = new String[] { "Error!", "Error occurred!" };
+                    break;
             }
         } else {
             Event vote = eventManager.loadEvent(eventId);
@@ -318,6 +319,7 @@ public class USSDVoteController extends USSDController {
             default:
                 // this should never be called, but need it else Java throws error -- defaulting to instant
                 proposedDateTime = LocalDateTime.now().plusMinutes(7L);
+                break;
         }
 
         eventManager.setSendBlock(eventId);

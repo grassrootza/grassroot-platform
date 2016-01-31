@@ -423,7 +423,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
     @Test
     public void newGroupCreateShouldWork() throws Exception {
-        resetTestGroup();;
+        resetTestGroup();
         String nameToPass = "test group";
         String urlToSave = saveGroupMenuWithInput("create-do", testGroup.getId(), nameToPass);
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);

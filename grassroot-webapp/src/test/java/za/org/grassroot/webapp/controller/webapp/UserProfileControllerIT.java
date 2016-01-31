@@ -30,7 +30,7 @@ import static org.hamcrest.Matchers.equalTo;
 public class UserProfileControllerIT {
 
     @Autowired
-    UserManagementService userManagementService;
+    private UserManagementService userManagementService;
 
     @Test
     public void testName() throws Exception {

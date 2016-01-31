@@ -159,9 +159,9 @@ public class USSDMeetingController extends USSDController {
         if (!userInput.trim().equals("0")) {
             thisMenu = new USSDMenu(true);
             if (groupId == null) {
-                groupId = ussdGroupUtil.addNumbersToNewGroup(user, USSDSection.MEETINGS, thisMenu, userInput, groupHandlingMenu);
+                Long newGroupId = ussdGroupUtil.addNumbersToNewGroup(user, USSDSection.MEETINGS, thisMenu, userInput, groupHandlingMenu);
                 userManager.setLastUssdMenu(user, USSDUrlUtil.
-                        saveMenuUrlWithInput(thisSection, groupHandlingMenu, groupIdUrlSuffix + groupId, userInput));
+                        saveMenuUrlWithInput(thisSection, groupHandlingMenu, groupIdUrlSuffix + newGroupId, userInput));
             } else {
                 thisMenu = ussdGroupUtil.addNumbersToExistingGroup(user, groupId, USSDSection.MEETINGS, userInput, groupHandlingMenu);
             }
@@ -172,9 +172,9 @@ public class USSDMeetingController extends USSDController {
                 thisMenu.setNextURI(meetingMenus + groupHandlingMenu);
             } else {
                 if (eventId == null) {
-                    eventId = eventManager.createMeeting(inputNumber, groupId).getId();
+                    Long newEventId = eventManager.createMeeting(inputNumber, groupId).getId();
                     userManager.setLastUssdMenu(user, USSDUrlUtil.saveMenuUrlWithInput(thisSection, groupHandlingMenu,
-                                                                                       includeGroup + "&eventId=" + eventId, userInput));
+                                                                                       includeGroup + "&eventId=" + newEventId, userInput));
                 }
                 thisMenu.setPromptMessage(getMessage(thisSection, nextMenu(startMenu), promptKey, user));
                 thisMenu.setNextURI(meetingMenus + nextMenu(nextMenu(startMenu)) + eventIdUrlSuffix + eventId

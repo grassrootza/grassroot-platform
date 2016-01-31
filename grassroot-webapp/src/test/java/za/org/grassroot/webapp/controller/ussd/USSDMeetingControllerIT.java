@@ -36,13 +36,13 @@ public class USSDMeetingControllerIT extends USSDAbstractIT {
     private static final Logger log = LoggerFactory.getLogger(USSDMeetingControllerIT.class);
 
     @Autowired
-    UserManagementService userManager;
+    private UserManagementService userManager;
 
     @Autowired
-    GroupManagementService groupManager;
+    private GroupManagementService groupManager;
 
     @Autowired
-    EventManagementService eventManager;
+    private EventManagementService eventManager;
 
 
     @Before

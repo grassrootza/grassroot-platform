@@ -163,7 +163,7 @@ public class User implements UserDetails {
     }
 
     @Column(name = "web")
-    public boolean getWebProfile() { return webProfile; }
+    public boolean hasWebProfile() { return webProfile; }
 
     public void setWebProfile(boolean webProfile) { this.webProfile = webProfile; }
 

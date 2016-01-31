@@ -27,7 +27,7 @@ public class USSDEventUtil extends USSDUtil {
     private static final Logger log = LoggerFactory.getLogger(USSDEventUtil.class);
 
     @Autowired
-    EventManagementService eventManager;
+    private EventManagementService eventManager;
 
     private static final String eventIdParameter = "eventId";
     private static final String eventIdFirstParam = "?" + eventIdParameter + "=";
@@ -136,6 +136,7 @@ public class USSDEventUtil extends USSDUtil {
                 break;
             default:
                 eventToReturn = eventManager.loadEvent(eventId);
+                break;
         }
         return eventToReturn;
     }

@@ -28,19 +28,19 @@ public class AccountManager implements AccountManagementService {
     private static final Logger log = LoggerFactory.getLogger(AccountManager.class);
 
     @Autowired
-    AccountRepository accountRepository;
+    private AccountRepository accountRepository;
 
     @Autowired
-    PaidGroupRepository paidGroupRepository;
+    private PaidGroupRepository paidGroupRepository;
 
     @Autowired
-    UserManagementService userManagementService;
+    private UserManagementService userManagementService;
 
     @Autowired
-    GroupManagementService groupManagementService;
+    private GroupManagementService groupManagementService;
 
     @Autowired
-    RoleManagementService roleManagementService;
+    private RoleManagementService roleManagementService;
 
     private String accountAdminRole = "ROLE_ACCOUNT_ADMIN";
 
@@ -105,10 +105,9 @@ public class AccountManager implements AccountManagementService {
         // todo: check if there are redundant calls here (though this won't be used often)
         log.info("Wiring up user to account admin ... ");
         user.setAccountAdministered(account);
-        user = userManagementService.save(user);
-        log.info("User account admin set ... User: " + user.toString());
-        return roleManagementService.addStandardRoleToUser(accountAdminRole, user);
-//        return user;
+        User savedUser = userManagementService.save(user);
+        log.info("User account admin set ... User: " + savedUser.toString());
+        return roleManagementService.addStandardRoleToUser(accountAdminRole, savedUser);
     }
 
     @Override

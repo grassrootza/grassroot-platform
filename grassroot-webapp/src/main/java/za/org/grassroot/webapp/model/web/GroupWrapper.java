@@ -16,18 +16,18 @@ import java.util.List;
 
 public class GroupWrapper {
 
-    Group group;
-    String groupName;
+    private Group group;
+    private String groupName;
 
-    boolean hasParent;
-    Group parentGroup;
-    Long parentId;
+    private boolean hasParent;
+    private Group parentGroup;
+    private Long parentId;
 
-    String parentName;
+    private String parentName;
 
-    boolean discoverable;
-    boolean generateToken;
-    Integer tokenDaysValid;
+    private boolean discoverable;
+    private boolean generateToken;
+    private Integer tokenDaysValid;
 
     List<User> addedMembers = LazyList.lazyList(new ArrayList<>(), FactoryUtils.instantiateFactory(User.class));
 
