@@ -74,7 +74,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
 
     @Test
-    public void TestCreateMeetingWorks() throws Exception {
+    public void testCreateMeetingWorks() throws Exception {
         Event dummyMeeting = new Event();
         dummyMeeting.setId(1L);
         Group dummyGroup = new Group();
@@ -96,7 +96,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     }
 
     @Test
-    public void TestSendFreeFormWorksWithGroupSpecified() throws Exception {
+    public void testSendFreeFormWorksWithGroupSpecified() throws Exception {
         Group testGroup = new Group("", sessionTestUser);
         testGroup.setId(dummyId);
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);

@@ -20,7 +20,6 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.Month;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -49,16 +48,19 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
     private static final int minutes = 00;
     private static final String groupMenu = "group", subjectMenu = "subject", dueDateMenu = "due_date",
             assignMenu = "assign", searchUserMenu = "search_user", pickUserMenu = "pick_user", confirmMenu = "confirm", send = "send";
-    private static final String entryTypeMenu = "type", listEntriesMenu = "list", viewEntryMenu = "view", viewEntryDates = "view_dates",
+    private static final String listEntriesMenu = "list", viewEntryMenu = "view", viewEntryDates = "view_dates",
             viewAssignment = "view_assigned", setCompleteMenu = "set_complete", viewCompleteMenu = "view_complete",
             completingUser = "choose_completor", pickCompletor = "pick_completor", completedDate = "date_completed",
             confirmCompleteDate = "confirm_date", confirmComplete = "confirm_complete";
 
     private static final String path = "/ussd/log/";
+
     @InjectMocks
-    USSDLogBookController ussdLogBookController;
+    private USSDLogBookController ussdLogBookController;
+
     @Mock
-    UserRepository userRepository;
+    private UserRepository userRepository;
+
     private User testUser;
 
     @Before
@@ -180,7 +182,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
         String priorInput = "20/1";
 
-        String urlToSave= USSDUrlUtil.saveLogMenu(assignMenu,dummyId,priorInput);
+        String urlToSave= saveLogMenu(assignMenu,dummyId,priorInput);
         String formattedDateString = DateTimeUtil.reformatDateInput(priorInput).trim();
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(logBookServiceMock.setDueDate(dummyLogBook.getId(), DateTimeUtil.parsePreformattedDate(
@@ -201,7 +203,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
     @Test
     public void searchUserWorksAfterInterruption() throws Exception {
 
-        String urlToSave = USSDUrlUtil.saveLogMenu(searchUserMenu,dummyId);
+        String urlToSave = saveLogMenu(searchUserMenu,dummyId);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         mockMvc.perform(get(path + searchUserMenu).param(logBookIdParam, String.valueOf(dummyId))
                 .param(phoneParam, testUserPhone).param("prior_input", "1").param("interrupted", String.valueOf(true))
@@ -217,7 +219,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         LogBook dummyLogBook = new LogBook();
         dummyLogBook.setId(dummyId);
         dummyLogBook.setGroupId(dummyId);
-        String urlToSave = USSDUrlUtil.saveLogMenu(pickUserMenu,dummyId,testUserPhone);
+        String urlToSave = saveLogMenu(pickUserMenu,dummyId,testUserPhone);
         List<User> dummyPossibleUsers = Arrays.asList(testUser);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(logBookServiceMock.load(dummyId)).thenReturn(dummyLogBook);
@@ -249,7 +251,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         dummyLogBook.setActionByDate(Timestamp.from(Instant.now()));
         dummyLogBook.setAssignedToUserId(testUser.getId());
 
-        String urlToSave = USSDUrlUtil.saveLogMenu(confirmMenu,dummyId,"1",testUser.getId());
+        String urlToSave = saveLogMenu(confirmMenu,dummyId,"1",testUser.getId());
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(logBookServiceMock.setAssignedToUser(dummyLogBook.getId(), testUser.getId())).thenReturn(dummyLogBook);

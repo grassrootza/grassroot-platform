@@ -86,7 +86,7 @@ public class USSDHomeControllerIT extends USSDAbstractIT {
         User userCreated = userManager.findByInputNumber(testPhoneZu);
 
         final URI changeLanguageUri = assembleUssdURI("user/language-do").queryParam(phoneParam, testPhoneZu).queryParam("language", "zu").build().toUri();
-        ResponseEntity response = executeQuery(changeLanguageUri);
+        executeQuery(changeLanguageUri);
 
         log.info("The URL used is as follows: " + changeLanguageUri.toString());
         log.info("The user has been saved, as: " + userCreated);
@@ -219,8 +219,8 @@ public class USSDHomeControllerIT extends USSDAbstractIT {
     @Test
     public void ussdRSVP() throws Exception {
 
-        User testUser = createTestUser();
-        Group testGroup = createTestGroup();
+        createTestUser();
+        createTestGroup();
         Event testMeeting = createTestMeeting();
         Long eventId = testMeeting.getId();
 

@@ -50,10 +50,10 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
     private User testUser;
 
     @InjectMocks
-    USSDVoteController ussdVoteController;
+    private USSDVoteController ussdVoteController;
 
     @InjectMocks
-    USSDEventUtil ussdEventUtil;
+    private USSDEventUtil ussdEventUtil;
 
     @Before
     public void setUp() {

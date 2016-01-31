@@ -17,10 +17,10 @@ import za.org.grassroot.webapp.model.web.UserAccountRecovery;
 public class UserAccountRecoveryValidator implements Validator{
 
     @Autowired
-    PasswordTokenService passwordTokenService;
+    private PasswordTokenService passwordTokenService;
 
     @Autowired
-    UserManagementService userManagementService;
+    private UserManagementService userManagementService;
 
     @Override
     public boolean supports(Class<?> clazz) {

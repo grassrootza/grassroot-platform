@@ -79,7 +79,7 @@ public class USSDEventUtil extends USSDUtil {
         EventType eventType = mapSectionType.get(section);
         USSDMenu menu = new USSDMenu(prompt);
         Page<Event> events = eventManager.getEventsUserCanView(user, eventType, 1, 0, pageSize);
-        return addListOfEventsToMenu(menu, nextUrl, events.getContent(), user, false);
+        return addListOfEventsToMenu(menu, nextUrl, events.getContent(), false);
     }
 
     public USSDMenu listPriorEvents(User user, USSDSection section, String prompt, String nextUrl, boolean withGroup) {
@@ -90,7 +90,7 @@ public class USSDEventUtil extends USSDUtil {
                                         boolean includeGroupName, int pastPresentBoth, int pageNumber) {
         Page<Event> events = eventManager.getEventsUserCanView(user, mapSectionType.get(section), pastPresentBoth, pageNumber, pageSize);
         USSDMenu menu = new USSDMenu(prompt);
-        menu = addListOfEventsToMenu(menu, nextUrl, events.getContent(), user, includeGroupName);
+        menu = addListOfEventsToMenu(menu, nextUrl, events.getContent(), includeGroupName);
         if (events.hasNext())
             menu.addMenuOption(USSDUrlUtil.paginatedEventUrl(prompt, section, nextUrl, pastPresentBoth, includeGroupName, pageNumber + 1), "More");
         if (events.hasPrevious())
@@ -98,7 +98,7 @@ public class USSDEventUtil extends USSDUtil {
         return menu;
     }
 
-    private USSDMenu addListOfEventsToMenu(USSDMenu menu, String nextMenuUrl, List<Event> events, User user, boolean includeGroupName) {
+    private USSDMenu addListOfEventsToMenu(USSDMenu menu, String nextMenuUrl, List<Event> events, boolean includeGroupName) {
         final String formedUrl = nextMenuUrl + ((nextMenuUrl.contains("?")) ? eventIdLaterParam : eventIdFirstParam);
         for (Event event : events) {
             String descriptor = (includeGroupName ? eventManager.getGroupName(event) + ": " : "Subject: ") + event.getName();

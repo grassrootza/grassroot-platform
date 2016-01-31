@@ -49,10 +49,10 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
     private User testUserNso = new User(baseForOthers + "4");
     private User testUserSt = new User(baseForOthers + "5");
 
-    List<User> languageUsers;
+    private List<User> languageUsers;
 
     @InjectMocks
-    USSDHomeController ussdHomeController;
+    private USSDHomeController ussdHomeController;
 
     @Before
     public void setUp() {

@@ -3,7 +3,6 @@ package za.org.grassroot.webapp.util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.MessageSource;
 import org.springframework.context.NoSuchMessageException;
 import za.org.grassroot.core.domain.User;
@@ -16,13 +15,11 @@ import java.util.Locale;
  */
 public class USSDUtil {
 
-    private static final Logger log = LoggerFactory.getLogger(USSDUtil.class);
-
     // we use this for truncating lists of votes, meetings, etc -- roughly 50 chars for prompt, 5 chars for ellipsis & enum
     private static final int maxSafeListOptionLength = ((160 - 50) / 3) - 5;
 
     @Autowired
-    MessageSource messageSource;
+    protected MessageSource messageSource;
 
     protected static final Integer PAGE_LENGTH = 3;
     protected static final String

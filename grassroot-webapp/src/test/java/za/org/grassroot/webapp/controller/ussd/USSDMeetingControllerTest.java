@@ -15,7 +15,6 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.util.USSDEventUtil;
-import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -25,9 +24,7 @@ import java.util.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static za.org.grassroot.webapp.util.USSDUrlUtil.saveMeetingMenu;
-import static za.org.grassroot.webapp.util.USSDUrlUtil.saveMenuUrlWithInput;
-import static za.org.grassroot.webapp.util.USSDUrlUtil.saveMtgMenuWithAction;
+import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 
 /**
  * Created by luke on 2015/11/26.
