@@ -25,7 +25,7 @@ import static org.junit.Assert.assertThat;
  * Created by luke on 2015/09/08.
  */
 public class USSDGroupControllerIT extends USSDAbstractIT {
-
+/*
     private Logger log = LoggerFactory.getLogger(USSDGroupControllerIT.class);
 
     @Autowired
@@ -71,7 +71,7 @@ public class USSDGroupControllerIT extends USSDAbstractIT {
         /* String code = reloadedGroup.getGroupTokenCode();
         assertNotNull(code);
         assertTrue(groupManager.tokenExists(code));
-        assertNotNull(groupManager.getGroupByToken(code)); */
+        assertNotNull(groupManager.getGroupByToken(code));
 
 
     }
@@ -90,5 +90,5 @@ public class USSDGroupControllerIT extends USSDAbstractIT {
         return groupToReturn;
 
     }
-
+*/
 }
