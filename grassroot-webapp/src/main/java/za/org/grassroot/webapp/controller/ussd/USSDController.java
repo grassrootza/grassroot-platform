@@ -1,8 +1,6 @@
 package za.org.grassroot.webapp.controller.ussd;
 
 import com.google.common.collect.ImmutableMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.MessageSource;
@@ -87,32 +85,26 @@ public class USSDController {
     @Autowired
     @Qualifier("messageSource")
     MessageSource messageSource;
-    /**
-     * Some default menu returns and some frequently used sets of menu options
-     */
-
-    Request tooLongError = new Request("Error! Menu is too long.", new ArrayList<>());
-
-    /*
-    Stubs to the utility methods, for readability in the sub-classes
-     */
-    Request noUserError = new Request("Error! Couldn't find you as a user.", new ArrayList<>());
 
     /*
     Simple helper method for mocking and unit test
      */
-    Request noGroupError = new Request("Sorry! Something went wrong finding the group.", new ArrayList<>());
-    private Logger log = LoggerFactory.getLogger(getClass());
 
     protected Request menuBuilder(USSDMenu ussdMenu) throws URISyntaxException {
         return USSDMenuUtil.menuBuilder(ussdMenu);
     }
 
     public void setMessageSource(MessageSource messageSource) { this.messageSource = messageSource; }
-
     public void setUssdGroupUtil(USSDGroupUtil ussdGroupUtil) {
         this.ussdGroupUtil = ussdGroupUtil;
     }
+
+    /**
+     * Some default menu returns and some frequently used sets of menu options
+     */
+
+    protected Request tooLongError = new Request("Error! Menu is too long.", new ArrayList<>());
+    protected Request noUserError = new Request("Error! Couldn't find you as a user.", new ArrayList<>());
 
     protected Map<String, String> optionsHomeExit(User sessionUser) {
         return ImmutableMap.<String, String>builder().
@@ -133,6 +125,7 @@ public class USSDController {
     /*
     i18n helper methods
      */
+
 
     protected String getMessage(USSDSection section, String menu, String messageType, User user) {
         final String messageKey = "ussd." + section.toKey() + menu + "." + messageType;

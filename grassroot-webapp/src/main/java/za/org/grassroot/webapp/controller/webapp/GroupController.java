@@ -14,15 +14,15 @@ import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.services.EventManagementService;
-import za.org.grassroot.services.GroupManagementService;
-import za.org.grassroot.services.RoleManagementService;
-import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
 
 import javax.servlet.http.HttpServletRequest;
 import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -39,16 +39,22 @@ import java.util.Map;
 
 public class GroupController extends BaseController {
 
-    Logger log = LoggerFactory.getLogger(GroupController.class);
+    private static final Logger log = LoggerFactory.getLogger(GroupController.class);
 
     @Autowired
-    UserManagementService userManagementService;
+    private UserManagementService userManagementService;
 
     @Autowired
-    GroupManagementService groupManagementService;
+    private GroupManagementService groupManagementService;
 
     @Autowired
-    EventManagementService eventManagementService;
+    private EventManagementService eventManagementService;
+
+    @Autowired
+    private LogBookService logBookService;
+
+    @Autowired
+    private GroupLogService groupLogService;
 
     /* @Autowired
     RoleManagementService roleManagementService;*/
@@ -723,5 +729,45 @@ public class GroupController extends BaseController {
         return "redirect:/home";
     }
 
+    /**
+     * SECTION: Group history pages
+     * todo: maybe separate this off into its own controller if it starts to become overly complex
+     */
+
+    @RequestMapping(value = "history")
+    public String viewGroupHistory(Model model, @RequestParam Long groupId,
+                                   @RequestParam(value = "monthToView", required = false) String monthToView) {
+
+        Group group = groupManagementService.loadGroup(groupId); // todo: use permissions
+        if (!isUserPartOfGroup(getUserProfile(), group)) throw new AccessDeniedException("");
+
+        final LocalDateTime startDateTime;
+        final LocalDateTime endDateTime;
+
+        if (monthToView == null) {
+            startDateTime = LocalDate.now().withDayOfMonth(1).atStartOfDay();
+            endDateTime = LocalDateTime.now();
+        } else {
+            startDateTime = LocalDate.parse("01-" + monthToView, DateTimeFormatter.ofPattern("dd-M-yyyy")).atStartOfDay();
+            endDateTime = startDateTime.plusMonths(1L);
+        }
+
+        Long startTime = System.currentTimeMillis();
+        List<Event> eventsInPeriod = eventManagementService.getGroupEventsInPeriod(group, startDateTime, endDateTime);
+        List<LogBook> logBooksInPeriod = logBookService.getLogBookEntriesInPeriod(group.getId(), startDateTime, endDateTime);
+        List<GroupLog> groupLogsInPeriod = groupLogService.getLogsForGroup(group, startDateTime, endDateTime);
+        List<LocalDate> monthsActive = groupManagementService.getMonthsGroupActive(group);
+        Long endTime = System.currentTimeMillis();
+
+        log.info(String.format("Retrieved the events and group log ... time taken: %d msecs", endTime - startTime));
+
+        model.addAttribute("group", group);
+        model.addAttribute("eventsInPeriod", eventsInPeriod);
+        model.addAttribute("logBooksInPeriod", logBooksInPeriod);
+        model.addAttribute("groupLogsInPeriod", groupLogsInPeriod);
+        model.addAttribute("monthsToView", monthsActive);
+
+        return "group/history";
+    }
 
 }

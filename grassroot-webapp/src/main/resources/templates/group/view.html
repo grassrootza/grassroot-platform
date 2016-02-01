@@ -7,17 +7,14 @@
 <body>
 
 <div layout:fragment="header">
-  <h2>Group: <span  th:text="${group.groupName}">Group</span></h2>
-  <h3>Group last active on <span th:text="${#dates.format(lastActiveTime, 'dd MMM yyyy')}">date</span></h3>
-  <div th:if="${hasParent}"><h3>This group has a parent. Its name is <span th:text="${group.parent.groupName}">parent</span></h3></div>
+  <h2><span  th:text="${group.groupName}">Group</span></h2>
 </div>
 <div th:if="${canAlter}" layout:fragment="overview">
-  <div th:if="${discoverable}">
-    This group is discoverable
-  </div>
-  <div th:unless="${discoverable}">
-    This group is not discoverable
-  </div>
+  <h4>
+    Last active on <span th:text="${#dates.format(lastActiveTime, 'dd MMM yyyy')}">date</span>.
+    <a th:href="@{/group/history(groupId=${group.id})}">View group history</a>
+  </h4>
+  <div th:if="${hasParent}"><h3>This group has a parent. Its name is <span th:text="${group.parent.groupName}">parent</span></h3></div>
 </div>
 
 <div layout:fragment="content">
@@ -96,7 +93,7 @@
         <a href="" th:href="@{/vote/create(groupId=${group.id})}"><button class="btn btn-primary">Take a vote</button></a>
       </div>
       <div class="col-md-3">
-        <a href="" th:href="@{/log/view(groupId=${group.id})}"><button class="btn btn-primary">View actions</button></a>
+        <a href="" th:href="@{/log/view(groupId=${group.id})}"><button class="btn btn-primary">Manage to-dos</button></a>
       </div>
     </div>
   </div>
@@ -119,6 +116,12 @@
         </tr>
         </tbody>
       </table>
+    </div>
+    <div class="row" th:if="${discoverable}">
+      This group is discoverable by members of the public if they search for it by name
+    </div>
+    <div class="row" th:unless="${discoverable}">
+      This group is hidden from others unless the group invites them or gives them its join code
     </div>
   </div>
 

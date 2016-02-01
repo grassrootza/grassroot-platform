@@ -663,7 +663,7 @@ public class EventManager implements EventManagementService {
 
             SimpleDateFormat sdf = new SimpleDateFormat("EEE d MMM, h:mm a");
             String dateTimeString = (event.getDateTimeString() != null) ? event.getDateTimeString() :
-                    sdf.format(event.getEventStartDateTime().getTime());;
+                    sdf.format(event.getEventStartDateTime().getTime());
 
             eventDescription.put("minimumData", "true");
             eventDescription.put("groupName", event.getAppliesToGroup().getName(""));
@@ -781,6 +781,13 @@ public class EventManager implements EventManagementService {
     @Override
     public String getDefaultLocaleReminderMessage(User user, Event event) {
         return getReminderMessageForConfirmation("en", user, event);
+    }
+
+    @Override
+    public List<Event> getGroupEventsInPeriod(Group group, LocalDateTime periodStart, LocalDateTime periodEnd) {
+        Sort sort = new Sort(Sort.Direction.ASC, "EventStartDateTime");
+        return eventRepository.findByAppliesToGroupAndEventStartDateTimeBetween(group, Timestamp.valueOf(periodStart),
+                                                                                Timestamp.valueOf(periodEnd), sort);
     }
 
     /**

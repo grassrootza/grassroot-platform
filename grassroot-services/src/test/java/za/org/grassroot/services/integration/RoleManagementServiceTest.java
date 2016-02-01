@@ -5,15 +5,11 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.AbstractTransactionalJUnit4SpringContextTests;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.transaction.TestTransaction;
-import org.springframework.transaction.annotation.EnableTransactionManagement;
 import za.org.grassroot.GrassRootServicesConfig;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
@@ -21,7 +17,8 @@ import za.org.grassroot.services.*;
 
 import javax.transaction.Transactional;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by luke on 2015/11/19.
@@ -35,19 +32,19 @@ public class RoleManagementServiceTest extends AbstractTransactionalJUnit4Spring
     private static final Logger log = LoggerFactory.getLogger(RoleManagementServiceTest.class);
 
     @Autowired
-    RoleManagementService roleManagementService;
+    private RoleManagementService roleManagementService;
 
     @Autowired
-    UserManagementService userManagementService;
+    private UserManagementService userManagementService;
 
     @Autowired
-    GroupManagementService groupManagementService;
+    private GroupManagementService groupManagementService;
 
     @Autowired
-    PermissionsManagementService permissionsManagementService;
+    private PermissionsManagementService permissionsManagementService;
 
     @Autowired
-    GroupAccessControlManagementService groupAccessControlManagementService;
+    private GroupAccessControlManagementService groupAccessControlManagementService;
 
     @Test
     @Rollback

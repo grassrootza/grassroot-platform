@@ -36,19 +36,19 @@ public class UserRepositoryTest {
     private static final Logger log = LoggerFactory.getLogger(UserRepositoryTest.class);
 
     @Autowired
-    UserRepository userRepository;
+    private UserRepository userRepository;
 
     @Autowired
-    GroupRepository groupRepository;
+    private GroupRepository groupRepository;
 
     @Autowired
-    EventRepository eventRepository;
+    private EventRepository eventRepository;
 
     @Autowired
-    EventLogRepository eventLogRepository;
+    private EventLogRepository eventLogRepository;
 
     @Autowired
-    RoleRepository roleRepository;
+    private RoleRepository roleRepository;
 
     private static final String number = "0821234560";
 

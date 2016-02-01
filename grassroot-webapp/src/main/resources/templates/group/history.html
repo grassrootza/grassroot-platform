@@ -1,0 +1,123 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+  <title>GrassRoot - View group records</title>
+</head>
+<body>
+
+<div layout:fragment="header">
+  <h2><mark><span th:text="${group.groupName}">Group name</span></mark>: meetings, votes, actions and changes</h2>
+</div>
+
+<div layout:fragment="overview">
+  View different month:
+  <form th:action="@{/group/history}" method="post">
+    <input type="hidden" name="groupId" th:value="${group.id}" />
+    <select name="monthToView">
+      <option th:each="date : ${monthsToView}"
+              th:value="${date.getMonthValue() + '-' + date.getYear()}"
+              th:text="${date.getMonth().toString() + ' ' + date.getYear()}"
+              th:selected="${date == beginDate}">
+      </option>
+    </select>
+    <button type="submit" class="btn-info">Go</button>
+  </form>
+
+</div>
+
+<div layout:fragment="content">
+  <div layout:fragment="messages"></div>
+
+  <div class="well"  th:unless="${#lists.isEmpty(eventsInPeriod)}">
+    <div class="row list-group">
+      <h4>
+        <span th:if="${param.monthToView == null}">Meetings and votes held so far this month</span>
+        <span th:unless="${param.monthToView == null}" th:value="${param.monthToView[0]}"></span>
+      </h4>
+    </div>
+    <div class="row list-group-item">
+      <table class="table table-striped">
+        <!-- todo: consider privacy concerns & implications for all below -->
+        <thead>
+        <th>Date held</th>
+        <th>Type of call</th>
+        <th>Subject</th>
+        <!-- todo : add in RSVP totals of some sort, plus links to the event details pages -->
+        </thead>
+        <tbody>
+        <tr th:each="event : ${eventsInPeriod}">
+          <td><span th:text="${#dates.format(event.eventStartDateTime, 'dd MMM yyyy')}">Date time</span></td>
+          <td><span th:text="${event.eventType}"></span></td>
+          <td><mark><span th:text="${event.name}">Description</span></mark></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="well" th:unless="${#lists.isEmpty(logBooksInPeriod)}">
+    <div class="row list-group">
+      <h3>Actions ('to-dos') recorded in the month:</h3>
+    </div>
+    <div class="row list-group-item">
+      <table class="table table-striped">
+        <thead>
+        <th>Date entered</th>
+        <th>Description</th>
+        <th>Completed?</th>
+        <th>Due date</th>
+        <th></th>
+        </thead>
+        <tbody>
+        <tr th:each="entry : ${logBooksInPeriod}">
+          <td><span th:text="${#dates.format(entry.createdDateTime, 'dd MMM yyyy')}">Date time</span></td>
+          <td><a th:href="@{/log/details(logBookId=${entry.id})}"><span th:text="${entry.message}">Description</span></a></td>
+          <td><span th:text="${entry.completed}">Complete or not</span></td>
+          <td><span th:text="${#dates.format(entry.actionByDate, 'dd MMM yyyy')}">Due date</span></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="well" th:unless="${#lists.isEmpty(groupLogsInPeriod)}">
+    <div class="row list-group">
+      <h3>Changes to the group during this period:</h3>
+    </div>
+    <div class="row list-group-item">
+      <table class="table table-striped">
+        <thead>
+        <th>Date and time</th>
+        <th>Type of change</th>
+        <th>Description</th>
+        <th>Member that made change</th>
+        </thead>
+        <tbody>
+        <tr th:each="entry : ${groupLogsInPeriod}">
+          <td><span th:text="${#dates.format(entry.createdDateTime, 'dd MMM yyyy, HH:mm')}">Date time</span></td>
+          <td>
+            <span th:unless="${entry.groupLogType == null}" th:text="${#strings.capitalize(entry.groupLogType)}">Description</span>
+          </td>
+          <td>
+            <span th:unless="${entry.description == null}" th:text="${entry.description}">Further description</span>
+            <span th:if="${entry.description == null}">N/A</span>
+          </td>
+          <td><!-- todo: add in user object from userId --></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="well">
+    <a th:href="@{/group/view(groupId=${group.id})}"><button class="btn-warning">Back to group</button></a>
+    <div th:if="${param.monthToView != null}">
+      <a th:href="@{/group/history(groupId=${group.id})}">View this month</a>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

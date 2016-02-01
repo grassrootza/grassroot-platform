@@ -26,7 +26,7 @@
           <th>Date entered</th>
           <th>Description</th>
           <th>Due date</th>
-          <th></th>
+          <th><!-- todo: assigned member --></th>
         </thead>
         <tbody>
         <tr th:each="entry : ${incompleteEntries}">
@@ -50,14 +50,14 @@
           <th>Date entered</th>
           <th>Description</th>
           <th>Date completed</th>
-          <th>Completed by member</th>
+          <th><!-- todo: completed member --></th>
         </thead>
         <tbody>
         <tr th:each="entry: ${completedEntries}">
           <td><span th:text="${#dates.format(entry.createdDateTime, 'dd MMM yyyy')}">Date time created</span></td>
           <td><a th:href="@{details(logBookId=${entry.id})}"><span th:text="${entry.message}">Description</span></a></td>
           <td><span th:text="${#dates.format(entry.completedDate, 'dd MMM yyyy')}">Completed date</span></td>
-          <td>Some member</td>
+          <td></td>
         </tr>
         </tbody>
       </table>

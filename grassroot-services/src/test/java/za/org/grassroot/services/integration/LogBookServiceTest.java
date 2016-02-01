@@ -2,6 +2,8 @@ package za.org.grassroot.services.integration;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
@@ -25,7 +27,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 import static org.junit.Assert.assertEquals;
 
@@ -39,9 +40,7 @@ import static org.junit.Assert.assertEquals;
 @ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
 public class LogBookServiceTest extends AbstractTransactionalJUnit4SpringContextTests {
 
-
-    private Logger log = Logger.getLogger(getClass().getCanonicalName());
-
+    private static final Logger log = LoggerFactory.getLogger(LogBookServiceTest.class);
 
     @Autowired
     private UserManagementService userManagementService;
@@ -50,10 +49,10 @@ public class LogBookServiceTest extends AbstractTransactionalJUnit4SpringContext
     private GroupManagementService groupManagementService;
 
     @Autowired
-    UserRepository userRepository;
+    private UserRepository userRepository;
 
     @Autowired
-    GroupRepository groupRepository;
+    private GroupRepository groupRepository;
 
     @Autowired
     LogBookService logBookService;

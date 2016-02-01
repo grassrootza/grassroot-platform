@@ -278,9 +278,7 @@ public class User implements UserDetails {
     public boolean needsToRenameSelf(Integer timeLimit) {
         if (hasName()) return false;
         Timestamp minutesAgo = Timestamp.valueOf(LocalDateTime.now().minusMinutes(timeLimit));
-        if (createdDateTime == null || createdDateTime.after(minutesAgo))
-            return false;
-        return true;
+        return (createdDateTime != null && createdDateTime.before(minutesAgo));
     }
 
     public boolean hasName() {

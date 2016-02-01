@@ -249,6 +249,7 @@ public class USSDHomeController extends USSDController {
                 break;
             case NONE:
                 openingMenu = defaultStartMenu(sessionUser);
+                break;
         }
 
         return openingMenu;
