@@ -33,7 +33,7 @@ import static org.springframework.http.HttpStatus.OK;
  */
 public class USSDMeetingControllerIT extends USSDAbstractIT {
 
-    private static final Logger log = LoggerFactory.getLogger(USSDMeetingControllerIT.class);
+   /* private static final Logger log = LoggerFactory.getLogger(USSDMeetingControllerIT.class);
 
     @Autowired
     private UserManagementService userManager;
@@ -173,8 +173,7 @@ public class USSDMeetingControllerIT extends USSDAbstractIT {
     protected LinkedHashMap<URI, ResponseEntity<String>> uriExecute(URI uriToExecute) {
         LinkedHashMap<URI, ResponseEntity<String>> hashMap = new LinkedHashMap<>();
         hashMap.put(uriToExecute, template.getForEntity(uriToExecute, String.class));
-        return hashMap;
-    }
+        return hashMap;}
 
 
 

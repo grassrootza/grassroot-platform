@@ -8,29 +8,39 @@
 
 package za.org.grassroot.webapp.model.ussd.AAT;
 
-import java.net.URI;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlValue;
+import java.net.URI;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class Option {
 
     @XmlValue
-    final String value;
+    final public String value;
 
     @XmlAttribute
-    final int command;
+    final public int command;
 
     @XmlAttribute
-    final int order;
+    final public int order;
 
     @XmlAttribute
-    final URI callback;
+    final public URI callback;
 
     @XmlAttribute
-    final Boolean display;
+    final public Boolean display;
+
+    //well i had to, i was get a number of error one of which was  default consructor not found
+    //I also had to expose all the fields publicly, will revert in due time
+    public Option() {
+        value = null;
+        order = 1;
+        callback = null;
+        display = null;
+        command = 1;
+    }
 
     public Option(String value, int command, int order, URI callback, Boolean display) {
         this.value = value;

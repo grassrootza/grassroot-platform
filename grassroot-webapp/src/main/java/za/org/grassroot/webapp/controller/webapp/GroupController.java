@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -130,8 +129,9 @@ public class GroupController extends BaseController {
         log.info(String.format("Checking group membership took ... %d msec", endTime - startTime));
 
         startTime = System.currentTimeMillis();
-        boolean hasUpdatePermission = (groupManagementService.canUserModifyGroup(group, user) ||
-                groupManagementService.isGroupCreatedByUser(groupId, user));
+        boolean isUserCreatedGroup = groupManagementService.isGroupCreatedByUser(groupId,user);
+        boolean hasUpdatePermission = (groupManagementService.canUserModifyGroup(group, user) || isUserCreatedGroup);
+
         // boolean hasUpdatePermission = groupManagementService.isGroupCreatedByUser(groupId, user);
         endTime = System.currentTimeMillis();
         log.info(String.format("Checking if update permission took ... %d msec", endTime - startTime));
@@ -146,7 +146,7 @@ public class GroupController extends BaseController {
         if (hasUpdatePermission) {
             model.addAttribute("canAlter", hasUpdatePermission);
             model.addAttribute("canDeleteGroup", groupManagementService.canUserMakeGroupInactive(user, group));
-            model.addAttribute("canMergeWithOthers", groupManagementService.isGroupCreatedByUser(groupId, user)); // replace w/ permission later
+            model.addAttribute("canMergeWithOthers", isUserCreatedGroup); // replace w/ permission later
             model.addAttribute("isDiscoverable", group.isDiscoverable());
         }
 
@@ -643,8 +643,10 @@ public class GroupController extends BaseController {
                                       @RequestParam(value="leaveActive", required=false) boolean leaveActive, RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
         // todo: add error handling
-        Group consolidatedGroup = groupManagementService.mergeGroupsSpecifyOrder(groupIdInto, groupIdFrom, !leaveActive);
-        Integer[] userCounts = new Integer[] { groupManagementService.loadGroup(groupIdFrom).getGroupMembers().size(),
+        Group groupInto = groupManagementService.loadGroup(groupIdInto);
+        Group groupFrom = groupManagementService.loadGroup(groupIdFrom);
+        Group consolidatedGroup = groupManagementService.mergeGroupsSpecifyOrder(groupInto, groupFrom, !leaveActive);
+        Integer[] userCounts = new Integer[]{groupFrom.getGroupMembers().size(),
                 groupManagementService.getGroupSize(consolidatedGroup, false)};
         redirectAttributes.addAttribute("groupId", consolidatedGroup.getId());
         addMessage(redirectAttributes, MessageType.SUCCESS, "group.merge.success", userCounts, request);

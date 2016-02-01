@@ -7,7 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.MessageSource;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.services.*;
+import za.org.grassroot.services.EventManagementService;
+import za.org.grassroot.services.GroupManagementService;
+import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -17,7 +19,9 @@ import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.net.URISyntaxException;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * Created by luke on 2015/08/14.
@@ -25,34 +29,12 @@ import java.util.*;
  */
 public class USSDController {
 
-    private Logger log = LoggerFactory.getLogger(getClass());
-
-    @Autowired
-    UserManagementService userManager;
-
-    @Autowired
-    GroupManagementService groupManager;
-
-    @Autowired
-    EventManagementService eventManager;
-
-    @Autowired
-    @Qualifier("messageSource")
-    MessageSource messageSource;
-
-    /*
-    Utility classes that pull together some often used methods
-     */
-    @Autowired
-    protected USSDGroupUtil ussdGroupUtil;
-
     /**
      * SECTION: Constants used throughout the code
      */
 
     // Constants used in URL mapping and message handling
     protected static final String homePath = USSDUrlUtil.homePath;
-
     protected static final String
             meetingMenus = "mtg/",
             userMenus = "user/",
@@ -60,7 +42,6 @@ public class USSDController {
             voteMenus = "vote/",
             logMenus = "log/",
             U404= "error";
-
     // referencing these from the Util class so can be common across tests etc, but stating here so not cumbersome in sub-classes
     protected static final String
             phoneNumber = USSDUrlUtil.phoneNumber,
@@ -72,13 +53,11 @@ public class USSDController {
             interruptedFlag = USSDUrlUtil.interruptedFlag,
             interruptedInput = USSDUrlUtil.interruptedInput,
             revisingFlag = USSDUrlUtil.revisingFlag;
-
     protected static final String
             startMenu = "start",
             groupIdUrlSuffix = USSDUrlUtil.groupIdUrlSuffix,
             eventIdUrlSuffix = USSDUrlUtil.eventIdUrlSuffix,
             doSuffix = "-do";
-
     // Constants used in i18n and message handling
     protected static final String
             homeKey = USSDSection.HOME.toString(),
@@ -87,36 +66,53 @@ public class USSDController {
             groupKey = USSDSection.GROUP_MANAGER.toString(),
             voteKey = USSDSection.VOTES.toString(),
             logKey = USSDSection.LOGBOOK.toString();
-
     protected static final String
             promptKey = "prompt",
             errorPromptKey = "prompt.error",
             optionsKey = "options.";
-
     protected static final DateTimeFormatter dateTimeFormat = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
     protected static final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("EEE d MMM");
     protected static final DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("h:mm a");
-
     /*
-    Stubs to the utility methods, for readability in the sub-classes
+    Utility classes that pull together some often used methods
      */
-
-    protected Request menuBuilder(USSDMenu ussdMenu) throws URISyntaxException { return USSDMenuUtil.menuBuilder(ussdMenu); }
-
-    /*
-    Simple helper method for mocking and unit test
-     */
-
-    public void setMessageSource(MessageSource messageSource) { this.messageSource = messageSource; }
-    public void setUssdGroupUtil(USSDGroupUtil ussdGroupUtil) { this.ussdGroupUtil = ussdGroupUtil; }
-
+    @Autowired
+    protected USSDGroupUtil ussdGroupUtil;
+    @Autowired
+    UserManagementService userManager;
+    @Autowired
+    GroupManagementService groupManager;
+    @Autowired
+    EventManagementService eventManager;
+    @Autowired
+    @Qualifier("messageSource")
+    MessageSource messageSource;
     /**
      * Some default menu returns and some frequently used sets of menu options
      */
 
     Request tooLongError = new Request("Error! Menu is too long.", new ArrayList<>());
+
+    /*
+    Stubs to the utility methods, for readability in the sub-classes
+     */
     Request noUserError = new Request("Error! Couldn't find you as a user.", new ArrayList<>());
+
+    /*
+    Simple helper method for mocking and unit test
+     */
     Request noGroupError = new Request("Sorry! Something went wrong finding the group.", new ArrayList<>());
+    private Logger log = LoggerFactory.getLogger(getClass());
+
+    protected Request menuBuilder(USSDMenu ussdMenu) throws URISyntaxException {
+        return USSDMenuUtil.menuBuilder(ussdMenu);
+    }
+
+    public void setMessageSource(MessageSource messageSource) { this.messageSource = messageSource; }
+
+    public void setUssdGroupUtil(USSDGroupUtil ussdGroupUtil) {
+        this.ussdGroupUtil = ussdGroupUtil;
+    }
 
     protected Map<String, String> optionsHomeExit(User sessionUser) {
         return ImmutableMap.<String, String>builder().

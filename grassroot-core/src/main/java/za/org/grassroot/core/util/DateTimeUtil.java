@@ -28,7 +28,7 @@ public class DateTimeUtil {
     public static final DateTimeFormatter preferredDateFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy");
     public static final DateTimeFormatter preferredTimeFormat = DateTimeFormatter.ofPattern("HH:mm");
     public static final DateTimeFormatter preferredDateTimeFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
-    private static final String possibleTimeDelims = "[-, :]+";
+    private static final String possibleTimeDelims = "[-,:hH]+";
     private static final Joiner timeJoiner = Joiner.on(":").skipNulls();
     private static final Pattern timeWithDelims = Pattern.compile("\\d{1,2}" + possibleTimeDelims + "\\d\\d");
     private static final Pattern timeWithoutDelims = Pattern.compile("\\d{3,4}");
@@ -100,8 +100,10 @@ public class DateTimeUtil {
         // note: we only need to worry about am/pm if pm is entered, and in that case add 12 to hour
 
         String reformattedTime;
-        final String trimmedResponse = userResponse.trim().toLowerCase();
+        final String trimmedResponse = userResponse.trim().toLowerCase()
+                .replace("^[-,:]",":");
         boolean pmStringEntered = Pattern.matches(".*pm?", trimmedResponse);
+
         log.info("We have been passed this as our input ... " + trimmedResponse + " ... and we found pm: " + pmStringEntered);
 
         final Matcher matcherDelims = timeWithDelims.matcher(trimmedResponse);
@@ -314,6 +316,8 @@ public class DateTimeUtil {
     public static Date processDateString(String dateString) {
         return processDateString(dateString, new SimpleDateFormat("dd/MM/yyyy HH:mm a"));
     }
+
+
 
     public static int numberOfMinutesForDays(int days) {
         return 60 * 24 * days;
