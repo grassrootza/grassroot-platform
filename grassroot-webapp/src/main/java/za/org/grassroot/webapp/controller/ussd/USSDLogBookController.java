@@ -132,9 +132,8 @@ public class USSDLogBookController extends USSDController {
 
         userInput = interrupted ? priorInput : userInput;
         User user = userManager.findByInputNumber(inputNumber, saveLogMenu(assignMenu, logBookId, userInput));
-       String formattedDateString =  DateTimeUtil.reformatDateInput(userInput);
         if (!revising) logBookService.setDueDate(logBookId, DateTimeUtil.parsePreformattedDate(
-                formattedDateString, hour,minute));
+                DateTimeUtil.reformatDateInput(userInput), hour,minute));
         USSDMenu menu = new USSDMenu(menuPrompt(assignMenu, user));
         menu.addMenuOption(returnUrl(confirmMenu, logBookId),
                            getMessage(thisSection, assignMenu, optionsKey + "group", user));
