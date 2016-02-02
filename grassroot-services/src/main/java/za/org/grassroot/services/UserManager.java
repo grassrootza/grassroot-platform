@@ -312,13 +312,13 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public boolean needsToRSVP(User sessionUser) {
         // todo: as noted elsewhere, probably want to optimize this quite aggressively
-        return !(eventManagementService.getOutstandingRSVPForUser(sessionUser).size() == 0);
+        return eventManagementService.getOutstandingRSVPForUser(sessionUser).size() > 0;
     }
 
     @Override
     public boolean needsToVote(User sessionUser) {
         log.info("Checking if vote outstanding for user: " + sessionUser);
-        return !(eventManagementService.getOutstandingVotesForUser(sessionUser).size() == 0);
+        return eventManagementService.getOutstandingVotesForUser(sessionUser).size() > 0;
     }
 
     @Override

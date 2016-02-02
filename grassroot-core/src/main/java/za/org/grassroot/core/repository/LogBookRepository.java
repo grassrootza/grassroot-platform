@@ -2,6 +2,7 @@ package za.org.grassroot.core.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import za.org.grassroot.core.domain.LogBook;
@@ -16,6 +17,7 @@ public interface LogBookRepository extends JpaRepository<LogBook, Long> {
 
     List<LogBook> findAllByGroupId(Long groupId);
     List<LogBook> findAllByGroupIdAndRecorded(Long groupId, boolean recorded);
+    List<LogBook> findAllByGroupIdAndRecordedAndCreatedDateTimeBetween(Long groupId, boolean recorded, Timestamp start, Timestamp end, Sort sort);
     List<LogBook> findByGroupIdAndMessageAndCreatedDateTime(Long groupId, String message, Timestamp createdDateTime);
 
     // note: no way a non-recorded action gets to completion (manager throws an exception), so adding that would be redundant

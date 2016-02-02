@@ -18,13 +18,11 @@ import za.org.grassroot.core.domain.PaidGroup;
 import za.org.grassroot.core.domain.User;
 
 import javax.transaction.Transactional;
-
 import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
-import static org.hamcrest.CoreMatchers.either;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
@@ -41,16 +39,16 @@ public class PaidGroupRepositoryTest {
     private static final Logger log = LoggerFactory.getLogger(PaidGroupRepositoryTest.class);
 
     @Autowired
-    PaidGroupRepository paidGroupRepository;
+    private PaidGroupRepository paidGroupRepository;
 
     @Autowired
-    UserRepository userRepository;
+    private UserRepository userRepository;
 
     @Autowired
-    GroupRepository groupRepository;
+    private GroupRepository groupRepository;
 
     @Autowired
-    AccountRepository accountRepository;
+    private AccountRepository accountRepository;
 
     private static final String testPhoneNumber = "0810005555";
     private static final String testGroupName = "testGroup";

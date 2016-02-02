@@ -3,7 +3,7 @@ package za.org.grassroot.services;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
@@ -34,13 +34,13 @@ public class LogBookManager implements LogBookService {
     private static final int defaultReminderMinutes = -1440;
 
     @Autowired
-    LogBookRepository logBookRepository;
+    private LogBookRepository logBookRepository;
 
     @Autowired
-    GroupManagementService groupManagementService;
+    private GroupManagementService groupManagementService;
 
     @Autowired
-    GenericJmsTemplateProducerService jmsTemplateProducerService;
+    private GenericJmsTemplateProducerService jmsTemplateProducerService;
 
     @Override
     public LogBook load(Long logBookId) {
@@ -50,6 +50,13 @@ public class LogBookManager implements LogBookService {
     @Override
     public List<LogBook> getAllLogBookEntriesForGroup(Long groupId) {
         return logBookRepository.findAllByGroupIdAndRecorded(groupId, true);
+    }
+
+    @Override
+    public List<LogBook> getLogBookEntriesInPeriod(Long groupId, LocalDateTime periodStart, LocalDateTime periodEnd) {
+        Sort sort = new Sort(Sort.Direction.ASC, "CreatedDateTime");
+        return logBookRepository.findAllByGroupIdAndRecordedAndCreatedDateTimeBetween(groupId, true, Timestamp.valueOf(periodStart),
+                                                                                      Timestamp.valueOf(periodEnd), sort);
     }
 
     @Override

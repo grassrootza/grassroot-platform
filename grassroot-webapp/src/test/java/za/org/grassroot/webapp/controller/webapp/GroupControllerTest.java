@@ -547,5 +547,18 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
     }
 
+    @Test
+    public void groupHistoryThisMonthShouldWork() {
+        Group testGroup = new Group();
+        testGroup.setId(dummyId);
+        when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
+        // ...
+    }
+
+    @Test
+    public void groupHistoryLastMonthShouldWork() {
+        // ...
+    }
+
 
 }

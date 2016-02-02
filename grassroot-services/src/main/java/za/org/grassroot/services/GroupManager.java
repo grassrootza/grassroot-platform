@@ -325,8 +325,7 @@ public class GroupManager implements GroupManagementService {
     @Override
     public boolean canGroupBeSetInactive(Group group, User user) {
         // todo: checking of permissions, etc etc
-        if (group.hasName()) return false;
-        return true;
+        return !(group.hasName());
     }
 
     @Override

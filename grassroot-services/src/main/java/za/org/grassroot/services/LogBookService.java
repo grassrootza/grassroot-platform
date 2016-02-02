@@ -19,6 +19,8 @@ public interface LogBookService {
 
     List<LogBook> getAllLogBookEntriesForGroup(Long groupId);
 
+    List<LogBook> getLogBookEntriesInPeriod(Long groupId, LocalDateTime periodStart, LocalDateTime periodEnd);
+
     List<LogBook> getAllLogBookEntriesForGroup(Long groupId, boolean completed);
 
     Page<LogBook> getAllLogBookEntriesForGroup(Long groupId, int pageNumber,int pageSize, boolean completed);

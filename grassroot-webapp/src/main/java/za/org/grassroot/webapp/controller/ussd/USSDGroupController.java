@@ -351,7 +351,7 @@ public class USSDGroupController extends USSDController {
             String beginUri = groupMenus + groupTokenMenu, endUri = groupIdUrlSuffix + groupId;
             thisMenu = new USSDMenu(getMessage(thisSection, groupTokenMenu, promptKey + ".close", sessionUser),
                                     optionsYesNo(sessionUser, beginUri + "-close" + endUri));
-        } else if (confirmed.equals("yes")) {
+        } else if ("yes".equals(confirmed)) {
             sessionUser = userManager.findByInputNumber(inputNumber, null);
             // todo: error handling here (bad token, etc., also, security)
             groupManager.invalidateGroupToken(groupId);
