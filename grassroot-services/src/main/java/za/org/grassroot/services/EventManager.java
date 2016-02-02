@@ -434,6 +434,11 @@ public class EventManager implements EventManagementService {
         return rsvpResponses;
     }
 
+    @Override
+    public int countUpcomingEvents(Long userId) {
+        return eventRepository.countFutureEvents(userId);
+    }
+
 
     @Override
     public List<Event> getOutstandingVotesForUser(Long userId) {
@@ -637,9 +642,9 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
-    public boolean hasUpcomingEvents(User requestingUser, EventType type) {
+    public boolean hasUpcomingEvents(Long userId) {
         // likewise, if we start using this at outset of meetings menu, need to make it fast, possibly a query
-        return getUpcomingEvents(requestingUser, type).size() != 0;
+        return eventRepository.countFutureEvents(userId) > 0;
     }
 
     @Override

@@ -43,13 +43,19 @@
         <th>Date held</th>
         <th>Type of call</th>
         <th>Subject</th>
+        <th>Member who called</th>
         <!-- todo : add in RSVP totals of some sort, plus links to the event details pages -->
         </thead>
         <tbody>
         <tr th:each="event : ${eventsInPeriod}">
           <td><span th:text="${#dates.format(event.eventStartDateTime, 'dd MMM yyyy')}">Date time</span></td>
           <td><span th:text="${event.eventType}"></span></td>
-          <td><mark><span th:text="${event.name}">Description</span></mark></td>
+          <td>
+            <a th:href="@{view_event(eventId=${event.id}, eventType=${event.eventType})}"> <!-- todo: when figure out Thymeleaf var setting, process this -->
+              <span th:text="${event.name}">Description</span>
+            </a>
+          </td>
+          <td><span th:text="${event.createdByUser.nameToDisplay()}"></span></td>
         </tr>
         </tbody>
       </table>
@@ -91,7 +97,7 @@
         <th>Date and time</th>
         <th>Type of change</th>
         <th>Description</th>
-        <th>Member that made change</th>
+        <!-- <th>Member that made change</th> -->
         </thead>
         <tbody>
         <tr th:each="entry : ${groupLogsInPeriod}">
@@ -103,7 +109,7 @@
             <span th:unless="${entry.description == null}" th:text="${entry.description}">Further description</span>
             <span th:if="${entry.description == null}">N/A</span>
           </td>
-          <td><!-- todo: add in user object from userId --></td>
+          <!-- <td> todo: add in user objects from userId </td> -->
         </tr>
         </tbody>
       </table>

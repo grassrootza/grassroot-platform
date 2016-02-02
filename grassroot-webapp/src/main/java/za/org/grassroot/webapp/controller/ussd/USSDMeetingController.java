@@ -100,7 +100,7 @@ public class USSDMeetingController extends USSDController {
 
         USSDMenu returnMenu;
 
-        // todo: replace with call to hasUpcomingEvents plus permission filter
+        // todo: replace with call to countFutureEvents plus permission filter
         if (newMeeting || eventManager.getUpcomingEventsUserCreated(user).size() == 0) {
             returnMenu = ussdGroupUtil.askForGroupAllowCreateNew(user, USSDSection.MEETINGS, nextMenu(startMenu), newGroupMenu, null);
         } else {

@@ -152,13 +152,21 @@ public class HomeController extends BaseController {
 
         model.addAttribute("userGroups", groupManagementService.getActiveGroupsPartOf(user));
         model.addAttribute("groupTreesSql", groupViewNodeSqls);
+        Long endTime2 = System.currentTimeMillis();
+        log.info(String.format("Retrieved the active groups for the user ... took %d msecs", endTime2 - startTime2));
 
         // get lists of outstanding RSVPs and votes
-        List<Event> meetingsToRsvp = eventManagementService.getOutstandingRSVPForUser(user);
-        List<Event> votesToAnswer = eventManagementService.getOutstandingVotesForUser(user);
-        Long endTime2 = System.currentTimeMillis();
+        Long startTime3 = System.currentTimeMillis();
+        List<Event> meetingsToRsvp = new ArrayList<>();
+        List<Event> votesToAnswer = new ArrayList<>();
+        int upcomingEvents = eventManagementService.countUpcomingEvents(user.getId());
+        if (upcomingEvents > 0) {
+            meetingsToRsvp = eventManagementService.getOutstandingRSVPForUser(user);
+            votesToAnswer = eventManagementService.getOutstandingVotesForUser(user);
+        }
+        Long endTime3 = System.currentTimeMillis();
 
-        log.info(String.format("Retrieved the events for the user ... took %d msecs", endTime2 - startTime2));
+        log.info(String.format("Retrieved %d events for the user ... took %d msecs", upcomingEvents, endTime3 - startTime3));
 
         model.addAttribute("meetingRsvps", meetingsToRsvp);
         model.addAttribute("votesToAnswer", votesToAnswer);

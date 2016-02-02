@@ -86,7 +86,7 @@ public class VoteController extends BaseController {
     }
 
     @RequestMapping("/vote/view")
-    public String viewVote(Model model, @RequestParam(value="eventId") Long eventId) {
+    public String viewVote(Model model, @RequestParam Long eventId) {
 
         Event vote = eventManagementService.loadEvent(eventId);
 

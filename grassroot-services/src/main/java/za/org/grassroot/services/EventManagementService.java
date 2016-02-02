@@ -149,7 +149,9 @@ public interface EventManagementService {
 
     Map<User, EventRSVPResponse> getRSVPResponses(Event event);
 
-    boolean hasUpcomingEvents(User requestingUser, EventType type);
+    int countUpcomingEvents(Long userId);
+
+    boolean hasUpcomingEvents(Long userId);
 
     String[] populateNotificationFields(Event event);
 

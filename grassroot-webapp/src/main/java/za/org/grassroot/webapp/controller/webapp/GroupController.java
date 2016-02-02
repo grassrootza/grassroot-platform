@@ -14,6 +14,7 @@ import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
@@ -23,6 +24,7 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -746,7 +748,7 @@ public class GroupController extends BaseController {
 
         if (monthToView == null) {
             startDateTime = LocalDate.now().withDayOfMonth(1).atStartOfDay();
-            endDateTime = LocalDateTime.now();
+            endDateTime = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS); // leaving miliseconds on causes spurious test failures
         } else {
             startDateTime = LocalDate.parse("01-" + monthToView, DateTimeFormatter.ofPattern("dd-M-yyyy")).atStartOfDay();
             endDateTime = startDateTime.plusMonths(1L);
@@ -768,6 +770,16 @@ public class GroupController extends BaseController {
         model.addAttribute("monthsToView", monthsActive);
 
         return "group/history";
+    }
+
+    @RequestMapping(value = "view_event")
+    public String redirectToEvent(Model model, @RequestParam Long eventId, @RequestParam EventType eventType,
+                                  RedirectAttributes redirectAttributes, HttpServletRequest request) {
+
+        String path = (eventType == EventType.Meeting) ? "/meeting/" : "/vote/";
+        redirectAttributes.addAttribute("eventId", eventId);
+        return "redirect:" + path + "view";
+
     }
 
 }

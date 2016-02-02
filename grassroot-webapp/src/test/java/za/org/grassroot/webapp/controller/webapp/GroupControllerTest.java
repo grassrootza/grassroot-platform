@@ -5,15 +5,18 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -548,17 +551,99 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     }
 
     @Test
-    public void groupHistoryThisMonthShouldWork() {
+    public void groupHistoryThisMonthShouldWork() throws Exception {
+
         Group testGroup = new Group();
         testGroup.setId(dummyId);
+        testGroup.addMember(sessionTestUser);
+        sessionTestUser.setGroupsPartOf(Arrays.asList(testGroup));
+
+        List<Event> dummyEvents = Arrays.asList(new Event(sessionTestUser, EventType.Meeting, true),
+                                                new Event(sessionTestUser, EventType.Vote, true));
+        List<LogBook> dummyLogbooks = Arrays.asList(new LogBook(dummyId, "Do stuff", Timestamp.valueOf(LocalDateTime.now().plusDays(2L))),
+                                                  new LogBook(dummyId, "Do more stuff", Timestamp.valueOf(LocalDateTime.now().plusDays(5L))));
+        List<GroupLog> dummyGroupLogs = Arrays.asList(new GroupLog(dummyId, sessionTestUser.getId(), GroupLogType.GROUP_MEMBER_ADDED, 0L, "guy joined"),
+                                                      new GroupLog(dummyId, sessionTestUser.getId(), GroupLogType.GROUP_MEMBER_REMOVED, 0L, "other guy left"));
+        List<LocalDate> dummyMonths = Arrays.asList(LocalDate.now(), LocalDate.now().minusMonths(1L));
+
+        LocalDateTime start = LocalDate.now().withDayOfMonth(1).atStartOfDay();
+        LocalDateTime end = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
+
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
-        // ...
+        when(userManagementServiceMock.getUserById(sessionTestUser.getId())).thenReturn(sessionTestUser);
+        when(eventManagementServiceMock.getGroupEventsInPeriod(testGroup, start, end)).thenReturn(dummyEvents);
+        when(logBookServiceMock.getLogBookEntriesInPeriod(dummyId, start, end)).thenReturn(dummyLogbooks);
+        when(groupLogServiceMock.getLogsForGroup(testGroup, start, end)).thenReturn(dummyGroupLogs);
+        when(groupManagementServiceMock.getMonthsGroupActive(testGroup)).thenReturn(dummyMonths);
+
+        mockMvc.perform(get("/group/history").param("groupId", String.valueOf(dummyId))).
+                andExpect(view().name("group/history")).
+                andExpect(model().attribute("group", hasProperty("id", is(dummyId)))).
+                andExpect(model().attribute("eventsInPeriod", is(dummyEvents))).
+                andExpect(model().attribute("logBooksInPeriod", is(dummyLogbooks))).
+                andExpect(model().attribute("groupLogsInPeriod", is(dummyGroupLogs))).
+                andExpect(model().attribute("monthsToView", is(dummyMonths)));
+
+        verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
+        verify(groupManagementServiceMock, times(1)).getMonthsGroupActive(testGroup);
+        verifyNoMoreInteractions(groupManagementServiceMock);
+        verify(userManagementServiceMock, times(1)).getUserById(sessionTestUser.getId());
+        verifyNoMoreInteractions(userManagementServiceMock);
+        verify(eventManagementServiceMock, times(1)).getGroupEventsInPeriod(testGroup, start, end);
+        verifyNoMoreInteractions(eventManagementServiceMock);
+        verify(logBookServiceMock, times(1)).getLogBookEntriesInPeriod(dummyId, start, end);
+        verifyNoMoreInteractions(logBookServiceMock);
+        verify(groupLogServiceMock, times(1)).getLogsForGroup(testGroup, start, end);
+        verifyNoMoreInteractions(groupLogServiceMock);
+
     }
 
     @Test
-    public void groupHistoryLastMonthShouldWork() {
-        // ...
-    }
+    public void groupHistoryLastMonthShouldWork() throws Exception {
 
+        Group testGroup = new Group();
+        testGroup.setId(dummyId);
+        testGroup.addMember(sessionTestUser);
+        sessionTestUser.setGroupsPartOf(Arrays.asList(testGroup));
+
+        List<Event> dummyEvents = Arrays.asList(new Event("test meeting", sessionTestUser, testGroup));
+        List<LogBook> dummyLogBooks = Arrays.asList(new LogBook(dummyId, "do stuff", Timestamp.valueOf(LocalDateTime.now())));
+        List<GroupLog> dummyGroupLogs = Arrays.asList(new GroupLog(dummyId, sessionTestUser.getId(), GroupLogType.GROUP_MEMBER_ADDED, 0L));
+        List<LocalDate> dummyMonths = Arrays.asList(LocalDate.now(), LocalDate.now().minusMonths(1L));
+
+        LocalDate lastMonth = LocalDate.now().minusMonths(1L);
+        String monthToView = lastMonth.format(DateTimeFormatter.ofPattern("M-yyyy"));
+
+        LocalDateTime start = LocalDate.parse("01-" + monthToView, DateTimeFormatter.ofPattern("dd-M-yyyy")).atStartOfDay();
+        LocalDateTime end = start.plusMonths(1L);
+
+        when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
+        when(userManagementServiceMock.getUserById(sessionTestUser.getId())).thenReturn(sessionTestUser);
+        when(eventManagementServiceMock.getGroupEventsInPeriod(testGroup, start, end)).thenReturn(dummyEvents);
+        when(logBookServiceMock.getLogBookEntriesInPeriod(dummyId, start, end)).thenReturn(dummyLogBooks);
+        when(groupLogServiceMock.getLogsForGroup(testGroup, start, end)).thenReturn(dummyGroupLogs);
+        when(groupManagementServiceMock.getMonthsGroupActive(testGroup)).thenReturn(dummyMonths);
+
+        mockMvc.perform(get("/group/history").param("groupId", String.valueOf(dummyId)).param("monthToView", monthToView)).
+                andExpect(view().name("group/history")).
+                andExpect(model().attribute("group", hasProperty("id", is(dummyId)))).
+                andExpect(model().attribute("eventsInPeriod", is(dummyEvents))).
+                andExpect(model().attribute("logBooksInPeriod", is(dummyLogBooks))).
+                andExpect(model().attribute("groupLogsInPeriod", is(dummyGroupLogs))).
+                andExpect(model().attribute("monthsToView", is(dummyMonths)));
+
+        verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
+        verify(groupManagementServiceMock, times(1)).getMonthsGroupActive(testGroup);
+        verifyNoMoreInteractions(groupManagementServiceMock);
+        verify(userManagementServiceMock, times(1)).getUserById(sessionTestUser.getId());
+        verifyNoMoreInteractions(userManagementServiceMock);
+        verify(eventManagementServiceMock, times(1)).getGroupEventsInPeriod(testGroup, start, end);
+        verifyNoMoreInteractions(eventManagementServiceMock);
+        verify(logBookServiceMock, times(1)).getLogBookEntriesInPeriod(dummyId, start, end);
+        verifyNoMoreInteractions(logBookServiceMock);
+        verify(groupLogServiceMock, times(1)).getLogsForGroup(testGroup, start, end);
+        verifyNoMoreInteractions(groupLogServiceMock);
+
+    }
 
 }

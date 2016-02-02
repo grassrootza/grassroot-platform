@@ -46,11 +46,9 @@ public class MeetingController extends BaseController {
 
     @Autowired
     EventLogManagementService eventLogManagementService;
-    
-    
 
     @RequestMapping("/meeting/view")
-    public String viewMeetingDetails(Model model, @RequestParam("eventId") Long eventId) {
+    public String viewMeetingDetails(Model model, @RequestParam Long eventId) {
 
         Event meeting = eventManagementService.loadEvent(eventId);
         

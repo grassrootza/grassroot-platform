@@ -197,7 +197,7 @@ public class EventManagementServiceTest {
         event = eventManagementService.createVote(event);
         assertNotSame(0, event.getId());
         assertThat(event.getAppliesToGroup(), is(group1));
-        // assertTrue(eventManagementService.hasUpcomingEvents(user)); // fails because getUpcomingEventsQuery is PSQL-dependent
+        // assertTrue(eventManagementService.countFutureEvents(user)); // fails because getUpcomingEventsQuery is PSQL-dependent
 
         // todo: make method in send message save to cache -- so that we can check -- this fails because of async and various other issues
         // assertNotEquals(eventLogRepository.count(), 0L);

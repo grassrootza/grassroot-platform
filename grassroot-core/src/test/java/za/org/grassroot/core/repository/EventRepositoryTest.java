@@ -343,4 +343,32 @@ public class EventRepositoryTest {
 
     }
 
+    @Test
+    public void countUpcomingEventsShouldWork() {
+
+        assertThat(eventRepository.count(), is(0L));
+
+        User user = userRepository.save(new User("0710001111"));
+        User user2 = userRepository.save(new User("0810001111"));
+        Group group = groupRepository.save(new Group("tg1", user));
+        group = groupRepository.save(group.addMember(user));
+        Group group2 = groupRepository.save(new Group("tg2", user2));
+        group2 = groupRepository.save(group2.addMember(user));
+        group2 = groupRepository.save(group2.addMember(user2));
+
+        Event event1 = new Event("count check", user, group);
+        event1.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.now().plusDays(2L)));
+        Event event2 = new Event("count check 2", user, group2);
+        event2.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.now().minusDays(2L)));
+
+        event1 = eventRepository.save(event1);
+        event2 = eventRepository.save(event2);
+
+        int numberUpcomingEvents1 = eventRepository.countFutureEvents(user.getId());
+        assertThat(numberUpcomingEvents1, is(1));
+        int numberUpcomingEvents2 = eventRepository.countFutureEvents(user2.getId());
+        assertThat(numberUpcomingEvents2, is(0));
+
+    }
+
 }
