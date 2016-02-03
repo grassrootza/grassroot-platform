@@ -36,6 +36,7 @@ public class USSDGroupUtil extends USSDUtil {
     private static final String groupIdUrlEnding = "?" + groupIdParameter + "=";
     private static final String validNumbers = "valid";
     private static final String invalidNumbers = "error";
+    private static final String doSuffix ="-do";
 
     private static final SimpleDateFormat unnamedGroupDate = new SimpleDateFormat("d MMM");
 
@@ -51,7 +52,7 @@ public class USSDGroupUtil extends USSDUtil {
         USSDMenu groupMenu;
         log.info("Inside askForGroupAllowCreateNew ... newGroupUrl is ..." + newGroupUrl);
         if (!groupManager.hasActiveGroupsPartOf(sessionUser)) {
-            groupMenu = createGroupPrompt(sessionUser, section, newGroupUrl);
+            groupMenu = createGroupPrompt(sessionUser, section,USSDSection.GROUP_MANAGER.toPath() + newGroupUrl+doSuffix);
         } else {
             String prompt = getMessage(section, groupKeyForMessages, promptKey + ".existing", sessionUser);
             String existingGroupUri = section.toPath() + nextUrl + ((nonGroupParams == null) ? "" : nonGroupParams);
