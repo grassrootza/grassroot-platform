@@ -32,7 +32,7 @@
         </tr>
         <tr>
           <td>Phone number</td>
-          <td><span th:text="${user.phoneNumber}">0815550000</span></td></t>
+          <td><span th:text="${user.phoneNumber}">0815550000</span></td>
         </tr>
         <tr>
           <td>Language</td>
@@ -48,11 +48,11 @@
         </tr>
         <tr>
           <td>Has a web profile:</td>
-          <td><span th:text="${user.webProfile}">Yes</span></td>
+          <td><span th:text="${user.hasWebProfile()}">Yes</span></td>
         </tr>
         <tr>
           <td>Number of groups a part of:</td>
-          <td><span th:text="${user.groupsPartOf.size()}">254</span></td> <!-- turn this into a link -->
+          <td><span th:text="${numberGroups}">254</span></td> <!-- use a custom variable -->
         </tr>
       </table>
     </div>
@@ -62,8 +62,6 @@
       <a href="@{language}">Change this user's language</a>
       <a href="@{password}">Reset this user's password</a>
 
-    </div>
-  </div>-->
     </div>
   </div>
 </div>

@@ -69,10 +69,10 @@ public class PhoneNumberUtil {
         // todo: figure out if possible to have a 00 as delimiter, or just to seperate by 10 digits
         // todo: generally, take the next step from "any delimiter" to "any logical pattern" for bunching numbers
 
-        userResponse = userResponse.replace("\"", ""); // in case the response is passed with quotes around it
+        String userResponseTrimmed = userResponse.replace("\"", ""); // in case the response is passed with quotes around it
 
         Pattern nonNumericPattern = Pattern.compile("\\d+");
-        Matcher numberMatch = nonNumericPattern.matcher(userResponse);
+        Matcher numberMatch = nonNumericPattern.matcher(userResponseTrimmed);
 
         Map<String, List<String>> returnMap = new HashMap<>();
         List<String> validNumbers = new ArrayList<>();

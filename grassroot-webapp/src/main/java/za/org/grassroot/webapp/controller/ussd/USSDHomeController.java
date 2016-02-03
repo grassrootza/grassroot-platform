@@ -72,6 +72,7 @@ public class USSDHomeController extends USSDController {
     public Request startMenu(@RequestParam(value= phoneNumber) String inputNumber,
                              @RequestParam(value= userInputParam, required=false) String enteredUSSD) throws URISyntaxException {
 
+        Long startTime = System.currentTimeMillis();
         USSDMenu openingMenu;
         User sessionUser = userManager.loadOrSaveUser(inputNumber);
 
@@ -100,6 +101,8 @@ public class USSDHomeController extends USSDController {
             openingMenu = defaultStartMenu(sessionUser);
         }
 
+        Long endTime = System.currentTimeMillis();
+        log.info(String.format("Generating home menu, time taken: %d msecs", endTime - startTime));
         return menuBuilder(openingMenu);
 
     }
@@ -364,7 +367,7 @@ public class USSDHomeController extends USSDController {
 
         User sessionUser = userManager.findByInputNumber(inputNumber);
         String welcomeMessage;
-        if (userName.equals("0") || userName.trim().equals("")) {
+        if ("0".equals(userName) || "".equals(userName.trim())) {
             welcomeMessage = getMessage(thisSection, startMenu, promptKey, sessionUser);
         } else {
             sessionUser = userManager.setDisplayName(sessionUser, userName);

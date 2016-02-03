@@ -19,6 +19,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.util.MaskingUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 
@@ -242,12 +243,12 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public List<User> searchByInputNumber(String inputNumber) {
         String phoneNumber = PhoneNumberUtil.convertPhoneNumberFragment(inputNumber);
-        return userRepository.findByPhoneNumberContaining(phoneNumber);
+        return MaskingUtil.maskUsers(userRepository.findByPhoneNumberContaining(phoneNumber));
     }
 
     @Override
     public List<User> searchByDisplayName(String displayName) {
-        return userRepository.findByDisplayNameContaining(displayName);
+        return MaskingUtil.maskUsers(userRepository.findByDisplayNameContaining(displayName));
     }
 
     @Override
@@ -323,10 +324,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     public boolean needsToVoteOrRSVP(User sessionUser) {
-        // todo: make this into a single combined (and optimized) query
-        // note: in effect this is going to run getOutstanding twice, once here, second time to distinguish
-        // todo: instead make this return EventType or null, or something like that, so only need once
-        log.info("Checking if user needs to respond to something: " + sessionUser);
+        // note: inserting a hasUpcomingEvents here makes it faster before cache is warmed up but slower after
+        // as then will be doing a quick count query but still slower than cache retrieval, trade-off to monitor
         return (needsToVote(sessionUser) || needsToRSVP(sessionUser));
     }
 
@@ -456,6 +455,33 @@ public class UserManager implements UserManagementService, UserDetailsService {
         languages.put("zu", "Zulu");
 
         return languages;
+    }
+
+    /*
+    SECTION: methods to return a masked user entity, for analytics
+     */
+    @Override
+    public User loadUserMasked(Long userId) {
+        return MaskingUtil.maskUser(userRepository.findOne(userId));
+    }
+
+    @Override
+    public List<User> loadAllUsersMasked() {
+        List<User> maskedUsers = new ArrayList<>();
+        // todo: work out a much quicker way of doing this than the loop (could get _very_ long)
+        for (User user : userRepository.findAll()) {
+            maskedUsers.add(MaskingUtil.maskUser(user));
+        }
+        return maskedUsers;
+    }
+
+    @Override
+    public List<User> loadSubsetUsersMasked(List<Long> ids) {
+        List<User> maskedUsers = new ArrayList<>();
+        List<User> unmaskedUsers = userRepository.findAll(ids);
+        for (User user : unmaskedUsers)
+            maskedUsers.add(MaskingUtil.maskUser(user));
+        return maskedUsers;
     }
 
     public void setPasswordEncoder(final PasswordEncoder passwordEncoder) {

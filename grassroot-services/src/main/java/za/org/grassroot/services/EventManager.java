@@ -444,6 +444,7 @@ public class EventManager implements EventManagementService {
     public List<Event> getOutstandingVotesForUser(Long userId) {
         return getOutstandingVotesForUser(userRepository.findOne(userId));
     }
+
     @Override
     public List<Event> getOutstandingVotesForUser(User user) {
         return getOutstandingResponseForUser(user, EventType.Vote);

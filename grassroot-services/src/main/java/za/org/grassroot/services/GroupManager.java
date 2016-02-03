@@ -373,6 +373,11 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
+    public List<Group> getActiveGroupsPartOf(Long userId) {
+        return getActiveGroupsPartOf(userManager.getUserById(userId));
+    }
+
+    @Override
     public List<Group> getListGroupsFromLogbooks(List<LogBook> logBooks) {
         // seems like doing it this way more efficient than running lots of group fetch queries, but need to test/verify
         log.info("Got a list of logbooks ... look like this: " + logBooks);
@@ -472,8 +477,9 @@ public class GroupManager implements GroupManagementService {
         // todo: checks for whether the code already exists, and/or existing validity of group
 
         log.info("Generating a new group token, for group: " + group.getId());
+        Group groupToReturn;
         if (daysValid == 0) {
-            group = generateGroupToken(group);
+            groupToReturn = generateGroupToken(group);
         } else {
             Integer daysMillis = 24 * 60 * 60 * 1000;
             Timestamp expiryDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis() + daysValid * daysMillis);
@@ -483,12 +489,12 @@ public class GroupManager implements GroupManagementService {
 
             log.info("Group code generated: " + group.getGroupTokenCode());
 
-            group = saveGroup(group,true,String.format("Set Group Token: %s",group.getGroupTokenCode()),dontKnowTheUser);
+            groupToReturn = saveGroup(group,true,String.format("Set Group Token: %s",group.getGroupTokenCode()),dontKnowTheUser);
 
             log.info("Group code after save: " + group.getGroupTokenCode());
         }
 
-        return group;
+        return groupToReturn;
     }
 
     @Override

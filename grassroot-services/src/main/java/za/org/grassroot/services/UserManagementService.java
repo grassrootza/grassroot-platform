@@ -106,4 +106,15 @@ public interface UserManagementService {
 
     LinkedHashMap<String, String> getImplementedLanguages();
 
+    /*
+    Methods to return masked user entities for system analysis
+    todo: add security to the methods that load users which are not masked
+     */
+
+    User loadUserMasked(Long userId);
+
+    List<User> loadAllUsersMasked();
+
+    List<User> loadSubsetUsersMasked(List<Long> ids);
+
 }

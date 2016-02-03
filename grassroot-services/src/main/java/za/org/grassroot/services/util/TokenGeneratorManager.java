@@ -17,7 +17,7 @@ public class TokenGeneratorManager implements TokenGeneratorService {
     private Logger log = Logger.getLogger(getClass().getCanonicalName());
 
     @Autowired
-    GroupRepository groupRepository;
+    private GroupRepository groupRepository;
     private AtomicInteger counter;
 
 

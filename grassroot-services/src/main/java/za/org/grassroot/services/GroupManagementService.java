@@ -60,6 +60,8 @@ public interface GroupManagementService {
 
     public List<Group> getActiveGroupsPartOf(User sessionUser);
 
+    public List<Group> getActiveGroupsPartOf(Long userId);
+
     public Page<Group> getPageOfActiveGroups(User sessionUser, int pageNumber, int pageSize);
 
     public List<Group> getListGroupsFromLogbooks(List<LogBook> logBooks);

@@ -49,12 +49,6 @@ public class LogBookServiceTest extends AbstractTransactionalJUnit4SpringContext
     private GroupManagementService groupManagementService;
 
     @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private GroupRepository groupRepository;
-
-    @Autowired
     LogBookService logBookService;
 
     @Test
