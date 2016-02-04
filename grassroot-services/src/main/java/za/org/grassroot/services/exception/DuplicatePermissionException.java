@@ -1,4 +1,4 @@
-package za.org.grassroot.services;
+package za.org.grassroot.services.exception;
 
 /**
  * @author Lesetse Kimwaga

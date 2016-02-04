@@ -2,6 +2,7 @@ package za.org.grassroot.core.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 
 import java.util.ArrayList;
@@ -17,7 +18,6 @@ public class MaskingUtil {
 
     private static final char maskingCharacter = '*';
     private static final int phoneNumberLength = "27810001111".length(); // todo: make country specific
-    private static final double shareOfNameToMask = 2/3;
 
     public static char getMaskingCharacter() { return maskingCharacter; }
 
@@ -32,14 +32,12 @@ public class MaskingUtil {
     public static String maskName(String name) {
         if (name == null || name.trim().equals("")) return name;
 
-        int lengthOfName = name.length();
-        int lengthToMask = (int) Math.ceil(lengthOfName * shareOfNameToMask);
-        int lengthOfRemainder = (lengthOfName - lengthToMask) / 2;
+        int lengthOfMask = name.length() - 1;
 
-        char[] mask = new char[lengthToMask];
+        char[] mask = new char[lengthOfMask];
         Arrays.fill(mask, maskingCharacter);
 
-        return name.substring(0, lengthOfRemainder) + (new String(mask)) + name.substring(lengthOfName - lengthToMask, lengthOfName);
+        return name.substring(0, 1) + (new String(mask));
 
     }
 
@@ -53,7 +51,7 @@ public class MaskingUtil {
         maskedUser.setLastName(maskName(user.getLastName()));
         maskedUser.setCreatedDateTime(user.getCreatedDateTime());
         maskedUser.setLanguageCode(user.getLanguageCode());
-        maskedUser.setWebProfile(user.hasWebProfile());
+        maskedUser.setHasWebProfile(user.isHasWebProfile());
         return maskedUser;
     }
 
@@ -62,6 +60,11 @@ public class MaskingUtil {
         for (User user : users)
             maskedUsers.add(maskUser(user));
         return maskedUsers;
+    }
+
+    public static Group maskGroup(Group group) {
+        Group maskedGroup = new Group();
+        return maskedGroup;
     }
 
 }

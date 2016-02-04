@@ -1,7 +1,6 @@
 package za.org.grassroot.core.domain;
 
 import lombok.EqualsAndHashCode;
-import lombok.ToString;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -36,7 +35,7 @@ public class User implements UserDetails {
     private List<Group> groupsPartOf;
     private String      username;
     private String      password;
-    private boolean   webProfile = false;
+    private boolean hasWebProfile = false;
     private boolean   enabled    = true;
     private String lastUssdMenu;
     private boolean hasInitiatedSession;
@@ -163,9 +162,9 @@ public class User implements UserDetails {
     }
 
     @Column(name = "web")
-    public boolean hasWebProfile() { return webProfile; }
+    public boolean isHasWebProfile() { return hasWebProfile; }
 
-    public void setWebProfile(boolean webProfile) { this.webProfile = webProfile; }
+    public void setHasWebProfile(boolean hasWebProfile) { this.hasWebProfile = hasWebProfile; }
 
     @Column(name = "enabled")
     public boolean getEnabled() {

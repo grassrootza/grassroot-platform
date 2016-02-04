@@ -26,9 +26,58 @@
     </div>
   </div>
 
-  <!-- To insert search box for groups, events, etc, once many users -->
-
-  <!-- Row of buttons to take common actions -->
+  <!-- read out of some key stats -->
+  <div class="well">
+    <div class="row">
+      <mark>System statistics at a glance</mark>
+    </div>
+    <div class="row">
+      <table class="table table-striped">
+        <thead>
+          <th>Time period</th>
+          <th>Users added</th>
+          <th>Initiated USSD</th>
+          <th>Created Web profile</th>
+          <th>Groups created</th>
+          <th>Meetings called</th>
+          <th>Votes called</th>
+          <th>To-dos recorded</th>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Last week</td>
+            <td><span th:text="${countLastWeek}">X</span></td>
+            <td><span th:text="${countUssdLastWeek}">X</span></td>
+            <td><span th:text="${countWebLastWeek}">X</span></td>
+            <td><span th:text="${groupsLastWeek}">Z</span></td>
+            <td><span th:text="${meetingsLastWeek}">Z</span></td>
+            <td><span th:text="${votesLastWeek}">Z</span></td>
+            <td><span th:text="${todosLastWeek}">Z</span></td>
+          </tr>
+          <tr>
+            <td>Last month</td>
+            <td><span th:text="${countLastMonth}">Y</span></td>
+            <td><span th:text="${countUssdLastMonth}">X</span></td>
+            <td><span th:text="${countWebLastMonth}">X</span></td>
+            <td><span th:text="${groupsLastMonth}">Z</span></td>
+            <td><span th:text="${meetingsLastMonth}">Z</span></td>
+            <td><span th:text="${votesLastMonth}">Z</span></td>
+            <td><span th:text="${todosLastMonth}">Z</span></td>
+          </tr>
+          <tr>
+            <td>Total</td>
+            <td><span th:text="${userCount}">Z</span></td>
+            <td><span th:text="${countUssdTotal}">X</span></td>
+            <td><span th:text="${countWebTotal}">X</span></td>
+            <td><span th:text="${groupsTotal}">X</span></td>
+            <td><span th:text="${meetingsTotal}">X</span></td>
+            <td><span th:text="${votesTotal}">X</span></td>
+            <td><span th:text="${todosTotal}">X</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
   <div class="well">
     <div class="row">

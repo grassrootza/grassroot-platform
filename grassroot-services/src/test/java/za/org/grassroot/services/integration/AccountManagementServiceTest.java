@@ -1,6 +1,5 @@
 package za.org.grassroot.services.integration;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -10,16 +9,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.transaction.TestTransaction;
-import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.GrassRootServicesConfig;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.PaidGroup;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.*;
+import za.org.grassroot.services.exception.GroupAlreadyPaidForException;
 
 import static org.junit.Assert.*;
 

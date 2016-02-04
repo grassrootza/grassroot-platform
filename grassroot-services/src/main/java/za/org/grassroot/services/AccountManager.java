@@ -10,6 +10,7 @@ import za.org.grassroot.core.domain.PaidGroup;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.AccountRepository;
 import za.org.grassroot.core.repository.PaidGroupRepository;
+import za.org.grassroot.services.exception.GroupAlreadyPaidForException;
 
 import javax.transaction.Transactional;
 import java.sql.Timestamp;

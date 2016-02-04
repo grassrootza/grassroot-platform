@@ -37,6 +37,14 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     Page<Event> findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(User user, Date startTime, boolean cancelled, Pageable page);
 
     /*
+    Some methods for analytical services, to count, find events, etc
+     */
+    Long countByEventTypeAndEventStartDateTimeNotNullAndSendBlockedFalse(EventType eventType);
+    List<Event> findByEventTypeAndCreatedDateTimeBetweenAndSendBlockedAndEventStartDateTimeNotNull(EventType type, Timestamp start, Timestamp end, boolean sendBlocked);
+    int countByEventTypeAndCreatedDateTimeBetweenAndSendBlockedFalseAndEventStartDateTimeNotNull(EventType type, Timestamp start, Timestamp end);
+
+
+    /*
 
     N.B. do not remove start_date_time > current_timestamp as it will force the query to do an
     index scan, when there is enough data

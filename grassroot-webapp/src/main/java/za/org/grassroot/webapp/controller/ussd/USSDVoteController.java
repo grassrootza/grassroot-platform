@@ -1,6 +1,5 @@
 package za.org.grassroot.webapp.controller.ussd;
 
-import org.apache.tomcat.jni.Local;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,25 +13,19 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.services.NoSuchUserException;
+import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import za.org.grassroot.webapp.util.USSDEventUtil;
-import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.net.URISyntaxException;
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
-import java.util.Map;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.backVoteUrl;
-import static za.org.grassroot.webapp.util.USSDUrlUtil.revisingFlag;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.saveVoteMenu;
 
 /**

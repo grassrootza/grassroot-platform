@@ -6,6 +6,7 @@ import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 
+import java.sql.Timestamp;
 import java.util.List;
 
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -24,14 +25,24 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByPhoneNumberContaining(String phoneNumber);
     List<User> findByDisplayNameContaining(String displayName);
     List<User> findByDisplayNameContainingOrPhoneNumberContaining(String userInput, String phoneNumber);
-    List<User> findByGroupsPartOfAndDisplayNameContainingOrPhoneNumberContaining(Group group, String userInput, String phoneNumber);
-
-    List<User> findByGroupsPartOfAndDisplayNameContainingIgnoreCaseOrPhoneNumberLike(Group group, String userInput, String phoneNumber);
-
 
     List<User> findByGroupsPartOfOrderByIdAsc(Group group);
+    List<User> findByGroupsPartOfAndDisplayNameContainingOrPhoneNumberContaining(Group group, String userInput, String phoneNumber);
+    List<User> findByGroupsPartOfAndDisplayNameContainingIgnoreCaseOrPhoneNumberLike(Group group, String userInput, String phoneNumber);
 
     User findByUsername(String username);
+
+    int countByCreatedDateTimeBetween(Timestamp start, Timestamp end);
+    List<User> findByCreatedDateTimeBetweenOrderByCreatedDateTimeDesc(Timestamp start, Timestamp end);
+
+    int countByHasInitiatedSession(boolean hasInitiatedSession);
+    int countByCreatedDateTimeBetweenAndHasInitiatedSession(Timestamp start, Timestamp end, boolean hasInitiatedSession);
+    List<User> findByCreatedDateTimeBetweenAndHasInitiatedSession(Timestamp start, Timestamp end, boolean hasInitiatedSession);
+
+    int countByHasWebProfile(boolean webProfile);
+    int countByCreatedDateTimeBetweenAndHasWebProfile(Timestamp start, Timestamp end, boolean webProfile);
+    List<User> findByCreatedDateTimeBetweenAndHasWebProfile(Timestamp start, Timestamp end, boolean hasWebProfile);
+
     /*
     See if the phone number exists, before adding it
      */

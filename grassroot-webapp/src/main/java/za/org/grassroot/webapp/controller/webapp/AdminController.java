@@ -13,12 +13,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.dto.MaskedUserDTO;
+import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.MemberWrapper;
 
 import javax.servlet.http.HttpServletRequest;
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -35,16 +38,19 @@ public class AdminController extends BaseController {
     private static final Integer GROUP_PAGE_SIZE = 10; // todo: allow user to set
 
     @Autowired
-    UserManagementService userManagementService;
+    private UserManagementService userManagementService;
 
     @Autowired
-    GroupManagementService groupManagementService;
+    private GroupManagementService groupManagementService;
 
     @Autowired
-    AccountManagementService accountManagementService;
+    private AccountManagementService accountManagementService;
 
     @Autowired
-    RoleManagementService roleManagementService;
+    private RoleManagementService roleManagementService;
+
+    @Autowired
+    private AnalyticalService analyticalService;
 
     // todo: move this map somewhere
 /*    private static final Map<String, String> groupRoles = ImmutableMap.of(BaseRoles.ROLE_ORDINARY_MEMBER, "Ordinary member",
@@ -55,9 +61,42 @@ public class AdminController extends BaseController {
     @RequestMapping("/admin/home")
     public String adminIndex(Model model, @ModelAttribute("currentUser") UserDetails userDetails) {
 
-        // todo: additional security checks
-
         User user = getUserProfile();
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime week = now.minusWeeks(1L);
+        LocalDateTime month = now.minusMonths(1L);
+
+        // todo: put these into maps
+
+        model.addAttribute("countLastWeek", analyticalService.countUsersCreatedInInterval(week, now));
+        model.addAttribute("countLastMonth", analyticalService.countUsersCreatedInInterval(month, now));
+        model.addAttribute("userCount", analyticalService.countAllUsers());
+
+        model.addAttribute("countUssdLastWeek", analyticalService.countUsersCreatedAndInitiatedInPeriod(week, now));
+        model.addAttribute("countUssdLastMonth", analyticalService.countUsersCreatedAndInitiatedInPeriod(month, now));
+        model.addAttribute("countUssdTotal", analyticalService.countUsersThatHaveInitiatedSession());
+
+        model.addAttribute("countWebLastWeek", analyticalService.countUsersCreatedWithWebProfileInPeriod(week, now));
+        model.addAttribute("countWebLastMonth", analyticalService.countUsersCreatedWithWebProfileInPeriod(month, now));
+        model.addAttribute("countWebTotal", analyticalService.countUsersThatHaveWebProfile());
+
+        model.addAttribute("groupsLastWeek", analyticalService.countGroupsCreatedInInterval(week, now));
+        model.addAttribute("groupsLastMonth", analyticalService.countGroupsCreatedInInterval(month, now));
+        model.addAttribute("groupsTotal", analyticalService.countActiveGroups());
+
+        model.addAttribute("meetingsLastWeek", analyticalService.countEventsCreatedInInterval(week, now, EventType.Meeting));
+        model.addAttribute("meetingsLastMonth", analyticalService.countEventsCreatedInInterval(month, now, EventType.Meeting));
+        model.addAttribute("meetingsTotal", analyticalService.countAllEvents(EventType.Meeting));
+
+        model.addAttribute("votesLastWeek", analyticalService.countEventsCreatedInInterval(week, now, EventType.Vote));
+        model.addAttribute("votesLastMonth", analyticalService.countEventsCreatedInInterval(month, now, EventType.Vote));
+        model.addAttribute("votesTotal", analyticalService.countAllEvents(EventType.Vote));
+
+        model.addAttribute("todosLastWeek", analyticalService.countLogBooksRecordedInInterval(week, now));
+        model.addAttribute("todosLastMonth", analyticalService.countLogBooksRecordedInInterval(month, now));
+        model.addAttribute("todosTotal", analyticalService.countAllLogBooks());
+
         return "admin/home";
 
     }
@@ -86,19 +125,7 @@ public class AdminController extends BaseController {
                            @RequestParam("lookup_term") String lookupTerm, HttpServletRequest request) {
 
         String pageToDisplay;
-        List<User> foundUsers;
-
-        switch (lookupField) {
-            case "phoneNumber":
-                foundUsers = userManagementService.searchByInputNumber(lookupTerm);
-                break;
-            case "displayName":
-                foundUsers = userManagementService.searchByDisplayName(lookupTerm);
-                break;
-            default:
-                foundUsers = userManagementService.searchByInputNumber(lookupTerm);
-                break;
-        }
+        List<MaskedUserDTO> foundUsers = analyticalService.searchByInputNumberOrDisplayName(lookupTerm);
 
         log.info("Admin site, found this many users with the search term ... " + foundUsers.size());
 

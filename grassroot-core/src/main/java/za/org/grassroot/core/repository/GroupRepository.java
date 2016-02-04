@@ -3,14 +3,15 @@ package za.org.grassroot.core.repository;
 /**
  * Created by luke on 2015/07/16.
  */
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.PagingAndSortingRepository;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 
+import java.sql.Timestamp;
 import java.util.Date;
 import java.util.List;
 
@@ -51,12 +52,20 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
      */
     Page<Group> findAll(Pageable pageable);
     Page<Group> findAllByActiveOrderByIdAsc(boolean active, Pageable pageable);
+    Long countByActive(boolean active);
     List<Group> findAllByIdIn(List<Long> ids);
 
     /*
     Couple of methods to be able to discover groups, as long as those have opted in
      */
     List<Group> findByGroupNameContainingAndDiscoverable(String nameFragment, boolean discoverable);
+
+    /*
+    Methods for analytical service, to retrieve and count groups in periods (by created date time)
+     */
+    int countByCreatedDateTimeBetweenAndActive(Timestamp periodStart, Timestamp periodEnd, boolean active);
+    List<Group> findByCreatedDateTimeBetweenAndActive(Timestamp periodStart, Timestamp periodEnd, boolean active);
+
 
     /*
     Find the max(groupTokenCode) in table

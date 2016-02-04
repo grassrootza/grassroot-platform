@@ -3,10 +3,11 @@ package za.org.grassroot.services;
 import org.springframework.data.domain.Page;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.services.exception.NoSuchUserException;
+import za.org.grassroot.services.exception.UserExistsException;
 
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author Lesetse Kimwaga

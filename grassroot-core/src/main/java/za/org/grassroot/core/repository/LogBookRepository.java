@@ -36,6 +36,10 @@ public interface LogBookRepository extends JpaRepository<LogBook, Long> {
     List<LogBook> findAllByReplicatedGroupIdAndMessage(Long replicatedGroupId, String message);
     List<LogBook> findAllByReplicatedGroupIdAndMessageAndCreatedDateTimeOrderByGroupIdAsc(Long replicatedGroupId, String message, Timestamp createdDateTime);
 
+    // methods for analyzing logbooks (for admin)
+    Long countByRecordedTrue();
+    Long countByCreatedDateTimeBetweenAndRecordedTrue(Timestamp start, Timestamp end);
+
     @Query(value = "select * from log_book l where l.action_by_date is not null and l.completed = false and l.recorded = true and l.number_of_reminders_left_to_send > 0 and (l.action_by_date + l.reminder_minutes * INTERVAL '1 minute') < current_timestamp", nativeQuery = true)
     List<LogBook> findLogBookReminders();
 

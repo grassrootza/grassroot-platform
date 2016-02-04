@@ -22,6 +22,8 @@ import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.MaskingUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
+import za.org.grassroot.services.exception.NoSuchUserException;
+import za.org.grassroot.services.exception.UserExistsException;
 
 import javax.transaction.Transactional;
 import java.util.ArrayList;
@@ -68,10 +70,10 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
         if (userExist(phoneNumber)) {
 
-            System.out.println("The user exists, and their web profile is set to: " + userProfile.hasWebProfile());
+            System.out.println("The user exists, and their web profile is set to: " + userProfile.isHasWebProfile());
 
             User userToUpdate = loadOrSaveUser(phoneNumber);
-            if (userToUpdate.hasWebProfile()) {
+            if (userToUpdate.isHasWebProfile()) {
                 System.out.println("This user has a web profile already");
                 throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a web profile!");
             }
@@ -84,7 +86,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             userToUpdate.setLastName(userProfile.getLastName());
 
             userToUpdate.setUsername(phoneNumber);
-            userToUpdate.setWebProfile(true);
+            userToUpdate.setHasWebProfile(true);
             userToUpdate.setHasInitiatedSession(true);
             userToSave = userToUpdate;
 
@@ -94,7 +96,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             userProfile.setUsername(phoneNumber);
             // for some reason String.join was not inserting the space properly, so changing to a straight concatenation;
             userProfile.setDisplayName(userProfile.getFirstName() + " " + userProfile.getLastName());
-            userProfile.setWebProfile(true);
+            userProfile.setHasWebProfile(true);
             userProfile.setHasInitiatedSession(true); // since signing up on web page presumes an active user
             userToSave = userProfile;
         }
