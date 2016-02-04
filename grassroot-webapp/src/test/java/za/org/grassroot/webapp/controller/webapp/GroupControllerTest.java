@@ -5,6 +5,7 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.test.web.servlet.MvcResult;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.GroupLogType;
@@ -17,12 +18,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
 
 import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -43,7 +42,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Before
     public void setUp() {
         setUp(groupController);
-
 
     }
 
@@ -152,7 +150,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void addMemberFailsValidation() throws Exception {
         GroupWrapper groupCreator = new GroupWrapper();
-        groupCreator.addMember(sessionTestUser);
+        groupCreator.addMember(new User());
         mockMvc.perform(post("/group/create").param("addMember", "")
                 .sessionAttr("groupCreator", groupCreator))
                 .andExpect(status().isOk())
@@ -194,6 +192,26 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         mockMvc.perform(post("/group/modify").param("addMember", "")
                 .sessionAttr("groupModifier", groupCreator))
                 .andExpect(status().isOk()).andExpect(view().name("group/modify"));
+
+    }
+
+    @Test
+    public void addMemberModifyFails() throws Exception {
+        GroupWrapper groupCreator = new GroupWrapper();
+        groupCreator.addMember(new User());
+        MvcResult result = mockMvc.perform(post("/group/modify").param("addMember", "")
+                .sessionAttr("groupModifier", groupCreator))
+                .andExpect(status().isOk())
+
+               // .andExpect(model().attributeHasErrors())
+                .andExpect(view().name("group/modify")).andReturn();
+        Map<String, Object> map = result.getModelAndView().getModel();
+        Set<Map.Entry<String,Object>> entrySet =map.entrySet();
+        Iterator<Map.Entry<String,Object>> iter = entrySet.iterator();
+        while (iter.hasNext()){
+            logger.debug(iter.next().getValue().toString());
+        }
+
 
     }
 

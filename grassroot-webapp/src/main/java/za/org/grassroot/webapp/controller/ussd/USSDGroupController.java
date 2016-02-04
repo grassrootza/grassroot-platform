@@ -43,7 +43,8 @@ public class USSDGroupController extends USSDController {
             unsubscribePrompt = "unsubscribe",
             groupTokenMenu = "token",
             mergeGroupMenu = "merge",
-            inactiveMenu = "inactive";
+            inactiveMenu = "inactive",
+            validity ="validity.";
 
     private static final String groupPath = homePath + groupMenus;
     private static final USSDSection thisSection = USSDSection.GROUP_MANAGER;
@@ -285,9 +286,9 @@ public class USSDGroupController extends USSDController {
             /* Creating a new token, ask for number of days, set an interruption flag */
             tokenMenu = new USSDMenu(getMessage(thisSection, groupTokenMenu, promptKey, sessionUser));
             String daysUrl = groupMenus + groupTokenMenu + doSuffix + groupIdUrlSuffix + groupId + "&days=";
-            tokenMenu.addMenuOption(daysUrl + "0", "Permanent (can be closed at any time)");
-            tokenMenu.addMenuOption(daysUrl + "1", "One day");
-            tokenMenu.addMenuOption(daysUrl + "7", "One week");
+            tokenMenu.addMenuOption(daysUrl + "0", getMessage(thisSection,groupTokenMenu,validity+"permanent",sessionUser));
+            tokenMenu.addMenuOption(daysUrl + "1", getMessage(thisSection,groupTokenMenu,validity+"day",sessionUser));
+            tokenMenu.addMenuOption(daysUrl + "7", getMessage(thisSection,groupTokenMenu,validity+"week",sessionUser));
         }
         return menuBuilder(tokenMenu);
     }

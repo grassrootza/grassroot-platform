@@ -336,7 +336,7 @@ public class GroupController extends BaseController {
                                 BindingResult bindingResult, HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
         if (bindingResult.hasErrors()) {
-            log.info("binding result error ..." + bindingResult.getAllErrors().iterator().next().getCode());
+            log.debug("binding result error ..." + bindingResult.getAllErrors().iterator().next().getCode());
             model.addAttribute("groupModifier", groupModifier);
             addMessage(model, MessageType.ERROR, "group.modification.error", request);
             return "group/modify";

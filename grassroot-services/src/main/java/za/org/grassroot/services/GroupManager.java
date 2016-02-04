@@ -371,6 +371,10 @@ public class GroupManager implements GroupManagementService {
     public List<Group> getActiveGroupsPartOf(User sessionUser) {
         return groupRepository.findByGroupMembersAndActive(sessionUser, true);
     }
+    @Override
+    public List<Group> getActiveGroupsPartOfOrdered(User sessionUser){
+        return groupRepository.findActiveUserGroupsOrderedByRecentActivity(sessionUser.getId());
+    }
 
     @Override
     public List<Group> getActiveGroupsPartOf(Long userId) {
