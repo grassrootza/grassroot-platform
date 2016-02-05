@@ -497,7 +497,7 @@ public class EventManager implements EventManagementService {
                                     //N.B. remove this if statement if you want to allow votes for people that joined the group late
                                     if (eventType == EventType.Vote) {
                                         Timestamp joined = groupLogRepository.getGroupJoinedDate(group.getId(),user.getId());
-                                        if (joined.after(event.getCreatedDateTime())) {
+                                        if (joined !=null && joined.after(event.getCreatedDateTime())) {
                                             log.info(String.format("Excluding vote %s for %s as the user joined group %s after the vote was called",event.getName(),user.getPhoneNumber(),group.getId()));
                                             continue;
                                         }
