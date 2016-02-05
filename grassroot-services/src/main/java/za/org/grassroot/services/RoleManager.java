@@ -1,6 +1,7 @@
 package za.org.grassroot.services;
 
 import com.google.common.collect.Lists;
+import org.apache.commons.collections4.list.LazyList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -168,7 +169,7 @@ public class RoleManager implements  RoleManagementService {
         if (fetchGroupRole(roleName, group) == null) {
             // create the role with default permissions and add it to the group
             role = new Role(roleName, group.getId(), group.getGroupName());
-            // log.info("Created this new role: " + role.describe());
+            log.info("Created this new role: " + role.describe());
             role.setPermissions(permissionsManagementService.defaultPermissionsGroupRole(roleName));
             role = roleRepository.save(role);
             // log.info("Role saved as ... " + role.describe());
@@ -180,19 +181,46 @@ public class RoleManager implements  RoleManagementService {
             // role exists, just make sure it has a set of permissions and add it to user and group
             // todo: work out what to do if role has a non-BaseRoles name and permissions set is empty (throw a fit)
             role = fetchGroupRole(roleName, group);
-            // log.info("Retrieved the following role: " + role.toString());
+            log.info("Retrieved the following role: " + role.describe());
             if (role.getPermissions() == null || role.getPermissions().isEmpty())
                 role.setPermissions(permissionsManagementService.defaultPermissionsGroupRole(role.getName()));
             role = roleRepository.save(role);
             group.addRole(role);
             groupManagementService.saveGroup(group,true, String.format("Added role %s to group",role.getName()),dontKnowTheUser);
+            log.info("Okay, group saved, about to save role ..." + role.describe());
+            log.info("At present, user has these roles ... " + user.getRoles());
+            user = userManagementService.save(user);
+            log.info("After DB save, user has these roles ... " + user.getRoles());
             user.addRole(role);
-            userManagementService.save(user);
+            user = userManagementService.save(user);
+            log.info("After role addition and DB save, user has these roles ... " + user.getRoles());
         }
 
         // now that we have a role with the right set of permissions, finish off by wiring up access control
         groupAccessControlManagementService.addUserGroupPermissions(group, user, role.getPermissions());
 
+    }
+
+    @Override
+    public void resetGroupToDefaultRolesPermissions(Long groupId) {
+        log.info("Resetting group to creator as organizer, rest as members ... ");
+        Long startTime = System.currentTimeMillis();
+        Group group = groupManagementService.loadGroup(groupId);
+        List<User> groupMembers = new ArrayList<>(group.getGroupMembers());
+        for (User member : groupMembers) {
+            log.info("Resetting member ... " + member.nameToDisplay());
+            addDefaultRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, group, member);
+        }
+        addDefaultRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, group, group.getCreatedByUser());
+        Long endTime = System.currentTimeMillis();
+        log.info(String.format("Added roles to members, total time took %d msecs", endTime - startTime));
+        log.info("Exiting the resetGroupToDefault method ...");
+    }
+
+    @Override
+    public User removeGroupRolesFromUser(User user, Group group) {
+        user = flushUserRolesInGroup(user, group);
+        return userManagementService.save(user);
     }
 
     @Override
@@ -237,8 +265,10 @@ public class RoleManager implements  RoleManagementService {
     private User flushUserRolesInGroup(User user, Group group) {
         List<Role> oldRoles = new ArrayList<>(user.getRoles());
         for (Role role: oldRoles) {
-            if (role.isGroupRole() && (role.getGroupReferenceId() == group.getId()))
+            if (role.isGroupRole() && (role.getGroupReferenceId() == group.getId())) {
+                log.info("Found a group role to flush! User ... " + user.nameToDisplay() + " ... and role ... " + role.toString());
                 user.removeRole(role);
+            }
         }
         return user;
     }

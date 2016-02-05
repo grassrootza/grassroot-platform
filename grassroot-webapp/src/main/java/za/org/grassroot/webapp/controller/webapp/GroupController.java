@@ -58,8 +58,8 @@ public class GroupController extends BaseController {
     @Autowired
     private GroupLogService groupLogService;
 
-    /* @Autowired
-    RoleManagementService roleManagementService;*/
+    @Autowired
+    private RoleManagementService roleManagementService;
 
     @Autowired
     @Qualifier("groupWrapperValidator")
@@ -81,10 +81,9 @@ public class GroupController extends BaseController {
         return userFromDb.getGroupsPartOf().contains(group);
     }
 
-    /* private Group secureLoadGroup(Long id) {
-        log.info("Inside secureLoadGroup ...");
+    private Group secureLoadGroup(Long id) {
         return loadGroup(id, BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
-    }*/
+    }
 
     /*
     First method is for users brand new and without any group membership, and/or later for any user, to find & join group
@@ -131,16 +130,14 @@ public class GroupController extends BaseController {
 
         Long startTime = System.currentTimeMillis();
         // Group group = secureLoadGroup(groupId);
-        Group group = groupManagementService.loadGroup(groupId); // change to secureLoadGroup once retro permissions done
+        Group group = groupManagementService.loadGroup(groupId);
         if (!isUserPartOfGroup(getUserProfile(), group)) throw new AccessDeniedException("");
         Long endTime = System.currentTimeMillis();
         log.info(String.format("Checking group membership took ... %d msec", endTime - startTime));
 
         startTime = System.currentTimeMillis();
-        boolean isUserCreatedGroup = groupManagementService.isGroupCreatedByUser(groupId,user);
-        boolean hasUpdatePermission = (groupManagementService.canUserModifyGroup(group, user) || isUserCreatedGroup);
-
-        // boolean hasUpdatePermission = groupManagementService.isGroupCreatedByUser(groupId, user);
+        // boolean hasUpdatePermission = groupManagementService.canUserModifyGroup(group, user);
+        boolean hasUpdatePermission = groupManagementService.isGroupCreatedByUser(groupId, user);
         endTime = System.currentTimeMillis();
         log.info(String.format("Checking if update permission took ... %d msec", endTime - startTime));
 
@@ -154,7 +151,7 @@ public class GroupController extends BaseController {
         if (hasUpdatePermission) {
             model.addAttribute("canAlter", hasUpdatePermission);
             model.addAttribute("canDeleteGroup", groupManagementService.canUserMakeGroupInactive(user, group));
-            model.addAttribute("canMergeWithOthers", isUserCreatedGroup); // replace w/ permission later
+            model.addAttribute("canMergeWithOthers", hasUpdatePermission); // replace w/ permission later
             model.addAttribute("isDiscoverable", group.isDiscoverable());
         }
 
@@ -205,7 +202,7 @@ public class GroupController extends BaseController {
         timeStart = System.currentTimeMillis();
         User userCreator = userManagementService.getUserById(getUserProfile().getId());
         Group groupToSave = groupManagementService.createNewGroup(userCreator, groupCreator.getGroupName());
-        // boolean creatorInGroup = false;
+        boolean creatorInGroup = false;
         timeEnd = System.currentTimeMillis();
         log.info(String.format("User load & group creation: %d msecs", timeEnd - timeStart));
 
@@ -213,25 +210,22 @@ public class GroupController extends BaseController {
         for (User addedUser : groupCreator.getAddedMembers()) {
             if (addedUser.getPhoneNumber() != null && !addedUser.getPhoneNumber().trim().equals("")) {
                 User memberToAdd = userManagementService.loadOrSaveUser(addedUser.getPhoneNumber());
-                // if (memberToAdd.getId() == userCreator.getId()) creatorInGroup = true;
+                if (memberToAdd.getId() == userCreator.getId()) creatorInGroup = true;
                 if (!memberToAdd.hasName() && addedUser.getDisplayName() != null) {
                     memberToAdd.setDisplayName(addedUser.getDisplayName());
                     memberToAdd = userManagementService.save(memberToAdd);
                 }
-                // groupManagementService.addGroupMemberWithDefaultRole(groupToSave, memberToAdd, BaseRoles.ROLE_ORDINARY_MEMBER);
-                groupManagementService.addGroupMember(groupToSave, memberToAdd);
+                groupManagementService.addGroupMemberWithDefaultRole(groupToSave, memberToAdd, BaseRoles.ROLE_ORDINARY_MEMBER);
+                // groupManagementService.addGroupMember(groupToSave, memberToAdd);
             }
         }
 
         timeEnd = System.currentTimeMillis();
         log.info(String.format("Adding users to group: %d msecs", timeEnd - timeStart));
-
         timeStart = System.currentTimeMillis();
 
-        /* if (creatorInGroup) {
-            log.info("Okay, the creator is a member ...");
+        if (creatorInGroup)
             roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, groupToSave, userCreator);
-        }*/
 
         timeEnd = System.currentTimeMillis();
         log.info(String.format("Set up creator as group organizer: %d msecs", timeEnd - timeStart));

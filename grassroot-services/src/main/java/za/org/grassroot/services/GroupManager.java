@@ -45,34 +45,34 @@ public class GroupManager implements GroupManagementService {
     private final Long dontKnowTheUser = 0L;
 
     @Autowired
-    GroupRepository groupRepository;
+    private GroupRepository groupRepository;
 
     @Autowired
-    PaidGroupRepository paidGroupRepository;
+    private PaidGroupRepository paidGroupRepository;
 
     @Autowired
-    UserManagementService userManager;
+    private UserManagementService userManager;
 
     @Autowired
-    TokenGeneratorService tokenGeneratorService;
+    private TokenGeneratorService tokenGeneratorService;
 
     @Autowired
-    GenericJmsTemplateProducerService jmsTemplateProducerService;
+    private GenericJmsTemplateProducerService jmsTemplateProducerService;
 
     @Autowired
-    GroupLogRepository groupLogRepository;
+    private GroupLogRepository groupLogRepository;
 
     @Autowired
-    EventRepository eventRepository;
-
-    /*@Autowired
-    RoleManagementService roleManagementService;*/
+    private EventRepository eventRepository;
 
     @Autowired
-    PermissionsManagementService permissionsManager;
+    private RoleManagementService roleManagementService;
 
     @Autowired
-    GroupAccessControlManagementService accessControlService;
+    private PermissionsManagementService permissionsManager;
+
+    @Autowired
+    private GroupAccessControlManagementService accessControlService;
 
 
     /**
@@ -156,6 +156,7 @@ public class GroupManager implements GroupManagementService {
         group.getGroupMembers().remove(user);
         Group savedGroup = saveGroup(group, false, "", dontKnowTheUser);
         GroupLog groupLog = groupLogRepository.save(new GroupLog(group.getId(), user.getId(), GroupLogType.GROUP_MEMBER_REMOVED, user.getId(), "Member unsubscribed from group"));
+        roleManagementService.removeGroupRolesFromUser(user, savedGroup);
         return savedGroup;
     }
 
@@ -233,12 +234,12 @@ public class GroupManager implements GroupManagementService {
         }
     }
 
-    /* @Override
+    @Override
     public Group addGroupMemberWithDefaultRole(Group group, User user, String role) {
         group = addGroupMember(group, user);
         roleManagementService.addDefaultRoleToGroupAndUser(role, group, user);
         return group;
-    }*/
+    }
 
     @Override
     public Group createNewGroup(Long creatingUserId, List<String> phoneNumbers) {
@@ -352,10 +353,10 @@ public class GroupManager implements GroupManagementService {
         return getActiveGroupsPartOf(user);
     }
 
-    @Override
+    /* @Override
     public boolean canUserCallVoteOnAnyGroup(User user) {
         return (groupsOnWhichCanCallVote(user).size() != 0);
-    }
+    }*/
 
     @Override
     public List<Group> getCreatedGroups(User creatingUser) {
@@ -822,7 +823,7 @@ public class GroupManager implements GroupManagementService {
     public Group mergeGroupsSpecifyOrder(Group groupInto, Group groupFrom, boolean setFromGroupInactive) {
 
         // todo: optimize this, almost certainly very slow
-        for (User user : groupFrom.getGroupMembers()) {
+        for (User user : new ArrayList<>(groupFrom.getGroupMembers())) {
             addGroupMember(groupInto, user);
         }
 

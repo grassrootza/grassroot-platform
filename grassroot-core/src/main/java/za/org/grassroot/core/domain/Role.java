@@ -31,6 +31,8 @@ public class Role extends BaseEntity implements GrantedAuthority {
 
     private Set<Permission> permissions = new HashSet<>();
 
+    private Set<User> users = new HashSet<>();
+
     public Role() {
         this.roleType = RoleType.STANDARD;
     }
@@ -62,7 +64,6 @@ public class Role extends BaseEntity implements GrantedAuthority {
         this.name = name;
     }
 
-
     @OneToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "role_permissions",
             joinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id", unique = false)},
@@ -75,6 +76,17 @@ public class Role extends BaseEntity implements GrantedAuthority {
     public void setPermissions(Set<Permission> permissions) {
         this.permissions = permissions;
     }
+
+    @OneToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "user_roles",
+            joinColumns        = {@JoinColumn(name = "role_id", referencedColumnName = "id", unique = false)},
+            inverseJoinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id", unique = false)}
+    )
+    public Set<User> getUsers() {
+        return users;
+    }
+
+    public void setUsers(Set<User> users) { this.users = users; }
 
     @Column(name = "group_reference_id")
     public Long getGroupReferenceId() {

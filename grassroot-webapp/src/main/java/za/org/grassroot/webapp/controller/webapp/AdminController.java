@@ -242,7 +242,7 @@ public class AdminController extends BaseController {
     Group admin methods to adjust roles
      */
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/admin/groups/change_role")
+    @RequestMapping(value = "/admin/groups/roles/change")
     public String changeGroupRole(Model model, @RequestParam("groupId") Long groupId, @RequestParam("userId") Long userId,
                                   @RequestParam("roleName") String roleName, HttpServletRequest request) {
 
@@ -258,6 +258,36 @@ public class AdminController extends BaseController {
 
         addMessage(model, MessageType.INFO, "admin.done", request);
         return adminViewGroup(model, groupId);
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/admin/groups/roles/reset")
+    public String resetGroupRoles(Model model, @RequestParam Long groupId, HttpServletRequest request) {
+
+        // todo: uh, confirmation screen
+        roleManagementService.resetGroupToDefaultRolesPermissions(groupId);
+        addMessage(model, MessageType.INFO, "admin.done", request);
+        return adminViewGroup(model, groupId);
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/admin/groups/roles/reset-select")
+    public String resetGroupsSelect(Model model) {
+        // todo: add filtering here
+        Page<Group> groupsToSelect = groupManagementService.getAllActiveGroupsPaginated(0, 50);
+        model.addAttribute("groupList", groupsToSelect);
+        return "/admin/groups/reset-select";
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/admin/groups/roles/reset-multiple", method = RequestMethod.POST)
+    public String resetRolesForMultipleGroups(Model model, @RequestParam("groupId") Long[] groupId) {
+        List<Long> groupIds = Arrays.asList(groupId);
+        for (Long id : groupIds) {
+            log.info("Resetting group ... " + groupManagementService.loadGroup(id).getGroupName());
+            roleManagementService.resetGroupToDefaultRolesPermissions(id);
+        }
+        return allGroups(model, 0);
     }
 
     /**

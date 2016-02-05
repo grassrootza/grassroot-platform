@@ -30,7 +30,7 @@
         <tbody>
         <tr th:each="member, iterStat : ${members}">
 
-          <form  th:action="@{change_role}" method="post" autocomplete="on" class="form-horizontal">
+          <form  th:action="@{/admin/groups/roles/change}" method="post" autocomplete="on" class="form-horizontal">
             <input type="hidden" name="groupId" th:value="${group.id}" />
             <input type="hidden" name="userId" th:value="${member.user.id}" />
 
@@ -54,6 +54,12 @@
         </tr>
         </tbody>
       </table>
+    </div>
+    <div class="row">
+      <form th:action="@{/admin/groups/roles/reset}" method="post">
+        <input type="hidden" name="groupId" th:value="${group.id}" />
+        <button type="submit" class="btn btn-default">Reset all roles to default</button>
+      </form>
     </div>
 
     <!-- Scratch, holder

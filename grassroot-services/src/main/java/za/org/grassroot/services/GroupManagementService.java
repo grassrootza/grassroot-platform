@@ -25,8 +25,6 @@ public interface GroupManagementService {
 
     public Group createNewGroup(User creatingUser, String groupName);
 
-    // public Group createNewGroupWithRole(User creatingUser, String groupName);
-
     public Group createNewGroup(User creatingUser, List<String> phoneNumbers);
 
     public Group createNewGroup(Long creatingUserId, List<String> phoneNumbers);
@@ -78,7 +76,7 @@ public interface GroupManagementService {
 
     public Group addGroupMember(Group currentGroup, User newMember);
 
-//    public Group addGroupMemberWithDefaultRole(Group group, User user, String roleName);
+    public Group addGroupMemberWithDefaultRole(Group group, User user, String roleName);
 
     public Group addGroupMember(Long currentGroupId, Long newMemberId);
 
@@ -115,8 +113,6 @@ public interface GroupManagementService {
     public boolean isGroupCreatedByUser(Long groupId, User user);
 
     public List<Group> groupsOnWhichCanCallVote(User user);
-
-    public boolean canUserCallVoteOnAnyGroup(User user);
 
     /*
     Methods to work with group joining tokens and group discovery
@@ -266,7 +262,7 @@ public interface GroupManagementService {
     List<LocalDate> getMonthsGroupActive(Group group);
 
     /*
-        Recursive query better to use than recursive code calls
-         */
+    Recursive query better to use than recursive code calls
+    */
     List<Group> findGroupAndSubGroupsById(Long groupId);
 }
