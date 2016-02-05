@@ -178,6 +178,12 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
 
     }
 
+    @Override
+    public boolean hasGroupPermission(String permissionName, Group group, User user) {
+        org.springframework.security.acls.model.Permission permission = permissionFactory.buildFromName(permissionName);
+        return hasGroupPermission((Permission) permission, group, user);
+    }
+
     /**
      * @param groupId
      * @param permission

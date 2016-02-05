@@ -605,6 +605,11 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
+    public List<User> getMembersExcludingCreator(Group group) {
+        return null;
+    }
+
+    @Override
     public List<Group> getAllParentGroups(Group group) {
         List<Group> parentGroups = new ArrayList<Group>();
         recursiveParentGroups(group, parentGroups);

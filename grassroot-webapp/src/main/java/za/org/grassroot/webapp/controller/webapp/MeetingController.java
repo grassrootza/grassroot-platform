@@ -13,6 +13,7 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import za.org.grassroot.core.domain.BasePermissions;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
@@ -47,22 +48,30 @@ public class MeetingController extends BaseController {
     @Autowired
     EventLogManagementService eventLogManagementService;
 
+    @Autowired
+    GroupAccessControlManagementService groupAccessControlManagementService;
+
     @RequestMapping("/meeting/view")
     public String viewMeetingDetails(Model model, @RequestParam Long eventId) {
 
         Event meeting = eventManagementService.loadEvent(eventId);
+        boolean canViewDetails = groupAccessControlManagementService.hasGroupPermission(
+                BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS, meeting.getAppliesToGroup(), getUserProfile());
         
         int rsvpYesTotal = eventManagementService.getListOfUsersThatRSVPYesForEvent(meeting).size();
-        Set<Map.Entry<User, EventRSVPResponse>> rsvpResponses =
-                eventManagementService.getRSVPResponses(meeting).entrySet();
-        
 
         model.addAttribute("meeting", meeting);
         model.addAttribute("rsvpYesTotal", rsvpYesTotal);
-        model.addAttribute("rsvpResponses", rsvpResponses);
+        model.addAttribute("canViewMemberDetails", canViewDetails); // todo: try use Th sec)
+
+        if (canViewDetails) {
+            Set<Map.Entry<User, EventRSVPResponse>> rsvpResponses =
+                    eventManagementService.getRSVPResponses(meeting).entrySet();
+            model.addAttribute("rsvpResponses", rsvpResponses);
+            log.info("Size of response map: " + rsvpResponses);
+        }
 
         log.info("Number of yes RSVPd: " + rsvpYesTotal);
-        log.info("Size of response map: " + rsvpResponses);
 
         return "meeting/view";
     }
@@ -111,11 +120,6 @@ public class MeetingController extends BaseController {
         // todo: add error handling and validation
         // todo: check that we have all the needed information and/or add a confirmation screen
         // todo: put this data transformation else where:Maybe Wrapper?
-
-
-
-
-
         log.info("The event passed back to us: " + meeting.toString());
 
         /*

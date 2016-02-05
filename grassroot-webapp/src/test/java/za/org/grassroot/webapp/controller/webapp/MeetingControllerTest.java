@@ -6,10 +6,7 @@ import org.mockito.InjectMocks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.EventLog;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 
 import java.util.ArrayList;
@@ -42,14 +39,20 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     }
 
      @Test
-    public void shouldShowMeetingDetails() throws Exception{
-        Event dummyMeeting = new Event();
+    public void shouldShowMeetingDetails() throws Exception {
+
+         Event dummyMeeting = new Event();
+         Group dummyGroup = new Group();
         dummyMeeting.setId(dummyId);
+         dummyMeeting.setAppliesToGroup(dummyGroup);
+
         List<User> listOfDummyYesResponses = new ArrayList<>();
         HashMap<User, EventRSVPResponse> dummyResponsesMap = mock(HashMap.class);
         dummyResponsesMap.put(sessionTestUser, EventRSVPResponse.YES);
         when(eventManagementServiceMock.loadEvent(dummyId)).thenReturn(
                 dummyMeeting);
+        when(groupAccessControlManagementServiceMock.hasGroupPermission(BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS,
+                                                                         dummyGroup, sessionTestUser)).thenReturn(true);
         when(eventManagementServiceMock.getListOfUsersThatRSVPYesForEvent(
                 dummyMeeting)).thenReturn(listOfDummyYesResponses);
         when(eventManagementServiceMock.getRSVPResponses(dummyMeeting)).

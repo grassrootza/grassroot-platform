@@ -1,10 +1,10 @@
 package za.org.grassroot.services;
 
 import com.google.common.collect.Lists;
-import org.apache.commons.collections4.list.LazyList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.RoleRepository;
@@ -12,7 +12,6 @@ import za.org.grassroot.core.repository.RoleRepository;
 import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 /**
  * @author Lesetse Kimwaga
@@ -200,7 +199,8 @@ public class RoleManager implements  RoleManagementService {
         groupAccessControlManagementService.addUserGroupPermissions(group, user, role.getPermissions());
 
     }
-
+    
+    @Async
     @Override
     public void resetGroupToDefaultRolesPermissions(Long groupId) {
         log.info("Resetting group to creator as organizer, rest as members ... ");
@@ -216,7 +216,7 @@ public class RoleManager implements  RoleManagementService {
         ordinaryRole = roleRepository.save(ordinaryRole);
 
         for (User member : groupMembers) {
-            log.info("Resetting member ... " + member.nameToDisplay());
+            // log.info("Resetting member ... " + member.nameToDisplay());
             flushUserRolesInGroup(member, group);
             member.addRole(ordinaryRole);
         }

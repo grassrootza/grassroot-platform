@@ -1,4 +1,5 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorator="layout">
 <head>
@@ -98,9 +99,10 @@
     </div>
   </div>
 
-  <!-- Major todo: add in user permissions about changing names & groups &c. -->
+  <!-- todo: use Thymeleaf spring security instead of the boolean flag  -->
+  <!-- <div class="well" sec:authorize="hasPermission(group.id, 'GROUP_PERMISSION_SEE_MEMBER_DETAILS')"> -->
   <div class="well">
-    <div class="row">
+    <div class="row" th:if="${canSeeMemberDetails}">
       <h2>Group members</h2>
     </div>
     <div class="row">

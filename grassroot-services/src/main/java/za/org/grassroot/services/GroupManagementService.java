@@ -167,6 +167,8 @@ public interface GroupManagementService {
 
     public List<User> getAllUsersInGroupAndSubGroups(Group group);
 
+    public List<User> getMembersExcludingCreator(Group group);
+
     boolean hasParent(Group group);
 
     public Group getParent(Group group);

@@ -136,7 +136,6 @@ public class GroupController extends BaseController {
         log.info(String.format("Checking group membership took ... %d msec", endTime - startTime));
 
         startTime = System.currentTimeMillis();
-        // boolean hasUpdatePermission = groupManagementService.canUserModifyGroup(group, user);
         boolean hasUpdatePermission = groupManagementService.isGroupCreatedByUser(groupId, user);
         endTime = System.currentTimeMillis();
         log.info(String.format("Checking if update permission took ... %d msec", endTime - startTime));
@@ -147,6 +146,8 @@ public class GroupController extends BaseController {
         model.addAttribute("groupVotes", eventManagementService.getUpcomingVotes(group));
         model.addAttribute("subGroups", groupManagementService.getSubGroups(group));
         model.addAttribute("openToken", groupManagementService.groupHasValidToken(group));
+        model.addAttribute("canSeeMemberDetails", groupAccessControlManagementService.
+                hasGroupPermission(BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS, group, user)); // todo: try use Th sec
 
         if (hasUpdatePermission) {
             model.addAttribute("canAlter", hasUpdatePermission);

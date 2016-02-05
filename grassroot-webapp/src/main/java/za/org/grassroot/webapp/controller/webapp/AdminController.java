@@ -267,7 +267,7 @@ public class AdminController extends BaseController {
         // todo: uh, confirmation screen
         roleManagementService.resetGroupToDefaultRolesPermissions(groupId);
         addMessage(model, MessageType.INFO, "admin.done", request);
-        return adminViewGroup(model, groupId);
+        return allGroups(model, 0);
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")

@@ -38,6 +38,8 @@ public interface GroupAccessControlManagementService {
      */
     boolean hasGroupPermission(Permission permission, Group group, User user);
 
+    boolean hasGroupPermission(String permissionName, Group group, User user);
+
     /**
      *
      * @param groupId
