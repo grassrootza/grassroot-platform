@@ -7,15 +7,18 @@ package za.org.grassroot.core.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.query.Procedure;
 import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.List;
+
 
 public interface GroupRepository extends JpaRepository<Group, Long> {
     /*
@@ -85,7 +88,12 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     @Query(value = "with distinct_root as (select distinct q1.root, q1.id as member from (select g.id, getroot(g.id) as root from group_profile g, group_user_membership gu where gu.user_id = ?1 and gu.group_id = g.id  ) as q1) select distinct (getchildren(root)).*, root  from distinct_root order by root,parent", nativeQuery = true)
     List<Object[]> getGroupMemberTree(Long userId);
 
-    @Query(value = "select id, created_date_time, name from getusergroups(?1) where active=true order by maximum_time desc",nativeQuery = true)
+    @Query(value = "select id, created_date_time, name from getusergroups(?1) where active=true order by maximum_time desc NULLS LAST",nativeQuery = true)
     List<Group> findActiveUserGroupsOrderedByRecentActivity(Long userId);
+
+    @Modifying
+    @Transactional
+    @Query("delete from Group g where g.id = ?1")
+    void deleteById(Long id);
 
 }

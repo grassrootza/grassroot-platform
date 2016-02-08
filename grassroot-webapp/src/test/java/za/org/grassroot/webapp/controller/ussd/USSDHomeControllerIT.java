@@ -30,10 +30,9 @@ import static org.springframework.http.HttpStatus.OK;
  * Created by luke on 2015/11/17.
  */
 
-@Category(IntegrationTest.class)
 public class USSDHomeControllerIT extends USSDAbstractIT {
 
- /*  private static final Logger log = LoggerFactory.getLogger(USSDHomeControllerIT.class);
+   private static final Logger log = LoggerFactory.getLogger(USSDHomeControllerIT.class);
 
     private final String startMenuEN = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>" +
             "<request>" +
@@ -82,6 +81,7 @@ public class USSDHomeControllerIT extends USSDAbstractIT {
         final URI requestUri = assembleUssdURI("start").queryParam(phoneParam, testPhoneZu).build().toUri();
         executeQuery(requestUri);
 
+
         log.info("User creation URI string: " + requestUri.toString());
         User userCreated = userManager.findByInputNumber(testPhoneZu);
 
@@ -99,8 +99,6 @@ public class USSDHomeControllerIT extends USSDAbstractIT {
         assertNotNull(userCreated.getId());
         assertNotNull(userCreated.getCreatedDateTime());
         assertXMLEqual(startMenuZU, newHomeMenu.getBody());
-        TestTransaction.end();
-        TestTransaction.start();
         User zuUser = userManager.findByInputNumber(testPhoneZu);
         assertEquals(testPhoneZu, zuUser.getPhoneNumber());
         assertEquals("zu", zuUser.getLanguageCode());
@@ -123,8 +121,7 @@ public class USSDHomeControllerIT extends USSDAbstractIT {
         for (ResponseEntity<String> responseEntity : responseEntities)
             assertThat(responseEntity.getStatusCode(), is(OK));
 
-        TestTransaction.end();
-        TestTransaction.start();
+
         User renamedUser = userManager.findByInputNumber(testPhone);
 
         assertThat(renamedUser.hasName(), is(true));
@@ -145,13 +142,13 @@ public class USSDHomeControllerIT extends USSDAbstractIT {
     }
 
 
-    Test that the group joining code is working
-    todo: figure out where to start and end transaction to get all of this to not throw spurious failures
+ //   Test that the group joining code is working
+  //  todo: figure out where to start and end transaction to get all of this to not throw spurious failures
 
     @Test
     public void joiningCode() throws Exception {
 
-        User testUser = createTestUser();
+  /*      User testUser = createTestUser();
         Group testGroup = createTestGroup();
         testGroup = groupManager.generateGroupToken(testGroup, 1);
         String groupToken = testGroup.getGroupTokenCode();
@@ -171,8 +168,8 @@ public class USSDHomeControllerIT extends USSDAbstractIT {
         assertThat(responseEntity.getStatusCode(), is(OK));
         assertThat(groupManager.tokenExists(groupToken), is(true));
         assertThat(groupManager.groupHasValidToken(testGroup), is(true));
-        assertThat(groupManager.getGroupByToken(groupToken), is(testGroup));
-        // assertThat(groupManager.isUserInGroup(testGroup, nonGroupUser), is(true));
+        assertThat(groupManager.getGroupByToken(groupToken).getId(), is(testGroup.getId()));
+        assertThat(groupManager.isUserInGroup(testGroup, nonGroupUser), is(false));*/
 
     }
 
@@ -256,7 +253,7 @@ public class USSDHomeControllerIT extends USSDAbstractIT {
         assertThat(eventLogManager.userRsvpForEvent(testMeeting, yesUser), is(true));
         assertThat(eventLogManager.userRsvpNoForEvent(testMeeting, noUser), is(true));*/
 
- //   }*/
+ //   }
 
 }
 

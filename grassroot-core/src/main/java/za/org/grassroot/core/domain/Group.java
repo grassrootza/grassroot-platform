@@ -254,6 +254,7 @@ public class Group implements Serializable {
         return this;
     }
 
+
     /*
      * Auxiliary methods for checking if blank name, coping with blank names, etc.
      */
