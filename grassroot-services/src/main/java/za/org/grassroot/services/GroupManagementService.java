@@ -261,6 +261,9 @@ public interface GroupManagementService {
 
     List<LocalDate> getMonthsGroupActive(Group group);
 
+    //warning: to be used for integration test purposes only
+
+
     /*
     Recursive query better to use than recursive code calls
     */

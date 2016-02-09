@@ -394,6 +394,7 @@ public class GroupManager implements GroupManagementService {
 
     @Override
     public List<Group> findDiscoverableGroups(String groupName) {
+
         return groupRepository.findByGroupNameContainingAndDiscoverable(groupName, true);
     }
 

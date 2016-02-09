@@ -12,9 +12,11 @@ import org.springframework.boot.test.TestRestTemplate;
 import org.springframework.boot.test.WebIntegrationTest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.AbstractTransactionalJUnit4SpringContextTests;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.transaction.TransactionConfiguration;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -49,10 +51,8 @@ import java.util.logging.Logger;
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = {GrassRootWebApplicationConfig.class})
 @WebIntegrationTest(randomPort = true)
-@Transactional
 @ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
-@Category(IntegrationTest.class)
-public class USSDAbstractIT extends AbstractTransactionalJUnit4SpringContextTests {
+public class USSDAbstractIT {
 
     private Logger log = Logger.getLogger(getClass().getCanonicalName());
 
@@ -145,10 +145,6 @@ public class USSDAbstractIT extends AbstractTransactionalJUnit4SpringContextTest
 
     }
 
-    @Test
-    public void dummyTest() {
-
-    }
     protected UriComponentsBuilder assembleUssdURI(String urlEnding) {
         UriComponentsBuilder baseUri = UriComponentsBuilder.fromUri(base.build().toUri())
                 .path(ussdPath + urlEnding);
@@ -181,6 +177,8 @@ public class USSDAbstractIT extends AbstractTransactionalJUnit4SpringContextTest
         return userManager.findByInputNumber(testPhone);
     }
 
+
+
     protected Group createTestGroup() {
 
         // possibly redundant to create test user, but don't want to generate false fails depending on how this is called
@@ -209,6 +207,10 @@ public class USSDAbstractIT extends AbstractTransactionalJUnit4SpringContextTest
         eventToTest = eventManager.setEventTimestamp(eventId, Timestamp.valueOf(DateTimeUtil.parseDateTime(testMtgDateTime)));
 
         return eventToTest;
+
+    }
+    @Test
+    public void dummyTest() throws Exception{
 
     }
 
