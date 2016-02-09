@@ -207,10 +207,22 @@ public class RoleManager implements  RoleManagementService {
         Long startTime = System.currentTimeMillis();
         Group group = groupManagementService.loadGroup(groupId);
         List<User> groupMembers = new ArrayList<>(group.getGroupMembers());
+
+        Role ordinaryRole = (fetchGroupRole(BaseRoles.ROLE_ORDINARY_MEMBER, groupId) != null) ?
+                fetchGroupRole(BaseRoles.ROLE_ORDINARY_MEMBER, groupId) :
+                new Role(BaseRoles.ROLE_ORDINARY_MEMBER, groupId, group.getGroupName());
+
+        ordinaryRole.setPermissions(permissionsManagementService.defaultOrdinaryMemberPermissions());
+        ordinaryRole = roleRepository.save(ordinaryRole);
+
         for (User member : groupMembers) {
             log.info("Resetting member ... " + member.nameToDisplay());
-            addDefaultRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, group, member);
+            flushUserRolesInGroup(member, group);
+            member.addRole(ordinaryRole);
         }
+
+        userManagementService.saveList(groupMembers);
+
         addDefaultRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, group, group.getCreatedByUser());
         Long endTime = System.currentTimeMillis();
         log.info(String.format("Added roles to members, total time took %d msecs", endTime - startTime));

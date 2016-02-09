@@ -160,6 +160,11 @@ public class UserManager implements UserManagementService, UserDetailsService {
         return userRepository.save(userToSave);
     }
 
+    @Override
+    public void saveList(List<User> usersToSave) {
+        userRepository.save(usersToSave);
+    }
+
     /**
      * Creating some functions to internalize conversion of phone numbers and querying
      */

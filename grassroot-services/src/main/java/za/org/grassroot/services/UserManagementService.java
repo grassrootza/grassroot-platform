@@ -32,6 +32,8 @@ public interface UserManagementService {
 
     User save(User userToSave);
 
+    void saveList(List<User> usersToSave);
+
     User loadOrSaveUser(String inputNumber);
 
     User loadOrSaveUser(String inputNumber, String currentUssdMenu);
