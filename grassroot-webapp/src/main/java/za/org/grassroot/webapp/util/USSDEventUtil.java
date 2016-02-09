@@ -74,12 +74,12 @@ public class USSDEventUtil extends USSDUtil {
         return askMenu;
     }
 
-    public USSDMenu listUpcomingEvents(User user, USSDSection section, String prompt, String nextUrl) {
+    public USSDMenu listUpcomingEvents(User user, USSDSection section, String prompt, String nextMenu) {
         // todo: page back and forward
         EventType eventType = mapSectionType.get(section);
         USSDMenu menu = new USSDMenu(prompt);
         Page<Event> events = eventManager.getEventsUserCanView(user, eventType, 1, 0, pageSize);
-        return addListOfEventsToMenu(menu, nextUrl, events.getContent(), false);
+        return addListOfEventsToMenu(menu, section.toPath() + nextMenu, events.getContent(), false);
     }
 
     public USSDMenu listPriorEvents(User user, USSDSection section, String prompt, String nextUrl, boolean withGroup) {

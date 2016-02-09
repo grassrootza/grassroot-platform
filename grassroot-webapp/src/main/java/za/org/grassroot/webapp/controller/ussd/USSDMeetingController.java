@@ -120,7 +120,7 @@ public class USSDMeetingController extends USSDController {
     @ResponseBody
     public Request newGroup(@RequestParam(value= phoneNumber, required = true) String inputNumber) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber, meetingMenus + newGroupMenu);
-        return menuBuilder(ussdGroupUtil.createGroupPrompt(user, thisSection, meetingMenus + groupHandlingMenu));
+        return menuBuilder(ussdGroupUtil.createGroupPrompt(user, thisSection, groupHandlingMenu));
     }
 
     /*
@@ -168,13 +168,14 @@ public class USSDMeetingController extends USSDController {
                 thisMenu.setPromptMessage(getMessage(thisSection, groupHandlingMenu, promptKey + ".no-group", user));
                 thisMenu.setNextURI(meetingMenus + groupHandlingMenu);
             } else {
+                Long eventIdToPass = eventId;
                 if (eventId == null) {
-                    Long newEventId = eventManager.createMeeting(inputNumber, groupId).getId();
+                    eventIdToPass = eventManager.createMeeting(inputNumber, groupId).getId();
                     userManager.setLastUssdMenu(user, USSDUrlUtil.saveMenuUrlWithInput(thisSection, groupHandlingMenu,
-                                                                                       includeGroup + "&eventId=" + newEventId, userInput));
+                                                                                       includeGroup + "&eventId=" + eventIdToPass, userInput));
                 }
                 thisMenu.setPromptMessage(getMessage(thisSection, nextMenu(startMenu), promptKey, user));
-                thisMenu.setNextURI(meetingMenus + nextMenu(nextMenu(startMenu)) + eventIdUrlSuffix + eventId
+                thisMenu.setNextURI(meetingMenus + nextMenu(nextMenu(startMenu)) + eventIdUrlSuffix + eventIdToPass
                                             + "&" + previousMenu + "=" + nextMenu(startMenu));
             }
         }

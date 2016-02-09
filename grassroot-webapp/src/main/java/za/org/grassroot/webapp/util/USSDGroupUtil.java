@@ -46,17 +46,17 @@ public class USSDGroupUtil extends USSDUtil {
      */
 
     public USSDMenu askForGroupAllowCreateNew(User sessionUser, USSDSection section, String nextUrl,
-                                              String newGroupUrl, String nonGroupParams) throws URISyntaxException {
+                                              String newGroupMenu, String nonGroupParams) throws URISyntaxException {
 
         // todo: the groupManager call is probably quite expensive, replace with a count query (non trivial, at least for me)
         USSDMenu groupMenu;
-        log.info("Inside askForGroupAllowCreateNew ... newGroupUrl is ..." + newGroupUrl);
+        log.info("Inside askForGroupAllowCreateNew ... newGroupUrl is ..." + newGroupMenu);
         if (!groupManager.hasActiveGroupsPartOf(sessionUser)) {
-            groupMenu = createGroupPrompt(sessionUser, section,USSDSection.GROUP_MANAGER.toPath() + newGroupUrl+doSuffix);
+            groupMenu = createGroupPrompt(sessionUser, section, newGroupMenu);
         } else {
             String prompt = getMessage(section, groupKeyForMessages, promptKey + ".existing", sessionUser);
             String existingGroupUri = section.toPath() + nextUrl + ((nonGroupParams == null) ? "" : nonGroupParams);
-            String newGroupUri = section.toPath() + newGroupUrl + ((nonGroupParams == null) ? "" : nonGroupParams);
+            String newGroupUri = section.toPath() + newGroupMenu + ((nonGroupParams == null) ? "" : nonGroupParams);
             groupMenu = userGroupMenuPageOne(sessionUser, prompt, existingGroupUri, newGroupUri);
         }
         return groupMenu;
@@ -134,7 +134,7 @@ public class USSDGroupUtil extends USSDUtil {
         log.info("Constructing prompt for new group's name, with url ... " + nextUrl);
         USSDMenu thisMenu = new USSDMenu(getMessage(section, groupKeyForMessages, promptKey + ".create", user));
         thisMenu.setFreeText(true);
-        thisMenu.setNextURI(nextUrl);
+        thisMenu.setNextURI(section.toPath() + nextUrl);
         return thisMenu;
     }
 

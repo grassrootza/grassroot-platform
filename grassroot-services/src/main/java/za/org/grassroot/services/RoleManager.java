@@ -252,15 +252,15 @@ public class RoleManager implements  RoleManagementService {
 
     @Override
     public Role getUserRoleInGroup(User user, Group group) {
-        log.info("Searching for user role in group ...");
+        // log.info("Searching for user role in group ...");
         if (!groupManagementService.isUserInGroup(group, user))
             throw new RuntimeException("Get user role in group: Error! User not in group");
 
         // todo: roles are eagerly loaded so this should not be too expensive, but keep an eye on its performance
-        log.info("Iterating through roles for user ... " + user.nameToDisplay() + " ... in group ... " + group.getGroupName());
+        // log.info("Iterating through roles for user ... " + user.nameToDisplay() + " ... in group ... " + group.getGroupName());
         for (Role role : user.getRoles()) {
             if (role.isGroupRole() && (role.getGroupReferenceId() == group.getId())) {
-                log.info("Found the role, returning it as ... " + role);
+                // log.info("Found the role, returning it as ... " + role);
                 return role;
             }
         }

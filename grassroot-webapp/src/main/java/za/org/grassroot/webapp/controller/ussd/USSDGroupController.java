@@ -102,7 +102,7 @@ public class USSDGroupController extends USSDController {
     @ResponseBody
     public Request createPrompt(@RequestParam(value= phoneNumber, required=true) String inputNumber) throws URISyntaxException {
         User sessionUser = userManager.findByInputNumber(inputNumber, groupMenus + createGroupMenu);
-        return menuBuilder(ussdGroupUtil.createGroupPrompt(sessionUser, thisSection, groupMenus + createGroupMenu + doSuffix));
+        return menuBuilder(ussdGroupUtil.createGroupPrompt(sessionUser, thisSection, createGroupMenu + doSuffix));
     }
 
     /*
