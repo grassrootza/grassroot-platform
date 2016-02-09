@@ -15,9 +15,12 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
+import za.org.grassroot.webapp.util.BulkUserImportUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import java.sql.Timestamp;
@@ -25,9 +28,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author Lesetse Kimwaga
@@ -57,6 +58,9 @@ public class GroupController extends BaseController {
 
     @Autowired
     private GroupLogService groupLogService;
+
+    @Autowired
+    private GroupRepository groupRepository;
 
     @Autowired
     private RoleManagementService roleManagementService;
@@ -315,6 +319,48 @@ public class GroupController extends BaseController {
         return "group/modify";
     }
 
+    @RequestMapping(value = "add_members")
+    public String addMembersBulk(Model model,@RequestParam("groupId") Long groupId,HttpServletRequest request) {
+
+        Group group = groupManagementService.loadGroup(groupId);
+        model.addAttribute("group", group);
+
+
+        return "group/add_members";
+    }
+
+    @RequestMapping(value = "add_members_do", method = RequestMethod.POST)
+    public String addMembersBulkDo(Model model,@RequestParam("groupId") Long groupId,@RequestParam(value = "list")
+    String list, HttpServletRequest request) {
+
+        Group group = groupManagementService.loadGroup(groupId);
+        Map<String, List<String>> mapOfNumbers = BulkUserImportUtil.splitPhoneNumbers(list);
+        List<String> numbersToBeAdded = mapOfNumbers.get("valid");
+
+        if(!mapOfNumbers.get("valid").isEmpty()) {
+            List<User> users = userManagementService.getExistingUsersFromNumbers(numbersToBeAdded);
+            for (User user : users) {
+                numbersToBeAdded.remove(user.getPhoneNumber());
+            }
+
+            for (int i = 0; i < numbersToBeAdded.size(); i++) {
+                users.add(new User(PhoneNumberUtil.convertPhoneNumber(numbersToBeAdded.get(i))));
+            }
+            group.getGroupMembers().addAll(users);
+            groupRepository.save(group);
+        }
+        boolean errors = (mapOfNumbers.get("error").isEmpty())?false:true;
+
+
+       model.addAttribute("errors",errors);
+        model.addAttribute("group", group);
+        model.addAttribute("invalid", mapOfNumbers.get("error"));
+        model.addAttribute("members_added", numbersToBeAdded.size());
+
+        return "group/add_members_do";
+    }
+
+
 
     @RequestMapping(value = "modify", params={"removeMember"})
     public String removeMemberModify(Model model, @ModelAttribute("groupModifier") GroupWrapper groupModifier,
@@ -357,6 +403,7 @@ public class GroupController extends BaseController {
         }
 
         log.info("These are the users passed from the store: " + updatedUserList);
+
 
         Group savedGroup = groupManagementService.addRemoveGroupMembers(groupToUpdate, updatedUserList);
 

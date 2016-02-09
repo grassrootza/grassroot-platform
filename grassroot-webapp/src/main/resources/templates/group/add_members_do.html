@@ -1,0 +1,43 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+    <title>GrassRoot - Bulk Add Members</title>
+</head>
+<body>
+
+
+<div layout:fragment="header">
+    <h2>Bulk Add Results </h2>
+</div>
+<div layout:fragment="overview">Bulk member adding operation results for <span th:text="${group.groupName}">group </span></div>
+
+<div layout:fragment="content">
+    <div layout:fragment="messages"></div>
+    <div class="well">
+
+            <div th:switch="${errors}">
+                <div th:case="false">
+                    <p> The operation succeeded without errors.</p>
+                    <p> <span th:text="${members_added}"></span> member(s) was/were added to the group. </p>
+
+                </div>
+                <div th:case="true">
+                    <p>The operation succeeded with errors</p>
+                    <p> <span th:text="${members_added}"></span> members were added to the group.</p>
+                    <p>The following entries were found to be invalid.</p>
+                    <ul>
+                        <th:block>
+                            <li th:each="item : ${invalid}"><span th:text="${item}"></span></li>
+                        </th:block>
+                    </ul>
+
+                </div>
+                </div>
+
+
+</div>
+
+</div>
+</body>
+</html>

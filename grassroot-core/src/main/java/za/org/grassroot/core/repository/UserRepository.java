@@ -2,12 +2,14 @@ package za.org.grassroot.core.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Set;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
@@ -54,6 +56,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("select u from User u, EventLog el, Event e where e = ?1 and el.event = e and u = el.user and el.eventLogType = za.org.grassroot.core.enums.EventLogType.EventRSVP and el.message = 'No'")
     List<User> findUsersThatRSVPNoForEvent(Event event);
+
+    @Query(value = "select u from User u where u.phoneNumber IN :phone_numbers")
+    List<User> findExistingUsers(@Param("phone_numbers") List<String> numbers);
 
 
 }
