@@ -5,16 +5,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.dto.NewGroupMember;
 import za.org.grassroot.core.enums.EventChangeType;
 import za.org.grassroot.core.enums.GroupLogType;
-import za.org.grassroot.core.repository.EventRepository;
-import za.org.grassroot.core.repository.GroupLogRepository;
-import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.repository.PaidGroupRepository;
+import za.org.grassroot.core.repository.*;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.util.TokenGeneratorService;
 
@@ -38,10 +37,10 @@ public class GroupManager implements GroupManagementService {
 
     /*
     N.B.
-
     When we refactor to pass the user doing actions around so that it can be recorded then replace the
     dontKnowTheUser whereever it is used with the actual user
      */
+
     private final Long dontKnowTheUser = 0L;
 
     @Autowired
@@ -62,8 +61,8 @@ public class GroupManager implements GroupManagementService {
     @Autowired
     private GroupLogRepository groupLogRepository;
 
-    @Autowired
-    private EventRepository eventRepository;
+//    @Autowired
+//    private EventRepository eventRepository;
 
     @Autowired
     private RoleManagementService roleManagementService;
@@ -75,10 +74,184 @@ public class GroupManager implements GroupManagementService {
     private GroupAccessControlManagementService accessControlService;
 
 
-    /**
-     * Have not yet created methods analogous to those in UserManager, as not sure if necessary
-     * For the moment, using this to expose some basic group services for the application interfaces
+    /*
+    First, methods to create groups
      */
+
+    @Override
+    public Group createNewGroup(User creatingUser, String groupName, boolean addDefaultRole) {
+        Long timeStart = System.currentTimeMillis();
+        Group group = groupRepository.save(new Group(groupName, creatingUser));
+        recordGroupLog(group.getId(),creatingUser.getId(),GroupLogType.GROUP_ADDED, 0L, "");;
+        if (addDefaultRole) roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, group, creatingUser, creatingUser);
+        Long timeEnd = System.currentTimeMillis();
+        log.info(String.format("Creating a group without roles, time taken ... %d msecs", timeEnd - timeStart));
+        return group;
+    }
+
+    @Override
+    public Group createNewGroupWithCreatorAsMember(User creatingUser, String groupName, boolean addDefaultRole) {
+        Group group = new Group(groupName, creatingUser);
+        group.addMember(creatingUser);
+        Group savedGroup = groupRepository.save(group);
+        recordGroupLog(savedGroup.getId(),creatingUser.getId(),GroupLogType.GROUP_ADDED,0L, "");
+        if (addDefaultRole) roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, group, creatingUser, creatingUser);
+        return savedGroup;
+    }
+
+    @Override
+    public Group createNewGroup(User creatingUser, List<String> phoneNumbers, boolean addDefaultRoles) {
+        // todo: check if a similar group exists and if so prompt
+        Group groupToCreate = createNewGroupWithCreatorAsMember(creatingUser, "", addDefaultRoles);
+        return addNumbersToGroup(groupToCreate.getId(), phoneNumbers, creatingUser, addDefaultRoles);
+    }
+
+    @Override
+    public Group createNewGroup(Long creatingUserId, List<String> phoneNumbers, boolean addDefaultRoles) {
+        return createNewGroup(userManager.getUserById(creatingUserId), phoneNumbers, addDefaultRoles);
+    }
+
+    @Override
+    public Group saveGroup(Group groupToSave, boolean createGroupLog, String description, Long changedByuserId) {
+        Group group = groupRepository.save(groupToSave);
+        if (createGroupLog) recordGroupLog(groupToSave.getId(),changedByuserId, GroupLogType.GROUP_UPDATED,0L,description);
+        return group;
+    }
+
+    @Override
+    public Group renameGroup(Group group, String newGroupName) {
+        // only bother if the name has changed (in some instances, web app may call this without actual name change)
+        if (!group.getGroupName().equals(newGroupName)) {
+            String oldName = group.getGroupName();
+            group.setGroupName(newGroupName);
+            return saveGroup(group,true,String.format("Old name: %s, New name: %s",oldName,newGroupName),dontKnowTheUser);
+        } else {
+            return group;
+        }
+    }
+
+    @Override
+    public Group renameGroup(Long groupId, String newGroupName) {
+        return renameGroup(loadGroup(groupId), newGroupName);
+    }
+
+    // @Async
+    @Override
+    public void recordGroupLog(Long groupId, Long userDoingId, GroupLogType type, Long userOrGroupAffectedId, String description) {
+        groupLogRepository.save(new GroupLog(groupId, userDoingId, type, userOrGroupAffectedId, description));
+    }
+
+    /**
+     * SECTION: Methods to add and remove group members, including logging & roles/permissions
+     */
+
+    // @Async
+    public void wireNewGroupMemberLogsRoles(Group group, User newMember, Long addingUserId, boolean addDefaultRole) {
+
+        if (hasDefaultLanguage(group) && !newMember.isHasInitiatedSession())
+            assignDefaultLanguage(group, newMember);
+
+        Long savingUserId = (addingUserId == null) ? dontKnowTheUser : addingUserId;
+
+        groupLogRepository.save(new GroupLog(group.getId(), savingUserId, GroupLogType.GROUP_MEMBER_ADDED, newMember.getId()));
+
+        if (addDefaultRole) {
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, group,
+                                                                   newMember, userManager.getUserById(addingUserId));
+            } else {
+                roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, group, newMember);
+            }
+        }
+
+        jmsTemplateProducerService.sendWithNoReply(EventChangeType.USER_ADDED.toString(),new NewGroupMember(group,newMember));
+    }
+
+    // @Async
+    public void removeGroupMemberLogsRoles(Group group, User oldMember, User removingUser) {
+        Long removingUserId = (removingUser == null) ? dontKnowTheUser : removingUser.getId();
+        String description = (oldMember.getId() == removingUserId) ? "Unsubscribed" : "Removed from group";
+        groupLogRepository.save(new GroupLog(group.getId(), removingUserId, GroupLogType.GROUP_MEMBER_REMOVED,
+                                             oldMember.getId(), description));
+        roleManagementService.removeGroupRolesFromUser(oldMember, group);
+    }
+
+    @Override
+    public Group addGroupMember(Group currentGroup, User newMember, Long addingUserId, boolean addDefaultRole) {
+        // todo: make sure transaction management is working alright
+        if (currentGroup.getGroupMembers().contains(newMember)) {
+            return currentGroup;
+        } else {
+            currentGroup.addMember(newMember);
+            currentGroup = saveGroup(currentGroup,false,"",dontKnowTheUser);
+            newMember = userManager.save(newMember); // so that this is isntantly double-sided, else getting access control errors
+            wireNewGroupMemberLogsRoles(currentGroup, newMember, addingUserId, addDefaultRole);
+            return currentGroup;
+        }
+    }
+
+    @Override
+    public Group addGroupMember(Long currentGroupId, Long newMemberId, Long addingUserId, boolean addDefaultRole) {
+        return addGroupMember(loadGroup(currentGroupId), userManager.getUserById(newMemberId), addingUserId, addDefaultRole);
+    }
+
+    @Override
+    public Group addNumbersToGroup(Long groupId, List<String> phoneNumbers, User addingUser, boolean addDefaultRoles) {
+
+        Group groupToExpand = loadGroup(groupId);
+
+        List<User> groupNewMembers = userManager.getUsersFromNumbers(phoneNumbers);
+        for (User newMember : groupNewMembers)
+            groupToExpand.addMember(newMember);
+        Group savedGroup = groupRepository.save(groupToExpand);
+
+        for (User newMember : groupNewMembers) // do this after else risk async getting in way before joins established
+            wireNewGroupMemberLogsRoles(savedGroup, newMember, addingUser.getId(), addDefaultRoles);
+
+        return savedGroup;
+    }
+
+    @Override
+    public Group removeGroupMember(Group group, User user, User removingUser) {
+        // todo: error handling
+        group.getGroupMembers().remove(user);
+        Group savedGroup = saveGroup(group,false,"",dontKnowTheUser);
+        removeGroupMemberLogsRoles(savedGroup, user, removingUser);
+        return savedGroup;
+    }
+
+    @Override
+    public Group removeGroupMember(Long groupId, User user, User removingUser) {
+        return removeGroupMember(loadGroup(groupId), user, removingUser);
+    }
+
+    @Override
+    public Group addRemoveGroupMembers(Group group, List<User> revisedUserList, Long modifyingUserId, boolean addDefaultRoles) {
+
+        List<User> originalUsers = new ArrayList<>(group.getGroupMembers());
+
+        // todo: we need to log each of these removals, hence doing it this way, but should refactor
+        for (User user : originalUsers) {
+            if (!revisedUserList.contains(user)) {
+                log.info("Removing a member: " + user);
+                removeGroupMember(group, user, null);
+            }
+        }
+
+        for (User user : revisedUserList) {
+            if (!originalUsers.contains(user)) {
+                log.info("Adding a member: " + user);
+                addGroupMember(group, user, modifyingUserId, addDefaultRoles);
+            }
+        }
+
+        return saveGroup(group,false,"",dontKnowTheUser);
+    }
+
+    /*
+    SECTION: Loading groups, finding properties, etc
+     */
+
 
     @Override
     public Group loadGroup(Long groupId) {
@@ -86,219 +259,52 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public Group secureLoadGroup(Long id) {
-        return loadGroup(id);
+    public String getGroupName(Long groupId) {
+        return loadGroup(groupId).getName("");
     }
 
     @Override
-    public List<Group> getGroupsFromUser(User sessionUser) {
-        // todo: add pagination
-        return sessionUser.getGroupsPartOf();
+    public List<Group> getCreatedGroups(User creatingUser) {
+        return groupRepository.findByCreatedByUserAndActive(creatingUser, true);
     }
+
+    @Override
+    public List<Group> getActiveGroupsPartOf(User sessionUser) {
+        return groupRepository.findByGroupMembersAndActive(sessionUser, true);
+    }
+    @Override
+    public List<Group> getActiveGroupsPartOfOrdered(User sessionUser){
+        return groupRepository.findActiveUserGroupsOrderedByRecentActivity(sessionUser.getId());
+    }
+
+    @Override
+    public List<Group> getActiveGroupsPartOf(Long userId) {
+        return getActiveGroupsPartOf(userManager.getUserById(userId));
+    }
+
+    @Override
+    public Page<Group> getPageOfActiveGroups(User sessionUser, int pageNumber, int pageSize) {
+        return groupRepository.findByGroupMembersAndActive(sessionUser, new PageRequest(pageNumber, pageSize), true);
+    }
+
+    @Override
+    public List<Group> getListGroupsFromLogbooks(List<LogBook> logBooks) {
+        // seems like doing it this way more efficient than running lots of group fetch queries, but need to test/verify
+        log.info("Got a list of logbooks ... look like this: " + logBooks);
+        List<Long> ids = new ArrayList<>();
+        for (LogBook entry : logBooks) { ids.add(entry.getGroupId()); }
+        log.info("And now we have this list of Ids ... " + ids);
+        return groupRepository.findAllByIdIn(ids);
+    }
+
+    /*
+    Methods to find if a user has an outstanding group management action to perform or groups on which they can perform it
+     */
 
     @Override
     public boolean isUserInGroup(Group group, User user) {
         // at some point may want to make this more efficient than getter method
         return group.getGroupMembers().contains(user);
-    }
-
-    @Override
-    public Group saveGroup(Group groupToSave, boolean createGroupLog, String description, Long changedByuserId) {
-        Group group = groupRepository.save(groupToSave);
-        if (createGroupLog) {
-            GroupLog groupLog = groupLogRepository.save(new GroupLog(groupToSave.getId(),changedByuserId, GroupLogType.GROUP_UPDATED,0L,description));
-        }
-        return group;
-    }
-
-    /* @Override
-    public void deleteGroup(Group groupToDelete) {
-
-        //there are issues with cascading if we delete the group before removing all users, hence doing it this way
-        //which will be quite slow, but this function should almost never be used, so not a major issue, for now, and
-        //rather safe than sorry on deletion.
-
-        List<User> members = new ArrayList<>(groupToDelete.getGroupMembers());
-        log.info("We are now going to delete a group ... first, we unsubscribe " + members.size() + " members");
-
-        for (User user : members) {
-            groupToDelete = removeGroupMember(groupToDelete, user);
-        }
-
-        log.info("Group members removed ... " + groupToDelete.getGroupMembers().size() + " members left. Proceeding to delete");
-
-        groupRepository.delete(groupToDelete);
-    }*/
-
-
-    @Override
-    public Group addGroupMember(Long currentGroupId, Long newMemberId) {
-        return addGroupMember(loadGroup(currentGroupId), userManager.getUserById(newMemberId));
-    }
-
-    @Override
-    public Group removeGroupMember(Group group, User user) {
-        // todo: error handling
-        group.getGroupMembers().remove(user);
-        Group savedGroup = saveGroup(group,false,"",dontKnowTheUser);
-        GroupLog groupLog = groupLogRepository.save(new GroupLog(group.getId(),dontKnowTheUser,GroupLogType.GROUP_MEMBER_REMOVED,user.getId()));
-        return savedGroup;
-    }
-
-    @Override
-    public Group removeGroupMember(Long groupId, User user) {
-        return removeGroupMember(loadGroup(groupId), user);
-    }
-
-    @Override
-    public Group unsubscribeMember(Group group, User user) {
-        // with logging, this behaves different from standard remove member, though may consolidate in future
-        group.getGroupMembers().remove(user);
-        Group savedGroup = saveGroup(group, false, "", dontKnowTheUser);
-        GroupLog groupLog = groupLogRepository.save(new GroupLog(group.getId(), user.getId(), GroupLogType.GROUP_MEMBER_REMOVED, user.getId(), "Member unsubscribed from group"));
-        roleManagementService.removeGroupRolesFromUser(user, savedGroup);
-        return savedGroup;
-    }
-
-    @Override
-    public Group addRemoveGroupMembers(Group group, List<User> revisedUserList) {
-
-        List<User> originalUsers = new ArrayList<>(group.getGroupMembers());
-
-        log.info("These are the original users: " + originalUsers);
-
-        // for some reason, the list remove function isn't working on these users, hence have to do this hard way
-
-        for (User user : originalUsers) {
-            if (!revisedUserList.contains(user)) {
-                log.info("Removing a member: " + user);
-                removeGroupMember(group, user);
-            }
-        }
-
-        for (User user : revisedUserList) {
-            if (!originalUsers.contains(user)) {
-                log.info("Adding a member: " + user);
-                addGroupMember(group, user);
-            }
-        }
-
-        return saveGroup(group,false,"",dontKnowTheUser);
-    }
-
-    @Override
-    public Group addNumberToGroup(Long groupId, String phoneNumber) {
-        return addGroupMember(loadGroup(groupId), userManager.loadOrSaveUser(phoneNumber));
-    }
-
-    @Override
-    public Group createNewGroup(User creatingUser, String groupName) {
-        Long timeStart = System.currentTimeMillis();
-        Group group = groupRepository.save(new Group(groupName, creatingUser));
-        GroupLog groupLog = groupLogRepository.save(new GroupLog(group.getId(),creatingUser.getId(),GroupLogType.GROUP_ADDED,0L));
-        Long timeEnd = System.currentTimeMillis();
-        log.info(String.format("Creating a group without roles, time taken ... %d msecs", timeEnd - timeStart));
-        return group;
-    }
-
-    /*@Override
-    public Group createNewGroupWithRole(User creatingUser, String groupName) {
-        Long timeStart = System.currentTimeMillis();
-        Group group = createNewGroup(creatingUser, groupName);
-        addGroupMember(group, creatingUser);
-        roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, group, creatingUser);
-        Long timeEnd = System.currentTimeMillis();
-        log.info(String.format("Creating a group with roles, overall time taken ... %d msecs", timeEnd - timeStart));
-        return group;
-    }*/
-
-    @Override
-    public Group addGroupMember(Group currentGroup, User newMember) {
-
-        // todo: just make sure this works as planned, if user has persisted in interim (e.g., maybe call repo?).
-        if (currentGroup.getGroupMembers().contains(newMember)) {
-            return currentGroup;
-        } else {
-            // todo: consider putting some of the persistence roles in the async part of things
-
-            currentGroup.addMember(newMember);
-            if (hasDefaultLanguage(currentGroup) && !newMember.isHasInitiatedSession())
-                assignDefaultLanguage(currentGroup, newMember);
-
-            currentGroup = saveGroup(currentGroup,false,"",dontKnowTheUser);
-            newMember = userManager.save(newMember); // so that this is isntantly double-sided, else getting access control errors
-            GroupLog groupLog = groupLogRepository.save(new GroupLog(currentGroup.getId(),dontKnowTheUser,GroupLogType.GROUP_MEMBER_ADDED,newMember.getId()));
-            jmsTemplateProducerService.sendWithNoReply(EventChangeType.USER_ADDED.toString(),new NewGroupMember(currentGroup,newMember));
-
-            return currentGroup;
-        }
-    }
-
-    @Override
-    public Group addGroupMemberWithDefaultRole(Group group, User user, String role) {
-        group = addGroupMember(group, user);
-        roleManagementService.addDefaultRoleToGroupAndUser(role, group, user);
-        return group;
-    }
-
-    @Override
-    public Group createNewGroup(Long creatingUserId, List<String> phoneNumbers) {
-        return createNewGroup(userManager.getUserById(creatingUserId), phoneNumbers);
-    }
-
-    // bugs!
-    @Override
-    public Group createNewGroupWithCreatorAsMember(User creatingUser, String groupName) {
-        Group group = new Group(groupName, creatingUser);
-        group.addMember(creatingUser);
-        Group savedGroup = groupRepository.save(group);
-        GroupLog groupLog = groupLogRepository.save(new GroupLog(savedGroup.getId(),creatingUser.getId(),GroupLogType.GROUP_ADDED,0L));
-        return savedGroup;
-    }
-
-    @Override
-    public Group createNewGroup(User creatingUser, List<String> phoneNumbers) {
-
-        // todo: consider some way to check if group "exists", needs a solid "equals" logic
-        // todo: defaulting to using Lists as Collection type for many-many, but that's an amateur decision ...
-
-        Group groupToCreate = new Group();
-
-        groupToCreate.setCreatedByUser(creatingUser);
-        groupToCreate.setGroupName(""); // column not-null, so use blank string as default
-
-        List<User> groupMembers = userManager.getUsersFromNumbers(phoneNumbers);
-        groupMembers.add(creatingUser);
-        groupToCreate.setGroupMembers(groupMembers);
-        Group savedGroup = groupRepository.save(groupToCreate);
-        GroupLog groupLog = groupLogRepository.save(new GroupLog(savedGroup.getId(),creatingUser.getId(),GroupLogType.GROUP_ADDED,0L));
-        for (User user : savedGroup.getGroupMembers()) {
-            groupLog = groupLogRepository.save(new GroupLog(savedGroup.getId(),creatingUser.getId(),GroupLogType.GROUP_MEMBER_ADDED,user.getId()));
-        }
-        return savedGroup;
-
-    }
-
-    @Override
-    public Group addNumbersToGroup(Long groupId, List<String> phoneNumbers) {
-
-        Group groupToExpand = loadGroup(groupId);
-        log.info("ZOG: Adding numbers to group ... these numbers ... " + phoneNumbers + " ... to this group: " + groupToExpand);
-        List<User> groupNewMembers = userManager.getUsersFromNumbers(phoneNumbers);
-
-        for (User newMember : groupNewMembers) {
-            groupToExpand.addMember(newMember);
-        }
-
-        log.info("ZOG: Group members now looks like .. " + groupToExpand.getGroupMembers());
-        Group savedGroup = groupRepository.save(groupToExpand);
-        for (User newMember : groupNewMembers) {
-            GroupLog groupLog = groupLogRepository.save(new GroupLog(savedGroup.getId(),dontKnowTheUser,GroupLogType.GROUP_MEMBER_ADDED,newMember.getId()));
-            jmsTemplateProducerService.sendWithNoReply(EventChangeType.USER_ADDED.toString(),new NewGroupMember(groupToExpand,newMember));
-        }
-
-        return savedGroup;
-
     }
 
     /*
@@ -324,137 +330,40 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public boolean canGroupBeSetInactive(Group group, User user) {
-        // todo: checking of permissions, etc etc
-        return !(group.hasName());
-    }
-
-    @Override
-    public Group renameGroup(Group group, String newGroupName) {
-        // only bother if the name has changed (in some instances, web app may call this without actual name change)
-        if (!group.getGroupName().equals(newGroupName)) {
-            String oldName = group.getGroupName();
-            group.setGroupName(newGroupName);
-            return saveGroup(group,true,String.format("Old name: %s, New name: %s",oldName,newGroupName),dontKnowTheUser);
-
-        } else {
-            return group;
-        }
-    }
-
-    @Override
-    public Group renameGroup(Long groupId, String newGroupName) {
-        return renameGroup(loadGroup(groupId), newGroupName);
-    }
-
-    @Override
-    public List<Group> groupsOnWhichCanCallVote(User user) {
-        // major todo: integrate this with group/user permissions; for now, just returning all groups
-        return getActiveGroupsPartOf(user);
-    }
-
-    /* @Override
-    public boolean canUserCallVoteOnAnyGroup(User user) {
-        return (groupsOnWhichCanCallVote(user).size() != 0);
-    }*/
-
-    @Override
-    public List<Group> getCreatedGroups(User creatingUser) {
-        return groupRepository.findByCreatedByUserAndActive(creatingUser, true);
-    }
-
-    @Override
-    public List<Group> getGroupsPartOf(User sessionUser) {
-        return groupRepository.findByGroupMembers(sessionUser);
-    }
-
-    @Override
-    public List<Group> getActiveGroupsPartOf(User sessionUser) {
-        return groupRepository.findByGroupMembersAndActive(sessionUser, true);
-    }
-    @Override
-    public List<Group> getActiveGroupsPartOfOrdered(User sessionUser){
-        return groupRepository.findActiveUserGroupsOrderedByRecentActivity(sessionUser.getId());
-    }
-
-    @Override
-    public List<Group> getActiveGroupsPartOf(Long userId) {
-        return getActiveGroupsPartOf(userManager.getUserById(userId));
-    }
-
-    @Override
-    public List<Group> getListGroupsFromLogbooks(List<LogBook> logBooks) {
-        // seems like doing it this way more efficient than running lots of group fetch queries, but need to test/verify
-        log.info("Got a list of logbooks ... look like this: " + logBooks);
-        List<Long> ids = new ArrayList<>();
-        for (LogBook entry : logBooks) { ids.add(entry.getGroupId()); }
-        log.info("And now we have this list of Ids ... " + ids);
-        return groupRepository.findAllByIdIn(ids);
-    }
-
-    @Override
-    public List<Group> findDiscoverableGroups(String groupName) {
-
-        return groupRepository.findByGroupNameContainingAndDiscoverable(groupName, true);
-    }
-
-    @Override
     public boolean hasActiveGroupsPartOf(User user) {
         return !getPageOfActiveGroups(user, 0, 1).getContent().isEmpty();
-    }
-
-    /*@Override
-    public List<Group> getPaginatedGroups(User sessionUser, int pageNumber, int pageSize) {
-        return getPageOfGroups(sessionUser, pageNumber, pageSize).getContent();
+        // return groupRepository.countActiveGroups(user.getId()) > 0; // this is breaking the getActiveGroups methods
     }
 
     @Override
-    public Page<Group> getPageOfGroups(User sessionUser, int pageNumber, int pageSize) {
-        return groupRepository.findByGroupMembers(sessionUser, new PageRequest(pageNumber, pageSize));
-    }*/
+    public boolean canUserMakeGroupInactive(User user, Group group) {
+        // todo: Integrate with permission checking -- for now, just checking if group created by user in last 48 hours
+        // todo: the time checking would be so much easier if we use Joda or Java 8 DateTime ...
+        boolean createdByUser = (group.getCreatedByUser().getId() == user.getId()); // full equals doesn't work on session-loaded user
+        Timestamp thresholdTime = new Timestamp(Calendar.getInstance().getTimeInMillis() - (48 * 60 * 60 * 1000));
+        boolean groupCreatedSinceThreshold = (group.getCreatedDateTime().after(thresholdTime));
+        return (createdByUser && groupCreatedSinceThreshold);
+    }
 
     @Override
-    public Page<Group> getPageOfActiveGroups(User sessionUser, int pageNumber, int pageSize) {
-        return groupRepository.findByGroupMembersAndActive(sessionUser, new PageRequest(pageNumber, pageSize), true);
+    public boolean canUserMakeGroupInactive(User user, Long groupId) {
+        return canUserMakeGroupInactive(user, loadGroup(groupId));
+    }
+
+    @Override
+    public boolean isGroupCreatedByUser(Long groupId, User user) {
+        return (loadGroup(groupId).getCreatedByUser() == user);
+    }
+
+    @Override
+    public boolean canUserModifyGroup(Group group, User user) {
+        Permission permission = permissionsManager.findByName(BasePermissions.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        return accessControlService.hasGroupPermission(permission, group, user);
     }
 
     /*
-    We use this for the web home page, so we can show a structured set of groups. Another way to do this might be via
-    a query in the repository, but the most obvious, findByUserAndParentNull, won't quite work if a user is a member
-     of a subgroup but not of the parent (i.e., the group is seniormost for that user but not within that tree
-     todo: figure out how to do this via query, or the below implementation may kill us when the group lists are large
+    Methods to work with group joining tokens and group discovery
      */
-
-    @Override
-    public List<Group> getActiveTopLevelGroups(User user) {
-
-        List<Group> groupsPartOf = getActiveGroupsPartOf(user);
-        List<Group> topLevelGroups = new ArrayList<>();
-
-        for (Group group : groupsPartOf) {
-            if (group.getParent() == null || !isUserInGroup(group.getParent(), user)) {
-                topLevelGroups.add(group);
-            }
-        }
-
-        return topLevelGroups;
-    }
-
-    @Override
-    public List<Group> getSubGroups(Group group) {
-        return groupRepository.findByParent(group);
-    }
-
-    @Override
-    public boolean hasSubGroups(Group group) {
-        // slightly redundant for now, but if trees get large & complex may want to replace with quick count query (a la 'if user exists')
-        return !getSubGroups(group).isEmpty();
-    }
-
-    @Override
-    public List<User> getUsersInGroupNotSubGroups(Long groupId) {
-        return loadGroup(groupId).getGroupMembers();
-    }
 
     @Override
     public Group getGroupByToken(String groupToken) {
@@ -465,28 +374,30 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public Group generateGroupToken(Long groupId) {
-        return generateGroupToken(loadGroup(groupId));
+    public Group generateGroupToken(Long groupId, User generatingUser) {
+        // todo: check permissions
+        return generateGroupToken(loadGroup(groupId), generatingUser);
     }
 
     @Override
-    public Group generateGroupToken(Group group) {
+    public Group generateGroupToken(Group group, User generatingUser) {
         log.info("Generating a token code that is indefinitely open, within postgresql range ... We will have to adjust this before the next century");
-        Timestamp endOfCentury = Timestamp.valueOf(LocalDateTime.of(2099, 12, 31, 23, 59));
+        final Timestamp endOfCentury = Timestamp.valueOf(LocalDateTime.of(2099, 12, 31, 23, 59));
         group.setGroupTokenCode(generateCodeString());
         group.setTokenExpiryDateTime(endOfCentury);
-        return saveGroup(group,true,String.format("Set Group Token: %s",group.getGroupTokenCode()),dontKnowTheUser);
+        return saveGroup(group, true, String.format("Set Group Token: %s",group.getGroupTokenCode()), generatingUser.getId());
     }
 
     @Override
-    public Group generateGroupToken(Group group, Integer daysValid) {
+    public Group generateGroupToken(Group group, Integer daysValid, User user) {
         // todo: checks for whether the code already exists, and/or existing validity of group
 
         log.info("Generating a new group token, for group: " + group.getId());
         Group groupToReturn;
         if (daysValid == 0) {
-            groupToReturn = generateGroupToken(group);
+            groupToReturn = generateGroupToken(group, user);
         } else {
+
             Integer daysMillis = 24 * 60 * 60 * 1000;
             Timestamp expiryDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis() + daysValid * daysMillis);
 
@@ -495,7 +406,7 @@ public class GroupManager implements GroupManagementService {
 
             log.info("Group code generated: " + group.getGroupTokenCode());
 
-            groupToReturn = saveGroup(group,true,String.format("Set Group Token: %s",group.getGroupTokenCode()),dontKnowTheUser);
+            groupToReturn = saveGroup(group,true,String.format("Set Group Token: %s",group.getGroupTokenCode()),user.getId());
 
             log.info("Group code after save: " + group.getGroupTokenCode());
         }
@@ -504,33 +415,28 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public Group generateGroupToken(Long groupId, Integer daysValid) {
-        return generateGroupToken(loadGroup(groupId), daysValid);
+    public Group generateGroupToken(Long groupId, Integer daysValid, User user) {
+        return generateGroupToken(loadGroup(groupId), daysValid, user);
     }
 
     @Override
-    public Group extendGroupToken(Group group, Integer daysExtension) {
+    public Group extendGroupToken(Group group, Integer daysExtension, User user) {
         Integer daysMillis = 24 * 60 * 60 * 1000; // need to put this somewhere else so not copying & pasting
         Timestamp newExpiryDateTime = new Timestamp(group.getTokenExpiryDateTime().getTime() + daysExtension * daysMillis);
         group.setTokenExpiryDateTime(newExpiryDateTime);
-        return saveGroup(group,true,String.format("Extend group toke %s to %s",group.getGroupTokenCode(),newExpiryDateTime.toString()),dontKnowTheUser);
+        return saveGroup(group,true,String.format("Extend group token %s to %s",group.getGroupTokenCode(),newExpiryDateTime.toString()),user.getId());
     }
 
     @Override
-    public Group invalidateGroupToken(Group group) {
+    public Group invalidateGroupToken(Group group, User user) {
         group.setTokenExpiryDateTime(new Timestamp(Calendar.getInstance().getTimeInMillis()));
         group.setGroupTokenCode(null); // alternately, set it to ""
-        return saveGroup(group,true,"Invalidate Group Token",dontKnowTheUser);
+        return saveGroup(group,true,"Invalidate Group Token",user.getId());
     }
 
     @Override
-    public Group invalidateGroupToken(Long groupId) {
-        return invalidateGroupToken(loadGroup(groupId));
-    }
-
-    @Override
-    public boolean groupHasValidToken(Long groupId) {
-        return groupHasValidToken(loadGroup(groupId));
+    public Group invalidateGroupToken(Long groupId, User user) {
+        return invalidateGroupToken(loadGroup(groupId), user);
     }
 
     @Override
@@ -553,14 +459,9 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public Group setGroupDiscoverable(Long groupId, boolean discoverable, User user) {
+    public Group setGroupDiscoverable(Group group, boolean discoverable, Long userId) {
         // todo: create a dedicated permission for this, and uncomment, when we have permission setting working on group create
         // todo: once we have implemented 'request to join', will need to wire that up here
-        return setGroupDiscoverable(loadGroup(groupId), discoverable, user.getId());
-    }
-
-    @Override
-    public Group setGroupDiscoverable(Group group, boolean discoverable, Long userId) {
         if (group.isDiscoverable() == discoverable) return group;
         String logEntry = discoverable ? "Set group publicly discoverable" : "Set group hidden from public";
         group.setDiscoverable(discoverable);
@@ -568,16 +469,17 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public boolean canUserModifyGroup(Group group, User user) {
-        Permission permission = permissionsManager.findByName(BasePermissions.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-        return accessControlService.hasGroupPermission(permission, group, user);
+    public List<Group> findDiscoverableGroups(String groupName) {
+        return groupRepository.findByGroupNameContainingAndDiscoverable(groupName, true);
     }
 
     private String generateCodeString() {
-        // todo: implement a unique code generating algorithm that actually makes sense
-        //return String.valueOf(1000 + new Random().nextInt(9999));
         return String.valueOf(tokenGeneratorService.getNextToken());
     }
+
+    /**
+     * Methods for working with subgroups
+     */
 
     /*
     returns the new sub-group
@@ -588,8 +490,25 @@ public class GroupManager implements GroupManagementService {
 
     public Group createSubGroup(User createdByUser, Group group, String subGroupName) {
         Group subGroup = groupRepository.save(new Group(subGroupName, createdByUser, group));
-        GroupLog groupLog = groupLogRepository.save(new GroupLog(group.getId(),createdByUser.getId(),GroupLogType.SUBGROUP_ADDED,subGroup.getId(),String.format("Sub Group: %s added",subGroupName)));
+        recordGroupLog(group.getId(),createdByUser.getId(),GroupLogType.SUBGROUP_ADDED, subGroup.getId(),
+                       String.format("Subgroup: %s added",subGroupName));
         return subGroup;
+    }
+
+    @Override
+    public List<Group> getSubGroups(Group group) {
+        return groupRepository.findByParent(group);
+    }
+
+    @Override
+    public boolean hasSubGroups(Group group) {
+        // slightly redundant for now, but if trees get large & complex may want to replace with quick count query (a la 'if user exists')
+        return !getSubGroups(group).isEmpty();
+    }
+
+    @Override
+    public List<User> getUsersInGroupNotSubGroups(Long groupId) {
+        return loadGroup(groupId).getGroupMembers();
     }
 
     @Override
@@ -602,11 +521,6 @@ public class GroupManager implements GroupManagementService {
         List<User> userList = new ArrayList<User>();
         recursiveUserAdd(group, userList);
         return userList;
-    }
-
-    @Override
-    public List<User> getMembersExcludingCreator(Group group) {
-        return null;
     }
 
     @Override
@@ -641,9 +555,6 @@ public class GroupManager implements GroupManagementService {
         return savedChild;
     }
 
-    /*
-    The method checks whether the
-     */
     @Override
     public boolean isGroupAlsoParent(Group possibleChildGroup, Group possibleParentGroup) {
         for (Group g : getAllParentGroups(possibleParentGroup)) {
@@ -654,15 +565,14 @@ public class GroupManager implements GroupManagementService {
         return false;
     }
 
+    /**
+     * Section of methods to add and remove a range of group properties
+     */
+
     @Override
     public Group setGroupDefaultReminderMinutes(Group group, Integer minutes) {
         group.setReminderMinutes(minutes);
         return saveGroup(group,true,String.format("Set reminder minutes to %d",minutes),dontKnowTheUser);
-    }
-
-    @Override
-    public Group setGroupDefaultReminderMinutes(Long groupId, Integer minutes) {
-        return setGroupDefaultReminderMinutes(loadGroup(groupId), minutes);
     }
 
     @Override
@@ -678,12 +588,11 @@ public class GroupManager implements GroupManagementService {
         for (User user : userList) {
             if (!user.isHasInitiatedSession()) {
                 log.info("User hasn't set their own language, so adjusting it to: " + locale + " for this user: " + user.nameToDisplay());
-                userManager.setUserLanguage(user, locale);
+                user.setLanguageCode(locale);
+                userManager.save(user);
             }
         }
-
         group.setDefaultLanguage(locale);
-
         return saveGroup(group,true,String.format("Set default language to %s", locale),dontKnowTheUser);
 
     }
@@ -709,7 +618,8 @@ public class GroupManager implements GroupManagementService {
 
     @Override
     public void assignDefaultLanguage(Group group, User user) {
-        userManager.setUserLanguage(user, group.getDefaultLanguage());
+        user.setLanguageCode(group.getDefaultLanguage());
+        userManager.save(user);
     }
 
     @Override
@@ -736,11 +646,11 @@ public class GroupManager implements GroupManagementService {
     public LocalDateTime getLastTimeGroupActive(Group group) {
         // todo: we should upgrade this to a slightly complex single query that checks both events and grouplogs at once
         // for present, if it finds an event, returns the event, else returns the date of last modification, likely date of creation
-        Event lastEvent = eventRepository.findFirstByAppliesToGroupAndEventStartDateTimeNotNullOrderByEventStartDateTimeDesc(group);
-        if (lastEvent == null)
+        // Event lastEvent = eventRepository.findFirstByAppliesToGroupAndEventStartDateTimeNotNullOrderByEventStartDateTimeDesc(group);
+        // if (lastEvent == null)
             return getLastTimeGroupModified(group);
-        else
-            return lastEvent.getEventStartDateTime().toLocalDateTime();
+        //else
+        //    return lastEvent.getEventStartDateTime().toLocalDateTime();
     }
 
     @Override
@@ -766,28 +676,28 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public Group setGroupInactive(Group group) {
+    public Group setGroupInactive(Group group, User user) {
         // todo errors and exception throwing
         group.setActive(false);
         Group savedGroup = groupRepository.save(group);
-        GroupLog groupLog = groupLogRepository.save(new GroupLog(group.getId(),dontKnowTheUser,GroupLogType.GROUP_REMOVED,0L,String.format("Set group inactive")));
+        recordGroupLog(group.getId(),user.getId(),GroupLogType.GROUP_REMOVED,0L,String.format("Set group inactive"));
         return savedGroup;
     }
 
     @Override
-    public Group setGroupInactive(Long groupId) {
-        return setGroupInactive(loadGroup(groupId));
+    public Group setGroupInactive(Long groupId, User user) {
+        return setGroupInactive(loadGroup(groupId), user);
     }
 
     @Override
-    public Group mergeGroups(Long firstGroupId, Long secondGroupId) {
+    public Group mergeGroups(Long firstGroupId, Long secondGroupId, Long mergingUserId) {
         log.info("Okay, trying to merge these groups");
-        return mergeGroups(loadGroup(firstGroupId), loadGroup(secondGroupId));
+        return mergeGroups(loadGroup(firstGroupId), loadGroup(secondGroupId), mergingUserId);
     }
 
     @Override
-    public Group mergeGroupsLeaveActive(Long firstGroupId, Long secondGroupId) {
-        return mergeGroups(loadGroup(firstGroupId), loadGroup(secondGroupId), false);
+    public Group mergeGroupsLeaveActive(Long firstGroupId, Long secondGroupId, Long mergingUserId) {
+        return mergeGroups(loadGroup(firstGroupId), loadGroup(secondGroupId), false, mergingUserId);
     }
 
     @Override
@@ -795,21 +705,22 @@ public class GroupManager implements GroupManagementService {
         Group consolidatedGroup = new Group(newGroupName, creatingUser);
         Set<User> setOfMembers = new HashSet<>(loadGroup(firstGroupId).getGroupMembers());
         setOfMembers.addAll(loadGroup(secondGroupId).getGroupMembers());
+
         consolidatedGroup.setGroupMembers(new ArrayList<>(setOfMembers));
         Group savedGroup = saveGroup(consolidatedGroup,true,String.format("Merged group %d with %d",secondGroupId,firstGroupId),creatingUser.getId());
-        for (User u : setOfMembers) {
-            GroupLog groupLog = groupLogRepository.save(new GroupLog(savedGroup.getId(),creatingUser.getId(),GroupLogType.GROUP_MEMBER_ADDED,u.getId()));
-        }
+        for (User u : setOfMembers)
+            wireNewGroupMemberLogsRoles(savedGroup, u, creatingUser.getId(), true);
+
         return savedGroup;
     }
 
     @Override
-    public Group mergeGroups(Group groupA, Group groupB) {
-        return mergeGroups(groupA, groupB, true);
+    public Group mergeGroups(Group groupA, Group groupB, Long mergingUserId) {
+        return mergeGroups(groupA, groupB, true, mergingUserId);
     }
 
     @Override
-    public Group mergeGroups(Group groupA, Group groupB, boolean setConsolidatedGroupInactive) {
+    public Group mergeGroups(Group groupA, Group groupB, boolean setConsolidatedGroupInactive, Long mergingUserId) {
 
         Group largerGroup, smallerGroup;
 
@@ -822,26 +733,25 @@ public class GroupManager implements GroupManagementService {
             smallerGroup = groupA;
         }
 
-        return mergeGroupsSpecifyOrder(largerGroup, smallerGroup, setConsolidatedGroupInactive);
+        return mergeGroupsSpecifyOrder(largerGroup, smallerGroup, setConsolidatedGroupInactive, mergingUserId);
     }
 
     @Override
-    public Group mergeGroupsSpecifyOrder(Group groupInto, Group groupFrom, boolean setFromGroupInactive) {
+    public Group mergeGroupsSpecifyOrder(Group groupInto, Group groupFrom, boolean setFromGroupInactive, Long mergingUserId) {
 
         // todo: optimize this, almost certainly very slow
-        for (User user : new ArrayList<>(groupFrom.getGroupMembers())) {
-            addGroupMember(groupInto, user);
-        }
+        // todo: figure out how to transfer roles ... original group roles move over?
+        for (User user : new ArrayList<>(groupFrom.getGroupMembers()))
+            addGroupMember(groupInto, user, mergingUserId, false);
 
         groupFrom.setActive(!setFromGroupInactive);
         saveGroup(groupFrom,true,String.format("Set group %d inactive",groupFrom.getId()),dontKnowTheUser);
-
         return saveGroup(groupInto,true,String.format("Merged group %d into %d",groupFrom.getId(),groupInto.getId()),dontKnowTheUser);
     }
 
     @Override
-    public Group mergeGroupsSpecifyOrder(Long groupIntoId, Long groupFromId, boolean setFromGroupInactive) {
-        return mergeGroupsSpecifyOrder(loadGroup(groupIntoId), loadGroup(groupFromId), setFromGroupInactive);
+    public Group mergeGroupsSpecifyOrder(Long groupIntoId, Long groupFromId, boolean setFromGroupInactive, Long mergingUserId) {
+        return mergeGroupsSpecifyOrder(loadGroup(groupIntoId), loadGroup(groupFromId), setFromGroupInactive, mergingUserId);
     }
 
     @Override
@@ -919,31 +829,6 @@ public class GroupManager implements GroupManagementService {
         }
 
         return filteredGroups;
-    }
-
-    @Override
-    public boolean canUserMakeGroupInactive(User user, Group group) {
-        // todo: Integrate with permission checking -- for now, just checking if group created by user in last 48 hours
-        // todo: the time checking would be so much easier if we use Joda or Java 8 DateTime ...
-        boolean createdByUser = (group.getCreatedByUser().getId() == user.getId()); // full equals doesn't work on session-loaded user
-        Timestamp thresholdTime = new Timestamp(Calendar.getInstance().getTimeInMillis() - (48 * 60 * 60 * 1000));
-        boolean groupCreatedSinceThreshold = (group.getCreatedDateTime().after(thresholdTime));
-        return (createdByUser && groupCreatedSinceThreshold);
-    }
-
-    @Override
-    public boolean canUserMakeGroupInactive(User user, Long groupId) {
-        return canUserMakeGroupInactive(user, loadGroup(groupId));
-    }
-
-    @Override
-    public boolean isGroupCreatedByUser(Long groupId, User user) {
-        return (loadGroup(groupId).getCreatedByUser() == user);
-    }
-
-    @Override
-    public String getGroupName(Long groupId) {
-        return loadGroup(groupId).getName("");
     }
 
     @Override

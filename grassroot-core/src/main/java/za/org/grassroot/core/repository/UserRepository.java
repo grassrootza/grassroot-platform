@@ -55,5 +55,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("select u from User u, EventLog el, Event e where e = ?1 and el.event = e and u = el.user and el.eventLogType = za.org.grassroot.core.enums.EventLogType.EventRSVP and el.message = 'No'")
     List<User> findUsersThatRSVPNoForEvent(Event event);
 
+    List<User> findByGroupsPartOfAndIdNot(Group group, Long excludedUserId);
 
 }

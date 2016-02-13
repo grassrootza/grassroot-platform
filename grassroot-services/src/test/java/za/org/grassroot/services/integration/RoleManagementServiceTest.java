@@ -43,15 +43,15 @@ public class RoleManagementServiceTest extends AbstractTransactionalJUnit4Spring
     @Autowired
     private PermissionsManagementService permissionsManagementService;
 
-    @Autowired
-    private GroupAccessControlManagementService groupAccessControlManagementService;
+    // @Autowired
+    // private GroupAccessControlManagementService groupAccessControlManagementService;
 
     @Test
     @Rollback
     public void shouldAssignDefaultPermissionsToRole() {
 
         User user = userManagementService.loadOrSaveUser("0810001111");
-        Group group = groupManagementService.createNewGroup(user, "test group");
+        Group group = groupManagementService.createNewGroup(user, "test group", false);
         Role organizerRole = roleManagementService.addRoleToGroup(BaseRoles.ROLE_GROUP_ORGANIZER, group);
         Permission addUserPermission = permissionsManagementService.findByName(BasePermissions.GROUP_PERMISSION_ADD_GROUP_MEMBER);
         organizerRole.setPermissions(permissionsManagementService.defaultGroupOrganizerPermissions());
@@ -86,7 +86,7 @@ public class RoleManagementServiceTest extends AbstractTransactionalJUnit4Spring
         assertNotNull(user2.getUsername());
         assertNotNull(user3.getUsername());
 
-        Group group = groupManagementService.createNewGroup(user1, "test group");
+        Group group = groupManagementService.createNewGroup(user1, "test group", false);
 
         // roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, group, user1); // todo: fix authentication
         // roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_COMMITTEE_MEMBER, group, user2);
@@ -98,8 +98,8 @@ public class RoleManagementServiceTest extends AbstractTransactionalJUnit4Spring
     public void shouldReturnCorrectGroupRoles() {
 
         User user1 = userManagementService.loadOrSaveUser("27810005555");
-        Group group1 = groupManagementService.createNewGroupWithCreatorAsMember(user1, "test group 1");
-        Group group2 = groupManagementService.createNewGroupWithCreatorAsMember(user1, "test group 2");
+        Group group1 = groupManagementService.createNewGroupWithCreatorAsMember(user1, "test group 1", false);
+        Group group2 = groupManagementService.createNewGroupWithCreatorAsMember(user1, "test group 2", false);
 
         Role role1 = roleManagementService.addRoleToGroup(BaseRoles.ROLE_ORDINARY_MEMBER, group1);
         Role role2 = roleManagementService.addRoleToGroup(BaseRoles.ROLE_COMMITTEE_MEMBER, group2);

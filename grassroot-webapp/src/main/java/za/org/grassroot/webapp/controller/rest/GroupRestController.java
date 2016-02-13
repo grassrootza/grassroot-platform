@@ -45,7 +45,7 @@ public class GroupRestController {
 
     @RequestMapping(value = "/add/{userid}/{phonenumbers}", method = RequestMethod.POST)
     public GroupDTO add(@PathVariable("userid") Long userid,@PathVariable("phonenumbers") String phoneNumbers) {
-        return new GroupDTO(groupManagementService.createNewGroup(userid,PhoneNumberUtil.splitPhoneNumbers(phoneNumbers).get("valid")));
+        return new GroupDTO(groupManagementService.createNewGroup(userid,PhoneNumberUtil.splitPhoneNumbers(phoneNumbers).get("valid"), true));
     }
 
     @RequestMapping(value = "/add/subgroup/{userId}/{groupId}/{subGroupName}",
@@ -62,13 +62,13 @@ public class GroupRestController {
             method = RequestMethod.POST)
     public GroupDTO addUserToGroup(@PathVariable("userId") Long userId,
                                 @PathVariable("groupId") Long groupId) {
-        return new GroupDTO(groupManagementService.addGroupMember(groupId, userId));
+        return new GroupDTO(groupManagementService.addGroupMember(groupId, userId, userId, true));
     }
     @RequestMapping(value = "/remove/userfromgroup/{userId}/{groupId}",
             method = RequestMethod.POST)
     public GroupDTO removeUserFromGroup(@PathVariable("userId") Long userId,
                                    @PathVariable("groupId") Long groupId) {
-        return new GroupDTO(groupManagementService.removeGroupMember(groupId, userRepository.findOne(userId)));
+        return new GroupDTO(groupManagementService.removeGroupMember(groupId, userRepository.findOne(userId), userRepository.findOne(userId)));
     }
 
     @RequestMapping(value = "/get/userjoingroup/{userId}/{groupId}",

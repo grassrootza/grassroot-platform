@@ -88,6 +88,18 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
 
     }
 
+    @Override
+    public void addUserGroupPermissions(Group group, User addingToUser, User modifyingUser, Set<Permission> groupPermissions) {
+        // USSD sessions (& those over API later) will not have user object in auth, so need to construct it
+        // log.info("Adding permissions, authentication currently ... " + SecurityContextHolder.getContext().getAuthentication());
+        if (SecurityContextHolder.getContext().getAuthentication() == null) {
+            Authentication auth = new UsernamePasswordAuthenticationToken(modifyingUser, modifyingUser.getPassword(), modifyingUser.getAuthorities());
+            SecurityContextHolder.getContext().setAuthentication(auth);
+        }
+        // log.info("After null check & setting, context set to ... " + SecurityContextHolder.getContext().getAuthentication());
+        addUserGroupPermissions(group, addingToUser, groupPermissions);
+    }
+
     /**
      * @param objectIdentity
      * @return
@@ -97,7 +109,7 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
         try {
             return (MutableAcl) mutableAclService.readAclById(objectIdentity);
         } catch (NotFoundException e) {
-
+            log.info("Inside mutableAcl, with authentication context ... " + SecurityContextHolder.getContext().getAuthentication());
             MutableAcl acl = mutableAclService.createAcl(objectIdentity);
             return (MutableAcl) mutableAclService.readAclById(objectIdentity);
 

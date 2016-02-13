@@ -38,6 +38,8 @@ public interface UserManagementService {
 
     User loadOrSaveUser(String inputNumber, String currentUssdMenu);
 
+    void saveUssdMenu(User user, String menuToSave);
+
     User loadOrSaveUser(String inputNumber, boolean isInitiatingSession);
 
     public User loadOrSaveUser(User passedUser);
@@ -73,6 +75,10 @@ public interface UserManagementService {
     List<User> getUsersFromNumbers(List<String> listOfNumbers);
 
     List<User> getGroupMembersSortedById(Group group);
+
+    List<User> getGroupMembersWithoutCreator(Group group);
+
+    List<User> getGroupMembersWithout(Group group, Long excludedUserId);
 
 
     /*

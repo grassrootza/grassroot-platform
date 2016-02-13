@@ -228,4 +228,34 @@ public class UserRepositoryTest {
 
     }
 
+    @Test
+    public void shouldFindGroupMembersExcludingCreator() {
+        String phoneBase = "080555000";
+
+        User testUser = userRepository.save(new User(phoneBase +" 1", "tester1"));
+        User user2 = userRepository.save(new User(phoneBase + "2", "anonymous"));
+        User user3 = userRepository.save(new User(phoneBase + "3", "tester2"));
+
+        Group testGroup = groupRepository.save(new Group("tg1", testUser));
+        testGroup.addMember(testUser);
+        testGroup.addMember(user2);
+        testGroup.addMember(user3);
+        Group testGroupFromDb = groupRepository.save(testGroup);
+
+        List<Long> memberIds = Arrays.asList(user2.getId(), user3.getId());
+
+        assertThat(testGroupFromDb.getGroupMembers().size(), is(3));
+        assertTrue(testGroupFromDb.getGroupMembers().contains(testUser));
+        assertTrue(testGroupFromDb.getGroupMembers().contains(user2));
+        assertTrue(testGroupFromDb.getGroupMembers().contains(user3));
+
+        List<User> nonCreatorMembers = userRepository.findByGroupsPartOfAndIdNot(testGroupFromDb, testUser.getId());
+
+        assertThat(nonCreatorMembers.size(), is(2));
+        assertFalse(nonCreatorMembers.contains(testUser));
+        assertTrue(nonCreatorMembers.contains(user2));
+        assertTrue(nonCreatorMembers.contains(user3));
+
+    }
+
 }

@@ -36,7 +36,6 @@ public class USSDGroupUtil extends USSDUtil {
     private static final String groupIdUrlEnding = "?" + groupIdParameter + "=";
     private static final String validNumbers = "valid";
     private static final String invalidNumbers = "error";
-    private static final String doSuffix ="-do";
 
     private static final SimpleDateFormat unnamedGroupDate = new SimpleDateFormat("d MMM");
 
@@ -149,7 +148,7 @@ public class USSDGroupUtil extends USSDUtil {
             groupId = 0L;
         } else {
             log.info("About to create group with these numbers ... " + enteredNumbers.get(validNumbers).toString() + ".... created by this user: " + user.toString());
-            Group createdGroup = groupManager.createNewGroup(user, enteredNumbers.get(validNumbers));
+            Group createdGroup = groupManager.createNewGroup(user, enteredNumbers.get(validNumbers), true);
             log.info("Okay, we created this group ... " + createdGroup);
             checkForErrorsAndSetPrompt(user, section, menu, createdGroup.getId(), enteredNumbers.get(invalidNumbers), returnUrl, true);
             groupId = createdGroup.getId();
@@ -162,7 +161,7 @@ public class USSDGroupUtil extends USSDUtil {
     public USSDMenu addNumbersToExistingGroup(User user, Long groupId, USSDSection section, String userInput, String returnUrl)
             throws URISyntaxException {
         Map<String, List<String>> enteredNumbers = PhoneNumberUtil.splitPhoneNumbers(userInput);
-        groupManager.addNumbersToGroup(groupId, enteredNumbers.get(validNumbers));
+        groupManager.addNumbersToGroup(groupId, enteredNumbers.get(validNumbers), user, true);
         return checkForErrorsAndSetPrompt(user, section, new USSDMenu(true), groupId, enteredNumbers.get(invalidNumbers), returnUrl, false);
     }
 
