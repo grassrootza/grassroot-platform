@@ -114,7 +114,7 @@ public class GroupController extends BaseController {
     @RequestMapping(value = "join", method = RequestMethod.POST)
     public String joinGroup(Model model, @RequestParam Long groupId, HttpServletRequest request, RedirectAttributes redirectAttributes) {
         // todo: think through security, privacy, etc
-        groupManagementService.addGroupMember(groupId, getUserProfile().getId());
+        groupManagementService.addGroupMember(groupId, getUserProfile().getId(), getUserProfile().getId(), true);
         addMessage(redirectAttributes, MessageType.SUCCESS, "group.join.success", request);
         return "redirect:/home"; // redirecting to group view is creating issues ... todo: fix those
     }
@@ -151,7 +151,7 @@ public class GroupController extends BaseController {
         model.addAttribute("subGroups", groupManagementService.getSubGroups(group));
         model.addAttribute("openToken", groupManagementService.groupHasValidToken(group));
         model.addAttribute("canSeeMemberDetails", groupAccessControlManagementService.
-                hasGroupPermission(BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS, group, user)); // todo: try use Th sec
+                hasGroupPermission(BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS, group, user)); // todo: try use Th sec*/
 
         if (hasUpdatePermission) {
             model.addAttribute("canAlter", hasUpdatePermission);
@@ -206,7 +206,7 @@ public class GroupController extends BaseController {
 
         timeStart = System.currentTimeMillis();
         User userCreator = userManagementService.getUserById(getUserProfile().getId());
-        Group groupToSave = groupManagementService.createNewGroup(userCreator, groupCreator.getGroupName());
+        Group groupToSave = groupManagementService.createNewGroup(userCreator, groupCreator.getGroupName(), true);
         boolean creatorInGroup = false;
         timeEnd = System.currentTimeMillis();
         log.info(String.format("User load & group creation: %d msecs", timeEnd - timeStart));
@@ -220,8 +220,7 @@ public class GroupController extends BaseController {
                     memberToAdd.setDisplayName(addedUser.getDisplayName());
                     memberToAdd = userManagementService.save(memberToAdd);
                 }
-                groupManagementService.addGroupMemberWithDefaultRole(groupToSave, memberToAdd, BaseRoles.ROLE_ORDINARY_MEMBER);
-                // groupManagementService.addGroupMember(groupToSave, memberToAdd);
+                groupManagementService.addGroupMember(groupToSave, memberToAdd, userCreator.getId(), true);
             }
         }
 
@@ -248,7 +247,7 @@ public class GroupController extends BaseController {
 
         if (groupCreator.getGenerateToken()) {
             log.info("Generating a join code for the newly created group");
-            groupToSave = groupManagementService.generateGroupToken(groupToSave, groupCreator.getTokenDaysValid());
+            groupToSave = groupManagementService.generateGroupToken(groupToSave, groupCreator.getTokenDaysValid(), userCreator);
         }
         timeEnd = System.currentTimeMillis();
         log.info(String.format("Final bit of scaffolding took: %d msecs", timeEnd - timeStart));
@@ -404,8 +403,7 @@ public class GroupController extends BaseController {
 
         log.info("These are the users passed from the store: " + updatedUserList);
 
-
-        Group savedGroup = groupManagementService.addRemoveGroupMembers(groupToUpdate, updatedUserList);
+        Group savedGroup = groupManagementService.addRemoveGroupMembers(groupToUpdate, updatedUserList, getUserProfile().getId(), true);
 
         addMessage(redirectAttributes, MessageType.SUCCESS, "group.update.success", new Object[]{savedGroup.getGroupName()}, request);
         redirectAttributes.addAttribute("groupId", savedGroup.getId());
@@ -473,19 +471,19 @@ public class GroupController extends BaseController {
         switch (action) {
             case "create":
                 if (days == 0)
-                    group = groupManagementService.generateGroupToken(group);
+                    group = groupManagementService.generateGroupToken(group, getUserProfile());
                 else
-                    group = groupManagementService.generateGroupToken(group, days);
+                    group = groupManagementService.generateGroupToken(group, days, getUserProfile());
                 log.info("New token created with value: " + group.getGroupTokenCode());
                 addMessage(redirectAttributes, MessageType.SUCCESS, "group.token.creation.success",
                            new Object[]{group.getGroupTokenCode()}, request);
                 break;
             case "extend":
-                group = groupManagementService.extendGroupToken(group, days);
+                group = groupManagementService.extendGroupToken(group, days, getUserProfile());
                 log.info("Token extended until: " + group.getTokenExpiryDateTime().toString());
                 break;
             case "close":
-                group = groupManagementService.invalidateGroupToken(group);
+                group = groupManagementService.invalidateGroupToken(group, getUserProfile());
                 log.info("Token closed!");
                 break;
         }
@@ -577,7 +575,7 @@ public class GroupController extends BaseController {
 
         Group groupToMakeChild = groupManagementService.loadGroup(groupId);
 
-        List<Group> userGroups = groupManagementService.getGroupsFromUser(getUserProfile());
+        List<Group> userGroups = groupManagementService.getActiveGroupsPartOf(getUserProfile().getId());
         userGroups.remove(groupToMakeChild);
         List<Group> possibleParents = new ArrayList<>(userGroups);
 
@@ -695,7 +693,7 @@ public class GroupController extends BaseController {
         // todo: add error handling
         Group groupInto = groupManagementService.loadGroup(groupIdInto);
         Group groupFrom = groupManagementService.loadGroup(groupIdFrom);
-        Group consolidatedGroup = groupManagementService.mergeGroupsSpecifyOrder(groupInto, groupFrom, !leaveActive);
+        Group consolidatedGroup = groupManagementService.mergeGroupsSpecifyOrder(groupInto, groupFrom, !leaveActive, getUserProfile().getId());
         Integer[] userCounts = new Integer[]{groupFrom.getGroupMembers().size(),
                 groupManagementService.getGroupSize(consolidatedGroup, false)};
         redirectAttributes.addAttribute("groupId", consolidatedGroup.getId());
@@ -735,7 +733,7 @@ public class GroupController extends BaseController {
 
         if (groupManagementService.canUserMakeGroupInactive(getUserProfile(), group) &&
                 confirmText.toLowerCase().equals("delete")) {
-            groupManagementService.setGroupInactive(group);
+            groupManagementService.setGroupInactive(group, getUserProfile());
             addMessage(redirectAttributes, MessageType.SUCCESS, "group.delete.success", request);
             return "redirect:/home";
         } else {
@@ -764,7 +762,7 @@ public class GroupController extends BaseController {
         User user = userManagementService.loadUser(getUserProfile().getId()); // else equals in "is user in group" fails
 
         if (groupManagementService.isUserInGroup(group, user) && confirmText.toLowerCase().equals("unsubscribe")) {
-            groupManagementService.unsubscribeMember(group, user);
+            groupManagementService.removeGroupMember(group, user, user);
             addMessage(redirectAttributes, MessageType.SUCCESS, "group.unsubscribe.success", request);
         } else {
             addMessage(redirectAttributes, MessageType.ERROR, "group.unsubscribe.error", request);

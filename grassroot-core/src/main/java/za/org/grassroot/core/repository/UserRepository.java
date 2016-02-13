@@ -60,5 +60,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query(value = "select u from User u where u.phoneNumber IN :phone_numbers")
     List<User> findExistingUsers(@Param("phone_numbers") List<String> numbers);
 
+    List<User> findByGroupsPartOfAndIdNot(Group group, Long excludedUserId);
 
 }

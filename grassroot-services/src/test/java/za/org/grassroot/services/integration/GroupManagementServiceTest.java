@@ -83,9 +83,10 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         User user = userManagementService.loadOrSaveUser(testUserBase + "0");
         User user2 = userManagementService.loadOrSaveUser(testUserBase + "1");
 
-        Group group = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "1"));
+        // todo: swithc these to "true" on roles once set up a user with authorities
+        Group group = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "1"), false);
         assertThat(group.getGroupMembers().size(), is(2));
-        Group group2 = groupManagementService.addGroupMember(group, user2);
+        Group group2 = groupManagementService.addGroupMember(group, user2, user.getId(), false);
         assertThat(group2.getGroupMembers().size(), is(2));
     }
 
@@ -93,9 +94,9 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
     @Rollback
     public void shouldAddMultipleNumbersToGroup() {
         User user = userManagementService.loadOrSaveUser("0810001111");
-        Group group = groupManagementService.createNewGroup(user, "test group");
+        Group group = groupManagementService.createNewGroup(user, "test group", false);
         log.info("ZOG: Group created ..." + group.toString());
-        groupManagementService.addNumbersToGroup(group.getId(), Arrays.asList("0810001111", "0810001112", "0810001113", "0810001114"));
+        groupManagementService.addNumbersToGroup(group.getId(), Arrays.asList("0810001111", "0810001112", "0810001113", "0810001114"), user, false);
         log.info("ZOG: Group now looks like ... " + group.toString() + "... with groupMembers ... " + group.getGroupMembers().toString());
         assertNotNull(group.getGroupMembers());
         assertEquals(4, group.getGroupMembers().size());
@@ -107,9 +108,9 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
     public void shouldSetGroupInactive() {
         assertThat(groupRepository.count(), is(0L));
         User user = userManagementService.loadOrSaveUser(testUserBase + "1");
-        Group group = groupManagementService.createNewGroup(user, testGroupBase + "1");
-        Group group2 = groupManagementService.createNewGroup(user, testGroupBase + "2");
-        groupManagementService.setGroupInactive(group);
+        Group group = groupManagementService.createNewGroup(user, testGroupBase + "1", false);
+        Group group2 = groupManagementService.createNewGroup(user, testGroupBase + "2", false);
+        groupManagementService.setGroupInactive(group, user);
 
         // todo: do a 'find by active' and count here instead
         Group groupFromDb = groupManagementService.loadGroup(group.getId());
@@ -123,10 +124,10 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         assertThat(groupRepository.count(), is(0L));
         User user1 = userManagementService.loadOrSaveUser(testUserBase + "1");
         User user2 = userManagementService.loadOrSaveUser(testUserBase + "2");
-        Group group1 = groupManagementService.createNewGroup(user1, testGroupBase + "1");
-        Group group2 = groupManagementService.createNewGroup(user2, testGroupBase + "2");
-        groupManagementService.addGroupMember(group1, user1);
-        groupManagementService.addGroupMember(group2, user1);
+        Group group1 = groupManagementService.createNewGroup(user1, testGroupBase + "1", false);
+        Group group2 = groupManagementService.createNewGroup(user2, testGroupBase + "2", false);
+        groupManagementService.addGroupMember(group1, user1, user1.getId(), false);
+        groupManagementService.addGroupMember(group2, user1, user1.getId(), false);
         assertTrue(group2.getGroupMembers().contains(user1));
         List<Group> list1 = groupManagementService.getActiveGroupsPartOf(user1);
         List<Group> list2 = groupManagementService.getCreatedGroups(user1);
@@ -141,14 +142,14 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         assertThat(groupRepository.count(), is(0L));
         User user = userManagementService.loadOrSaveUser(testUserBase + "2");
 
-        Group group1 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "3", testUserBase + "4", testUserBase + "5"));
-        Group group2 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "6", testUserBase + "7"));
+        Group group1 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "3", testUserBase + "4", testUserBase + "5"), false);
+        Group group2 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "6", testUserBase + "7"), false);
 
         assertThat(group1.getGroupMembers().size(), is(4));
         assertTrue(group1.isActive());
         assertThat(group2.getGroupMembers().size(), is(3));
 
-        groupManagementService.mergeGroups(group1, group2);
+        groupManagementService.mergeGroups(group1, group2, user.getId());
         assertNotNull(group1);
         assertNotNull(group2);
         assertTrue(group1.isActive());
@@ -163,15 +164,15 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         assertThat(groupRepository.count(), is(0L));
         User user = userManagementService.loadOrSaveUser(testUserBase + "3");
 
-        Group group1 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "4"));
-        Group group2 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "5"));
+        Group group1 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "4"), false);
+        Group group2 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "5"), false);
 
         List<Group> list1 = groupManagementService.getActiveGroupsPartOf(user);
         assertThat(list1.size(), is(2));
         assertTrue(list1.contains(group1));
         assertTrue(list1.contains(group2));
 
-        groupManagementService.setGroupInactive(group2);
+        groupManagementService.setGroupInactive(group2, user);
 
         List<Group> list2 = groupManagementService.getActiveGroupsPartOf(user);
         assertThat(list2.size(), is(1));
@@ -185,10 +186,10 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         assertThat(groupRepository.count(), is(0L));
         User user = userManagementService.loadOrSaveUser(testUserBase + "0");
 
-        Group group1 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "3", testUserBase + "4", testUserBase + "5"));
-        Group group2 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "6", testUserBase + "7"));
+        Group group1 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "3", testUserBase + "4", testUserBase + "5"), false);
+        Group group2 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "6", testUserBase + "7"), false);
 
-        groupManagementService.mergeGroupsSpecifyOrder(group2, group1, true);
+        groupManagementService.mergeGroupsSpecifyOrder(group2, group1, true, user.getId());
 
         assertNotNull(group1);
         assertNotNull(group2);
@@ -203,9 +204,9 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
     public void groupMergeShouldLeaveActiveIfFlagged() {
         assertThat(groupRepository.count(), is(0L));
         User user = userManagementService.loadOrSaveUser(testUserBase + "1");
-        Group group1 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "2"));
-        Group group2 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "3"));
-        groupManagementService.mergeGroups(group1, group2, false);
+        Group group1 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "2"), false);
+        Group group2 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "3"), false);
+        groupManagementService.mergeGroups(group1, group2, false, user.getId());
         assertNotNull(group1);
         assertNotNull(group2);
         assertTrue(group1.isActive());
@@ -220,10 +221,10 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         User user = userManagementService.loadOrSaveUser(testUserBase + "1");
         User user2 = userManagementService.loadOrSaveUser(testUserBase + "2");
 
-        Group group1 = groupManagementService.createNewGroup(user, testGroupBase + "1");
-        Group group2 = groupManagementService.createNewGroup(user, testGroupBase + "2");
-        Group group3 = groupManagementService.createNewGroup(user, testGroupBase + "3");
-        Group group4 = groupManagementService.createNewGroup(user2, Arrays.asList(testUserBase + "1"));
+        Group group1 = groupManagementService.createNewGroup(user, testGroupBase + "1", false);
+        Group group2 = groupManagementService.createNewGroup(user, testGroupBase + "2", false);
+        Group group3 = groupManagementService.createNewGroup(user, testGroupBase + "3", false);
+        Group group4 = groupManagementService.createNewGroup(user2, Arrays.asList(testUserBase + "1"), false);
 
         assertThat(groupRepository.count(), is(4L));
 
@@ -247,7 +248,7 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
 
         User userProfile = userManagementService.createUserProfile(new User("111111111", "aap1"));
 
-        Group level1 = groupManagementService.createNewGroup(userProfile, Arrays.asList("111111112", "111111113"));
+        Group level1 = groupManagementService.createNewGroup(userProfile, Arrays.asList("111111112", "111111113"), false);
         Group level2 = groupManagementService.createSubGroup(userProfile, level1, "level2 group");
         assertEquals(level2.getParent().getId(), level1.getId());
     }
@@ -257,7 +258,7 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
 
         User userProfile = userManagementService.createUserProfile(new User("111111111", "aap1"));
 
-        Group level1 = groupManagementService.createNewGroup(userProfile, Arrays.asList("111111112", "111111113"));
+        Group level1 = groupManagementService.createNewGroup(userProfile, Arrays.asList("111111112", "111111113"), false);
         Group level2 = groupManagementService.createSubGroup(userProfile, level1, "level2 group");
         assertEquals(level2.getParent().getId(), level1.getId());
         List<Group> children = groupManagementService.getSubGroups(level1);

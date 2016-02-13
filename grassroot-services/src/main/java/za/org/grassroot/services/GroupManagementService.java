@@ -2,13 +2,12 @@ package za.org.grassroot.services;
 
 import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
-import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.GroupTreeDTO;
+import za.org.grassroot.core.enums.GroupLogType;
 
-import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -23,13 +22,13 @@ public interface GroupManagementService {
     Methods to create, save and name groups
      */
 
-    public Group createNewGroup(User creatingUser, String groupName);
+    public Group createNewGroup(User creatingUser, String groupName, boolean addDefaultRole);
 
-    public Group createNewGroup(User creatingUser, List<String> phoneNumbers);
+    public Group createNewGroupWithCreatorAsMember(User creatingUser, String groupName, boolean addDefaultRole);
 
-    public Group createNewGroup(Long creatingUserId, List<String> phoneNumbers);
+    public Group createNewGroup(User creatingUser, List<String> phoneNumbers, boolean addDefaultRoles);
 
-    public Group createNewGroupWithCreatorAsMember(User creatingUser, String groupName);
+    public Group createNewGroup(Long creatingUserId, List<String> phoneNumbers, boolean addDefaultRoles);
 
     public Group saveGroup(Group groupToSave, boolean createGroupLog, String description, Long changedByUserId);
 
@@ -37,24 +36,34 @@ public interface GroupManagementService {
 
     public Group renameGroup(Long groupId, String newGroupName);
 
+    public void recordGroupLog(Long groupId, Long userDoingId, GroupLogType type, Long userOrGroupAffectedId, String description);
+
+    /*
+    Methods to add group members
+     */
+
+    public Group addGroupMember(Group currentGroup, User newMember, Long addingMemberId, boolean addDefaultRole);
+
+    public Group addGroupMember(Long currentGroupId, Long newMemberId, Long addingMemberId, boolean addDefaultRole);
+
+    public Group addNumbersToGroup(Long groupId, List<String> phoneNumbers, User addingUser, boolean addDefaultRoles);
+
+    public Group removeGroupMember(Group group, User user, User removingUser);
+
+    public Group removeGroupMember(Long groupId, User user, User removingUser);
+
+    public Group addRemoveGroupMembers(Group group, List<User> revisedUserList, Long modifyingUserId, boolean addDefaultRoles);
+
 
     /*
     Methods to load and find groups
-    todo: clean up redundancy
     */
-
-    @PreAuthorize("hasPermission(#id, 'za.org.grassroot.core.domain.Group', 'GROUP_PERMISSION_UPDATE_GROUP_DETAILS')")
-    public Group secureLoadGroup(Long id);
 
     public Group loadGroup(Long groupId);
 
     public String getGroupName(Long groupId);
 
-    public List<Group> getGroupsFromUser(User sessionUser);
-
     public List<Group> getCreatedGroups(User creatingUser);
-
-    public List<Group> getGroupsPartOf(User sessionUser);
 
     public List<Group> getActiveGroupsPartOf(User sessionUser);
 
@@ -66,43 +75,17 @@ public interface GroupManagementService {
 
     public List<Group> getListGroupsFromLogbooks(List<LogBook> logBooks);
 
-    public List<Group> findDiscoverableGroups(String groupName);
-
-    /*
-    Methods to find, and add group members
-     */
-
-    public boolean isUserInGroup(Group group, User user);
-
-    public Group addGroupMember(Group currentGroup, User newMember);
-
-    public Group addGroupMemberWithDefaultRole(Group group, User user, String roleName);
-
-    public Group addGroupMember(Long currentGroupId, Long newMemberId);
-
-    public Group removeGroupMember(Group group, User user);
-
-    public Group removeGroupMember(Long groupId, User user);
-
-    public Group addRemoveGroupMembers(Group group, List<User> revisedUserList);
-
-    public Group addNumberToGroup(Long groupId, String phoneNumber);
-
-    public Group addNumbersToGroup(Long groupId, List<String> phoneNumbers);
-
-    public Group unsubscribeMember(Group group, User user);
-
     /*
     Methods to find if a user has an outstanding group management action to perform or groups on which they can perform it
      */
+
+    public boolean isUserInGroup(Group group, User user);
 
     public Group getLastCreatedGroup(User creatingUser);
 
     public boolean needsToRenameGroup(User sessionUser);
 
     public Group groupToRename(User sessionUser);
-
-    public boolean canGroupBeSetInactive(Group group, User user);
 
     public boolean hasActiveGroupsPartOf(User user);
 
@@ -112,7 +95,7 @@ public interface GroupManagementService {
 
     public boolean isGroupCreatedByUser(Long groupId, User user);
 
-    public List<Group> groupsOnWhichCanCallVote(User user);
+    public boolean canUserModifyGroup(Group group, User user);
 
     /*
     Methods to work with group joining tokens and group discovery
@@ -120,32 +103,28 @@ public interface GroupManagementService {
 
     public Group getGroupByToken(String groupToken);
 
-    public Group generateGroupToken(Long groupId);
+    public Group generateGroupToken(Long groupId, User generatingUser);
 
-    public Group generateGroupToken(Group group);
+    public Group generateGroupToken(Group group, User generatingUser);
 
-    public Group generateGroupToken(Group group, Integer daysValid);
+    public Group generateGroupToken(Group group, Integer daysValid, User user);
 
-    public Group generateGroupToken(Long groupId, Integer daysValid);
+    public Group generateGroupToken(Long groupId, Integer daysValid, User user);
 
-    public Group extendGroupToken(Group group, Integer daysExtension);
+    public Group extendGroupToken(Group group, Integer daysExtension, User user);
 
-    public Group invalidateGroupToken(Group group);
+    public Group invalidateGroupToken(Group group, User user);
 
-    public Group invalidateGroupToken(Long groupId);
-
-    public boolean groupHasValidToken(Long groupId);
+    public Group invalidateGroupToken(Long groupId, User user);
 
     public boolean groupHasValidToken(Group group);
 
     public boolean tokenExists(String groupToken);
 
     // @PreAuthorize("hasPermission(#groupId, 'za.org.grassroot.core.domain.Group', 'GROUP_PERMISSION_UPDATE_GROUP_DETAILS')")
-    public Group setGroupDiscoverable(Long groupId, boolean discoverable, User user);
-
     public Group setGroupDiscoverable(Group group, boolean discoverable, Long userId);
 
-    public boolean canUserModifyGroup(Group group, User user);
+    public List<Group> findDiscoverableGroups(String groupName);
 
     /*
     Methods do deal with sub groups and parent groups
@@ -154,8 +133,6 @@ public interface GroupManagementService {
     public Group createSubGroup(User createdByUser, Group group, String subGroupName);
 
     public Group createSubGroup(Long createdByUserId, Long groupId, String subGroupName);
-
-    public List<Group> getActiveTopLevelGroups(User user);
 
     public List<Group> getSubGroups(Group group);
 
@@ -166,8 +143,6 @@ public interface GroupManagementService {
     public List<User> getAllUsersInGroupAndSubGroups(Long groupId);
 
     public List<User> getAllUsersInGroupAndSubGroups(Group group);
-
-    public List<User> getMembersExcludingCreator(Group group);
 
     boolean hasParent(Group group);
 
@@ -189,8 +164,6 @@ public interface GroupManagementService {
      */
 
     public Group setGroupDefaultReminderMinutes(Group group, Integer minutes);
-
-    public Group setGroupDefaultReminderMinutes(Long groupId, Integer minutes);
 
     public Group setGroupDefaultLanguage(Group group, String locale);
 
@@ -217,23 +190,23 @@ public interface GroupManagementService {
     Methods to consolidate groups, and to manage active / inactive
      */
 
-    public Group setGroupInactive(Group group);
+    public Group setGroupInactive(Group group, User user);
 
-    public Group setGroupInactive(Long groupId);
+    public Group setGroupInactive(Long groupId, User user);
 
-    public Group mergeGroups(Long firstGroupId, Long secondGroupId);
+    public Group mergeGroups(Long firstGroupId, Long secondGroupId, Long mergingUserId);
 
-    public Group mergeGroupsLeaveActive(Long firstGroupId, Long secondGroupId);
+    public Group mergeGroupsLeaveActive(Long firstGroupId, Long secondGroupId, Long mergingUserId);
 
     public Group mergeGroupsIntoNew(Long firstGroupId, Long secondGroupId, String newGroupName, User creatingUser);
 
-    public Group mergeGroups(Group firstGroup, Group secondGroup);
+    public Group mergeGroups(Group firstGroup, Group secondGroup, Long mergingUserId);
 
-    public Group mergeGroups(Group firstGroup, Group secondGroup, boolean setConsolidatedGroupInactive);
+    public Group mergeGroups(Group firstGroup, Group secondGroup, boolean setConsolidatedGroupInactive, Long mergingUserId);
 
-    public Group mergeGroupsSpecifyOrder(Group groupInto, Group groupFrom, boolean setFromGroupInactive);
+    public Group mergeGroupsSpecifyOrder(Group groupInto, Group groupFrom, boolean setFromGroupInactive, Long mergingUserId);
 
-    public Group mergeGroupsSpecifyOrder(Long groupIntoId, Long groupFromId, boolean setFromGroupInactive);
+    public Group mergeGroupsSpecifyOrder(Long groupIntoId, Long groupFromId, boolean setFromGroupInactive, Long mergingUserId);
 
     public List<Group> getMergeCandidates(User mergingUser, Long firstGroupSelected);
 
@@ -264,7 +237,6 @@ public interface GroupManagementService {
     List<LocalDate> getMonthsGroupActive(Group group);
 
     //warning: to be used for integration test purposes only
-
 
     /*
     Recursive query better to use than recursive code calls

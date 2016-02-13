@@ -62,6 +62,10 @@ public interface RoleManagementService {
 
     void addDefaultRoleToGroupAndUser(String roleName, Group group, User user);
 
+    void addDefaultRoleToGroupAndUser(String roleName, Group group, User addingToUser, User callingUser);
+
+    void removeUsersRoleInGroup(User user, Group group);
+
     void resetGroupToDefaultRolesPermissions(Long groupId);
 
     User removeGroupRolesFromUser(User user, Group group);

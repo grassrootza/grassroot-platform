@@ -30,7 +30,6 @@ import java.util.concurrent.Executors;
 @EnableJpaRepositories
 @EnableJms
 @EnableScheduling
-@EnableAsync
 public class GrassRootServicesConfig  implements SchedulingConfigurer {
 
     @Bean( name = "servicesMessageSource")
