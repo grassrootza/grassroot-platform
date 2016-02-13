@@ -120,7 +120,7 @@ public class USSDGroupController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber);
 
         Group createdGroup = (interrupted) ?    groupManager.loadGroup(groupId) :
-                                                groupManager.createNewGroupWithCreatorAsMember(user, groupName);
+                                                groupManager.createNewGroupWithCreatorAsMember(user, groupName, true);
 
         userManager.setLastUssdMenu(user, saveGroupMenuWithInput(createGroupMenu + doSuffix, createdGroup.getId(), groupName));
         USSDMenu menu = new USSDMenu(getMessage(thisSection, createGroupMenu + doSuffix, promptKey, createdGroup.getGroupName(), user));
@@ -151,7 +151,7 @@ public class USSDGroupController extends USSDController {
 
         String token = (interrupted || (group.getGroupTokenCode() != null && !group.getGroupTokenCode().equals(""))) ?
             groupManager.loadGroup(groupId).getGroupTokenCode() :
-            groupManager.generateGroupToken(groupId).getGroupTokenCode();
+            groupManager.generateGroupToken(groupId, user).getGroupTokenCode();
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, createGroupAddToken, promptKey, token, user));
 
@@ -301,8 +301,8 @@ public class USSDGroupController extends USSDController {
 
         /* Generate a token, but also set the interruption switch back to null -- group creation is finished, if group was created */
         User sessionUser = userManager.findByInputNumber(inputNumber, null);
-        Group group = (daysValid == 0) ? groupManager.generateGroupToken(groupId) :
-                groupManager.generateGroupToken(groupId, daysValid);
+        Group group = (daysValid == 0) ? groupManager.generateGroupToken(groupId, sessionUser) :
+                groupManager.generateGroupToken(groupId, daysValid, sessionUser);
         return menuBuilder(new USSDMenu(getMessage(thisSection, groupTokenMenu, "created", group.getGroupTokenCode(), sessionUser),
                                               optionsHomeExit(sessionUser)));
     }
@@ -328,7 +328,7 @@ public class USSDGroupController extends USSDController {
                 promptMenu.addMenuOption(groupMenuWithId(groupTokenMenu + "-extend", groupId)+ "&days=" + i, i + daySuffix);
         } else {
             // we have been passed a number of days to extend
-            sessionGroup = groupManager.extendGroupToken(sessionGroup, daysValid);
+            sessionGroup = groupManager.extendGroupToken(sessionGroup, daysValid, sessionUser);
             String date = sessionGroup.getTokenExpiryDateTime().toLocalDateTime().format(dateFormat);
             promptMenu = new USSDMenu(getMessage(thisSection, groupTokenMenu, promptKey + ".extend.done", date, sessionUser),
                                         optionsHomeExit(sessionUser));
@@ -355,7 +355,7 @@ public class USSDGroupController extends USSDController {
         } else if ("yes".equals(confirmed)) {
             sessionUser = userManager.findByInputNumber(inputNumber, null);
             // todo: error handling here (bad token, etc., also, security)
-            groupManager.invalidateGroupToken(groupId);
+            groupManager.invalidateGroupToken(groupId, sessionUser);
             thisMenu = new USSDMenu(getMessage(thisSection, groupTokenMenu, promptKey + ".close-done", sessionUser),
                                     optionsHomeExit(sessionUser));
         } else {
@@ -456,7 +456,7 @@ public class USSDGroupController extends USSDController {
         User sessionUser = userManager.findByInputNumber(inputNumber, null);
         // todo: add error and exception handling, as well as validation and checking (e.g., if user in group, etc)
         // todo: thorough integration testing
-        groupManager.removeGroupMember(groupId, sessionUser);
+        groupManager.removeGroupMember(groupId, sessionUser, sessionUser);
         String returnMessage = getMessage(thisSection, unsubscribePrompt + doSuffix, promptKey, sessionUser);
         return menuBuilder(new USSDMenu(returnMessage, optionsHomeExit(sessionUser)));
     }
@@ -539,16 +539,16 @@ public class USSDGroupController extends USSDController {
 
         switch (action) {
             case "inactive":
-                returnGroupId = groupManager.mergeGroups(firstGroupId, secondGroupId).getId();
+                returnGroupId = groupManager.mergeGroups(firstGroupId, secondGroupId, user.getId()).getId();
                 break;
             case "active":
-                returnGroupId = groupManager.mergeGroupsLeaveActive(firstGroupId, secondGroupId).getId();
+                returnGroupId = groupManager.mergeGroupsLeaveActive(firstGroupId, secondGroupId, user.getId()).getId();
                 break;
             case "new":
                 returnGroupId = groupManager.mergeGroupsIntoNew(firstGroupId, secondGroupId, userInput, user).getId();
                 break;
             default:
-                returnGroupId = groupManager.mergeGroups(firstGroupId, secondGroupId).getId();
+                returnGroupId = groupManager.mergeGroups(firstGroupId, secondGroupId, user.getId()).getId();
                 break;
         }
 
@@ -589,7 +589,7 @@ public class USSDGroupController extends USSDController {
 
         // todo: rather make this rely on an exception from services layer and move logic there
         if (groupManager.canUserMakeGroupInactive(user, groupId)) {
-            groupManager.setGroupInactive(groupId);
+            groupManager.setGroupInactive(groupId, user);
             menu = new USSDMenu(getMessage(thisSection, inactiveMenu + doSuffix, promptKey + ".success", user), optionsHomeExit(user));
         } else {
             menu = new USSDMenu(getMessage(thisSection, inactiveMenu + doSuffix, errorPromptKey, user), optionsHomeExit(user));

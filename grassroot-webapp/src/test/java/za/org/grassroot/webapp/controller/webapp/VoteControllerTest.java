@@ -53,7 +53,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
         Event testVote = new Event();
         testVote.setId(dummyId);
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
-        when(groupManagementServiceMock.groupsOnWhichCanCallVote(sessionTestUser)).thenReturn(testPossibleGroups);
+        when(groupManagementServiceMock.getActiveGroupsPartOf(sessionTestUser)).thenReturn(testPossibleGroups);
         mockMvc.perform(get("/vote/create").param("groupId", String.valueOf(dummyId))).andExpect(status().isOk())
                 .andExpect(view().name("vote/create"))
                 .andExpect(model().attribute("group",
@@ -72,12 +72,12 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
         testPossibleGroups.add(testGroup);
         Event testVote = new Event();
         testVote.setId(dummyId);
-        when(groupManagementServiceMock.groupsOnWhichCanCallVote(sessionTestUser)).thenReturn(testPossibleGroups);
+        when(groupManagementServiceMock.getActiveGroupsPartOf(sessionTestUser)).thenReturn(testPossibleGroups);
         mockMvc.perform(get("/vote/create")).andExpect(status().isOk())
                 .andExpect(view().name("vote/create"))
                 .andExpect(model().attribute("possibleGroups",
                         hasItem(testGroup)));
-        verify(groupManagementServiceMock, times(1)).groupsOnWhichCanCallVote(sessionTestUser);
+        verify(groupManagementServiceMock, times(1)).getActiveGroupsPartOf(sessionTestUser);
         verifyNoMoreInteractions(groupManagementServiceMock);
 
     }

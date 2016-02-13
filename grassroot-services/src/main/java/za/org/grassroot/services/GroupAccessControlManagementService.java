@@ -22,6 +22,8 @@ public interface GroupAccessControlManagementService {
      */
     void addUserGroupPermissions(Group group, User user, Set<Permission> groupPermissions);
 
+    void addUserGroupPermissions(Group group, User addingToUser, User modifyingUser, Set<Permission> groupPermissions);
+
     /**
      * @param group
      * @param user

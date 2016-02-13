@@ -50,7 +50,7 @@ public class VoteController extends BaseController {
             model.addAttribute("group", groupManagementService.loadGroup(groupId));
         //    vote = eventManagementService.setGroup(vote.getId(), groupId);
         } else {
-            model.addAttribute("possibleGroups", groupManagementService.groupsOnWhichCanCallVote(user));
+            model.addAttribute("possibleGroups", groupManagementService.getActiveGroupsPartOf(user));
 
         }
 

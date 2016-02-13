@@ -202,7 +202,7 @@ public class USSDHomeController extends USSDController {
             // todo: basic validation, checking, etc.
             log.info("Found a token with these trailing digits ...");
             Group groupToJoin = groupManager.getGroupByToken(trailingDigits);
-            groupManager.addGroupMember(groupToJoin, sessionUser);
+            groupManager.addGroupMember(groupToJoin, sessionUser, sessionUser.getId(), true);
             String prompt = (groupToJoin.hasName()) ?
                     getMessage(thisSection, startMenu, promptKey + ".group.token.named", groupToJoin.getGroupName(), sessionUser) :
                     getMessage(thisSection, startMenu, promptKey + ".group.token.unnamed", sessionUser);
@@ -246,7 +246,7 @@ public class USSDHomeController extends USSDController {
                 break;
             case NAME_GROUP:
                 Group group = groupManager.groupToRename(sessionUser);
-                openingMenu = (groupManager.canGroupBeSetInactive(group, sessionUser)) ?
+                openingMenu = (groupManager.canUserMakeGroupInactive(sessionUser, group)) ?
                         renameGroupAllowInactive(sessionUser, group.getId(), dateFormat.format(group.getCreatedDateTime().toLocalDateTime())) :
                         renameGroupNoInactiveOption(sessionUser, group.getId(), dateFormat.format(group.getCreatedDateTime().toLocalDateTime()));
                 break;
@@ -392,7 +392,7 @@ public class USSDHomeController extends USSDController {
             Group groupToRename = groupManager.loadGroup(groupId);
             String oldName = groupToRename.getGroupName();
             groupToRename.setGroupName(groupName);
-            groupToRename = groupManager.saveGroup(groupToRename,true,String.format("Group renamed from %s to %s", oldName, groupName),sessionUser.getId());
+            groupManager.saveGroup(groupToRename,true,String.format("Group renamed from %s to %s", oldName, groupName),sessionUser.getId());
             welcomeMessage = getMessage(thisSection, startMenu, promptKey + "-group-do", sessionUser.nameToDisplay(), sessionUser);
         }
 
@@ -436,7 +436,7 @@ public class USSDHomeController extends USSDController {
         User sessionUser = userManager.findByInputNumber(inputNumber);
         Group group = groupManager.loadGroup(groupId);
         log.info("At the request of user: " + sessionUser + ", we are setting inactive this group ... " + group);
-        groupManager.setGroupInactive(group);
+        groupManager.setGroupInactive(group, sessionUser);
         String welcomeMessage = getMessage(thisSection, "group", "inactive." + promptKey + ".done", sessionUser);
         return menuBuilder(welcomeMenu(welcomeMessage, sessionUser));
     }

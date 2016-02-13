@@ -170,7 +170,7 @@ public class USSDMeetingController extends USSDController {
             } else {
                 Long eventIdToPass = eventId;
                 if (eventId == null) {
-                    eventIdToPass = eventManager.createMeeting(inputNumber, groupId).getId();
+                    eventIdToPass = eventManager.createMeeting(user, groupId).getId();
                     userManager.setLastUssdMenu(user, USSDUrlUtil.saveMenuUrlWithInput(thisSection, groupHandlingMenu,
                                                                                        includeGroup + "&eventId=" + eventIdToPass, userInput));
                 }

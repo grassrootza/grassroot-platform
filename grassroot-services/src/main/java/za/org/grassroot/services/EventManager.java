@@ -475,7 +475,7 @@ public class EventManager implements EventManagementService {
             // fetch from the database
             Map eventMap = new HashedMap<Long,Long>();
             outstandingRSVPs = new ArrayList<Event>();
-            List<Group> groups = groupManager.getGroupsPartOf(user);
+            List<Group> groups = groupManager.getActiveGroupsPartOf(user);
             log.fine("getOutstandingResponseForUser...after...getGroupsPartOf...");
             if (groups != null) {
                 log.fine("getOutstandingResponseForUser...number of groups..." + groups.size());

@@ -55,7 +55,7 @@ public class LogBookServiceTest extends AbstractTransactionalJUnit4SpringContext
     public void shouldSaveLogBook() {
 
         User userProfile = userManagementService.createUserProfile(new User("111111111", "aap1"));
-        Group level1 = groupManagementService.createNewGroup(userProfile, Arrays.asList("111111112", "111111113"));
+        Group level1 = groupManagementService.createNewGroup(userProfile, Arrays.asList("111111112", "111111113"), false);
         LogBook logBook = logBookService.create(userProfile.getId(),level1.getId(),"X must do Y");
         Long fuddyDuddyGroup = 999999999999L;
         LogBook logBookFuddy = logBookService.create(userProfile.getId(),fuddyDuddyGroup,"X must do Y");
@@ -68,7 +68,7 @@ public class LogBookServiceTest extends AbstractTransactionalJUnit4SpringContext
 
         User userProfile = userManagementService.createUserProfile(new User("111111111", "aap1"));
 
-        Group level1 = groupManagementService.createNewGroup(userProfile, Arrays.asList("111111112", "111111113"));
+        Group level1 = groupManagementService.createNewGroup(userProfile, Arrays.asList("111111112", "111111113"), false);
         Group level2 = groupManagementService.createSubGroup(userProfile, level1, "level2 group");
         Group level3 = groupManagementService.createSubGroup(userProfile, level2, "level3 group");
         TestTransaction.end();

@@ -164,7 +164,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         log.info("Running the test, where the url to save is ... " + firstUrlToSave);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, firstUrlToSave)).thenReturn(testUser);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, secondUrlToSave)).thenReturn(testUser);
-        when(groupManagementServiceMock.createNewGroup(eq(testUser), anyListOf(String.class))).thenReturn(testGroup);
+        when(groupManagementServiceMock.createNewGroup(eq(testUser), anyListOf(String.class), eq(true))).thenReturn(testGroup);
 
         mockMvc.perform(get(path + "group").param(phoneParam, testUserPhone).param("request", "0801112345")).
                 andExpect(status().isOk());
@@ -174,8 +174,8 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, firstUrlToSave);
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, secondUrlToSave);
         verify(userManagementServiceMock, times(1)).setLastUssdMenu(testUser, secondUrlToSave);
-        verify(groupManagementServiceMock, times(1)).createNewGroup(testUser, Arrays.asList("0801112345"));
-        verify(groupManagementServiceMock, times(1)).addNumbersToGroup(testGroup.getId(), Arrays.asList("0801112345"));
+        verify(groupManagementServiceMock, times(1)).createNewGroup(testUser, Arrays.asList("0801112345"), true);
+        verify(groupManagementServiceMock, times(1)).addNumbersToGroup(testGroup.getId(), Arrays.asList("0801112345"), testUser, true);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(groupManagementServiceMock);
 
@@ -201,7 +201,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(anyString(), anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupManagementServiceMock, times(2)).addNumbersToGroup(testGroup.getId(), Arrays.asList("0801112345"));
+        verify(groupManagementServiceMock, times(2)).addNumbersToGroup(testGroup.getId(), Arrays.asList("0801112345"), testUser, true);
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
 
@@ -221,7 +221,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave2)).thenReturn(testUser);
-        when(eventManagementServiceMock.createMeeting(testUserPhone, 1L)).thenReturn(testMeeting);
+        when(eventManagementServiceMock.createMeeting(testUser, 1L)).thenReturn(testMeeting);
 
         mockMvc.perform(get(path + "group").param(phoneParam, testUserPhone).param("groupId", "" + testGroup.getId()).
                 param("request", "0")).andExpect(status().isOk());
@@ -232,7 +232,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(1)).setLastUssdMenu(testUser, urlToSave2);
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave2);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(eventManagementServiceMock, times(1)).createMeeting(testUserPhone, testGroup.getId());
+        verify(eventManagementServiceMock, times(1)).createMeeting(testUser, testGroup.getId());
         verifyNoMoreInteractions(eventManagementServiceMock);
         verifyZeroInteractions(groupManagementServiceMock);
 
@@ -272,7 +272,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(anyString(), anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupManagementServiceMock, times(1)).addNumbersToGroup(testGroup.getId(), Arrays.asList("0801112345"));
+        verify(groupManagementServiceMock, times(1)).addNumbersToGroup(testGroup.getId(), Arrays.asList("0801112345"), testUser, true);
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
 

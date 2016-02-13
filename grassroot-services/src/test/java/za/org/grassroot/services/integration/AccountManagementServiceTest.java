@@ -15,6 +15,7 @@ import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.exception.GroupAlreadyPaidForException;
 
@@ -54,7 +55,7 @@ public class AccountManagementServiceTest {
     public void setUp() {
         log.info("Number of standard roles at set up: " + roleManagementService.getNumberStandardRoles());
         testUser = userManagementService.loadOrSaveUser(userNumber);
-        testGroup = groupManagementService.createNewGroup(testUser, groupName);
+        testGroup = groupManagementService.createNewGroup(testUser, groupName, false);
         roleManagementService.createStandardRole(accountAdminRole);
     }
 

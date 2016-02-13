@@ -156,14 +156,14 @@ public class RoleManager implements  RoleManagementService {
     }
 
     @Override
-    public void addDefaultRoleToGroupAndUser(String roleName, Group group, User user) {
+    public void addDefaultRoleToGroupAndUser(String roleName, Group group, User addingToUser, User callingUser) {
         // todo: throw a fit if roleName is not standard
 
         Role role;
 
-        // log.info("Flushing user roles ... starting with them as ... " + user.getRoles());
-        user = flushUserRolesInGroup(user, group);
-        // log.info("User roles flushed, now with ... " + user.getRoles());
+        // log.info("Flushing addingToUser roles ... starting with them as ... " + addingToUser.getRoles());
+        addingToUser = flushUserRolesInGroup(addingToUser, group);
+        // log.info("User roles flushed, now with ... " + addingToUser.getRoles());
 
         if (fetchGroupRole(roleName, group) == null) {
             // create the role with default permissions and add it to the group
@@ -174,10 +174,10 @@ public class RoleManager implements  RoleManagementService {
             // log.info("Role saved as ... " + role.describe());
             group.addRole(role);
             groupManagementService.saveGroup(group,true, String.format("Added role %s to group",role.getName()),dontKnowTheUser);
-            user.addRole(role);
-            userManagementService.save(user);
+            addingToUser.addRole(role);
+            userManagementService.save(addingToUser);
         } else {
-            // role exists, just make sure it has a set of permissions and add it to user and group
+            // role exists, just make sure it has a set of permissions and add it to addingToUser and group
             // todo: work out what to do if role has a non-BaseRoles name and permissions set is empty (throw a fit)
             role = fetchGroupRole(roleName, group);
             log.info("Retrieved the following role: " + role.describe());
@@ -187,20 +187,31 @@ public class RoleManager implements  RoleManagementService {
             group.addRole(role);
             groupManagementService.saveGroup(group,true, String.format("Added role %s to group",role.getName()),dontKnowTheUser);
             log.info("Okay, group saved, about to save role ..." + role.describe());
-            log.info("At present, user has these roles ... " + user.getRoles());
-            user = userManagementService.save(user);
-            log.info("After DB save, user has these roles ... " + user.getRoles());
-            user.addRole(role);
-            user = userManagementService.save(user);
-            log.info("After role addition and DB save, user has these roles ... " + user.getRoles());
+            log.info("At present, addingToUser has these roles ... " + addingToUser.getRoles());
+            addingToUser = userManagementService.save(addingToUser);
+            log.info("After DB save, addingToUser has these roles ... " + addingToUser.getRoles());
+            addingToUser.addRole(role);
+            addingToUser = userManagementService.save(addingToUser);
+            log.info("After role addition and DB save, addingToUser has these roles ... " + addingToUser.getRoles());
         }
 
         // now that we have a role with the right set of permissions, finish off by wiring up access control
-        groupAccessControlManagementService.addUserGroupPermissions(group, user, role.getPermissions());
+        groupAccessControlManagementService.addUserGroupPermissions(group, addingToUser, callingUser, role.getPermissions());
 
     }
-    
-    @Async
+
+    @Override
+    public void addDefaultRoleToGroupAndUser(String roleName, Group group, User user) {
+        addDefaultRoleToGroupAndUser(roleName, group, user, null);
+    }
+
+    @Override
+    public void removeUsersRoleInGroup(User user, Group group) {
+        // todo: make sure this is properly flushing throughout (else security leak)
+        userManagementService.save(flushUserRolesInGroup(user, group));
+    }
+
+    // @Async
     @Override
     public void resetGroupToDefaultRolesPermissions(Long groupId) {
         log.info("Resetting group to creator as organizer, rest as members ... ");
@@ -223,6 +234,7 @@ public class RoleManager implements  RoleManagementService {
 
         userManagementService.saveList(groupMembers);
 
+        // note: we only call this from the web application, so don't have to worry about passing the modifying user
         addDefaultRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, group, group.getCreatedByUser());
         Long endTime = System.currentTimeMillis();
         log.info(String.format("Added roles to members, total time took %d msecs", endTime - startTime));

@@ -78,7 +78,7 @@ public class EventManagementServiceTest {
     public void shouldSaveEventWithNameUserAndGroup() {
 
         User userProfile = userManagementService.createUserProfile(new User("111222333", "aap1"));
-        Group group = groupManagementService.createNewGroup(userProfile, Arrays.asList("111222444", "111222555"));
+        Group group = groupManagementService.createNewGroup(userProfile, Arrays.asList("111222444", "111222555"), false);
         Event event = eventManagementService.createEvent("Drink till you drop", userProfile, group);
         assertEquals("Drink till you drop", event.getName());
         assertEquals(userProfile.getId(), event.getCreatedByUser().getId());
@@ -90,7 +90,7 @@ public class EventManagementServiceTest {
     public void shouldSaveEventWithMinimumDataAndTriggerNotifications() {
         log.info("shouldSaveEventWithMinimumDataAndTriggerNotifications...starting...");
         User userProfile = userManagementService.createUserProfile(new User("111222555", "aap1"));
-        Group group = groupManagementService.createNewGroup(userProfile, Arrays.asList("111222666", "111222777"));
+        Group group = groupManagementService.createNewGroup(userProfile, Arrays.asList("111222666", "111222777"), false);
         Event event = eventManagementService.createEvent("Tell me about it", userProfile, group);
         event = eventManagementService.setLocation(event.getId(), "Lekker place");
         event = eventManagementService.setDateTimeString(event.getId(),"31st 7pm");
@@ -103,7 +103,7 @@ public class EventManagementServiceTest {
     public void shouldTriggerAddAndChangeNotifications() {
         log.info("shouldTriggerAddAndChangeNotifications...starting...");
         User userProfile = userManagementService.createUserProfile(new User("111222556", "aap1"));
-        Group group = groupManagementService.createNewGroup(userProfile, Arrays.asList("111222667", "111222778"));
+        Group group = groupManagementService.createNewGroup(userProfile, Arrays.asList("111222667", "111222778"), false);
         Event event = eventManagementService.createEvent("Tell me about it 2", userProfile, group);
         event = eventManagementService.setLocation(event.getId(), "Lekker place 2");
         event = eventManagementService.setDateTimeString(event.getId(),"31st 7pm");
@@ -117,7 +117,7 @@ public class EventManagementServiceTest {
     public void shouldTriggerAddAndCancelNotifications() {
         log.info("shouldTriggerAddAndCancelNotifications...starting...");
         User userProfile = userManagementService.createUserProfile(new User("111222556", "aap1"));
-        Group group = groupManagementService.createNewGroup(userProfile, Arrays.asList("111222667", "111222778"));
+        Group group = groupManagementService.createNewGroup(userProfile, Arrays.asList("111222667", "111222778"), false);
         Event event = eventManagementService.createEvent("Tell me about it 2", userProfile, group);
         event = eventManagementService.setLocation(event.getId(), "Lekker place 2");
         event = eventManagementService.setDateTimeString(event.getId(), "31 7pm");
@@ -187,7 +187,7 @@ public class EventManagementServiceTest {
     public void shouldCreateVoteFromEntity() {
         assertThat(eventLogRepository.count(), is(0L));
         User user = userManagementService.loadOrSaveUser("0710001234");
-        Group group1 = groupManagementService.createNewGroup(user, Arrays.asList("0701112345"));
+        Group group1 = groupManagementService.createNewGroup(user, Arrays.asList("0701112345"), false);
         Event event = new Event();
         event.setEventType(EventType.Vote);
         event.setRsvpRequired(true);

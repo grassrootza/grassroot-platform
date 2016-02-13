@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -187,11 +188,17 @@ public class UserManager implements UserManagementService, UserDetailsService {
      */
     public User loadOrSaveUser(String inputNumber, String currentUssdMenu) {
         User sessionUser = loadOrSaveUser(inputNumber);
-        log.info("USSD menu passed to services: " + currentUssdMenu);
-        sessionUser.setLastUssdMenu(currentUssdMenu);
-        sessionUser = userRepository.save(sessionUser);
-        log.info("USSD menu stored: " + sessionUser.getLastUssdMenu());
+        saveUssdMenu(sessionUser, currentUssdMenu);
         return sessionUser;
+    }
+
+    //@Async
+    @Override
+    public void saveUssdMenu(User user, String menuToSave) {
+        log.info("USSD menu passed to services: " + menuToSave);
+        user.setLastUssdMenu(menuToSave);
+        user = userRepository.save(user);
+        log.info("USSD menu stored: " + user.getLastUssdMenu());
     }
 
     /*
@@ -294,6 +301,16 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public List<User> getGroupMembersSortedById(Group group) {
         return userRepository.findByGroupsPartOfOrderByIdAsc(group);
+    }
+
+    @Override
+    public List<User> getGroupMembersWithoutCreator(Group group) {
+        return userRepository.findByGroupsPartOfAndIdNot(group, group.getCreatedByUser().getId());
+    }
+
+    @Override
+    public List<User> getGroupMembersWithout(Group group, Long excludedUserId) {
+        return userRepository.findByGroupsPartOfAndIdNot(group, excludedUserId);
     }
 
     @Override
