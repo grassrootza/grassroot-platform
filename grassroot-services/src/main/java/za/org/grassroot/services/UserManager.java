@@ -25,6 +25,7 @@ import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.exception.UserExistsException;
+import za.org.grassroot.services.util.CacheUtilService;
 
 import javax.transaction.Transactional;
 import java.util.ArrayList;
@@ -55,6 +56,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
     private PasswordTokenService passwordTokenService;
     @Autowired
     private EventManagementService eventManagementService;
+    @Autowired
+    private CacheUtilService cacheUtilService;
 
     @Override
     public User createUserProfile(User userProfile) {
@@ -197,7 +200,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public void saveUssdMenu(User user, String menuToSave) {
         log.info("USSD menu passed to services: " + menuToSave);
-        user.setLastUssdMenu(menuToSave);
+        cacheUtilService.putUssdMenuForUser(user.getPhoneNumber(), menuToSave);
+        user.setLastUssdMenu(menuToSave); // probably remove this once we have logging & are using cache
         user = userRepository.save(user);
         log.info("USSD menu stored: " + user.getLastUssdMenu());
     }
@@ -251,7 +255,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public User findByInputNumber(String inputNumber, String currentUssdMenu) throws NoSuchUserException {
         User sessionUser = userRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(inputNumber));
-        sessionUser.setLastUssdMenu(currentUssdMenu);
+        cacheUtilService.putUssdMenuForUser(inputNumber, currentUssdMenu);
+        sessionUser.setLastUssdMenu(currentUssdMenu); // again, remove / switch to async call once properly set up
         return userRepository.save(sessionUser);
     }
 
@@ -422,13 +427,14 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public String getLastUssdMenu(User sessionUser) {
-        return (sessionUser.getLastUssdMenu() == null) ? "" : sessionUser.getLastUssdMenu();
+    public String getLastUssdMenu(String inputNumber) {
+        return cacheUtilService.fetchUssdMenuForUser(inputNumber);
     }
 
     @Override
     public User resetLastUssdMenu(User sessionUser) {
-        sessionUser.setLastUssdMenu(null);
+        cacheUtilService.clearUssdMenuForUser(sessionUser.getPhoneNumber());
+        sessionUser.setLastUssdMenu(null); // as above, to make async &/or remove once cache and async all working
         return userRepository.save(sessionUser);
     }
 

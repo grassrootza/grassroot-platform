@@ -8,7 +8,6 @@ import za.org.grassroot.services.exception.UserExistsException;
 
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
 
 /**
  * @author Lesetse Kimwaga
@@ -100,7 +99,7 @@ public interface UserManagementService {
 
     User resetUserPassword(String username, String newPassword, User adminUser, String adminPassword);
 
-    String getLastUssdMenu(User sessionUser);
+    String getLastUssdMenu(String inputNumber);
 
     User resetLastUssdMenu(User sessionUser);
 

@@ -87,9 +87,12 @@ public class HomeController extends BaseController {
 
         Long startTime = System.currentTimeMillis();
         ModelAndView homePageModelAndView;
+        log.info("Getting user profile ... ");
         User user = getUserProfile();
-
+        Long startTimeCountGroups = System.currentTimeMillis();
+        log.info(String.format("Getting user profile took %d msecs", startTimeCountGroups - startTime));
         if (groupManagementService.hasActiveGroupsPartOf(user)) {
+            log.info(String.format("Counting user groups took ... %d msecs", System.currentTimeMillis() - startTimeCountGroups));
             homePageModelAndView = getHomePageUserHasGroups(model, user);
         } else {
             homePageModelAndView = getHomePageUserHasNoGroups(model, user);

@@ -87,14 +87,13 @@ public class USSDMeetingController extends USSDController {
     public Request meetingOrg(@RequestParam(value= phoneNumber, required=true) String inputNumber,
                               @RequestParam(value="newMtg", required=false) boolean newMeeting) throws URISyntaxException {
 
+        Long startTime = System.currentTimeMillis();
         log.info("Timing a core menu ... meeting start menu entering ...");
+        User user = userManager.findByInputNumber(inputNumber);
+        Long endTime = System.currentTimeMillis();
+        log.info("Timing a core menu ... meeting start menu to retrieve user... " + (endTime - startTime) + " msecs");
 
-        User user;
-        try { user = userManager.findByInputNumber(inputNumber); }
-        catch (NoSuchElementException e) { return noUserError; }
-
-        log.info("Timing a core menu ... meeting start menu has user ... ");
-
+        startTime = System.currentTimeMillis();
         USSDMenu returnMenu;
 
         // todo: replace with call to countFutureEvents plus permission filter
@@ -103,8 +102,9 @@ public class USSDMeetingController extends USSDController {
         } else {
             returnMenu = eventUtil.askForMeeting(user, startMenu, manageMeetingMenu, startMenu + "?newMtg=1");
         }
+        endTime = System.currentTimeMillis();
 
-        log.info("Timing a core menu ... meeting start menu handing over to menu builder ...");
+        log.info(String.format("Timing meeting start menu, construcing menu took ... took %d msecs", endTime - startTime));
         return menuBuilder(returnMenu);
     }
 

@@ -11,6 +11,7 @@ import java.util.List;
  * Created by aakilomar on 11/2/15.
  */
 public interface CacheUtilService {
+
     void clearRsvpCacheForUser(User user, EventType eventType);
 
     void clearCacheForAllUsersInGroup(EventDTO event);
@@ -18,4 +19,11 @@ public interface CacheUtilService {
     List<Event> getOutstandingResponseForUser(User user, EventType eventType);
 
     void putOutstandingResponseForUser(User user, EventType eventType, List<Event> outstandingRSVPs);
+
+    void putUssdMenuForUser(String phoneNumber, String urlToCache);
+
+    void clearUssdMenuForUser(String phoneNumber);
+
+    String fetchUssdMenuForUser(String phoneNumber);
+
 }

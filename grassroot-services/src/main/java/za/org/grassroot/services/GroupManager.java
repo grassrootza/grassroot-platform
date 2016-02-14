@@ -331,7 +331,7 @@ public class GroupManager implements GroupManagementService {
 
     @Override
     public boolean hasActiveGroupsPartOf(User user) {
-        return !getPageOfActiveGroups(user, 0, 1).getContent().isEmpty();
+        return !getActiveGroupsPartOf(user).isEmpty();
         // return groupRepository.countActiveGroups(user.getId()) > 0; // this is breaking the getActiveGroups methods
     }
 

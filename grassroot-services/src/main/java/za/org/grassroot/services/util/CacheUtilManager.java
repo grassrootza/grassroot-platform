@@ -98,6 +98,41 @@ public class CacheUtilManager implements CacheUtilService {
 
     }
 
+    @Override
+    public void putUssdMenuForUser(String phoneNumber, String urlToCache) {
+        log.info("Putting USSD menu into cache ..." + urlToCache);
+        try {
+            Cache cache = cacheManager.getCache("userUSSDMenu");
+            cache.put(new Element(phoneNumber, urlToCache));
+        } catch (Exception e) {
+            log.severe(e.toString());
+        }
+    }
+
+    @Override
+    public void clearUssdMenuForUser(String phoneNumber) {
+        log.info("Clearing out the stored USSD menu for the user ...");
+        try {
+            Cache cache = cacheManager.getCache("userUSSDMenu");
+            cache.remove(phoneNumber);
+        } catch (Exception e) {
+            log.severe(e.toString());
+        }
+    }
+
+    @Override
+    public String fetchUssdMenuForUser(String phoneNumber) {
+        String menuToReturn;
+        Cache cache = cacheManager.getCache("userUSSDMenu");
+        log.info("fetchUssdMenuForUser ...cacheKey... " + phoneNumber);
+        try {
+            menuToReturn = (String) cache.get(phoneNumber).getObjectValue();
+        } catch (Exception e) {
+            log.fine("Could not find a stored USSD menu for phone number ..." + phoneNumber);
+            menuToReturn = null;
+        }
+        return menuToReturn;
+    }
 
 
 }

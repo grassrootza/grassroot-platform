@@ -73,7 +73,13 @@ public class USSDHomeController extends USSDController {
                              @RequestParam(value= userInputParam, required=false) String enteredUSSD) throws URISyntaxException {
 
         Long startTime = System.currentTimeMillis();
+
         USSDMenu openingMenu;
+        // first off, check if there is a cache entry for an interrupted menu
+        if (userInterrupted(inputNumber)) {
+            return menuBuilder(interruptedPrompt(inputNumber));
+        }
+
         User sessionUser = userManager.loadOrSaveUser(inputNumber);
 
         /*
@@ -90,8 +96,6 @@ public class USSDHomeController extends USSDController {
         if (codeHasTrailingDigits(enteredUSSD)) {
             String trailingDigits = enteredUSSD.substring(hashPosition + 1, enteredUSSD.length() - 1);
             openingMenu = processTrailingDigits(trailingDigits, sessionUser);
-        } else if (userInterrupted(sessionUser)) {
-            openingMenu = interruptedPrompt(sessionUser);
         } else if (userResponseNeeded(sessionUser)) {
             openingMenu = requestUserResponse(sessionUser);
         } else if (firstSession(sessionUser)) {
@@ -146,11 +150,12 @@ public class USSDHomeController extends USSDController {
 
     }
 
-    private USSDMenu interruptedPrompt(User sessionUser) {
+    private USSDMenu interruptedPrompt(String inputNumber) {
 
-        String returnUrl = sessionUser.getLastUssdMenu();
+        String returnUrl = userManager.getLastUssdMenu(inputNumber);
         log.info("The user was interrupted somewhere ...Here's the URL: " + returnUrl);
 
+        User sessionUser = userManager.findByInputNumber(inputNumber);
         USSDMenu promptMenu = new USSDMenu(getMessage(thisSection, startMenu, promptKey + "-interrupted", sessionUser));
         promptMenu.addMenuOption(returnUrl, getMessage(thisSection, startMenu, "interrupted.resume", sessionUser));
         promptMenu.addMenuOption(startMenu + "_force", getMessage(thisSection, startMenu, "interrupted.start", sessionUser));
@@ -162,8 +167,8 @@ public class USSDHomeController extends USSDController {
 
     }
 
-    private boolean userInterrupted(User sessionUser) {
-        return (sessionUser.getLastUssdMenu() != null && !sessionUser.getLastUssdMenu().trim().equals(""));
+    private boolean userInterrupted(String inputNumber) {
+        return (userManager.getLastUssdMenu(inputNumber) != null);
     }
 
     private boolean userResponseNeeded(User sessionUser) {
