@@ -1,7 +1,6 @@
 package za.org.grassroot.services;
 
 import org.springframework.data.domain.Page;
-import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;

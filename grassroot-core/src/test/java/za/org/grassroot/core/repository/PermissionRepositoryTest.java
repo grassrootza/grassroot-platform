@@ -13,10 +13,13 @@ import za.org.grassroot.core.domain.BasePermissions;
 import za.org.grassroot.core.domain.Permission;
 
 import javax.transaction.Transactional;
+import java.util.Arrays;
+import java.util.List;
 
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.*;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 
 /**
  * @author Lesetse Kimwaga
@@ -48,6 +51,32 @@ public class PermissionRepositoryTest {
         permissionRepository.save(permission1);
         permissionRepository.save(permission2);
         permissionRepository.save(permission3);
+
+    }
+
+    @Test
+    public void testFindByListOfNames() throws Exception {
+
+        assertThat(permissionRepository.count(), is(0L));
+
+        Permission permission1 = permissionRepository.save(new Permission(BasePermissions.GROUP_PERMISSION_UPDATE_GROUP_DETAILS, 2));
+        Permission permission2 = permissionRepository.save(new Permission(BasePermissions.GROUP_PERMISSION_FORCE_PERMISSION_CHANGE, 4));
+        Permission permission3 = permissionRepository.save(new Permission(BasePermissions.GROUP_PERMISSION_DELETE_GROUP_MEMBER, 6));
+
+        List<String> namesList = Arrays.asList(BasePermissions.GROUP_PERMISSION_UPDATE_GROUP_DETAILS,
+                                               BasePermissions.GROUP_PERMISSION_FORCE_PERMISSION_CHANGE);
+
+        List<Permission> allPermissions = (List<Permission>) permissionRepository.findAll();
+        List<Permission> permissionsFromQuery = permissionRepository.findByNameIn(namesList);
+
+        assertNotNull(allPermissions);
+        assertThat(allPermissions.size(), is(3));
+        assertNotNull(permissionsFromQuery);
+        assertThat(permissionsFromQuery.size(), is(2));
+
+        assertThat(permissionsFromQuery.contains(permission1), is(true));
+        assertThat(permissionsFromQuery.contains(permission2), is(true));
+        assertThat(permissionsFromQuery.contains(permission3), is(false));
 
     }
 

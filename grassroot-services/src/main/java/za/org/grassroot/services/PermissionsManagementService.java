@@ -40,4 +40,17 @@ public interface PermissionsManagementService {
 
     Set<Permission> defaultPermissionsGroupRole(String roleName);
 
+    /*
+    default permissions for a "closed", i.e., one-way group, where only organizer & committee member can call things
+    major todo: externalize these permission structures
+     */
+
+    Set<Permission> closedGroupOrganizerPermissions();
+
+    Set<Permission> closedGroupCommitteeMemberPermissions();
+
+    Set<Permission> closedGroupOrdinaryMemberPermissions();
+
+    Set<Permission> closedPermissionsGroupRole(String roleName);
+
 }

@@ -2,6 +2,8 @@ package za.org.grassroot.services;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.BasePermissions;
@@ -10,7 +12,9 @@ import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.repository.PermissionRepository;
 
 import javax.transaction.Transactional;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author Lesetse Kimwaga
@@ -19,7 +23,10 @@ import java.util.*;
 @Transactional
 public class PermissionsManager implements PermissionsManagementService {
 
-    // todo: add GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY
+    private static final Logger log = LoggerFactory.getLogger(PermissionsManager.class);
+
+    // major todo: externalize these permissions
+
     private static final ImmutableList<String> defaultOrdinaryMemberPermissions =
             new ImmutableList.Builder<String>().
                     add(BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS).
@@ -48,6 +55,33 @@ public class PermissionsManager implements PermissionsManagementService {
                     add(BasePermissions.GROUP_PERMISSION_DELINK_SUBGROUP).
                     add(BasePermissions.GROUP_PERMISSION_FORCE_DELETE_MEMBER).build();
 
+    // closed group structure ... again, externalize
+    private static final ImmutableList<String> closedOrdinaryMemberPermissions =
+            new ImmutableList.Builder<String>().
+                    add(BasePermissions.GROUP_PERMISSION_READ_UPCOMING_EVENTS).build();
+
+    private static final ImmutableList<String> closedCommitteeMemberPermissions =
+            new ImmutableList.Builder<String>().addAll(defaultOrdinaryMemberPermissions).
+                    add(BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS).
+                    add(BasePermissions.GROUP_PERMISSION_CREATE_GROUP_MEETING).
+                    add(BasePermissions.GROUP_PERMISSION_CREATE_GROUP_VOTE).
+                    add(BasePermissions.GROUP_PERMISSION_VIEW_MEETING_RSVPS).
+                    add(BasePermissions.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY).
+                    add(BasePermissions.GROUP_PERMISSION_CLOSE_OPEN_LOGBOOK).build();
+
+    private static final ImmutableList<String> closedGroupOrganizerPermissions =
+            new ImmutableList.Builder<String>().addAll(defaultCommitteeMemberPermissions).
+                    add(BasePermissions.GROUP_PERMISSION_ADD_GROUP_MEMBER).
+                    add(BasePermissions.GROUP_PERMISSION_FORCE_ADD_MEMBER).
+                    add(BasePermissions.GROUP_PERMISSION_CREATE_SUBGROUP).
+                    add(BasePermissions.GROUP_PERMISSION_AUTHORIZE_SUBGROUP).
+                    add(BasePermissions.GROUP_PERMISSION_DELEGATE_SUBGROUP_CREATION).
+                    add(BasePermissions.GROUP_PERMISSION_DELETE_GROUP_MEMBER).
+                    add(BasePermissions.GROUP_PERMISSION_FORCE_ADD_MEMBER).
+                    add(BasePermissions.GROUP_PERMISSION_UPDATE_GROUP_DETAILS).
+                    add(BasePermissions.GROUP_PERMISSION_DELINK_SUBGROUP).
+                    add(BasePermissions.GROUP_PERMISSION_FORCE_DELETE_MEMBER).build();
+
     @Autowired
     private PermissionRepository permissionRepository;
 
@@ -68,7 +102,6 @@ public class PermissionsManager implements PermissionsManagementService {
 
     @Override
     public void deletePermission(Permission permission) {
-
         permissionRepository.delete(permission);
     }
 
@@ -84,12 +117,10 @@ public class PermissionsManager implements PermissionsManagementService {
 
     @Override
     public Set<Permission> findByNames(List<String> permissionNames) {
-        // todo: find a way to replace this with a single query call, otherwise group set up will kill us
-        Set<Permission> permissionsSet = new HashSet<>();
-        for (String name : permissionNames) {
-            permissionsSet.add(permissionRepository.findByName(name));
-        }
-        return permissionsSet;
+        // todo: take out the null handling, so errors if this is called with null are picked up
+        List<Permission> permissionsList = permissionRepository.findByNameIn(permissionNames);
+        log.info("findByNames returned this permissions list ... " + permissionsList);
+        return permissionsList.isEmpty() ? new HashSet<>() : new HashSet<>(permissionsList);
     }
 
     @Override
@@ -119,6 +150,35 @@ public class PermissionsManager implements PermissionsManagementService {
                 return defaultOrdinaryMemberPermissions();
             default:
                 return defaultOrdinaryMemberPermissions();
+        }
+    }
+
+    @Override
+    public Set<Permission> closedGroupOrganizerPermissions() {
+        return findByNames(closedGroupOrganizerPermissions);
+    }
+
+    @Override
+    public Set<Permission> closedGroupCommitteeMemberPermissions() {
+        return findByNames(closedCommitteeMemberPermissions);
+    }
+
+    @Override
+    public Set<Permission> closedGroupOrdinaryMemberPermissions() {
+        return findByNames(closedOrdinaryMemberPermissions);
+    }
+
+    @Override
+    public Set<Permission> closedPermissionsGroupRole(String roleName) {
+        switch (roleName) {
+            case BaseRoles.ROLE_GROUP_ORGANIZER:
+                return closedGroupOrganizerPermissions();
+            case BaseRoles.ROLE_COMMITTEE_MEMBER:
+                return closedGroupCommitteeMemberPermissions();
+            case BaseRoles.ROLE_ORDINARY_MEMBER:
+                return closedGroupOrdinaryMemberPermissions();
+            default:
+                return closedGroupOrdinaryMemberPermissions();
         }
     }
 }

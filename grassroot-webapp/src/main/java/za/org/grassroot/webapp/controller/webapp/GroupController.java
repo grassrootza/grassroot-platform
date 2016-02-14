@@ -28,7 +28,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Lesetse Kimwaga
@@ -206,6 +208,7 @@ public class GroupController extends BaseController {
 
         timeStart = System.currentTimeMillis();
         User userCreator = userManagementService.getUserById(getUserProfile().getId());
+        log.info(String.format("Just user load took: %d msecs", System.currentTimeMillis() - timeStart));
         Group groupToSave = groupManagementService.createNewGroup(userCreator, groupCreator.getGroupName(), true);
         boolean creatorInGroup = false;
         timeEnd = System.currentTimeMillis();

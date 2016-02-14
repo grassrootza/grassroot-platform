@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.*;
@@ -13,7 +12,9 @@ import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.dto.NewGroupMember;
 import za.org.grassroot.core.enums.EventChangeType;
 import za.org.grassroot.core.enums.GroupLogType;
-import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.repository.GroupLogRepository;
+import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.core.repository.PaidGroupRepository;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.util.TokenGeneratorService;
 
