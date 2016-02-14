@@ -8,6 +8,7 @@ import za.org.grassroot.services.exception.UserExistsException;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Lesetse Kimwaga
@@ -73,6 +74,8 @@ public interface UserManagementService {
     List<User> getUsersFromNumbers(List<String> listOfNumbers);
 
     List<User> getGroupMembersSortedById(Group group);
+
+    List<User> getExistingUsersFromNumbers(List<String> listOfNumbers);
 
 
     /*

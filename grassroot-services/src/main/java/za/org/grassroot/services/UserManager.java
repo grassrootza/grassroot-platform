@@ -29,6 +29,7 @@ import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Lesetse Kimwaga
@@ -294,6 +295,11 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public List<User> getGroupMembersSortedById(Group group) {
         return userRepository.findByGroupsPartOfOrderByIdAsc(group);
+    }
+
+    @Override
+    public List<User> getExistingUsersFromNumbers(List<String> listOfNumbers) {
+        return userRepository.findExistingUsers(listOfNumbers);
     }
 
     @Override
