@@ -162,6 +162,7 @@ public class GroupManager implements GroupManagementService {
                                                                    newMember, userManager.getUserById(addingUserId));
             } else {
                 roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, group, newMember);
+
             }
         }
 
@@ -210,6 +211,19 @@ public class GroupManager implements GroupManagementService {
             wireNewGroupMemberLogsRoles(savedGroup, newMember, addingUser.getId(), addDefaultRoles);
 
         return savedGroup;
+    }
+    @Override
+    public Group addMembersToGroup(Long groupId, List<User> members, boolean isClosedGroup){
+
+        Group groupToExpand = loadGroup(groupId);
+        groupToExpand.getGroupMembers().addAll(members);
+        Group savedGroup = groupRepository.save(groupToExpand);
+        for (User newMember : members) {
+            GroupLog groupLog = groupLogRepository.save(new GroupLog(savedGroup.getId(),dontKnowTheUser,GroupLogType.GROUP_MEMBER_ADDED,newMember.getId()));
+            jmsTemplateProducerService.sendWithNoReply(EventChangeType.USER_ADDED.toString(),new NewGroupMember(groupToExpand,newMember));
+        }
+        return savedGroup;
+
     }
 
     @Override

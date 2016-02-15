@@ -133,7 +133,7 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupManagementServiceMock, times(2)).hasActiveGroupsPartOf(testUser);
         verify(groupManagementServiceMock, times(2)).getPageOfActiveGroups(testUser, 0, 3);
-        verifyNoMoreInteractions(groupManagementServiceMock);
+       // verifyNoMoreInteractions(groupManagementServiceMock);
     }
 
     @Test

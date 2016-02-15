@@ -38,7 +38,6 @@ import java.util.Map;
 @Controller
 
 
-
 @RequestMapping("/group/")
 @SessionAttributes({"groupCreator", "groupModifier"})
 
@@ -62,9 +61,6 @@ public class GroupController extends BaseController {
     private GroupLogService groupLogService;
 
     @Autowired
-    private GroupRepository groupRepository;
-
-    @Autowired
     private RoleManagementService roleManagementService;
 
     @Autowired
@@ -76,10 +72,14 @@ public class GroupController extends BaseController {
     future we may need to handle differently, and the redundant code is minimal, so am making two calls
      */
     @InitBinder("groupCreator")
-    private void initCreatorBinder(WebDataBinder binder) { binder.setValidator(groupWrapperValidator); }
+    private void initCreatorBinder(WebDataBinder binder) {
+        binder.setValidator(groupWrapperValidator);
+    }
 
     @InitBinder("groupModifier")
-    private void initModifierBinder(WebDataBinder binder) { binder.setValidator(groupWrapperValidator); }
+    private void initModifierBinder(WebDataBinder binder) {
+        binder.setValidator(groupWrapperValidator);
+    }
 
     private boolean isUserPartOfGroup(User sessionUser, Group group) {
         // todo: do this from cache so it's not slow ...
@@ -126,7 +126,7 @@ public class GroupController extends BaseController {
      */
 
 
-   // @PreAuthorize("hasPermission(#groupId, ' za.org.grassroot.core.domain.Group', 'GROUP_PERMISSION_UPDATE_GROUP_DETAILS')")
+    // @PreAuthorize("hasPermission(#groupId, ' za.org.grassroot.core.domain.Group', 'GROUP_PERMISSION_UPDATE_GROUP_DETAILS')")
     @RequestMapping("view")
     public String viewGroupIndex(Model model, @RequestParam("groupId") Long groupId) {
 
@@ -173,15 +173,15 @@ public class GroupController extends BaseController {
      */
 
     @RequestMapping("create")
-    public String startGroupIndex(Model model, @RequestParam(value="parent", required=false) Long parentId) {
+    public String startGroupIndex(Model model, @RequestParam(value = "parent", required = false) Long parentId) {
 
         GroupWrapper groupCreator;
 
         if (parentId != null) {
             Group parent = groupManagementService.loadGroup(parentId);
-            if(parent!=null){
+            if (parent != null) {
                 groupCreator = new GroupWrapper(parent);
-            }else {
+            } else {
                 groupCreator = new GroupWrapper();
             }
         } else {
@@ -255,13 +255,13 @@ public class GroupController extends BaseController {
         timeEnd = System.currentTimeMillis();
         log.info(String.format("Final bit of scaffolding took: %d msecs", timeEnd - timeStart));
 
-        addMessage(redirectAttributes,MessageType.SUCCESS,"group.creation.success",new Object[]{groupToSave.getGroupName()},request);
+        addMessage(redirectAttributes, MessageType.SUCCESS, "group.creation.success", new Object[]{groupToSave.getGroupName()}, request);
         redirectAttributes.addAttribute("groupId", groupToSave.getId());
         return "redirect:view";
 
     }
 
-    @RequestMapping(value = "create", params={"addMember"})
+    @RequestMapping(value = "create", params = {"addMember"})
     public String addMember(Model model, @ModelAttribute("groupCreator") @Validated GroupWrapper groupCreator,
                             BindingResult bindingResult, HttpServletRequest request) {
         if (bindingResult.hasErrors()) {
@@ -277,7 +277,7 @@ public class GroupController extends BaseController {
     }
 
 
-    @RequestMapping(value = "create", params={"removeMember"})
+    @RequestMapping(value = "create", params = {"removeMember"})
     public String removeMember(Model model, @ModelAttribute("groupCreator") GroupWrapper groupCreator,
                                @RequestParam("removeMember") Integer memberId) {
 
@@ -290,7 +290,7 @@ public class GroupController extends BaseController {
     Major todo: permissions, throughout
      */
 
-    @RequestMapping(value = "modify", method = RequestMethod.POST, params={"group_modify"})
+    @RequestMapping(value = "modify", method = RequestMethod.POST, params = {"group_modify"})
     public String modifyGroup(Model model, @RequestParam("groupId") Long groupId) {
 
         // todo: replace getGroupMembers with actual thing
@@ -309,7 +309,7 @@ public class GroupController extends BaseController {
 
     }
 
-    @RequestMapping(value = "modify", params={"addMember"})
+    @RequestMapping(value = "modify", params = {"addMember"})
     public String addMemberModify(Model model, @ModelAttribute("groupModifier") @Validated GroupWrapper groupModifier,
                                   BindingResult bindingResult, HttpServletRequest request) {
         // todo: check permissions
@@ -322,7 +322,7 @@ public class GroupController extends BaseController {
     }
 
     @RequestMapping(value = "add_members")
-    public String addMembersBulk(Model model,@RequestParam("groupId") Long groupId,HttpServletRequest request) {
+    public String addMembersBulk(Model model, @RequestParam("groupId") Long groupId, HttpServletRequest request) {
 
         Group group = groupManagementService.loadGroup(groupId);
         model.addAttribute("group", group);
@@ -332,29 +332,27 @@ public class GroupController extends BaseController {
     }
 
     @RequestMapping(value = "add_members_do", method = RequestMethod.POST)
-    public String addMembersBulkDo(Model model,@RequestParam("groupId") Long groupId,@RequestParam(value = "list")
-    String list, HttpServletRequest request) {
+    public String addMembersBulkDo(Model model, @RequestParam("groupId") Long groupId, @RequestParam(value = "list")
+    String list, @RequestParam("closed") boolean isClosedGroup) {
 
-        Group group = groupManagementService.loadGroup(groupId);
+       Group group = groupManagementService.loadGroup(groupId);
         Map<String, List<String>> mapOfNumbers = BulkUserImportUtil.splitPhoneNumbers(list);
         List<String> numbersToBeAdded = mapOfNumbers.get("valid");
 
-        if(!mapOfNumbers.get("valid").isEmpty()) {
+        if (!numbersToBeAdded.isEmpty()) {
             List<User> users = userManagementService.getExistingUsersFromNumbers(numbersToBeAdded);
             for (User user : users) {
                 numbersToBeAdded.remove(user.getPhoneNumber());
             }
-
-            for (int i = 0; i < numbersToBeAdded.size(); i++) {
-                users.add(new User(PhoneNumberUtil.convertPhoneNumber(numbersToBeAdded.get(i))));
+            for (String number: numbersToBeAdded) {
+                users.add(new User(number));
             }
-            group.getGroupMembers().addAll(users);
-            groupRepository.save(group);
+
+            group = groupManagementService.addMembersToGroup(groupId, users, isClosedGroup);
+
         }
-        boolean errors = (mapOfNumbers.get("error").isEmpty())?false:true;
-
-
-       model.addAttribute("errors",errors);
+        boolean errors = (mapOfNumbers.get("error").isEmpty()) ? false : true;
+        model.addAttribute("errors", errors);
         model.addAttribute("group", group);
         model.addAttribute("invalid", mapOfNumbers.get("error"));
         model.addAttribute("members_added", numbersToBeAdded.size());
@@ -363,10 +361,9 @@ public class GroupController extends BaseController {
     }
 
 
-
-    @RequestMapping(value = "modify", params={"removeMember"})
+    @RequestMapping(value = "modify", params = {"removeMember"})
     public String removeMemberModify(Model model, @ModelAttribute("groupModifier") GroupWrapper groupModifier,
-                               @RequestParam("removeMember") Integer memberId) {
+                                     @RequestParam("removeMember") Integer memberId) {
 
         // todo: check permissions (either in validator or in service layer)
         groupModifier.setAddedMembers(removeMember(groupModifier, memberId));
@@ -439,7 +436,7 @@ public class GroupController extends BaseController {
     Methods for handling join tokens
      */
 
-    @RequestMapping(value = "modify", method = RequestMethod.POST, params={"token_create"})
+    @RequestMapping(value = "modify", method = RequestMethod.POST, params = {"token_create"})
     public String newToken(Model model, @RequestParam("groupId") Long groupId) {
 
         Group group = groupManagementService.loadGroup(groupId);
@@ -448,7 +445,7 @@ public class GroupController extends BaseController {
         return "group/new_token";
     }
 
-    @RequestMapping(value = "modify", method = RequestMethod.POST, params={"token_extend"})
+    @RequestMapping(value = "modify", method = RequestMethod.POST, params = {"token_extend"})
     public String extendToken(Model model, @RequestParam("groupId") Long groupId) {
 
         Group group = groupManagementService.loadGroup(groupId);
@@ -456,7 +453,7 @@ public class GroupController extends BaseController {
         return "group/extend_token";
     }
 
-    @RequestMapping(value = "modify", method = RequestMethod.POST, params={"token_cancel"})
+    @RequestMapping(value = "modify", method = RequestMethod.POST, params = {"token_cancel"})
     public String cancelToken(Model model, @RequestParam("groupId") Long groupId) {
 
         Group group = groupManagementService.loadGroup(groupId);
@@ -466,7 +463,7 @@ public class GroupController extends BaseController {
 
     @RequestMapping(value = "token", method = RequestMethod.POST)
     public String createGroupToken(Model model, @RequestParam("groupId") Long groupId, @RequestParam("action") String action,
-                                   @RequestParam(value="days", required=false) Integer days,
+                                   @RequestParam(value = "days", required = false) Integer days,
                                    HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
         Group group = groupManagementService.loadGroup(groupId);
@@ -479,7 +476,7 @@ public class GroupController extends BaseController {
                     group = groupManagementService.generateGroupToken(group, days, getUserProfile());
                 log.info("New token created with value: " + group.getGroupTokenCode());
                 addMessage(redirectAttributes, MessageType.SUCCESS, "group.token.creation.success",
-                           new Object[]{group.getGroupTokenCode()}, request);
+                        new Object[]{group.getGroupTokenCode()}, request);
                 break;
             case "extend":
                 group = groupManagementService.extendGroupToken(group, days, getUserProfile());
@@ -496,7 +493,7 @@ public class GroupController extends BaseController {
 
     }
 
-    @RequestMapping(value = "modify", params={"group_language"})
+    @RequestMapping(value = "modify", params = {"group_language"})
     public String requestGroupLanguage(Model model, @RequestParam("groupId") Long groupId) {
 
         Group group = groupManagementService.loadGroup(groupId);
@@ -536,16 +533,16 @@ public class GroupController extends BaseController {
     /**
      * Methods to handle changing group discoverability
      */
-    @RequestMapping(value="modify", params={"discoverable"})
+    @RequestMapping(value = "modify", params = {"discoverable"})
     public String alterGroupDiscoverability(Model model, @RequestParam("groupId") Long groupId) {
         Group group = loadGroup(groupId, BasePermissions.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         model.addAttribute("group", group);
         return "group/discoverable";
     }
 
-    @RequestMapping(value="discoverable", method = RequestMethod.POST)
+    @RequestMapping(value = "discoverable", method = RequestMethod.POST)
     public String changeDiscoverableConfirmed(Model model, @RequestParam Long groupId,
-                                              @RequestParam(value="confirm_field", required=false) String confirmField,
+                                              @RequestParam(value = "confirm_field", required = false) String confirmField,
                                               RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
         Group group = loadGroup(groupId, BasePermissions.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
@@ -570,7 +567,7 @@ public class GroupController extends BaseController {
     Methods for handling group linking to a parent (as observing that users often create group first, link later)
      */
 
-    @RequestMapping(value="parent")
+    @RequestMapping(value = "parent")
     public String listPossibleParents(Model model, @RequestParam("groupId") Long groupId,
                                       HttpServletRequest request, RedirectAttributes redirectAttributes) {
         // todo: check permissions, handle exceptions (in fact, on view group page), etc.
@@ -608,7 +605,7 @@ public class GroupController extends BaseController {
         }
     }
 
-    @RequestMapping(value="link", method=RequestMethod.POST)
+    @RequestMapping(value = "link", method = RequestMethod.POST)
     public String linkToParent(Model model, @RequestParam("groupId") Long groupId, @RequestParam("parentId") Long parentId,
                                RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
@@ -653,7 +650,7 @@ public class GroupController extends BaseController {
 
     @RequestMapping(value = "consolidate/confirm", method = RequestMethod.POST)
     public String consolidateGroupsConfirm(Model model, @RequestParam("groupId1") Long groupId1, @RequestParam("groupId2") Long groupId2,
-                                           @RequestParam("order") String order, @RequestParam(value="leaveActive", required=false) boolean leaveActive,
+                                           @RequestParam("order") String order, @RequestParam(value = "leaveActive", required = false) boolean leaveActive,
                                            HttpServletRequest request) {
 
         Group groupInto;
@@ -691,7 +688,7 @@ public class GroupController extends BaseController {
 
     @RequestMapping(value = "consolidate/do", method = RequestMethod.POST)
     public String consolidateGroupsDo(Model model, @RequestParam("groupInto") Long groupIdInto, @RequestParam("groupFrom") Long groupIdFrom,
-                                      @RequestParam(value="leaveActive", required=false) boolean leaveActive, RedirectAttributes redirectAttributes, HttpServletRequest request) {
+                                      @RequestParam(value = "leaveActive", required = false) boolean leaveActive, RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
         // todo: add error handling
         Group groupInto = groupManagementService.loadGroup(groupIdInto);
@@ -709,7 +706,7 @@ public class GroupController extends BaseController {
     Simple method to delete a group, if it was recently created and this is the creating user, after a confirmation screen
     todo: add Spring Security annotations to stop unauthorized users from even accessing the URLs
      */
-    @RequestMapping(value = "modify", params={"group_delete"})
+    @RequestMapping(value = "modify", params = {"group_delete"})
     public String confirmDelete(Model model, @RequestParam("groupId") Long groupId,
                                 HttpServletRequest request, RedirectAttributes redirectAttributes) {
 

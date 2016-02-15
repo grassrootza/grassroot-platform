@@ -672,4 +672,29 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
     }
 
+    @Test
+    public void addBulkMembersDoShouldWork() throws Exception{
+        Group testGroup = new Group();
+        String testNumbers = "0616780986,0833403013,01273,0799814669";
+        List<String> numbers_to_be_added = new ArrayList<>();
+        numbers_to_be_added.add("27616780986");
+        numbers_to_be_added.add("27833403013");
+        numbers_to_be_added.add("27799814669");
+        List<User> testUsers = Arrays.asList(new User("27616780986"),new User("27833403013"), new User("27799814669"));
+
+        when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
+   //     when(userManagementServiceMock.getExistingUsersFromNumbers(numbers_to_be_added)).thenReturn(testUsers);
+        when(groupManagementServiceMock.addMembersToGroup(dummyId,testUsers,true)).thenReturn(testGroup);
+
+        mockMvc.perform(post("/group/add_members_do").param("groupId", String.valueOf(dummyId)).param("list",testNumbers)
+                .param("closed", String.valueOf(true)))
+                .andExpect(status().isOk()).andExpect(view().name("group/add_members_do"));
+        verify(groupManagementServiceMock,times(1)).loadGroup(dummyId);
+      //  verify(userManagementServiceMock,times(1)).getExistingUsersFromNumbers(numbers_to_be_added);
+        verify(groupManagementServiceMock,times(1)).addMembersToGroup(dummyId,testUsers,true);
+        verifyNoMoreInteractions(groupManagementServiceMock);
+      //  verifyNoMoreInteractions(userManagementServiceMock);
+
+    }
+
 }

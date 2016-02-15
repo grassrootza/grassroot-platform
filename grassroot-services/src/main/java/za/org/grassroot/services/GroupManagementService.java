@@ -74,6 +74,16 @@ public interface GroupManagementService {
 
     public List<Group> getListGroupsFromLogbooks(List<LogBook> logBooks);
 
+
+    /*
+    Methods to find, and add group members
+     */
+
+
+
+    public Group addMembersToGroup(Long groupId, List<User> members, boolean isClosedGroup);
+
+
     /*
     Methods to find if a user has an outstanding group management action to perform or groups on which they can perform it
      */
