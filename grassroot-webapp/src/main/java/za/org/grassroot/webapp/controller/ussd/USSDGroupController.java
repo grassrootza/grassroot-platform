@@ -279,7 +279,7 @@ public class USSDGroupController extends USSDController {
             tokenMenu = new USSDMenu(getMessage(thisSection, groupTokenMenu, promptKey + ".exists", tokenCode, sessionUser));
             if (!indefiniteToken) tokenMenu.addMenuOption(groupMenuWithId(groupTokenMenu + "-extend", groupId),
                                                           getMessage(thisSection, groupTokenMenu, optionsKey + "extend", sessionUser));
-            tokenMenu.addMenuOption(groupMenuWithId(groupTokenMenu + "-close" + groupIdUrlSuffix, groupId),
+            tokenMenu.addMenuOption(groupMenuWithId(groupTokenMenu + "-close", groupId),
                                     getMessage(thisSection, groupTokenMenu, optionsKey + "close", sessionUser));
 
         } else {

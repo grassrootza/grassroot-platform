@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.enums.EventType;
@@ -23,6 +24,7 @@ import java.net.URISyntaxException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.backVoteUrl;
@@ -44,7 +46,9 @@ public class USSDVoteController extends USSDController {
     private static final USSDSection thisSection = USSDSection.VOTES;
 
     // for stubbing with Mockito
-    public void setEventUtil(USSDEventUtil eventUtil) { this.eventUtil = eventUtil; }
+    public void setEventUtil(USSDEventUtil eventUtil) {
+        this.eventUtil = eventUtil;
+    }
 
     /*
     First menu asks user to select a group. Until we have a "snap voting" functionality worked out, this requires
@@ -71,7 +75,7 @@ public class USSDVoteController extends USSDController {
             String groupsExistPrompt = getMessage(thisSection, "group", promptKey, user);
             String groupsDontExistPrompt = getMessage(thisSection, "group", promptKey + "-nogroup", user);
             menu = ussdGroupUtil.askForGroupNoInlineNew(user, thisSection, groupsExistPrompt, groupsDontExistPrompt,
-                                                        "issue", groupMenus + "create", null);
+                    "issue", groupMenus + "create", null);
         }
 
         return menuBuilder(menu);
@@ -85,9 +89,12 @@ public class USSDVoteController extends USSDController {
 
         String groupsExistPrompt = getMessage(thisSection, "group", promptKey, user);
         String groupsDontExistPrompt = getMessage(thisSection, "group", promptKey + "-nogroup", user);
-
+        List<Group> groups = groupManager.getActiveGroupsPartOf(user);
+        if (groups.size() == 1) {
+            return menuBuilder(eventUtil.askForEventSubject(user, thisSection, groups.get(0).getId()));
+        }
         return menuBuilder(ussdGroupUtil.askForGroupNoInlineNew(user, thisSection, groupsExistPrompt, groupsDontExistPrompt,
-                                                                "issue", groupMenus + "create", null));
+                "issue", groupMenus + "create", null));
     }
 
     /*
@@ -186,7 +193,7 @@ public class USSDVoteController extends USSDController {
         String[] promptFields;
 
         if (!interrupted) {
-            switch(field) {
+            switch (field) {
                 case "standard":
                     promptFields = setStandardTime(eventId, time, user);
                     break;
@@ -197,7 +204,7 @@ public class USSDVoteController extends USSDController {
                     promptFields = adjustSubject(eventId, userInput, user);
                     break;
                 default:
-                    promptFields = new String[] { "Error!", "Error occurred!" };
+                    promptFields = new String[]{"Error!", "Error occurred!"};
                     break;
             }
         } else {
@@ -244,7 +251,7 @@ public class USSDVoteController extends USSDController {
         boolean futureEvent = vote.getEventStartDateTime().toLocalDateTime().isAfter(LocalDateTime.now());
 
         RSVPTotalsDTO voteResults = eventManager.getVoteResultsDTO(vote);
-        String[] fields = new String[]{ vote.getAppliesToGroup().getName(""), vote.getName(), "" + voteResults.getYes(),
+        String[] fields = new String[]{vote.getAppliesToGroup().getName(""), vote.getName(), "" + voteResults.getYes(),
                 "" + voteResults.getNo(), "" + voteResults.getMaybe(), "" + voteResults.getNumberNoRSVP()};
         USSDMenu menu = new USSDMenu(getMessage(thisSection, "details", promptKey, fields, user));
 
@@ -266,7 +273,7 @@ public class USSDVoteController extends USSDController {
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, "reminder", promptKey, user));
         menu.addMenuOptions(optionsYesNo(user, voteMenus + "reminder-do?eventId=" + eventId,
-                                         voteMenus + "details?eventId=" + eventId));
+                voteMenus + "details?eventId=" + eventId));
 
         return menuBuilder(menu);
     }
@@ -287,7 +294,7 @@ public class USSDVoteController extends USSDController {
     private String[] setCustomTime(Long eventId, String userInput) {
         Event vote = eventUtil.updateEventAndBlockSend(eventId, "time", userInput);
         final String dateTimePrompt = "at " + DateTimeUtil.parseDateTime(userInput).format(dateTimeFormat);
-        return new String[]{ vote.getName(), dateTimePrompt };
+        return new String[]{vote.getName(), dateTimePrompt};
     }
 
 
@@ -317,7 +324,7 @@ public class USSDVoteController extends USSDController {
 
         eventManager.setSendBlock(eventId);
         Event vote = eventManager.setEventTimestamp(eventId, Timestamp.valueOf(proposedDateTime));
-        return new String[]{ vote.getName(), dateTimePrompt };
+        return new String[]{vote.getName(), dateTimePrompt};
 
     }
 
@@ -332,7 +339,7 @@ public class USSDVoteController extends USSDController {
             // need a quick way to do "at" in i18n
             dateTime = "at " + vote.getEventStartDateTime().toLocalDateTime().format(dateTimeFormat);
         }
-        return new String[] { userInput, dateTime };
+        return new String[]{userInput, dateTime};
     }
 
     /*
@@ -344,8 +351,11 @@ public class USSDVoteController extends USSDController {
                             @RequestParam(value = eventIdParam) Long eventId) throws Exception {
 
         User user;
-        try { user = userManager.findByInputNumber(inputNumber, null); }
-        catch (NoSuchUserException e) { return noUserError; }
+        try {
+            user = userManager.findByInputNumber(inputNumber, null);
+        } catch (NoSuchUserException e) {
+            return noUserError;
+        }
 
         Event vote = eventManager.removeSendBlock(eventId);
         log.info("Vote details confirmed! Closing date and time: " + vote.getEventStartDateTime().toLocalDateTime().format(dateTimeFormat));

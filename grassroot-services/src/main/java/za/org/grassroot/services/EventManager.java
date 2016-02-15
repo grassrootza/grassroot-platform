@@ -677,6 +677,7 @@ public class EventManager implements EventManagementService {
             eventDescription.put("eventSubject", event.getName());
             eventDescription.put("location", event.getEventLocation());
             eventDescription.put("createdDateTime", event.getCreatedDateTime().toString());
+            eventDescription.put("event_type", event.getEventType().name());
             eventDescription.put("dateTimeString", dateTimeString);
         } else {
             eventDescription.put("minimumData", "false");

@@ -4,6 +4,7 @@ import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.Phonenumber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,7 +38,7 @@ public class BulkUserImportUtil {
                 else if (number.length() < 10)
                     errorNumbers.add(number);
                 else
-                    validNumbers.add(number);
+                    validNumbers.add(PhoneNumberUtil.convertPhoneNumber(number));
             } catch (NumberParseException e) {
                 errorNumbers.add(number);
             }

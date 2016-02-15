@@ -207,7 +207,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
     }
 
-    @Test
+   /* @Test
     public void enteringZeroToStopGroupCreationShouldWork() throws Exception {
 
         User testUser = new User(testUserPhone);
@@ -236,7 +236,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         verifyNoMoreInteractions(eventManagementServiceMock);
         verifyZeroInteractions(groupManagementServiceMock);
 
-    }
+    }*/
 
     @Test
     public void enteringNoValidNumbersShouldGiveError() throws Exception {
