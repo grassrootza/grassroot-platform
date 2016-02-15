@@ -5,17 +5,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.GroupTreeDTO;
-import za.org.grassroot.core.dto.NewGroupMember;
-import za.org.grassroot.core.enums.EventChangeType;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.repository.GroupLogRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.PaidGroupRepository;
-import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.util.TokenGeneratorService;
 
 import javax.transaction.Transactional;
@@ -57,13 +53,7 @@ public class GroupManager implements GroupManagementService {
     private TokenGeneratorService tokenGeneratorService;
 
     @Autowired
-    private GenericJmsTemplateProducerService jmsTemplateProducerService;
-
-    @Autowired
     private GroupLogRepository groupLogRepository;
-
-//    @Autowired
-//    private EventRepository eventRepository;
 
     @Autowired
     private RoleManagementService roleManagementService;
@@ -74,6 +64,9 @@ public class GroupManager implements GroupManagementService {
     @Autowired
     private GroupAccessControlManagementService accessControlService;
 
+    @Autowired
+    private AsyncGroupService asyncGroupService;
+
 
     /*
     First, methods to create groups
@@ -83,7 +76,7 @@ public class GroupManager implements GroupManagementService {
     public Group createNewGroup(User creatingUser, String groupName, boolean addDefaultRole) {
         Long timeStart = System.currentTimeMillis();
         Group group = groupRepository.save(new Group(groupName, creatingUser));
-        recordGroupLog(group.getId(),creatingUser.getId(),GroupLogType.GROUP_ADDED, 0L, "");;
+        asyncGroupService.recordGroupLog(group.getId(),creatingUser.getId(),GroupLogType.GROUP_ADDED, 0L, "");;
         if (addDefaultRole) roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, group, creatingUser, creatingUser);
         Long timeEnd = System.currentTimeMillis();
         log.info(String.format("Creating a group without roles, time taken ... %d msecs", timeEnd - timeStart));
@@ -95,7 +88,7 @@ public class GroupManager implements GroupManagementService {
         Group group = new Group(groupName, creatingUser);
         group.addMember(creatingUser);
         Group savedGroup = groupRepository.save(group);
-        recordGroupLog(savedGroup.getId(),creatingUser.getId(),GroupLogType.GROUP_ADDED,0L, "");
+        asyncGroupService.recordGroupLog(savedGroup.getId(),creatingUser.getId(),GroupLogType.GROUP_ADDED,0L, "");
         if (addDefaultRole) roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, group, creatingUser, creatingUser);
         return savedGroup;
     }
@@ -115,7 +108,8 @@ public class GroupManager implements GroupManagementService {
     @Override
     public Group saveGroup(Group groupToSave, boolean createGroupLog, String description, Long changedByuserId) {
         Group group = groupRepository.save(groupToSave);
-        if (createGroupLog) recordGroupLog(groupToSave.getId(),changedByuserId, GroupLogType.GROUP_UPDATED,0L,description);
+        if (createGroupLog)
+            asyncGroupService.recordGroupLog(groupToSave.getId(),changedByuserId, GroupLogType.GROUP_UPDATED,0L,description);
         return group;
     }
 
@@ -136,47 +130,9 @@ public class GroupManager implements GroupManagementService {
         return renameGroup(loadGroup(groupId), newGroupName);
     }
 
-    // @Async
-    @Override
-    public void recordGroupLog(Long groupId, Long userDoingId, GroupLogType type, Long userOrGroupAffectedId, String description) {
-        groupLogRepository.save(new GroupLog(groupId, userDoingId, type, userOrGroupAffectedId, description));
-    }
-
     /**
      * SECTION: Methods to add and remove group members, including logging & roles/permissions
      */
-
-    // @Async
-    public void wireNewGroupMemberLogsRoles(Group group, User newMember, Long addingUserId, boolean addDefaultRole) {
-
-        if (hasDefaultLanguage(group) && !newMember.isHasInitiatedSession())
-            assignDefaultLanguage(group, newMember);
-
-        Long savingUserId = (addingUserId == null) ? dontKnowTheUser : addingUserId;
-
-        groupLogRepository.save(new GroupLog(group.getId(), savingUserId, GroupLogType.GROUP_MEMBER_ADDED, newMember.getId()));
-
-        if (addDefaultRole) {
-            if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, group,
-                                                                   newMember, userManager.getUserById(addingUserId));
-            } else {
-                roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, group, newMember);
-
-            }
-        }
-
-        jmsTemplateProducerService.sendWithNoReply(EventChangeType.USER_ADDED.toString(),new NewGroupMember(group,newMember));
-    }
-
-    // @Async
-    public void removeGroupMemberLogsRoles(Group group, User oldMember, User removingUser) {
-        Long removingUserId = (removingUser == null) ? dontKnowTheUser : removingUser.getId();
-        String description = (oldMember.getId() == removingUserId) ? "Unsubscribed" : "Removed from group";
-        groupLogRepository.save(new GroupLog(group.getId(), removingUserId, GroupLogType.GROUP_MEMBER_REMOVED,
-                                             oldMember.getId(), description));
-        roleManagementService.removeGroupRolesFromUser(oldMember, group);
-    }
 
     @Override
     public Group addGroupMember(Group currentGroup, User newMember, Long addingUserId, boolean addDefaultRole) {
@@ -187,7 +143,7 @@ public class GroupManager implements GroupManagementService {
             currentGroup.addMember(newMember);
             currentGroup = saveGroup(currentGroup,false,"",dontKnowTheUser);
             newMember = userManager.save(newMember); // so that this is isntantly double-sided, else getting access control errors
-            wireNewGroupMemberLogsRoles(currentGroup, newMember, addingUserId, addDefaultRole);
+            asyncGroupService.wireNewGroupMemberLogsRoles(currentGroup, newMember, addingUserId, addDefaultRole);
             return currentGroup;
         }
     }
@@ -208,22 +164,19 @@ public class GroupManager implements GroupManagementService {
         Group savedGroup = groupRepository.save(groupToExpand);
 
         for (User newMember : groupNewMembers) // do this after else risk async getting in way before joins established
-            wireNewGroupMemberLogsRoles(savedGroup, newMember, addingUser.getId(), addDefaultRoles);
+            asyncGroupService.wireNewGroupMemberLogsRoles(savedGroup, newMember, addingUser.getId(), addDefaultRoles);
 
         return savedGroup;
     }
+
     @Override
     public Group addMembersToGroup(Long groupId, List<User> members, boolean isClosedGroup){
-
         Group groupToExpand = loadGroup(groupId);
         groupToExpand.getGroupMembers().addAll(members);
         Group savedGroup = groupRepository.save(groupToExpand);
-        for (User newMember : members) {
-            GroupLog groupLog = groupLogRepository.save(new GroupLog(savedGroup.getId(),dontKnowTheUser,GroupLogType.GROUP_MEMBER_ADDED,newMember.getId()));
-            jmsTemplateProducerService.sendWithNoReply(EventChangeType.USER_ADDED.toString(),new NewGroupMember(groupToExpand,newMember));
-        }
+        for (User newMember : members)
+            asyncGroupService.wireNewGroupMemberLogsRoles(savedGroup, newMember, dontKnowTheUser, true);
         return savedGroup;
-
     }
 
     @Override
@@ -231,7 +184,7 @@ public class GroupManager implements GroupManagementService {
         // todo: error handling
         group.getGroupMembers().remove(user);
         Group savedGroup = saveGroup(group,false,"",dontKnowTheUser);
-        removeGroupMemberLogsRoles(savedGroup, user, removingUser);
+        asyncGroupService.removeGroupMemberLogsRoles(savedGroup, user, removingUser);
         return savedGroup;
     }
 
@@ -505,7 +458,7 @@ public class GroupManager implements GroupManagementService {
 
     public Group createSubGroup(User createdByUser, Group group, String subGroupName) {
         Group subGroup = groupRepository.save(new Group(subGroupName, createdByUser, group));
-        recordGroupLog(group.getId(),createdByUser.getId(),GroupLogType.SUBGROUP_ADDED, subGroup.getId(),
+        asyncGroupService.recordGroupLog(group.getId(),createdByUser.getId(),GroupLogType.SUBGROUP_ADDED, subGroup.getId(),
                        String.format("Subgroup: %s added",subGroupName));
         return subGroup;
     }
@@ -566,7 +519,7 @@ public class GroupManager implements GroupManagementService {
          */
         String description = String.format("Linked group: %s to %s",child.getGroupName().trim().equals("") ? child.getId() : child.getGroupName(),
                 parent.getGroupName().trim().equals("") ? parent.getId() : parent.getGroupName());
-        GroupLog groupLog = groupLogRepository.save(new GroupLog(parent.getId(),dontKnowTheUser,GroupLogType.SUBGROUP_ADDED,child.getId(),description));
+        asyncGroupService.recordGroupLog(parent.getId(),dontKnowTheUser,GroupLogType.SUBGROUP_ADDED,child.getId(),description);
         return savedChild;
     }
 
@@ -627,17 +580,6 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public boolean hasDefaultLanguage(Group group) {
-        return (group.getDefaultLanguage() != null && !group.getDefaultLanguage().trim().equals("en"));
-    }
-
-    @Override
-    public void assignDefaultLanguage(Group group, User user) {
-        user.setLanguageCode(group.getDefaultLanguage());
-        userManager.save(user);
-    }
-
-    @Override
     public Integer getGroupSize(Group group, boolean includeSubGroups) {
         // as with a few above, a little trivial as implemented here, but may change in future, so rather here than code in webapp
 
@@ -695,7 +637,7 @@ public class GroupManager implements GroupManagementService {
         // todo errors and exception throwing
         group.setActive(false);
         Group savedGroup = groupRepository.save(group);
-        recordGroupLog(group.getId(),user.getId(),GroupLogType.GROUP_REMOVED,0L,String.format("Set group inactive"));
+        asyncGroupService.recordGroupLog(group.getId(),user.getId(),GroupLogType.GROUP_REMOVED,0L,String.format("Set group inactive"));
         return savedGroup;
     }
 
@@ -724,7 +666,7 @@ public class GroupManager implements GroupManagementService {
         consolidatedGroup.setGroupMembers(new ArrayList<>(setOfMembers));
         Group savedGroup = saveGroup(consolidatedGroup,true,String.format("Merged group %d with %d",secondGroupId,firstGroupId),creatingUser.getId());
         for (User u : setOfMembers)
-            wireNewGroupMemberLogsRoles(savedGroup, u, creatingUser.getId(), true);
+            asyncGroupService.wireNewGroupMemberLogsRoles(savedGroup, u, creatingUser.getId(), true);
 
         return savedGroup;
     }

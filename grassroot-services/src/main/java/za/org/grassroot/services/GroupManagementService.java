@@ -35,8 +35,6 @@ public interface GroupManagementService {
 
     public Group renameGroup(Long groupId, String newGroupName);
 
-    public void recordGroupLog(Long groupId, Long userDoingId, GroupLogType type, Long userOrGroupAffectedId, String description);
-
     /*
     Methods to add group members
      */
@@ -177,10 +175,6 @@ public interface GroupManagementService {
     public Group setGroupDefaultLanguage(Group group, String locale);
 
     public Group setGroupAndSubGroupDefaultLanguage(Group group, String locale);
-
-    public boolean hasDefaultLanguage(Group group);
-
-    public void assignDefaultLanguage(Group group, User user);
 
     public Integer getGroupSize(Group group, boolean includeSubGroups);
 

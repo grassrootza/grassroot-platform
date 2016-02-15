@@ -29,6 +29,7 @@ import java.util.concurrent.Executors;
 @EnableAutoConfiguration
 @EnableJpaRepositories
 @EnableJms
+@EnableAsync
 @EnableScheduling
 public class GrassRootServicesConfig  implements SchedulingConfigurer {
 

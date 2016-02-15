@@ -4,6 +4,8 @@ import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.RoleRepository;
@@ -17,6 +19,7 @@ import java.util.List;
  */
 @Service
 @Transactional
+@Lazy
 public class RoleManager implements  RoleManagementService {
 
     private final static Logger log = LoggerFactory.getLogger(RoleManager.class);
@@ -210,7 +213,7 @@ public class RoleManager implements  RoleManagementService {
         userManagementService.save(flushUserRolesInGroup(user, group));
     }
 
-    // @Async
+    @Async
     @Override
     public void resetGroupToDefaultRolesPermissions(Long groupId) {
         log.info("Resetting group to creator as organizer, rest as members ... ");
