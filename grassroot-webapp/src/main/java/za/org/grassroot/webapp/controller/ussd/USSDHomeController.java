@@ -102,10 +102,9 @@ public class USSDHomeController extends USSDController {
         } else {
             openingMenu = defaultStartMenu(sessionUser);
         }
-
         Long endTime = System.currentTimeMillis();
         log.info(String.format("Generating home menu, time taken: %d msecs", endTime - startTime));
-        return menuBuilder(openingMenu);
+        return menuBuilder(openingMenu, true);
 
     }
 

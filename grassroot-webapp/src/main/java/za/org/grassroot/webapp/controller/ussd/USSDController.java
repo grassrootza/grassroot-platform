@@ -94,6 +94,12 @@ public class USSDController {
         return USSDMenuUtil.menuBuilder(ussdMenu);
     }
 
+
+    protected Request menuBuilder(USSDMenu ussdMenu, boolean isFirstMenu) throws URISyntaxException {
+        return USSDMenuUtil.menuBuilder(ussdMenu, isFirstMenu);
+    }
+
+
     public void setMessageSource(MessageSource messageSource) { this.messageSource = messageSource; }
     public void setUssdGroupUtil(USSDGroupUtil ussdGroupUtil) {
         this.ussdGroupUtil = ussdGroupUtil;

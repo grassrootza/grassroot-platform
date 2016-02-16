@@ -50,7 +50,12 @@ public class USSDGroupUtil extends USSDUtil {
     private static final String groupIdUrlEnding = "?" + groupIdParameter + "=";
     private static final String validNumbers = "valid";
     private static final String invalidNumbers = "error";
-    private static final String subjectMenu = "subject", placeMenu = "place", timeMenu = "time";
+    private static final String subjectMenu = "subject",
+            placeMenu = "place", existingGroupMenu = "menu", timeMenu = "time",
+            unsubscribePrompt = "unsubscribe",
+            groupTokenMenu = "token", renameGroupPrompt = "rename",
+            addMemberPrompt = "addnumber", mergeGroupMenu = "merge",
+            inactiveMenu = "inactive";
 
     private static final SimpleDateFormat unnamedGroupDate = new SimpleDateFormat("d MMM");
 
@@ -219,8 +224,20 @@ public class USSDGroupUtil extends USSDUtil {
                 Long logBookId = logBookService.create(user.getId(), groupId, false).getId();
                 userManager.setLastUssdMenu(user, saveLogMenu(subjectMenu, logBookId));
                 nextUrl = "log/due_date" + USSDUrlUtil.logbookIdUrlSuffix + logBookId;
-                menu = new USSDMenu(getMessage(section, subjectMenu, promptKey, user),
-                        nextUrl);
+                menu = new USSDMenu(getMessage(section, subjectMenu, promptKey, user), nextUrl);
+                break;
+            case GROUP_MANAGER:
+                sessionUser = userManager.findByInputNumber(sessionUser.getPhoneNumber(), saveGroupMenu(existingGroupMenu, groupId));
+                menu = new USSDMenu(getMessage(section, existingGroupMenu, promptKey, sessionUser));
+                String menuKey = section.toKey() + existingGroupMenu + "." + optionsKey;
+                menu.addMenuOption(groupMenuWithId(groupTokenMenu, groupId), getMessage(menuKey + groupTokenMenu, sessionUser));
+                menu.addMenuOption(groupMenuWithId(addMemberPrompt, groupId), getMessage(menuKey + addMemberPrompt, sessionUser));
+                menu.addMenuOption(groupMenuWithId(unsubscribePrompt, groupId), getMessage(menuKey + unsubscribePrompt, sessionUser));
+                menu.addMenuOption(groupMenuWithId(renameGroupPrompt, groupId), getMessage(menuKey + renameGroupPrompt, sessionUser));
+                if (groupManager.isGroupCreatedByUser(groupId, sessionUser))
+                    menu.addMenuOption(groupMenuWithId(mergeGroupMenu, groupId), getMessage(menuKey + mergeGroupMenu, sessionUser));
+                if (groupManager.canUserMakeGroupInactive(sessionUser, groupId))
+                    menu.addMenuOption(groupMenuWithId(inactiveMenu, groupId), getMessage(menuKey + inactiveMenu, sessionUser));
                 break;
             default:
                 break;
