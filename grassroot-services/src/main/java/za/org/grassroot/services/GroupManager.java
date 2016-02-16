@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.repository.GroupLogRepository;
@@ -246,6 +247,16 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
+    public List<GroupDTO> getActiveGroupsPartOfOrderedByRecent(User sessionUser) {
+        List<Object[]> listObjArray =  groupRepository.findActiveUserGroupsOrderedByRecentEvent(sessionUser.getId());
+        List<GroupDTO> list = new ArrayList<>();
+        for (Object[] objArray : listObjArray) {
+            list.add(new GroupDTO(objArray));
+        }
+        return list;
+    }
+
+    @Override
     public List<Group> getActiveGroupsPartOf(Long userId) {
         return getActiveGroupsPartOf(userManager.getUserById(userId));
     }
@@ -299,8 +310,8 @@ public class GroupManager implements GroupManagementService {
 
     @Override
     public boolean hasActiveGroupsPartOf(User user) {
-        return !getActiveGroupsPartOf(user).isEmpty();
-        // return groupRepository.countActiveGroups(user.getId()) > 0; // this is breaking the getActiveGroups methods
+        // return !getActiveGroupsPartOf(user).isEmpty();
+        return groupRepository.countActiveGroups(user.getId()) > 0; // this is breaking the getActiveGroups methods
     }
 
     @Override
@@ -797,6 +808,8 @@ public class GroupManager implements GroupManagementService {
         }
         return list;
     }
+
+
 
     @Override
     public List<LocalDate> getMonthsGroupActive(Group group) {

@@ -8,7 +8,10 @@ import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.PhoneNumberUtil;
+import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupManagementService;
+import za.org.grassroot.services.LogBookService;
+import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 
@@ -16,6 +19,8 @@ import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Map;
+
+import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 
 /**
  * Created by luke on 2015/12/04.
@@ -31,11 +36,21 @@ public class USSDGroupUtil extends USSDUtil {
     @Autowired
     private GroupManagementService groupManager;
 
+    @Autowired
+    private UserManagementService userManager;
+
+    @Autowired
+    private EventManagementService eventManager;
+
+    @Autowired
+    private LogBookService logBookService;
+
     private static final String groupKeyForMessages = "group";
     private static final String groupIdParameter = "groupId";
     private static final String groupIdUrlEnding = "?" + groupIdParameter + "=";
     private static final String validNumbers = "valid";
     private static final String invalidNumbers = "error";
+    private static final String subjectMenu = "subject", placeMenu = "place", timeMenu = "time";
 
     private static final SimpleDateFormat unnamedGroupDate = new SimpleDateFormat("d MMM");
 
@@ -56,7 +71,7 @@ public class USSDGroupUtil extends USSDUtil {
             String prompt = getMessage(section, groupKeyForMessages, promptKey + ".existing", sessionUser);
             String existingGroupUri = section.toPath() + nextUrl + ((nonGroupParams == null) ? "" : nonGroupParams);
             String newGroupUri = section.toPath() + newGroupMenu + ((nonGroupParams == null) ? "" : nonGroupParams);
-            groupMenu = userGroupMenuPageOne(sessionUser, prompt, existingGroupUri, newGroupUri);
+            groupMenu = userGroupMenuPageOne(sessionUser, prompt, existingGroupUri, newGroupUri, section);
         }
         return groupMenu;
     }
@@ -65,14 +80,14 @@ public class USSDGroupUtil extends USSDUtil {
                                            String urlIfExisting, String urlIfEmpty, String nonGroupParams) throws URISyntaxException {
         USSDMenu groupMenu;
         // todo: replace the getter with a less expensive call (boolean query -- non-trivial), plus filter for permissions
-        if(!groupManager.hasActiveGroupsPartOf(sessionUser)) {
+        if (!groupManager.hasActiveGroupsPartOf(sessionUser)) {
             groupMenu = new USSDMenu(promptIfEmpty);
             groupMenu.addMenuOption(urlIfEmpty, getMessage(section, groupKeyForMessages, "options.new", sessionUser));
             groupMenu.addMenuOption("start", getMessage("start", sessionUser));
             groupMenu.addMenuOption("exit", getMessage("exit.option", sessionUser));
         } else {
             String existingGroupUri = section.toPath() + urlIfExisting + ((nonGroupParams == null) ? "" : nonGroupParams);
-            groupMenu = userGroupMenuPageOne(sessionUser, promptIfExisting, existingGroupUri, null);
+            groupMenu = userGroupMenuPageOne(sessionUser, promptIfExisting, existingGroupUri, null, section);
         }
         return groupMenu;
     }
@@ -92,23 +107,27 @@ public class USSDGroupUtil extends USSDUtil {
         return askForGroupNoInlineNew(user, section, promptIfNotEmpty, promptIfEmpty, menuIfExisting, urlIfEmpty, "");
     }
 
-    public USSDMenu userGroupMenuPageOne(User user, String prompt, String existingGroupUrl, String newGroupUrl) throws URISyntaxException {
-        return userGroupMenuPaginated(user, prompt, existingGroupUrl, newGroupUrl, 0);
+    public USSDMenu userGroupMenuPageOne(User user, String prompt, String existingGroupUrl, String newGroupUrl, USSDSection section) throws URISyntaxException {
+        return userGroupMenuPaginated(user, prompt, existingGroupUrl, newGroupUrl, 0, section);
     }
 
-    public USSDMenu userGroupMenuPaginated(User user, String prompt, String urlForExistingGroups, String urlForNewGroup, Integer pageNumber)
+    public USSDMenu userGroupMenuPaginated(User user, String prompt, String urlForExistingGroups, String urlForNewGroup, Integer pageNumber, USSDSection section)
             throws URISyntaxException {
         USSDMenu menu = new USSDMenu(prompt);
         Page<Group> groupsPartOf = groupManager.getPageOfActiveGroups(user, pageNumber, PAGE_LENGTH);
-        menu = addListOfGroupsToMenu(menu, urlForExistingGroups, groupsPartOf.getContent(), user);
-        if (groupsPartOf.hasNext())
-            menu.addMenuOption(USSDUrlUtil.paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, pageNumber + 1),
-                               "More groups"); // todo: i18n
-        if (groupsPartOf.hasPrevious())
-            menu.addMenuOption(USSDUrlUtil.paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, pageNumber - 1),
-                               "Back"); // todo: i18n
-        if (urlForNewGroup != null)
-            menu.addMenuOption(urlForNewGroup, getMessage(groupKeyForMessages, "create", "option", user));
+        if (groupsPartOf.getTotalElements() == 1) {
+            menu = skipGroupSelection(user, section, groupsPartOf.iterator().next().getId());
+        } else {
+            menu = addListOfGroupsToMenu(menu, urlForExistingGroups, groupsPartOf.getContent(), user);
+            if (groupsPartOf.hasNext())
+                menu.addMenuOption(USSDUrlUtil.paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, pageNumber + 1),
+                        "More groups"); // todo: i18n
+            if (groupsPartOf.hasPrevious())
+                menu.addMenuOption(USSDUrlUtil.paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, pageNumber - 1),
+                        "Back"); // todo: i18n
+            if (urlForNewGroup != null)
+                menu.addMenuOption(urlForNewGroup, getMessage(groupKeyForMessages, "create", "option", user));
+        }
         return menu;
     }
 
@@ -126,7 +145,7 @@ public class USSDGroupUtil extends USSDUtil {
 
     /**
      * SECTION 2: Methods to enter numbers for creating a new group, handling input, and exiting again
-     * */
+     */
 
 
     public USSDMenu createGroupPrompt(User user, USSDSection section, String nextUrl) throws URISyntaxException {
@@ -143,7 +162,7 @@ public class USSDGroupUtil extends USSDUtil {
         log.info("addNumbersToNewGroup ... with user input ... " + userInput);
         if (enteredNumbers.get(validNumbers).isEmpty()) {
             menu.setPromptMessage(getMessage(section, groupKeyForMessages, promptKey + ".error",
-                                             String.join(", ", enteredNumbers.get(invalidNumbers)), user));
+                    String.join(", ", enteredNumbers.get(invalidNumbers)), user));
             menu.setNextURI(section.toPath() + returnUrl);
             groupId = 0L;
         } else {
@@ -174,6 +193,39 @@ public class USSDGroupUtil extends USSDUtil {
         menu.setPromptMessage(prompt);
         String groupIdWithParams = (returnUrl.contains("?")) ? ("&" + groupIdParameter + "=") : groupIdUrlEnding;
         menu.setNextURI(section.toPath() + returnUrl + groupIdWithParams + groupId);
+        return menu;
+    }
+
+    public USSDMenu skipGroupSelection(User sessionUser, USSDSection section, Long groupId) {
+        USSDMenu menu = null;
+        String nextUrl;
+        switch (section) {
+            case MEETINGS:
+                Long eventId = eventManager.createMeeting(sessionUser.getPhoneNumber(), groupId).getId();
+                sessionUser = userManager.findByInputNumber(sessionUser.getPhoneNumber(), saveMeetingMenu(subjectMenu, eventId, false));
+                String promptMessage = getMessage(section, subjectMenu, promptKey, sessionUser);
+                nextUrl = "mtg/" + "place" + USSDUrlUtil.eventIdUrlSuffix + eventId + "&prior_menu=subject";
+                menu = new USSDMenu(promptMessage, nextUrl);
+                break;
+            case VOTES:
+                sessionUser = userManager.findByInputNumber(sessionUser.getPhoneNumber());
+                eventId = eventManager.createVote(sessionUser, groupId).getId();
+                userManager.setLastUssdMenu(sessionUser, saveVoteMenu("issue", eventId));
+                nextUrl = "vote/" + "time" + USSDUrlUtil.eventIdUrlSuffix + eventId;
+                menu = new USSDMenu(getMessage(section, "issue", promptKey, sessionUser), nextUrl);
+                break;
+            case LOGBOOK:
+                User user = userManager.findByInputNumber(sessionUser.getPhoneNumber());
+                Long logBookId = logBookService.create(user.getId(), groupId, false).getId();
+                userManager.setLastUssdMenu(user, saveLogMenu(subjectMenu, logBookId));
+                nextUrl = "log/due_date" + USSDUrlUtil.logbookIdUrlSuffix + logBookId;
+                menu = new USSDMenu(getMessage(section, subjectMenu, promptKey, user),
+                        nextUrl);
+                break;
+            default:
+                break;
+
+        }
         return menu;
     }
 
