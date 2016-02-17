@@ -29,12 +29,14 @@ public interface RoleManagementService {
     List<Role> getAllRoles();
 
     /*
-    Methods to fetch standard and group roles
+    Methods to fetch standard roles and create and fetch group roles
      */
 
     Role fetchStandardRoleByName(String name);
 
     Role fetchGroupRoleByName(String name);
+
+    List<Role> createGroupRoles(Long groupId, String groupName);
 
     List<Role> fetchGroupRoles(Long groupId);
 
@@ -60,25 +62,7 @@ public interface RoleManagementService {
 
     Role addRoleToGroup(String roleName, Group group);
 
-    void addDefaultRoleToGroupAndUser(String roleName, Group group, User user);
-
-    void addDefaultRoleToGroupAndUser(String roleName, Group group, User addingToUser, User callingUser);
-
-    void removeUsersRoleInGroup(User user, Group group);
-
-    void resetGroupToDefaultRolesPermissions(Long groupId);
-
     User removeGroupRolesFromUser(User user, Group group);
-
-    /*
-    Methods to assign permissions to roles
-     */
-
-    Role assignPermissionsToRole(Role role, List<Permission> permissions);
-
-    Role addPermissionToRole(Role role, Permission permission);
-
-    Role removePermissionFromRole(Role role, Permission permission);
 
     /*
     Methods to retrieve roles for user in group
