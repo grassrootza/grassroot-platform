@@ -45,8 +45,7 @@ public class USSDMenuUtil {
             menuRequest = new Request(thisMenu.getPromptMessage(), freeText(thisMenu.getNextURI()));
         } else if (checkMenuLength(thisMenu, false)) {
             menuRequest = new Request(thisMenu.getPromptMessage(), createMenu(thisMenu.getMenuOptions()));
-        } else {
-            // note: this runs the risk of cutting off crucial end-of-prompt info, but is 'least bad' option so far (other is just an error message)
+        } else {// note: this runs the risk of cutting off crucial end-of-prompt info, but is 'least bad' option so far (other is just an error message)
             Integer charsToTrim = thisMenu.getMenuCharLength() - 159; // adding a character, for safety
             String currentPrompt = thisMenu.getPromptMessage();
             String revisedPrompt = currentPrompt.substring(0, currentPrompt.length() - charsToTrim);
@@ -54,6 +53,23 @@ public class USSDMenuUtil {
         }
         return menuRequest;
     }
+    //todo: remove code smell
+    public static Request menuBuilder(USSDMenu thisMenu, boolean isFirstMenu) throws URISyntaxException {
+        Request menuRequest;
+        if (thisMenu.isFreeText()) {
+            menuRequest = new Request(thisMenu.getPromptMessage(), freeText(thisMenu.getNextURI()));
+        } else if (checkMenuLength(thisMenu, isFirstMenu) ){
+            menuRequest = new Request(thisMenu.getPromptMessage(), createMenu(thisMenu.getMenuOptions()));
+        } else {
+            Integer charsToTrim = thisMenu.getMenuCharLength() - 139; // adding a character, for safety
+            String currentPrompt = thisMenu.getPromptMessage();
+            String revisedPrompt = currentPrompt.substring(0, currentPrompt.length() - charsToTrim);
+            menuRequest = new Request(revisedPrompt, createMenu(thisMenu.getMenuOptions()));
+        }
+        return menuRequest;
+    }
+
+
 
     public static List<Option> freeText(String urlEnding) throws URISyntaxException {
         return Collections.singletonList(new Option("", 1, 1, new URI(baseURI + urlEnding), false));

@@ -186,13 +186,13 @@
                     <div class="row">
                       <div class="col-lg-6">
                       <h4  class="list-group-item-heading">
-                        <a th:href="@{/group/view(groupId=${group.id})}"><span th:text="${group.getName('')}"></span></a>
+                        <a th:href="@{/group/view(groupId=${group.getId()})}"><span th:text="${group.getName()}"></span></a>
                       </h4>
-                      <div class="least-content"><span th:text="${group.getGroupMembers().size()}"></span> Members</div>
+                      <div class="least-content"><span th:text="${group.getGroupMembers()}"></span> Members</div>
                       <p class="list-group-item-text">Est. <span th:text="${#calendars.format(group.getCreatedDateTime(),'dd MMMM yyyy')}">13 May 2011</span></p>
                       </div>
                       <div class="col-lg-6">
-                        <a th:href="@{/group/unsubscribe(groupId=${group.id})}">
+                        <a th:href="@{/group/unsubscribe(groupId=${group.getId()})}">
                           <button class="btn">Unsubscribe from group</button>
                         </a>
                       </div>

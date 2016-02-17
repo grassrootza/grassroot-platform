@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.enums.GroupLogType;
 
@@ -65,6 +66,8 @@ public interface GroupManagementService {
     public List<Group> getActiveGroupsPartOf(User sessionUser);
 
     public List<Group> getActiveGroupsPartOfOrdered(User sessionUser);
+
+    public List<GroupDTO> getActiveGroupsPartOfOrderedByRecent(User sessionUser);
 
     public List<Group> getActiveGroupsPartOf(Long userId);
 

@@ -11,19 +11,12 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.EventManagementService;
-import za.org.grassroot.services.UserManagementService;
-import za.org.grassroot.webapp.controller.ussd.USSDMeetingController;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
-import za.org.grassroot.webapp.controller.webapp.MeetingController;
 import za.org.grassroot.webapp.enums.USSDSection;
 
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
-
-import static za.org.grassroot.webapp.util.USSDUrlUtil.saveLogMenu;
-import static za.org.grassroot.webapp.util.USSDUrlUtil.saveMeetingMenu;
-import static za.org.grassroot.webapp.util.USSDUrlUtil.saveVoteMenu;
 
 /**
  * Created by luke on 2015/12/05.
@@ -35,11 +28,6 @@ public class USSDEventUtil extends USSDUtil {
 
     @Autowired
     private EventManagementService eventManager;
-
-    @Autowired
-    private UserManagementService userManager;
-
-
 
 
     private static final String eventIdParameter = "eventId";
@@ -88,31 +76,6 @@ public class USSDEventUtil extends USSDUtil {
         askMenu.addMenuOption(meetingMenus + newUrl, newMeetingOption);
         return askMenu;
     }
-    public USSDMenu askForEventSubject(User sessionUser, USSDSection section, Long groupId){
-        USSDMenu menu = null;
-        String nextUrl;
-        switch(section){
-            case MEETINGS:
-                Long eventId = eventManager.createMeeting(sessionUser.getPhoneNumber(), groupId).getId();
-                sessionUser = userManager.findByInputNumber(sessionUser.getPhoneNumber(), saveMeetingMenu(subjectMenu, eventId, false));
-                String promptMessage = getMessage(section, subjectMenu, promptKey, sessionUser);
-                nextUrl = "mtg/"+"place" + USSDUrlUtil.eventIdUrlSuffix+ eventId+"&prior_menu=subject";
-                menu = new USSDMenu(promptMessage, nextUrl);
-                break;
-
-            case VOTES:
-                sessionUser = userManager.findByInputNumber(sessionUser.getPhoneNumber());
-                eventId = eventManager.createVote(sessionUser, groupId).getId();
-                userManager.setLastUssdMenu(sessionUser, saveVoteMenu("issue", eventId));
-                nextUrl = "vote/" + "time" + USSDUrlUtil.eventIdUrlSuffix + eventId ;
-                menu =  new USSDMenu(getMessage(section, "issue", promptKey, sessionUser), nextUrl);
-
-
-        }
-        return menu;
-    }
-
-
 
 
     public USSDMenu listUpcomingEvents(User user, USSDSection section, String prompt, String nextMenu) {
