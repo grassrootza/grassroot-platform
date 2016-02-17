@@ -6,6 +6,7 @@ import org.springframework.data.repository.query.Param;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.UserDTO;
 
 import java.sql.Timestamp;
 import java.util.List;
@@ -61,5 +62,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findExistingUsers(@Param("phone_numbers") List<String> numbers);
 
     List<User> findByGroupsPartOfAndIdNot(Group group, Long excludedUserId);
+
+    @Query(value = "select id, display_name,phone_number,language_code from user_profile where user_profile.phone_number =?1", nativeQuery = true)
+    Object[] findByNumber(String phoneNumber);
 
 }

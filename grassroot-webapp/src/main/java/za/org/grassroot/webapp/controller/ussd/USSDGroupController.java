@@ -115,8 +115,8 @@ public class USSDGroupController extends USSDController {
                                        @RequestParam(value="interrupted", required=false) boolean interrupted,
                                        @RequestParam(value= groupIdParam, required=false) Long groupId) throws URISyntaxException {
 
-        log.info("Inside createGroupMenu ... going to name it ... " + groupName);
-        User user = userManager.findByInputNumber(inputNumber);
+      //  log.info("Inside createGroupMenu ... going to name it ... " + groupName);
+       User user = userManager.findByInputNumber(inputNumber);
 
         Group createdGroup = (interrupted) ?    groupManager.loadGroup(groupId) :
                                                 groupManager.createNewGroupWithCreatorAsMember(user, groupName, true);

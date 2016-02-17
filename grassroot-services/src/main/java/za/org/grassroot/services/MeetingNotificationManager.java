@@ -114,6 +114,13 @@ public class MeetingNotificationManager implements MeetingNotificationService {
         return messageSourceAccessor.getMessage(messageId, populateWelcomeFields(userDTO), getUserLocale(userDTO.getLanguageCode()));
     }
 
+    @Override
+    public String createReplyFailureMessage(User user) {
+        return messageSourceAccessor.getMessage("sms.reply.failure", "",getUserLocale(user));
+
+    }
+
+
     private Locale getUserLocale(User user) {
         return getUserLocale(user.getLanguageCode());
     }

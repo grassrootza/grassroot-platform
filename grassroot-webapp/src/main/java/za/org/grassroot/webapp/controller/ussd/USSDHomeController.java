@@ -80,6 +80,7 @@ public class USSDHomeController extends USSDController {
 
         User sessionUser = userManager.loadOrSaveUser(inputNumber);
 
+
         /*
         Adding some complex logic here to check for one of these things:
         (1) The user has appended a joining code, so we need to add them to a group
@@ -132,6 +133,7 @@ public class USSDHomeController extends USSDController {
 
         User sessionUser = userManager.findByInputNumber(inputNumber);
         sessionUser = userManager.setUserLanguage(sessionUser, language);
+
         return menuBuilder(defaultStartMenu(sessionUser));
 
     }

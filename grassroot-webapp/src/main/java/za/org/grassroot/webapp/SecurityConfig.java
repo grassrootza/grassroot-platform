@@ -53,6 +53,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/web/**")
                 .antMatchers("/test/**")
                 .antMatchers("/console/**")
+                .antMatchers("/sms/**")
                 .antMatchers("/404")
                 .antMatchers("/500").
                 antMatchers("/403");

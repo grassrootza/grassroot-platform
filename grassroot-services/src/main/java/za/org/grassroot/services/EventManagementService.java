@@ -189,6 +189,8 @@ public interface EventManagementService {
     todo: handle sub-groups
      */
 
+
+
     List<Event> getGroupEventsInPeriod(Group group, LocalDateTime periodStart, LocalDateTime periodEnd);
 
     List<Event> getEventsForGroupInTimePeriod(Group group, EventType eventType, LocalDateTime periodStart, LocalDateTime periodEnd);
@@ -204,5 +206,8 @@ public interface EventManagementService {
     double getCostOfMessagesForGroupInPeriod(Group group, EventType eventType, LocalDateTime periodStart, LocalDateTime periodEnd);
 
     double getTotalCostGroupInPeriod(Group group, LocalDateTime periodStart, LocalDateTime periodEnd);
+
+    int notifyUnableToProcessEventReply(User user);
+
 
 }

@@ -31,6 +31,14 @@ public class UserDTO implements Serializable {
         this.enabled = user.getEnabled();
     }
 
+    public UserDTO(Object[] objArray) {
+        this.id = Long.parseLong(objArray[0].toString());
+        this.displayName = String.valueOf(objArray[1]);
+        this.phoneNumber =String.valueOf(objArray[2]);
+        this.languageCode =String.valueOf(objArray[3]);
+
+    }
+
     public boolean isEnabled() {
         return enabled;
     }
