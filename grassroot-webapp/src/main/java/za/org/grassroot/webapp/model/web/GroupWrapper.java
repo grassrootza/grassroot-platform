@@ -4,6 +4,7 @@ import org.apache.commons.collections4.FactoryUtils;
 import org.apache.commons.collections4.list.LazyList;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +30,8 @@ public class GroupWrapper {
     private boolean generateToken;
     private Integer tokenDaysValid;
 
+    // private GroupPermissionTemplate template;
+
     List<User> addedMembers = LazyList.lazyList(new ArrayList<>(), FactoryUtils.instantiateFactory(User.class));
 
     // leaving out setters for group and parent as those are set at construction
@@ -37,6 +40,7 @@ public class GroupWrapper {
         this.group = new Group();
         this.generateToken = false;
         this.discoverable = false;
+        // this.template = GroupPermissionTemplate.DEFAULT_GROUP;
     }
 
     public GroupWrapper(Group parentGroup) {
@@ -50,6 +54,7 @@ public class GroupWrapper {
         this.parentName = parentGroup.getGroupName();
         this.addedMembers.addAll(parentGroup.getGroupMembers());
         this.discoverable = parentGroup.isDiscoverable();
+        // this.template = GroupPermissionTemplate.DEFAULT_GROUP; // todo: figure out if/how to store / inherit this
     }
 
     public Group getGroup() { return group; }
@@ -89,6 +94,10 @@ public class GroupWrapper {
     public boolean isDiscoverable() { return discoverable; }
 
     public void setDiscoverable(boolean discoverable) { this.discoverable = discoverable; }
+
+    // public GroupPermissionTemplate getTemplate() { return template; }
+
+    // public void setTemplate(GroupPermissionTemplate template) { this.template = template; }
 
     /* Constructors
     One for a group without a parent, one for a group with a parent

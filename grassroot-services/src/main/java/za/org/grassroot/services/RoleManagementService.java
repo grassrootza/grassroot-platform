@@ -6,6 +6,7 @@ import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -39,7 +40,7 @@ public interface RoleManagementService {
 
     Set<Role> createGroupRoles(Long groupId, String groupName);
 
-    Set<Role> fetchGroupRoles(Long groupId);
+    Map<String, Role> fetchGroupRoles(Long groupId);
 
     Role fetchGroupRole(String roleName, Long groupId);
 
@@ -66,6 +67,8 @@ public interface RoleManagementService {
      */
 
     Role getUserRoleInGroup(User user, Group group);
+
+    Role getUserRoleInGroup(User user, Long groupId);
 
     boolean doesUserHaveRoleInGroup(User user, Group group, String roleName);
 

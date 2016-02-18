@@ -231,8 +231,11 @@ public class AdminController extends BaseController {
                                                   new String[]{BaseRoles.ROLE_GROUP_ORGANIZER, "Group organizer"});
 
         List<MemberWrapper> members = new ArrayList<>();
-        for (User user : userManagementService.getGroupMembersSortedById(group))
-            members.add(new MemberWrapper(user, group, roleManagementService.getUserRoleInGroup(user, group)));
+        for (User user : userManagementService.getGroupMembersSortedById(group)) {
+            Role roleInGroup = roleManagementService.getUserRoleInGroup(user, group);
+            log.info("constructingMemberWrapper ... user's role is ... " + ((roleInGroup != null) ? roleInGroup.describe() : "null"));
+            members.add(new MemberWrapper(user, group, roleInGroup));
+        }
 
         model.addAttribute("group", group);
         model.addAttribute("members", members);
@@ -257,7 +260,7 @@ public class AdminController extends BaseController {
         log.info("About to do role assignment etc ... Role: " + roleName + " ... to user ... " + userToModify.nameToDisplay() +
                          " ... to group ... " + group.getGroupName());
 
-        asyncRoleService.addDefaultRoleToGroupAndUser(roleName, group, userToModify, getUserProfile());
+        asyncRoleService.addRoleToGroupAndUser(roleName, group, userToModify, getUserProfile());
 
         addMessage(model, MessageType.INFO, "admin.done", request);
         return adminViewGroup(model, groupId);

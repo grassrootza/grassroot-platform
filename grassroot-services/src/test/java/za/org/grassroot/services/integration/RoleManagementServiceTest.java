@@ -92,9 +92,9 @@ public class RoleManagementServiceTest extends AbstractTransactionalJUnit4Spring
 
         Group group = groupManagementService.createNewGroup(user1, "test group", false);
 
-        // roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, group, user1); // todo: fix authentication
-        // roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_COMMITTEE_MEMBER, group, user2);
-        // roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, group, user3);
+        // roleManagementService.addRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, group, user1); // todo: fix authentication
+        // roleManagementService.addRoleToGroupAndUser(BaseRoles.ROLE_COMMITTEE_MEMBER, group, user2);
+        // roleManagementService.addRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, group, user3);
 
     }
 

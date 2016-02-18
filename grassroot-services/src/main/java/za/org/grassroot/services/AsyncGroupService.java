@@ -4,6 +4,9 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.GroupLogType;
 
+import java.util.List;
+import java.util.concurrent.Future;
+
 /**
  * Created by luke on 2016/02/15.
  */
@@ -18,5 +21,9 @@ public interface AsyncGroupService {
     public void assignDefaultLanguage(Group group, User user);
 
     public boolean hasDefaultLanguage(Group group);
+
+    public void addBulkMembers(Long groupId, List<String> phoneNumbers, User callingUser);
+
+    public Future<Group> addMembersWithoutRoles(Long groupId, List<User> newMembers);
 
 }

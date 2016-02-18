@@ -106,8 +106,15 @@ public class RoleManager implements  RoleManagementService {
     }
 
     @Override
-    public Set<Role> fetchGroupRoles(Long groupId) {
-        return roleRepository.findByGroupReferenceId(groupId);
+    public Map<String, Role> fetchGroupRoles(Long groupId) {
+        Map<String, Role> groupRoles = new HashMap<>();
+        groupRoles.put(BaseRoles.ROLE_ORDINARY_MEMBER,
+                       roleRepository.findByNameAndGroupReferenceId(BaseRoles.ROLE_ORDINARY_MEMBER, groupId));
+        groupRoles.put(BaseRoles.ROLE_COMMITTEE_MEMBER,
+                       roleRepository.findByNameAndGroupReferenceId(BaseRoles.ROLE_COMMITTEE_MEMBER, groupId));
+        groupRoles.put(BaseRoles.ROLE_GROUP_ORGANIZER,
+                       roleRepository.findByNameAndGroupReferenceId(BaseRoles.ROLE_GROUP_ORGANIZER, groupId));
+        return groupRoles;
     }
 
     @Override
@@ -156,16 +163,27 @@ public class RoleManager implements  RoleManagementService {
     @Override
     public Role getUserRoleInGroup(User user, Group group) {
 
-        if (!groupManagementService.isUserInGroup(group, user))
-            throw new RuntimeException("Get user role in group: Error! User not in group");
+        // note: this is currently used just to display user's role in a view already secured, hence redundant here (but keep eye)
+        /* if (!groupManagementService.isUserInGroup(group, user))
+            throw new RuntimeException("Get user role in group: Error! User not in group"); */
+
+        return getUserRoleInGroup(user, group.getId()); // if the user has not been given a role in the group, this is what we return
+    }
+
+    @Override
+    public Role getUserRoleInGroup(User user, Long groupId) {
 
         for (Role role : user.getRoles()) {
-            if (role.isGroupRole() && (role.getGroupReferenceId() == group.getId())) {
-                return role;
+            log.info("Checking a role for user ... " + user.getId() + " role is ... " + role.getId() + ", ref " + role.getGroupReferenceId() + " ..."
+                             + " looking for one that matches " + groupId);
+            if (role.isGroupRole()) {
+                if (role.getGroupReferenceId().equals(groupId)) {
+                    return role;
+                }
             }
         }
 
-        return null; // if the user has not been given a role in the group, this is what we return
+        return null;
     }
 
     @Override

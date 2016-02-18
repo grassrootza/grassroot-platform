@@ -14,16 +14,15 @@ import za.org.grassroot.core.repository.GroupLogRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.PaidGroupRepository;
 import za.org.grassroot.core.repository.RoleRepository;
+import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.util.TokenGeneratorService;
 
-import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
-import java.util.concurrent.Future;
 
 /**
  * @author luke on 2015/08/14.
@@ -99,18 +98,18 @@ public class GroupManager implements GroupManagementService {
     public Group createNewGroupWithCreatorAsMember(User creatingUser, String groupName, boolean addDefaultRole) {
         /* First thing, we create the group with the creator as member */
 
-        Group group = new Group(groupName, creatingUser);
-        group.addMember(creatingUser);
-        Group savedGroup = groupRepository.save(group);
-
-        /* Then we create the standard group roles and save them to the group */
-        if (addDefaultRole) { savedGroup.setGroupRoles(roleManagementService.createGroupRoles(group.getId(), groupName)); }
+        Group savedGroup = createNewGroup(creatingUser, groupName, addDefaultRole);
+        savedGroup.addMember(creatingUser);
         groupRepository.saveAndFlush(savedGroup);
 
+        /* Then we create the standard group roles and save them to the group */
+        if (addDefaultRole) {
+            asyncRoleService.assignPermissionsToGroupRoles(savedGroup, GroupPermissionTemplate.DEFAULT_GROUP);
+        }
+
         /* Then we call the two async methods--one records the log, the other wires up permissions and role */
-        asyncGroupService.recordGroupLog(savedGroup.getId(),creatingUser.getId(),GroupLogType.GROUP_ADDED,0L, "");
         if (addDefaultRole)
-            asyncRoleService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, group, creatingUser, creatingUser);
+            asyncRoleService.addRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, savedGroup, creatingUser, creatingUser);
 
         return savedGroup;
     }
@@ -165,8 +164,8 @@ public class GroupManager implements GroupManagementService {
             currentGroup = saveGroup(currentGroup,false,"",dontKnowTheUser);
             newMember = userManager.save(newMember); // so that this is isntantly double-sided, else getting access control errors
             asyncGroupService.addNewGroupMemberLogsMessages(currentGroup, newMember, addingUserId);
-            if (addDefaultRole) asyncRoleService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER,
-                                                                              currentGroup, newMember, newMember);
+            if (addDefaultRole) asyncRoleService.addRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER,
+                                                                       currentGroup, newMember, newMember);
             return currentGroup;
         }
     }
@@ -189,8 +188,8 @@ public class GroupManager implements GroupManagementService {
         for (User newMember : groupNewMembers) {
             // todo: turn this into a single batch call
             asyncGroupService.addNewGroupMemberLogsMessages(savedGroup, newMember, addingUser.getId());
-            if (addDefaultRoles) asyncRoleService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, savedGroup,
-                                                                               newMember, addingUser);
+            if (addDefaultRoles) asyncRoleService.addRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, savedGroup,
+                                                                        newMember, addingUser);
         }
 
         return savedGroup;
@@ -203,7 +202,7 @@ public class GroupManager implements GroupManagementService {
         Group savedGroup = groupRepository.save(groupToExpand);
         for (User newMember : members) { // todo: also switch to single async calls
             asyncGroupService.addNewGroupMemberLogsMessages(savedGroup, newMember, dontKnowTheUser);
-            asyncRoleService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, savedGroup, newMember, newMember);
+            asyncRoleService.addRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, savedGroup, newMember, newMember);
         }
         return savedGroup;
     }
@@ -708,7 +707,7 @@ public class GroupManager implements GroupManagementService {
         Group savedGroup = saveGroup(consolidatedGroup,true,String.format("Merged group %d with %d",secondGroupId,firstGroupId),creatingUser.getId());
         for (User u : setOfMembers) {
             asyncGroupService.addNewGroupMemberLogsMessages(savedGroup, u, creatingUser.getId());
-            asyncRoleService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, savedGroup, u, creatingUser);
+            asyncRoleService.addRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, savedGroup, u, creatingUser);
         }
 
         return savedGroup;

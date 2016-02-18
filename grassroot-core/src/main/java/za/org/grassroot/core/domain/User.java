@@ -1,6 +1,5 @@
 package za.org.grassroot.core.domain;
 
-import lombok.EqualsAndHashCode;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -21,7 +20,6 @@ import java.util.*;
 
 @Entity
 @Table(name = "user_profile")  //table name needs to be quoted in SQL because 'user' is a reserved keyword
-@EqualsAndHashCode
 //@ToString
 public class User implements UserDetails {
 
@@ -378,18 +376,17 @@ public class User implements UserDetails {
                 '}';
     }
 
-    /**
-     * Override equals and hashCode methods, may need in future (since Lombok ones require everything equal, vs just
-     * the unique fields).
+    // Override equals and hashCode methods, maybe rethink later, but for now these shuold do
 
     @Override
     public int hashCode() {
         int result = phoneNumber != null ? phoneNumber.hashCode() : 0;
         result = 31 * result + (id != null ? id.hashCode() : 0);
-        // result = 31 * result + (createdDateTime != null ? createdDateTime.hashCode() : 0);
+        result = 31 * result + (createdDateTime != null ? createdDateTime.hashCode() : 0);
         return result;
     }
 
+    // only checking three core fields -- can reconsider later, but if these match, have to be same
     @Override
     public boolean equals(Object o) {
         if (this == o) { return true; }
@@ -399,8 +396,9 @@ public class User implements UserDetails {
 
         if (id != null ? !id.equals(user.id) : user.id != null) { return false; }
         if (phoneNumber != null ? !phoneNumber.equals(user.phoneNumber) : user.phoneNumber != null) { return false; }
+        if (createdDateTime != null ? !createdDateTime.equals(user.createdDateTime) : user.createdDateTime != null) { return false; }
 
         return true;
 
-    }*/
+    }
 }

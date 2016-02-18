@@ -12,11 +12,12 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.GroupHasNoRolesException;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.concurrent.Future;
 
 /**
@@ -65,18 +66,28 @@ public class AsyncRoleManager implements AsyncRoleService {
 
         for (User member : groupMembers) {
             // log.info("Resetting member ... " + member.nameToDisplay());
-            flushUserRolesInGroup(member, group);
+            flushUserRolesInGroup(member, group.getId());
             member.addRole(ordinaryRole);
         }
 
         userRepository.save(groupMembers);
 
         // note: we only call this from the web application, so don't have to worry about passing the modifying user
-        addDefaultRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, group, group.getCreatedByUser(), null);
+        addRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, group, group.getCreatedByUser(), null);
         Long endTime = System.currentTimeMillis();
         log.info(String.format("Added roles to members, total time took %d msecs", endTime - startTime));
         log.info("Exiting the resetGroupToDefault method ...");
     }
+
+    // @Async
+    @Override
+    public void assignPermissionsToGroupRoles(Group group, GroupPermissionTemplate template) {
+        log.info("assignPermissionsToGroupRoles ... for group " + group.getGroupName() + " and template " + template);
+        Map<String, Role> groupRoles = roleManagementService.fetchGroupRoles(group.getId());
+        log.info("assignPermissionsToGroupRoles ... got roles back ... " + groupRoles.toString());
+        permissionsManagementService.setRolePermissionsFromTemplate(groupRoles, template);
+    }
+
 
     // @Async
     @Override
@@ -92,24 +103,25 @@ public class AsyncRoleManager implements AsyncRoleService {
 
     // @Async
     @Override
-    @Transactional
-    public void addDefaultRoleToGroupAndUser(String roleName, Group group, User addingToUser, User callingUser) {
+    // @Transactional
+    public void addRoleToGroupAndUser(String roleName, Group group, User addingToUser, User callingUser) {
+
+        // note: this doesn't work during group creation because Hibernate hasn't cached yet
 
         Role role = fetchGroupRole(roleName, group.getId());
-        log.info("Async flushing addingToUser roles ... starting with them as ... " + addingToUser.getRoles());
-        addingToUser = flushUserRolesInGroup(addingToUser, group);
+        addingToUser = flushUserRolesInGroup(addingToUser, group.getId());
 
         if (role == null) { throw new GroupHasNoRolesException(); }
 
         log.info("Retrieved the following role: " + role.describe());
-        if (role.getPermissions() == null || role.getPermissions().isEmpty())
+        if (role.getPermissions() == null || role.getPermissions().isEmpty()) {
+            log.error("Uh oh, for some reason the role permissions weren't set previously");
             role.setPermissions(permissionsManagementService.defaultPermissionsGroupRole(role.getName()));
-        role = roleRepository.save(role);
-
-        log.info("At present, addingToUser has these roles ... " + addingToUser.getRoles());
+            roleRepository.save(role);
+        }
         addingToUser.addRole(role);
-        // addingToUser = userRepository.saveAndFlush(addingToUser);
-        // log.info("After DB save, addingToUser has these roles ... " + addingToUser.getRoles());
+        // addingToUser = userRepository.save(addingToUser);
+        // log.info("After, user " + addingToUser.getPhoneNumber() + " has these roles ... " + addingToUser.getRoles());
 
         // now that we have a role with the right set of permissions, finish off by wiring up access control
         groupAccessControlManagementService.addUserGroupPermissions(group, addingToUser, callingUser, role.getPermissions());
@@ -119,7 +131,7 @@ public class AsyncRoleManager implements AsyncRoleService {
     @Override
     public void removeUsersRoleInGroup(User user, Group group) {
         // todo: make sure this is properly flushing throughout (else security leak)
-        userRepository.save(flushUserRolesInGroup(user, group));
+        userRepository.save(flushUserRolesInGroup(user, group.getId()));
     }
 
     @Override
@@ -141,13 +153,13 @@ public class AsyncRoleManager implements AsyncRoleService {
         return roleRepository.findByNameAndGroupReferenceId(roleName, groupId);
     }
 
-    private User flushUserRolesInGroup(User user, Group group) {
-        List<Role> oldRoles = new ArrayList<>(user.getRoles());
-        for (Role role: oldRoles) {
-            if (role.isGroupRole() && (role.getGroupReferenceId() == group.getId())) {
-                log.info("Found a group role to flush! User ... " + user.nameToDisplay() + " ... and role ... " + role.toString());
-                user.removeRole(role);
-            }
+    private User flushUserRolesInGroup(User user, Long groupId) {
+        Role oldRole = roleManagementService.getUserRoleInGroup(user, groupId);
+        if (oldRole != null) {
+            log.info("Found a group role to flush! User ... " + user.nameToDisplay() + " ... and role ... " + oldRole.toString());
+            user.removeRole(oldRole);
+        } else {
+            log.info("Didn't find a role to flush ...");
         }
         return user;
     }

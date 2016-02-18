@@ -10,6 +10,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.GroupLogType;
+import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
 
@@ -140,11 +141,11 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(userManagementServiceMock.save(sessionTestUser)).thenReturn(sessionTestUser);
         when(groupManagementServiceMock.addGroupMember(dummyGroup, sessionTestUser, dummyId, true)).thenReturn(dummyGroup);
 
-        mockMvc.perform(post("/group/create").sessionAttr("groupCreator", dummyGroupCreator)).andExpect(view()
-                .name("redirect:view")).andExpect(model().attribute("groupId", dummyGroup.getId()))
+        mockMvc.perform(post("/group/create").sessionAttr("groupCreator", dummyGroupCreator).
+                param("groupTemplate", GroupPermissionTemplate.DEFAULT_GROUP.toString())).
+                andExpect(view().name("redirect:view")).andExpect(model().attribute("groupId", dummyGroup.getId()))
                 .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("view"));
         verify(groupManagementServiceMock, times(1)).createNewGroup(sessionTestUser, dummyGroupCreator.getGroupName(), true);
-        verify(userManagementServiceMock, times(1)).getUserById(sessionTestUser.getId());
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(groupManagementServiceMock);
     }
@@ -705,8 +706,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
                 .param("closed", String.valueOf(true)))
                 .andExpect(status().isOk()).andExpect(view().name("group/add_members_do"));
         verify(groupManagementServiceMock,times(1)).loadGroup(dummyId);
-      //  verify(userManagementServiceMock,times(1)).getExistingUsersFromNumbers(numbers_to_be_added);
-        verify(groupManagementServiceMock,times(1)).addMembersToGroup(dummyId,testUsers,true);
+        verify(asyncGroupService,times(1)).addBulkMembers(dummyId, numbers_to_be_added, sessionTestUser);
         verifyNoMoreInteractions(groupManagementServiceMock);
       //  verifyNoMoreInteractions(userManagementServiceMock);
 

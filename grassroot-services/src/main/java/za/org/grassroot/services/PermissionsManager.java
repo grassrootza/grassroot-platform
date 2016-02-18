@@ -9,12 +9,13 @@ import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.BasePermissions;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.repository.PermissionRepository;
+import za.org.grassroot.core.repository.RoleRepository;
+import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
 import javax.transaction.Transactional;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Lesetse Kimwaga
@@ -84,6 +85,9 @@ public class PermissionsManager implements PermissionsManagementService {
 
     @Autowired
     private PermissionRepository permissionRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
 
     @Override
     public Permission createPermission(Permission permission) {
@@ -180,5 +184,56 @@ public class PermissionsManager implements PermissionsManagementService {
             default:
                 return closedGroupOrdinaryMemberPermissions();
         }
+    }
+
+    @Override
+    public Map<String, Role> setRolePermissionsFromTemplate(Map<String, Role> roles, GroupPermissionTemplate template) {
+
+        Role organizer = roles.get(BaseRoles.ROLE_GROUP_ORGANIZER);
+        Role committee = roles.get(BaseRoles.ROLE_COMMITTEE_MEMBER);
+        Role member = roles.get(BaseRoles.ROLE_ORDINARY_MEMBER);
+
+        switch(template) {
+            case DEFAULT_GROUP:
+                organizer.setPermissions(defaultGroupOrganizerPermissions());
+                committee.setPermissions(defaultCommitteeMemberPermissions());
+                member.setPermissions(defaultOrdinaryMemberPermissions());
+                break;
+            case CLOSED_GROUP:
+                organizer.setPermissions(closedGroupOrganizerPermissions());
+                committee.setPermissions(closedGroupCommitteeMemberPermissions());
+                member.setPermissions(closedGroupOrdinaryMemberPermissions());
+                break;
+            default:
+                organizer.setPermissions(defaultGroupOrganizerPermissions());
+                committee.setPermissions(defaultCommitteeMemberPermissions());
+                member.setPermissions(defaultOrdinaryMemberPermissions());
+                break;
+        }
+
+        Map<String, Role> savedRoles = new HashMap<>();
+        savedRoles.put(BaseRoles.ROLE_GROUP_ORGANIZER, roleRepository.save(organizer));
+        savedRoles.put(BaseRoles.ROLE_COMMITTEE_MEMBER, roleRepository.save(committee));
+        savedRoles.put(BaseRoles.ROLE_ORDINARY_MEMBER, roleRepository.save(member));
+
+        return savedRoles;
+    }
+
+    @Override
+    public Set<Permission> getPermissions(String roleName, GroupPermissionTemplate template) {
+        // todo: so this is basically iterating over two enums in a way that isn't great, this all needs a refactor prob
+        Set<Permission> permissions;
+        switch(template) {
+            case DEFAULT_GROUP:
+                permissions = defaultPermissionsGroupRole(roleName);
+                break;
+            case CLOSED_GROUP:
+                permissions = closedPermissionsGroupRole(roleName);
+                break;
+            default:
+                permissions = defaultPermissionsGroupRole(roleName);
+                break;
+        }
+        return permissions;
     }
 }
