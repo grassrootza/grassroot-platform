@@ -15,7 +15,7 @@ import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 
 import javax.transaction.Transactional;
-import java.util.List;
+import java.util.Set;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -158,8 +158,8 @@ public class RoleRepositoryTest {
         Role role2c = roleRepository.save(new Role(roleName3, group2.getId(), group2.getGroupName()));
         assertThat(roleRepository.count(), is(5L));
 
-        List<Role> group1roles = roleRepository.findByGroupReferenceId(group1.getId());
-        List<Role> group2roles = roleRepository.findByGroupReferenceId(group2.getId());
+        Set<Role> group1roles = roleRepository.findByGroupReferenceId(group1.getId());
+        Set<Role> group2roles = roleRepository.findByGroupReferenceId(group2.getId());
         assertThat(group1roles.size(), is(2));
         assertThat(group2roles.size(), is(3));
         assertTrue(group1roles.contains(role1a));

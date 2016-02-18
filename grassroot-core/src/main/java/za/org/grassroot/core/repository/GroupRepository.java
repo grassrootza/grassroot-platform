@@ -42,12 +42,15 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
      */
     List<Group> findByGroupMembers(User sessionUser);
     Page<Group> findByGroupMembers(User sessionUser, Pageable pageable);
+
     /*
     Find groups which are active
      */
     List<Group> findByGroupMembersAndActive(User user, boolean active);
     Page<Group> findByGroupMembersAndActive(User user, Pageable pageable, boolean active);
-    // int countByGroupMembersAndActive(User user, boolean active); // uh, for some reason this breaks the named query below
+    int countByGroupMembersAndActiveTrue(User user);
+    int countByIdAndGroupMembers(Long groupId, User user);
+
     /*
     Find a group by a code
      */
@@ -98,11 +101,6 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
 
    // @Query(value = "SELECT count(*) from group_profile g WHERE g.active = true AND g.id IN (SELECT group_id from group_user_membership WHERE user_id= ?1)", nativeQuery = true)
   //  int countActiveGroups(Long userId);
-
-
-    @Query(value = "SELECT COUNT(*) as group_numbers from getusergroups(?1) WHERE active = true ", nativeQuery = true)
-    int countActiveGroups(Long userId);
-
 
     // @Query(value = "SELECT count(*) from Event e where e.start_date_time > current_timestamp and e.applies_to_group in (select group_id from group_user_membership where user_id = ?1)", nativeQuery = true)
 

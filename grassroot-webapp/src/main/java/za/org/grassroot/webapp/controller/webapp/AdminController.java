@@ -50,6 +50,9 @@ public class AdminController extends BaseController {
     private RoleManagementService roleManagementService;
 
     @Autowired
+    private AsyncRoleService asyncRoleService;
+
+    @Autowired
     private AnalyticalService analyticalService;
 
     // todo: move this map somewhere
@@ -254,7 +257,7 @@ public class AdminController extends BaseController {
         log.info("About to do role assignment etc ... Role: " + roleName + " ... to user ... " + userToModify.nameToDisplay() +
                          " ... to group ... " + group.getGroupName());
 
-        roleManagementService.addDefaultRoleToGroupAndUser(roleName, group, userToModify);
+        asyncRoleService.addDefaultRoleToGroupAndUser(roleName, group, userToModify, getUserProfile());
 
         addMessage(model, MessageType.INFO, "admin.done", request);
         return adminViewGroup(model, groupId);
@@ -265,7 +268,7 @@ public class AdminController extends BaseController {
     public String resetGroupRoles(Model model, @RequestParam Long groupId, HttpServletRequest request) {
 
         // todo: uh, confirmation screen
-        roleManagementService.resetGroupToDefaultRolesPermissions(groupId);
+        asyncRoleService.resetGroupToDefaultRolesPermissions(groupId);
         addMessage(model, MessageType.INFO, "admin.done", request);
         return allGroups(model, 0);
     }
@@ -285,7 +288,7 @@ public class AdminController extends BaseController {
         List<Long> groupIds = Arrays.asList(groupId);
         for (Long id : groupIds) {
             log.info("Resetting group ... " + groupManagementService.loadGroup(id).getGroupName());
-            roleManagementService.resetGroupToDefaultRolesPermissions(id);
+            asyncRoleService.resetGroupToDefaultRolesPermissions(id);
         }
         return allGroups(model, 0);
     }

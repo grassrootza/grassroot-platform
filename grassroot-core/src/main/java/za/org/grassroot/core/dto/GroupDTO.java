@@ -40,6 +40,20 @@ public class GroupDTO {
 
     public Long getId() {return id;}
 
+    public boolean hasName() {
+        return (name != null && name.trim().length() != 0);
+    }
+
+    public String getDisplayName(String unnamedPrefix) {
+        if (hasName()) {
+            return name;
+        } else if (unnamedPrefix.trim().length() == 0) {
+            return "Unnamed group (" + group_size + " members)";
+        } else {
+            return unnamedPrefix;
+        }
+    }
+
     @Override
     public String toString() {
         return "GroupDTO{" +

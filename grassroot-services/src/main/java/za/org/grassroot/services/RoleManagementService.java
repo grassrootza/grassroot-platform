@@ -6,6 +6,7 @@ import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Lesetse Kimwaga
@@ -36,9 +37,9 @@ public interface RoleManagementService {
 
     Role fetchGroupRoleByName(String name);
 
-    List<Role> createGroupRoles(Long groupId, String groupName);
+    Set<Role> createGroupRoles(Long groupId, String groupName);
 
-    List<Role> fetchGroupRoles(Long groupId);
+    Set<Role> fetchGroupRoles(Long groupId);
 
     Role fetchGroupRole(String roleName, Long groupId);
 
@@ -57,10 +58,6 @@ public interface RoleManagementService {
     User removeStandardRoleFromUser(Role role, User user);
 
     User removeStandardRoleFromUser(String roleName, User user);
-
-    Role addRoleToGroup(Role role, Group group);
-
-    Role addRoleToGroup(String roleName, Group group);
 
     User removeGroupRolesFromUser(User user, Group group);
 

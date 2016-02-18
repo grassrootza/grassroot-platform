@@ -11,9 +11,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.RoleRepository;
 
 import javax.transaction.Transactional;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author Lesetse Kimwaga
@@ -93,23 +91,22 @@ public class RoleManager implements  RoleManagementService {
 
     @Override
     public Role fetchGroupRoleByName(String name) {
-        // log.info("Fetching group role through this name ... " + name);
         List<Role> roles = roleRepository.findByNameAndRoleType(name, Role.RoleType.GROUP);
-        // as above, should have at least one group role
         return !roles.isEmpty() ? roles.get(0) : null;
     }
 
     @Override
-    public List<Role> createGroupRoles(Long groupId, String groupName) {
+    public Set<Role> createGroupRoles(Long groupId, String groupName) {
         // todo: make sure these are batch processing by controlling session
         Role organizer = roleRepository.save(new Role(BaseRoles.ROLE_GROUP_ORGANIZER, groupId, groupName));
         Role committee = roleRepository.save(new Role(BaseRoles.ROLE_COMMITTEE_MEMBER, groupId, groupName));
         Role ordinary = roleRepository.save(new Role(BaseRoles.ROLE_ORDINARY_MEMBER, groupId, groupName));
-        return Arrays.asList(organizer, committee, ordinary);
+        roleRepository.flush();
+        return new HashSet<>(Arrays.asList(organizer, committee, ordinary));
     }
 
     @Override
-    public List<Role> fetchGroupRoles(Long groupId) {
+    public Set<Role> fetchGroupRoles(Long groupId) {
         return roleRepository.findByGroupReferenceId(groupId);
     }
 
@@ -151,23 +148,6 @@ public class RoleManager implements  RoleManagementService {
     }
 
     @Override
-    public Role addRoleToGroup(Role role, Group group) {
-        // todo: check for duplicates before doing this
-        group.addRole(role);
-        groupManagementService.saveGroup(group,true, String.format("Added role %s to group",role.getName()),dontKnowTheUser);
-        role.setGroup(group);
-        return roleRepository.save(role);
-    }
-
-    @Override
-    public Role addRoleToGroup(String roleName, Group group) {
-        // todo: check for duplicates before doing this
-        Role role = (fetchGroupRoleByName(roleName) == null) ?
-                roleRepository.save(new Role(roleName)) : fetchGroupRoleByName(roleName);
-        return addRoleToGroup(role, group);
-    }
-
-    @Override
     public User removeGroupRolesFromUser(User user, Group group) {
         user = flushUserRolesInGroup(user, group);
         return userManagementService.save(user);
@@ -175,15 +155,12 @@ public class RoleManager implements  RoleManagementService {
 
     @Override
     public Role getUserRoleInGroup(User user, Group group) {
-        // log.info("Searching for user role in group ...");
+
         if (!groupManagementService.isUserInGroup(group, user))
             throw new RuntimeException("Get user role in group: Error! User not in group");
 
-        // todo: roles are eagerly loaded so this should not be too expensive, but keep an eye on its performance
-        // log.info("Iterating through roles for user ... " + user.nameToDisplay() + " ... in group ... " + group.getGroupName());
         for (Role role : user.getRoles()) {
             if (role.isGroupRole() && (role.getGroupReferenceId() == group.getId())) {
-                // log.info("Found the role, returning it as ... " + role);
                 return role;
             }
         }
@@ -208,17 +185,4 @@ public class RoleManager implements  RoleManagementService {
         return user;
     }
 
-    /*
-    Deprecated
-    @Override
-    public Role createGroupRole(String roleName, Long groupId, String groupName) {
-
-        Role role = roleRepository.findByNameAndGroupReferenceId(roleName,groupId);
-
-        if(role == null)
-        {
-            role = roleRepository.save( new Role(roleName,groupId,groupName));
-        }
-        return role;
-    }*/
 }

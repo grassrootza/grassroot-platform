@@ -11,9 +11,9 @@ public interface AsyncGroupService {
 
     public void recordGroupLog(Long groupId, Long userDoingId, GroupLogType type, Long userOrGroupAffectedId, String description);
 
-    public void wireNewGroupMemberLogsRoles(Group group, User newMember, Long addingUserId, boolean addDefaultRole);
+    public void addNewGroupMemberLogsMessages(Group group, User newMember, Long addingUserId);
 
-    public void removeGroupMemberLogsRoles(Group group, User oldMember, User removingUser);
+    public void removeGroupMemberLogs(Group group, User oldMember, User removingUser);
 
     public void assignDefaultLanguage(Group group, User user);
 

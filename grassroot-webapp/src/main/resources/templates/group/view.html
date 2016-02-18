@@ -112,7 +112,7 @@
         <td>Phone number</td>
         </thead>
         <tbody>
-        <tr th:each="member : ${group.groupMembers}">
+        <tr th:each="member : ${groupMembers}">
           <td><span th:text="${member.displayName}"></span></td>
           <td><span th:text="${member.phoneNumber}"></span></td>
         </tr>

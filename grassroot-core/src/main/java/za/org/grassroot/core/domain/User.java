@@ -125,7 +125,7 @@ public class User implements UserDetails {
     public void setAccountAdministered(Account accountAdministered) { this.accountAdministered = accountAdministered; }
 
 
-    @ManyToMany(cascade = CascadeType.ALL, mappedBy = "groupMembers", fetch = FetchType.EAGER) // not sure which cascade type is going to be best
+    @ManyToMany(cascade = CascadeType.ALL, mappedBy = "groupMembers", fetch = FetchType.LAZY) // not sure which cascade type is going to be best
     public List<Group> getGroupsPartOf() {
         return groupsPartOf;
     }

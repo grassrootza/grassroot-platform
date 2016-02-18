@@ -100,7 +100,7 @@ public class Group implements Serializable {
     @OneToMany(mappedBy = "group")
     private List<Event> eventsApplied;
 
-    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinTable(name = "group_user_membership", joinColumns = @JoinColumn(name = "group_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
     public List<User> getGroupMembers() {
         if (groupMembers == null) {

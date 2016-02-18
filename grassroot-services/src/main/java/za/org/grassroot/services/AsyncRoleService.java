@@ -6,13 +6,14 @@ import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 
 import java.util.List;
+import java.util.concurrent.Future;
 
 /**
  * Created by luke on 2016/02/17.
  */
 public interface AsyncRoleService {
 
-    void addDefaultRoleToGroupAndUser(String roleName, Group group, User user);
+    Future<Role> fetchOrCreateGroupRole(String roleName, Group group);
 
     void addDefaultRoleToGroupAndUser(String roleName, Group group, User addingToUser, User callingUser);
 

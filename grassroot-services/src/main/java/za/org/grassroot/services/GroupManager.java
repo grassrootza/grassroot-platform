@@ -13,14 +13,17 @@ import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.repository.GroupLogRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.PaidGroupRepository;
+import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.services.util.TokenGeneratorService;
 
+import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.concurrent.Future;
 
 /**
  * @author luke on 2015/08/14.
@@ -68,6 +71,11 @@ public class GroupManager implements GroupManagementService {
     @Autowired
     private AsyncGroupService asyncGroupService;
 
+    @Autowired
+    private AsyncRoleService asyncRoleService;
+
+    @Autowired
+    private RoleRepository roleRepository;
 
     /*
     First, methods to create groups
@@ -77,20 +85,33 @@ public class GroupManager implements GroupManagementService {
     public Group createNewGroup(User creatingUser, String groupName, boolean addDefaultRole) {
         Long timeStart = System.currentTimeMillis();
         Group group = groupRepository.save(new Group(groupName, creatingUser));
-        asyncGroupService.recordGroupLog(group.getId(),creatingUser.getId(),GroupLogType.GROUP_ADDED, 0L, "");;
-        if (addDefaultRole) roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, group, creatingUser, creatingUser);
+
+        if (addDefaultRole) { group.setGroupRoles(roleManagementService.createGroupRoles(group.getId(), group.getGroupName())); }
+
+        group = groupRepository.saveAndFlush(group);
         Long timeEnd = System.currentTimeMillis();
-        log.info(String.format("Creating a group without roles, time taken ... %d msecs", timeEnd - timeStart));
+        log.info(String.format("Setting up a standard group, time taken ... %d msecs", timeEnd - timeStart));
+        asyncGroupService.recordGroupLog(group.getId(),creatingUser.getId(),GroupLogType.GROUP_ADDED, 0L, "");;
         return group;
     }
 
     @Override
     public Group createNewGroupWithCreatorAsMember(User creatingUser, String groupName, boolean addDefaultRole) {
+        /* First thing, we create the group with the creator as member */
+
         Group group = new Group(groupName, creatingUser);
         group.addMember(creatingUser);
         Group savedGroup = groupRepository.save(group);
+
+        /* Then we create the standard group roles and save them to the group */
+        if (addDefaultRole) { savedGroup.setGroupRoles(roleManagementService.createGroupRoles(group.getId(), groupName)); }
+        groupRepository.saveAndFlush(savedGroup);
+
+        /* Then we call the two async methods--one records the log, the other wires up permissions and role */
         asyncGroupService.recordGroupLog(savedGroup.getId(),creatingUser.getId(),GroupLogType.GROUP_ADDED,0L, "");
-        if (addDefaultRole) roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, group, creatingUser, creatingUser);
+        if (addDefaultRole)
+            asyncRoleService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, group, creatingUser, creatingUser);
+
         return savedGroup;
     }
 
@@ -137,14 +158,15 @@ public class GroupManager implements GroupManagementService {
 
     @Override
     public Group addGroupMember(Group currentGroup, User newMember, Long addingUserId, boolean addDefaultRole) {
-        // todo: make sure transaction management is working alright
         if (currentGroup.getGroupMembers().contains(newMember)) {
             return currentGroup;
         } else {
             currentGroup.addMember(newMember);
             currentGroup = saveGroup(currentGroup,false,"",dontKnowTheUser);
             newMember = userManager.save(newMember); // so that this is isntantly double-sided, else getting access control errors
-            asyncGroupService.wireNewGroupMemberLogsRoles(currentGroup, newMember, addingUserId, addDefaultRole);
+            asyncGroupService.addNewGroupMemberLogsMessages(currentGroup, newMember, addingUserId);
+            if (addDefaultRole) asyncRoleService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER,
+                                                                              currentGroup, newMember, newMember);
             return currentGroup;
         }
     }
@@ -164,8 +186,12 @@ public class GroupManager implements GroupManagementService {
             groupToExpand.addMember(newMember);
         Group savedGroup = groupRepository.save(groupToExpand);
 
-        for (User newMember : groupNewMembers) // do this after else risk async getting in way before joins established
-            asyncGroupService.wireNewGroupMemberLogsRoles(savedGroup, newMember, addingUser.getId(), addDefaultRoles);
+        for (User newMember : groupNewMembers) {
+            // todo: turn this into a single batch call
+            asyncGroupService.addNewGroupMemberLogsMessages(savedGroup, newMember, addingUser.getId());
+            if (addDefaultRoles) asyncRoleService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, savedGroup,
+                                                                               newMember, addingUser);
+        }
 
         return savedGroup;
     }
@@ -175,8 +201,10 @@ public class GroupManager implements GroupManagementService {
         Group groupToExpand = loadGroup(groupId);
         groupToExpand.getGroupMembers().addAll(members);
         Group savedGroup = groupRepository.save(groupToExpand);
-        for (User newMember : members)
-            asyncGroupService.wireNewGroupMemberLogsRoles(savedGroup, newMember, dontKnowTheUser, true);
+        for (User newMember : members) { // todo: also switch to single async calls
+            asyncGroupService.addNewGroupMemberLogsMessages(savedGroup, newMember, dontKnowTheUser);
+            asyncRoleService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, savedGroup, newMember, newMember);
+        }
         return savedGroup;
     }
 
@@ -185,7 +213,8 @@ public class GroupManager implements GroupManagementService {
         // todo: error handling
         group.getGroupMembers().remove(user);
         Group savedGroup = saveGroup(group,false,"",dontKnowTheUser);
-        asyncGroupService.removeGroupMemberLogsRoles(savedGroup, user, removingUser);
+        asyncGroupService.removeGroupMemberLogs(savedGroup, user, removingUser);
+        asyncRoleService.removeUsersRoleInGroup(user, savedGroup);
         return savedGroup;
     }
 
@@ -283,7 +312,7 @@ public class GroupManager implements GroupManagementService {
     @Override
     public boolean isUserInGroup(Group group, User user) {
         // at some point may want to make this more efficient than getter method
-        return group.getGroupMembers().contains(user);
+        return groupRepository.countByIdAndGroupMembers(group.getId(), user) > 0;
     }
 
     /*
@@ -311,7 +340,7 @@ public class GroupManager implements GroupManagementService {
     @Override
     public boolean hasActiveGroupsPartOf(User user) {
         // return !getActiveGroupsPartOf(user).isEmpty();
-        return groupRepository.countActiveGroups(user.getId()) > 0; // this is breaking the getActiveGroups methods
+        return groupRepository.countByGroupMembersAndActiveTrue(user) > 0;
     }
 
     @Override
@@ -670,14 +699,17 @@ public class GroupManager implements GroupManagementService {
 
     @Override
     public Group mergeGroupsIntoNew(Long firstGroupId, Long secondGroupId, String newGroupName, User creatingUser) {
+
         Group consolidatedGroup = new Group(newGroupName, creatingUser);
         Set<User> setOfMembers = new HashSet<>(loadGroup(firstGroupId).getGroupMembers());
         setOfMembers.addAll(loadGroup(secondGroupId).getGroupMembers());
 
         consolidatedGroup.setGroupMembers(new ArrayList<>(setOfMembers));
         Group savedGroup = saveGroup(consolidatedGroup,true,String.format("Merged group %d with %d",secondGroupId,firstGroupId),creatingUser.getId());
-        for (User u : setOfMembers)
-            asyncGroupService.wireNewGroupMemberLogsRoles(savedGroup, u, creatingUser.getId(), true);
+        for (User u : setOfMembers) {
+            asyncGroupService.addNewGroupMemberLogsMessages(savedGroup, u, creatingUser.getId());
+            asyncRoleService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, savedGroup, u, creatingUser);
+        }
 
         return savedGroup;
     }

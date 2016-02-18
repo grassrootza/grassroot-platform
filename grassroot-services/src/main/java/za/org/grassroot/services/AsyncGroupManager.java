@@ -38,9 +38,6 @@ public class AsyncGroupManager implements AsyncGroupService {
     private GroupLogRepository groupLogRepository;
 
     @Autowired
-    private RoleManagementService roleManagementService;
-
-    @Autowired
     private GenericJmsTemplateProducerService jmsTemplateProducerService;
 
     @Async
@@ -51,7 +48,7 @@ public class AsyncGroupManager implements AsyncGroupService {
 
     @Async
     @Override
-    public void wireNewGroupMemberLogsRoles(Group group, User newMember, Long addingUserId, boolean addDefaultRole) {
+    public void addNewGroupMemberLogsMessages(Group group, User newMember, Long addingUserId) {
 
         if (hasDefaultLanguage(group) && !newMember.isHasInitiatedSession())
             assignDefaultLanguage(group, newMember);
@@ -59,29 +56,19 @@ public class AsyncGroupManager implements AsyncGroupService {
         Long savingUserId = (addingUserId == null) ? dontKnowTheUser : addingUserId;
 
         groupLogRepository.save(new GroupLog(group.getId(), savingUserId, GroupLogType.GROUP_MEMBER_ADDED, newMember.getId()));
-
-        if (addDefaultRole) {
-            if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, group,
-                                                                   newMember, userRepository.findOne(addingUserId));
-            } else {
-                roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, group, newMember);
-            }
-        }
-
         jmsTemplateProducerService.sendWithNoReply(EventChangeType.USER_ADDED.toString(), new NewGroupMember(group, newMember));
     }
 
     @Async
     @Override
-    public void removeGroupMemberLogsRoles(Group group, User oldMember, User removingUser) {
+    public void removeGroupMemberLogs(Group group, User oldMember, User removingUser) {
         Long removingUserId = (removingUser == null) ? dontKnowTheUser : removingUser.getId();
         String description = (oldMember.getId() == removingUserId) ? "Unsubscribed" : "Removed from group";
         groupLogRepository.save(new GroupLog(group.getId(), removingUserId, GroupLogType.GROUP_MEMBER_REMOVED,
                                              oldMember.getId(), description));
-        roleManagementService.removeGroupRolesFromUser(oldMember, group);
     }
 
+    @Async
     @Override
     public void assignDefaultLanguage(Group group, User user) {
         user.setLanguageCode(group.getDefaultLanguage());

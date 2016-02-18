@@ -65,6 +65,9 @@ public class GroupController extends BaseController {
     private RoleManagementService roleManagementService;
 
     @Autowired
+    private AsyncRoleService asyncRoleService;
+
+    @Autowired
     @Qualifier("groupWrapperValidator")
     private Validator groupWrapperValidator;
 
@@ -84,8 +87,7 @@ public class GroupController extends BaseController {
 
     private boolean isUserPartOfGroup(User sessionUser, Group group) {
         // todo: do this from cache so it's not slow ...
-        User userFromDb = userManagementService.getUserById(sessionUser.getId());
-        return userFromDb.getGroupsPartOf().contains(group);
+        return groupManagementService.isUserInGroup(group, sessionUser);
     }
 
     private Group secureLoadGroup(Long id) {
@@ -153,8 +155,11 @@ public class GroupController extends BaseController {
         model.addAttribute("groupVotes", eventManagementService.getUpcomingVotes(group));
         model.addAttribute("subGroups", groupManagementService.getSubGroups(group));
         model.addAttribute("openToken", groupManagementService.groupHasValidToken(group));
-        model.addAttribute("canSeeMemberDetails", groupAccessControlManagementService.
-                hasGroupPermission(BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS, group, user)); // todo: try use Th sec*/
+
+        if (groupAccessControlManagementService.hasGroupPermission(BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS, group, user)) {
+            model.addAttribute("canSeeMembersDetails", true);
+            model.addAttribute("groupMembers", userManagementService.getGroupMembersSortedById(group));
+        }
 
         if (hasUpdatePermission) {
             model.addAttribute("canAlter", hasUpdatePermission);
@@ -210,9 +215,13 @@ public class GroupController extends BaseController {
         timeStart = System.currentTimeMillis();
         User userCreator = userManagementService.getUserById(getUserProfile().getId());
         log.info(String.format("Just user load took: %d msecs", System.currentTimeMillis() - timeStart));
+
         Group groupToSave = groupManagementService.createNewGroup(userCreator, groupCreator.getGroupName(), true);
+        log.info("Okay, we have the groupToSave, with these roles ... " + groupToSave.getGroupRoles());
+        asyncRoleService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, groupToSave, userCreator, userCreator);
         boolean creatorInGroup = false;
         timeEnd = System.currentTimeMillis();
+
         log.info(String.format("User load & group creation: %d msecs", timeEnd - timeStart));
 
         timeStart = System.currentTimeMillis();
@@ -233,7 +242,7 @@ public class GroupController extends BaseController {
         timeStart = System.currentTimeMillis();
 
         if (creatorInGroup)
-            roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, groupToSave, userCreator);
+            asyncRoleService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, groupToSave, userCreator, userCreator);
 
         timeEnd = System.currentTimeMillis();
         log.info(String.format("Set up creator as group organizer: %d msecs", timeEnd - timeStart));
@@ -334,7 +343,7 @@ public class GroupController extends BaseController {
 
     @RequestMapping(value = "add_members_do", method = RequestMethod.POST)
     public String addMembersBulkDo(Model model, @RequestParam("groupId") Long groupId, @RequestParam(value = "list")
-    String list, @RequestParam("closed") boolean isClosedGroup) {
+    String list, @RequestParam(value = "closed", required = false) boolean isClosedGroup) {
 
 
         log.debug("closedgroup", String.valueOf(isClosedGroup));
