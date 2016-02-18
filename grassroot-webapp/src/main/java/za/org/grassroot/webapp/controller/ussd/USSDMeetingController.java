@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
@@ -106,11 +105,7 @@ public class USSDMeetingController extends USSDController {
 
         // todo: replace with call to countFutureEvents plus permission filter
         if (newMeeting || eventManager.getUpcomingEventsUserCreated(user).size() == 0) {
-            List<Group> userGroups = groupManager.getActiveGroupsPartOf(user);
-            if (newMeeting && userGroups.size() == 1) {
-                returnMenu = eventUtil.askForEventSubject(user, thisSection, userGroups.get(0).getId());
-            } else
-                returnMenu = ussdGroupUtil.askForGroupAllowCreateNew(user, USSDSection.MEETINGS, nextMenu(startMenu), newGroupMenu, null);
+            returnMenu = ussdGroupUtil.askForGroupAllowCreateNew(user, USSDSection.MEETINGS, nextMenu(startMenu), newGroupMenu, null);
         } else {
             returnMenu = eventUtil.askForMeeting(user, startMenu, manageMeetingMenu, startMenu + "?newMtg=1");
         }

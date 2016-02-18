@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.enums.EventType;
@@ -24,7 +23,6 @@ import java.net.URISyntaxException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.backVoteUrl;
@@ -86,13 +84,8 @@ public class USSDVoteController extends USSDController {
     public Request newVote(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber, voteMenus + "new");
-
         String groupsExistPrompt = getMessage(thisSection, "group", promptKey, user);
         String groupsDontExistPrompt = getMessage(thisSection, "group", promptKey + "-nogroup", user);
-        List<Group> groups = groupManager.getActiveGroupsPartOf(user);
-        if (groups.size() == 1) {
-            return menuBuilder(eventUtil.askForEventSubject(user, thisSection, groups.get(0).getId()));
-        }
         return menuBuilder(ussdGroupUtil.askForGroupNoInlineNew(user, thisSection, groupsExistPrompt, groupsDontExistPrompt,
                 "issue", groupMenus + "create", null));
     }

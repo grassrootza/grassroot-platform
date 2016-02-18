@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.webapp;
 
+import org.apache.commons.logging.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -334,6 +335,9 @@ public class GroupController extends BaseController {
     @RequestMapping(value = "add_members_do", method = RequestMethod.POST)
     public String addMembersBulkDo(Model model, @RequestParam("groupId") Long groupId, @RequestParam(value = "list")
     String list, @RequestParam("closed") boolean isClosedGroup) {
+
+
+        log.debug("closedgroup", String.valueOf(isClosedGroup));
 
        Group group = groupManagementService.loadGroup(groupId);
         Map<String, List<String>> mapOfNumbers = BulkUserImportUtil.splitPhoneNumbers(list);
