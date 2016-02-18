@@ -159,6 +159,9 @@ public class USSDController {
     protected String getMessage(String messageKey, User sessionUser) {
         return messageSource.getMessage("ussd." + messageKey, null, new Locale(getLanguage(sessionUser)));
     }
+    protected String getMessage(String messageKey, String language) {
+        return messageSource.getMessage("ussd." + messageKey, null, new Locale(language));
+    }
 
     // todo move this somewhere else, and/or clean up nullability in User class, but if put it there, confuses Hibernate (wants a setter)
     protected String getLanguage(User user) {

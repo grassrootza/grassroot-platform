@@ -112,6 +112,8 @@ public class EventDTO  implements Serializable {
 
     }
 
+
+
     public Event getEventObject() {
         return new Event(eventLocation, id, createdDateTime, eventStartDateTime, createdByUser, appliesToGroup, canceled, eventType, name, dateTimeString, includeSubGroups, reminderMinutes, rsvpRequired, relayable, sendBlocked, version);
     }

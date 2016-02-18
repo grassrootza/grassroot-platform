@@ -17,5 +17,10 @@
            eternal="false"
            timeToIdleSeconds="3600">
     </cache>
+    <cache name="user_language"
+           maxEntriesLocalHeap="2000"
+           eternal="false"
+           timeToIdleSeconds="3600">
+    </cache>
 
 </ehcache>

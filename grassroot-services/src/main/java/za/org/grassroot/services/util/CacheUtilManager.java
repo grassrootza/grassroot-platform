@@ -134,5 +134,62 @@ public class CacheUtilManager implements CacheUtilService {
         return menuToReturn;
     }
 
+    @Override
+    public User fetchUser(String phoneNumber) {
+        User user;
+        Cache cache = cacheManager.getCache("user");
+        try{
+            user = (User)cache.get(phoneNumber).getObjectValue();
+        }catch (Exception e){
+            user = null;
+        }
+        return user;
+    }
+
+    @Override
+    public void cacheUser(User user) {
+        try {
+            Cache cache = cacheManager.getCache("user");
+            cache.put(new Element(user.getPhoneNumber(), user));
+        } catch (Exception e) {
+            log.severe(e.toString());
+        }
+
+    }
+
+    @Override
+    public void putUserLanguage(String inputNumber, String language) {
+        try {
+            Cache cache = cacheManager.getCache("user_language");
+            cache.put(new Element(inputNumber, language));
+        } catch (Exception e) {
+            log.severe(e.toString());
+        }
+    }
+
+    @Override
+    public String getUserLanguage(String inputNumber) {
+        String language = null;
+        try {
+            Cache cache = cacheManager.getCache("user_language");
+            language = String.valueOf(cache.get(inputNumber).getObjectValue());
+        } catch (Exception e) {
+            log.severe(e.toString());
+        }
+        return language;
+
+    }
+
+    @Override
+    public void clearUserLanguage(String phoneNumber) {
+        try {
+            Cache cache = cacheManager.getCache("user_language");
+            cache.remove(phoneNumber);
+        } catch (Exception e) {
+            log.severe(e.toString());
+        }
+
+    }
+
 
 }

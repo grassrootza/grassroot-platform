@@ -3,6 +3,7 @@ package za.org.grassroot.services;
 import org.springframework.data.domain.Page;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.exception.UserExistsException;
 
@@ -103,6 +104,8 @@ public interface UserManagementService {
 
     User resetLastUssdMenu(User sessionUser);
 
+    void putLastUSSDMenu(String phoneNumber, String lastUssdMenu);
+
     User setLastUssdMenu(User sessionUser, String lastUssdMenu);
 
     User setDisplayName(User user, String displayName);
@@ -127,5 +130,7 @@ public interface UserManagementService {
     List<User> loadAllUsersMasked();
 
     List<User> loadSubsetUsersMasked(List<Long> ids);
+
+    UserDTO loadUser(String phoneNumber);
 
 }

@@ -1,7 +1,6 @@
 package za.org.grassroot.services.consumer;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.*;
@@ -240,6 +239,13 @@ public class EventNotificationConsumer {
 
     }
 
+    @JmsListener(destination = "processing-failure", containerFactory = "messagingJmsContainerFactory", concurrency = "1")
+    public void sendReplyProcessingFailureNotification(User user){
+        sendCouldNotProcessReply(user);
+    }
+
+
+
     private void sendWelcomeMessages(UserDTO userDTO) {
         log.info("sendWelcomeMessages..." + userDTO + "...messages..." + welcomeMessages);
         for (String messageId : welcomeMessages) {
@@ -364,6 +370,11 @@ public class EventNotificationConsumer {
         messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
         logBookLogRepository.save(new LogBookLog(logBookDTO.getId(),message,user.getId(),group.getId(),user.getPhoneNumber()));
 
+    }
+
+    public void sendCouldNotProcessReply(User user){
+        String message = meetingNotificationService.createReplyFailureMessage(user);
+        messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
     }
 
 }
