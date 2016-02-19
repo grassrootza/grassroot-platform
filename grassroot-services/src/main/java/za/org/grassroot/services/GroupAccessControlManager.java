@@ -58,7 +58,9 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
             // log.info("ZOG: Adding them to this user ... {}", user.toString());
             // log.info("ZOG: Adding this set of permissions ... {}", groupPermissions);
 
+            log.info("inside ACL setting .... Current authentication is ... " + SecurityContextHolder.getContext().getAuthentication());
             ObjectIdentity objectIdentity = new ObjectIdentityImpl(Group.class, group.getId());
+            log.info("Principal SID with user name ... " + user.getUsername());
             Sid sid = new PrincipalSid(user.getUsername());
 
 
@@ -96,7 +98,7 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
             Authentication auth = new UsernamePasswordAuthenticationToken(modifyingUser, modifyingUser.getPassword(), modifyingUser.getAuthorities());
             SecurityContextHolder.getContext().setAuthentication(auth);
         }
-        // log.info("After null check & setting, context set to ... " + SecurityContextHolder.getContext().getAuthentication());
+        log.info("After null check & setting, context set to ... " + SecurityContextHolder.getContext().getAuthentication());
         addUserGroupPermissions(group, addingToUser, groupPermissions);
     }
 

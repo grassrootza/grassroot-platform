@@ -294,8 +294,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         for (String inputNumber : listOfNumbers) {
             String phoneNumber = PhoneNumberUtil.convertPhoneNumber(inputNumber);
             if (!userExist(phoneNumber)) {
-                User userToCreate = new User();
-                userToCreate.setPhoneNumber(phoneNumber);
+                User userToCreate = new User(phoneNumber);
                 userRepository.save(userToCreate);
                 usersToAdd.add(userToCreate);
             } else {

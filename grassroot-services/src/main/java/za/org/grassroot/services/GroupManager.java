@@ -164,8 +164,8 @@ public class GroupManager implements GroupManagementService {
             currentGroup = saveGroup(currentGroup,false,"",dontKnowTheUser);
             newMember = userManager.save(newMember); // so that this is isntantly double-sided, else getting access control errors
             asyncGroupService.addNewGroupMemberLogsMessages(currentGroup, newMember, addingUserId);
-            if (addDefaultRole) asyncRoleService.addRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER,
-                                                                       currentGroup, newMember, newMember);
+            if (addDefaultRole)
+                asyncRoleService.addRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, currentGroup, newMember, newMember);
             return currentGroup;
         }
     }
@@ -188,8 +188,8 @@ public class GroupManager implements GroupManagementService {
         for (User newMember : groupNewMembers) {
             // todo: turn this into a single batch call
             asyncGroupService.addNewGroupMemberLogsMessages(savedGroup, newMember, addingUser.getId());
-            if (addDefaultRoles) asyncRoleService.addRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, savedGroup,
-                                                                        newMember, addingUser);
+            if (addDefaultRoles)
+                asyncRoleService.addRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, savedGroup, newMember, addingUser);
         }
 
         return savedGroup;
