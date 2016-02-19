@@ -121,7 +121,7 @@ public class USSDGroupUtil extends USSDUtil {
         USSDMenu menu = new USSDMenu(prompt);
         Page<Group> groupsPartOf = groupManager.getPageOfActiveGroups(user, pageNumber, PAGE_LENGTH);
         if (groupsPartOf.getTotalElements() == 1) {
-            menu = skipGroupSelection(user, section, groupsPartOf.iterator().next().getId());
+            menu = skipGroupSelection(user, section,urlForNewGroup, groupsPartOf.iterator().next().getId());
         } else {
             menu = addListOfGroupsToMenu(menu, urlForExistingGroups, groupsPartOf.getContent(), user);
             if (groupsPartOf.hasNext())
@@ -201,7 +201,7 @@ public class USSDGroupUtil extends USSDUtil {
         return menu;
     }
 
-    public USSDMenu skipGroupSelection(User sessionUser, USSDSection section, Long groupId) {
+    public USSDMenu skipGroupSelection(User sessionUser, USSDSection section, String urlForNewGroup, Long groupId) {
         USSDMenu menu = null;
         String nextUrl;
         switch (section) {
@@ -234,10 +234,13 @@ public class USSDGroupUtil extends USSDUtil {
                 menu.addMenuOption(groupMenuWithId(addMemberPrompt, groupId), getMessage(menuKey + addMemberPrompt, sessionUser));
                 menu.addMenuOption(groupMenuWithId(unsubscribePrompt, groupId), getMessage(menuKey + unsubscribePrompt, sessionUser));
                 menu.addMenuOption(groupMenuWithId(renameGroupPrompt, groupId), getMessage(menuKey + renameGroupPrompt, sessionUser));
-                if (groupManager.isGroupCreatedByUser(groupId, sessionUser))
+                if (groupManager.isGroupCreatedByUser(groupId, sessionUser)) {
                     menu.addMenuOption(groupMenuWithId(mergeGroupMenu, groupId), getMessage(menuKey + mergeGroupMenu, sessionUser));
-                if (groupManager.canUserMakeGroupInactive(sessionUser, groupId))
+                }
+                if (groupManager.canUserMakeGroupInactive(sessionUser, groupId)) {
                     menu.addMenuOption(groupMenuWithId(inactiveMenu, groupId), getMessage(menuKey + inactiveMenu, sessionUser));
+                }
+                menu.addMenuOption(urlForNewGroup, getMessage(groupKeyForMessages, "create", "option", sessionUser));
                 break;
             default:
                 break;
