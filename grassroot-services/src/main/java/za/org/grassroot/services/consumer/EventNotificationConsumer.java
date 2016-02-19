@@ -3,6 +3,7 @@ package za.org.grassroot.services.consumer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.*;
 import za.org.grassroot.core.enums.EventLogType;
@@ -268,10 +269,12 @@ public class EventNotificationConsumer {
 
     }
 
+    @Transactional
     private List<User> getAllUsersForGroup(Event event) {
         if (event.isIncludeSubGroups()) {
             return groupManagementService.getAllUsersInGroupAndSubGroups(event.getAppliesToGroup());
         } else {
+            event.getAppliesToGroup().getGroupMembers().size();
             return event.getAppliesToGroup().getGroupMembers();
         }
     }
