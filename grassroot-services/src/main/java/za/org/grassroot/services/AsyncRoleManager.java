@@ -110,11 +110,13 @@ public class AsyncRoleManager implements AsyncRoleService {
 
         Role role = fetchGroupRole(roleName, group.getId());
         addingToUser = flushUserRolesInGroup(addingToUser, group.getId());
-        if(role==null){
+        if(role==null) {
             group.setGroupRoles(roleManagementService.createGroupRoles(group.getId(), group.getGroupName()));
+            groupRepository.saveAndFlush(group);
+            role = fetchGroupRole(roleName, group.getId());
          }
 
-        if (role == null) { throw new GroupHasNoRolesException(); }
+        // if (role == null) { throw new GroupHasNoRolesException(); }
 
         log.info("Retrieved the following role: " + role.describe());
         if (role.getPermissions() == null || role.getPermissions().isEmpty()) {
