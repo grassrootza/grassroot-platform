@@ -19,6 +19,7 @@ import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.UserDTO;
+import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.MaskingUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
@@ -58,6 +59,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
     private EventManagementService eventManagementService;
     @Autowired
     private CacheUtilService cacheUtilService;
+    @Autowired
+    private AsyncUserService asyncUserService;
 
     @Override
     public User createUserProfile(User userProfile) {
@@ -72,8 +75,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
         User userToSave;
         String phoneNumber = PhoneNumberUtil.convertPhoneNumber(userProfile.getPhoneNumber());
+        boolean userExists = userExist(phoneNumber);
 
-        if (userExist(phoneNumber)) {
+        if (userExists) {
 
             System.out.println("The user exists, and their web profile is set to: " + userProfile.isHasWebProfile());
 
@@ -102,7 +106,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
             // for some reason String.join was not inserting the space properly, so changing to a straight concatenation;
             userProfile.setDisplayName(userProfile.getFirstName() + " " + userProfile.getLastName());
             userProfile.setHasWebProfile(true);
-            userProfile.setHasInitiatedSession(true); // since signing up on web page presumes an active user
             userToSave = userProfile;
         }
 
@@ -113,7 +116,11 @@ public class UserManager implements UserManagementService, UserDetailsService {
         }
 
         try {
-            return userRepository.save(userToSave);
+            User userToReturn = userRepository.saveAndFlush(userToSave);
+            if (userExists)
+                asyncUserService.recordUserLog(userToReturn.getId(), UserLogType.CREATED_IN_DB, "User first created via web sign up");
+            asyncUserService.recordUserLog(userToReturn.getId(), UserLogType.CREATED_WEB, "User created web profile");
+            return userToReturn;
         } catch (final Exception e) {
             e.printStackTrace();
             log.warn(e.getMessage());
@@ -181,7 +188,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
             User sessionUser = new User();
             sessionUser.setPhoneNumber(phoneNumber);
             sessionUser.setUsername(phoneNumber);
-            return userRepository.save(sessionUser);
+            User newUser = userRepository.save(sessionUser);
+            asyncUserService.recordUserLog(newUser.getId(), UserLogType.CREATED_IN_DB, "Created via loadOrSaveUser");
+            return newUser;
         } else {
             return userRepository.findByPhoneNumber(phoneNumber);
         }
@@ -294,9 +303,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
         for (String inputNumber : listOfNumbers) {
             String phoneNumber = PhoneNumberUtil.convertPhoneNumber(inputNumber);
             if (!userExist(phoneNumber)) {
-                User userToCreate = new User(phoneNumber);
-                userRepository.save(userToCreate);
+                User userToCreate = userRepository.save(new User(phoneNumber));
                 usersToAdd.add(userToCreate);
+                asyncUserService.recordUserLog(userToCreate.getId(), UserLogType.CREATED_IN_DB, "Created via multi member add");
             } else {
                 usersToAdd.add(findByInputNumber(inputNumber));
             }
@@ -418,6 +427,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public User setInitiatedSession(User sessionUser) {
         sessionUser.setHasInitiatedSession(true);
         jmsTemplateProducerService.sendWithNoReply("welcome-messages", new UserDTO(sessionUser));
+        asyncUserService.recordUserLog(sessionUser.getId(), UserLogType.INITIATED_USSD, "First USSD active session");
         return userRepository.save(sessionUser);
     }
 

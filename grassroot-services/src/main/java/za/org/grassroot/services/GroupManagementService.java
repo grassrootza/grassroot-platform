@@ -52,6 +52,7 @@ public interface GroupManagementService {
 
     public Group addRemoveGroupMembers(Group group, List<User> revisedUserList, Long modifyingUserId, boolean addDefaultRoles);
 
+    public Group addMembersToGroup(Long groupId, List<User> members, boolean isClosedGroup);
 
     /*
     Methods to load and find groups
@@ -80,16 +81,15 @@ public interface GroupManagementService {
     Methods to find, and add group members
      */
 
-
-
-    public Group addMembersToGroup(Long groupId, List<User> members, boolean isClosedGroup);
-
-
     /*
     Methods to find if a user has an outstanding group management action to perform or groups on which they can perform it
      */
 
     public boolean isUserInGroup(Group group, User user);
+
+    public boolean canUserCallMeeting(Long groupId, User user);
+
+    public boolean canUserCallVote(Long groupId, User user);
 
     public Group getLastCreatedGroup(User creatingUser);
 

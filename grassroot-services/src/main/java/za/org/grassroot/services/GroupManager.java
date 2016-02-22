@@ -73,9 +73,6 @@ public class GroupManager implements GroupManagementService {
     @Autowired
     private AsyncRoleService asyncRoleService;
 
-    @Autowired
-    private RoleRepository roleRepository;
-
     /*
     First, methods to create groups
      */
@@ -312,6 +309,16 @@ public class GroupManager implements GroupManagementService {
     public boolean isUserInGroup(Group group, User user) {
         // at some point may want to make this more efficient than getter method
         return groupRepository.countByIdAndGroupMembers(group.getId(), user) > 0;
+    }
+
+    @Override
+    public boolean canUserCallMeeting(Long groupId, User user) {
+        return accessControlService.hasGroupPermission(BasePermissions.GROUP_PERMISSION_CREATE_GROUP_MEETING, groupId, user);
+    }
+
+    @Override
+    public boolean canUserCallVote(Long groupId, User user) {
+        return accessControlService.hasGroupPermission(BasePermissions.GROUP_PERMISSION_CREATE_GROUP_VOTE, groupId, user);
     }
 
     /*

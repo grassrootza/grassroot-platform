@@ -80,6 +80,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         dummyMeeting.setId(1L);
         Group dummyGroup = new Group();
         dummyGroup.setId(dummyId);
+        when(groupManagementServiceMock.canUserCallMeeting(dummyId, sessionTestUser)).thenReturn(true);
         when(eventManagementServiceMock.updateEvent(dummyMeeting)).thenReturn(
                 dummyMeeting);
         when(eventManagementServiceMock.setGroup(dummyMeeting.getId(),
@@ -91,9 +92,10 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(redirectedUrl("/home"));
         verify(eventManagementServiceMock, times(1)).updateEvent(dummyMeeting);
         verify(eventManagementServiceMock, times(1)).setGroup(dummyId, dummyId);
-        verifyZeroInteractions(groupManagementServiceMock);
-        verifyZeroInteractions(userManagementServiceMock);
+        verify(groupManagementServiceMock, times(1)).canUserCallMeeting(dummyId, sessionTestUser);
+        verifyNoMoreInteractions(groupManagementServiceMock);
         verifyNoMoreInteractions(eventManagementServiceMock);
+        verifyZeroInteractions(userManagementServiceMock);
     }
 
     @Test
@@ -221,7 +223,11 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     public void initiateMeetingModificationWorks() throws Exception {
         Event dummyMeeting = new Event();
         dummyMeeting.setId(dummyId);
+        Group testGroup = new Group("tg1", sessionTestUser);
+        testGroup.setId(dummyId);
+        dummyMeeting.setAppliesToGroup(testGroup);
         List<User> listOfDummyYesResponses = Arrays.asList(new User("", "testUser"));
+        when(groupManagementServiceMock.canUserCallMeeting(dummyId, sessionTestUser)).thenReturn(true);
         when(eventManagementServiceMock.loadEvent(dummyMeeting.getId())).thenReturn(dummyMeeting);
         when(eventManagementServiceMock.getListOfUsersThatRSVPYesForEvent(dummyMeeting)).thenReturn(listOfDummyYesResponses);
         mockMvc.perform(post("/meeting/modify").param("change", "true").sessionAttr("meeting", dummyMeeting)
@@ -232,8 +238,8 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(view().name("meeting/modify"));
         verify(eventManagementServiceMock, times(1)).loadEvent(dummyMeeting.getId());
         verify(eventManagementServiceMock, times(1)).getListOfUsersThatRSVPYesForEvent(dummyMeeting);
+        verify(groupManagementServiceMock, times(1)).canUserCallMeeting(dummyId, sessionTestUser);
         verifyZeroInteractions(userManagementServiceMock);
-        verifyZeroInteractions(groupManagementServiceMock);
         verifyNoMoreInteractions(eventManagementServiceMock);
     }
 

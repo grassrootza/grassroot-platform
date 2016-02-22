@@ -5,6 +5,7 @@ import edu.emory.mathcs.backport.java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.web.context.AbstractSecurityWebApplicationInitializer;
@@ -87,15 +88,15 @@ public class MeetingController extends BaseController {
         User sessionUser = getUserProfile();
         Event meeting = eventManagementService.createMeeting(sessionUser);
 
-
         if (groupId != null) {
             log.info("Came here from a group");
             model.addAttribute("group", groupManagementService.loadGroup(groupId));
             meeting = eventManagementService.setGroup(meeting.getId(), groupId);
             groupSpecified = true;
         } else {
+            // todo: filter by permissions
             log.info("No group selected, pass the list of possible");
-            model.addAttribute("userGroups", groupManagementService.getActiveGroupsPartOf(sessionUser)); // todo: or just use user.getGroupsPartOf?
+            model.addAttribute("userGroups", groupManagementService.getActiveGroupsPartOf(sessionUser));
             groupSpecified = false;
         }
 
@@ -120,7 +121,11 @@ public class MeetingController extends BaseController {
         // todo: add error handling and validation
         // todo: check that we have all the needed information and/or add a confirmation screen
         // todo: put this data transformation else where:Maybe Wrapper?
+
         log.info("The event passed back to us: " + meeting.toString());
+        Long groupId = (meeting.getAppliesToGroup() == null) ? selectedGroupId : meeting.getAppliesToGroup().getId();
+        if (!groupManagementService.canUserCallMeeting(groupId, getUserProfile()))
+            throw new AccessDeniedException("You do not have permission to call a meeting of this group");
 
         /*
         This is a bit clunky. Unfortunately, Thymeleaf isn't handling the mapping of group IDs from selection box back
@@ -148,8 +153,10 @@ public class MeetingController extends BaseController {
     @RequestMapping(value = "/meeting/modify", params={"change"})
     public String initiateMeetingModification(Model model, @ModelAttribute("meeting") Event meeting) {
 
-        // todo: check for permission ...
+        // todo: replace canUserCall with canUserModify
         meeting = eventManagementService.loadEvent(meeting.getId()); // load all details, as may not have been passed by Th
+        if (!groupManagementService.canUserCallMeeting(meeting.getAppliesToGroup().getId(), getUserProfile()))
+            throw new AccessDeniedException("");
         model.addAttribute("meeting", meeting);
         model.addAttribute("rsvpYesTotal", eventManagementService.getListOfUsersThatRSVPYesForEvent(meeting).size());
 
@@ -161,6 +168,8 @@ public class MeetingController extends BaseController {
                                 BindingResult bindingResult, HttpServletRequest request) {
 
         log.info("Meeting we are passed: " + meeting);
+        if (!groupManagementService.canUserCallMeeting(meeting.getAppliesToGroup().getId(), getUserProfile()))
+            throw new AccessDeniedException("");
         meeting = eventManagementService.updateEvent(meeting);
         model.addAttribute("meeting", meeting);
         addMessage(model, MessageType.SUCCESS, "meeting.update.success", request);
@@ -173,6 +182,8 @@ public class MeetingController extends BaseController {
                                 RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
         log.info("Meeting that is about to be cancelled: " + meeting.toString());
+        if (!groupManagementService.canUserCallMeeting(meeting.getAppliesToGroup().getId(), getUserProfile()))
+            throw new AccessDeniedException("");
         eventManagementService.cancelEvent(meeting.getId());
         addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.cancel.success", request);
         return "redirect:/home";
@@ -184,12 +195,13 @@ public class MeetingController extends BaseController {
                                HttpServletRequest request) {
 
         meeting = eventManagementService.loadEvent(meeting.getId());
+
         // todo: make sure this is a paid group before allowing it (not just that user is admin)
         if (request.isUserInRole("ROLE_SYSTEM_ADMIN") || request.isUserInRole("ROLE_ACCOUNT_ADMIN")) {
 
             model.addAttribute("entityId", meeting.getId());
             model.addAttribute("action", "remind");
-            model.addAttribute("includeSubGRoups", meeting.isIncludeSubGroups());
+            model.addAttribute("includeSubGroups", meeting.isIncludeSubGroups());
 
             String groupLanguage = meeting.getAppliesToGroup().getDefaultLanguage();
             log.info("Composing dummy message for confirmation ... Group language is ... " + groupLanguage);
@@ -216,6 +228,7 @@ public class MeetingController extends BaseController {
     public String sendReminder(Model model, @RequestParam("entityId") Long eventId, RedirectAttributes redirectAttributes,
                                HttpServletRequest request) {
 
+        // todo: check for paid group & for feature enabled
         eventManagementService.sendManualReminder(eventManagementService.loadEvent(eventId), "");
         addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.reminder.success", request);
         return "redirect:/home";

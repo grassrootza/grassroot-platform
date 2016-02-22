@@ -17,6 +17,7 @@ import za.org.grassroot.core.dto.MaskedUserDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.*;
+import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.MemberWrapper;
 
@@ -271,7 +272,7 @@ public class AdminController extends BaseController {
     public String resetGroupRoles(Model model, @RequestParam Long groupId, HttpServletRequest request) {
 
         // todo: uh, confirmation screen
-        asyncRoleService.resetGroupToDefaultRolesPermissions(groupId);
+        asyncRoleService.resetGroupToDefaultRolesPermissions(groupId, GroupPermissionTemplate.DEFAULT_GROUP, getUserProfile());
         addMessage(model, MessageType.INFO, "admin.done", request);
         return allGroups(model, 0);
     }
@@ -291,7 +292,7 @@ public class AdminController extends BaseController {
         List<Long> groupIds = Arrays.asList(groupId);
         for (Long id : groupIds) {
             log.info("Resetting group ... " + groupManagementService.loadGroup(id).getGroupName());
-            asyncRoleService.resetGroupToDefaultRolesPermissions(id);
+            asyncRoleService.resetGroupToDefaultRolesPermissions(id, GroupPermissionTemplate.DEFAULT_GROUP, getUserProfile());
         }
         return allGroups(model, 0);
     }

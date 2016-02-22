@@ -3,6 +3,7 @@ package za.org.grassroot.webapp.controller.webapp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -47,11 +48,12 @@ public class VoteController extends BaseController {
         // Event vote = eventManagementService.createVote(user);
 
         if (groupSpecified) {
+            if (!groupManagementService.canUserCallVote(groupId, getUserProfile()))
+                throw new AccessDeniedException("Sorry, you do not have permission to call a vote on this group");
             model.addAttribute("group", groupManagementService.loadGroup(groupId));
-        //    vote = eventManagementService.setGroup(vote.getId(), groupId);
         } else {
+            // todo: filter for permissions
             model.addAttribute("possibleGroups", groupManagementService.getActiveGroupsPartOf(user));
-
         }
 
         model.addAttribute("vote", new Event(user, EventType.Vote, true));
@@ -68,6 +70,8 @@ public class VoteController extends BaseController {
                                HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
         log.info("Vote passed back to us: " + vote);
+        if (!groupManagementService.canUserCallVote(selectedGroupId, getUserProfile()))
+            throw new AccessDeniedException("");
 
         // choosing to set some default fields here instead of a lot of hidden fields in Thymeleaf
         vote.setEventType(EventType.Vote);

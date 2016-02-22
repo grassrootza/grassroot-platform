@@ -20,7 +20,6 @@ import java.util.*;
 
 @Entity
 @Table(name = "user_profile")  //table name needs to be quoted in SQL because 'user' is a reserved keyword
-//@ToString
 public class User implements UserDetails {
 
     private String      firstName;

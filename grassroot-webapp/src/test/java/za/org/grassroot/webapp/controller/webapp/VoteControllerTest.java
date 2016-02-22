@@ -53,12 +53,14 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
         Event testVote = new Event();
         testVote.setId(dummyId);
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
+        when(groupManagementServiceMock.canUserCallVote(dummyId, sessionTestUser)).thenReturn(true);
         when(groupManagementServiceMock.getActiveGroupsPartOf(sessionTestUser)).thenReturn(testPossibleGroups);
         mockMvc.perform(get("/vote/create").param("groupId", String.valueOf(dummyId))).andExpect(status().isOk())
                 .andExpect(view().name("vote/create"))
                 .andExpect(model().attribute("group",
                         hasProperty("id", is(1L))));
         verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
+        verify(groupManagementServiceMock, times(1)).canUserCallVote(dummyId, sessionTestUser);
         verifyNoMoreInteractions(groupManagementServiceMock);
 
 
@@ -88,6 +90,8 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
         Event testVote = new Event(sessionTestUser, EventType.Vote, true);
         testVote.setId(dummyId);
         Group testGroup = new Group();
+        testGroup.setId(dummyId);
+        when(groupManagementServiceMock.canUserCallVote(dummyId, sessionTestUser)).thenReturn(true);
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
         when(eventManagementServiceMock.createVote(testVote)).thenReturn(testVote);
         mockMvc.perform(post("/vote/create").param("selectedGroupId", String.valueOf(dummyId))
@@ -96,6 +100,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(model().attributeExists(BaseController.MessageType.SUCCESS.getMessageKey()))
                 .andExpect(view().name("vote/view"));
         verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
+        verify(groupManagementServiceMock, times(1)).canUserCallVote(dummyId, sessionTestUser);
         verify(eventManagementServiceMock, times(1)).createVote(testVote);
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyNoMoreInteractions(eventManagementServiceMock);

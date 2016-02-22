@@ -12,6 +12,8 @@ import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.UserLogType;
+import za.org.grassroot.services.AsyncUserService;
 import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDResponseTypes;
@@ -38,10 +40,10 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 public class USSDHomeController extends USSDController {
 
     @Autowired
-    EventLogManagementService eventLogManagementService;
+    private EventLogManagementService eventLogManagementService;
 
     @Autowired
-    USSDEventUtil eventUtil;
+    private USSDEventUtil eventUtil;
 
     Logger log = LoggerFactory.getLogger(getClass());
     private static final String path = homePath + "/";

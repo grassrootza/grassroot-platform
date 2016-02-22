@@ -13,9 +13,7 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
-import za.org.grassroot.services.exception.GroupHasNoRolesException;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
@@ -48,32 +46,39 @@ public class AsyncRoleManager implements AsyncRoleService {
     @Autowired
     RoleManagementService roleManagementService;
 
+
+    private Role fixAndReturnGroupRole(String roleName, Group group, GroupPermissionTemplate template) {
+        group.setGroupRoles(roleManagementService.createGroupRoles(group.getId(), group.getGroupName()));
+        groupRepository.saveAndFlush(group);
+        return fetchGroupRole(roleName, group.getId());
+    }
+
+    private Role fixPermissionsForRole(Role role, GroupPermissionTemplate template) {
+        log.error("Uh oh, for some reason the role permissions weren't set previously");
+        role.setPermissions(permissionsManagementService.getPermissions(role.getName(), template));
+        return roleRepository.save(role);
+    }
+
     @Async
     @Override
-    public void resetGroupToDefaultRolesPermissions(Long groupId) {
+    public void resetGroupToDefaultRolesPermissions(Long groupId, GroupPermissionTemplate template, User callingUser) {
 
         log.info("Resetting group to creator as organizer, rest as members ... ");
         Long startTime = System.currentTimeMillis();
         Group group = groupRepository.findOne(groupId);
-        List<User> groupMembers = new ArrayList<>(group.getGroupMembers());
+        Long creatingUserId = group.getCreatedByUser().getId();
 
-        Role ordinaryRole = (fetchGroupRole(BaseRoles.ROLE_ORDINARY_MEMBER, groupId) != null) ?
-                fetchGroupRole(BaseRoles.ROLE_ORDINARY_MEMBER, groupId) :
-                new Role(BaseRoles.ROLE_ORDINARY_MEMBER, groupId, group.getGroupName());
+        List<User> groupMembers = userRepository.findByGroupsPartOfAndIdNot(group, creatingUserId);
 
-        ordinaryRole.setPermissions(permissionsManagementService.defaultOrdinaryMemberPermissions());
-        ordinaryRole = roleRepository.save(ordinaryRole);
+        Role ordinaryRole = fetchGroupRole(BaseRoles.ROLE_ORDINARY_MEMBER, groupId);
+        if (ordinaryRole == null) { ordinaryRole = fixAndReturnGroupRole(BaseRoles.ROLE_ORDINARY_MEMBER, group, template); }
 
-        for (User member : groupMembers) {
-            // log.info("Resetting member ... " + member.nameToDisplay());
-            flushUserRolesInGroup(member, group.getId());
-            member.addRole(ordinaryRole);
-        }
+        if (ordinaryRole.getPermissions() == null || ordinaryRole.getPermissions().isEmpty())
+            ordinaryRole = fixPermissionsForRole(ordinaryRole, template);
 
-        userRepository.save(groupMembers);
+        addRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, group, group.getCreatedByUser(), callingUser);
+        addRoleToGroupAndUsers(BaseRoles.ROLE_ORDINARY_MEMBER, group, groupMembers, callingUser);
 
-        // note: we only call this from the web application, so don't have to worry about passing the modifying user
-        addRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, group, group.getCreatedByUser(), null);
         Long endTime = System.currentTimeMillis();
         log.info(String.format("Added roles to members, total time took %d msecs", endTime - startTime));
         log.info("Exiting the resetGroupToDefault method ...");
@@ -110,27 +115,36 @@ public class AsyncRoleManager implements AsyncRoleService {
 
         Role role = fetchGroupRole(roleName, group.getId());
         addingToUser = flushUserRolesInGroup(addingToUser, group.getId());
-        if(role==null) {
-            group.setGroupRoles(roleManagementService.createGroupRoles(group.getId(), group.getGroupName()));
-            groupRepository.saveAndFlush(group);
-            role = fetchGroupRole(roleName, group.getId());
-         }
 
+        if (role==null) { role = fixAndReturnGroupRole(roleName, group, GroupPermissionTemplate.DEFAULT_GROUP); }
         // if (role == null) { throw new GroupHasNoRolesException(); }
 
         log.info("Retrieved the following role: " + role.describe());
         if (role.getPermissions() == null || role.getPermissions().isEmpty()) {
-            log.error("Uh oh, for some reason the role permissions weren't set previously");
-            role.setPermissions(permissionsManagementService.defaultPermissionsGroupRole(role.getName()));
-            roleRepository.save(role);
+            role = fixPermissionsForRole(role, GroupPermissionTemplate.DEFAULT_GROUP);
         }
         addingToUser.addRole(role);
-        // addingToUser = userRepository.save(addingToUser);
-        // log.info("After, user " + addingToUser.getPhoneNumber() + " has these roles ... " + addingToUser.getRoles());
+        // addingToUser = userRepository.save(addingToUser); // this causes issues with the ACL (many)
 
         // now that we have a role with the right set of permissions, finish off by wiring up access control
         groupAccessControlManagementService.addUserGroupPermissions(group, addingToUser, callingUser, role.getPermissions());
 
+    }
+
+    @Override
+    public void addRoleToGroupAndUsers(String roleName, Group group, List<User> addingToUsers, User callingUser) {
+        Role role = fetchGroupRole(roleName, group.getId());
+        if (role == null) { role = fixAndReturnGroupRole(roleName, group, GroupPermissionTemplate.DEFAULT_GROUP); }
+
+        // todo: make this work off a template instead
+        if (role.getPermissions() == null || role.getPermissions().isEmpty()) {
+            role = fixPermissionsForRole(role, GroupPermissionTemplate.DEFAULT_GROUP);
+        }
+
+        for (User user : addingToUsers) {
+            user.addRole(role);
+        }
+        groupAccessControlManagementService.addUsersGroupPermissions(group, addingToUsers, callingUser, role.getPermissions());
     }
 
     @Override
