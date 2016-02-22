@@ -4,6 +4,8 @@ import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.User;
@@ -12,6 +14,7 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.services.GroupManagementService;
 
 import java.util.List;
+import java.util.concurrent.Future;
 import java.util.logging.Logger;
 
 /**
@@ -54,14 +57,14 @@ public class CacheUtilManager implements CacheUtilService {
             for (User user : userList) {
                 log.info("clearCacheForAllUsersInGroup...user..." + user.getPhoneNumber());
                 // exclude createdbyuser as she has already been cleared
-                if (user.getId() != event.getCreatedByUser().getId()) {
+            //    if (user.getId() != event.getCreatedByUser().getId()) {
                     String cacheKey = event.getEventType().toString() + "|" + user.getId();
                     log.info("clearCacheForAllUsersInGroup...removing..." + cacheKey);
                     try {
                         cache.remove(cacheKey);
                     } catch (Exception e2) {
 
-                    }
+                 //   }
                 }
             }
         } catch (Exception e) {
@@ -69,6 +72,9 @@ public class CacheUtilManager implements CacheUtilService {
         log.info("clearCacheForAllUsersInGroup...ending");
 
     }
+
+
+
 
     @Override
     public List<Event> getOutstandingResponseForUser(User user, EventType eventType) {
@@ -97,6 +103,8 @@ public class CacheUtilManager implements CacheUtilService {
         }
 
     }
+
+
 
     @Override
     public void putUssdMenuForUser(String phoneNumber, String urlToCache) {
@@ -190,6 +198,8 @@ public class CacheUtilManager implements CacheUtilService {
         }
 
     }
+
+
 
 
 }

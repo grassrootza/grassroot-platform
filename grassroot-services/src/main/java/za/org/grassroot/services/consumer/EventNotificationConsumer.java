@@ -73,6 +73,7 @@ public class EventNotificationConsumer {
         log.finest("sendNewEventNotifications... <" + event.toString() + ">");
 
         for (User user : getAllUsersForGroup(event.getEventObject())) {
+            cacheUtilService.clearRsvpCacheForUser(user,event.getEventType());
             sendNewMeetingMessage(user, event);
         }
     }

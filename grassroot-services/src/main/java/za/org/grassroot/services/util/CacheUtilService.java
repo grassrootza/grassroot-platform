@@ -6,6 +6,7 @@ import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.enums.EventType;
 
 import java.util.List;
+import java.util.concurrent.Future;
 
 /**
  * Created by aakilomar on 11/2/15.
@@ -35,6 +36,9 @@ public interface CacheUtilService {
     String getUserLanguage(String phoneNumber);
 
     void clearUserLanguage(String phoneNumber);
+
+
+
 
 
 
