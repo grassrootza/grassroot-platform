@@ -882,8 +882,8 @@ public class EventManager implements EventManagementService {
             log.info("queued to event-added..." + savedEvent.getId() + "...version..." + savedEvent.getVersion());
             //todo do the same for changes???
             //clear the users cache so that they can pickup the new event
-            cacheUtilService.clearRsvpCacheForUser(savedEvent.getCreatedByUser(), savedEvent.getEventType());
-            jmsTemplateProducerService.sendWithNoReply("clear-groupcache", new EventDTO(savedEvent));
+          //  cacheUtilService.clearRsvpCacheForUser(savedEvent.getCreatedByUser(), savedEvent.getEventType());
+           // jmsTemplateProducerService.sendWithNoReply("clear-groupcache", new EventDTO(savedEvent));
             addedNewEventToQueue = true;
         }
 
