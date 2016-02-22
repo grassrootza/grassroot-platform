@@ -66,8 +66,8 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(userManagementServiceMock.getUserById(sessionTestUser.getId())).thenReturn(sessionTestUser);
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(dummyGroup);
         when(groupManagementServiceMock.isUserInGroup(dummyGroup, sessionTestUser)).thenReturn(true);
-        when(groupAccessControlManagementServiceMock.
-                loadGroup(dummyGroup.getId(), BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS)).thenReturn(dummyGroup);
+        // when(groupAccessControlManagementServiceMock.
+        //        loadGroup(dummyGroup.getId(), BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS)).thenReturn(dummyGroup);
 
         when(groupManagementServiceMock.hasParent(dummyGroup)).thenReturn(false);
         when(eventManagementServiceMock.getUpcomingMeetings(dummyGroup)).thenReturn(dummyMeetings);

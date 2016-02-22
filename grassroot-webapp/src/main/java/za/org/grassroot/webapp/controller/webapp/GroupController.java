@@ -160,10 +160,10 @@ public class GroupController extends BaseController {
         model.addAttribute("subGroups", groupManagementService.getSubGroups(group));
         model.addAttribute("openToken", groupManagementService.groupHasValidToken(group));
 
-        if (groupAccessControlManagementService.hasGroupPermission(BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS, group, user)) {
+        // if (groupAccessControlManagementService.hasGroupPermission(BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS, group, user)) {
             model.addAttribute("canSeeMembersDetails", true);
             model.addAttribute("groupMembers", userManagementService.getGroupMembersSortedById(group));
-        }
+        // } removing from master until reset historical groups' roles, else will cause UX issues
 
         if (hasUpdatePermission) {
             model.addAttribute("canAlter", hasUpdatePermission);
