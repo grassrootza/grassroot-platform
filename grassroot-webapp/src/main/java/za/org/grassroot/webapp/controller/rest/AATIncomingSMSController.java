@@ -35,13 +35,16 @@ public class AATIncomingSMSController {
     @Autowired
     EventLogManagementService eventLogManager;
 
-    public static final String fromNumber ="FN";
-    public static final String message ="MS";
+    public static final String fromNumber ="fn";
+    public static final String message ="ms";
 
 
     @RequestMapping(value = "incoming", method = RequestMethod.GET)
     public void receiveSms(@RequestParam(value =fromNumber, required = true) String phoneNumber,
                                    @RequestParam(value = message,required = true) String msg) {
+
+
+        log.info("Inside AATIncomingSMSController -" + "following param values were received + ms ="+msg+ " fn= "+phoneNumber);
 
         User user = userManager.loadOrSaveUser(phoneNumber);
         String trimmedMsg =  msg.toLowerCase().trim();
