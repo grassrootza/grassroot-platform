@@ -32,7 +32,6 @@ public class AATIncomingSMSControllerTest extends RestAbstractUnitTest {
     @Before
     public void setUp() {
         mockMvc =   MockMvcBuilders.standaloneSetup(aatIncomingSMSController).build();
-
     }
 
     @Test
@@ -50,7 +49,7 @@ public class AATIncomingSMSControllerTest extends RestAbstractUnitTest {
         when(eventManagementServiceMock.getOutstandingRSVPForUser(sessionTestUser)).thenReturn(meetings);
         when(eventLogManagementServiceMock.rsvpForEvent(meeting.getId(),sessionTestUser.getId(),
                 EventRSVPResponse.fromString("yes"))).thenReturn(log);
-        mockMvc.perform(get(path+"incoming").param("FN",testUserPhone).param("MS", "yes"))
+        mockMvc.perform(get(path+"incoming").param("fn",testUserPhone).param("ms", "yes"))
                 .andExpect(status().isOk());
         verify(userManagementServiceMock,times(1)).loadOrSaveUser(testUserPhone);
         verify(userManagementServiceMock,times(1)).needsToRSVP(sessionTestUser);
@@ -69,7 +68,7 @@ public class AATIncomingSMSControllerTest extends RestAbstractUnitTest {
 
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(eventManagementServiceMock.notifyUnableToProcessEventReply(sessionTestUser)).thenReturn(0);
-        mockMvc.perform(get(path+"incoming").param("FN",testUserPhone).param("MS", "yebo"))
+        mockMvc.perform(get(path+"incoming").param("fn",testUserPhone).param("ms", "yebo"))
                 .andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).loadOrSaveUser(testUserPhone);
         verify(eventManagementServiceMock, times(1)).notifyUnableToProcessEventReply(sessionTestUser);
