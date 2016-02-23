@@ -1,8 +1,6 @@
 package za.org.grassroot.services;
 
 import org.apache.commons.lang3.StringUtils;
-import org.joda.time.DateTime;
-import org.joda.time.Minutes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +14,9 @@ import za.org.grassroot.core.util.PhoneNumberUtil;
 
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.Period;
 import java.util.Random;
 
 /**
@@ -92,9 +93,15 @@ public class PasswordTokenManager implements PasswordTokenService {
         if (verificationTokenCode == null) {
             return false;
         }
-        boolean isGreaterThanLifeSpanMinutes = Minutes.minutesBetween(new DateTime(verificationTokenCode.getCreatedDateTime().getTime()),
+
+        /*boolean isGreaterThanLifeSpanMinutes =
+                Minutes.minutesBetween(new DateTime(verificationTokenCode.getCreatedDateTime().getTime()),
                 new DateTime())
-                .isGreaterThan(Minutes.minutes(TOKEN_LIFE_SPAN_MINUTES));
+                .isGreaterThan(Minutes.minutes(TOKEN_LIFE_SPAN_MINUTES));*/
+
+        boolean isGreaterThanLifeSpanMinutes =
+                Duration.between(LocalDateTime.now(), verificationTokenCode.getCreatedDateTime().toLocalDateTime()).toMinutes()
+                        > TOKEN_LIFE_SPAN_MINUTES;
 
         return !isGreaterThanLifeSpanMinutes;
     }
@@ -116,7 +123,7 @@ public class PasswordTokenManager implements PasswordTokenService {
 
     private Timestamp getExpiryDateFromNow()
     {
-        return  new Timestamp( DateTime.now().plusMinutes(TOKEN_LIFE_SPAN_MINUTES).toDate().getTime());
+        return Timestamp.valueOf(LocalDateTime.now().plusMinutes(TOKEN_LIFE_SPAN_MINUTES));
     }
 
 }

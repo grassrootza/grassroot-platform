@@ -27,10 +27,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author Lesetse Kimwaga
@@ -62,6 +59,9 @@ public class GroupController extends BaseController {
 
     @Autowired
     private GroupLogService groupLogService;
+
+    @Autowired
+    private RoleManagementService roleService;
 
     @Autowired
     private AsyncRoleService asyncRoleService;
@@ -843,6 +843,32 @@ public class GroupController extends BaseController {
         redirectAttributes.addAttribute("eventId", eventId);
         return "redirect:" + path + "view";
 
+    }
+
+    /**
+     * Group role view pages
+     */
+
+    @RequestMapping(value = "roles")
+    public String viewGroupRoles(Model model, @RequestParam Long groupId) {
+
+        // just to see roles, all you need is see details -- changing roles is a different story ...
+        Group group = loadGroup(groupId, BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        Map<String, Role> roles = roleService.fetchGroupRoles(groupId);
+        // todo: create a DTO object representing group user membership that has roles with it
+
+        model.addAttribute("group", group);
+
+        if (roles.get(BaseRoles.ROLE_GROUP_ORGANIZER) != null)
+            model.addAttribute("organizerPerms", new ArrayList<>(roles.get(BaseRoles.ROLE_GROUP_ORGANIZER).getPermissions()));
+
+        if (roles.get(BaseRoles.ROLE_COMMITTEE_MEMBER) != null)
+            model.addAttribute("committeePerms", new ArrayList<>(roles.get(BaseRoles.ROLE_COMMITTEE_MEMBER).getPermissions()));
+
+        if (roles.get(BaseRoles.ROLE_ORDINARY_MEMBER) != null)
+            model.addAttribute("ordinaryPerms", new ArrayList<>(roles.get(BaseRoles.ROLE_ORDINARY_MEMBER).getPermissions()));
+
+        return "group/roles";
     }
 
 }

@@ -110,16 +110,16 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
             ObjectIdentity objectIdentity = new ObjectIdentityImpl(Group.class, group.getId());
 
             log.info("about to try setting permisssions for a number of users ...");
+            MutableAcl acl = getMutableAcl(objectIdentity);
             for (User user : addingToUsers) {
                 Sid sid = new PrincipalSid(user.getUsername());
                 removePermissions(objectIdentity, sid);
-                MutableAcl acl = getMutableAcl(objectIdentity);
 
                 for (Permission permission : groupPermissions) {
                     acl.insertAce(acl.getEntries().size(), permission, sid, true);
-                    mutableAclService.updateAcl(acl);
                 }
             }
+            mutableAclService.updateAcl(acl);
             log.info("done setting permissions ....");
 
         } catch (Exception e) {

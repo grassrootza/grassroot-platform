@@ -1,0 +1,81 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+    <title>GrassRoot - View Group Roles</title>
+</head>
+<body>
+
+<div layout:fragment="header">
+  <h2><span  th:text="${group.groupName}">Group</span></h2>
+</div>
+<div layout:fragment="overview">
+  <h4>
+    View group roles
+  </h4>
+</div>
+
+<div layout:fragment="content">
+  <div layout:fragment="messages"></div>
+
+  <div class="well" th:if="${organizerPerms != null}">
+    <div class="row">
+      <h2>Group organizer</h2>
+    </div>
+    <div class="row">
+      <table class="table table-striped">
+        <thead>
+        <td>Permission granted</td>
+        </thead>
+        <tbody>
+        <tr th:each="permission : ${organizerPerms}">
+          <td><span th:text="${permission.getName()}">Permission name</span></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="well" th:if="${committeePerms != null}">
+    <div class="row">
+      <h2>Committee members</h2>
+    </div>
+    <div class="row">
+      <table class="table table-striped">
+        <thead>
+        <td>Permission granted</td>
+        </thead>
+        <tbody>
+        <tr th:each="permission : ${committeePerms}">
+          <td><span th:text="${permission.getName()}">Permission name</span></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="well" th:if="${ordinaryPerms != null}">
+    <div class="row">
+      <h2>Ordinary members</h2>
+    </div>
+    <div class="row">
+      <table class="table table-striped">
+        <thead>
+        <td>Permission granted</td>
+        </thead>
+        <tbody>
+        <tr th:each="permission : ${ordinaryPerms}">
+          <td><span th:text="${permission.getName()}">Permission name</span></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- todo: add button that will get all users from subgroups too and display them in one list -->
+</div>
+
+
+</body>
+</html>
