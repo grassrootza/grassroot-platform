@@ -12,6 +12,7 @@ import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.util.AppIdGenerator;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.util.USSDEventUtil;
@@ -66,7 +67,7 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
         wireUpMessageSourceAndGroupUtil(ussdVoteController, ussdGroupUtil);
         ussdEventUtil.setMessageSource(messageSource());
         ussdVoteController.setEventUtil(ussdEventUtil);
-        testUser = new User(testUserPhone);
+        testUser = new User(AppIdGenerator.generateId(), testUserPhone);
 
     }
 

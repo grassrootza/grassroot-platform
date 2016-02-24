@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.util.AppIdGenerator;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -37,7 +38,7 @@ public class USSDUserControllerTest extends USSDAbstractUnitTest {
                 .setViewResolvers(viewResolver())
                 .build();
         ussdUserController.setMessageSource(messageSource());
-        testUser = new User(testUserPhone);
+        testUser = new User(AppIdGenerator.generateId(), testUserPhone);
     }
 
     @Test
@@ -53,7 +54,7 @@ public class USSDUserControllerTest extends USSDAbstractUnitTest {
     @Test
     public void renameSelfPromptShouldWork() throws Exception {
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        User namedUser = new User("27801115550", "named");
+        User namedUser = new User(AppIdGenerator.generateId(), "27801115550", "named");
         when(userManagementServiceMock.findByInputNumber(namedUser.getPhoneNumber())).thenReturn(namedUser);
         mockMvc.perform(get(path + "name").param(phoneParam, testUserPhone)).andExpect(status().isOk());
         mockMvc.perform(get(path + "name").param(phoneParam, namedUser.getPhoneNumber())).andExpect(status().isOk());
@@ -64,7 +65,7 @@ public class USSDUserControllerTest extends USSDAbstractUnitTest {
 
     @Test
     public void renameSelfDoneScreenShouldWork() throws Exception {
-        User namedUser = new User("278011115550", "named");
+        User namedUser = new User(AppIdGenerator.generateId(), "278011115550", "named");
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(userManagementServiceMock.findByInputNumber(namedUser.getPhoneNumber())).thenReturn(testUser);
         when(userManagementServiceMock.save(testUser)).thenReturn(testUser);

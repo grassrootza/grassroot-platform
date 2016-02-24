@@ -12,6 +12,7 @@ import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.util.AppIdGenerator;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.transaction.Transactional;
@@ -48,7 +49,7 @@ public class LogBookRepositoryTest {
     @Test
     public void shouldSaveAndRetrieveLogBookForGroup()  {
 
-        User user = userRepository.save(new User("001111141"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "001111141"));
         Group group = groupRepository.save(new Group("test logbook", user));
         Group groupUnrelated = groupRepository.save(new Group("not related logbook", user));
         LogBook lb1 = logBookRepository.save(new LogBook(group.getId(),"just do it", DateTimeUtil.addHoursFromNow(2)));
@@ -61,7 +62,7 @@ public class LogBookRepositoryTest {
     @Test
     public void shouldSaveAndRetrieveLogBookForGroupAndNotCompleted()  {
 
-        User user = userRepository.save(new User("001111142"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "001111142"));
         Group group = groupRepository.save(new Group("test logbook", user));
         Group groupUnrelated = groupRepository.save(new Group("not related logbook", user));
         LogBook lb1 = logBookRepository.save(new LogBook(group.getId(),"just do it", DateTimeUtil.addHoursFromNow(2)));
@@ -74,7 +75,7 @@ public class LogBookRepositoryTest {
     @Test
     public void shouldSaveAndRetrieveLogBookForGroupAndCompleted()  {
 
-        User user = userRepository.save(new User("001111143"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "001111143"));
         Group group = groupRepository.save(new Group("test logbook", user));
         LogBook lb1 = logBookRepository.save(new LogBook(group.getId(),"just do it", DateTimeUtil.addHoursFromNow(2)));
         LogBook lb2 = logBookRepository.save(new LogBook(group.getId(),"just do it too", DateTimeUtil.addHoursFromNow(2)));
@@ -89,7 +90,7 @@ public class LogBookRepositoryTest {
     @Test
     public void shouldSaveAndRetrieveLogBookAssignedToUser()  {
 
-        User user = userRepository.save(new User("001111144"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "001111144"));
         Group group = groupRepository.save(new Group("test logbook", user));
         LogBook lb1 = logBookRepository.save(new LogBook(group.getId(),"just do it", DateTimeUtil.addHoursFromNow(2), user.getId()));
         LogBook lb2 = logBookRepository.save(new LogBook(group.getId(),"not assigned", DateTimeUtil.addHoursFromNow(2)));
@@ -104,7 +105,7 @@ public class LogBookRepositoryTest {
     @Test
     public void shouldSaveAndRetrieveLogBookAssignedToUserAndCompleted()  {
 
-        User user = userRepository.save(new User("001111145"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "001111145"));
         Group group = groupRepository.save(new Group("test logbook", user));
         LogBook lb1 = logBookRepository.save(new LogBook(group.getId(),"just do it", DateTimeUtil.addHoursFromNow(2),user.getId()));
         LogBook lb2 = logBookRepository.save(new LogBook(group.getId(),"not assigned", DateTimeUtil.addHoursFromNow(2),user.getId()));
@@ -119,7 +120,7 @@ public class LogBookRepositoryTest {
     @Test
     public void shouldSaveAndRetrieveReplicatedEntries() {
 
-        User user = userRepository.save(new User("08601112222"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "08601112222"));
         Group group1 = groupRepository.save(new Group("test replicating logbooks", user));
         Group group2 = groupRepository.save(new Group("subgroup1", user, group1));
         Group group3 = groupRepository.save(new Group("subgroup2", user, group1));
@@ -176,7 +177,7 @@ public class LogBookRepositoryTest {
     @Test
     public void shouldNotRetrieveUnrecordedEntries() {
 
-        User user = userRepository.save(new User("0601110000"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "0601110000"));
         Group group1 = groupRepository.save(new Group("test entry recorded field", user));
         LogBook lb1 = logBookRepository.save(new LogBook(group1.getId(), "user didn't finish this one",
                                                          Timestamp.valueOf(LocalDateTime.now().plusDays(1L)), false));

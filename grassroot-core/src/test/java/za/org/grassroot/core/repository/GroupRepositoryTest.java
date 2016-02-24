@@ -12,14 +12,12 @@ import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.util.AppIdGenerator;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Logger;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -51,8 +49,7 @@ public class GroupRepositoryTest {
 
         Group groupToCreate = new Group();
 
-        User userToDoTests = new User();
-        userToDoTests.setPhoneNumber("56789");
+        User userToDoTests = new User(AppIdGenerator.generateId(), "56789");
         userRepository.save(userToDoTests);
 
         groupToCreate.setGroupName("TestGroup");
@@ -72,7 +69,7 @@ public class GroupRepositoryTest {
     @Test
     public void shouldSaveWithAddedMember() throws Exception {
         assertThat(groupRepository.count(), is(0L));
-        User userForTest = userRepository.save(new User("0814441111"));
+        User userForTest = userRepository.save(new User(AppIdGenerator.generateId(), "0814441111"));
         Group groupToCreate = groupRepository.save(new Group("testGroup", userForTest));
         groupToCreate.addMember(userForTest);
         groupToCreate = groupRepository.save(groupToCreate);
@@ -86,7 +83,7 @@ public class GroupRepositoryTest {
     public void shouldSaveAndFindByCreatedUser() throws Exception {
 
         Group groupToCreate = new Group();
-        User userToDoTests = new User();
+        User userToDoTests = new User(AppIdGenerator.generateId());
         userToDoTests.setPhoneNumber("100001");
         userRepository.save(userToDoTests);
         groupToCreate.setGroupName("TestGroup");
@@ -103,8 +100,7 @@ public class GroupRepositoryTest {
     @Test
     public void shouldFindLastCreatedGroupForUser() throws Exception {
 
-        User userToDoTests = new User();
-        userToDoTests.setPhoneNumber("100002");
+        User userToDoTests = new User(AppIdGenerator.generateId(), "100002");
         userRepository.save(userToDoTests);
         Group group1 = new Group();
         group1.setGroupName("TestGroup1");
@@ -121,7 +117,7 @@ public class GroupRepositoryTest {
 
     @Test
     public void shouldSaveParentRelationship() {
-        User user = userRepository.save(new User("1111111111"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "1111111111"));
         Group ga = groupRepository.save(new Group("ga", user));
         Group ga1 = groupRepository.save(new Group("ga1", user, ga));
         assertEquals(ga.getId(), ga1.getParent().getId());
@@ -130,7 +126,7 @@ public class GroupRepositoryTest {
 
     @Test
     public void shouldReturnLevel1Children() {
-        User user = userRepository.save(new User("2222222222"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "2222222222"));
         Group gb = groupRepository.save(new Group("gb", user));
         Group gb1 = groupRepository.save(new Group("gb1", user, gb));
         Group gb2 = groupRepository.save(new Group("gb2", user, gb));
@@ -144,7 +140,7 @@ public class GroupRepositoryTest {
 
     @Test
     public void shouldReturnParentAndAllChildren() {
-        User user = userRepository.save(new User("3333333333"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "3333333333"));
         Group gc = groupRepository.save(new Group("gc", user));
         Group gc1 = groupRepository.save(new Group("gc1", user, gc));
         Group gc2 = groupRepository.save(new Group("gc2", user, gc));
@@ -157,7 +153,7 @@ public class GroupRepositoryTest {
 
     @Test
     public void shouldReturnOnlyOneLevel() {
-        User user = userRepository.save(new User("3333333330"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "3333333330"));
         Group gc = groupRepository.save(new Group("gc", user));
         Group gc1 = groupRepository.save(new Group("gc1", user, gc));
         Group gc2 = groupRepository.save(new Group("gc2", user, gc));
@@ -176,7 +172,7 @@ public class GroupRepositoryTest {
 
     @Test
     public void shouldCreateAndUseToken() {
-        User user1 = userRepository.save(new User("3331118888"));
+        User user1 = userRepository.save(new User(AppIdGenerator.generateId(), "3331118888"));
         Group group = groupRepository.save(new Group("token", user1));
         Integer realToken = groupRepository.getMaxTokenValue();
         Integer fakeToken = realToken - 10;
@@ -191,7 +187,7 @@ public class GroupRepositoryTest {
 
     @Test
     public void shouldUseAndExtendToken() {
-        User user = userRepository.save(new User("3335551111"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "3335551111"));
         Group group = groupRepository.save(new Group("tg", user));
         String token = String.valueOf(groupRepository.getMaxTokenValue());
         Date testDate1 = DateTimeUtil.addHoursToDate(new Date(), 12);
@@ -216,7 +212,7 @@ public class GroupRepositoryTest {
 
     @Test
     public void shouldCloseToken() {
-        User user = userRepository.save(new User("3335550000"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "3335550000"));
         Group group = groupRepository.save(new Group("tg", user));
         String token = String.valueOf(groupRepository.getMaxTokenValue());
         Date testDate1 = DateTimeUtil.addHoursToDate(new Date(), 12);
@@ -238,7 +234,7 @@ public class GroupRepositoryTest {
     @Test
     public void shouldSetInactive() {
         assertThat(groupRepository.count(), is(0L));
-        User user = userRepository.save(new User("3331110000"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "3331110000"));
         Group group = groupRepository.save(new Group("gc", user));
         group.setActive(false);
         groupRepository.save(group);
@@ -251,7 +247,7 @@ public class GroupRepositoryTest {
     @Test
     public void shouldReturnOnlyActive() {
         assertThat(groupRepository.count(), is(0L));
-        User user = userRepository.save(new User("3331115555"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "3331115555"));
         Group group1 = new Group("gc1", user);
         Group group2 = new Group("gc2", user);
         group1.addMember(user);
@@ -271,7 +267,7 @@ public class GroupRepositoryTest {
     @Test
     public void shouldReturnPagesActive() {
         assertThat(groupRepository.count(), is(0L));
-        User user = userRepository.save(new User("3331110000"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "3331110000"));
         List<Group> testGroups = Arrays.asList(new Group("gc1", user), new Group("gc2", user), new Group("gc3", user), new Group("gc4", user));
         for (Group group : testGroups) group.addMember(user);
         testGroups = groupRepository.save(testGroups);
@@ -289,7 +285,7 @@ public class GroupRepositoryTest {
     @Test
     public void shouldSaveAndRetrievePaidFor() {
         assertThat(groupRepository.count(), is(0L));
-        User user = userRepository.save(new User("3331113333"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "3331113333"));
         Group group1 = groupRepository.save(new Group("paidGroup", user, true));
         Group group2 = groupRepository.save(new Group("unpaidGroup", user));
         assertTrue(group1.isPaidFor());
@@ -299,7 +295,7 @@ public class GroupRepositoryTest {
     @Test
     public void shouldRetrieveFromListOfIds() {
         assertThat(groupRepository.count(), is(0L));
-        User user = userRepository.save(new User("3331115555"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "3331115555"));
         Group testGroup1 = groupRepository.save(new Group("gc1", user));
         Group testGroup2 = groupRepository.save(new Group("gc2", user));
         Group testGroup3 = groupRepository.save(new Group("gc3", user));
@@ -316,7 +312,7 @@ public class GroupRepositoryTest {
     @Test
     public void shouldFindByDiscoverable() {
         assertThat(groupRepository.count(), is(0L));
-        User user = userRepository.save(new User("0881110000"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "0881110000"));
         Group testGroup1 = groupRepository.save(new Group("test group 1", user));
         Group testGroup2 = groupRepository.save(new Group("other test", user));
         testGroup1.setDiscoverable(true);

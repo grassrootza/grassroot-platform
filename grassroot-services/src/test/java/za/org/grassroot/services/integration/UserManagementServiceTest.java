@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 import za.org.grassroot.GrassRootServicesConfig;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.util.AppIdGenerator;
 import za.org.grassroot.services.UserManagementService;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -33,7 +34,7 @@ public class UserManagementServiceTest {
     @Test
     public void testName() throws Exception {
 
-        User userProfile = new User();
+        User userProfile = new User(AppIdGenerator.generateId());
         userProfile.setDisplayName("Grass Root");
         userProfile.setPhoneNumber("1201994");
 

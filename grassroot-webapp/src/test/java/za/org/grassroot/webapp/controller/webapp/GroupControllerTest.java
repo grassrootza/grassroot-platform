@@ -10,6 +10,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.GroupLogType;
+import za.org.grassroot.core.util.AppIdGenerator;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
@@ -162,7 +163,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void addMemberFailsValidation() throws Exception {
         GroupWrapper groupCreator = new GroupWrapper();
-        groupCreator.addMember(new User());
+        groupCreator.addMember(new User(AppIdGenerator.generateId()));
         mockMvc.perform(post("/group/create").param("addMember", "")
                 .sessionAttr("groupCreator", groupCreator))
                 .andExpect(status().isOk())
@@ -193,7 +194,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void removeMemberWorks() throws Exception {
         GroupWrapper groupCreator = new GroupWrapper();
-        groupCreator.addMember(new User());
+        groupCreator.addMember(new User(AppIdGenerator.generateId()));
         mockMvc.perform(post("/group/create").param("removeMember", String.valueOf(0)).param("removeMember", "")
                 .sessionAttr("groupCreator", groupCreator))
                 .andExpect(status().isOk()).andExpect(view().name("group/create"));
@@ -212,7 +213,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void addMemberModifyFails() throws Exception {
         GroupWrapper groupCreator = new GroupWrapper();
-        groupCreator.addMember(new User());
+        groupCreator.addMember(new User(AppIdGenerator.generateId()));
         MvcResult result = mockMvc.perform(post("/group/modify").param("addMember", "")
                 .sessionAttr("groupModifier", groupCreator))
                 .andExpect(status().isOk())
@@ -475,7 +476,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     public void groupsConsolidateDoWorks() throws Exception {
         Group testGroupInto = new Group();
         testGroupInto.setId(0L);
-        testGroupInto.addMember(new User());
+        testGroupInto.addMember(new User(AppIdGenerator.generateId()));
         Group testGroupFrom = new Group();
         testGroupFrom.addMember(sessionTestUser);
         testGroupFrom.setId(1L);
@@ -696,7 +697,10 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         numbers_to_be_added.add("27616780986");
         numbers_to_be_added.add("27833403013");
         numbers_to_be_added.add("27799814669");
-        List<User> testUsers = Arrays.asList(new User("27616780986"),new User("27833403013"), new User("27799814669"));
+        List<User> testUsers = Arrays.asList(
+                new User(AppIdGenerator.generateId(), "27616780986"),
+                new User(AppIdGenerator.generateId(), "27833403013"),
+                new User(AppIdGenerator.generateId(), "27799814669"));
 
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
    //     when(userManagementServiceMock.getExistingUsersFromNumbers(numbers_to_be_added)).thenReturn(testUsers);

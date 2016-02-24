@@ -43,7 +43,7 @@ public class MaskingUtil {
 
     public static User maskUser(User user) {
         // todo: add in transfer of whatever other properties may be needed by anonymized views/queries
-        User maskedUser = new User();
+        User maskedUser = new User(user.getAppId());
         maskedUser.setId(user.getId());
         maskedUser.setPhoneNumber(maskPhoneNumber(user.getPhoneNumber()));
         maskedUser.setDisplayName(maskName(user.getDisplayName()));

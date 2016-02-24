@@ -12,6 +12,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.util.AppIdGenerator;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
 
@@ -28,7 +29,7 @@ import java.util.ArrayList;
 public abstract class WebAppAbstractUnitTest {
 
     protected final static String testUserPhone = "27815550000";
-    protected final static User sessionTestUser = new User("testUser", testUserPhone);
+    protected final static User sessionTestUser = new User(AppIdGenerator.generateId(),"testUser", testUserPhone);
 
     protected MockMvc mockMvc;
     @Mock
