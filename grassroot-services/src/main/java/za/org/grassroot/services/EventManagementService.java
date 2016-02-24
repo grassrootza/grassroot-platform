@@ -2,6 +2,7 @@ package za.org.grassroot.services;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
@@ -24,6 +25,7 @@ public interface EventManagementService {
     /*
     Methods to create events, in various different forms
      */
+
     Event createEvent(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups, boolean rsvpRequired);
 
     Event createEvent(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups);

@@ -1,6 +1,8 @@
 package za.org.grassroot.services;
 
 import org.springframework.data.domain.Page;
+import org.springframework.security.access.prepost.PostFilter;
+import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
@@ -70,6 +72,7 @@ public interface GroupManagementService {
 
     public List<GroupDTO> getActiveGroupsPartOfOrderedByRecent(User sessionUser);
 
+  //  @PostFilter("hasPermission(filterObject, 'GROUP_PERMISSION_CREATE_GROUP_MEETING')")
     public List<Group> getActiveGroupsPartOf(Long userId);
 
     public Page<Group> getPageOfActiveGroups(User sessionUser, int pageNumber, int pageSize);
