@@ -44,7 +44,7 @@ public class AATIncomingSMSController {
                                    @RequestParam(value = message,required = true) String msg) {
 
 
-        log.info("Inside AATIncomingSMSController -" + "following param values were received + ms ="+msg+ " fn= "+phoneNumber);
+        log.info("Inside AATIncomingSMSController -" + " following param values were received + ms ="+msg+ " fn= "+phoneNumber);
 
         User user = userManager.loadOrSaveUser(phoneNumber);
         String trimmedMsg =  msg.toLowerCase().trim();
@@ -64,7 +64,7 @@ public class AATIncomingSMSController {
                 Long id = eventManagementService.getNextOutstandingVote(user);
                 eventLogManager.rsvpForEvent(id, user.getId(),EventRSVPResponse.fromString(trimmedMsg));
             }
-            if (needsToRsvp) {
+            else if (needsToRsvp) {
                 Long id = eventManagementService.getOutstandingRSVPForUser(user).get(0).getId();
                 eventLogManager.rsvpForEvent(id, user.getId(),EventRSVPResponse.fromString(trimmedMsg));
             }

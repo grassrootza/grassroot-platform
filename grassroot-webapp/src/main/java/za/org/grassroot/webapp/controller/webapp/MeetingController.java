@@ -56,21 +56,21 @@ public class MeetingController extends BaseController {
     public String viewMeetingDetails(Model model, @RequestParam Long eventId) {
 
         Event meeting = eventManagementService.loadEvent(eventId);
-        boolean canViewDetails = groupAccessControlManagementService.hasGroupPermission(
-                BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS, meeting.getAppliesToGroup(), getUserProfile());
+       /* boolean canViewDetails = groupAccessControlManagementService.hasGroupPermission(
+                BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS, meeting.getAppliesToGroup(), getUserProfile());*/
         
         int rsvpYesTotal = eventManagementService.getListOfUsersThatRSVPYesForEvent(meeting).size();
 
         model.addAttribute("meeting", meeting);
         model.addAttribute("rsvpYesTotal", rsvpYesTotal);
-        model.addAttribute("canViewMemberDetails", canViewDetails); // todo: try use Th sec)
+     //   model.addAttribute("canViewMemberDetails", canViewDetails); // todo: try use Th sec)
 
-        if (canViewDetails) {
+      //  if (canViewDetails) {
             Set<Map.Entry<User, EventRSVPResponse>> rsvpResponses =
                     eventManagementService.getRSVPResponses(meeting).entrySet();
             model.addAttribute("rsvpResponses", rsvpResponses);
             log.info("Size of response map: " + rsvpResponses);
-        }
+      //  }
 
         log.info("Number of yes RSVPd: " + rsvpYesTotal);
 
@@ -124,8 +124,8 @@ public class MeetingController extends BaseController {
 
         log.info("The event passed back to us: " + meeting.toString());
         Long groupId = (meeting.getAppliesToGroup() == null) ? selectedGroupId : meeting.getAppliesToGroup().getId();
-        if (!groupManagementService.canUserCallMeeting(groupId, getUserProfile()))
-            throw new AccessDeniedException("You do not have permission to call a meeting of this group");
+      /*  if (!groupManagementService.canUserCallMeeting(groupId, getUserProfile()))
+            throw new AccessDeniedException("You do not have permission to call a meeting of this group");*/
 
         /*
         This is a bit clunky. Unfortunately, Thymeleaf isn't handling the mapping of group IDs from selection box back
@@ -155,8 +155,8 @@ public class MeetingController extends BaseController {
 
         // todo: replace canUserCall with canUserModify
         meeting = eventManagementService.loadEvent(meeting.getId()); // load all details, as may not have been passed by Th
-        if (!groupManagementService.canUserCallMeeting(meeting.getAppliesToGroup().getId(), getUserProfile()))
-            throw new AccessDeniedException("");
+      /*  if (!groupManagementService.canUserCallMeeting(meeting.getAppliesToGroup().getId(), getUserProfile()))
+            throw new AccessDeniedException("");*/
         model.addAttribute("meeting", meeting);
         model.addAttribute("rsvpYesTotal", eventManagementService.getListOfUsersThatRSVPYesForEvent(meeting).size());
 
@@ -168,8 +168,8 @@ public class MeetingController extends BaseController {
                                 BindingResult bindingResult, HttpServletRequest request) {
 
         log.info("Meeting we are passed: " + meeting);
-        if (!groupManagementService.canUserCallMeeting(meeting.getAppliesToGroup().getId(), getUserProfile()))
-            throw new AccessDeniedException("");
+     /*   if (!groupManagementService.canUserCallMeeting(meeting.getAppliesToGroup().getId(), getUserProfile()))
+            throw new AccessDeniedException("");*/
         meeting = eventManagementService.updateEvent(meeting);
         model.addAttribute("meeting", meeting);
         addMessage(model, MessageType.SUCCESS, "meeting.update.success", request);
@@ -182,8 +182,8 @@ public class MeetingController extends BaseController {
                                 RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
         log.info("Meeting that is about to be cancelled: " + meeting.toString());
-        if (!groupManagementService.canUserCallMeeting(meeting.getAppliesToGroup().getId(), getUserProfile()))
-            throw new AccessDeniedException("");
+      /*  if (!groupManagementService.canUserCallMeeting(meeting.getAppliesToGroup().getId(), getUserProfile()))
+            throw new AccessDeniedException("");*/
         eventManagementService.cancelEvent(meeting.getId());
         addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.cancel.success", request);
         return "redirect:/home";

@@ -271,7 +271,7 @@ public class EventNotificationConsumer {
 
     private List<User> getAllUsersForGroup(Event event) {
         if (event.isIncludeSubGroups()) {
-            return groupManagementService.getAllUsersInGroupAndSubGroups(event.getAppliesToGroup());
+            return groupManagementService.getAllUsersInGroupAndSubGroups(event.getAppliesToGroup().getId());
         } else {
             return groupManagementService.getUsersInGroupNotSubGroups(event.getAppliesToGroup().getId());
         }

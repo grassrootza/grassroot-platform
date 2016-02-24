@@ -880,7 +880,7 @@ public class GroupManager implements GroupManagementService {
         }
 
         // add all the users at this level
-        userList.addAll(parentGroup.getGroupMembers());
+        userList.addAll(groupRepository.findOne(parentGroup.getId()).getGroupMembers());
 
     }
 

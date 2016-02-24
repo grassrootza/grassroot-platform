@@ -4,6 +4,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
@@ -17,6 +24,7 @@ import za.org.grassroot.webapp.enums.USSDSection;
 
 import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -119,7 +127,16 @@ public class USSDGroupUtil extends USSDUtil {
     public USSDMenu userGroupMenuPaginated(User user, String prompt, String urlForExistingGroups, String urlForNewGroup, Integer pageNumber, USSDSection section)
             throws URISyntaxException {
         USSDMenu menu = new USSDMenu(prompt);
-        Page<Group> groupsPartOf = groupManager.getPageOfActiveGroups(user, pageNumber, PAGE_LENGTH);
+
+      //todo: this is just for testing purposes
+      /*  Authentication authentication = new UsernamePasswordAuthenticationToken(user, null,
+                user.getAuthorities());
+        SecurityContext securityContext = SecurityContextHolder.getContext();
+        securityContext.setAuthentication(authentication);*/
+      //  List<Group> groups = groupManager.getActiveGroupsPartOf(user);
+      //  Page<Group> groupsPartOf = new PageImpl<>(groups);
+
+       Page<Group> groupsPartOf = groupManager.getPageOfActiveGroups(user, pageNumber, PAGE_LENGTH);
         if (groupsPartOf.getTotalElements() == 1) {
             menu = skipGroupSelection(user, section,urlForNewGroup, groupsPartOf.iterator().next().getId());
         } else {
@@ -248,5 +265,7 @@ public class USSDGroupUtil extends USSDUtil {
         }
         return menu;
     }
+
+
 
 }
