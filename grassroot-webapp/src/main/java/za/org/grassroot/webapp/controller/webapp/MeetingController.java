@@ -63,7 +63,7 @@ public class MeetingController extends BaseController {
 
         model.addAttribute("meeting", meeting);
         model.addAttribute("rsvpYesTotal", rsvpYesTotal);
-     //   model.addAttribute("canViewMemberDetails", canViewDetails); // todo: try use Th sec)
+        model.addAttribute("canViewMemberDetails", true); // note: just setting it for now todo: try use Th sec)
 
       //  if (canViewDetails) {
             Set<Map.Entry<User, EventRSVPResponse>> rsvpResponses =
