@@ -21,6 +21,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.util.AppIdGenerator;
 import za.org.grassroot.core.util.MaskingUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
@@ -185,8 +186,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public User loadOrSaveUser(String inputNumber) {
         String phoneNumber = PhoneNumberUtil.convertPhoneNumber(inputNumber);
         if (!userExist(phoneNumber)) {
-            User sessionUser = new User();
-            sessionUser.setPhoneNumber(phoneNumber);
+            User sessionUser = new User(AppIdGenerator.generateId(), phoneNumber);
             sessionUser.setUsername(phoneNumber);
             User newUser = userRepository.save(sessionUser);
             asyncUserService.recordUserLog(newUser.getId(), UserLogType.CREATED_IN_DB, "Created via loadOrSaveUser");
@@ -303,7 +303,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         for (String inputNumber : listOfNumbers) {
             String phoneNumber = PhoneNumberUtil.convertPhoneNumber(inputNumber);
             if (!userExist(phoneNumber)) {
-                User userToCreate = userRepository.save(new User(phoneNumber));
+                User userToCreate = userRepository.save(new User(AppIdGenerator.generateId(), phoneNumber));
                 usersToAdd.add(userToCreate);
                 asyncUserService.recordUserLog(userToCreate.getId(), UserLogType.CREATED_IN_DB, "Created via multi member add");
             } else {

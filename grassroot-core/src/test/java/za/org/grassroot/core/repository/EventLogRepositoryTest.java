@@ -14,6 +14,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.util.AppIdGenerator;
 
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
@@ -47,9 +48,9 @@ public class EventLogRepositoryTest {
     @Test
     public void shouldSaveAndRetrieveEventLogEventNotification() throws Exception {
 
-        User user = userRepository.save(new User("001111111"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "001111111"));
         Group group = groupRepository.save(new Group("test eventlog", user));
-        User user2 = userRepository.save(new User("00111112"));
+        User user2 = userRepository.save(new User(AppIdGenerator.generateId(), "00111112"));
         group.getGroupMembers().add(user2);
         Event event = eventRepository.save(new Event("drinking again", user, group));
         EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.EventNotification, "you are hereby invited to the drinking again meeting"));
@@ -65,9 +66,9 @@ public class EventLogRepositoryTest {
     @Test
     public void shouldSaveAndNotRetrieveEventLogEventNotification() throws Exception {
 
-        User user = userRepository.save(new User("001111113"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "001111113"));
         Group group = groupRepository.save(new Group("test eventlog 2", user));
-        User user2 = userRepository.save(new User("00111114"));
+        User user2 = userRepository.save(new User(AppIdGenerator.generateId(), "00111114"));
         group.getGroupMembers().add(user2);
         Event event = eventRepository.save(new Event("drinking again 2", user, group));
         EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.EventNotification, "you are hereby invited to the drinking again meeting"));
@@ -79,9 +80,9 @@ public class EventLogRepositoryTest {
     @Test
     public void shouldSayNotificationSent() throws Exception {
 
-        User user = userRepository.save(new User("001111115"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "001111115"));
         Group group = groupRepository.save(new Group("test eventlog 3", user));
-        User user2 = userRepository.save(new User("00111116"));
+        User user2 = userRepository.save(new User(AppIdGenerator.generateId(), "00111116"));
         group.getGroupMembers().add(user2);
         Event event = eventRepository.save(new Event("drinking again 3", user, group));
         EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.EventNotification, "you are hereby invited to the drinking again meeting"));
@@ -92,9 +93,9 @@ public class EventLogRepositoryTest {
     @Test
     public void shouldSayNotificationNotSent() throws Exception {
 
-        User user = userRepository.save(new User("001111115"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "001111115"));
         Group group = groupRepository.save(new Group("test eventlog 3", user));
-        User user2 = userRepository.save(new User("00111116"));
+        User user2 = userRepository.save(new User(AppIdGenerator.generateId(), "00111116"));
         group.getGroupMembers().add(user2);
         Event event = eventRepository.save(new Event("drinking again 3", user, group));
         assertEquals(false, Boolean.parseBoolean(eventLogRepository.notificationSent(event, user).toString()));
@@ -105,9 +106,9 @@ public class EventLogRepositoryTest {
     @Test
     public void shouldSayReminderSent() throws Exception {
 
-        User user = userRepository.save(new User("001111117"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "001111117"));
         Group group = groupRepository.save(new Group("test eventlog 4", user));
-        User user2 = userRepository.save(new User("00111118"));
+        User user2 = userRepository.save(new User(AppIdGenerator.generateId(), "00111118"));
         group.getGroupMembers().add(user2);
         Event event = eventRepository.save(new Event("drinking again 4", user, group));
         EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.EventReminder, "you are hereby reminded about the drinking again meeting"));
@@ -118,9 +119,9 @@ public class EventLogRepositoryTest {
     @Test
     public void shouldSayReminderNotSent() throws Exception {
 
-        User user = userRepository.save(new User("001111119"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "001111119"));
         Group group = groupRepository.save(new Group("test eventlog 4", user));
-        User user2 = userRepository.save(new User("00111110"));
+        User user2 = userRepository.save(new User(AppIdGenerator.generateId(), "00111110"));
         group.getGroupMembers().add(user2);
         Event event = eventRepository.save(new Event("drinking again 4", user, group));
         assertEquals(false, Boolean.parseBoolean(eventLogRepository.reminderSent(event, user).toString()));
@@ -130,9 +131,9 @@ public class EventLogRepositoryTest {
 
     @Test
     public void shouldReturnMinutesForEvent() {
-        User user = userRepository.save(new User("001111120"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "001111120"));
         Group group = groupRepository.save(new Group("test minutes 1", user));
-        User user2 = userRepository.save(new User("001111121"));
+        User user2 = userRepository.save(new User(AppIdGenerator.generateId(), "001111121"));
         group.getGroupMembers().add(user2);
         Event event = eventRepository.save(new Event("drinking again 5", user, group));
         EventLog elog1 = eventLogRepository.save(new EventLog(user,event,EventLogType.EventMinutes,"item 1"));
@@ -146,7 +147,7 @@ public class EventLogRepositoryTest {
 
     @Test
     public void shouldReturnThatUserRSVPNo() {
-        User user = userRepository.save(new User("0121234567"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "0121234567"));
         Group group = groupRepository.save(new Group("RSVP group",user));
         Event event = eventRepository.save(new Event("répondez s'il vous plaît",user,group));
         EventLog eventLog = eventLogRepository.save(new EventLog(user,event,EventLogType.EventRSVP, EventRSVPResponse.NO.toString()));
@@ -155,7 +156,7 @@ public class EventLogRepositoryTest {
     }
     @Test
     public void shouldReturnFalseForRSVPNo() {
-        User user = userRepository.save(new User("0121234577"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "0121234577"));
         Group group = groupRepository.save(new Group("RSVP group 2",user));
         Event event = eventRepository.save(new Event("répondez s'il vous plaît duo",user,group));
         EventLog eventLog = eventLogRepository.save(new EventLog(user,event,EventLogType.EventRSVP, "#$*&^#& off"));

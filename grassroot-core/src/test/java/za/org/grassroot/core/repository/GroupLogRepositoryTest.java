@@ -12,6 +12,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.GroupLogType;
+import za.org.grassroot.core.util.AppIdGenerator;
 
 import javax.transaction.Transactional;
 import java.util.logging.Logger;
@@ -46,9 +47,7 @@ public class GroupLogRepositoryTest {
         assertThat(groupLogRepository.count(), is(0L));
 
         Group groupToCreate = new Group();
-        User userToDoTests = new User();
-
-        userToDoTests.setPhoneNumber("0810001111");
+        User userToDoTests = new User(AppIdGenerator.generateId(), "0810001111");
         userToDoTests = userRepository.save(userToDoTests);
 
         groupToCreate.setGroupName("testGroup");
@@ -73,7 +72,7 @@ public class GroupLogRepositoryTest {
 
         assertThat(groupLogRepository.count(), is(0L));
 
-        User userToDoTests = userRepository.save(new User("0810002222"));
+        User userToDoTests = userRepository.save(new User(AppIdGenerator.generateId(), "0810002222"));
         Group groupToCreate = groupRepository.save(new Group("testGroup", userToDoTests));
 
         GroupLog groupLog1 = new GroupLog(groupToCreate.getId(), userToDoTests.getId(), GroupLogType.GROUP_ADDED, 0L);

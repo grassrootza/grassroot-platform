@@ -4,6 +4,7 @@ import org.hibernate.validator.constraints.NotBlank;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.util.AppIdGenerator;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 
 /**
@@ -15,7 +16,7 @@ public class UserRegistration {
     public User user;
 
     public UserRegistration() {
-        user = new User();
+        user = new User(AppIdGenerator.generateId());
     }
 
     public User getUser() {

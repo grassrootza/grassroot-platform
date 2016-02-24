@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.util.AppIdGenerator;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.webapp.controller.BaseController;
@@ -441,7 +442,7 @@ public class GroupController extends BaseController {
     private List<User> addMember(GroupWrapper groupWrapper) {
 
         List<User> groupMembers = groupWrapper.getAddedMembers();
-        groupMembers.add(new User());
+        groupMembers.add(new User(AppIdGenerator.generateId()));
         return groupMembers;
 
     }

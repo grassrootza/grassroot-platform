@@ -19,6 +19,7 @@ import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.util.AppIdGenerator;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.LogBookService;
 import za.org.grassroot.services.UserManagementService;
@@ -54,7 +55,7 @@ public class LogBookServiceTest extends AbstractTransactionalJUnit4SpringContext
     @Test
     public void shouldSaveLogBook() {
 
-        User userProfile = userManagementService.createUserProfile(new User("111111111", "aap1"));
+        User userProfile = userManagementService.createUserProfile(new User(AppIdGenerator.generateId(), "111111111", "aap1"));
         Group level1 = groupManagementService.createNewGroup(userProfile, Arrays.asList("111111112", "111111113"), false);
         LogBook logBook = logBookService.create(userProfile.getId(),level1.getId(),"X must do Y");
         Long fuddyDuddyGroup = 999999999999L;
@@ -66,7 +67,7 @@ public class LogBookServiceTest extends AbstractTransactionalJUnit4SpringContext
     //@Test
     public void shouldReplicateLogBookEntries() {
 
-        User userProfile = userManagementService.createUserProfile(new User("111111111", "aap1"));
+        User userProfile = userManagementService.createUserProfile(new User(AppIdGenerator.generateId(), "111111111", "aap1"));
 
         Group level1 = groupManagementService.createNewGroup(userProfile, Arrays.asList("111111112", "111111113"), false);
         Group level2 = groupManagementService.createSubGroup(userProfile, level1, "level2 group");

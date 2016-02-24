@@ -13,6 +13,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.util.AppIdGenerator;
 
 import javax.transaction.Transactional;
 import java.util.Set;
@@ -130,7 +131,7 @@ public class RoleRepositoryTest {
     public void testSaveWithGroupReference() throws Exception {
         assertThat(roleRepository.count(), is(0L));
         String roleName = "ADD_MEMBER";
-        User user = userRepository.save(new User("0812223456"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "0812223456"));
         Group group = groupRepository.save(new Group("testGroup", user));
         Role role = roleRepository.save(new Role(roleName, group.getId(), group.getGroupName()));
         Role roleFromDb = roleRepository.findByNameAndGroupReferenceId(roleName, group.getId());
@@ -147,7 +148,7 @@ public class RoleRepositoryTest {
         String roleName1 = "GROUP_ORGANIZER";
         String roleName2 = "ORDINARY_MEMBER";
         String roleName3 = "COMMITTEE_MEMBER";
-        User user = userRepository.save(new User("0801110000"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "0801110000"));
         Group group1 = groupRepository.save(new Group("gc1", user));
         Group group2 = groupRepository.save(new Group("gc2", user));
 
@@ -176,7 +177,7 @@ public class RoleRepositoryTest {
         Role role = roleRepository.save(new Role("GROUP_ORGANIZER"));
         assertThat(roleRepository.count(), is(1L));
         Role roleFromDb1 = roleRepository.findByName("GROUP_ORGANIZER").iterator().next();
-        User user = userRepository.save(new User("0811110001"));
+        User user = userRepository.save(new User(AppIdGenerator.generateId(), "0811110001"));
         Group group = groupRepository.save(new Group("test Group", user));
         roleFromDb1.setGroup(group);
         roleRepository.save(roleFromDb1);

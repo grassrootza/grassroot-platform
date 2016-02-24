@@ -17,6 +17,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.util.AppIdGenerator;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.sql.Timestamp;
@@ -42,12 +43,12 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
     private static final String openingMenu = "/ussd/start";
     private static final String phoneParameter = "msisdn";
 
-    private User testUser = new User(phoneForTests, testUserName);
+    private User testUser = new User(AppIdGenerator.generateId(), phoneForTests, testUserName);
 
-    private User testUserZu = new User(baseForOthers + "2");
-    private User testUserTs = new User(baseForOthers + "3");
-    private User testUserNso = new User(baseForOthers + "4");
-    private User testUserSt = new User(baseForOthers + "5");
+    private User testUserZu = new User(AppIdGenerator.generateId(), baseForOthers + "2");
+    private User testUserTs = new User(AppIdGenerator.generateId(), baseForOthers + "3");
+    private User testUserNso = new User(AppIdGenerator.generateId(), baseForOthers + "4");
+    private User testUserSt = new User(AppIdGenerator.generateId(), baseForOthers + "5");
 
     private List<User> languageUsers;
 
@@ -145,7 +146,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         testUser.setDisplayName("");
         testUser.setHasInitiatedSession(false);
 
-        Group testGroup = new Group(testGroupName, new User("27601110000"));
+        Group testGroup = new Group(testGroupName, new User(AppIdGenerator.generateId(), "27601110000"));
 
         testGroup.setGroupTokenCode("111");
         testGroup.setTokenExpiryDateTime(new Timestamp(DateTimeUtil.addHoursToDate(new Date(), 24 * 7).getTime()));

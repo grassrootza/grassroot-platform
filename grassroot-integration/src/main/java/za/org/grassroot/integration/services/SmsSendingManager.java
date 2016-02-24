@@ -16,6 +16,7 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.util.AppIdGenerator;
 
 import java.util.List;
 
@@ -73,7 +74,7 @@ public class SmsSendingManager implements SmsSendingService {
             // todo: store this result somewhere in the cache so an integrated test can check it
             User testMessageUser = (userRepository.existsByPhoneNumber(testMessagePhone)) ?
                     userRepository.findByPhoneNumber(testMessagePhone) :
-                    userRepository.save(new User(testMessagePhone));
+                    userRepository.save(new User(AppIdGenerator.generateId(), testMessagePhone));
             Event messageEvent = eventRepository.save(new Event(testMessageUser, EventType.DummyEvent));
             EventLog messageRecord = new EventLog(testMessageUser, messageEvent, EventLogType.EventTest, message);
             log.info("Saving a dummy EventLog ... " + messageRecord);
