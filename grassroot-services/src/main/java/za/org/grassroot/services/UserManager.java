@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -21,7 +20,6 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.core.util.AppIdGenerator;
 import za.org.grassroot.core.util.MaskingUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
@@ -33,7 +31,6 @@ import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
 
 /**
  * @author Lesetse Kimwaga
@@ -186,7 +183,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public User loadOrSaveUser(String inputNumber) {
         String phoneNumber = PhoneNumberUtil.convertPhoneNumber(inputNumber);
         if (!userExist(phoneNumber)) {
-            User sessionUser = new User(AppIdGenerator.generateId(), phoneNumber);
+            User sessionUser = new User(phoneNumber);
             sessionUser.setUsername(phoneNumber);
             User newUser = userRepository.save(sessionUser);
             asyncUserService.recordUserLog(newUser.getId(), UserLogType.CREATED_IN_DB, "Created via loadOrSaveUser");
@@ -303,7 +300,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         for (String inputNumber : listOfNumbers) {
             String phoneNumber = PhoneNumberUtil.convertPhoneNumber(inputNumber);
             if (!userExist(phoneNumber)) {
-                User userToCreate = userRepository.save(new User(AppIdGenerator.generateId(), phoneNumber));
+                User userToCreate = userRepository.save(new User(phoneNumber));
                 usersToAdd.add(userToCreate);
                 asyncUserService.recordUserLog(userToCreate.getId(), UserLogType.CREATED_IN_DB, "Created via multi member add");
             } else {

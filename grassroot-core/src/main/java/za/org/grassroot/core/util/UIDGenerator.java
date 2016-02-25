@@ -2,8 +2,8 @@ package za.org.grassroot.core.util;
 
 import java.util.UUID;
 
-public class AppIdGenerator {
-    private AppIdGenerator() {
+public class UIDGenerator {
+    private UIDGenerator() {
         // utility
     }
 

@@ -16,7 +16,6 @@ import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.PaidGroup;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.util.AppIdGenerator;
 
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
@@ -62,7 +61,7 @@ public class PaidGroupRepositoryTest {
     @Before
     public void setUp() throws Exception {
 
-        testUser = userRepository.save(new User(AppIdGenerator.generateId(), testPhoneNumber));
+        testUser = userRepository.save(new User(testPhoneNumber));
         testGroup = groupRepository.save(new Group(testGroupName, testUser));
         testGroup2 = groupRepository.save(new Group(testGroupName + "2", testUser));
         testAccount = accountRepository.save(new Account(testAccountName, true));

@@ -13,7 +13,6 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.core.util.AppIdGenerator;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.webapp.util.USSDUrlUtil;
 
@@ -68,7 +67,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
                 .setViewResolvers(viewResolver())
                 .build();
         wireUpMessageSourceAndGroupUtil(ussdLogBookController, ussdGroupUtil);
-        testUser = new User(AppIdGenerator.generateId(), testUserPhone);
+        testUser = new User(testUserPhone);
         testUser.setId(dummyId);
 
     }

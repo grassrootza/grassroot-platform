@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.webapp.controller.BaseController;
@@ -45,8 +46,8 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void createVoteWorksWhenGroupIdSpecified() throws Exception {
+        Group testGroup = new Group("Dummy Group3", new User("234345345"));
 
-        Group testGroup = new Group();
         testGroup.setId(dummyId);
         List<Group> testPossibleGroups = new ArrayList<>();
         testPossibleGroups.add(testGroup);
@@ -68,7 +69,8 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void createVoteWorksWhengroupNotSpecified() throws Exception {
-        Group testGroup = new Group();
+        Group testGroup = new Group("Dummy Group3", new User("234345345"));
+
         testGroup.setId(dummyId);
         List<Group> testPossibleGroups = new ArrayList<>();
         testPossibleGroups.add(testGroup);
@@ -89,7 +91,8 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
 
         Event testVote = new Event(sessionTestUser, EventType.Vote, true);
         testVote.setId(dummyId);
-        Group testGroup = new Group();
+        Group testGroup = new Group("Dummy Group3", new User("234345345"));
+
         testGroup.setId(dummyId);
         when(groupManagementServiceMock.canUserCallVote(dummyId, sessionTestUser)).thenReturn(true);
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);

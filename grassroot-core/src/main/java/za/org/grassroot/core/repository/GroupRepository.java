@@ -31,6 +31,9 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     Find the last group created by a specific user
      */
     Group findFirstByCreatedByUserOrderByIdDesc(User createdByUser);
+
+    Group findOneByUid(String uid);
+
     /*
     Get the sub-groups for a specific group
     one level only

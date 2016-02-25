@@ -15,7 +15,6 @@ import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.enums.UserLogType;
-import za.org.grassroot.core.util.AppIdGenerator;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -46,7 +45,7 @@ public class UserLogRepositoryTest {
     @Test
     public void shouldSaveAndRetrieveUserLogs() {
         assertThat(userLogRepository.count(), is(0L));
-        User testUser = userRepository.save(new User(AppIdGenerator.generateId(), "0605551111"));
+        User testUser = userRepository.save(new User("0605551111"));
         UserLog createLog = userLogRepository.save(new UserLog(testUser.getId(), UserLogType.CREATED_IN_DB));
         testUser.setHasInitiatedSession(true);
         testUser.setHasWebProfile(true);
@@ -71,7 +70,7 @@ public class UserLogRepositoryTest {
         Timestamp now = Timestamp.valueOf(LocalDateTime.now());
         Sort sort = new Sort(Sort.Direction.ASC, "createdDateTime");
 
-        User testUser = new User(AppIdGenerator.generateId(), "0605550000");
+        User testUser = new User("0605550000");
         testUser.setCreatedDateTime(twoMonths);
         testUser = userRepository.save(testUser);
         UserLog createdLog = new UserLog(testUser.getId(), UserLogType.CREATED_IN_DB, "Created the user");

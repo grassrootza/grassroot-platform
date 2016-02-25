@@ -18,7 +18,6 @@ import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.core.util.AppIdGenerator;
 import za.org.grassroot.services.util.CacheUtilService;
 
 import javax.jws.soap.SOAPBinding;
@@ -129,7 +128,7 @@ public class EventLogManager implements EventLogManagementService {
             // put values in the fields so that rest method does not NPE
             eventLog.setId(0L);
             eventLog.setEvent(new Event());
-            eventLog.setUser(new User(AppIdGenerator.generateId()));
+            eventLog.setUser(User.makeEmpty());
 
         }
 

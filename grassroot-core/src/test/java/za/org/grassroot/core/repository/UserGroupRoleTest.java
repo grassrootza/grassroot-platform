@@ -13,7 +13,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.util.AppIdGenerator;
 
 
 import static org.hamcrest.Matchers.*;
@@ -47,7 +46,7 @@ public class UserGroupRoleTest {
     @Ignore
     public void testCreateGroupRoles() throws Exception {
 
-        User user = new User(AppIdGenerator.generateId(), "27729100003");
+        User user = new User("27729100003");
         user.setFirstName("Java");
         user.setLastName("Pablo");
 

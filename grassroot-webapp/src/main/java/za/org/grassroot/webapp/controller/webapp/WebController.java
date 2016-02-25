@@ -45,7 +45,7 @@ public class WebController {
     public String userHome(@RequestParam(value="input_number") String inputNumber,
                            @RequestParam(value="display_name", required=false) String displayName, Model model) {
 
-        User sessionUser = new User(AppIdGenerator.generateId());
+        User sessionUser = User.makeEmpty();
 
         try {
             sessionUser = userManager.findByInputNumber(inputNumber);
@@ -78,7 +78,7 @@ public class WebController {
     public String createUser(@RequestParam(value = "input_number") String inputNumber, Model model) {
         ///web/find_group
 
-        User user = new User(AppIdGenerator.generateId());
+        User user = User.makeEmpty();
         user.setPhoneNumber(inputNumber);
         user = userRepository.save(user);
 
@@ -163,7 +163,7 @@ public class WebController {
     @RequestMapping(value="/web/group/new") // to create a new group (with forms & drop-down boxes)
     public String newGroupForm(@RequestParam(value="user_id", required=true) Long userId, Model model) {
 
-        User sessionUser = new User(AppIdGenerator.generateId());
+        User sessionUser = User.makeEmpty();
         try { sessionUser = userRepository.findOne(userId); }
         catch (Exception e) { return "user_error"; }
 
@@ -179,7 +179,7 @@ public class WebController {
                                  @RequestParam(value="group_name", required=true) String groupName,
                                  HttpServletRequest request, Model model) {
 
-        User sessionUser, userToCreate = new User(AppIdGenerator.generateId());
+        User sessionUser, userToCreate = User.makeEmpty();
         try { sessionUser = userRepository.findOne(userId); }
         catch (Exception e) { return "user_error"; }
 
