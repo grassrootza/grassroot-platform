@@ -11,7 +11,6 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 import za.org.grassroot.GrassRootServicesConfig;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.util.AppIdGenerator;
 import za.org.grassroot.services.UserManagementService;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -33,13 +32,8 @@ public class UserManagementServiceTest {
 
     @Test
     public void testName() throws Exception {
-
-        User userProfile = new User(AppIdGenerator.generateId());
-        userProfile.setDisplayName("Grass Root");
-        userProfile.setPhoneNumber("1201994");
-
+        User userProfile = new User("1201994", "Grass Root");
         userProfile = userManagementService.createUserProfile(userProfile);
-
         assertThat(userProfile.getDisplayName(), equalTo("Grass Root"));
 
     }

@@ -1,10 +1,8 @@
 package za.org.grassroot.services.integration;
 
-import junit.framework.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -19,9 +17,7 @@ import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.core.util.AppIdGenerator;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
@@ -78,7 +74,7 @@ public class EventManagementServiceTest {
     @Test
     public void shouldSaveEventWithNameUserAndGroup() {
 
-        User userProfile = userManagementService.createUserProfile(new User(AppIdGenerator.generateId(), "111222333", "aap1"));
+        User userProfile = userManagementService.createUserProfile(new User("111222333", "aap1"));
         Group group = groupManagementService.createNewGroup(userProfile, Arrays.asList("111222444", "111222555"), false);
         Event event = eventManagementService.createEvent("Drink till you drop", userProfile, group);
         assertEquals("Drink till you drop", event.getName());
@@ -90,7 +86,7 @@ public class EventManagementServiceTest {
     @Test
     public void shouldSaveEventWithMinimumDataAndTriggerNotifications() {
         log.info("shouldSaveEventWithMinimumDataAndTriggerNotifications...starting...");
-        User userProfile = userManagementService.createUserProfile(new User(AppIdGenerator.generateId(), "111222555", "aap1"));
+        User userProfile = userManagementService.createUserProfile(new User("111222555", "aap1"));
         Group group = groupManagementService.createNewGroup(userProfile, Arrays.asList("111222666", "111222777"), false);
         Event event = eventManagementService.createEvent("Tell me about it", userProfile, group);
         event = eventManagementService.setLocation(event.getId(), "Lekker place");
@@ -103,7 +99,7 @@ public class EventManagementServiceTest {
     @Test
     public void shouldTriggerAddAndChangeNotifications() {
         log.info("shouldTriggerAddAndChangeNotifications...starting...");
-        User userProfile = userManagementService.createUserProfile(new User(AppIdGenerator.generateId(), "111222556", "aap1"));
+        User userProfile = userManagementService.createUserProfile(new User("111222556", "aap1"));
         Group group = groupManagementService.createNewGroup(userProfile, Arrays.asList("111222667", "111222778"), false);
         Event event = eventManagementService.createEvent("Tell me about it 2", userProfile, group);
         event = eventManagementService.setLocation(event.getId(), "Lekker place 2");
@@ -117,7 +113,7 @@ public class EventManagementServiceTest {
     @Test
     public void shouldTriggerAddAndCancelNotifications() {
         log.info("shouldTriggerAddAndCancelNotifications...starting...");
-        User userProfile = userManagementService.createUserProfile(new User(AppIdGenerator.generateId(), "111222556", "aap1"));
+        User userProfile = userManagementService.createUserProfile(new User("111222556", "aap1"));
         Group group = groupManagementService.createNewGroup(userProfile, Arrays.asList("111222667", "111222778"), false);
         Event event = eventManagementService.createEvent("Tell me about it 2", userProfile, group);
         event = eventManagementService.setLocation(event.getId(), "Lekker place 2");
@@ -129,15 +125,15 @@ public class EventManagementServiceTest {
 
     @Test
     public void shouldReturnOutstandingRSVPEventForSecondLevelUserAndParentGroupEvent() {
-        User user = userRepository.save(new User(AppIdGenerator.generateId(), "0825555511"));
+        User user = userRepository.save(new User("0825555511"));
         Group grouplevel1 = groupRepository.save(new Group("rsvp level1",user));
-        User userl1 = userRepository.save(new User(AppIdGenerator.generateId(), "0825555512"));
+        User userl1 = userRepository.save(new User("0825555512"));
         grouplevel1.addMember(userl1);
         grouplevel1 = groupRepository.save(grouplevel1);
         Group grouplevel2 = groupRepository.save(new Group("rsvp level2",user));
         grouplevel2.setParent(grouplevel1);
         grouplevel2 = groupRepository.save(grouplevel2);
-        User userl2 = userRepository.save(new User(AppIdGenerator.generateId(), "0825555521"));
+        User userl2 = userRepository.save(new User("0825555521"));
         grouplevel2.addMember(userl2);
         grouplevel2 = groupRepository.save(grouplevel2);
         Event event = eventRepository.save(new Event("test rsvp required",user,grouplevel1,true,true));
@@ -152,15 +148,15 @@ public class EventManagementServiceTest {
     }
     @Test
     public void shouldNotReturnOutstandingRSVPEventForSecondLevelUserAndParentGroupEvent() {
-        User user = userRepository.save(new User(AppIdGenerator.generateId(), "0825555511"));
+        User user = userRepository.save(new User("0825555511"));
         Group grouplevel1 = groupRepository.save(new Group("rsvp level1",user));
-        User userl1 = userRepository.save(new User(AppIdGenerator.generateId(), "0825555512"));
+        User userl1 = userRepository.save(new User("0825555512"));
         grouplevel1.addMember(userl1);
         grouplevel1 = groupRepository.save(grouplevel1);
         Group grouplevel2 = groupRepository.save(new Group("rsvp level2",user));
         grouplevel2.setParent(grouplevel1);
         grouplevel2 = groupRepository.save(grouplevel2);
-        User userl2 = userRepository.save(new User(AppIdGenerator.generateId(), "0825555521"));
+        User userl2 = userRepository.save(new User("0825555521"));
         grouplevel2.addMember(userl2);
         grouplevel2 = groupRepository.save(grouplevel2);
         Event event = eventRepository.save(new Event("test rsvp required",user,grouplevel1,true,true));
@@ -176,7 +172,7 @@ public class EventManagementServiceTest {
 
     @Test
     public void shouldCreateVote() {
-        User user = userRepository.save(new User(AppIdGenerator.generateId(), "0831111111"));
+        User user = userRepository.save(new User("0831111111"));
         Event event = eventManagementService.createVote("Jacob is a nice guy to his friends",user);
         assertNotSame(0,event.getId());
         assertEquals(EventType.Vote,event.getEventType());

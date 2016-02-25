@@ -2,6 +2,7 @@ package za.org.grassroot.core.domain;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
@@ -28,7 +29,7 @@ public class User implements UserDetails {
     private Long id;
 
     @Column(name = "app_id", nullable = false, unique = true)
-    private String appId;
+    private String uid;
 
     @Column(name = "phone_number", nullable = false, length = 20, unique = true)
     private String phoneNumber;
@@ -83,24 +84,34 @@ public class User implements UserDetails {
     @Version
     private Integer version;
 
-    public User() {
+    private User() {
         // for JPA
     }
 
-    public User(String appId) {
-        this(appId, null);
+    public User(String phoneNumber) {
+        this(phoneNumber, null);
     }
 
-    public User(String appId, String phoneNumber) {
-        this(appId, phoneNumber, null);
-    }
-
-    public User(String appId, String phoneNumber, String displayName) {
-        this.appId = Objects.requireNonNull(appId);
+    public User(String phoneNumber, String displayName) {
+        this.uid = UIDGenerator.generateId();
         this.phoneNumber = phoneNumber;
         this.username = phoneNumber;
         this.displayName = displayName;
         this.languageCode = "en";
+    }
+
+    /**
+     * We use this static constructor because no-arg constructor should be only used by JPA
+     * @return user
+     */
+    public static User makeEmpty() {
+        return makeEmpty(UIDGenerator.generateId());
+    }
+
+    public static User makeEmpty(String uid) {
+        User user = new User();
+        user.uid = uid;
+        return user;
     }
 
     public Long getId() {
@@ -111,12 +122,12 @@ public class User implements UserDetails {
         this.id = id;
     }
 
-    public String getAppId() {
-        return appId;
+    public String getUid() {
+        return uid;
     }
 
-    void setAppId(String appId) {
-        this.appId = appId;
+    void setUid(String uid) {
+        this.uid = uid;
     }
 
     public String getFirstName() {
@@ -369,7 +380,7 @@ public class User implements UserDetails {
 
         User user = (User) o;
 
-        if (appId != null ? !appId.equals(user.appId) : user.appId != null) {
+        if (uid != null ? !uid.equals(user.uid) : user.uid != null) {
             return false;
         }
 
@@ -378,14 +389,14 @@ public class User implements UserDetails {
 
     @Override
     public int hashCode() {
-        return appId != null ? appId.hashCode() : 0;
+        return uid != null ? uid.hashCode() : 0;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("User{");
         sb.append("id=").append(id);
-        sb.append(", appId='").append(appId).append('\'');
+        sb.append(", uid='").append(uid).append('\'');
         sb.append(", phoneNumber='").append(phoneNumber).append('\'');
         sb.append(", firstName='").append(firstName).append('\'');
         sb.append(", lastName='").append(lastName).append('\'');

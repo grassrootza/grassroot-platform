@@ -253,6 +253,11 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
+    public Group loadGroupByUid(String uid) {
+        return groupRepository.findOneByUid(uid);
+    }
+
+    @Override
     public String getGroupName(Long groupId) {
         return loadGroup(groupId).getName("");
     }
