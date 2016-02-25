@@ -878,6 +878,10 @@ public class EventManager implements EventManagementService {
 
         if (priorEventIncompleteOrBlocked && savedEventOkayToSend) {
 
+            //so that the attendance tally adds up
+            if(savedEvent.getEventType() == EventType.Meeting){
+                eventLogManagementService.rsvpForEvent(savedEvent,savedEvent.getCreatedByUser(),EventRSVPResponse.YES);
+            }
             jmsTemplateProducerService.sendWithNoReply("event-added", new EventDTO(savedEvent));
             log.info("queued to event-added..." + savedEvent.getId() + "...version..." + savedEvent.getVersion());
             //todo do the same for changes???
