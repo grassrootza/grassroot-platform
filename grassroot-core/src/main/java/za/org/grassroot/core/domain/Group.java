@@ -2,8 +2,6 @@ package za.org.grassroot.core.domain;
 
 //TODO level so that we can block too many levels
 
-import org.apache.commons.collections4.FactoryUtils;
-import org.apache.commons.collections4.list.LazyList;
 import za.org.grassroot.core.util.AppIdGenerator;
 
 import javax.persistence.*;
@@ -34,7 +32,7 @@ public class Group implements Serializable {
 
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinTable(name = "group_user_membership", joinColumns = @JoinColumn(name = "group_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
-    private List<User> groupMembers = LazyList.lazyList(new ArrayList<>(), FactoryUtils.instantiateFactory(User.class));
+    private List<User> groupMembers = new ArrayList<>();
 
     @ManyToOne
     @JoinColumn(name = "parent")

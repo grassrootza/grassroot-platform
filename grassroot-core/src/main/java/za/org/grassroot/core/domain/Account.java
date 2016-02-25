@@ -37,7 +37,7 @@ public class Account implements Serializable {
     possibility, but until/unless we have (very) strong user demand, catering to it is not worth many-to-many overheads
      */
     @OneToMany(mappedBy = "accountAdministered")
-    private List<User> administrators = LazyList.lazyList(new ArrayList<>(), FactoryUtils.instantiateFactory(User.class));
+    private List<User> administrators = new ArrayList<>();
 
     @OneToMany(mappedBy = "account")
     private List<PaidGroup> paidGroups = LazyList.lazyList(new ArrayList<>(), FactoryUtils.instantiateFactory(PaidGroup.class));

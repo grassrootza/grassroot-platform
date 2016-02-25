@@ -83,7 +83,7 @@ public class User implements UserDetails {
     @Version
     private Integer version;
 
-    public User() {
+    private User() {
         // for JPA
     }
 

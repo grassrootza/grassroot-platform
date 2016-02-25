@@ -33,7 +33,7 @@ public class GroupWrapper {
 
     // private GroupPermissionTemplate template;
 
-    List<User> addedMembers = LazyList.lazyList(new ArrayList<>(), FactoryUtils.instantiateFactory(User.class));
+    private List<User> addedMembers = new ArrayList<>();
 
     // leaving out setters for group and parent as those are set at construction
 
