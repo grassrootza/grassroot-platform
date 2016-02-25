@@ -1,9 +1,7 @@
 package za.org.grassroot.core.repository;
 
-import edu.emory.mathcs.backport.java.util.Arrays;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
@@ -16,7 +14,6 @@ import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.PaidGroup;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.util.AppIdGenerator;
 
 import javax.transaction.Transactional;
 import java.util.List;
@@ -192,7 +189,7 @@ public class AccountRepositoryTest {
     public void shouldSaveAndFindAdministrator() {
 
         assertThat(accountRepository.count(), is(0L));
-        User testAdmin = new User(AppIdGenerator.generateId(), "0505550000");
+        User testAdmin = new User("0505550000");
         testAdmin = userRepository.save(testAdmin);
 
         Account account = new Account(accountName, testAdmin);
@@ -216,7 +213,7 @@ public class AccountRepositoryTest {
 
         assertThat(accountRepository.count(), is(0L));
 
-        User testUser = new User(AppIdGenerator.generateId(), "0505550000");
+        User testUser = new User("0505550000");
         testUser = userRepository.save(testUser);
         Group testGroup = new Group("testGroup", testUser);
         testGroup = groupRepository.save(testGroup);

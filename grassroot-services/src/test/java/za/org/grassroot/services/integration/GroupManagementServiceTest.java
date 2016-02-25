@@ -1,6 +1,5 @@
 package za.org.grassroot.services.integration;
 
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -12,7 +11,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.AbstractTransactionalJUnit4SpringContextTests;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.transaction.TestTransaction;
-import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.GrassRootServicesConfig;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
@@ -20,7 +18,6 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.core.util.AppIdGenerator;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
 
@@ -59,7 +56,7 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
      */
     @Test
     public void shouldDetectLoop() {
-        User user = userRepository.save(new User(AppIdGenerator.generateId(), "0824444441"));
+        User user = userRepository.save(new User("0824444441"));
         Group g1 = groupRepository.save(new Group("g1", user));
         Group g2 = groupRepository.save(new Group("g2", user, g1));
         assertEquals(true, groupManagementService.isGroupAlsoParent(g1, g2));
@@ -67,7 +64,7 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
 
     @Test
     public void shouldNotDetectLoop() {
-        User user = userRepository.save(new User(AppIdGenerator.generateId(), "0824444442"));
+        User user = userRepository.save(new User("0824444442"));
         Group g1 = groupRepository.save(new Group("g1", user));
         Group g2 = groupRepository.save(new Group("g2", user, g1));
         Group g3 = groupRepository.save(new Group("g3", user));
@@ -247,7 +244,7 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
     @Test
     public void shouldCreateSubGroup() {
 
-        User userProfile = userManagementService.createUserProfile(new User(AppIdGenerator.generateId(), "111111111", "aap1"));
+        User userProfile = userManagementService.createUserProfile(new User("111111111", "aap1"));
 
         Group level1 = groupManagementService.createNewGroup(userProfile, Arrays.asList("111111112", "111111113"), false);
         Group level2 = groupManagementService.createSubGroup(userProfile, level1, "level2 group");
@@ -257,7 +254,7 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
     //@Test
     public void shouldReturnGroupAndSubGroups() {
 
-        User userProfile = userManagementService.createUserProfile(new User(AppIdGenerator.generateId(), "111111111", "aap1"));
+        User userProfile = userManagementService.createUserProfile(new User("111111111", "aap1"));
 
         Group level1 = groupManagementService.createNewGroup(userProfile, Arrays.asList("111111112", "111111113"), false);
         Group level2 = groupManagementService.createSubGroup(userProfile, level1, "level2 group");

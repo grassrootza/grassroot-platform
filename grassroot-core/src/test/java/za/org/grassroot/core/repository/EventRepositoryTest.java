@@ -17,7 +17,6 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.util.AppIdGenerator;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.transaction.Transactional;
@@ -57,9 +56,7 @@ public class EventRepositoryTest {
         assertThat(eventRepository.count(), is(0L));
 
         Event eventToCreate = new Event();
-        User userToDoTests = new User(AppIdGenerator.generateId());
-
-        userToDoTests.setPhoneNumber("55555");
+        User userToDoTests = new User("55555");
         userRepository.save(userToDoTests);
 
         Group groupToDoTests = new Group("Test Group", userToDoTests);
@@ -116,7 +113,7 @@ public class EventRepositoryTest {
 
     @Test
     public void shouldReturnEventsForGroupAfterDate() {
-        User user = userRepository.save(new User(AppIdGenerator.generateId(), "0827654321"));
+        User user = userRepository.save(new User("0827654321"));
         Group group = groupRepository.save(new Group("events for group test",user));
         Event pastEvent = eventRepository.save(new Event("past event",user,group,false));
         Calendar cal = Calendar.getInstance();
@@ -143,7 +140,7 @@ public class EventRepositoryTest {
 
     @Test
     public void shouldReturnSameObjectOnSecondUpdate() {
-        User user = userRepository.save(new User(AppIdGenerator.generateId(), "085551234","test dup event user"));
+        User user = userRepository.save(new User("085551234","test dup event user"));
         Group group = groupRepository.save(new Group("test dup event",user));
         Event event = eventRepository.save(new Event("duplicate event test",user,group));
         event.setEventLocation("dup location");
@@ -154,7 +151,7 @@ public class EventRepositoryTest {
 
     @Test
     public void shouldFindOneFutureVote() {
-        User user = userRepository.save(new User(AppIdGenerator.generateId(), "0831111112"));
+        User user = userRepository.save(new User("0831111112"));
         Event vote = eventRepository.save(new Event(user, EventType.Vote,true));
         vote.setName("testing vote query");
         Date expiry = DateTimeUtil.roundHourUp(DateTimeUtil.addHoursToDate(new Date(), 1));
@@ -168,7 +165,7 @@ public class EventRepositoryTest {
 
     @Test
     public void shouldNotFindOneFutureVote() {
-        User user = userRepository.save(new User(AppIdGenerator.generateId(), "0831111113"));
+        User user = userRepository.save(new User("0831111113"));
         Event vote = eventRepository.save(new Event(user, EventType.Vote,true));
         vote.setName("testing vote query");
         Date expiry = DateTimeUtil.roundHourDown(new Date());
@@ -182,7 +179,7 @@ public class EventRepositoryTest {
 
     @Test
     public void shouldNotFindOneFutureVoteBecauseMeeting() {
-        User user = userRepository.save(new User(AppIdGenerator.generateId(), "0831111114"));
+        User user = userRepository.save(new User("0831111114"));
         Event vote = eventRepository.save(new Event(user, EventType.Meeting,true));
         vote.setName("testing vote query");
         Date expiry = DateTimeUtil.roundHourUp(DateTimeUtil.addHoursToDate(new Date(), 1));
@@ -196,7 +193,7 @@ public class EventRepositoryTest {
 
     @Test
     public void shouldIdentifyEventTypeVote() {
-        User user = userRepository.save(new User(AppIdGenerator.generateId(), "0831111115"));
+        User user = userRepository.save(new User("0831111115"));
         Event vote = eventRepository.save(new Event(user, EventType.Vote, true));
         assertEquals(EventType.Vote,vote.getEventType());
 
@@ -206,8 +203,8 @@ public class EventRepositoryTest {
     public void shouldFindEventsByUser() {
 
         assertThat(eventRepository.count(), is(0L));
-        User user1 = userRepository.save(new User(AppIdGenerator.generateId(), "0831111115"));
-        User user2 = userRepository.save(new User(AppIdGenerator.generateId(), "0831111116"));
+        User user1 = userRepository.save(new User("0831111115"));
+        User user2 = userRepository.save(new User("0831111116"));
 
         Group group = groupRepository.save(new Group("tg1", user1));
         group = groupRepository.save(group.addMember(user1));
@@ -240,7 +237,7 @@ public class EventRepositoryTest {
     public void ShouldFindEventsByUserAndTimeStamp() {
 
         assertThat(eventRepository.count(), is(0L));
-        User user = userRepository.save(new User(AppIdGenerator.generateId(), "0831111115"));
+        User user = userRepository.save(new User("0831111115"));
         Group group = groupRepository.save(new Group("tg1", user));
         group = groupRepository.save(group.addMember(user));
 
@@ -291,7 +288,7 @@ public class EventRepositoryTest {
     public void shouldFindEventsByGroupBetweenTimestamps() {
 
         assertThat(eventRepository.count(), is(0L));
-        User user = userRepository.save(new User(AppIdGenerator.generateId(), "0813330000"));
+        User user = userRepository.save(new User("0813330000"));
         Group group1 = groupRepository.save(new Group("tg1", user));
         Group group2 = groupRepository.save(new Group("tg2", user));
 
@@ -348,8 +345,8 @@ public class EventRepositoryTest {
 
         assertThat(eventRepository.count(), is(0L));
 
-        User user = userRepository.save(new User(AppIdGenerator.generateId(), "0710001111"));
-        User user2 = userRepository.save(new User(AppIdGenerator.generateId(), "0810001111"));
+        User user = userRepository.save(new User("0710001111"));
+        User user2 = userRepository.save(new User("0810001111"));
         Group group = groupRepository.save(new Group("tg1", user));
         group = groupRepository.save(group.addMember(user));
         Group group2 = groupRepository.save(new Group("tg2", user2));

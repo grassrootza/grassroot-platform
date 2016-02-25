@@ -3,14 +3,12 @@ package za.org.grassroot.webapp.controller.webapp;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.web.servlet.MvcResult;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.GroupLogType;
-import za.org.grassroot.core.util.AppIdGenerator;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
@@ -50,10 +48,10 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void viewGroupIndexWorks() throws Exception {
-        Group dummyGroup = new Group("Dummy Group2", new User(AppIdGenerator.generateId(), "234345345"));
+        Group dummyGroup = new Group("Dummy Group2", new User("234345345"));
         dummyGroup.setId(dummyId);
 
-        Group dummySubGroup = new Group("Dummy Group3", new User(AppIdGenerator.generateId(), "234345345"));
+        Group dummySubGroup = new Group("Dummy Group3", new User("234345345"));
 
         dummyGroup.addMember(sessionTestUser);
         List<Group> subGroups = Arrays.asList(dummySubGroup);
@@ -162,7 +160,8 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void addMemberFailsValidation() throws Exception {
         GroupWrapper groupCreator = new GroupWrapper();
-        groupCreator.addMember(new User(AppIdGenerator.generateId()));
+        User user = new User("100001");
+        groupCreator.addMember(user);
         mockMvc.perform(post("/group/create").param("addMember", "")
                 .sessionAttr("groupCreator", groupCreator))
                 .andExpect(status().isOk())
@@ -172,7 +171,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void modifyGroupWorks() throws Exception {
-        Group dummyGroup = new Group("Dummy Group", new User(AppIdGenerator.generateId(), "234345345"));
+        Group dummyGroup = new Group("Dummy Group", new User("234345345"));
         dummyGroup.addMember(sessionTestUser);
         List<Group> testGroupPartOf = new ArrayList<>();
         testGroupPartOf.add(dummyGroup);
@@ -193,7 +192,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void removeMemberWorks() throws Exception {
         GroupWrapper groupCreator = new GroupWrapper();
-        groupCreator.addMember(new User(AppIdGenerator.generateId()));
+        groupCreator.addMember(new User("100001"));
         mockMvc.perform(post("/group/create").param("removeMember", String.valueOf(0)).param("removeMember", "")
                 .sessionAttr("groupCreator", groupCreator))
                 .andExpect(status().isOk()).andExpect(view().name("group/create"));
@@ -212,7 +211,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void addMemberModifyFails() throws Exception {
         GroupWrapper groupCreator = new GroupWrapper();
-        groupCreator.addMember(new User(AppIdGenerator.generateId()));
+        groupCreator.addMember(new User("100001"));
         MvcResult result = mockMvc.perform(post("/group/modify").param("addMember", "")
                 .sessionAttr("groupModifier", groupCreator))
                 .andExpect(status().isOk())
@@ -240,7 +239,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void modifyGroupDoWorks() throws Exception {
-        Group testGroup = new Group("Dummy Group", new User(AppIdGenerator.generateId(), "234345345"));
+        Group testGroup = new Group("Dummy Group", new User("234345345"));
         GroupWrapper groupModifier = new GroupWrapper(testGroup);
         groupModifier.setGroupName("DummyGroup");
         testGroup.setId(dummyId);
@@ -269,7 +268,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void newTokenWorks() throws Exception {
-        Group testGroup = new Group("Dummy Group", new User(AppIdGenerator.generateId(), "234345345"));
+        Group testGroup = new Group("Dummy Group", new User("234345345"));
         testGroup.setId(dummyId);
         List<Group> testGroupspartOf = new ArrayList<>();
         testGroupspartOf.add(testGroup);
@@ -288,7 +287,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void extendTokenWorks() throws Exception {
-        Group group = new Group("someGroupname", new User(AppIdGenerator.generateId(), "234345345"));
+        Group group = new Group("someGroupname", new User("234345345"));
         group.setId(dummyId);
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(group);
         mockMvc.perform(post("/group/modify").param("token_extend", "").param("groupId", String.valueOf(dummyId)))
@@ -301,7 +300,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void cancelTokenWorks() throws Exception {
-        Group group = new Group("someGroupname", new User(AppIdGenerator.generateId(), "234345345"));
+        Group group = new Group("someGroupname", new User("234345345"));
         group.setId(dummyId);
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(group);
         mockMvc.perform(post("/group/modify").param("token_cancel", "").param("groupId", String.valueOf(dummyId)))
@@ -315,7 +314,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void createGroupTokenWorks() throws Exception {
         String[] actions = {"create", "extend", "close"};
-        Group testGroup = new Group("someGroupname", new User(AppIdGenerator.generateId(), "234345345"));
+        Group testGroup = new Group("someGroupname", new User("234345345"));
         testGroup.setTokenExpiryDateTime(Timestamp.from(Instant.now()));
         Integer days = 5;
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
@@ -337,7 +336,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void requestGroupLanguageWorks() throws Exception {
-        Group testGroup = new Group("Dummy Group", new User(AppIdGenerator.generateId(), "234345345"));
+        Group testGroup = new Group("Dummy Group", new User("234345345"));
         testGroup.setId(dummyId);
         LinkedHashMap<String, String> testImplementedLanguages = new LinkedHashMap<>();
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
@@ -354,9 +353,9 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void listPossibleParentsWorks() throws Exception {
-        Group testChildGroup = new Group("someGroup", new User(AppIdGenerator.generateId(), "234345345"));
+        Group testChildGroup = new Group("someGroup", new User("234345345"));
 
-        Group testParentGroup = new Group("someParent", new User(AppIdGenerator.generateId(), "234345345"));
+        Group testParentGroup = new Group("someParent", new User("234345345"));
         testParentGroup.setId(dummyId);
         testChildGroup.setParent(testParentGroup);
         List<Group> testUsergroups = new ArrayList<>();
@@ -377,9 +376,9 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void linkToParentWorks() throws Exception {
-        Group testGroup = new Group("someGroupname", new User(AppIdGenerator.generateId(), "234345345"));
+        Group testGroup = new Group("someGroupname", new User("234345345"));
 
-        Group testParent = new Group("someParentGroup", new User(AppIdGenerator.generateId(), "234345345"));
+        Group testParent = new Group("someParentGroup", new User("234345345"));
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
         when(groupManagementServiceMock.loadGroup(0L)).thenReturn(testParent);
         when(groupManagementServiceMock.linkSubGroup(testGroup, testParent)).thenReturn(testGroup);
@@ -397,8 +396,8 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void selectConsolidateWorksWhenMergeCandidateHasEntries() throws Exception {
-        List<Group> testCandidateGroups = Arrays.asList(new Group("Dummy Group", new User(AppIdGenerator.generateId(), "234345345")));
-        Group testGroup = new Group("Dummy Group2", new User(AppIdGenerator.generateId(), "234345345"));
+        List<Group> testCandidateGroups = Arrays.asList(new Group("Dummy Group", new User("234345345")));
+        Group testGroup = new Group("Dummy Group2", new User("234345345"));
 
         testGroup.setId(dummyId);
         when(groupManagementServiceMock.getMergeCandidates(sessionTestUser, dummyId)).thenReturn(testCandidateGroups);
@@ -430,11 +429,11 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void consolidateGroupConfirmWorks() throws Exception {
-        Group testGroupInto = new Group("someGroupname", new User(AppIdGenerator.generateId(), "234345345"));
+        Group testGroupInto = new Group("someGroupname", new User("234345345"));
         testGroupInto.setId(1L);
 
 //        Group testGroupFrom = new Group();
-        Group testGroupFrom = new Group("someGroupname", new User(AppIdGenerator.generateId(), "234345345"));
+        Group testGroupFrom = new Group("someGroupname", new User("234345345"));
         testGroupFrom.setId(0L);
         testGroupFrom.addMember(sessionTestUser);
 
@@ -475,12 +474,12 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void groupsConsolidateDoWorks() throws Exception {
-        Group testGroupInto = new Group("someGroupname", new User(AppIdGenerator.generateId(), "234345345"));
+        Group testGroupInto = new Group("someGroupname", new User("234345345"));
 
         testGroupInto.setId(0L);
-        testGroupInto.addMember(new User(AppIdGenerator.generateId()));
+        testGroupInto.addMember(new User("100001"));
 
-        Group testGroupFrom = new Group("someGroupname2", new User(AppIdGenerator.generateId(), "234345345"));
+        Group testGroupFrom = new Group("someGroupname2", new User("234345345"));
         testGroupFrom.addMember(sessionTestUser);
         testGroupFrom.setId(1L);
         when(groupManagementServiceMock.loadGroup(testGroupFrom.getId())).thenReturn(testGroupFrom);
@@ -504,7 +503,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void confirmDeleteWorks() throws Exception {
-        Group group = new Group("someGroupname", new User(AppIdGenerator.generateId(), "234345345"));
+        Group group = new Group("someGroupname", new User("234345345"));
         group.setId(dummyId);
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(group);
         when(groupManagementServiceMock.canUserMakeGroupInactive(sessionTestUser, group)).thenReturn(true);
@@ -519,7 +518,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void deleteGroupWorksWithConfirmFieldValueValid() throws Exception {
-        Group group = new Group("someGroupname", new User(AppIdGenerator.generateId(), "234345345"));
+        Group group = new Group("someGroupname", new User("234345345"));
 
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(group);
         when(groupManagementServiceMock.canUserMakeGroupInactive(sessionTestUser, group)).thenReturn(true);
@@ -537,7 +536,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void deleteGroupWorksWithConfirmFieldValueInvalid() throws Exception {
 
-        Group group = new Group("someGroupname", new User(AppIdGenerator.generateId(), "234345345"));
+        Group group = new Group("someGroupname", new User("234345345"));
         when(userManagementServiceMock.getUserById(sessionTestUser.getId())).thenReturn(sessionTestUser);
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(group);
         when(groupManagementServiceMock.isUserInGroup(group, sessionTestUser)).thenReturn(true);
@@ -562,7 +561,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void unSubscribeWorks() throws Exception {
-        Group testGroup = new Group("Dummy Group2", new User(AppIdGenerator.generateId(), "234345345"));
+        Group testGroup = new Group("Dummy Group2", new User("234345345"));
         testGroup.setId(dummyId);
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
         mockMvc.perform(get("/group/unsubscribe").param("groupId", String.valueOf(dummyId)))
@@ -575,7 +574,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void unSubgroupWorks() throws Exception {
-        Group testGroup = new Group("Dummy Group2", new User(AppIdGenerator.generateId(), "234345345"));
+        Group testGroup = new Group("Dummy Group2", new User("234345345"));
         testGroup.setId(dummyId);
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
         when(userManagementServiceMock.loadUser(sessionTestUser.getId())).thenReturn(sessionTestUser);
@@ -596,7 +595,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void groupHistoryThisMonthShouldWork() throws Exception {
 
-        Group testGroup = new Group("someGroupname", new User(AppIdGenerator.generateId(), "234345345"));
+        Group testGroup = new Group("someGroupname", new User("234345345"));
         testGroup.setId(dummyId);
         testGroup.addMember(sessionTestUser);
         sessionTestUser.setGroupsPartOf(Arrays.asList(testGroup));
@@ -646,7 +645,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void groupHistoryLastMonthShouldWork() throws Exception {
 
-        Group testGroup = new Group("someGroupname", new User(AppIdGenerator.generateId(), "234345345"));
+        Group testGroup = new Group("someGroupname", new User("234345345"));
 
         testGroup.setId(dummyId);
         testGroup.addMember(sessionTestUser);
@@ -702,11 +701,11 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         numbers_to_be_added.add("27833403013");
         numbers_to_be_added.add("27799814669");
         List<User> testUsers = Arrays.asList(
-                new User(AppIdGenerator.generateId(), "27616780986"),
-                new User(AppIdGenerator.generateId(), "27833403013"),
-                new User(AppIdGenerator.generateId(), "27799814669"));
+                new User("27616780986"),
+                new User("27833403013"),
+                new User("27799814669"));
 
-        Group testGroup = new Group("someGroupName", new User(AppIdGenerator.generateId(), "27616780989"));
+        Group testGroup = new Group("someGroupName", new User("27616780989"));
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
    //     when(userManagementServiceMock.getExistingUsersFromNumbers(numbers_to_be_added)).thenReturn(testUsers);
         when(groupManagementServiceMock.addMembersToGroup(dummyId,testUsers,true)).thenReturn(testGroup);

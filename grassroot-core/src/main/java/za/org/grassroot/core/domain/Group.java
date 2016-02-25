@@ -2,7 +2,7 @@ package za.org.grassroot.core.domain;
 
 //TODO level so that we can block too many levels
 
-import za.org.grassroot.core.util.AppIdGenerator;
+import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -84,9 +84,6 @@ public class Group implements Serializable {
     @Column(name = "discoverable")
     private boolean discoverable;
 
-    /*
-    Constructors
-     */
     private Group() {
         // for JPA
     }
@@ -96,7 +93,7 @@ public class Group implements Serializable {
     }
 
     public Group(String groupName, User createdByUser, Group parent) {
-        this.uid = AppIdGenerator.generateId();
+        this.uid = UIDGenerator.generateId();
         this.groupName = groupName;
         this.createdByUser = createdByUser;
         this.active = true;
@@ -105,12 +102,12 @@ public class Group implements Serializable {
     }
 
     /**
-     * We use this static constructor because
-     * @return
+     * We use this static constructor because no-arg constructor should be only used by JPA
+     * @return group
      */
     public static Group makeEmpty() {
         Group group = new Group();
-        group.uid = AppIdGenerator.generateId();
+        group.uid = UIDGenerator.generateId();
         group.active = true;
         return group;
     }

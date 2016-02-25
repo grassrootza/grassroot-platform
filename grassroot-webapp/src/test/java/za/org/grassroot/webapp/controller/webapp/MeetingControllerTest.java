@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.core.util.AppIdGenerator;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,7 +43,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
          Event dummyMeeting = new Event();
 
-         Group dummyGroup = new Group("Dummy Group3", new User(AppIdGenerator.generateId(), "234345345"));
+         Group dummyGroup = new Group("Dummy Group3", new User("234345345"));
         dummyMeeting.setId(dummyId);
          dummyMeeting.setAppliesToGroup(dummyGroup);
 
@@ -81,7 +80,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         Event dummyMeeting = new Event();
         dummyMeeting.setId(1L);
 
-        Group dummyGroup = new Group("Dummy Group3", new User(AppIdGenerator.generateId(), "234345345"));
+        Group dummyGroup = new Group("Dummy Group3", new User("234345345"));
         dummyGroup.setId(dummyId);
       //  when(groupManagementServiceMock.canUserCallMeeting(dummyId, sessionTestUser)).thenReturn(true);
         when(eventManagementServiceMock.updateEvent(dummyMeeting)).thenReturn(
@@ -198,7 +197,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void sendFreeMsgWorks() throws Exception {
-        Group dummyGroup = new Group("Dummy Group3", new User(AppIdGenerator.generateId(), "234345345"));
+        Group dummyGroup = new Group("Dummy Group3", new User("234345345"));
         dummyGroup.setId(dummyId);
         Event testEvent = new Event();
         testEvent.setId(dummyId);
@@ -229,7 +228,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         Group testGroup = new Group("tg1", sessionTestUser);
         testGroup.setId(dummyId);
         dummyMeeting.setAppliesToGroup(testGroup);
-        List<User> listOfDummyYesResponses = Arrays.asList(new User(AppIdGenerator.generateId(), "", "testUser"));
+        List<User> listOfDummyYesResponses = Arrays.asList(new User("", "testUser"));
         when(groupManagementServiceMock.canUserCallMeeting(dummyId, sessionTestUser)).thenReturn(true);
         when(eventManagementServiceMock.loadEvent(dummyMeeting.getId())).thenReturn(dummyMeeting);
         when(eventManagementServiceMock.getListOfUsersThatRSVPYesForEvent(dummyMeeting)).thenReturn(listOfDummyYesResponses);
@@ -314,7 +313,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     }
     @Test
     public void sendFreeFormWorksWithGroupId() throws Exception {
-        User testUser = new User(AppIdGenerator.generateId(), "", "testUser");
+        User testUser = new User("", "testUser");
         testUser.setId(dummyId);
         Group testGroup = new Group("", testUser);
         testGroup.setId(dummyId);

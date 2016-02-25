@@ -1,11 +1,9 @@
 package za.org.grassroot.services.integration;
 
-import junit.framework.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
@@ -20,7 +18,6 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.core.util.AppIdGenerator;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.MeetingNotificationService;
 
@@ -82,7 +79,7 @@ public class NotificationServiceTest {
 
     @Test
     public void shouldGiveEnglishMeetingMessage() {
-        User  user  = userRepository.save(new User(AppIdGenerator.generateId(), "27817770000"));
+        User  user  = userRepository.save(new User("27817770000"));
         Group group = groupManagementService.createNewGroup(user, Arrays.asList("0828888888", "0829999999"), false);
         Event event = eventRepository.save(new Event("Drink till you drop", user, group));
         event.setEventLocation("Ellispark");
@@ -94,7 +91,7 @@ public class NotificationServiceTest {
 
     @Test
     public void shouldGiveEnglishChangeMeetingMessage() {
-        User user = userRepository.save(new User(AppIdGenerator.generateId(), "27817770000"));
+        User user = userRepository.save(new User("27817770000"));
         Group group = groupManagementService.createNewGroup(user, Arrays.asList("0828888888", "0829999999"), false);
         Event event = eventRepository.save(new Event("Drink till you drop",user,group));
         event.setEventLocation("Ellispark");
@@ -106,7 +103,7 @@ public class NotificationServiceTest {
 
     @Test
     public void shouldGiveEnglishCancelMeetingMessage() {
-        User user = userRepository.save(new User(AppIdGenerator.generateId(), "27817770000"));
+        User user = userRepository.save(new User("27817770000"));
         Group group = groupManagementService.createNewGroup(user, Arrays.asList("0828888888", "0829999999"), false);
         Event event = eventRepository.save(new Event("Drink till you drop",user,group));
         event.setEventLocation("Ellispark");

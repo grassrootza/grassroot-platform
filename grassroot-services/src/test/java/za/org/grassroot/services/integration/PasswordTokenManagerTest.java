@@ -15,7 +15,6 @@ import za.org.grassroot.GrassRootServicesConfig;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.VerificationTokenCode;
-import za.org.grassroot.core.util.AppIdGenerator;
 import za.org.grassroot.services.PasswordTokenManager;
 import za.org.grassroot.services.UserManagementService;
 
@@ -43,7 +42,7 @@ public class PasswordTokenManagerTest {
     @Repeat(5)
     public void testGenerateVerificationCode() throws Exception {
 
-        User user = userManagementService.createUserProfile(new User(AppIdGenerator.generateId(), "27700000"));
+        User user = userManagementService.createUserProfile(new User("27700000"));
 
         VerificationTokenCode verificationTokenCode = passwordTokenManager.generateVerificationCode(user);
 
@@ -54,7 +53,7 @@ public class PasswordTokenManagerTest {
     @Test
     public void testGenerateVerificationCode2() throws Exception {
 
-        User user = userManagementService.createUserProfile(new User(AppIdGenerator.generateId(), "27700000"));
+        User user = userManagementService.createUserProfile(new User("27700000"));
 
         VerificationTokenCode verificationTokenCode = passwordTokenManager.generateVerificationCode(user);
 

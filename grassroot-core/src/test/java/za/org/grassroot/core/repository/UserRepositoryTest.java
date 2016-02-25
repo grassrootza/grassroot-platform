@@ -15,7 +15,6 @@ import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.core.util.AppIdGenerator;
 
 /**
  * @author Lesetse Kimwaga
@@ -57,7 +56,7 @@ public class UserRepositoryTest {
     public void shouldSaveAndRetrieveUserData() throws Exception {
         assertThat(userRepository.count(), is(0L));
 
-        User userToCreate = new User(AppIdGenerator.generateId(), "12345");
+        User userToCreate = new User("12345");
         assertNull(userToCreate.getId());
         assertNull(userToCreate.getCreatedDateTime());
         userRepository.save(userToCreate);
@@ -73,7 +72,7 @@ public class UserRepositoryTest {
     public void shouldNotSaveDuplicatePhoneNumbersInUserTable() throws Exception {
         assertThat(userRepository.count(), is(0L));
 
-        User firstUserToCreate = new User(AppIdGenerator.generateId(), "12345");
+        User firstUserToCreate = new User("12345");
         firstUserToCreate = userRepository.save(firstUserToCreate);
 
 
@@ -82,7 +81,7 @@ public class UserRepositoryTest {
         assertThat(userFromDb.getPhoneNumber(), is("12345"));
 
 
-        User secondUserToCreate = new User(AppIdGenerator.generateId(), "12345");
+        User secondUserToCreate = new User("12345");
 
         userRepository.save(secondUserToCreate);
         fail("Saving a user with the phone number of an already existing user should throw an exception");
@@ -92,7 +91,7 @@ public class UserRepositoryTest {
 
     @Test
     public void shouldSaveAndFindByPhoneNumber() throws Exception {
-        User userToCreate = new User(AppIdGenerator.generateId(), "54321");
+        User userToCreate = new User("54321");
         assertNull(userToCreate.getId());
         assertNull(userToCreate.getCreatedDateTime());
         User savedUser = userRepository.save(userToCreate);
@@ -114,14 +113,14 @@ public class UserRepositoryTest {
 
     @Test
     public void shouldExist() {
-        userRepository.save(new User(AppIdGenerator.generateId(), "4444444"));
+        userRepository.save(new User("4444444"));
         assertEquals(true, userRepository.existsByPhoneNumber("4444444"));
     }
 
     @Test
     public void shouldReturnUserThatRSVPYes() {
-        User u1 = userRepository.save(new User(AppIdGenerator.generateId(), "0821234560"));
-        User u2 = userRepository.save(new User(AppIdGenerator.generateId(), "0821234561"));
+        User u1 = userRepository.save(new User("0821234560"));
+        User u2 = userRepository.save(new User("0821234561"));
         Group group = groupRepository.save(new Group("rsvp yes",u1));
         group.getGroupMembers().add(u2);
         group = groupRepository.save(group);
@@ -134,8 +133,8 @@ public class UserRepositoryTest {
 
     @Test
     public void shouldReturnUserThatRSVPNo() {
-        User u1 = userRepository.save(new User(AppIdGenerator.generateId(), "0821234570"));
-        User u2 = userRepository.save(new User(AppIdGenerator.generateId(), "0821234571"));
+        User u1 = userRepository.save(new User("0821234570"));
+        User u2 = userRepository.save(new User("0821234571"));
         Group group = groupRepository.save(new Group("rsvp yes",u1));
         group.getGroupMembers().add(u2);
         group = groupRepository.save(group);
@@ -150,7 +149,7 @@ public class UserRepositoryTest {
     @Test
     @Rollback
     public void shouldSaveAddedRole() {
-        User user = userRepository.save(new User(AppIdGenerator.generateId(), number));
+        User user = userRepository.save(new User(number));
         Role role = roleRepository.save(new Role("TEST_ROLE"));
         user.addRole(role);
         userRepository.save(user);
@@ -163,7 +162,7 @@ public class UserRepositoryTest {
     @Test
     @Rollback
     public void shouldRemoveRole() {
-        User user = userRepository.save(new User(AppIdGenerator.generateId(), number));
+        User user = userRepository.save(new User(number));
         Role role = roleRepository.save(new Role("TEST_ROLE"));
         user.addRole(role);
         user = userRepository.save(user);
@@ -183,11 +182,11 @@ public class UserRepositoryTest {
 
         String phoneBase = "080111000";
 
-        User user1 = userRepository.save(new User(AppIdGenerator.generateId(), phoneBase + "1", "tester1"));
-        User user2 = userRepository.save(new User(AppIdGenerator.generateId(), phoneBase + "2", "anonymous"));
-        User user3 = userRepository.save(new User(AppIdGenerator.generateId(), phoneBase + "3", "tester2"));
-        User user4 = userRepository.save(new User(AppIdGenerator.generateId(), "0701110001", "tester3"));
-        User user5 = userRepository.save(new User(AppIdGenerator.generateId(), "0701110002", "no name"));
+        User user1 = userRepository.save(new User(phoneBase + "1", "tester1"));
+        User user2 = userRepository.save(new User(phoneBase + "2", "anonymous"));
+        User user3 = userRepository.save(new User(phoneBase + "3", "tester2"));
+        User user4 = userRepository.save(new User("0701110001", "tester3"));
+        User user5 = userRepository.save(new User("0701110002", "no name"));
 
         Group testGroup = groupRepository.save(new Group("test group", user1));
         testGroup.getGroupMembers().add(user1);
@@ -227,9 +226,9 @@ public class UserRepositoryTest {
     public void shouldFindGroupMembersExcludingCreator() {
         String phoneBase = "080555000";
 
-        User testUser = userRepository.save(new User(AppIdGenerator.generateId(), phoneBase +" 1", "tester1"));
-        User user2 = userRepository.save(new User(AppIdGenerator.generateId(), phoneBase + "2", "anonymous"));
-        User user3 = userRepository.save(new User(AppIdGenerator.generateId(), phoneBase + "3", "tester2"));
+        User testUser = userRepository.save(new User(phoneBase +" 1", "tester1"));
+        User user2 = userRepository.save(new User(phoneBase + "2", "anonymous"));
+        User user3 = userRepository.save(new User(phoneBase + "3", "tester2"));
 
         Group testGroup = groupRepository.save(new Group("tg1", testUser));
         testGroup.addMember(testUser);
