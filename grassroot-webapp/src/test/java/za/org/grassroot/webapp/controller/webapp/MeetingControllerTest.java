@@ -43,7 +43,8 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     public void shouldShowMeetingDetails() throws Exception {
 
          Event dummyMeeting = new Event();
-         Group dummyGroup = new Group();
+
+         Group dummyGroup = new Group("Dummy Group3", new User(AppIdGenerator.generateId(), "234345345"));
         dummyMeeting.setId(dummyId);
          dummyMeeting.setAppliesToGroup(dummyGroup);
 
@@ -79,7 +80,8 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     public void testCreateMeetingWorks() throws Exception {
         Event dummyMeeting = new Event();
         dummyMeeting.setId(1L);
-        Group dummyGroup = new Group();
+
+        Group dummyGroup = new Group("Dummy Group3", new User(AppIdGenerator.generateId(), "234345345"));
         dummyGroup.setId(dummyId);
       //  when(groupManagementServiceMock.canUserCallMeeting(dummyId, sessionTestUser)).thenReturn(true);
         when(eventManagementServiceMock.updateEvent(dummyMeeting)).thenReturn(
@@ -196,7 +198,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void sendFreeMsgWorks() throws Exception {
-        Group dummyGroup = new Group();
+        Group dummyGroup = new Group("Dummy Group3", new User(AppIdGenerator.generateId(), "234345345"));
         dummyGroup.setId(dummyId);
         Event testEvent = new Event();
         testEvent.setId(dummyId);
@@ -332,7 +334,8 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void sendFreeFormWorksWithoutGroupId() throws Exception{
         Group testGroup = new Group("",sessionTestUser);
-        List<Group> dummyGroups = Arrays.asList(new Group("", sessionTestUser));
+        List<Group> dummyGroups = Arrays.asList(testGroup);
+
         when(groupManagementServiceMock.getActiveGroupsPartOf(sessionTestUser)).thenReturn(dummyGroups);
         when(groupManagementServiceMock.getActiveGroupsPartOf(sessionTestUser)).thenReturn(dummyGroups);
         sessionTestUser.setGroupsPartOf(dummyGroups);

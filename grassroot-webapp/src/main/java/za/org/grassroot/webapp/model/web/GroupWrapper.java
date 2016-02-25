@@ -8,6 +8,7 @@ import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Created by luke on 2015/09/13.
@@ -37,19 +38,17 @@ public class GroupWrapper {
     // leaving out setters for group and parent as those are set at construction
 
     public GroupWrapper() {
-        this.group = new Group();
+        this.group = Group.makeEmpty();
         this.generateToken = false;
         this.discoverable = false;
         // this.template = GroupPermissionTemplate.DEFAULT_GROUP;
     }
 
     public GroupWrapper(Group parentGroup) {
-        this.group = new Group();
-
-        // todo: make sure we never pass a null parent
+        this();
 
         this.hasParent = true;
-        this.parentGroup = parentGroup;
+        this.parentGroup = Objects.requireNonNull(parentGroup);
         this.parentId = parentGroup.getId();
         this.parentName = parentGroup.getGroupName();
         this.addedMembers.addAll(parentGroup.getGroupMembers());

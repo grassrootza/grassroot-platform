@@ -62,6 +62,8 @@ public interface GroupManagementService {
 
     public Group loadGroup(Long groupId);
 
+    public Group loadGroupByUid(String uid);
+
     public String getGroupName(Long groupId);
 
     public List<Group> getCreatedGroups(User creatingUser);

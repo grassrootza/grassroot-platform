@@ -61,10 +61,4 @@ public class MaskingUtil {
             maskedUsers.add(maskUser(user));
         return maskedUsers;
     }
-
-    public static Group maskGroup(Group group) {
-        Group maskedGroup = new Group();
-        return maskedGroup;
-    }
-
 }

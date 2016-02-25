@@ -324,7 +324,6 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
         resetTestUser();
 
-        Group testGroup1 = new Group();
         List<Group> testGroups = Arrays.asList(new Group("gc1", testUser),
                                                new Group("gc2", testUser),
                                                new Group("gc3", testUser),

@@ -47,13 +47,10 @@ public class GroupRepositoryTest {
 
         assertThat(groupRepository.count(), is(0L));
 
-        Group groupToCreate = new Group();
-
         User userToDoTests = new User(AppIdGenerator.generateId(), "56789");
         userRepository.save(userToDoTests);
 
-        groupToCreate.setGroupName("TestGroup");
-        groupToCreate.setCreatedByUser(userToDoTests);
+        Group groupToCreate = new Group("TestGroup", userToDoTests);
         assertNull(groupToCreate.getId());
         assertNull(groupToCreate.getCreatedDateTime());
         groupRepository.save(groupToCreate);
@@ -82,12 +79,11 @@ public class GroupRepositoryTest {
     @Test
     public void shouldSaveAndFindByCreatedUser() throws Exception {
 
-        Group groupToCreate = new Group();
         User userToDoTests = new User(AppIdGenerator.generateId());
         userToDoTests.setPhoneNumber("100001");
         userRepository.save(userToDoTests);
-        groupToCreate.setGroupName("TestGroup");
-        groupToCreate.setCreatedByUser(userToDoTests);
+
+        Group groupToCreate = new Group("TestGroup", userToDoTests);
         assertNull(groupToCreate.getId());
         assertNull(groupToCreate.getCreatedDateTime());
         groupRepository.save(groupToCreate);
@@ -102,13 +98,11 @@ public class GroupRepositoryTest {
 
         User userToDoTests = new User(AppIdGenerator.generateId(), "100002");
         userRepository.save(userToDoTests);
-        Group group1 = new Group();
-        group1.setGroupName("TestGroup1");
-        group1.setCreatedByUser(userToDoTests);
+
+        Group group1 = new Group("TestGroup1", userToDoTests);
         groupRepository.save(group1);
-        Group group2 = new Group();
-        group2.setGroupName("TestGroup2");
-        group2.setCreatedByUser(userToDoTests);
+
+        Group group2 = new Group("TestGroup2", userToDoTests);
         Group savedGroup2 = groupRepository.save(group2);
         Group groupFromDb = groupRepository.findFirstByCreatedByUserOrderByIdDesc(userToDoTests);
         log.finest("latest group........." + groupFromDb.toString());
@@ -286,7 +280,10 @@ public class GroupRepositoryTest {
     public void shouldSaveAndRetrievePaidFor() {
         assertThat(groupRepository.count(), is(0L));
         User user = userRepository.save(new User(AppIdGenerator.generateId(), "3331113333"));
-        Group group1 = groupRepository.save(new Group("paidGroup", user, true));
+
+        Group paidGroup = new Group("paidGroup", user);
+        paidGroup.setPaidFor(true);
+        Group group1 = groupRepository.save(paidGroup);
         Group group2 = groupRepository.save(new Group("unpaidGroup", user));
         assertTrue(group1.isPaidFor());
         assertFalse(group2.isPaidFor());

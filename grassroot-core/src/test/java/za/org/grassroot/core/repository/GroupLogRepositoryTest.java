@@ -46,12 +46,10 @@ public class GroupLogRepositoryTest {
 
         assertThat(groupLogRepository.count(), is(0L));
 
-        Group groupToCreate = new Group();
         User userToDoTests = new User(AppIdGenerator.generateId(), "0810001111");
         userToDoTests = userRepository.save(userToDoTests);
 
-        groupToCreate.setGroupName("testGroup");
-        groupToCreate.setCreatedByUser(userToDoTests);
+        Group groupToCreate = new Group("testGroup", userToDoTests);
         groupToCreate = groupRepository.save(groupToCreate);
 
         GroupLog groupLog = new GroupLog(groupToCreate.getId(), userToDoTests.getId(), GroupLogType.GROUP_ADDED, 0L);
