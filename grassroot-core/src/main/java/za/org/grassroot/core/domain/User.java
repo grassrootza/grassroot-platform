@@ -28,7 +28,7 @@ public class User implements UserDetails {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "app_id", nullable = false, unique = true)
+    @Column(name = "uid", nullable = false, unique = true)
     private String uid;
 
     @Column(name = "phone_number", nullable = false, length = 20, unique = true)
@@ -94,7 +94,7 @@ public class User implements UserDetails {
 
     public User(String phoneNumber, String displayName) {
         this.uid = UIDGenerator.generateId();
-        this.phoneNumber = phoneNumber;
+        this.phoneNumber = Objects.requireNonNull(phoneNumber);
         this.username = phoneNumber;
         this.displayName = displayName;
         this.languageCode = "en";

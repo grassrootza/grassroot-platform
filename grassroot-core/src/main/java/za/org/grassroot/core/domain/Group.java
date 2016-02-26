@@ -94,8 +94,8 @@ public class Group implements Serializable {
 
     public Group(String groupName, User createdByUser, Group parent) {
         this.uid = UIDGenerator.generateId();
-        this.groupName = groupName;
-        this.createdByUser = createdByUser;
+        this.groupName = Objects.requireNonNull(groupName);
+        this.createdByUser = Objects.requireNonNull(createdByUser);
         this.active = true;
         this.discoverable = false;
         this.parent = parent;
