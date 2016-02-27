@@ -48,3 +48,6 @@ target/
 
 # Grassroot.log
 grassroot.log*
+
+## Hibernate schema export DDL script
+schema-export-create.sql

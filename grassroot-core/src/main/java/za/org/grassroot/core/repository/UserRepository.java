@@ -20,6 +20,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     User findByPhoneNumber(String phoneNumber);
 
+    User findOneByUid(String uid);
+
     /*
     Used in admin pages to find users who can then be designated, modified, etc. Probably want a better search method
     than to use 'containing', but will do for now.
