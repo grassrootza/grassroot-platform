@@ -23,7 +23,7 @@ public class MemberWrapper {
     private String roleName;
 
     public MemberWrapper(User user, Group group, Role role) {
-        log.info("Constructing member wrapper for user ... " + user.getId() + " ... in group ... " + group.getId());
+        // log.info("Constructing member wrapper for user ... " + user.getId() + " ... in group ... " + group.getId());
         this.user = user;
         this.group = group;
         this.role = role;

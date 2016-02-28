@@ -152,14 +152,14 @@
           <button type="submit" name="group_modify" class="btn btn-default">Add and modify group members</button>
         </div>
         <div class="col-lg-3">
-          <button type="submit" name="group_language" class="btn btn-default">Change group language</button>
-        </div>
-        <div class="col-lg-3">
           <button type="submit" name="discoverable" class="btn btn-default">Change public/private options</button>
         </div>
       </div>
     </form>
     <div class="row form-group">
+        <div class="col-md-4" th:if="${canAlter}">
+          <a href="" th:href="@{/group/roles/view(groupId=${group.id})}"><button class="btn btn-default">Member roles</button></a>
+        </div>
         <div class="col-md-4" th:if="${not hasParent}">
           <a href="" th:href="@{/group/parent(groupId=${group.id})}"><button class="btn btn-warning">Link this group to a parent</button></a>
         </div>

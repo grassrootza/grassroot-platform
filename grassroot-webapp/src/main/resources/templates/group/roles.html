@@ -25,12 +25,25 @@
         <th>Name</th>
         <th>Phone</th>
         <th>Role</th>
+        <th></th>
       </thead>
       <tbody>
         <tr th:each="member : ${members}">
-          <td><span th:text="${member.user.displayName}"></span></td>
-          <td><span th:text="${member.user.phoneNumber}"></span></td>
-          <td><span th:text="${member.roleName}"></span></td>
+          <form  th:action="@{/group/roles/change}" method="post" autocomplete="on" class="form-horizontal">
+            <input type="hidden" name="userId" th:value="${member.user.id}" />
+            <input type="hidden" name="groupId" th:value="${member.group.id}" />
+            <td><span th:text="${member.user.displayName}"></span></td>
+            <td><span th:text="${member.user.phoneNumber}"></span></td>
+            <td>
+              <select name="roleName">
+                <option th:each="role : ${roles}"
+                        th:value="${role[0]}"
+                        th:text="${role[1]}"
+                        th:selected="${#strings.equals(member.roleName, role[0])}"></option>
+              </select>
+            </td>
+            <th><button type="submit" class="btn btn-info" aria-label="Change role">Change role</button></th>
+          </form>
         </tr>
       </tbody>
     </table>

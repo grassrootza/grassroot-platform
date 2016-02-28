@@ -846,13 +846,18 @@ public class GroupController extends BaseController {
      * Group role view pages
      */
 
-    /* @RequestMapping(value = "roles")
+    List<String[]> roleDescriptions = Arrays.asList(new String[]{"NULL", "Not set"},
+                                              new String[]{BaseRoles.ROLE_ORDINARY_MEMBER, "Ordinary member"},
+                                              new String[]{BaseRoles.ROLE_COMMITTEE_MEMBER, "Committee member"},
+                                              new String[]{BaseRoles.ROLE_GROUP_ORGANIZER, "Group organizer"});
+
+    @RequestMapping(value = "roles/view")
     public String viewGroupRoles(Model model, @RequestParam Long groupId) {
 
-        // just to see roles, all you need is see details -- changing roles is a different story ...
         Group group = loadGroup(groupId, BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
         Map<String, Role> roles = roleService.fetchGroupRoles(groupId);
-        // todo: replace this with, say, Membership entity once built
+
+        // todo: replace this with Membership entity once built ... very badly done kludge for present
 
         List<MemberWrapper> members = new ArrayList<>();
         for (User user : userManagementService.getGroupMembersSortedById(group))
@@ -860,6 +865,7 @@ public class GroupController extends BaseController {
 
         model.addAttribute("group", group);
         model.addAttribute("members", members);
+        model.addAttribute("roles", roleDescriptions);
 
         if (roles.get(BaseRoles.ROLE_GROUP_ORGANIZER) != null)
             model.addAttribute("organizerPerms", new ArrayList<>(roles.get(BaseRoles.ROLE_GROUP_ORGANIZER).getPermissions()));
@@ -871,6 +877,18 @@ public class GroupController extends BaseController {
             model.addAttribute("ordinaryPerms", new ArrayList<>(roles.get(BaseRoles.ROLE_ORDINARY_MEMBER).getPermissions()));
 
         return "group/roles";
-    }*/
+    }
+
+    @RequestMapping(value = "roles/change", method = RequestMethod.POST)
+    public String changeGroupRole(Model model, @RequestParam Long groupId, @RequestParam Long userId,
+                                  @RequestParam("roleName") String roleName, HttpServletRequest request) {
+
+        User userToModify = userManagementService.loadUser(userId);
+        Group group = groupManagementService.loadGroup(groupId);
+        asyncRoleService.addRoleToGroupAndUser(roleName, group, userToModify, getUserProfile());
+
+        addMessage(model, MessageType.INFO, "group.role.done", request);
+        return viewGroupRoles(model, groupId);
+    }
 
 }
