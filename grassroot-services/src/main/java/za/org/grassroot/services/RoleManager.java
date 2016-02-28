@@ -174,8 +174,8 @@ public class RoleManager implements  RoleManagementService {
     public Role getUserRoleInGroup(User user, Long groupId) {
 
         for (Role role : user.getRoles()) {
-            log.info("Checking a role for user ... " + user.getId() + " role is ... " + role.getId() + ", ref " + role.getGroupReferenceId() + " ..."
-                             + " looking for one that matches " + groupId);
+            /*log.info("Checking a role for user ... " + user.getId() + " role is ... " + role.getId() + ", ref " + role.getGroupReferenceId() + " ..."
+                             + " looking for one that matches " + groupId);*/
             if (role.isGroupRole()) {
                 if (role.getGroupReferenceId().equals(groupId)) {
                     return role;

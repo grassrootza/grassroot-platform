@@ -19,14 +19,34 @@
 <div layout:fragment="content">
   <div layout:fragment="messages"></div>
 
+  <div class="well">
+    <table class="table table-striped">
+      <thead>
+        <th>Name</th>
+        <th>Phone</th>
+        <th>Role</th>
+      </thead>
+      <tbody>
+        <tr th:each="member : ${members}">
+          <td><span th:text="${member.user.displayName}"></span></td>
+          <td><span th:text="${member.user.phoneNumber}"></span></td>
+          <td><span th:text="${member.roleName}"></span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
   <div class="well" th:if="${organizerPerms != null}">
+    <div class="row">
+      <mark>Role permissions:</mark>
+    </div>
     <div class="row">
       <h2>Group organizer</h2>
     </div>
     <div class="row">
       <table class="table table-striped">
         <thead>
-        <td>Permission granted</td>
+          <th>Permission granted</th>
         </thead>
         <tbody>
         <tr th:each="permission : ${organizerPerms}">

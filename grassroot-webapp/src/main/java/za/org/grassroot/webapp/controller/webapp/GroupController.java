@@ -19,6 +19,7 @@ import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
+import za.org.grassroot.webapp.model.web.MemberWrapper;
 import za.org.grassroot.webapp.util.BulkUserImportUtil;
 
 import javax.servlet.http.HttpServletRequest;
@@ -845,15 +846,20 @@ public class GroupController extends BaseController {
      * Group role view pages
      */
 
-    @RequestMapping(value = "roles")
+    /* @RequestMapping(value = "roles")
     public String viewGroupRoles(Model model, @RequestParam Long groupId) {
 
         // just to see roles, all you need is see details -- changing roles is a different story ...
         Group group = loadGroup(groupId, BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
         Map<String, Role> roles = roleService.fetchGroupRoles(groupId);
-        // todo: create a DTO object representing group user membership that has roles with it
+        // todo: replace this with, say, Membership entity once built
+
+        List<MemberWrapper> members = new ArrayList<>();
+        for (User user : userManagementService.getGroupMembersSortedById(group))
+            members.add(new MemberWrapper(user, group, roleService.getUserRoleInGroup(user, group)));
 
         model.addAttribute("group", group);
+        model.addAttribute("members", members);
 
         if (roles.get(BaseRoles.ROLE_GROUP_ORGANIZER) != null)
             model.addAttribute("organizerPerms", new ArrayList<>(roles.get(BaseRoles.ROLE_GROUP_ORGANIZER).getPermissions()));
@@ -865,6 +871,6 @@ public class GroupController extends BaseController {
             model.addAttribute("ordinaryPerms", new ArrayList<>(roles.get(BaseRoles.ROLE_ORDINARY_MEMBER).getPermissions()));
 
         return "group/roles";
-    }
+    }*/
 
 }
