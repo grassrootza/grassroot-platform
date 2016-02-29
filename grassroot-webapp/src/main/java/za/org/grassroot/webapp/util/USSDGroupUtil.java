@@ -12,13 +12,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import za.org.grassroot.core.domain.BasePermissions;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.PhoneNumberUtil;
-import za.org.grassroot.services.EventManagementService;
-import za.org.grassroot.services.GroupManagementService;
-import za.org.grassroot.services.LogBookService;
-import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 
@@ -53,6 +51,9 @@ public class USSDGroupUtil extends USSDUtil {
     @Autowired
     private LogBookService logBookService;
 
+    @Autowired
+    GroupAccessControlManagementService groupAccessControlManager;
+
     private static final String groupKeyForMessages = "group";
     private static final String groupIdParameter = "groupId";
     private static final String groupIdUrlEnding = "?" + groupIdParameter + "=";
@@ -63,7 +64,7 @@ public class USSDGroupUtil extends USSDUtil {
             unsubscribePrompt = "unsubscribe",
             groupTokenMenu = "token", renameGroupPrompt = "rename",
             addMemberPrompt = "addnumber", mergeGroupMenu = "merge",
-            inactiveMenu = "inactive";
+            inactiveMenu = "inactive", doSuffix="=do";
 
     private static final SimpleDateFormat unnamedGroupDate = new SimpleDateFormat("d MMM");
 
@@ -71,6 +72,23 @@ public class USSDGroupUtil extends USSDUtil {
      * SECTION 1: menus to ask a user to pick a group, including via pagination
      * major todo: introduce filtering by permission into these
      */
+
+    public USSDMenu askForGroupAllowCreateNew(User sessionUser, USSDSection section, String nextUrl,
+                                              String newGroupMenu, String nonGroupParams, boolean modifying) throws URISyntaxException {
+
+        // todo: the groupManager call is probably quite expensive, replace with a count query (non trivial, at least for me)
+        USSDMenu groupMenu;
+        log.info("Inside askForGroupAllowCreateNew ... newGroupUrl is ..." + newGroupMenu);
+        if (!groupManager.hasActiveGroupsPartOf(sessionUser)) {
+            groupMenu = createGroupPrompt(sessionUser, section, newGroupMenu);
+        } else {
+            String prompt = getMessage(section, groupKeyForMessages, promptKey + ".existing", sessionUser);
+            String existingGroupUri = section.toPath() + nextUrl + ((nonGroupParams == null) ? "" : nonGroupParams);
+            String newGroupUri = section.toPath() + newGroupMenu + ((nonGroupParams == null) ? "" : nonGroupParams);
+            groupMenu = userGroupMenuPageOne(sessionUser, prompt, existingGroupUri, newGroupUri, section,modifying);
+        }
+        return groupMenu;
+    }
 
     public USSDMenu askForGroupAllowCreateNew(User sessionUser, USSDSection section, String nextUrl,
                                               String newGroupMenu, String nonGroupParams) throws URISyntaxException {
@@ -84,7 +102,7 @@ public class USSDGroupUtil extends USSDUtil {
             String prompt = getMessage(section, groupKeyForMessages, promptKey + ".existing", sessionUser);
             String existingGroupUri = section.toPath() + nextUrl + ((nonGroupParams == null) ? "" : nonGroupParams);
             String newGroupUri = section.toPath() + newGroupMenu + ((nonGroupParams == null) ? "" : nonGroupParams);
-            groupMenu = userGroupMenuPageOne(sessionUser, prompt, existingGroupUri, newGroupUri, section);
+            groupMenu = userGroupMenuPageOne(sessionUser, prompt, existingGroupUri, newGroupUri, section,false);
         }
         return groupMenu;
     }
@@ -100,7 +118,23 @@ public class USSDGroupUtil extends USSDUtil {
             groupMenu.addMenuOption("exit", getMessage("exit.option", sessionUser));
         } else {
             String existingGroupUri = section.toPath() + urlIfExisting + ((nonGroupParams == null) ? "" : nonGroupParams);
-            groupMenu = userGroupMenuPageOne(sessionUser, promptIfExisting, existingGroupUri, null, section);
+            groupMenu = userGroupMenuPageOne(sessionUser, promptIfExisting, existingGroupUri, null, section,false);
+        }
+        return groupMenu;
+    }
+
+    public USSDMenu askForGroupNoInlineNew(User sessionUser, USSDSection section, String promptIfExisting, String promptIfEmpty,
+                                           String urlIfExisting, String urlIfEmpty, String nonGroupParams, boolean modification) throws URISyntaxException {
+        USSDMenu groupMenu;
+        // todo: replace the getter with a less expensive call (boolean query -- non-trivial), plus filter for permissions
+        if (!groupManager.hasActiveGroupsPartOf(sessionUser)) {
+            groupMenu = new USSDMenu(promptIfEmpty);
+            groupMenu.addMenuOption(urlIfEmpty, getMessage(section, groupKeyForMessages, "options.new", sessionUser));
+            groupMenu.addMenuOption("start", getMessage("start", sessionUser));
+            groupMenu.addMenuOption("exit", getMessage("exit.option", sessionUser));
+        } else {
+            String existingGroupUri = section.toPath() + urlIfExisting + ((nonGroupParams == null) ? "" : nonGroupParams);
+            groupMenu = userGroupMenuPageOne(sessionUser, promptIfExisting, existingGroupUri, null, section, modification);
         }
         return groupMenu;
     }
@@ -120,23 +154,40 @@ public class USSDGroupUtil extends USSDUtil {
         return askForGroupNoInlineNew(user, section, promptIfNotEmpty, promptIfEmpty, menuIfExisting, urlIfEmpty, "");
     }
 
-    public USSDMenu userGroupMenuPageOne(User user, String prompt, String existingGroupUrl, String newGroupUrl, USSDSection section) throws URISyntaxException {
-        return userGroupMenuPaginated(user, prompt, existingGroupUrl, newGroupUrl, 0, section);
+    public USSDMenu userGroupMenuPageOne(User user, String prompt, String existingGroupUrl, String newGroupUrl, USSDSection section, boolean modification) throws URISyntaxException {
+        return userGroupMenuPaginated(user, prompt, existingGroupUrl, newGroupUrl, 0, section, modification);
+    }
+
+    public USSDMenu userGroupMenuPaginated(User user, String prompt, String urlForExistingGroups, String urlForNewGroup, Integer pageNumber, USSDSection section, boolean modification)
+            throws URISyntaxException {
+        USSDMenu menu = new USSDMenu(prompt);
+
+      //todo: this is just for testing purposes
+
+       Page<Group> groupsPartOf = groupManager.getPageOfActiveGroups(user, pageNumber, PAGE_LENGTH);
+        if (groupsPartOf.getTotalElements() == 1) {
+            menu = skipGroupSelection(user, section,urlForNewGroup, groupsPartOf.iterator().next().getId());
+        } else {
+            menu = addListOfGroupsToMenu(menu,section, urlForExistingGroups, groupsPartOf.getContent(), user, modification);
+            if (groupsPartOf.hasNext())
+                menu.addMenuOption(USSDUrlUtil.paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, pageNumber + 1),
+                        "More groups"); // todo: i18n
+            if (groupsPartOf.hasPrevious())
+                menu.addMenuOption(USSDUrlUtil.paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, pageNumber - 1),
+                        "Back"); // todo: i18n
+            if (urlForNewGroup != null)
+                menu.addMenuOption(urlForNewGroup, getMessage(groupKeyForMessages, "create", "option", user));
+        }
+        return menu;
     }
 
     public USSDMenu userGroupMenuPaginated(User user, String prompt, String urlForExistingGroups, String urlForNewGroup, Integer pageNumber, USSDSection section)
             throws URISyntaxException {
         USSDMenu menu = new USSDMenu(prompt);
 
-      //todo: this is just for testing purposes
-      /*  Authentication authentication = new UsernamePasswordAuthenticationToken(user, null,
-                user.getAuthorities());
-        SecurityContext securityContext = SecurityContextHolder.getContext();
-        securityContext.setAuthentication(authentication);*/
-      //  List<Group> groups = groupManager.getActiveGroupsPartOf(user);
-      //  Page<Group> groupsPartOf = new PageImpl<>(groups);
+        //todo: this is just for testing purposes
 
-       Page<Group> groupsPartOf = groupManager.getPageOfActiveGroups(user, pageNumber, PAGE_LENGTH);
+        Page<Group> groupsPartOf = groupManager.getPageOfActiveGroups(user, pageNumber, PAGE_LENGTH);
         if (groupsPartOf.getTotalElements() == 1) {
             menu = skipGroupSelection(user, section,urlForNewGroup, groupsPartOf.iterator().next().getId());
         } else {
@@ -158,12 +209,33 @@ public class USSDGroupUtil extends USSDUtil {
                 (nextMenuUrl + groupIdUrlEnding) :
                 (nextMenuUrl + "&" + groupIdParameter + "=");
         for (Group group : groups) {
+
             String name = (group.hasName()) ? group.getGroupName() :
                     getMessage(groupKeyForMessages, "unnamed", "label", unnamedGroupDate.format(group.getCreatedDateTime()), user);
-            menu.addMenuOption(formedUrl + group.getId(), name);
+                menu.addMenuOption(formedUrl + group.getId(), name);
         }
         return menu;
     }
+
+    public USSDMenu addListOfGroupsToMenu(USSDMenu menu,USSDSection section, String nextMenuUrl, List<Group> groups, User user,boolean modification ) {
+        final String formedUrl = (!nextMenuUrl.contains("?")) ?
+                (nextMenuUrl + groupIdUrlEnding) :
+                (nextMenuUrl + "&" + groupIdParameter + "=");
+        for (Group group : groups) {
+
+            String name = (group.hasName()) ? group.getGroupName() :
+                    getMessage(groupKeyForMessages, "unnamed", "label", unnamedGroupDate.format(group.getCreatedDateTime()), user);
+            if(modification){
+                if(checkPermissions(section,group,user)){
+                    menu.addMenuOption(formedUrl + group.getId(), name);
+                }
+            }else{
+            menu.addMenuOption(formedUrl + group.getId(), name);
+        }
+
+    }
+return menu;
+        }
 
     /**
      * SECTION 2: Methods to enter numbers for creating a new group, handling input, and exiting again
@@ -264,6 +336,31 @@ public class USSDGroupUtil extends USSDUtil {
 
         }
         return menu;
+    }
+
+    private boolean checkPermissions(USSDSection section, Group group, User user){
+
+        boolean canCreate = true;
+        Long startTime = System.currentTimeMillis();
+        switch (section){
+            case MEETINGS:
+                canCreate = groupAccessControlManager.hasGroupPermission(BasePermissions.GROUP_PERMISSION_CREATE_GROUP_MEETING, group,user);
+            break;
+            case VOTES:
+                canCreate =groupAccessControlManager.hasGroupPermission(BasePermissions.GROUP_PERMISSION_CREATE_GROUP_VOTE, group,user);
+                break;
+            case LOGBOOK:
+                canCreate = groupAccessControlManager.hasGroupPermission(BasePermissions.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY,group,user);
+                break;
+            case GROUP_MANAGER:
+                canCreate = groupAccessControlManager.hasGroupPermission(BasePermissions.GROUP_PERMISSION_UPDATE_GROUP_DETAILS,group,user);
+                break;
+            default:
+                break;
+         }
+        Long endTime = System.currentTimeMillis();
+        log.info(String.format("Ussd group permission checking ... took %d msec", endTime - startTime));
+        return canCreate;
     }
 
 
