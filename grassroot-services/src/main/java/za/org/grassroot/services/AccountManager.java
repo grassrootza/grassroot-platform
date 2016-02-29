@@ -154,8 +154,6 @@ public class AccountManager implements AccountManagementService {
 
         paidGroupRecord.setExpireDateTime(Timestamp.valueOf(LocalDateTime.now()));
         paidGroupRecord.setRemovedByUser(removingUser);
-        paidGroupRecord.setArchivedAccountId(account.getId());
-        paidGroupRecord.setAccount(getNullAccount());
 
         account.removePaidGroup(paidGroupRecord);
         group.setPaidFor(false);
@@ -168,6 +166,7 @@ public class AccountManager implements AccountManagementService {
 
     @Override
     public List<PaidGroup> getGroupsPaidForByAccount(Account account) {
+        // todo: remove this and just use getGroupsPaidFor
         return paidGroupRepository.findByAccount(account);
     }
 
@@ -176,7 +175,4 @@ public class AccountManager implements AccountManagementService {
         return paidGroupRepository.findOne(paidGroupId);
     }
 
-    private Account getNullAccount() {
-        return accountRepository.findOne(0L);
-    }
 }

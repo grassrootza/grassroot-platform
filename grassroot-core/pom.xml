@@ -91,15 +91,6 @@
             <artifactId>jsoup</artifactId>
             <version>1.8.2</version>
         </dependency>
-        <!--<dependency>-->
-            <!--<groupId>org.hibernate</groupId>-->
-            <!--<artifactId>hibernate-validator</artifactId>-->
-        <!--</dependency>-->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.16.4</version>
-        </dependency>
 
         <dependency>
             <groupId>com.googlecode.libphonenumber</groupId>

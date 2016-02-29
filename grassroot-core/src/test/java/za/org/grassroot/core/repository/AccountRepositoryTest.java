@@ -198,7 +198,7 @@ public class AccountRepositoryTest {
         Account accountFromDbByName = accountRepository.findByAccountName(accountName).get(0);
         assertNotNull(accountFromDbByName);
         assertThat(accountFromDbByName.getAdministrators().size(), is(1));
-        User adminFromAccount = accountFromDbByName.getAdministrators().get(0);
+        User adminFromAccount = accountFromDbByName.getAdministrators().iterator().next();
         assertNotNull(adminFromAccount);
         assertThat(adminFromAccount.getPhoneNumber(), is("0505550000"));
 
@@ -229,7 +229,7 @@ public class AccountRepositoryTest {
         assertNotNull(accountFromDbByName);
         assertNotNull(accountFromDbByName.getPaidGroups());
         assertThat(accountFromDbByName.getPaidGroups().size(), is(1));
-        PaidGroup paidGroupFromAccount = accountFromDbByName.getPaidGroups().get(0);
+        PaidGroup paidGroupFromAccount = accountFromDbByName.getPaidGroups().iterator().next();
         assertNotNull(paidGroupFromAccount);
         assertThat(paidGroupFromAccount.getAccount(), is(accountFromDbByName));
         assertThat(paidGroupFromAccount.getGroup(), is(testGroup));
