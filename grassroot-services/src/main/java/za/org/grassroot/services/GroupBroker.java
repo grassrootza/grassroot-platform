@@ -1,0 +1,15 @@
+package za.org.grassroot.services;
+
+import java.util.Set;
+
+public interface GroupBroker {
+    String create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos);
+
+    void update(String userUid, String groupUid, String name);
+
+    void addMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos);
+
+    void removeMembers(String userUid, String groupUid, Set<String> memberUids);
+
+    void updateMembershipRole(String userUid, String groupUid, String memberUid, String roleId);
+}

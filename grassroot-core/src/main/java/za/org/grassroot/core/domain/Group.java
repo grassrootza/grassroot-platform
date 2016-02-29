@@ -26,13 +26,13 @@ public class Group implements Serializable {
     @Column(name = "created_date_time", insertable = true, updatable = false)
     private Timestamp createdDateTime;
 
-    @ManyToOne
-    @JoinColumn(name = "created_by_user")
+    @ManyToOne()
+    @JoinColumn(name = "created_by_user", nullable = false, updatable = false)
     private User createdByUser;
 
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinTable(name = "group_user_membership", joinColumns = @JoinColumn(name = "group_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
-    private List<User> groupMembers = new ArrayList<>();
+    private Set<User> groupMembers = new HashSet<>();
 
     @ManyToOne
     @JoinColumn(name = "parent")
@@ -58,7 +58,7 @@ public class Group implements Serializable {
     @Column(name = "reminderminutes")
     private int reminderMinutes;
 
-    @OneToMany(fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinTable(name = "group_roles",
             joinColumns = {@JoinColumn(name = "group_id", referencedColumnName = "id")},
             inverseJoinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id")}
@@ -75,13 +75,13 @@ public class Group implements Serializable {
     /*
     Adding group inactive field, for when we want to deactivate a group (e.g., after a user consolidates)
      */
-    @Column(name = "active")
+    @Column(name = "active", nullable = false)
     private boolean active;
 
     /*
     Adding a 'discoverable' field, so group owners can mark if they want others to be able to find them
      */
-    @Column(name = "discoverable")
+    @Column(name = "discoverable", nullable = false)
     private boolean discoverable;
 
     private Group() {
@@ -116,7 +116,6 @@ public class Group implements Serializable {
         return uid;
     }
 
-
     public String getGroupName() {
         return groupName;
     }
@@ -145,19 +144,30 @@ public class Group implements Serializable {
         return this.createdByUser;
     }
 
-    public void setCreatedByUser(User createdByUser) {
+    void setCreatedByUser(User createdByUser) {
         this.createdByUser = createdByUser;
     }
 
-    public List<User> getGroupMembers() {
+    public Set<User> getGroupMembers() {
         if (groupMembers == null) {
-            groupMembers = new ArrayList<>();
+            groupMembers = new HashSet<>();
         }
-        return groupMembers;
+        return new HashSet<>(groupMembers);
     }
 
-    public void setGroupMembers(List<User> groupMembers) {
-        this.groupMembers = groupMembers;
+    public boolean addMember(User newMember) {
+        Objects.requireNonNull(newMember);
+        return this.groupMembers.add(newMember);
+    }
+
+    public boolean removeMember(User member) {
+        Objects.requireNonNull(member);
+        return this.groupMembers.remove(member);
+    }
+
+    public void addMembers(Collection<User> newMembers) {
+        Objects.requireNonNull(newMembers);
+        this.groupMembers.addAll(newMembers);
     }
 
     public Group getParent() {
@@ -225,24 +235,6 @@ public class Group implements Serializable {
     }
 
     /*
-    Adding & removing members and roles
-     */
-
-    public Group addMember(User newMember) {
-        // might alternately put this check in service layer, but leaving it here for now, as sometimes we want to do
-        // the check and add without calling the repository
-        if (!this.groupMembers.contains(newMember))
-            this.groupMembers.add(newMember);
-        return this;
-    }
-
-    public Group addRole(Role role) {
-        this.groupRoles.add(role);
-        return this;
-    }
-
-
-    /*
      * Auxiliary methods for checking if blank name, coping with blank names, etc.
      */
 
@@ -265,13 +257,13 @@ public class Group implements Serializable {
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (o == null || !(o instanceof Group)) {
             return false;
         }
 
         Group group = (Group) o;
 
-        if (uid != null ? !uid.equals(group.uid) : group.uid != null) {
+        if (getUid() != null ? !getUid().equals(group.getUid()) : group.getUid() != null) {
             return false;
         }
 
@@ -280,7 +272,7 @@ public class Group implements Serializable {
 
     @Override
     public int hashCode() {
-        return uid != null ? uid.hashCode() : 0;
+        return getUid() != null ? getUid().hashCode() : 0;
     }
 
     @Override

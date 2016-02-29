@@ -75,13 +75,13 @@ public class GroupJoinRequestEvent {
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (o == null || !(o instanceof GroupJoinRequestEvent)) {
             return false;
         }
 
         GroupJoinRequestEvent that = (GroupJoinRequestEvent) o;
 
-        if (uid != null ? !uid.equals(that.uid) : that.uid != null) {
+        if (getUid() != null ? !getUid().equals(that.getUid()) : that.getUid() != null) {
             return false;
         }
 
@@ -90,7 +90,7 @@ public class GroupJoinRequestEvent {
 
     @Override
     public int hashCode() {
-        return uid != null ? uid.hashCode() : 0;
+        return getUid() != null ? getUid().hashCode() : 0;
     }
 
     @Override

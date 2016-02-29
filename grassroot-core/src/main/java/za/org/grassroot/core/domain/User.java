@@ -374,13 +374,13 @@ public class User implements UserDetails {
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (o == null || !(o instanceof User)) {
             return false;
         }
 
         User user = (User) o;
 
-        if (uid != null ? !uid.equals(user.uid) : user.uid != null) {
+        if (getUid() != null ? !getUid().equals(user.getUid()) : user.getUid() != null) {
             return false;
         }
 
@@ -389,7 +389,7 @@ public class User implements UserDetails {
 
     @Override
     public int hashCode() {
-        return uid != null ? uid.hashCode() : 0;
+        return getUid() != null ? getUid().hashCode() : 0;
     }
 
     @Override

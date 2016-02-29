@@ -122,7 +122,7 @@ public class UserRepositoryTest {
         User u1 = userRepository.save(new User("0821234560"));
         User u2 = userRepository.save(new User("0821234561"));
         Group group = groupRepository.save(new Group("rsvp yes",u1));
-        group.getGroupMembers().add(u2);
+        group.addMember(u2);
         group = groupRepository.save(group);
         Event event = eventRepository.save(new Event("rsvp event",u1,group,true));
         EventLog eventLog = eventLogRepository.save(new EventLog(u1,event, EventLogType.EventRSVP, EventRSVPResponse.YES.toString()));
@@ -136,7 +136,7 @@ public class UserRepositoryTest {
         User u1 = userRepository.save(new User("0821234570"));
         User u2 = userRepository.save(new User("0821234571"));
         Group group = groupRepository.save(new Group("rsvp yes",u1));
-        group.getGroupMembers().add(u2);
+        group.addMember(u2);
         group = groupRepository.save(group);
         Event event = eventRepository.save(new Event("rsvp event",u1,group,true));
         EventLog eventLog = eventLogRepository.save(new EventLog(u1,event, EventLogType.EventRSVP, EventRSVPResponse.YES.toString()));
@@ -189,8 +189,8 @@ public class UserRepositoryTest {
         User user5 = userRepository.save(new User("0701110002", "no name"));
 
         Group testGroup = groupRepository.save(new Group("test group", user1));
-        testGroup.getGroupMembers().add(user1);
-        testGroup.getGroupMembers().add(user2);
+        testGroup.addMember(user1);
+        testGroup.addMember(user2);
         testGroup = groupRepository.save(testGroup);
 
         List<User> usersByPhone = userRepository.findByPhoneNumberContaining(phoneBase);
