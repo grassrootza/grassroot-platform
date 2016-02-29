@@ -1,8 +1,8 @@
 package za.org.grassroot.core.domain;
 
-import lombok.EqualsAndHashCode;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
@@ -21,80 +21,99 @@ import java.util.*;
 
 @Entity
 @Table(name = "user_profile")  //table name needs to be quoted in SQL because 'user' is a reserved keyword
-@EqualsAndHashCode
-//@ToString
 public class User implements UserDetails {
-
-    private String      firstName;
-    private String      lastName;
-    private String      phoneNumber;
-    private String      displayName;
-    private String      languageCode;
-    private Long        id;
-    private Timestamp   createdDateTime;
-    private List<Group> groupsPartOf;
-    private String      username;
-    private String      password;
-    private boolean hasWebProfile = false;
-    private boolean   enabled    = true;
-    private String lastUssdMenu;
-    private boolean hasInitiatedSession;
-    private Set<Role> roles      = new HashSet<>();
-    private Account accountAdministered;
-    private Integer version;
-
-
-    @Column(name = "first_name")
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    @Column(name = "last_name")
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-    @Basic
-    @Column(name = "phone_number", nullable = false, length = 20, unique = true)
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
-
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
-    }
-
-    @Basic
-    @Column(name = "display_name", nullable = true, length = 70) // allowing this to be nullable as might not be set
-    public String getDisplayName() {
-        return displayName;
-    }
-
-    public void setDisplayName(String displayName) {
-        this.displayName = displayName;
-    }
-
-    @Basic
-    @Column(name = "language_code", nullable = true, length = 10)
-    public String getLanguageCode() {
-        return languageCode;
-    }
-
-    public void setLanguageCode(String languageCode) {
-        this.languageCode = languageCode;
-    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
+    private Long id;
+
+    @Column(name = "uid", nullable = false, unique = true)
+    private String uid;
+
+    @Column(name = "phone_number", nullable = false, length = 20, unique = true)
+    private String phoneNumber;
+
+    @Column(name = "first_name")
+    private String firstName;
+
+    @Column(name = "last_name")
+    private String lastName;
+
+    @Column(name = "display_name", nullable = true, length = 70) // allowing this to be nullable as might not be set
+    private String displayName;
+
+    @Column(name = "language_code", nullable = true, length = 10)
+    private String languageCode;
+
+    @Column(name = "created_date_time", insertable = true, updatable = false)
+    private Timestamp createdDateTime;
+
+    @ManyToMany(cascade = CascadeType.ALL, mappedBy = "groupMembers", fetch = FetchType.LAZY) // not sure which cascade type is going to be best
+    private List<Group> groupsPartOf;
+
+    @Column(name = "user_name", length = 50, unique = true)
+    private String username;
+
+    @Column(name = "password")
+    private String password;
+
+    @Column(name = "web")
+    private boolean hasWebProfile = false;
+
+    @Column(name = "enabled")
+    private boolean enabled = true;
+
+    @Column(name = "lastUssdMenu")
+    private String lastUssdMenu;
+
+    @Column(name = "initiated_session")
+    private boolean hasInitiatedSession;
+
+    @OneToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "user_roles",
+            joinColumns        = {@JoinColumn(name = "user_id", referencedColumnName = "id", unique = false)},
+            inverseJoinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id", unique = false)}
+    )
+    private Set<Role> roles = new HashSet<>();
+
+    @ManyToOne
+    @JoinColumn(name = "account_administered")
+    private Account accountAdministered;
+
+    @Version
+    private Integer version;
+
+    private User() {
+        // for JPA
+    }
+
+    public User(String phoneNumber) {
+        this(phoneNumber, null);
+    }
+
+    public User(String phoneNumber, String displayName) {
+        this.uid = UIDGenerator.generateId();
+        this.phoneNumber = Objects.requireNonNull(phoneNumber);
+        this.username = phoneNumber;
+        this.displayName = displayName;
+        this.languageCode = "en";
+    }
+
+    /**
+     * We use this static constructor because no-arg constructor should be only used by JPA
+     * @return user
+     */
+    public static User makeEmpty() {
+        return makeEmpty(UIDGenerator.generateId());
+    }
+
+    public static User makeEmpty(String uid) {
+        User user = new User();
+        user.uid = uid;
+        return user;
+    }
+
     public Long getId() {
         return id;
     }
@@ -103,8 +122,54 @@ public class User implements UserDetails {
         this.id = id;
     }
 
-    @Basic
-    @Column(name = "created_date_time", insertable = true, updatable = false)
+    public String getUid() {
+        return uid;
+    }
+
+    void setUid(String uid) {
+        this.uid = uid;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
+    }
+
+    public String getLanguageCode() {
+        return languageCode;
+    }
+
+    public void setLanguageCode(String languageCode) {
+        this.languageCode = languageCode;
+    }
+
     public Timestamp getCreatedDateTime() {
         return createdDateTime;
     }
@@ -113,19 +178,9 @@ public class User implements UserDetails {
         this.createdDateTime = createdDateTime;
     }
 
-    @OneToMany(mappedBy = "user")
-    private List<Group> groupsCreated;
-
-    @OneToMany(mappedBy = "user")
-    private List<Event> eventsCreated;
-
-    @ManyToOne
-    @JoinColumn(name = "account_administered")
     public Account getAccountAdministered() { return accountAdministered; }
     public void setAccountAdministered(Account accountAdministered) { this.accountAdministered = accountAdministered; }
 
-
-    @ManyToMany(cascade = CascadeType.ALL, mappedBy = "groupMembers", fetch = FetchType.EAGER) // not sure which cascade type is going to be best
     public List<Group> getGroupsPartOf() {
         return groupsPartOf;
     }
@@ -142,7 +197,6 @@ public class User implements UserDetails {
         }
     }
 
-    @Column(name = "user_name", length = 50, unique = true)
     public String getUsername() {
         return username;
     }
@@ -152,7 +206,6 @@ public class User implements UserDetails {
     }
 
 
-    @Column(name = "password")
     public String getPassword() {
         return password;
     }
@@ -161,12 +214,10 @@ public class User implements UserDetails {
         this.password = password;
     }
 
-    @Column(name = "web")
     public boolean isHasWebProfile() { return hasWebProfile; }
 
     public void setHasWebProfile(boolean hasWebProfile) { this.hasWebProfile = hasWebProfile; }
 
-    @Column(name = "enabled")
     public boolean getEnabled() {
         return enabled;
     }
@@ -175,11 +226,6 @@ public class User implements UserDetails {
         this.enabled = enabled;
     }
 
-    @OneToMany(fetch = FetchType.EAGER)
-    @JoinTable(name = "user_roles",
-            joinColumns        = {@JoinColumn(name = "user_id", referencedColumnName = "id", unique = false)},
-            inverseJoinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id", unique = false)}
-    )
     public Set<Role> getRoles() {
         return roles;
     }
@@ -197,7 +243,6 @@ public class User implements UserDetails {
         this.roles.addAll(roles);
     }
 
-    @Column(name = "lastUssdMenu")
     public String getLastUssdMenu() { return lastUssdMenu; }
 
     public void setLastUssdMenu(String lastUssdMenu) { this.lastUssdMenu = lastUssdMenu; }
@@ -208,7 +253,6 @@ public class User implements UserDetails {
     been added via being part of another group -- to us in our stats, plus for some use cases (e.g., asking for language)
      */
 
-    @Column(name = "initiated_session")
     public boolean isHasInitiatedSession() { return hasInitiatedSession; }
 
     public void setHasInitiatedSession(boolean hasInitiatedSession) { this.hasInitiatedSession = hasInitiatedSession; }
@@ -258,7 +302,6 @@ public class User implements UserDetails {
         return this.getEnabled();
     }
 
-    @Version
     public Integer getVersion() {
         return version;
     }
@@ -298,15 +341,6 @@ public class User implements UserDetails {
     // refactoring to avoid confusion with property displayName -- point is this returns name, or phone number if no name
     public String nameToDisplay() { return getName(""); }
 
-    public Group needsToRenameGroup() {
-        // todo: for speed reasons, probably need a SQL query to do this, rather than this loop, but using a loop for now
-        if (groupsCreated == null || groupsCreated.size() == 0) return null;
-        for (Group groupCreated : groupsCreated) {
-            if (!groupCreated.hasName()) return groupCreated;
-        }
-        return null;
-    }
-
     /**
      * Inserting string functions to handle phone numbers here, for the moment
      * todo: remove these to use only the Util class
@@ -316,8 +350,6 @@ public class User implements UserDetails {
 
         // todo: handle error if number has gotten into database in incorrect format
         // todo: make this much faster, e.g., use a simple regex / split function?
-
-        List<String> numComponents = new ArrayList<>();
         String prefix = String.join("", Arrays.asList("0", storedNumber.substring(2, 4)));
         String midnumbers, finalnumbers;
 
@@ -337,70 +369,42 @@ public class User implements UserDetails {
         return invertPhoneNumber(storedNumber, " ");
     }
 
-    /*
-    Constructors
-    */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
-    public User() {
+        User user = (User) o;
+
+        if (uid != null ? !uid.equals(user.uid) : user.uid != null) {
+            return false;
+        }
+
+        return true;
     }
 
-    public User(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
-        this.username = phoneNumber;
-        this.languageCode = "en";
-    }
-
-    public User(String phoneNumber, String displayName) {
-        this.phoneNumber = phoneNumber;
-        this.username = phoneNumber;
-        this.displayName = displayName;
-        this.languageCode = "en";
+    @Override
+    public int hashCode() {
+        return uid != null ? uid.hashCode() : 0;
     }
 
     @Override
     public String toString() {
-        return "User{" +
-                "firstName='" + firstName + '\'' +
-                ", lastName='" + lastName + '\'' +
-                ", phoneNumber='" + phoneNumber + '\'' +
-                ", displayName='" + displayName + '\'' +
-                ", languageCode='" + languageCode + '\'' +
-                ", id=" + id +
-                ", createdDateTime=" + createdDateTime +
-//                ", groupsPartOf=" + groupsPartOf +
-                ", username='" + username + '\'' +
-//                ", password='" + password + '\'' +
-                ", enabled=" + enabled +
-//                ", roles=" + roles +
-                ", version=" + version +
-//                ", groupsCreated=" + groupsCreated +
-//                ", eventsCreated=" + eventsCreated +
-                '}';
+        final StringBuilder sb = new StringBuilder("User{");
+        sb.append("id=").append(id);
+        sb.append(", uid='").append(uid).append('\'');
+        sb.append(", phoneNumber='").append(phoneNumber).append('\'');
+        sb.append(", firstName='").append(firstName).append('\'');
+        sb.append(", lastName='").append(lastName).append('\'');
+        sb.append(", username='").append(username).append('\'');
+        sb.append(", enabled=").append(enabled);
+        sb.append(", createdDateTime=").append(createdDateTime);
+        sb.append('}');
+        return sb.toString();
     }
 
-    /**
-     * Override equals and hashCode methods, may need in future (since Lombok ones require everything equal, vs just
-     * the unique fields).
-
-    @Override
-    public int hashCode() {
-        int result = phoneNumber != null ? phoneNumber.hashCode() : 0;
-        result = 31 * result + (id != null ? id.hashCode() : 0);
-        // result = 31 * result + (createdDateTime != null ? createdDateTime.hashCode() : 0);
-        return result;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) { return true; }
-        if (o == null || getClass() != o.getClass()) { return false; }
-
-        final User user = (User) o;
-
-        if (id != null ? !id.equals(user.id) : user.id != null) { return false; }
-        if (phoneNumber != null ? !phoneNumber.equals(user.phoneNumber) : user.phoneNumber != null) { return false; }
-
-        return true;
-
-    }*/
 }

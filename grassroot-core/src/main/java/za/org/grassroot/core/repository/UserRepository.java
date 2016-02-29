@@ -6,6 +6,7 @@ import org.springframework.data.repository.query.Param;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.UserDTO;
 
 import java.sql.Timestamp;
 import java.util.List;
@@ -18,6 +19,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Note: can now no longer rely on NoSuchElement exceptions to catch 'no such user', probably should now do ourselves
      */
     User findByPhoneNumber(String phoneNumber);
+
+    User findOneByUid(String uid);
 
     /*
     Used in admin pages to find users who can then be designated, modified, etc. Probably want a better search method
@@ -61,5 +64,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findExistingUsers(@Param("phone_numbers") List<String> numbers);
 
     List<User> findByGroupsPartOfAndIdNot(Group group, Long excludedUserId);
+
+    @Query(value = "select id, display_name,phone_number,language_code from user_profile where user_profile.phone_number =?1", nativeQuery = true)
+    Object[] findByNumber(String phoneNumber);
 
 }

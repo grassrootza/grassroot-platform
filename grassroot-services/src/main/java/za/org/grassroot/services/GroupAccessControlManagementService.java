@@ -6,6 +6,7 @@ import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 
+import java.util.List;
 import java.util.Set;
 
 
@@ -24,6 +25,8 @@ public interface GroupAccessControlManagementService {
 
     void addUserGroupPermissions(Group group, User addingToUser, User modifyingUser, Set<Permission> groupPermissions);
 
+    void addUsersGroupPermissions(Group group, List<User> addingToUser, User modifyingUser, Set<Permission> groupPermissions);
+
     /**
      * @param group
      * @param user
@@ -34,11 +37,15 @@ public interface GroupAccessControlManagementService {
 
     /**
      * @param permission
-     * @param group
+     * @param groupId
      * @param user
      * @return
      */
+    boolean hasGroupPermission(Permission permission, Long groupId, User user);
+
     boolean hasGroupPermission(Permission permission, Group group, User user);
+
+    boolean hasGroupPermission(String permissionName, Long groupId, User user);
 
     boolean hasGroupPermission(String permissionName, Group group, User user);
 

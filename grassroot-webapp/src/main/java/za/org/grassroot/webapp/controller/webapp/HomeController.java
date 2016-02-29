@@ -91,6 +91,7 @@ public class HomeController extends BaseController {
         User user = getUserProfile();
         Long startTimeCountGroups = System.currentTimeMillis();
         log.info(String.format("Getting user profile took %d msecs", startTimeCountGroups - startTime));
+
         if (groupManagementService.hasActiveGroupsPartOf(user)) {
             log.info(String.format("Counting user groups took ... %d msecs", System.currentTimeMillis() - startTimeCountGroups));
             homePageModelAndView = getHomePageUserHasGroups(model, user);
@@ -152,7 +153,7 @@ public class HomeController extends BaseController {
 
         Long startTime2 = System.currentTimeMillis();
         log.info("Getting the user from this id ... " + user.getId());
-        model.addAttribute("userGroups", groupManagementService.getActiveGroupsPartOfOrdered(user));
+        model.addAttribute("userGroups", groupManagementService.getActiveGroupsPartOfOrderedByRecent(user));
         // model.addAttribute("groupTreesSql", groupViewNodeSqls);
         Long endTime2 = System.currentTimeMillis();
         log.info(String.format("Retrieved the active groups for the user ... took %d msecs", endTime2 - startTime2));
@@ -180,7 +181,7 @@ public class HomeController extends BaseController {
     private GroupViewNodeSql recursiveTreeSubnodes(GroupViewNodeSql parentNode) {
 
         // see if there are more records
-        while (idx < nodeCount ) {
+        while (idx < nodeCount) {
             node = treeList.get(idx++);
             //log.info("recursiveTreeSubnodes..." + idx + "...group..." + node.getGroupName() + "...parent..." + node.getParentId());
             if (node.getRoot() == prevRoot) {
@@ -188,7 +189,7 @@ public class HomeController extends BaseController {
                 if (node.getParentId() == parentNode.getParentId()) {
                     parentNode.getSubgroups().add(new GroupViewNodeSql(node.getGroupName(), level, node.getParentId()));
                 } else {
-                    GroupViewNodeSql childNode = recursiveTreeSubnodes(new GroupViewNodeSql(node.getGroupName(),++level,node.getParentId()));
+                    GroupViewNodeSql childNode = recursiveTreeSubnodes(new GroupViewNodeSql(node.getGroupName(), ++level, node.getParentId()));
                     parentNode.getSubgroups().add(childNode);
                 }
 

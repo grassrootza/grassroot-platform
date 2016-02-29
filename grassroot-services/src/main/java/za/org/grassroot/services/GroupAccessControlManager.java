@@ -58,7 +58,9 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
             // log.info("ZOG: Adding them to this user ... {}", user.toString());
             // log.info("ZOG: Adding this set of permissions ... {}", groupPermissions);
 
+            log.info("inside ACL setting .... Current authentication is ... " + SecurityContextHolder.getContext().getAuthentication());
             ObjectIdentity objectIdentity = new ObjectIdentityImpl(Group.class, group.getId());
+            log.info("Principal SID with user name ... " + user.getUsername());
             Sid sid = new PrincipalSid(user.getUsername());
 
 
@@ -96,8 +98,34 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
             Authentication auth = new UsernamePasswordAuthenticationToken(modifyingUser, modifyingUser.getPassword(), modifyingUser.getAuthorities());
             SecurityContextHolder.getContext().setAuthentication(auth);
         }
-        // log.info("After null check & setting, context set to ... " + SecurityContextHolder.getContext().getAuthentication());
+        log.info("After null check & setting, context set to ... " + SecurityContextHolder.getContext().getAuthentication());
         addUserGroupPermissions(group, addingToUser, groupPermissions);
+    }
+
+    @Override
+    public void addUsersGroupPermissions(Group group, List<User> addingToUsers, User modifyingUser, Set<Permission> groupPermissions) {
+        try {
+
+            log.info("inside ACL setting .... Current authentication is ... " + SecurityContextHolder.getContext().getAuthentication());
+            ObjectIdentity objectIdentity = new ObjectIdentityImpl(Group.class, group.getId());
+
+            log.info("about to try setting permisssions for a number of users ...");
+            MutableAcl acl = getMutableAcl(objectIdentity);
+            for (User user : addingToUsers) {
+                Sid sid = new PrincipalSid(user.getUsername());
+                removePermissions(objectIdentity, sid);
+
+                for (Permission permission : groupPermissions) {
+                    acl.insertAce(acl.getEntries().size(), permission, sid, true);
+                }
+            }
+            mutableAclService.updateAcl(acl);
+            log.info("done setting permissions ....");
+
+        } catch (Exception e) {
+            log.error("Could not add group permissions for batch of users", e);
+            throw new RuntimeException("Could not add group permissions for user", e);
+        }
     }
 
     /**
@@ -173,10 +201,10 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
      * @return
      */
     @Override
-    public boolean hasGroupPermission(Permission permission, Group group, User user) {
+    public boolean hasGroupPermission(Permission permission, Long groupId, User user) {
 
         try {
-            ObjectIdentity objectIdentity = new ObjectIdentityImpl(Group.class, group.getId());
+            ObjectIdentity objectIdentity = new ObjectIdentityImpl(Group.class, groupId);
 
             ImmutableList<Sid> sids = ImmutableList.of(new PrincipalSid(user.getUsername()));
             MutableAcl acl = (MutableAcl) mutableAclService.readAclById(objectIdentity, sids);
@@ -191,9 +219,20 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
     }
 
     @Override
+    public boolean hasGroupPermission(Permission permission, Group group, User user) {
+        return hasGroupPermission(permission, group.getId(), user);
+    }
+
+    @Override
+    public boolean hasGroupPermission(String permissionName, Long groupId, User user) {
+        org.springframework.security.acls.model.Permission permission = permissionFactory.buildFromName(permissionName);
+        return hasGroupPermission((Permission) permission, groupId, user);
+    }
+
+    @Override
     public boolean hasGroupPermission(String permissionName, Group group, User user) {
         org.springframework.security.acls.model.Permission permission = permissionFactory.buildFromName(permissionName);
-        return hasGroupPermission((Permission) permission, group, user);
+        return hasGroupPermission((Permission) permission, group.getId(), user);
     }
 
     /**

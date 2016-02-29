@@ -5,8 +5,6 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
@@ -63,15 +61,12 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     public void openingMenuShouldWorkWithNoGroups() throws Exception {
         resetTestGroup();
         testUser.setGroupsPartOf(Arrays.asList(testGroup));
-        Page<Group> groupPage = new PageImpl<Group>(Arrays.asList(testGroup));
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(groupManagementServiceMock.hasActiveGroupsPartOf(testUser)).thenReturn(true);
-        when(groupManagementServiceMock.getPageOfActiveGroups(testUser, 0, 3)).thenReturn(groupPage);
+        when(groupManagementServiceMock.hasActiveGroupsPartOf(testUser)).thenReturn(false);
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupManagementServiceMock, times(1)).hasActiveGroupsPartOf(testUser);
-        verify(groupManagementServiceMock, times(1)).getPageOfActiveGroups(testUser, 0, 3);
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }

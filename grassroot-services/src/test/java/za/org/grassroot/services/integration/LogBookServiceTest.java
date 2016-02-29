@@ -17,8 +17,6 @@ import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.LogBookService;
 import za.org.grassroot.services.UserManagementService;

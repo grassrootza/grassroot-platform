@@ -1,9 +1,12 @@
 package za.org.grassroot.services;
 
 import org.springframework.data.domain.Page;
+import org.springframework.security.access.prepost.PostFilter;
+import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.enums.GroupLogType;
 
@@ -51,12 +54,15 @@ public interface GroupManagementService {
 
     public Group addRemoveGroupMembers(Group group, List<User> revisedUserList, Long modifyingUserId, boolean addDefaultRoles);
 
+    public Group addMembersToGroup(Long groupId, List<User> members, boolean isClosedGroup);
 
     /*
     Methods to load and find groups
     */
 
     public Group loadGroup(Long groupId);
+
+    public Group loadGroupByUid(String uid);
 
     public String getGroupName(Long groupId);
 
@@ -66,6 +72,9 @@ public interface GroupManagementService {
 
     public List<Group> getActiveGroupsPartOfOrdered(User sessionUser);
 
+    public List<GroupDTO> getActiveGroupsPartOfOrderedByRecent(User sessionUser);
+
+  //  @PostFilter("hasPermission(filterObject, 'GROUP_PERMISSION_CREATE_GROUP_MEETING')")
     public List<Group> getActiveGroupsPartOf(Long userId);
 
     public Page<Group> getPageOfActiveGroups(User sessionUser, int pageNumber, int pageSize);
@@ -77,16 +86,15 @@ public interface GroupManagementService {
     Methods to find, and add group members
      */
 
-
-
-    public Group addMembersToGroup(Long groupId, List<User> members, boolean isClosedGroup);
-
-
     /*
     Methods to find if a user has an outstanding group management action to perform or groups on which they can perform it
      */
 
     public boolean isUserInGroup(Group group, User user);
+
+    public boolean canUserCallMeeting(Long groupId, User user);
+
+    public boolean canUserCallVote(Long groupId, User user);
 
     public Group getLastCreatedGroup(User creatingUser);
 

@@ -15,11 +15,11 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.*;
+import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
+import za.org.grassroot.webapp.model.web.MemberWrapper;
 import za.org.grassroot.webapp.util.BulkUserImportUtil;
 
 import javax.servlet.http.HttpServletRequest;
@@ -28,9 +28,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author Lesetse Kimwaga
@@ -52,6 +50,9 @@ public class GroupController extends BaseController {
     private GroupManagementService groupManagementService;
 
     @Autowired
+    private AsyncGroupService asyncGroupService;
+
+    @Autowired
     private EventManagementService eventManagementService;
 
     @Autowired
@@ -61,11 +62,19 @@ public class GroupController extends BaseController {
     private GroupLogService groupLogService;
 
     @Autowired
-    private RoleManagementService roleManagementService;
+    private RoleManagementService roleService;
+
+    @Autowired
+    private AsyncRoleService asyncRoleService;
 
     @Autowired
     @Qualifier("groupWrapperValidator")
     private Validator groupWrapperValidator;
+
+    // todo: when cleaning up, figure out how to move this to groupwrapper
+    List<String[]> permissionTemplates = Arrays.asList(
+            new String[]{GroupPermissionTemplate.DEFAULT_GROUP.toString(), "Any member can call a meeting or vote or record a to-do"},
+            new String[]{GroupPermissionTemplate.CLOSED_GROUP.toString(), "Only designated members can call a meeting or vote or record a to-do"});
 
     /*
     Binding validators to model attributes. We could just user groupWrapper for both Creator and Modifier, but in the
@@ -83,8 +92,7 @@ public class GroupController extends BaseController {
 
     private boolean isUserPartOfGroup(User sessionUser, Group group) {
         // todo: do this from cache so it's not slow ...
-        User userFromDb = userManagementService.getUserById(sessionUser.getId());
-        return userFromDb.getGroupsPartOf().contains(group);
+        return groupManagementService.isUserInGroup(group, sessionUser);
     }
 
     private Group secureLoadGroup(Long id) {
@@ -152,8 +160,11 @@ public class GroupController extends BaseController {
         model.addAttribute("groupVotes", eventManagementService.getUpcomingVotes(group));
         model.addAttribute("subGroups", groupManagementService.getSubGroups(group));
         model.addAttribute("openToken", groupManagementService.groupHasValidToken(group));
-        model.addAttribute("canSeeMemberDetails", groupAccessControlManagementService.
-                hasGroupPermission(BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS, group, user)); // todo: try use Th sec*/
+
+        // if (groupAccessControlManagementService.hasGroupPermission(BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS, group, user)) {
+            model.addAttribute("canSeeMembersDetails", true);
+            model.addAttribute("groupMembers", userManagementService.getGroupMembersSortedById(group));
+        // } removing from master until reset historical groups' roles, else will cause UX issues
 
         if (hasUpdatePermission) {
             model.addAttribute("canAlter", hasUpdatePermission);
@@ -191,14 +202,19 @@ public class GroupController extends BaseController {
         groupCreator.addMember(getUserProfile()); // to remove ambiguity about group creator being part of group
 
         model.addAttribute("groupCreator", groupCreator);
+        model.addAttribute("permissionTemplates", permissionTemplates);
+
         return "group/create";
     }
 
     @RequestMapping(value = "create", method = RequestMethod.POST)
     public String createGroup(Model model, @ModelAttribute("groupCreator") @Validated GroupWrapper groupCreator,
+                              @RequestParam("groupTemplate") String templateRaw,
                               BindingResult bindingResult, HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
         Long timeStart, timeEnd;
+        GroupPermissionTemplate template = GroupPermissionTemplate.fromString(templateRaw); // todo: set in wrapper
+        log.info("Got group wrapper back with this template: ... " + template.toString());
 
         if (bindingResult.hasErrors()) {
             model.addAttribute("groupCreator", groupCreator);
@@ -207,21 +223,30 @@ public class GroupController extends BaseController {
         }
 
         timeStart = System.currentTimeMillis();
-        User userCreator = userManagementService.getUserById(getUserProfile().getId());
+
+        /* todo: consoldilate these calls into a single 'createNewGroup' with user Id and put code in services layer */
+        User userCreator = getUserProfile();
         log.info(String.format("Just user load took: %d msecs", System.currentTimeMillis() - timeStart));
+
         Group groupToSave = groupManagementService.createNewGroup(userCreator, groupCreator.getGroupName(), true);
+        log.info("Okay, we have the groupToSave, with these roles ... " + groupToSave.getGroupRoles());
+
+        /* todo: consolidate these into one "assign permissions for group" -- also maybe leave this one within thread */
+        asyncRoleService.assignPermissionsToGroupRoles(groupToSave, template);
+
         boolean creatorInGroup = false;
         timeEnd = System.currentTimeMillis();
+
         log.info(String.format("User load & group creation: %d msecs", timeEnd - timeStart));
 
         timeStart = System.currentTimeMillis();
         for (User addedUser : groupCreator.getAddedMembers()) {
             if (addedUser.getPhoneNumber() != null && !addedUser.getPhoneNumber().trim().equals("")) {
                 User memberToAdd = userManagementService.loadOrSaveUser(addedUser.getPhoneNumber());
-                if (memberToAdd.getId() == userCreator.getId()) creatorInGroup = true;
+                if (memberToAdd.getId().equals(userCreator.getId())) creatorInGroup = true;
                 if (!memberToAdd.hasName() && addedUser.getDisplayName() != null) {
                     memberToAdd.setDisplayName(addedUser.getDisplayName());
-                    memberToAdd = userManagementService.save(memberToAdd);
+                    memberToAdd = userManagementService.save(memberToAdd); // todo: move into services to batch
                 }
                 groupManagementService.addGroupMember(groupToSave, memberToAdd, userCreator.getId(), true);
             }
@@ -229,11 +254,12 @@ public class GroupController extends BaseController {
 
         timeEnd = System.currentTimeMillis();
         log.info(String.format("Adding users to group: %d msecs", timeEnd - timeStart));
+
         timeStart = System.currentTimeMillis();
-
-        if (creatorInGroup)
-            roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, groupToSave, userCreator);
-
+        if (creatorInGroup) {
+            log.info("The group creator is part of the group ...");
+            asyncRoleService.addRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, groupToSave, userCreator, userCreator);
+        }
         timeEnd = System.currentTimeMillis();
         log.info(String.format("Set up creator as group organizer: %d msecs", timeEnd - timeStart));
 
@@ -252,6 +278,7 @@ public class GroupController extends BaseController {
             log.info("Generating a join code for the newly created group");
             groupToSave = groupManagementService.generateGroupToken(groupToSave, groupCreator.getTokenDaysValid(), userCreator);
         }
+
         timeEnd = System.currentTimeMillis();
         log.info(String.format("Final bit of scaffolding took: %d msecs", timeEnd - timeStart));
 
@@ -273,6 +300,7 @@ public class GroupController extends BaseController {
             log.debug("binding_error", "");
             groupCreator.setAddedMembers(addMember(groupCreator));
         }
+        model.addAttribute("permissionTemplates", permissionTemplates);
         return "group/create";
     }
 
@@ -282,6 +310,7 @@ public class GroupController extends BaseController {
                                @RequestParam("removeMember") Integer memberId) {
 
         groupCreator.setAddedMembers(removeMember(groupCreator, memberId));
+        model.addAttribute("permissionTemplates", permissionTemplates);
         return "group/create";
     }
 
@@ -333,24 +362,19 @@ public class GroupController extends BaseController {
 
     @RequestMapping(value = "add_members_do", method = RequestMethod.POST)
     public String addMembersBulkDo(Model model, @RequestParam("groupId") Long groupId, @RequestParam(value = "list")
-    String list, @RequestParam("closed") boolean isClosedGroup) {
+    String list, @RequestParam(value = "closed", required = false) boolean isClosedGroup) {
 
-       Group group = groupManagementService.loadGroup(groupId);
+
+        log.debug("closedgroup", String.valueOf(isClosedGroup));
+
+        Group group = groupManagementService.loadGroup(groupId);
         Map<String, List<String>> mapOfNumbers = BulkUserImportUtil.splitPhoneNumbers(list);
         List<String> numbersToBeAdded = mapOfNumbers.get("valid");
 
         if (!numbersToBeAdded.isEmpty()) {
-            List<User> users = userManagementService.getExistingUsersFromNumbers(numbersToBeAdded);
-            for (User user : users) {
-                numbersToBeAdded.remove(user.getPhoneNumber());
-            }
-            for (String number: numbersToBeAdded) {
-                users.add(new User(number));
-            }
-
-            group = groupManagementService.addMembersToGroup(groupId, users, isClosedGroup);
-
+            asyncGroupService.addBulkMembers(groupId, numbersToBeAdded, getUserProfile());
         }
+
         boolean errors = (mapOfNumbers.get("error").isEmpty()) ? false : true;
         model.addAttribute("errors", errors);
         model.addAttribute("group", group);
@@ -416,20 +440,16 @@ public class GroupController extends BaseController {
      */
 
     private List<User> addMember(GroupWrapper groupWrapper) {
-
         List<User> groupMembers = groupWrapper.getAddedMembers();
-        groupMembers.add(new User());
+        groupMembers.add(User.makeEmpty());
         return groupMembers;
 
     }
 
     private List<User> removeMember(GroupWrapper groupWrapper, Integer memberId) {
-
         List<User> groupMembers = groupWrapper.getAddedMembers();
         groupMembers.remove(memberId.intValue());
-        System.out.println("Number of users should be: " + groupMembers.size());
         return groupMembers;
-
     }
 
     /*
@@ -821,5 +841,36 @@ public class GroupController extends BaseController {
         return "redirect:" + path + "view";
 
     }
+
+    /**
+     * Group role view pages
+     */
+
+    /* @RequestMapping(value = "roles")
+    public String viewGroupRoles(Model model, @RequestParam Long groupId) {
+
+        // just to see roles, all you need is see details -- changing roles is a different story ...
+        Group group = loadGroup(groupId, BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        Map<String, Role> roles = roleService.fetchGroupRoles(groupId);
+        // todo: replace this with, say, Membership entity once built
+
+        List<MemberWrapper> members = new ArrayList<>();
+        for (User user : userManagementService.getGroupMembersSortedById(group))
+            members.add(new MemberWrapper(user, group, roleService.getUserRoleInGroup(user, group)));
+
+        model.addAttribute("group", group);
+        model.addAttribute("members", members);
+
+        if (roles.get(BaseRoles.ROLE_GROUP_ORGANIZER) != null)
+            model.addAttribute("organizerPerms", new ArrayList<>(roles.get(BaseRoles.ROLE_GROUP_ORGANIZER).getPermissions()));
+
+        if (roles.get(BaseRoles.ROLE_COMMITTEE_MEMBER) != null)
+            model.addAttribute("committeePerms", new ArrayList<>(roles.get(BaseRoles.ROLE_COMMITTEE_MEMBER).getPermissions()));
+
+        if (roles.get(BaseRoles.ROLE_ORDINARY_MEMBER) != null)
+            model.addAttribute("ordinaryPerms", new ArrayList<>(roles.get(BaseRoles.ROLE_ORDINARY_MEMBER).getPermissions()));
+
+        return "group/roles";
+    }*/
 
 }

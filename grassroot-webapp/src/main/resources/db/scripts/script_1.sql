@@ -403,14 +403,6 @@ ALTER TABLE ONLY user_roles
 
 
 --
--- Name: uk_d4atqq8ege1sij0316vh2mxfu; Type: CONSTRAINT; Schema: public; Owner: rmqtjvxbcjvalc; Tablespace:
---
-
-ALTER TABLE ONLY role_permissions
-    ADD CONSTRAINT uk_d4atqq8ege1sij0316vh2mxfu UNIQUE (role_id);
-
-
---
 -- Name: uk_dd0g7xm8e4gtak3ka2h89clyh; Type: CONSTRAINT; Schema: public; Owner: rmqtjvxbcjvalc; Tablespace:
 --
 
@@ -432,14 +424,6 @@ ALTER TABLE ONLY group_profile
 
 ALTER TABLE ONLY user_profile
     ADD CONSTRAINT uk_l6wgfhqrwuy4m1o7bs81ivg6x UNIQUE (user_name);
-
-
---
--- Name: uk_qfkbccnh2c5o4tc7akq5x11wv; Type: CONSTRAINT; Schema: public; Owner: rmqtjvxbcjvalc; Tablespace:
---
-
-ALTER TABLE ONLY role_permissions
-    ADD CONSTRAINT uk_qfkbccnh2c5o4tc7akq5x11wv UNIQUE (permission_id);
 
 
 --

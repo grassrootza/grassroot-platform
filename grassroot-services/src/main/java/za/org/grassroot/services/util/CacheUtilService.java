@@ -26,4 +26,19 @@ public interface CacheUtilService {
 
     String fetchUssdMenuForUser(String phoneNumber);
 
+    User fetchUser(String phoneNumber);
+
+    void cacheUser(User user);
+
+    void putUserLanguage(String phoneNumber, String language);
+
+    String getUserLanguage(String phoneNumber);
+
+    void clearUserLanguage(String phoneNumber);
+
+
+
+
+
+
 }

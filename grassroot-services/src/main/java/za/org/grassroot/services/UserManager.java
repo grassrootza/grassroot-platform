@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -19,6 +18,7 @@ import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.UserDTO;
+import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.MaskingUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
@@ -31,7 +31,6 @@ import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
 
 /**
  * @author Lesetse Kimwaga
@@ -45,7 +44,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     private static final int PAGE_SIZE = 50;
     @Autowired
-    GenericJmsTemplateProducerService jmsTemplateProducerService;
+   GenericJmsTemplateProducerService jmsTemplateProducerService;
     @Autowired
     private PasswordEncoder passwordEncoder;
     @Autowired
@@ -58,6 +57,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
     private EventManagementService eventManagementService;
     @Autowired
     private CacheUtilService cacheUtilService;
+    @Autowired
+    private AsyncUserService asyncUserService;
 
     @Override
     public User createUserProfile(User userProfile) {
@@ -72,8 +73,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
         User userToSave;
         String phoneNumber = PhoneNumberUtil.convertPhoneNumber(userProfile.getPhoneNumber());
+        boolean userExists = userExist(phoneNumber);
 
-        if (userExist(phoneNumber)) {
+        if (userExists) {
 
             System.out.println("The user exists, and their web profile is set to: " + userProfile.isHasWebProfile());
 
@@ -102,7 +104,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
             // for some reason String.join was not inserting the space properly, so changing to a straight concatenation;
             userProfile.setDisplayName(userProfile.getFirstName() + " " + userProfile.getLastName());
             userProfile.setHasWebProfile(true);
-            userProfile.setHasInitiatedSession(true); // since signing up on web page presumes an active user
             userToSave = userProfile;
         }
 
@@ -113,7 +114,11 @@ public class UserManager implements UserManagementService, UserDetailsService {
         }
 
         try {
-            return userRepository.save(userToSave);
+            User userToReturn = userRepository.saveAndFlush(userToSave);
+            if (userExists)
+                asyncUserService.recordUserLog(userToReturn.getId(), UserLogType.CREATED_IN_DB, "User first created via web sign up");
+            asyncUserService.recordUserLog(userToReturn.getId(), UserLogType.CREATED_WEB, "User created web profile");
+            return userToReturn;
         } catch (final Exception e) {
             e.printStackTrace();
             log.warn(e.getMessage());
@@ -178,10 +183,11 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public User loadOrSaveUser(String inputNumber) {
         String phoneNumber = PhoneNumberUtil.convertPhoneNumber(inputNumber);
         if (!userExist(phoneNumber)) {
-            User sessionUser = new User();
-            sessionUser.setPhoneNumber(phoneNumber);
+            User sessionUser = new User(phoneNumber);
             sessionUser.setUsername(phoneNumber);
-            return userRepository.save(sessionUser);
+            User newUser = userRepository.save(sessionUser);
+            asyncUserService.recordUserLog(newUser.getId(), UserLogType.CREATED_IN_DB, "Created via loadOrSaveUser");
+            return newUser;
         } else {
             return userRepository.findByPhoneNumber(phoneNumber);
         }
@@ -254,10 +260,11 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     public User findByInputNumber(String inputNumber, String currentUssdMenu) throws NoSuchUserException {
-        User sessionUser = userRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(inputNumber));
+
+        User  sessionUser =userRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(inputNumber));
         cacheUtilService.putUssdMenuForUser(inputNumber, currentUssdMenu);
-        sessionUser.setLastUssdMenu(currentUssdMenu); // again, remove / switch to async call once properly set up
-        return userRepository.save(sessionUser);
+
+        return sessionUser;
     }
 
     @Override
@@ -293,10 +300,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
         for (String inputNumber : listOfNumbers) {
             String phoneNumber = PhoneNumberUtil.convertPhoneNumber(inputNumber);
             if (!userExist(phoneNumber)) {
-                User userToCreate = new User();
-                userToCreate.setPhoneNumber(phoneNumber);
-                userRepository.save(userToCreate);
+                User userToCreate = userRepository.save(new User(phoneNumber));
                 usersToAdd.add(userToCreate);
+                asyncUserService.recordUserLog(userToCreate.getId(), UserLogType.CREATED_IN_DB, "Created via multi member add");
             } else {
                 usersToAdd.add(findByInputNumber(inputNumber));
             }
@@ -418,6 +424,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public User setInitiatedSession(User sessionUser) {
         sessionUser.setHasInitiatedSession(true);
         jmsTemplateProducerService.sendWithNoReply("welcome-messages", new UserDTO(sessionUser));
+        asyncUserService.recordUserLog(sessionUser.getId(), UserLogType.INITIATED_USSD, "First USSD active session");
         return userRepository.save(sessionUser);
     }
 
@@ -440,10 +447,14 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     public User setLastUssdMenu(User sessionUser, String lastUssdMenu) {
-        sessionUser.setLastUssdMenu(lastUssdMenu);
-        return userRepository.save(sessionUser);
+        cacheUtilService.putUssdMenuForUser(sessionUser.getPhoneNumber(),lastUssdMenu);
+        return sessionUser;
     }
 
+    @Override
+    public void putLastUSSDMenu(String phoneNumber, String lastUssdMenu){
+        cacheUtilService.putUssdMenuForUser(phoneNumber,lastUssdMenu);
+    }
     @Override
     public User setDisplayName(User user, String displayName) {
         user.setDisplayName(displayName);
@@ -458,6 +469,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public User setUserLanguage(User sessionUser, String locale) {
         sessionUser.setLanguageCode(locale);
+        cacheUtilService.putUserLanguage(sessionUser.getPhoneNumber(),locale);
         return userRepository.save(sessionUser);
     }
 
@@ -517,6 +529,10 @@ public class UserManager implements UserManagementService, UserDetailsService {
         for (User user : unmaskedUsers)
             maskedUsers.add(MaskingUtil.maskUser(user));
         return maskedUsers;
+    }
+    @Override
+    public UserDTO loadUser(String phoneNumber) {
+        return new UserDTO(userRepository.findByNumber(phoneNumber));
     }
 
     public void setPasswordEncoder(final PasswordEncoder passwordEncoder) {

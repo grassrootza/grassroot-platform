@@ -15,7 +15,7 @@ public class UserRegistration {
     public User user;
 
     public UserRegistration() {
-        user = new User();
+        user = User.makeEmpty();
     }
 
     public User getUser() {

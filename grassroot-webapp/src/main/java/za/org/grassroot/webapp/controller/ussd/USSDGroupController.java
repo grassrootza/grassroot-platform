@@ -14,12 +14,11 @@ import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
-import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
-import java.net.URLEncoder;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
@@ -60,7 +59,7 @@ public class USSDGroupController extends USSDController {
         // in case went "back" from menu in middle of create group
         User sessionUser = (interrupted) ? userManager.findByInputNumber(inputNumber, null) : userManager.findByInputNumber(inputNumber);
         return menuBuilder(ussdGroupUtil.askForGroupAllowCreateNew(sessionUser, USSDSection.GROUP_MANAGER,
-                                                                   existingGroupMenu, createGroupMenu, null));
+                                                                   existingGroupMenu, createGroupMenu,null));
     }
 
     /*
@@ -116,8 +115,8 @@ public class USSDGroupController extends USSDController {
                                        @RequestParam(value="interrupted", required=false) boolean interrupted,
                                        @RequestParam(value= groupIdParam, required=false) Long groupId) throws URISyntaxException {
 
-        log.info("Inside createGroupMenu ... going to name it ... " + groupName);
-        User user = userManager.findByInputNumber(inputNumber);
+      //  log.info("Inside createGroupMenu ... going to name it ... " + groupName);
+       User user = userManager.findByInputNumber(inputNumber);
 
         Group createdGroup = (interrupted) ?    groupManager.loadGroup(groupId) :
                                                 groupManager.createNewGroupWithCreatorAsMember(user, groupName, true);

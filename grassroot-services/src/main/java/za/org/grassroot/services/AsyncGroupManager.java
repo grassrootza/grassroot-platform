@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.BaseRoles;
@@ -20,6 +20,9 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 
+import java.util.List;
+import java.util.concurrent.Future;
+
 /**
  * Created by luke on 2016/02/15.
  */
@@ -32,13 +35,19 @@ public class AsyncGroupManager implements AsyncGroupService {
     private static final Long dontKnowTheUser = 0L;
 
     @Autowired
+    private GroupRepository groupRepository;
+
+    @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private UserManagementService userManagementService;
 
     @Autowired
     private GroupLogRepository groupLogRepository;
 
     @Autowired
-    private RoleManagementService roleManagementService;
+    private AsyncRoleService asyncRoleService;
 
     @Autowired
     private GenericJmsTemplateProducerService jmsTemplateProducerService;
@@ -51,7 +60,7 @@ public class AsyncGroupManager implements AsyncGroupService {
 
     @Async
     @Override
-    public void wireNewGroupMemberLogsRoles(Group group, User newMember, Long addingUserId, boolean addDefaultRole) {
+    public void addNewGroupMemberLogsMessages(Group group, User newMember, Long addingUserId) {
 
         if (hasDefaultLanguage(group) && !newMember.isHasInitiatedSession())
             assignDefaultLanguage(group, newMember);
@@ -59,33 +68,76 @@ public class AsyncGroupManager implements AsyncGroupService {
         Long savingUserId = (addingUserId == null) ? dontKnowTheUser : addingUserId;
 
         groupLogRepository.save(new GroupLog(group.getId(), savingUserId, GroupLogType.GROUP_MEMBER_ADDED, newMember.getId()));
-
-        if (addDefaultRole) {
-            if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, group,
-                                                                   newMember, userRepository.findOne(addingUserId));
-            } else {
-                roleManagementService.addDefaultRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, group, newMember);
-            }
-        }
-
         jmsTemplateProducerService.sendWithNoReply(EventChangeType.USER_ADDED.toString(), new NewGroupMember(group, newMember));
     }
 
     @Async
     @Override
-    public void removeGroupMemberLogsRoles(Group group, User oldMember, User removingUser) {
+    public void removeGroupMemberLogs(Group group, User oldMember, User removingUser) {
         Long removingUserId = (removingUser == null) ? dontKnowTheUser : removingUser.getId();
         String description = (oldMember.getId() == removingUserId) ? "Unsubscribed" : "Removed from group";
         groupLogRepository.save(new GroupLog(group.getId(), removingUserId, GroupLogType.GROUP_MEMBER_REMOVED,
                                              oldMember.getId(), description));
-        roleManagementService.removeGroupRolesFromUser(oldMember, group);
     }
 
+    @Async
     @Override
     public void assignDefaultLanguage(Group group, User user) {
         user.setLanguageCode(group.getDefaultLanguage());
         userRepository.save(user);
+    }
+
+    @Async
+    @Override
+    @Transactional
+    public void addBulkMembers(Long groupId, List<String> phoneNumbers, User callingUser) {
+
+        Long timeStart = System.currentTimeMillis();
+        List<User> users = userManagementService.getExistingUsersFromNumbers(phoneNumbers);
+
+        for (User user : users) {
+            log.info("Removing phone number ..." + user.getPhoneNumber());
+            phoneNumbers.remove(user.getPhoneNumber());
+        }
+
+        for (String number: phoneNumbers) {
+            users.add(new User(number));
+        }
+
+        Future<Group> returnedGroup = addMembersWithoutRoles(groupId, users);
+        while (!returnedGroup.isDone()) {
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        Group savedGroup;
+        try { savedGroup = returnedGroup.get(); }
+        catch (Exception e) { savedGroup = groupRepository.findOne(groupId); }
+
+        log.info(String.format("Prior to logs and messages, took ... %d msec", System.currentTimeMillis() - timeStart));
+
+        for (User newMember : users) { // todo: also switch to single async calls
+            addNewGroupMemberLogsMessages(savedGroup, newMember, callingUser.getId());
+            asyncRoleService.addRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, savedGroup, newMember, callingUser);
+            userRepository.save(newMember); // else some users not saving role, not sure why
+        }
+
+        log.info(String.format("Altogether, took .... %d msec", System.currentTimeMillis() - timeStart));
+
+    }
+
+    @Async
+    @Override
+    @Transactional
+    public Future<Group> addMembersWithoutRoles(Long groupId, List<User> newMembers) {
+        Group group = groupRepository.findOne(groupId);
+        userRepository.save(newMembers);
+        group.getGroupMembers().addAll(newMembers); // todo: make sure not duplicating (switch to set)
+        Group savedGroup = groupRepository.saveAndFlush(group);
+        return new AsyncResult<>(savedGroup);
     }
 
     @Override

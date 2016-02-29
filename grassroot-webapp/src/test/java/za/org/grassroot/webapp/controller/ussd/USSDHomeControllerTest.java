@@ -2,9 +2,7 @@ package za.org.grassroot.webapp.controller.ussd;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
-import org.mockito.runners.MockitoJUnitRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -323,7 +321,6 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
         resetTestUser();
 
-        Group testGroup1 = new Group();
         List<Group> testGroups = Arrays.asList(new Group("gc1", testUser),
                                                new Group("gc2", testUser),
                                                new Group("gc3", testUser),

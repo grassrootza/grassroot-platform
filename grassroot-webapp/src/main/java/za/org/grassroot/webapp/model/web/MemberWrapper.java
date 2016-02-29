@@ -23,8 +23,7 @@ public class MemberWrapper {
     private String roleName;
 
     public MemberWrapper(User user, Group group, Role role) {
-        log.info("Constructing member wrapper for user ... " + user.nameToDisplay() + " ... in group ... " + group.getName(""));
-        if (!group.getGroupMembers().contains(user)) throw new SecurityException("Error! User not a member of group");
+        log.info("Constructing member wrapper for user ... " + user.getId() + " ... in group ... " + group.getId());
         this.user = user;
         this.group = group;
         this.role = role;

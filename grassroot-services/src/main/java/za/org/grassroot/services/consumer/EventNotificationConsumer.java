@@ -1,7 +1,6 @@
 package za.org.grassroot.services.consumer;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.*;
@@ -74,6 +73,7 @@ public class EventNotificationConsumer {
         log.finest("sendNewEventNotifications... <" + event.toString() + ">");
 
         for (User user : getAllUsersForGroup(event.getEventObject())) {
+            cacheUtilService.clearRsvpCacheForUser(user,event.getEventType());
             sendNewMeetingMessage(user, event);
         }
     }
@@ -154,7 +154,7 @@ public class EventNotificationConsumer {
             sendLogBookReminderMessage(userRepository.findOne(logBookDTO.getAssignedToUserId()), group, logBookDTO);
 
         } else {
-            for (User user : group.getGroupMembers()) {
+            for (User user : groupManagementService.getUsersInGroupNotSubGroups(group.getId())) {
                 sendLogBookReminderMessage(user, group, logBookDTO);
             }
         }
@@ -240,6 +240,13 @@ public class EventNotificationConsumer {
 
     }
 
+    @JmsListener(destination = "processing-failure", containerFactory = "messagingJmsContainerFactory", concurrency = "1")
+    public void sendReplyProcessingFailureNotification(User user){
+        sendCouldNotProcessReply(user);
+    }
+
+
+
     private void sendWelcomeMessages(UserDTO userDTO) {
         log.info("sendWelcomeMessages..." + userDTO + "...messages..." + welcomeMessages);
         for (String messageId : welcomeMessages) {
@@ -264,16 +271,16 @@ public class EventNotificationConsumer {
 
     private List<User> getAllUsersForGroup(Event event) {
         if (event.isIncludeSubGroups()) {
-            return groupManagementService.getAllUsersInGroupAndSubGroups(event.getAppliesToGroup());
+            return groupManagementService.getAllUsersInGroupAndSubGroups(event.getAppliesToGroup().getId());
         } else {
-            return event.getAppliesToGroup().getGroupMembers();
+            return groupManagementService.getUsersInGroupNotSubGroups(event.getAppliesToGroup().getId());
         }
     }
 
     private void sendNewMeetingMessage(User user, EventDTO event) {
         //generate message based on user language
         String message = meetingNotificationService.createMeetingNotificationMessage(user, event);
-        if (!eventLogManagementService.notificationSentToUser(event.getEventObject(), user)) {
+        if (!eventLogManagementService.notificationSentToUser(event.getEventObject(),user)) {
             log.info("sendNewEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
             messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
             eventLogManagementService.createEventLog(EventLogType.EventNotification, event.getEventObject(), user, message);
@@ -364,6 +371,11 @@ public class EventNotificationConsumer {
         messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
         logBookLogRepository.save(new LogBookLog(logBookDTO.getId(),message,user.getId(),group.getId(),user.getPhoneNumber()));
 
+    }
+
+    public void sendCouldNotProcessReply(User user){
+        String message = meetingNotificationService.createReplyFailureMessage(user);
+        messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
     }
 
 }

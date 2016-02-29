@@ -17,6 +17,7 @@ import za.org.grassroot.core.dto.MaskedUserDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.*;
+import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.MemberWrapper;
 
@@ -48,6 +49,9 @@ public class AdminController extends BaseController {
 
     @Autowired
     private RoleManagementService roleManagementService;
+
+    @Autowired
+    private AsyncRoleService asyncRoleService;
 
     @Autowired
     private AnalyticalService analyticalService;
@@ -228,8 +232,11 @@ public class AdminController extends BaseController {
                                                   new String[]{BaseRoles.ROLE_GROUP_ORGANIZER, "Group organizer"});
 
         List<MemberWrapper> members = new ArrayList<>();
-        for (User user : userManagementService.getGroupMembersSortedById(group))
-            members.add(new MemberWrapper(user, group, roleManagementService.getUserRoleInGroup(user, group)));
+        for (User user : userManagementService.getGroupMembersSortedById(group)) {
+            Role roleInGroup = roleManagementService.getUserRoleInGroup(user, group);
+            log.info("constructingMemberWrapper ... user's role is ... " + ((roleInGroup != null) ? roleInGroup.describe() : "null"));
+            members.add(new MemberWrapper(user, group, roleInGroup));
+        }
 
         model.addAttribute("group", group);
         model.addAttribute("members", members);
@@ -254,7 +261,7 @@ public class AdminController extends BaseController {
         log.info("About to do role assignment etc ... Role: " + roleName + " ... to user ... " + userToModify.nameToDisplay() +
                          " ... to group ... " + group.getGroupName());
 
-        roleManagementService.addDefaultRoleToGroupAndUser(roleName, group, userToModify);
+        asyncRoleService.addRoleToGroupAndUser(roleName, group, userToModify, getUserProfile());
 
         addMessage(model, MessageType.INFO, "admin.done", request);
         return adminViewGroup(model, groupId);
@@ -265,7 +272,7 @@ public class AdminController extends BaseController {
     public String resetGroupRoles(Model model, @RequestParam Long groupId, HttpServletRequest request) {
 
         // todo: uh, confirmation screen
-        roleManagementService.resetGroupToDefaultRolesPermissions(groupId);
+        asyncRoleService.resetGroupToDefaultRolesPermissions(groupId, GroupPermissionTemplate.DEFAULT_GROUP, getUserProfile());
         addMessage(model, MessageType.INFO, "admin.done", request);
         return allGroups(model, 0);
     }
@@ -285,7 +292,7 @@ public class AdminController extends BaseController {
         List<Long> groupIds = Arrays.asList(groupId);
         for (Long id : groupIds) {
             log.info("Resetting group ... " + groupManagementService.loadGroup(id).getGroupName());
-            roleManagementService.resetGroupToDefaultRolesPermissions(id);
+            asyncRoleService.resetGroupToDefaultRolesPermissions(id, GroupPermissionTemplate.DEFAULT_GROUP, getUserProfile());
         }
         return allGroups(model, 0);
     }

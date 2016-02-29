@@ -2,6 +2,7 @@ package za.org.grassroot.services;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
@@ -24,6 +25,7 @@ public interface EventManagementService {
     /*
     Methods to create events, in various different forms
      */
+
     Event createEvent(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups, boolean rsvpRequired);
 
     Event createEvent(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups);
@@ -189,6 +191,8 @@ public interface EventManagementService {
     todo: handle sub-groups
      */
 
+
+
     List<Event> getGroupEventsInPeriod(Group group, LocalDateTime periodStart, LocalDateTime periodEnd);
 
     List<Event> getEventsForGroupInTimePeriod(Group group, EventType eventType, LocalDateTime periodStart, LocalDateTime periodEnd);
@@ -204,5 +208,8 @@ public interface EventManagementService {
     double getCostOfMessagesForGroupInPeriod(Group group, EventType eventType, LocalDateTime periodStart, LocalDateTime periodEnd);
 
     double getTotalCostGroupInPeriod(Group group, LocalDateTime periodStart, LocalDateTime periodEnd);
+
+    int notifyUnableToProcessEventReply(User user);
+
 
 }

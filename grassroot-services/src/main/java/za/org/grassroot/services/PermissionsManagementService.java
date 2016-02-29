@@ -1,8 +1,11 @@
 package za.org.grassroot.services;
 
 import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.Role;
+import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -52,5 +55,13 @@ public interface PermissionsManagementService {
     Set<Permission> closedGroupOrdinaryMemberPermissions();
 
     Set<Permission> closedPermissionsGroupRole(String roleName);
+
+    /*
+    Strings to return set of default permissions for role name and
+     */
+
+    Map<String, Role> setRolePermissionsFromTemplate(Map<String, Role> roles, GroupPermissionTemplate template);
+
+    Set<Permission> getPermissions(String roleName, GroupPermissionTemplate template);
 
 }

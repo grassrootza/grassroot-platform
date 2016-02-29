@@ -15,7 +15,6 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.util.USSDEventUtil;
-import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
@@ -133,7 +132,7 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupManagementServiceMock, times(2)).hasActiveGroupsPartOf(testUser);
         verify(groupManagementServiceMock, times(2)).getPageOfActiveGroups(testUser, 0, 3);
-       // verifyNoMoreInteractions(groupManagementServiceMock);
+        verifyNoMoreInteractions(groupManagementServiceMock);
     }
 
     @Test

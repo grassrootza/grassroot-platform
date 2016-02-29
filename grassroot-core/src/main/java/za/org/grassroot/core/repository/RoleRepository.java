@@ -1,14 +1,15 @@
 package za.org.grassroot.core.repository;
 
-import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 import za.org.grassroot.core.domain.Role;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Lesetse Kimwaga
  */
-public interface RoleRepository extends CrudRepository<Role,Long> {
+public interface RoleRepository extends JpaRepository<Role,Long> {
 
     List<Role> findByName(String name);
 
@@ -16,7 +17,7 @@ public interface RoleRepository extends CrudRepository<Role,Long> {
 
     List<Role> findByRoleType(Role.RoleType roleType);
 
-    List<Role> findByGroupReferenceId(Long groupReferenceId);
+    Set<Role> findByGroupReferenceId(Long groupReferenceId);
 
     Role findByNameAndGroupReferenceId(String name, Long groupReferenceId);
 }

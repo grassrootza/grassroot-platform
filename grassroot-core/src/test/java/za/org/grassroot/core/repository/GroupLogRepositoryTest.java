@@ -4,8 +4,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.TestContextConfiguration;
@@ -14,14 +12,8 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.GroupLogType;
-import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.transaction.Transactional;
-import java.sql.Timestamp;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
 import java.util.logging.Logger;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -53,14 +45,10 @@ public class GroupLogRepositoryTest {
 
         assertThat(groupLogRepository.count(), is(0L));
 
-        Group groupToCreate = new Group();
-        User userToDoTests = new User();
-
-        userToDoTests.setPhoneNumber("0810001111");
+        User userToDoTests = new User("0810001111");
         userToDoTests = userRepository.save(userToDoTests);
 
-        groupToCreate.setGroupName("testGroup");
-        groupToCreate.setCreatedByUser(userToDoTests);
+        Group groupToCreate = new Group("testGroup", userToDoTests);
         groupToCreate = groupRepository.save(groupToCreate);
 
         GroupLog groupLog = new GroupLog(groupToCreate.getId(), userToDoTests.getId(), GroupLogType.GROUP_ADDED, 0L);

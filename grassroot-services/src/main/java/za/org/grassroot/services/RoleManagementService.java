@@ -6,6 +6,8 @@ import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Lesetse Kimwaga
@@ -29,14 +31,16 @@ public interface RoleManagementService {
     List<Role> getAllRoles();
 
     /*
-    Methods to fetch standard and group roles
+    Methods to fetch standard roles and create and fetch group roles
      */
 
     Role fetchStandardRoleByName(String name);
 
     Role fetchGroupRoleByName(String name);
 
-    List<Role> fetchGroupRoles(Long groupId);
+    Set<Role> createGroupRoles(Long groupId, String groupName);
+
+    Map<String, Role> fetchGroupRoles(Long groupId);
 
     Role fetchGroupRole(String roleName, Long groupId);
 
@@ -56,35 +60,15 @@ public interface RoleManagementService {
 
     User removeStandardRoleFromUser(String roleName, User user);
 
-    Role addRoleToGroup(Role role, Group group);
-
-    Role addRoleToGroup(String roleName, Group group);
-
-    void addDefaultRoleToGroupAndUser(String roleName, Group group, User user);
-
-    void addDefaultRoleToGroupAndUser(String roleName, Group group, User addingToUser, User callingUser);
-
-    void removeUsersRoleInGroup(User user, Group group);
-
-    void resetGroupToDefaultRolesPermissions(Long groupId);
-
     User removeGroupRolesFromUser(User user, Group group);
-
-    /*
-    Methods to assign permissions to roles
-     */
-
-    Role assignPermissionsToRole(Role role, List<Permission> permissions);
-
-    Role addPermissionToRole(Role role, Permission permission);
-
-    Role removePermissionFromRole(Role role, Permission permission);
 
     /*
     Methods to retrieve roles for user in group
      */
 
     Role getUserRoleInGroup(User user, Group group);
+
+    Role getUserRoleInGroup(User user, Long groupId);
 
     boolean doesUserHaveRoleInGroup(User user, Group group, String roleName);
 

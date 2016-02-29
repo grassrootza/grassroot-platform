@@ -25,11 +25,11 @@
         </div>
       </div>
     </div>
-    <div class="row">
+    <!-- <div class="row">
       <div class="col-lg-8">
         <h4>It will be sent to <span th:text="${recipients}">X</span> people, at a cost of R <span th:text="${cost}"></span></h4>.
       </div>
-    </div>
+    </div> -->
     <div class="row">
       <form th:action="@{${action}}" method="post" class="form-horizontal col-lg-8">
         <input type="hidden" name="entityId" th:value="${entityId}" />

@@ -41,7 +41,6 @@ public class PhoneNumberUtil {
         // todo: handle error if number has gotten into database in incorrect format
         // todo: make this much faster, e.g., use a simple regex / split function?
 
-        List<String> numComponents = new ArrayList<>();
         String prefix = String.join("", Arrays.asList("0", storedNumber.substring(2, 4)));
         String midnumbers, finalnumbers;
 

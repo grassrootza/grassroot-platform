@@ -128,7 +128,7 @@ public class EventLogManager implements EventLogManagementService {
             // put values in the fields so that rest method does not NPE
             eventLog.setId(0L);
             eventLog.setEvent(new Event());
-            eventLog.setUser(new User());
+            eventLog.setUser(User.makeEmpty());
 
         }
 

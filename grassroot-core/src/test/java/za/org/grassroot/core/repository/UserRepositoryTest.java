@@ -56,8 +56,7 @@ public class UserRepositoryTest {
     public void shouldSaveAndRetrieveUserData() throws Exception {
         assertThat(userRepository.count(), is(0L));
 
-        User userToCreate = new User();
-        userToCreate.setPhoneNumber("12345");
+        User userToCreate = new User("12345");
         assertNull(userToCreate.getId());
         assertNull(userToCreate.getCreatedDateTime());
         userRepository.save(userToCreate);
@@ -73,8 +72,7 @@ public class UserRepositoryTest {
     public void shouldNotSaveDuplicatePhoneNumbersInUserTable() throws Exception {
         assertThat(userRepository.count(), is(0L));
 
-        User firstUserToCreate = new User();
-        firstUserToCreate.setPhoneNumber("12345");
+        User firstUserToCreate = new User("12345");
         firstUserToCreate = userRepository.save(firstUserToCreate);
 
 
@@ -83,10 +81,7 @@ public class UserRepositoryTest {
         assertThat(userFromDb.getPhoneNumber(), is("12345"));
 
 
-        User firstUserFromDB = userRepository.findAll().iterator().next();
-
-        User secondUserToCreate = new User();
-        secondUserToCreate.setPhoneNumber("12345");
+        User secondUserToCreate = new User("12345");
 
         userRepository.save(secondUserToCreate);
         fail("Saving a user with the phone number of an already existing user should throw an exception");
@@ -96,8 +91,7 @@ public class UserRepositoryTest {
 
     @Test
     public void shouldSaveAndFindByPhoneNumber() throws Exception {
-        User userToCreate = new User();
-        userToCreate.setPhoneNumber("54321");
+        User userToCreate = new User("54321");
         assertNull(userToCreate.getId());
         assertNull(userToCreate.getCreatedDateTime());
         User savedUser = userRepository.save(userToCreate);

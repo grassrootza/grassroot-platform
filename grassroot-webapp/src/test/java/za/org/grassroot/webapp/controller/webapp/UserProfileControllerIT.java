@@ -9,7 +9,6 @@ import org.springframework.boot.test.WebIntegrationTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
-import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.webapp.GrassRootWebApplicationConfig;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.UserManagementService;
@@ -34,11 +33,7 @@ public class UserProfileControllerIT {
 
     @Test
     public void testName() throws Exception {
-
-        User userProfile = new User();
-        userProfile.setDisplayName("Grass Root");
-        userProfile.setPhoneNumber("1201994");
-
+        User userProfile = new User("1201994", "Grass Root");
         userProfile = userManagementService.createUserProfile(userProfile);
 
         assertThat(userProfile.getDisplayName(), equalTo("Grass Root"));

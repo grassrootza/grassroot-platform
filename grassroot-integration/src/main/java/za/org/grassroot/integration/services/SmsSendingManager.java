@@ -17,8 +17,6 @@ import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.UserRepository;
 
-import java.util.List;
-
 /**
  * Created by luke on 2015/09/09.
  */

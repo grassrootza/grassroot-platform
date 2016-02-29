@@ -82,18 +82,16 @@
             Add another member</button>
         </div>
       </div>
-        <!-- <div class="col-lg-8">
-          <label for="generateToken" class="col-lg-4 control-label">Create a joining code?</label>
-          <div class="col-lg-4">
-            <input th:checked="${generateToken}" type="checkbox" class="form-control" id="generateToken" name="generateToken"/>
-          </div>
-          <label for="tokenDaysValid">How long should it stay open?</label>
-          <select th:field="*{tokenDaysValid}" id="tokenDaysValid">
-            <option value="0">Permanent (can be closed anytime)</option>
-            <div class="col-lg-4" th:include="fragments :: daySelector"></div>
+      <div class="form-group">
+        <label for="groupTemplate" class="col-lg-2 control-label">What permissions should members have?</label>
+        <div class="col-lg-4">
+          <select name="groupTemplate" id="groupTemplate">
+            <option th:each="template : ${permissionTemplates}"
+                    th:value="${template[0]}"
+                    th:text="${template[1]}"></option>
           </select>
         </div>
-      </div> -->
+      </div>
       <div class="form-group">
         <div class="col-lg-8">
           <a th:href="@{/home}" role="button" class="btn btn-default">Cancel</a>

@@ -7,6 +7,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.context.support.ResourceBundleMessageSource;
+import org.springframework.data.jpa.convert.threeten.Jsr310JpaConverters;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.jms.annotation.EnableJms;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -25,7 +26,7 @@ import java.util.concurrent.Executors;
 
 @Configuration
 @ComponentScan("za.org.grassroot")
-@EntityScan
+@EntityScan(basePackageClasses = {GrassRootServicesConfig.class, Jsr310JpaConverters.class})
 @EnableAutoConfiguration
 @EnableJpaRepositories
 @EnableJms

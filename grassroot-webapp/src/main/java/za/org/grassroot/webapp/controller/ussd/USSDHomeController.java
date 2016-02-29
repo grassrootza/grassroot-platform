@@ -1,9 +1,5 @@
 package za.org.grassroot.webapp.controller.ussd;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.*;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,11 +8,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.UserLogType;
+import za.org.grassroot.services.AsyncUserService;
 import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDResponseTypes;
@@ -25,6 +22,9 @@ import za.org.grassroot.webapp.model.ussd.AAT.Option;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import za.org.grassroot.webapp.util.USSDEventUtil;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.*;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
@@ -40,10 +40,10 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 public class USSDHomeController extends USSDController {
 
     @Autowired
-    EventLogManagementService eventLogManagementService;
+    private EventLogManagementService eventLogManagementService;
 
     @Autowired
-    USSDEventUtil eventUtil;
+    private USSDEventUtil eventUtil;
 
     Logger log = LoggerFactory.getLogger(getClass());
     private static final String path = homePath + "/";
@@ -82,6 +82,7 @@ public class USSDHomeController extends USSDController {
 
         User sessionUser = userManager.loadOrSaveUser(inputNumber);
 
+
         /*
         Adding some complex logic here to check for one of these things:
         (1) The user has appended a joining code, so we need to add them to a group
@@ -104,10 +105,9 @@ public class USSDHomeController extends USSDController {
         } else {
             openingMenu = defaultStartMenu(sessionUser);
         }
-
         Long endTime = System.currentTimeMillis();
         log.info(String.format("Generating home menu, time taken: %d msecs", endTime - startTime));
-        return menuBuilder(openingMenu);
+        return menuBuilder(openingMenu, true);
 
     }
 
@@ -135,6 +135,7 @@ public class USSDHomeController extends USSDController {
 
         User sessionUser = userManager.findByInputNumber(inputNumber);
         sessionUser = userManager.setUserLanguage(sessionUser, language);
+
         return menuBuilder(defaultStartMenu(sessionUser));
 
     }
@@ -463,7 +464,7 @@ public class USSDHomeController extends USSDController {
          displayed/paginated will vary a lot
           */
         return menuBuilder(ussdGroupUtil.
-                userGroupMenuPaginated(userManager.findByInputNumber(inputNumber), prompt, existingUri, newUri, pageNumber));
+                userGroupMenuPaginated(userManager.findByInputNumber(inputNumber), prompt, existingUri, newUri, pageNumber,null));
 
     }
 

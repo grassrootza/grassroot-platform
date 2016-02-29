@@ -1,12 +1,8 @@
 package za.org.grassroot.services;
 
-import net.sf.ehcache.Cache;
-import net.sf.ehcache.CacheManager;
-import net.sf.ehcache.Element;
 import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.lang3.SerializationUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -26,7 +22,6 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.util.CacheUtilService;
 
-import javax.persistence.EntityManager;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
@@ -62,8 +57,6 @@ public class EventManager implements EventManagementService {
     @Autowired
     EventLogManagementService eventLogManagementService;
 
-    @Autowired
-    EntityManager entityManager;
 
     @Autowired
     CacheUtilService cacheUtilService;
@@ -93,13 +86,13 @@ public class EventManager implements EventManagementService {
 
     @Override
     public Event createEvent(String name, User createdByUser, Group appliesToGroup) {
-        return  createEvent(name, createdByUser, appliesToGroup, false);
+        return createEvent(name, createdByUser, appliesToGroup, false);
     }
 
     @Override
     public Event createEvent(String name, Long createdByUserId, Long appliesToGroupId, boolean includeSubGroups) {
         return createEvent(name, userManagementService.getUserById(createdByUserId),
-                           groupManager.loadGroup(appliesToGroupId), includeSubGroups);
+                groupManager.loadGroup(appliesToGroupId), includeSubGroups);
     }
 
     /* These appear not to be used anymore, hence commenting out ... to reduce clutter in the service interface
@@ -189,7 +182,6 @@ public class EventManager implements EventManagementService {
         log.fine("createNewEvent...created..." + createdEvent.toString());
         return createdEvent;
     }
-
 
 
     @Override
@@ -473,7 +465,7 @@ public class EventManager implements EventManagementService {
 
         if (outstandingRSVPs == null) {
             // fetch from the database
-            Map eventMap = new HashedMap<Long,Long>();
+            Map eventMap = new HashedMap<Long, Long>();
             outstandingRSVPs = new ArrayList<Event>();
             List<Group> groups = groupManager.getActiveGroupsPartOf(user);
             log.fine("getOutstandingResponseForUser...after...getGroupsPartOf...");
@@ -489,16 +481,16 @@ public class EventManager implements EventManagementService {
                         for (Event event : upcomingEvents) {
                             log.fine("getOutstandingResponseForUser...start...event check..." + event.getId());
 
-                            if (event.isRsvpRequired()  && event.getEventType() == eventType) {
+                            if (event.isRsvpRequired() && event.getEventType() == eventType) {
                                 //rsvp
                                 if ((eventType == EventType.Meeting && event.getCreatedByUser().getId() != user.getId())
                                         || eventType != EventType.Meeting) {
 
                                     //N.B. remove this if statement if you want to allow votes for people that joined the group late
                                     if (eventType == EventType.Vote) {
-                                        Timestamp joined = groupLogRepository.getGroupJoinedDate(group.getId(),user.getId());
-                                        if (joined !=null && joined.after(event.getCreatedDateTime())) {
-                                            log.info(String.format("Excluding vote %s for %s as the user joined group %s after the vote was called",event.getName(),user.getPhoneNumber(),group.getId()));
+                                        Timestamp joined = groupLogRepository.getGroupJoinedDate(group.getId(), user.getId());
+                                        if (joined != null && joined.after(event.getCreatedDateTime())) {
+                                            log.info(String.format("Excluding vote %s for %s as the user joined group %s after the vote was called", event.getName(), user.getPhoneNumber(), group.getId()));
                                             continue;
                                         }
                                     }
@@ -506,7 +498,7 @@ public class EventManager implements EventManagementService {
                                         //see if we added it already as the user can be in multiple groups in a group structure
                                         if (eventMap.get(event.getId()) == null) {
                                             outstandingRSVPs.add(event);
-                                            eventMap.put(event.getId(),event.getId());
+                                            eventMap.put(event.getId(), event.getId());
                                         }
                                         log.info("getOutstandingResponseForUser..." + eventType.toString() + " Required..." + user.getPhoneNumber() + "...event..." + event.getId());
                                     } else {
@@ -525,7 +517,7 @@ public class EventManager implements EventManagementService {
                     }
 
                 }
-                cacheUtilService.putOutstandingResponseForUser(user,eventType,outstandingRSVPs);
+                cacheUtilService.putOutstandingResponseForUser(user, eventType, outstandingRSVPs);
             }
 
         }
@@ -794,7 +786,7 @@ public class EventManager implements EventManagementService {
     public List<Event> getGroupEventsInPeriod(Group group, LocalDateTime periodStart, LocalDateTime periodEnd) {
         Sort sort = new Sort(Sort.Direction.ASC, "EventStartDateTime");
         return eventRepository.findByAppliesToGroupAndEventStartDateTimeBetween(group, Timestamp.valueOf(periodStart),
-                                                                                Timestamp.valueOf(periodEnd), sort);
+                Timestamp.valueOf(periodEnd), sort);
     }
 
     /**
@@ -840,11 +832,17 @@ public class EventManager implements EventManagementService {
         // todo: a repository method that doesn't bother with event type ...
         Sort sort = new Sort(Sort.Direction.ASC, "EventStartDateTime");
         List<Event> events = eventRepository.findByAppliesToGroupAndEventStartDateTimeBetween(group, Timestamp.valueOf(periodStart),
-                                                                                              Timestamp.valueOf(periodEnd), sort);
+                Timestamp.valueOf(periodEnd), sort);
         double costCounter = 0;
         for (Event event : events)
             costCounter += getCostOfMessagesDefault(event);
         return costCounter;
+    }
+
+    @Override
+    public int notifyUnableToProcessEventReply(User user) {
+        jmsTemplateProducerService.sendWithNoReply("processing-failure", user);
+        return 0;
     }
 
     /**
@@ -880,12 +878,16 @@ public class EventManager implements EventManagementService {
 
         if (priorEventIncompleteOrBlocked && savedEventOkayToSend) {
 
+            //so that the attendance tally adds up
+            if(savedEvent.getEventType() == EventType.Meeting){
+                eventLogManagementService.rsvpForEvent(savedEvent,savedEvent.getCreatedByUser(),EventRSVPResponse.YES);
+            }
             jmsTemplateProducerService.sendWithNoReply("event-added", new EventDTO(savedEvent));
             log.info("queued to event-added..." + savedEvent.getId() + "...version..." + savedEvent.getVersion());
             //todo do the same for changes???
             //clear the users cache so that they can pickup the new event
-            cacheUtilService.clearRsvpCacheForUser(savedEvent.getCreatedByUser(),savedEvent.getEventType());
-            jmsTemplateProducerService.sendWithNoReply("clear-groupcache",new EventDTO(savedEvent));
+          //  cacheUtilService.clearRsvpCacheForUser(savedEvent.getCreatedByUser(), savedEvent.getEventType());
+           // jmsTemplateProducerService.sendWithNoReply("clear-groupcache", new EventDTO(savedEvent));
             addedNewEventToQueue = true;
         }
 

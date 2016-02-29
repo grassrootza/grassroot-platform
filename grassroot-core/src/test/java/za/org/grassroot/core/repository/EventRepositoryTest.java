@@ -56,13 +56,10 @@ public class EventRepositoryTest {
         assertThat(eventRepository.count(), is(0L));
 
         Event eventToCreate = new Event();
-        User userToDoTests = new User();
-        Group groupToDoTests = new Group();
-
-        userToDoTests.setPhoneNumber("55555");
+        User userToDoTests = new User("55555");
         userRepository.save(userToDoTests);
-        groupToDoTests.setGroupName("Test Group");
-        groupToDoTests.setCreatedByUser(userToDoTests);
+
+        Group groupToDoTests = new Group("Test Group", userToDoTests);
         groupRepository.save(groupToDoTests);
 
         Timestamp testStartDateTime = Timestamp.valueOf("2015-08-18 10:00:00.0");

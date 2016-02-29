@@ -34,4 +34,6 @@ public interface MeetingNotificationService {
     public String createMeetingReminderMessage(String locale, User user, EventDTO event);
 
     String createWelcomeMessage(String messageId, UserDTO userDTO);
+
+    String createReplyFailureMessage(User user);
 }

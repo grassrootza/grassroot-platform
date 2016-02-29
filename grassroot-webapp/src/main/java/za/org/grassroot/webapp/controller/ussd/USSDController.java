@@ -94,6 +94,12 @@ public class USSDController {
         return USSDMenuUtil.menuBuilder(ussdMenu);
     }
 
+
+    protected Request menuBuilder(USSDMenu ussdMenu, boolean isFirstMenu) throws URISyntaxException {
+        return USSDMenuUtil.menuBuilder(ussdMenu, isFirstMenu);
+    }
+
+
     public void setMessageSource(MessageSource messageSource) { this.messageSource = messageSource; }
     public void setUssdGroupUtil(USSDGroupUtil ussdGroupUtil) {
         this.ussdGroupUtil = ussdGroupUtil;
@@ -152,6 +158,9 @@ public class USSDController {
     // final convenience version, for the root strings, stripping out "."
     protected String getMessage(String messageKey, User sessionUser) {
         return messageSource.getMessage("ussd." + messageKey, null, new Locale(getLanguage(sessionUser)));
+    }
+    protected String getMessage(String messageKey, String language) {
+        return messageSource.getMessage("ussd." + messageKey, null, new Locale(language));
     }
 
     // todo move this somewhere else, and/or clean up nullability in User class, but if put it there, confuses Hibernate (wants a setter)
