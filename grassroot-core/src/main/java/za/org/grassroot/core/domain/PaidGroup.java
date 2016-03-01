@@ -1,6 +1,6 @@
 package za.org.grassroot.core.domain;
 
-import lombok.EqualsAndHashCode;
+import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
@@ -11,13 +11,15 @@ import java.util.Calendar;
  */
 @Entity
 @Table(name="paid_group")
-@EqualsAndHashCode
 public class PaidGroup {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
+
+    @Column(name = "uid", nullable = false, unique = true)
+    private String uid;
 
     /*
     Entity may get created before it is made active, hence the two different timestamps
@@ -55,14 +57,6 @@ public class PaidGroup {
     private Timestamp expireDateTime;
 
     /*
-    Since we want to be able to recall records matched to an account even when it is deactivated, we set account to null
-    and then set this archivedAccountId to the prior accountId
-     */
-    @Basic
-    @Column(name="archived_account_id")
-    private Long archivedAccountId;
-
-    /*
     Constructors
      */
 
@@ -82,6 +76,7 @@ public class PaidGroup {
 
     public PaidGroup(Group group, Account account, User addedByUser) {
 
+        this.uid = UIDGenerator.generateId();
         this.group = group;
         this.account = account;
         this.addedByUser = addedByUser;
@@ -97,6 +92,7 @@ public class PaidGroup {
 
     public PaidGroup(Group group, Account account, User addedByUser, Timestamp activeDateTime, Timestamp expireDateTime) {
 
+        this.uid = UIDGenerator.generateId();
         this.group = group;
         this.account = account;
         this.addedByUser = addedByUser;
@@ -105,17 +101,8 @@ public class PaidGroup {
 
     }
 
-    /*
-    Constructor with a custom expiry date but active now
-     */
-    public PaidGroup(Group group, Account account, User addedByUser, Timestamp expireDateTime) {
-
-        this(group, account, addedByUser, new Timestamp(Calendar.getInstance().getTimeInMillis()), expireDateTime);
-
-    }
-
-    public PaidGroup() {
-
+    private PaidGroup() {
+        // For JPA
     }
 
     /*
@@ -126,6 +113,8 @@ public class PaidGroup {
     public Long getId() {
         return id;
     }
+
+    public String getUid() { return uid; }
 
     public Timestamp getCreatedDateTime() {
         return createdDateTime;
@@ -159,7 +148,26 @@ public class PaidGroup {
 
     public void setExpireDateTime(Timestamp expireDateTime) { this.expireDateTime = expireDateTime; }
 
-    public Long getArchivedAccountId() { return archivedAccountId; }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || !(o instanceof PaidGroup)) {
+            return false;
+        }
 
-    public void setArchivedAccountId(Long archivedAccountId) { this.archivedAccountId = archivedAccountId; }
+        PaidGroup paidGroup = (PaidGroup) o;
+
+        if (getUid() != null ? !getUid().equals(paidGroup.getUid()) : paidGroup.getUid() != null) {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return getUid() != null ? getUid().hashCode() : 0;
+    }
 }

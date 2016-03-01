@@ -74,7 +74,7 @@ public class AccountManagementServiceTest {
         assertNotEquals(null, account.getId());
         assertNotNull(account.getAdministrators());
         assertEquals(account.getAdministrators().size(), 1);
-        assertEquals(testUser.getId(), account.getAdministrators().get(0).getId()); // note: equals on User as whole fails for persistence reasons
+        assertEquals(testUser.getId(), account.getAdministrators().iterator().next().getId()); // note: equals on User as whole fails for persistence reasons
         assertEquals(testUser.getAccountAdministered().getId(), account.getId()); // note: as above, full equals fails ... possibly within-test persistence issues
         assertTrue(testUser.getRoles().contains(roleManagementService.fetchStandardRoleByName(accountAdminRole)));
     }
@@ -86,7 +86,7 @@ public class AccountManagementServiceTest {
         assertNotEquals(null, account.getId());
         assertEquals(billingEmail, account.getPrimaryEmail());
         assertTrue(account.isEnabled());
-        assertEquals(testUser.getId(), account.getAdministrators().get(0).getId()); // note: equals on User as whole fails for persistence reasons
+        assertEquals(testUser.getId(), account.getAdministrators().iterator().next().getId()); // note: equals on User as whole fails for persistence reasons
         assertEquals(testUser.getAccountAdministered().getId(), account.getId()); // note: as above, full equals fails ... possibly within-test persistence issues
         assertTrue(testUser.getRoles().contains(roleManagementService.fetchStandardRoleByName(accountAdminRole)));
     }
@@ -97,7 +97,7 @@ public class AccountManagementServiceTest {
         assertEquals(account.getAdministrators().size(), 0);
         accountManagementService.addAdministrator(account, testUser); // note: putting 'account =' at the front of this causes subsequent tests to fail ..
         assertEquals(account.getAdministrators().size(), 1);
-        assertEquals(account.getAdministrators().get(0), testUser);
+        assertEquals(account.getAdministrators().iterator().next(), testUser);
         assertEquals(account, testUser.getAccountAdministered());
         assertTrue(testUser.getRoles().contains(roleManagementService.fetchStandardRoleByName(accountAdminRole)));
     }

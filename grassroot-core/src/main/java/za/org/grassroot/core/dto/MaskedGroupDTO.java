@@ -1,22 +1,18 @@
 package za.org.grassroot.core.dto;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.MaskingUtil;
 
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Created by luke on 2016/02/04.
  * Entity to pass a group back to services and view with key data obscured
  */
-@ToString
-@EqualsAndHashCode
 public class MaskedGroupDTO {
 
     private Long id;
@@ -24,7 +20,7 @@ public class MaskedGroupDTO {
     private User createdByUser;
     private String groupName;
 
-    private List<MaskedUserDTO> groupMembers = new ArrayList<>();
+    private Set<MaskedUserDTO> groupMembers = new HashSet<>();
     private Long parentId;
     private boolean paidFor;
 
@@ -63,7 +59,7 @@ public class MaskedGroupDTO {
         return groupName;
     }
 
-    public List<MaskedUserDTO> getGroupMembers() {
+    public Set<MaskedUserDTO> getGroupMembers() {
         return groupMembers;
     }
 
