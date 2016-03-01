@@ -65,9 +65,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         User testUser = new User(testUserPhone);
         List<Event> emptyMeetingList = new ArrayList<>();
-        List<Group> emptyGroupList = new ArrayList<>();
         Event dummyEvent = new Event("", testUser);
-        testUser.setGroupsPartOf(emptyGroupList);
         dummyEvent.setId(0L);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
@@ -89,7 +87,9 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         List<Group> existingGroupList = Arrays.asList(new Group("gc1", testUser),
                                                       new Group("gc2", testUser),
                                                       new Group("gc3", testUser));
-        testUser.setGroupsPartOf(existingGroupList);
+        for (Group group : existingGroupList) {
+            group.addMember(testUser);
+        }
         Page<Group> groupPage = new PageImpl<Group>(existingGroupList);
 
         List<Event> emptyMeetingList = new ArrayList<>();

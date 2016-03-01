@@ -84,7 +84,7 @@ public class GroupRestController {
             method = RequestMethod.GET)
     public List<UserDTO> listUsersInGroup(@PathVariable("groupId") Long groupId) {
         List<UserDTO> list =  new ArrayList<UserDTO>();
-        for (User user : groupManagementService.loadGroup(groupId).getGroupMembers()) {
+        for (User user : groupManagementService.loadGroup(groupId).getMembers()) {
             list.add(new UserDTO(user));
         }
         return list;

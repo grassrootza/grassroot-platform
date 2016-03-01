@@ -54,7 +54,7 @@ public class GroupBrokerImpl implements GroupBroker {
         for (MembershipInfo membershipInfo : membershipInfos) {
             User user = existingUserMap.getOrDefault(membershipInfo.getPhoneNumber(), new User(membershipInfo.getPhoneNumber(), membershipInfo.getDisplayName()));
             Role role = membershipInfo.getRoleId() == null ? null : roleRepository.findOne(membershipInfo.getRoleId());
-            group.addMember(user); // todo: add role
+            group.addMember(user, role);
         }
     }
 

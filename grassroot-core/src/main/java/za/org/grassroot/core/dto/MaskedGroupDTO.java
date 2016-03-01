@@ -3,6 +3,7 @@ package za.org.grassroot.core.dto;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.MaskingUtil;
 
@@ -41,8 +42,9 @@ public class MaskedGroupDTO {
         this.active = group.isActive();
         this.discoverable = group.isActive();
 
-        for (User member : group.getGroupMembers())
-            this.groupMembers.add(new MaskedUserDTO(member));
+        for (Membership membership : group.getMemberships()) {
+            this.groupMembers.add(new MaskedUserDTO(membership.getUser()));
+        }
     }
 
     public Long getId() {

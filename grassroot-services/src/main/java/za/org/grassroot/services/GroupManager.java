@@ -155,7 +155,7 @@ public class GroupManager implements GroupManagementService {
 
     @Override
     public Group addGroupMember(Group currentGroup, User newMember, Long addingUserId, boolean addDefaultRole) {
-        if (currentGroup.addMember(newMember)) {
+        if (currentGroup.addMember(newMember) != null) {
             currentGroup = saveGroup(currentGroup,false,"",dontKnowTheUser);
             newMember = userManager.save(newMember); // so that this is isntantly double-sided, else getting access control errors
             asyncGroupService.addNewGroupMemberLogsMessages(currentGroup, newMember, addingUserId);
@@ -223,7 +223,7 @@ public class GroupManager implements GroupManagementService {
     @Override
     public Group addRemoveGroupMembers(Group group, List<User> revisedUserList, Long modifyingUserId, boolean addDefaultRoles) {
 
-        Set<User> originalUsers = group.getGroupMembers();
+        Set<User> originalUsers = group.getMembers();
 
         // todo: we need to log each of these removals, hence doing it this way, but should refactor
         for (User user : originalUsers) {
@@ -270,7 +270,7 @@ public class GroupManager implements GroupManagementService {
 
     @Override
     public List<Group> getActiveGroupsPartOf(User sessionUser) {
-        return groupRepository.findByGroupMembersAndActive(sessionUser, true);
+        return groupRepository.findByMembershipsUserAndActive(sessionUser, true);
     }
     @Override
     public List<Group> getActiveGroupsPartOfOrdered(User sessionUser){
@@ -294,7 +294,7 @@ public class GroupManager implements GroupManagementService {
 
     @Override
     public Page<Group> getPageOfActiveGroups(User sessionUser, int pageNumber, int pageSize) {
-        return groupRepository.findByGroupMembersAndActive(sessionUser, new PageRequest(pageNumber, pageSize), true);
+        return groupRepository.findByMembershipsUserAndActive(sessionUser, new PageRequest(pageNumber, pageSize), true);
     }
 
     @Override
@@ -314,7 +314,7 @@ public class GroupManager implements GroupManagementService {
     @Override
     public boolean isUserInGroup(Group group, User user) {
         // at some point may want to make this more efficient than getter method
-        return groupRepository.countByIdAndGroupMembers(group.getId(), user) > 0;
+        return groupRepository.countByIdAndMembershipsUser(group.getId(), user) > 0;
     }
 
     @Override
@@ -352,7 +352,7 @@ public class GroupManager implements GroupManagementService {
     @Override
     public boolean hasActiveGroupsPartOf(User user) {
         // return !getActiveGroupsPartOf(user).isEmpty();
-        return groupRepository.countByGroupMembersAndActiveTrue(user) > 0;
+        return groupRepository.countByMembershipsUserAndActiveTrue(user) > 0;
     }
 
     @Override
@@ -603,7 +603,7 @@ public class GroupManager implements GroupManagementService {
           */
 
         log.info("Okay, we are inside the group language setting function ...");
-        Set<User> userList = group.getGroupMembers();
+        Set<User> userList = group.getMembers();
 
         for (User user : userList) {
             if (!user.isHasInitiatedSession()) {
@@ -638,7 +638,7 @@ public class GroupManager implements GroupManagementService {
         log.info("Getting group member size");
         if (!includeSubGroups) {
             log.info("Getting group size, for group: " + group);
-            return group.getGroupMembers().size();
+            return group.getMembers().size();
         } else {
             log.info("Getting group size, including sub-groups, for group:" + group);
             return getAllUsersInGroupAndSubGroups(group).size();
@@ -711,8 +711,8 @@ public class GroupManager implements GroupManagementService {
 
     @Override
     public Group mergeGroupsIntoNew(Long firstGroupId, Long secondGroupId, String newGroupName, User creatingUser) {
-        Set<User> firstGroupMembers = loadGroup(firstGroupId).getGroupMembers();
-        Set<User> secondGroupMembers = loadGroup(secondGroupId).getGroupMembers();
+        Set<User> firstGroupMembers = loadGroup(firstGroupId).getMembers();
+        Set<User> secondGroupMembers = loadGroup(secondGroupId).getMembers();
 
         Group consolidatedGroup = new Group(newGroupName, creatingUser);
         consolidatedGroup.addMembers(firstGroupMembers);
@@ -738,7 +738,7 @@ public class GroupManager implements GroupManagementService {
         Group largerGroup, smallerGroup;
 
         // note: if the groups are the same size, this will default to merging into the first-passed group
-        if (groupA.getGroupMembers().size() >= groupB.getGroupMembers().size()) {
+        if (groupA.getMembers().size() >= groupB.getMembers().size()) {
             largerGroup = groupA;
             smallerGroup = groupB;
         } else {
@@ -754,7 +754,7 @@ public class GroupManager implements GroupManagementService {
 
         // todo: optimize this, almost certainly very slow
         // todo: figure out how to transfer roles ... original group roles move over?
-        for (User user : groupFrom.getGroupMembers()) {
+        for (User user : groupFrom.getMembers()) {
             addGroupMember(groupInto, user, mergingUserId, false);
         }
         groupFrom.setActive(!setFromGroupInactive);
@@ -778,8 +778,8 @@ public class GroupManager implements GroupManagementService {
 
     @Override
     public Long[] orderPairByNumberMembers(Long groupId1, Long groupId2) {
-        Integer group1size = loadGroup(groupId1).getGroupMembers().size(),
-                group2size = loadGroup(groupId2).getGroupMembers().size();
+        Integer group1size = loadGroup(groupId1).getMembers().size(),
+                group2size = loadGroup(groupId2).getMembers().size();
         return (group1size >= group2size) ? new Long[] {groupId1, groupId2} : new Long[] {groupId2, groupId1};
     }
 
@@ -817,7 +817,7 @@ public class GroupManager implements GroupManagementService {
         List<Group> allGroups = getAllGroups();
         Predicate<Group> predicate = group -> {
             boolean createdByUserIncluded = createdByUser == null || group.getCreatedByUser().equals(createdByUser);
-            boolean minGroupSizeIncluded = minGroupSize == null || group.getGroupMembers().size() > minGroupSize;
+            boolean minGroupSizeIncluded = minGroupSize == null || group.getMembers().size() > minGroupSize;
             boolean createdAfterDateIncluded = createdAfterDate == null || group.getCreatedDateTime().after(createdAfterDate);
             boolean createdBeforeDateIncluded = createdBeforeDate == null || group.getCreatedDateTime().before(createdBeforeDate);
             return createdByUserIncluded && minGroupSizeIncluded && createdAfterDateIncluded && createdBeforeDateIncluded;
@@ -866,7 +866,7 @@ public class GroupManager implements GroupManagementService {
         }
 
         // add all the users at this level
-        userList.addAll(groupRepository.findOne(parentGroup.getId()).getGroupMembers());
+        userList.addAll(groupRepository.findOne(parentGroup.getId()).getMembers());
 
     }
 

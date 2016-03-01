@@ -22,7 +22,10 @@ public class Role extends BaseEntity implements GrantedAuthority {
     public static final String ROLE_NAME_PREFIX    = "ROLE";
     public static final String GROUP_ID_PREFIX     = "GROUP_ID";
 
-    public enum RoleType {STANDARD, GROUP}
+    public enum RoleType {
+        STANDARD,
+        GROUP
+    }
 
     private String name;
     private Long   groupReferenceId;

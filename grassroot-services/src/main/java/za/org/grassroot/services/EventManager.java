@@ -414,7 +414,7 @@ public class EventManager implements EventManagementService {
         // todo: there is almost certainly a faster/better way to do this
         Map<User, EventRSVPResponse> rsvpResponses = new LinkedHashMap<>();
 
-        for (User user : event.getAppliesToGroup().getGroupMembers())
+        for (User user : event.getAppliesToGroup().getMembers())
             rsvpResponses.put(user, EventRSVPResponse.NO_RESPONSE);
 
         for (User user : getListOfUsersThatRSVPYesForEvent(event))
@@ -571,7 +571,7 @@ public class EventManager implements EventManagementService {
     @Override
     public List<Event> getUpcomingEvents(User requestingUser, EventType type) {
         // todo: at some point we will need this to be efficient ... for now, doing a very slow kludge, and going to avoid using the method
-        return eventRepository.findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled
+        return eventRepository.findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled
                 (requestingUser, type, new Date(), false);
     }
 
@@ -599,14 +599,14 @@ public class EventManager implements EventManagementService {
         // todo: this may be _very_ expensive if Hibernate is looping through lists, replace with a query pronto
         log.info("Checking on the repository ... ");
         return upcomingOnly ? userHasFutureEventsToView(user, type) :
-                !eventRepository.findByAppliesToGroupGroupMembersAndEventTypeAndCanceledOrderByEventStartDateTimeDesc(user, type, false).isEmpty();
+                !eventRepository.findByAppliesToGroupMembershipsUserAndEventTypeAndCanceledOrderByEventStartDateTimeDesc(user, type, false).isEmpty();
     }
 
     @Override
     public boolean userHasPastEventsToView(User user, EventType type) {
         // todo: in future performance tweaking, may turn this into a direct count query
         return !eventRepository.
-                findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeLessThanAndCanceled(user, type, new Date(), false).
+                findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeLessThanAndCanceled(user, type, new Date(), false).
                 isEmpty();
     }
 
@@ -614,7 +614,7 @@ public class EventManager implements EventManagementService {
     public boolean userHasFutureEventsToView(User user, EventType type) {
         // todo: as above, probably want to turn this into a count query
         return !eventRepository.
-                findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled(user, type, new Date(), false).
+                findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled(user, type, new Date(), false).
                 isEmpty();
     }
 
@@ -622,14 +622,14 @@ public class EventManager implements EventManagementService {
     public Page<Event> getEventsUserCanView(User user, EventType type, int pastPresentOrBoth, int pageNumber, int pageSize) {
         // todo: filter for permissions, maybe
         if (pastPresentOrBoth == -1) {
-            return eventRepository.findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeLessThanAndCanceledOrderByEventStartDateTimeDesc(
+            return eventRepository.findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeLessThanAndCanceledOrderByEventStartDateTimeDesc(
                     user, type, new Date(), false, new PageRequest(pageNumber, pageSize));
         } else if (pastPresentOrBoth == 1) {
-            return eventRepository.findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeGreaterThanAndCanceledOrderByEventStartDateTimeDesc(
+            return eventRepository.findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeGreaterThanAndCanceledOrderByEventStartDateTimeDesc(
                     user, type, new Date(), false, new PageRequest(pageNumber, pageSize));
         } else {
             // todo: think about setting a lower bound (e.g., one year ago)
-            return eventRepository.findByAppliesToGroupGroupMembersAndEventTypeAndCanceledOrderByEventStartDateTimeDesc(
+            return eventRepository.findByAppliesToGroupMembershipsUserAndEventTypeAndCanceledOrderByEventStartDateTimeDesc(
                     user, type, false, new PageRequest(pageNumber, pageSize));
         }
     }
@@ -686,7 +686,7 @@ public class EventManager implements EventManagementService {
     @Override
     public int getNumberInvitees(Event event) {
         // may make this more sophisticated once we have message relays in place
-        return (!event.isIncludeSubGroups()) ? event.getAppliesToGroup().getGroupMembers().size() :
+        return (!event.isIncludeSubGroups()) ? event.getAppliesToGroup().getMembers().size() :
                 groupManager.getAllUsersInGroupAndSubGroups(event.getAppliesToGroup()).size();
     }
 

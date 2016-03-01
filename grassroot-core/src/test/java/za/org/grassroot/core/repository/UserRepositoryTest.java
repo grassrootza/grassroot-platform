@@ -238,10 +238,10 @@ public class UserRepositoryTest {
 
         List<Long> memberIds = Arrays.asList(user2.getId(), user3.getId());
 
-        assertThat(testGroupFromDb.getGroupMembers().size(), is(3));
-        assertTrue(testGroupFromDb.getGroupMembers().contains(testUser));
-        assertTrue(testGroupFromDb.getGroupMembers().contains(user2));
-        assertTrue(testGroupFromDb.getGroupMembers().contains(user3));
+        assertThat(testGroupFromDb.getMemberships().size(), is(3));
+        assertTrue(testGroupFromDb.hasMember(testUser));
+        assertTrue(testGroupFromDb.hasMember(user2));
+        assertTrue(testGroupFromDb.hasMember(user3));
 
         List<User> nonCreatorMembers = userRepository.findByGroupsPartOfAndIdNot(testGroupFromDb, testUser.getId());
 

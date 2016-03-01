@@ -60,7 +60,8 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     @Test
     public void openingMenuShouldWorkWithNoGroups() throws Exception {
         resetTestGroup();
-        testUser.setGroupsPartOf(Arrays.asList(testGroup));
+        testGroup.addMember(testUser);
+
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(groupManagementServiceMock.hasActiveGroupsPartOf(testUser)).thenReturn(false);
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());

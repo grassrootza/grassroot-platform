@@ -49,8 +49,8 @@ public class User implements UserDetails {
     @Column(name = "created_date_time", insertable = true, updatable = false)
     private Timestamp createdDateTime;
 
-    @ManyToMany(cascade = CascadeType.ALL, mappedBy = "groupMembers", fetch = FetchType.LAZY) // not sure which cascade type is going to be best
-    private List<Group> groupsPartOf;
+//    @OneToMany(mappedBy = "user")
+//    private Set<Membership> memberships;
 
     @Column(name = "user_name", length = 50, unique = true)
     private String username;
@@ -180,14 +180,6 @@ public class User implements UserDetails {
 
     public Account getAccountAdministered() { return accountAdministered; }
     public void setAccountAdministered(Account accountAdministered) { this.accountAdministered = accountAdministered; }
-
-    public List<Group> getGroupsPartOf() {
-        return groupsPartOf;
-    }
-
-    public void setGroupsPartOf(List<Group> groupsPartOf) {
-        this.groupsPartOf = groupsPartOf;
-    }
 
     @PreUpdate
     @PrePersist

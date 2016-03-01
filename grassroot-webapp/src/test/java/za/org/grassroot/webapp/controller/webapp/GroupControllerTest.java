@@ -59,9 +59,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         Event dummyVote = new Event();
         List<Event> dummyMeetings = Arrays.asList(dummyMeeting);
         List<Event> dummyVotes = Arrays.asList(dummyVote);
-        List<Group> testGroupspartOf = new ArrayList<>();
-        testGroupspartOf.add(dummyGroup);
-        sessionTestUser.setGroupsPartOf(testGroupspartOf);
 
         when(userManagementServiceMock.getUserById(sessionTestUser.getId())).thenReturn(sessionTestUser);
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(dummyGroup);
@@ -173,9 +170,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     public void modifyGroupWorks() throws Exception {
         Group dummyGroup = new Group("Dummy Group", new User("234345345"));
         dummyGroup.addMember(sessionTestUser);
-        List<Group> testGroupPartOf = new ArrayList<>();
-        testGroupPartOf.add(dummyGroup);
-        sessionTestUser.setGroupsPartOf(testGroupPartOf);
+
         when(userManagementServiceMock.getUserById(sessionTestUser.getId())).thenReturn(sessionTestUser);
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(dummyGroup);
         when(groupManagementServiceMock.isUserInGroup(dummyGroup, sessionTestUser)).thenReturn(true);
@@ -245,9 +240,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         testGroup.setId(dummyId);
         testGroup.addMember(sessionTestUser);
         List<User> testUpdatedUserList = new ArrayList<>();
-        List<Group> testGroupspartOf = new ArrayList<>();
-        testGroupspartOf.add(testGroup);
-        sessionTestUser.setGroupsPartOf(testGroupspartOf);
+
         when(userManagementServiceMock.getUserById(sessionTestUser.getId())).thenReturn(sessionTestUser);
         when(groupManagementServiceMock.loadGroup(groupModifier.getGroup().getId())).thenReturn(testGroup);
         when(groupManagementServiceMock.isUserInGroup(testGroup, sessionTestUser)).thenReturn(true);
@@ -270,10 +263,8 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     public void newTokenWorks() throws Exception {
         Group testGroup = new Group("Dummy Group", new User("234345345"));
         testGroup.setId(dummyId);
-        List<Group> testGroupspartOf = new ArrayList<>();
-        testGroupspartOf.add(testGroup);
-        sessionTestUser.setGroupsPartOf(testGroupspartOf);
         testGroup.addMember(sessionTestUser);
+
         when(userManagementServiceMock.getUserById(sessionTestUser.getId())).thenReturn(sessionTestUser);
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
         when(groupManagementServiceMock.isUserInGroup(testGroup, sessionTestUser)).thenReturn(true);
@@ -442,7 +433,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(groupManagementServiceMock.orderPairByNumberMembers(1L, 0L)).thenReturn(orderedIds);
         when(groupManagementServiceMock.loadGroup(orderedIds[0])).thenReturn(testGroupInto);
         when(groupManagementServiceMock.loadGroup(orderedIds[1])).thenReturn(testGroupFrom);
-        when(groupManagementServiceMock.getGroupSize(testGroupFrom, false)).thenReturn(testGroupFrom.getGroupMembers().size());
+        when(groupManagementServiceMock.getGroupSize(testGroupFrom, false)).thenReturn(testGroupFrom.getMembers().size());
         for (int i = 0; i < orders.length; i++) {
             if (i < 2) {
                 mockMvc.perform(post("/group/consolidate/confirm").param("groupId1", String.valueOf(1L))
@@ -450,7 +441,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
                         .param("leaveActive", String.valueOf(true))).andExpect(model()
                         .attribute("groupInto", hasProperty("id", is(1L)))).andExpect(model()
                         .attribute("groupFrom", hasProperty("id", is(0L)))).
-                        andExpect(model().attribute("numberFrom", is(testGroupFrom.getGroupMembers().size())))
+                        andExpect(model().attribute("numberFrom", is(testGroupFrom.getMembers().size())))
                         .andExpect(model().attribute("leaveActive", is(true)));
             } else {
                 mockMvc.perform(post("/group/consolidate/confirm").param("groupId1", String.valueOf(1L))
@@ -458,7 +449,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
                                 String.valueOf(true))).andExpect(model()
                         .attribute("groupInto", hasProperty("id", is(0L)))).andExpect(model()
                         .attribute("groupFrom", hasProperty("id", is(1L)))).
-                        andExpect(model().attribute("numberFrom", is(testGroupInto.getGroupMembers().size())))
+                        andExpect(model().attribute("numberFrom", is(testGroupInto.getMembers().size())))
                         .andExpect(model().attribute("leaveActive", is(true)));
             }
         }
@@ -543,9 +534,9 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(groupAccessControlManagementServiceMock.loadGroup(dummyId, BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS)).thenReturn(group);
         when(groupManagementServiceMock.canUserMakeGroupInactive(sessionTestUser, group)).thenReturn(true);
         when(groupManagementServiceMock.getLastTimeGroupActive(group)).thenReturn(LocalDateTime.now());
-        List<Group> testGroupspartOf = new ArrayList<>();
-        testGroupspartOf.add(group);
-        sessionTestUser.setGroupsPartOf(testGroupspartOf);
+
+        group.addMember(sessionTestUser);
+
         mockMvc.perform(get("/group/delete").param("groupId", String.valueOf(dummyId)).param("confirm_field", "d"))
                 .andExpect(status().isOk()).andExpect(view().name("group/view"))
                 .andExpect(model()
@@ -598,7 +589,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         Group testGroup = new Group("someGroupname", new User("234345345"));
         testGroup.setId(dummyId);
         testGroup.addMember(sessionTestUser);
-        sessionTestUser.setGroupsPartOf(Arrays.asList(testGroup));
 
         List<Event> dummyEvents = Arrays.asList(new Event(sessionTestUser, EventType.Meeting, true),
                                                 new Event(sessionTestUser, EventType.Vote, true));
@@ -649,7 +639,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
         testGroup.setId(dummyId);
         testGroup.addMember(sessionTestUser);
-        sessionTestUser.setGroupsPartOf(Arrays.asList(testGroup));
 
         List<Event> dummyEvents = Arrays.asList(new Event("test meeting", sessionTestUser, testGroup));
         List<LogBook> dummyLogBooks = Arrays.asList(new LogBook(dummyId, "do stuff", Timestamp.valueOf(LocalDateTime.now())));

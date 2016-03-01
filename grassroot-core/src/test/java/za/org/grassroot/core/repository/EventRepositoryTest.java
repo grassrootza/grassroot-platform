@@ -218,8 +218,8 @@ public class EventRepositoryTest {
         group2 = groupRepository.save(group2);
         Event event2 = eventRepository.save(new Event("test2", user2, group2));
 
-        List<Event> events = eventRepository.findByAppliesToGroupGroupMembers(user1);
-        List<Event> events2 = eventRepository.findByAppliesToGroupGroupMembers(user2);
+        List<Event> events = eventRepository.findByAppliesToGroupMembershipsUser(user1);
+        List<Event> events2 = eventRepository.findByAppliesToGroupMembershipsUser(user2);
 
         assertThat(userRepository.count(), is(2L));
         assertThat(groupRepository.count(), is(2L));
@@ -262,7 +262,7 @@ public class EventRepositoryTest {
         event3 = eventRepository.save(event3);
 
         List<Event> events1 = eventRepository.
-                findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled(user, EventType.Meeting, new Date(), false);
+                findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled(user, EventType.Meeting, new Date(), false);
 
         assertFalse(events1.isEmpty());
         assertThat(events1.size(), is(1));
@@ -271,7 +271,7 @@ public class EventRepositoryTest {
         assertFalse(events1.contains(event3));
 
         List<Event> events2 = eventRepository.
-                findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeLessThanAndCanceled(user, EventType.Vote, new Date(), false);
+                findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeLessThanAndCanceled(user, EventType.Vote, new Date(), false);
 
         assertFalse(events2.isEmpty());
         assertThat(events2.size(), is(1));
@@ -280,11 +280,11 @@ public class EventRepositoryTest {
         assertFalse(events2.contains(event3));
 
         List<Event> events3 = eventRepository.
-                findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled(user, EventType.Vote, new Date(), false);
+                findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled(user, EventType.Vote, new Date(), false);
         assertTrue(events3.isEmpty());
 
         List<Event> events4 = eventRepository.
-                findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeLessThanAndCanceled(user, EventType.Meeting, new Date(), false);
+                findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeLessThanAndCanceled(user, EventType.Meeting, new Date(), false);
         assertTrue(events4.isEmpty());
     }
 

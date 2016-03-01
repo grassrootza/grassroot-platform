@@ -714,7 +714,7 @@ public class GroupController extends BaseController {
         Group groupInto = groupManagementService.loadGroup(groupIdInto);
         Group groupFrom = groupManagementService.loadGroup(groupIdFrom);
         Group consolidatedGroup = groupManagementService.mergeGroupsSpecifyOrder(groupInto, groupFrom, !leaveActive, getUserProfile().getId());
-        Integer[] userCounts = new Integer[]{groupFrom.getGroupMembers().size(),
+        Integer[] userCounts = new Integer[]{groupFrom.getMembers().size(),
                 groupManagementService.getGroupSize(consolidatedGroup, false)};
         redirectAttributes.addAttribute("groupId", consolidatedGroup.getId());
         addMessage(redirectAttributes, MessageType.SUCCESS, "group.merge.success", userCounts, request);

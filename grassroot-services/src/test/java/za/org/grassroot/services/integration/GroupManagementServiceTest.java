@@ -83,9 +83,9 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
 
         // todo: swithc these to "true" on roles once set up a user with authorities
         Group group = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "1"), false);
-        assertThat(group.getGroupMembers().size(), is(2));
+        assertThat(group.getMembers().size(), is(2));
         Group group2 = groupManagementService.addGroupMember(group, user2, user.getId(), false);
-        assertThat(group2.getGroupMembers().size(), is(2));
+        assertThat(group2.getMembers().size(), is(2));
     }
 
     @Test
@@ -95,9 +95,9 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         Group group = groupManagementService.createNewGroup(user, "test group", false);
         log.info("ZOG: Group created ..." + group.toString());
         groupManagementService.addNumbersToGroup(group.getId(), Arrays.asList("0810001111", "0810001112", "0810001113", "0810001114"), user, false);
-        log.info("ZOG: Group now looks like ... " + group.toString() + "... with groupMembers ... " + group.getGroupMembers().toString());
-        assertNotNull(group.getGroupMembers());
-        assertEquals(4, group.getGroupMembers().size());
+        log.info("ZOG: Group now looks like ... " + group.toString() + "... with groupMembers ... " + group.getMembers());
+        assertNotNull(group.getMembers());
+        assertEquals(4, group.getMembers().size());
         // further tests, e.g., that members contains the users created, stretch persistence lucky-streak to its breaking point
     }
 
@@ -126,7 +126,7 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         Group group2 = groupManagementService.createNewGroup(user2, testGroupBase + "2", false);
         groupManagementService.addGroupMember(group1, user1, user1.getId(), false);
         groupManagementService.addGroupMember(group2, user1, user1.getId(), false);
-        assertTrue(group2.getGroupMembers().contains(user1));
+        assertTrue(group2.getMembers().contains(user1));
         List<Group> list1 = groupManagementService.getActiveGroupsPartOf(user1);
         List<Group> list2 = groupManagementService.getCreatedGroups(user1);
         assertNotEquals(list1, list2);
@@ -143,17 +143,17 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         Group group1 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "3", testUserBase + "4", testUserBase + "5"), false);
         Group group2 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "6", testUserBase + "7"), false);
 
-        assertThat(group1.getGroupMembers().size(), is(4));
+        assertThat(group1.getMembers().size(), is(4));
         assertTrue(group1.isActive());
-        assertThat(group2.getGroupMembers().size(), is(3));
+        assertThat(group2.getMembers().size(), is(3));
 
         groupManagementService.mergeGroups(group1, group2, user.getId());
         assertNotNull(group1);
         assertNotNull(group2);
         assertTrue(group1.isActive());
         assertFalse(group2.isActive());
-        assertThat(group1.getGroupMembers().size(), is(6));
-        assertTrue(group1.getGroupMembers().contains(userManagementService.findByInputNumber(testUserBase + "6")));
+        assertThat(group1.getMembers().size(), is(6));
+        assertTrue(group1.getMembers().contains(userManagementService.findByInputNumber(testUserBase + "6")));
     }
 
     @Test
@@ -193,8 +193,8 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         assertNotNull(group2);
         assertFalse(group1.isActive());
         assertTrue(group2.isActive());
-        assertThat(group2.getGroupMembers().size(), is(6));
-        assertTrue(group2.getGroupMembers().contains(userManagementService.findByInputNumber(testUserBase + "3")));
+        assertThat(group2.getMembers().size(), is(6));
+        assertTrue(group2.getMembers().contains(userManagementService.findByInputNumber(testUserBase + "3")));
     }
 
     @Test

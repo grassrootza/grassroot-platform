@@ -33,7 +33,7 @@
           <tbody>
             <tr th:each="paidGroup : ${paidGroups}">
               <td><span th:text="${paidGroup.group.getName('')}">Group name</span></td>
-              <td><span th:text="${paidGroup.group.getGroupMembers().size()}">size</span></td> <!-- todo: watch time -->
+              <td><span th:text="${paidGroup.group.getMembers().size()}">size</span></td> <!-- todo: watch time -->
               <td><span th:text="${#dates.format(paidGroup.activeDateTime, 'dd-MMM-yyyy')}">date</span></td>
               <td><a th:href="@{/paid_account/group/view(paidGroupId=${paidGroup.id}, accountId=${account.id})}">View details</a></td>
               <td><a th:href="@{/paid_account/group/remove(paidGroupId=${paidGroup.id}, accountId=${account.id})}">Remove group</a></td>

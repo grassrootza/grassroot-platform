@@ -51,7 +51,7 @@ public class GroupWrapper {
         this.parentGroup = Objects.requireNonNull(parentGroup);
         this.parentId = parentGroup.getId();
         this.parentName = parentGroup.getGroupName();
-        this.addedMembers.addAll(parentGroup.getGroupMembers());
+        this.addedMembers.addAll(parentGroup.getMembers());
         this.discoverable = parentGroup.isDiscoverable();
         // this.template = GroupPermissionTemplate.DEFAULT_GROUP; // todo: figure out if/how to store / inherit this
     }
@@ -136,7 +136,7 @@ public class GroupWrapper {
             this.parentName = parentGroup.getGroupName();
         }
 
-        this.addedMembers.addAll(groupToModify.getGroupMembers());
+        this.addedMembers.addAll(groupToModify.getMembers());
 
     }
 

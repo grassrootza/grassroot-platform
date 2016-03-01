@@ -173,14 +173,18 @@ public class RoleRepositoryTest {
     @Rollback
     public void testGroupAssignmentAfterConstruction() throws Exception {
         assertThat(roleRepository.count(), is(0L));
-        Role role = roleRepository.save(new Role("GROUP_ORGANIZER"));
+
+        roleRepository.save(new Role("GROUP_ORGANIZER"));
         assertThat(roleRepository.count(), is(1L));
-        Role roleFromDb1 = roleRepository.findByName("GROUP_ORGANIZER").iterator().next();
+
         User user = userRepository.save(new User("0811110001"));
         Group group = groupRepository.save(new Group("test Group", user));
+
+        Role roleFromDb1 = roleRepository.findByName("GROUP_ORGANIZER").iterator().next();
         roleFromDb1.setGroup(group);
         roleRepository.save(roleFromDb1);
         assertThat(roleRepository.count(), is(1L)); // check doesn't duplicate
+
         Role roleFromDb2 = roleRepository.findByNameAndGroupReferenceId("GROUP_ORGANIZER", group.getId());
         assertNotNull(roleFromDb2);
         assertThat(roleFromDb1, is(roleFromDb2));

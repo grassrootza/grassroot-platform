@@ -334,10 +334,11 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     public void sendFreeFormWorksWithoutGroupId() throws Exception{
         Group testGroup = new Group("",sessionTestUser);
         List<Group> dummyGroups = Arrays.asList(testGroup);
+        when(groupManagementServiceMock.getActiveGroupsPartOf(sessionTestUser)).thenReturn(dummyGroups);
+        when(groupManagementServiceMock.getActiveGroupsPartOf(sessionTestUser)).thenReturn(dummyGroups);
 
-        when(groupManagementServiceMock.getActiveGroupsPartOf(sessionTestUser)).thenReturn(dummyGroups);
-        when(groupManagementServiceMock.getActiveGroupsPartOf(sessionTestUser)).thenReturn(dummyGroups);
-        sessionTestUser.setGroupsPartOf(dummyGroups);
+        testGroup.addMember(sessionTestUser);
+
         mockMvc.perform(get("/meeting/free")).andExpect(status().isOk())
                 .andExpect(view().name("meeting/free")).andExpect(model()
                 .attribute("userGroups", hasItem(testGroup)))
