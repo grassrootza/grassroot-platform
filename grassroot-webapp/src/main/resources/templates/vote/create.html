@@ -42,7 +42,8 @@
       <div class="form-group">
         <label for="name" class="col-md-2 control-label">Vote issue</label>
         <div class="col-md-4">
-          <input th:field="*{name}" type="text" class="form-control" id="name" placeholder="The issue for the vote" />
+          <input th:field="*{name}" type="text" class="form-control" id="name" placeholder="The issue for the vote" maxlength="35" data-toggle="tooltip"
+                 title="Issue description may not be longer than 35 characters. "/>
         </div>
       </div>
       <div class="form-group">
