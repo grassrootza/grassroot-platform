@@ -50,6 +50,9 @@ public class GroupController extends BaseController {
     private GroupManagementService groupManagementService;
 
     @Autowired
+    private GroupBroker groupBroker;
+
+    @Autowired
     private AsyncGroupService asyncGroupService;
 
     @Autowired
@@ -72,6 +75,7 @@ public class GroupController extends BaseController {
     private Validator groupWrapperValidator;
 
     // todo: when cleaning up, figure out how to move this to groupwrapper
+
     List<String[]> permissionTemplates = Arrays.asList(
             new String[]{GroupPermissionTemplate.DEFAULT_GROUP.toString(), "Any member can call a meeting or vote or record a to-do"},
             new String[]{GroupPermissionTemplate.CLOSED_GROUP.toString(), "Only designated members can call a meeting or vote or record a to-do"});
@@ -199,7 +203,8 @@ public class GroupController extends BaseController {
             groupCreator = new GroupWrapper();
         }
 
-        groupCreator.addMember(getUserProfile()); // to remove ambiguity about group creator being part of group
+        MembershipInfo creator = new MembershipInfo(getUserProfile().getPhoneNumber(), null, getUserProfile().getDisplayName());
+        groupCreator.addMember(creator); // to remove ambiguity about group creator being part of group
 
         model.addAttribute("groupCreator", groupCreator);
         model.addAttribute("permissionTemplates", permissionTemplates);
@@ -214,7 +219,6 @@ public class GroupController extends BaseController {
 
         Long timeStart, timeEnd;
         GroupPermissionTemplate template = GroupPermissionTemplate.fromString(templateRaw); // todo: set in wrapper
-        log.info("Got group wrapper back with this template: ... " + template.toString());
 
         if (bindingResult.hasErrors()) {
             model.addAttribute("groupCreator", groupCreator);
@@ -224,66 +228,27 @@ public class GroupController extends BaseController {
 
         timeStart = System.currentTimeMillis();
 
-        /* todo: consoldilate these calls into a single 'createNewGroup' with user Id and put code in services layer */
         User userCreator = getUserProfile();
-        log.info(String.format("Just user load took: %d msecs", System.currentTimeMillis() - timeStart));
-
-        Group groupToSave = groupManagementService.createNewGroup(userCreator, groupCreator.getGroupName(), true);
-        log.info("Okay, we have the groupToSave, with these roles ... " + groupToSave.getGroupRoles());
-
-        /* todo: consolidate these into one "assign permissions for group" -- also maybe leave this one within thread */
-        asyncRoleService.assignPermissionsToGroupRoles(groupToSave, template);
-
-        boolean creatorInGroup = false;
-        timeEnd = System.currentTimeMillis();
-
-        log.info(String.format("User load & group creation: %d msecs", timeEnd - timeStart));
-
-        timeStart = System.currentTimeMillis();
-        for (User addedUser : groupCreator.getAddedMembers()) {
-            if (addedUser.getPhoneNumber() != null && !addedUser.getPhoneNumber().trim().equals("")) {
-                User memberToAdd = userManagementService.loadOrSaveUser(addedUser.getPhoneNumber());
-                if (memberToAdd.getId().equals(userCreator.getId())) creatorInGroup = true;
-                if (!memberToAdd.hasName() && addedUser.getDisplayName() != null) {
-                    memberToAdd.setDisplayName(addedUser.getDisplayName());
-                    memberToAdd = userManagementService.save(memberToAdd); // todo: move into services to batch
-                }
-                groupManagementService.addGroupMember(groupToSave, memberToAdd, userCreator.getId(), true);
-            }
-        }
+        String parentUid = (groupCreator.getHasParent()) ? groupCreator.getParent().getUid() : null;
+        String groupUid = groupBroker.create(userCreator.getUid(), groupCreator.getGroupName(),
+                                             parentUid, groupCreator.getAddedMembers());
 
         timeEnd = System.currentTimeMillis();
-        log.info(String.format("Adding users to group: %d msecs", timeEnd - timeStart));
+        log.info(String.format("Refactored group creation took ... ", timeEnd - timeStart));
 
-        timeStart = System.currentTimeMillis();
-        if (creatorInGroup) {
-            log.info("The group creator is part of the group ...");
-            asyncRoleService.addRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, groupToSave, userCreator, userCreator);
-        }
-        timeEnd = System.currentTimeMillis();
-        log.info(String.format("Set up creator as group organizer: %d msecs", timeEnd - timeStart));
-
-        timeStart = System.currentTimeMillis();
-        if (groupCreator.getHasParent()) {
-            Group parentGroup = groupManagementService.loadGroup(groupCreator.getParentId());
-            log.info("This is a sub-group! Of: " + parentGroup.getGroupName());
-            groupToSave = groupManagementService.linkSubGroup(groupToSave, parentGroup);
-        }
 
         // removing from master branch until more comfortable about interface and UX for this and security
-        /* if (groupCreator.isDiscoverable())
-            groupToSave = groupManagementService.setGroupDiscoverable(groupToSave.getId(), true, userCreator);*/
 
-        if (groupCreator.getGenerateToken()) {
-            log.info("Generating a join code for the newly created group");
-            groupToSave = groupManagementService.generateGroupToken(groupToSave, groupCreator.getTokenDaysValid(), userCreator);
-        }
+        Group groupCreated = groupManagementService.loadGroupByUid(groupUid);
 
-        timeEnd = System.currentTimeMillis();
-        log.info(String.format("Final bit of scaffolding took: %d msecs", timeEnd - timeStart));
+        if (groupCreator.isDiscoverable())
+            groupCreated = groupManagementService.setGroupDiscoverable(groupCreated, true, userCreator.getId());
 
-        addMessage(redirectAttributes, MessageType.SUCCESS, "group.creation.success", new Object[]{groupToSave.getGroupName()}, request);
-        redirectAttributes.addAttribute("groupId", groupToSave.getId());
+        if (groupCreator.getGenerateToken())
+            groupCreated = groupManagementService.generateGroupToken(groupCreated, groupCreator.getTokenDaysValid(), userCreator);
+
+        addMessage(redirectAttributes, MessageType.SUCCESS, "group.creation.success", new Object[]{groupCreated.getGroupName()}, request);
+        redirectAttributes.addAttribute("groupId", groupCreated.getId());
         return "redirect:view";
 
     }
@@ -291,8 +256,8 @@ public class GroupController extends BaseController {
     @RequestMapping(value = "create", params = {"addMember"})
     public String addMember(Model model, @ModelAttribute("groupCreator") @Validated GroupWrapper groupCreator,
                             BindingResult bindingResult, HttpServletRequest request) {
-        if (bindingResult.hasErrors()) {
 
+        if (bindingResult.hasErrors()) {
             log.debug("binding_error", "");
             // print out the error
             addMessage(model, MessageType.ERROR, "user.enter.error.phoneNumber.invalid", request);
@@ -305,14 +270,14 @@ public class GroupController extends BaseController {
     }
 
 
-    @RequestMapping(value = "create", params = {"removeMember"})
+    /*@RequestMapping(value = "create", params = {"removeMember"})
     public String removeMember(Model model, @ModelAttribute("groupCreator") GroupWrapper groupCreator,
                                @RequestParam("removeMember") Integer memberId) {
 
         groupCreator.setAddedMembers(removeMember(groupCreator, memberId));
         model.addAttribute("permissionTemplates", permissionTemplates);
         return "group/create";
-    }
+    }*/
 
     /*
     SECTION: Methods for handling group modification
@@ -356,7 +321,6 @@ public class GroupController extends BaseController {
         Group group = groupManagementService.loadGroup(groupId);
         model.addAttribute("group", group);
 
-
         return "group/add_members";
     }
 
@@ -385,17 +349,17 @@ public class GroupController extends BaseController {
     }
 
 
-    @RequestMapping(value = "modify", params = {"removeMember"})
+    /*@RequestMapping(value = "modify", params = {"removeMember"})
     public String removeMemberModify(Model model, @ModelAttribute("groupModifier") GroupWrapper groupModifier,
                                      @RequestParam("removeMember") Integer memberId) {
 
         // todo: check permissions (either in validator or in service layer)
         groupModifier.setAddedMembers(removeMember(groupModifier, memberId));
         return "group/modify";
-    }
+    }*/
 
 
-    @RequestMapping(value = "modify", method = RequestMethod.POST)
+/*    @RequestMapping(value = "modify", method = RequestMethod.POST)
     public String modifyGroupDo(Model model, @ModelAttribute("groupModifier") @Validated GroupWrapper groupModifier,
                                 BindingResult bindingResult, HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
@@ -433,22 +397,23 @@ public class GroupController extends BaseController {
         redirectAttributes.addAttribute("groupId", savedGroup.getId());
         return "redirect:view";
 
-    }
+    }*/
 
     /*
     Helper methods for handling user addition and updating
      */
 
-    private List<User> addMember(GroupWrapper groupWrapper) {
-        List<User> groupMembers = groupWrapper.getAddedMembers();
-        groupMembers.add(User.makeEmpty());
+    private Set<MembershipInfo> addMember(GroupWrapper groupWrapper) {
+        Set<MembershipInfo> groupMembers = groupWrapper.getAddedMembers();
+        groupMembers.add(MembershipInfo.makeEmpty());
         return groupMembers;
 
     }
 
-    private List<User> removeMember(GroupWrapper groupWrapper, Integer memberId) {
-        List<User> groupMembers = groupWrapper.getAddedMembers();
-        groupMembers.remove(memberId.intValue());
+    private Set<MembershipInfo> removeMember(GroupWrapper groupWrapper, MembershipInfo member) {
+        // todo: fully rethink / redo this
+        Set<MembershipInfo> groupMembers = groupWrapper.getAddedMembers();
+        groupMembers.remove(member);
         return groupMembers;
     }
 

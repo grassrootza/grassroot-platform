@@ -4,11 +4,10 @@ import org.apache.commons.collections4.FactoryUtils;
 import org.apache.commons.collections4.list.LazyList;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Created by luke on 2015/09/13.
@@ -33,7 +32,7 @@ public class GroupWrapper {
 
     // private GroupPermissionTemplate template;
 
-    private List<User> addedMembers = new ArrayList<>();
+    private Set<MembershipInfo> addedMembers = new HashSet<>();
 
     // leaving out setters for group and parent as those are set at construction
 
@@ -51,7 +50,7 @@ public class GroupWrapper {
         this.parentGroup = Objects.requireNonNull(parentGroup);
         this.parentId = parentGroup.getId();
         this.parentName = parentGroup.getGroupName();
-        this.addedMembers.addAll(parentGroup.getMembers());
+        this.addedMembers.addAll(convertUsersToMemberships(parentGroup.getMembers(), parentGroup));
         this.discoverable = parentGroup.isDiscoverable();
         // this.template = GroupPermissionTemplate.DEFAULT_GROUP; // todo: figure out if/how to store / inherit this
     }
@@ -88,7 +87,7 @@ public class GroupWrapper {
 
     public void setTokenDaysValid(Integer tokenDaysValid) { this.tokenDaysValid = tokenDaysValid; }
 
-    public List<User> getAddedMembers() { return addedMembers; }
+    public Set<MembershipInfo> getAddedMembers() { return addedMembers; }
 
     public boolean isDiscoverable() { return discoverable; }
 
@@ -98,23 +97,14 @@ public class GroupWrapper {
 
     // public void setTemplate(GroupPermissionTemplate template) { this.template = template; }
 
-    /* Constructors
-    One for a group without a parent, one for a group with a parent
-     */
-
-    public void setAddedMembers(List<User> addedMembers) {
-        // as below, this is clumsy for now, but will put into a custom converter later
-        for (User userToAdd : addedMembers) {
-            this.addMember(userToAdd);
+    public void setAddedMembers(Set<MembershipInfo> addedMembers) {
+        for (MembershipInfo memberToAdd : addedMembers) {
+            this.addMember(memberToAdd);
         }
     }
 
-    public void addMember(User newMember) {
-        // this is very clumsy for now, custom converter better, but no time at present
-        if (!addedMembers.contains(newMember)) {
-            //  newMember.setPhoneNumber(PhoneNumberUtil.invertPhoneNumber(newMember.getPhoneNumber(), ""));
-            this.addedMembers.add(newMember);
-        }
+    public void addMember(MembershipInfo newMember) {
+        this.addedMembers.add(newMember);
     }
 
     /*
@@ -136,8 +126,20 @@ public class GroupWrapper {
             this.parentName = parentGroup.getGroupName();
         }
 
-        this.addedMembers.addAll(groupToModify.getMembers());
+        this.addedMembers.addAll(convertUsersToMemberships(groupToModify.getMembers(), groupToModify));
 
+    }
+
+    /*
+    Helper method to convert users into membership info, temporary until group members converted to membership info
+     */
+    private Set<MembershipInfo> convertUsersToMemberships(Set<User> users, Group group) {
+        Set<MembershipInfo> membershipInfos = new HashSet<>();
+        for (User user : users) {
+            // todo: extract the roleId for the group
+            membershipInfos.add(new MembershipInfo(user.getPhoneNumber(), null, user.getDisplayName()));
+        }
+        return membershipInfos;
     }
 
 }

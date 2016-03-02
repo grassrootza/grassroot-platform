@@ -1,5 +1,7 @@
 package za.org.grassroot.services;
 
+import za.org.grassroot.core.domain.User;
+
 import java.util.Objects;
 
 /**
@@ -7,6 +9,7 @@ import java.util.Objects;
  * Only phone number is required.
  */
 public class MembershipInfo {
+
     private final String phoneNumber;
     private final Long roleId;
     private final String displayName;
@@ -15,6 +18,17 @@ public class MembershipInfo {
         this.phoneNumber = Objects.requireNonNull(phoneNumber);
         this.roleId = roleId;
         this.displayName = displayName;
+    }
+
+    // constructor to create a membership info with an empty role
+    public MembershipInfo(User user) {
+        this.phoneNumber = user.getPhoneNumber();
+        this.displayName = user.getDisplayName();
+        this.roleId = null;
+    }
+
+    public static MembershipInfo makeEmpty() {
+        return new MembershipInfo("", null, "");
     }
 
     public String getPhoneNumber() {

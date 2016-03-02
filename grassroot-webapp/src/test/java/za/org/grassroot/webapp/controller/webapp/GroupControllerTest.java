@@ -9,6 +9,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.GroupLogType;
+import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
@@ -104,7 +105,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
         GroupWrapper dummyGroupCreator = new GroupWrapper();
         dummyGroupCreator.setGroupName("DummyGroup");
-        dummyGroupCreator.addMember(sessionTestUser);
+        dummyGroupCreator.addMember(new MembershipInfo(sessionTestUser));
         mockMvc.perform(get("/group/create")).andExpect(view().name("group/create")).andExpect(model()
                 .attribute("groupCreator", hasProperty("addedMembers", hasSize(dummyGroupCreator.getAddedMembers().size()))));
     }
@@ -158,7 +159,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     public void addMemberFailsValidation() throws Exception {
         GroupWrapper groupCreator = new GroupWrapper();
         User user = new User("100001");
-        groupCreator.addMember(user);
+        groupCreator.addMember(new MembershipInfo(user));
         mockMvc.perform(post("/group/create").param("addMember", "")
                 .sessionAttr("groupCreator", groupCreator))
                 .andExpect(status().isOk())
@@ -187,7 +188,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void removeMemberWorks() throws Exception {
         GroupWrapper groupCreator = new GroupWrapper();
-        groupCreator.addMember(new User("100001"));
+        groupCreator.addMember(new MembershipInfo("100001", null, ""));
         mockMvc.perform(post("/group/create").param("removeMember", String.valueOf(0)).param("removeMember", "")
                 .sessionAttr("groupCreator", groupCreator))
                 .andExpect(status().isOk()).andExpect(view().name("group/create"));
@@ -196,7 +197,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void addMemberModifyWorks() throws Exception {
         GroupWrapper groupCreator = new GroupWrapper();
-        groupCreator.addMember(sessionTestUser);
+        groupCreator.addMember(new MembershipInfo(sessionTestUser));
         mockMvc.perform(post("/group/modify").param("addMember", "")
                 .sessionAttr("groupModifier", groupCreator))
                 .andExpect(status().isOk()).andExpect(view().name("group/modify"));
@@ -206,7 +207,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void addMemberModifyFails() throws Exception {
         GroupWrapper groupCreator = new GroupWrapper();
-        groupCreator.addMember(new User("100001"));
+        groupCreator.addMember(new MembershipInfo(new User("100001")));
         MvcResult result = mockMvc.perform(post("/group/modify").param("addMember", "")
                 .sessionAttr("groupModifier", groupCreator))
                 .andExpect(status().isOk())
@@ -226,7 +227,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void removeMemberModifyWorks() throws Exception {
         GroupWrapper groupCreator = new GroupWrapper();
-        groupCreator.addMember(sessionTestUser);
+        groupCreator.addMember(new MembershipInfo(sessionTestUser));
         mockMvc.perform(post("/group/modify").param("removeMember", String.valueOf(0)).param("removeMember", "")
                 .sessionAttr("groupModifier", groupCreator))
                 .andExpect(status().isOk()).andExpect(view().name("group/modify"));

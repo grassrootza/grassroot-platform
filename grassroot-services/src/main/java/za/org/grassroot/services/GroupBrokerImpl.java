@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class GroupBrokerImpl implements GroupBroker {
+
     private GroupRepository groupRepository;
     private RoleRepository roleRepository;
     private UserRepository userRepository;
