@@ -8,14 +8,7 @@
 <body>
 
 <div layout:fragment="header">
-  <h2><span  th:text="${group.groupName}">Group</span></h2>
-</div>
-<div th:if="${canAlter}" layout:fragment="overview">
-  <h4>
-    Last active on <span th:text="${#dates.format(lastActiveTime, 'dd MMM yyyy')}">date</span>.
-    <a th:href="@{/group/history(groupId=${group.id})}">View group history</a>
-  </h4>
-  <div th:if="${hasParent}"><h3>This group has a parent. Its name is <span th:text="${group.parent.groupName}">parent</span></h3></div>
+  <h2 class="text-center">Group: "<span th:text="${group.groupName}">Group</span>"</h2>
 </div>
 
 <div layout:fragment="content">
@@ -23,26 +16,61 @@
 
   <!-- list any upcoming meetings, votes, or logs -->
   <!-- todo: use event type to distinguish / classify among them -->
-  <!-- todo: find a more elegant way to avoid null pointer problems on list.isEmpty -->
+  <!-- First, buttons for common actions -->
+  <!-- todo: make these a fragment, as we'll probably use a lot -->
 
-<div th:if="${not #lists.isEmpty(groupMeetings)}">
   <div class="well">
     <div class="row">
-      <div class="col-md-12">
-        <h2>Upcoming meetings</h2>
+      <div class="btn-group col-lg-12 text-center">
+        <a href="" th:href="@{/group/create(parent=${group.id})}"><button class="btn btn-primary">Create a sub-group</button></a>
+        <a href="" th:href="@{/meeting/create(groupId=${group.id})}"><button class="btn btn-primary">Call a meeting</button></a>
+        <a href="" th:href="@{/vote/create(groupId=${group.id})}"><button class="btn btn-primary">Take a vote</button></a>
+        <a href="" th:href="@{/log/view(groupId=${group.id})}"><button class="btn btn-primary">Manage to-dos</button></a>
       </div>
     </div>
-    <div class="row">
-      <div class="col-md-12">
-        <div th:each="event, iterStat : ${groupMeetings}" class="bs-component">
-          <div class="list-group">
-            <div class="list-group-item">
-              <div class="row-content">
-                <h4 class="list-group-item">
-                  <!-- todo: redirect this based on the event type -->
-                  <a href="" th:href="@{/meeting/view(eventId=${event.id})}"><span th:text="${event.name}"></span></a>
-                </h4>
-                <p class="list=group-time-text">Scheduled for <span th:text="${#calendars.format(event.getEventStartDateTime(),'dd MMMM yyyy')}">11 September 2015</span></p>
+    <div th:if="${canAlter}" class="row top-buffer">
+      <div class="col-lg-2 col-lg-offset-5">
+        <div class="dropdown">
+          <a href="javascript:void(0)" data-target="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+            Manage and modify group<b class="caret"></b><div class="ripple-wrapper"></div></a>
+          <ul class="dropdown-menu">
+            <li><a th:href="@{/group/history(groupId=${group.id})}">View group history</a></li>
+            <li><a th:href="@{/group/rename(groupId=${group.id})}">Rename group</a></li>
+            <li><a th:href="@{/group/token(groupId=${group.id})}">Manage joining code</a></li>
+            <li><a th:href="@{/group/discoverable(groupId=${group.id})}">Change discoverable options</a></li>
+            <li><a th:href="@{/group/add(groupId=${group.id})}">Add multiple members</a></li>
+            <li><a th:href="@{/group/remove(groupId=${group.id})}">Remove members</a></li>
+            <li><a th:href="@{/group/language(groupId=${group.id})}">Set default language</a></li>
+            <li class="divider"></li>
+            <li th:if="${not hasParent}"><a th:href="@{/group/parent(groupId=${group.id})}">Link to a parent group</a></li>
+            <li><a href="" th:href="@{/group/consolidate/select(groupId=${group.id})}">Merge with another group</a></li>
+            <li th:if="${canDeleteGroup}"><a th:href="@{/group/delete(groupId=${group.id})}">Delete group</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div th:if="${not #lists.isEmpty(groupMeetings)}">
+    <div class="well">
+      <div class="row">
+        <div class="col-md-12">
+          <h2>Upcoming meetings</h2>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12">
+          <div th:each="event, iterStat : ${groupMeetings}" class="bs-component">
+            <div class="list-group">
+              <div class="list-group-item">
+                <div class="row-content">
+                  <h4 class="list-group-item">
+                    <!-- todo: redirect this based on the event type -->
+                    <a href="" th:href="@{/meeting/view(eventId=${event.id})}"><span th:text="${event.name}"></span></a>
+                  </h4>
+                  <p class="list=group-time-text">Scheduled for <span th:text="${#calendars.format(event.getEventStartDateTime(),'dd MMMM yyyy')}">11 September 2015</span></p>
+                </div>
               </div>
             </div>
           </div>
@@ -50,7 +78,6 @@
       </div>
     </div>
   </div>
-</div>
 
   <div th:if="${not #lists.isEmpty(groupVotes)}">
     <div class="well">
@@ -79,25 +106,6 @@
     </div>
   </div>
 
-  <!-- First, buttons for common actions -->
-  <!-- todo: make these a fragment, as we'll probably use a lot -->
-
-  <div class="well">
-    <div class="row">
-      <div class="col-md-3">
-        <a href="" th:href="@{/group/create(parent=${group.id})}"><button class="btn btn-primary">Create a sub-group</button></a>
-      </div>
-      <div class="col-md-3">
-        <a href="" th:href="@{/meeting/create(groupId=${group.id})}"><button class="btn btn-primary">Call a meeting</button></a>
-      </div>
-      <div class="col-md-3">
-        <a href="" th:href="@{/vote/create(groupId=${group.id})}"><button class="btn btn-primary">Take a vote</button></a>
-      </div>
-      <div class="col-md-3">
-        <a href="" th:href="@{/log/view(groupId=${group.id})}"><button class="btn btn-primary">Manage to-dos</button></a>
-      </div>
-    </div>
-  </div>
 
   <!-- todo: use Thymeleaf spring security instead of the boolean flag  -->
   <!-- <div class="well" sec:authorize="hasPermission(group.id, 'GROUP_PERMISSION_SEE_MEMBER_DETAILS')"> -->
@@ -106,74 +114,38 @@
       <h2>Group members</h2>
     </div>
     <div class="row">
+      <div class="col-lg-12">
       <table class="table table-striped">
         <thead>
-        <th>Member</th>
-        <td>Phone number</td>
+        <th>Name</th>
+        <th>Phone number</th>
+        <th>Role in group</th>
+        <th th:if="${canAlter}"></th>
         </thead>
         <tbody>
         <tr th:each="member : ${groupMembers}">
           <td><span th:text="${member.displayName}"></span></td>
           <td><span th:text="${member.phoneNumber}"></span></td>
+          <td>To insert role name</td>
+          <td th:if="${canAlter}">
+            <a th:href="@{/group/remove(groupId=${group.id}, userId=${member.uid})}">
+              <button class="btn btn-default">Remove</button>
+            </a>
+          </td>
         </tr>
         </tbody>
       </table>
-    </div>
-    <div class="row" th:if="${discoverable}">
-      This group is discoverable by members of the public if they search for it by name
-    </div>
-    <div class="row" th:unless="${discoverable}">
-      This group is hidden from others unless the group invites them or gives them its join code
-    </div>
-  </div>
-
-  <div class="row">
-    <div class="col-lg-12">
-      <h3>Modify group:</h3>
-    </div>
-  </div>
-
-  <div th:if="${canAlter}" class="well">
-    <form th:action="@{modify}" method="post">
-      <input type="hidden" name="groupId" th:value="${group.id}" />
-      <div class="row form-group">
-        <div class="col-lg-3" th:switch="${openToken}">
-          <div th:case="true">
-            <p class="text-strong">Group join code: *134*1994*<span th:text="${group.groupTokenCode}"></span>#</p>
-            <button type="submit" name="token_extend" class="btn btn-primary">Extend code</button>
-            <button type="submit" name="token_cancel" class="btn btn-primary">Close this code</button>
-          </div>
-          <div th:case="false">
-            <button type="text" name="token_create" class="btn btn-default">Create a new join code ('token')</button>
-          </div>
-        </div>
-        <div class="col-lg-3">
-        <!-- Major todo: look up user's permissions before they can do this ... -->
-          <button type="submit" name="group_modify" class="btn btn-default">Add and modify group members</button>
-        </div>
-        <div class="col-lg-3">
-          <button type="submit" name="group_language" class="btn btn-default">Change group language</button>
-        </div>
-        <div class="col-lg-3">
-          <button type="submit" name="discoverable" class="btn btn-default">Change public/private options</button>
-        </div>
-      </div>
-    </form>
-    <div class="row form-group">
-        <div class="col-md-4" th:if="${not hasParent}">
-          <a href="" th:href="@{/group/parent(groupId=${group.id})}"><button class="btn btn-warning">Link this group to a parent</button></a>
-        </div>
-        <div class="col-md-4" th:if="${canMergeWithOthers}">
-          <a href="" th:href="@{/group/consolidate/select(groupId=${group.id})}"><button class="btn btn-warning">Consolidate with another group</button></a>
-        </div>
-        <div th:if="${canDeleteGroup}" class="col-md-4">
-          <form th:action="@{modify}" method="post">
-            <input type="hidden" name="groupId" th:value="${group.id}" />
-            <button type="submit" name="group_delete" class="btn btn-warning">Delete group (only within 48 hours)</button>
-          </form>
+      <div th:if="${canAlter}" class="form-group">
+        <div class="col-lg-4">
+          <button type="submit" name="addMember" class="btn btn-default">
+            <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+            Add another member</button>
         </div>
       </div>
     </div>
+    </div>
+  </div>
+
 
 
   <!-- todo: add button that will get all users from subgroups too and display them in one list -->

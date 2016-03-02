@@ -34,7 +34,6 @@ public interface GroupAccessControlManagementService {
      */
     void removeUserGroupPermissions(Group group, User user, Set<Permission> groupPermissions);
 
-
     /**
      * @param permission
      * @param groupId

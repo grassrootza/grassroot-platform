@@ -48,7 +48,7 @@ public class VoteController extends BaseController {
         // Event vote = eventManagementService.createVote(user);
 
         if (groupSpecified) {
-            if (!groupManagementService.canUserCallVote(groupId, getUserProfile()))
+            if (!groupManagementService.isUserInGroup(groupManagementService.loadGroup(groupId), getUserProfile()))
                 throw new AccessDeniedException("Sorry, you do not have permission to call a vote on this group");
             model.addAttribute("group", groupManagementService.loadGroup(groupId));
         } else {

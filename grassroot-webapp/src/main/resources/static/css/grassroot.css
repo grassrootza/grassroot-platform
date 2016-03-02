@@ -24,7 +24,6 @@
     margin-left: 50px;
 }
 
-
 .user-profile-container{
     width: 400px;padding: 100px 10px 100px 10px;
  }
@@ -57,9 +56,26 @@
 .cover {
     padding: 0 20px;
 }
+
 .cover .btn-lg {
     padding: 10px 20px;
     font-weight: bold;
+}
+
+.cover-container {
+    background-color: transparent;
+}
+
+.jumbotron {
+    background-color: transparent;
+}
+
+.cover-heading {
+    font-family: 'Open Sans', sans-serif;
+}
+
+.lead {
+    font-family: 'Open Sans', sans-serif;
 }
 
 
@@ -137,4 +153,23 @@
 
     /* Support for IE. */
     font-feature-settings: 'liga';
+}
+
+.btn-default {
+    border-radius: 0;
+    font-family: 'Roboto', sans-serif;
+}
+
+.label-light {
+    font-family: 'Roboto', sans-serif;
+    font-weight: 300;
+}
+
+.well {
+    background-color: transparent;
+    border: none;
+}
+
+.top-buffer {
+    margin-top:20px;
 }
