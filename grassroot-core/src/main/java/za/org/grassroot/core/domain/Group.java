@@ -108,7 +108,12 @@ public class Group implements Serializable {
 
     private void addRole(String roleName) {
         Objects.requireNonNull(roleName);
-        this.groupRoles.add(new Role(roleName, 1L, groupName));
+        for (Role role : groupRoles) {
+            if (role.getName().equals(roleName)) {
+                throw new IllegalArgumentException("Role with name " + roleName + " already exists in group: " + this);
+            }
+        }
+        this.groupRoles.add(new Role(roleName, uid));
     }
 
     /**
@@ -167,26 +172,34 @@ public class Group implements Serializable {
     }
 
     public Set<User> getMembers() {
-        return getMemberships().stream().map(Membership::getUser).collect(Collectors.toSet());
+        return getMemberships().stream()
+                .map(Membership::getUser)
+                .collect(Collectors.toSet());
     }
 
-    public void addMembers(Collection<User> newMembers, Role role) {
+    public Set<Membership> addMembers(Collection<User> newMembers) {
+        return addMembers(newMembers, BaseRoles.ROLE_ORDINARY_MEMBER);
+    }
+
+    public Set<Membership> addMembers(Collection<User> newMembers, String roleName) {
+        Objects.requireNonNull(roleName);
+
+        Role role = getRole(roleName)
+                .orElseThrow(() -> new IllegalArgumentException("No role with name " + roleName + " within group " + this));
+        return addMembers(newMembers, role);
+    }
+
+    public Set<Membership> addMembers(Collection<User> newMembers, Role role) {
         Objects.requireNonNull(newMembers);
-        for (User newMember : newMembers) {
-            addMember(newMember, role);
-        }
-    }
 
-    public void addMembers(Collection<User> newMembers) {
-        addMembers(newMembers, BaseRoles.ROLE_ORDINARY_MEMBER);
-    }
-
-    public void addMembers(Collection<User> newMembers, String roleName) {
-        Objects.requireNonNull(newMembers);
-        Role role = getRole(roleName).orElseThrow(() -> new IllegalArgumentException("No role with name " + roleName + " within group " + this));
+        Set<Membership> memberships = new HashSet<>();
         for (User newMember : newMembers) {
-            addMember(newMember, role);
+            Membership membership = addMember(newMember, role);
+            if (membership != null) {
+                memberships.add(membership);
+            }
         }
+        return memberships;
     }
 
     public Membership addMember(User newMember) {
@@ -194,7 +207,9 @@ public class Group implements Serializable {
     }
 
     public Membership addMember(User newMember, String roleName) {
-        Role role = getRole(roleName).orElseThrow(() -> new IllegalArgumentException("No role with name " + roleName + " within group " + this));
+        Objects.requireNonNull(roleName);
+        Role role = getRole(roleName)
+                .orElseThrow(() -> new IllegalArgumentException("No role with name " + roleName + " within group " + this));
         return addMember(newMember, role);
     }
 
@@ -208,6 +223,7 @@ public class Group implements Serializable {
         Membership membership = new Membership(this, newMember, role);
         boolean added = this.memberships.add(membership);
         if (added) {
+            newMember.addMappedByMembership(membership);
             return membership;
         }
         return null;

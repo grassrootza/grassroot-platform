@@ -855,7 +855,7 @@ public class GroupController extends BaseController {
     public String viewGroupRoles(Model model, @RequestParam Long groupId) {
 
         Group group = loadGroup(groupId, BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
-        Map<String, Role> roles = roleService.fetchGroupRoles(groupId);
+        Map<String, Role> roles = roleService.fetchGroupRoles(group.getUid());
 
         // todo: replace this with Membership entity once built ... very badly done kludge for present
 

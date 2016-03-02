@@ -83,7 +83,7 @@ public class GroupAccessControlManagementServiceTest {
         group = groupManagementService.saveGroup(group,false,"",0L);
 
 
-        Role groupRole = new Role(BaseRoles.ROLE_GROUP_ORGANIZER, group.getId(), group.getGroupName());
+        Role groupRole = new Role(BaseRoles.ROLE_GROUP_ORGANIZER, group.getUid());
 
         groupRole.setPermissions(ImmutableSet.copyOf(permissionsManagementService.getPermissions()));
 
@@ -112,8 +112,4 @@ public class GroupAccessControlManagementServiceTest {
         //Add Permissions again to verify what happens
         groupAccessControlManagementService.addUserGroupPermissions(group, user, groupRole.getPermissions());
     }
-
-
-
-
 }

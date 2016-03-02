@@ -5,12 +5,13 @@ import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.util.Objects;
 
 @Entity
 @Table(name = "group_user_membership",
         uniqueConstraints = @UniqueConstraint(name = "uk_membership_group_user", columnNames = {"group_id", "user_id"}))
-public class Membership {
+public class Membership implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
@@ -69,10 +70,10 @@ public class Membership {
 
         Membership that = (Membership) o;
 
-        if (!group.equals(that.group)) {
+        if (!getGroup().equals(that.getGroup())) {
             return false;
         }
-        if (!user.equals(that.user)) {
+        if (!getUser().equals(that.getUser())) {
             return false;
         }
 
@@ -81,8 +82,8 @@ public class Membership {
 
     @Override
     public int hashCode() {
-        int result = group.hashCode();
-        result = 31 * result + user.hashCode();
+        int result = getGroup().hashCode();
+        result = 31 * result + getUser().hashCode();
         return result;
     }
 

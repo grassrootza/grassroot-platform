@@ -40,11 +40,11 @@ public interface RoleManagementService {
 
     Role fetchGroupRoleByName(String name);
 
-    Set<Role> createGroupRoles(Long groupId, String groupName);
+    Set<Role> createGroupRoles(String groupUid);
 
-    Map<String, Role> fetchGroupRoles(Long groupId);
+    Map<String, Role> fetchGroupRoles(String groupUid);
 
-    Role fetchGroupRole(String roleName, Long groupId);
+    Role fetchGroupRole(String roleName, String groupUid);
 
     Role fetchGroupRole(String roleName, Group group);
 
@@ -61,8 +61,6 @@ public interface RoleManagementService {
     User removeStandardRoleFromUser(Role role, User user);
 
     User removeStandardRoleFromUser(String roleName, User user);
-
-    User removeGroupRolesFromUser(User user, Group group);
 
     /*
     Methods to retrieve roles for user in group

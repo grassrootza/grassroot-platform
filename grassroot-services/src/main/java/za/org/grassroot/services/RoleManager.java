@@ -5,7 +5,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.RoleRepository;
@@ -19,7 +18,7 @@ import java.util.*;
 @Service
 @Transactional
 @Lazy
-public class RoleManager implements  RoleManagementService {
+public class RoleManager implements RoleManagementService {
 
     private final static Logger log = LoggerFactory.getLogger(RoleManager.class);
 
@@ -96,35 +95,35 @@ public class RoleManager implements  RoleManagementService {
     }
 
     @Override
-    public Set<Role> createGroupRoles(Long groupId, String groupName) {
+    public Set<Role> createGroupRoles(String groupUid) {
         // todo: make sure these are batch processing by controlling session
-        Role organizer = roleRepository.save(new Role(BaseRoles.ROLE_GROUP_ORGANIZER, groupId, groupName));
-        Role committee = roleRepository.save(new Role(BaseRoles.ROLE_COMMITTEE_MEMBER, groupId, groupName));
-        Role ordinary = roleRepository.save(new Role(BaseRoles.ROLE_ORDINARY_MEMBER, groupId, groupName));
+        Role organizer = roleRepository.save(new Role(BaseRoles.ROLE_GROUP_ORGANIZER, groupUid));
+        Role committee = roleRepository.save(new Role(BaseRoles.ROLE_COMMITTEE_MEMBER, groupUid));
+        Role ordinary = roleRepository.save(new Role(BaseRoles.ROLE_ORDINARY_MEMBER, groupUid));
         roleRepository.flush();
         return new HashSet<>(Arrays.asList(organizer, committee, ordinary));
     }
 
     @Override
-    public Map<String, Role> fetchGroupRoles(Long groupId) {
+    public Map<String, Role> fetchGroupRoles(String groupUid) {
         Map<String, Role> groupRoles = new HashMap<>();
         groupRoles.put(BaseRoles.ROLE_ORDINARY_MEMBER,
-                       roleRepository.findByNameAndGroupReferenceId(BaseRoles.ROLE_ORDINARY_MEMBER, groupId));
+                       roleRepository.findByNameAndGroupUid(BaseRoles.ROLE_ORDINARY_MEMBER, groupUid));
         groupRoles.put(BaseRoles.ROLE_COMMITTEE_MEMBER,
-                       roleRepository.findByNameAndGroupReferenceId(BaseRoles.ROLE_COMMITTEE_MEMBER, groupId));
+                       roleRepository.findByNameAndGroupUid(BaseRoles.ROLE_COMMITTEE_MEMBER, groupUid));
         groupRoles.put(BaseRoles.ROLE_GROUP_ORGANIZER,
-                       roleRepository.findByNameAndGroupReferenceId(BaseRoles.ROLE_GROUP_ORGANIZER, groupId));
+                       roleRepository.findByNameAndGroupUid(BaseRoles.ROLE_GROUP_ORGANIZER, groupUid));
         return groupRoles;
     }
 
     @Override
-    public Role fetchGroupRole(String roleName, Long groupId) {
-        return roleRepository.findByNameAndGroupReferenceId(roleName, groupId);
+    public Role fetchGroupRole(String roleName, String groupUid) {
+        return roleRepository.findByNameAndGroupUid(roleName, groupUid);
     }
 
     @Override
     public Role fetchGroupRole(String roleName, Group group) {
-        return fetchGroupRole(roleName, group.getId());
+        return fetchGroupRole(roleName, group.getUid());
     }
 
     @Override
@@ -155,12 +154,6 @@ public class RoleManager implements  RoleManagementService {
     }
 
     @Override
-    public User removeGroupRolesFromUser(User user, Group group) {
-        user = flushUserRolesInGroup(user, group);
-        return userManagementService.save(user);
-    }
-
-    @Override
     public Role getUserRoleInGroup(User user, Group group) {
 
         // note: this is currently used just to display user's role in a view already secured, hence redundant here (but keep eye)
@@ -172,18 +165,10 @@ public class RoleManager implements  RoleManagementService {
 
     @Override
     public Role getUserRoleInGroup(User user, Long groupId) {
-
-        for (Role role : user.getRoles()) {
-            /*log.info("Checking a role for user ... " + user.getId() + " role is ... " + role.getId() + ", ref " + role.getGroupReferenceId() + " ..."
-                             + " looking for one that matches " + groupId);*/
-            if (role.isGroupRole()) {
-                if (role.getGroupReferenceId().equals(groupId)) {
-                    return role;
-                }
-            }
-        }
-
-        return null;
+        return user.getMemberships().stream()
+                .filter(membership -> membership.getGroup().getId().equals(groupId))
+                .map(Membership::getRole)
+                .findFirst().orElse(null);
     }
 
     @Override
@@ -191,16 +176,4 @@ public class RoleManager implements  RoleManagementService {
         Role role = fetchGroupRoleByName(roleName);
         return (getUserRoleInGroup(user, group) == role);
     }
-
-    private User flushUserRolesInGroup(User user, Group group) {
-        List<Role> oldRoles = new ArrayList<>(user.getRoles());
-        for (Role role: oldRoles) {
-            if (role.isGroupRole() && (role.getGroupReferenceId() == group.getId())) {
-                log.info("Found a group role to flush! User ... " + user.nameToDisplay() + " ... and role ... " + role.toString());
-                user.removeRole(role);
-            }
-        }
-        return user;
-    }
-
 }

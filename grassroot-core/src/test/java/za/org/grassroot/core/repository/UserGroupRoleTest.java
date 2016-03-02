@@ -58,7 +58,7 @@ public class UserGroupRoleTest {
         group1 = groupRepository.save(group1);
         group2 = groupRepository.save(group2);
 
-        Role group1Role1 = new Role("GROUP_ADMINISTRATOR", group1.getId(), group1.getGroupName());
+        Role group1Role1 = new Role("GROUP_ADMINISTRATOR", group1.getUid());
 
         group1Role1 = roleRepository.save(group1Role1);
         assertThat(group1Role1.getRoleType(), equalTo(Role.RoleType.GROUP));

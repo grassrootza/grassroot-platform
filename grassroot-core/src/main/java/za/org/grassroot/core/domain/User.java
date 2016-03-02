@@ -49,8 +49,8 @@ public class User implements UserDetails {
     @Column(name = "created_date_time", insertable = true, updatable = false)
     private Timestamp createdDateTime;
 
-//    @OneToMany(mappedBy = "user")
-//    private Set<Membership> memberships;
+    @OneToMany(mappedBy = "user")
+    private Set<Membership> memberships = new HashSet<>();
 
     @Column(name = "user_name", length = 50, unique = true)
     private String username;
@@ -181,6 +181,22 @@ public class User implements UserDetails {
     public Account getAccountAdministered() { return accountAdministered; }
     public void setAccountAdministered(Account accountAdministered) { this.accountAdministered = accountAdministered; }
 
+    public Set<Membership> getMemberships() {
+        if (memberships == null) {
+            memberships = new HashSet<>();
+        }
+        return new HashSet<>(memberships);
+    }
+
+    /**
+     * Thisisjust used to manually set inverse side of many-to-many relationship when it  is still not saved in db.
+     * Afterwards Hibernate takes care to set both sides.
+     * @param membership membership
+     */
+    public void addMappedByMembership(Membership membership) {
+        this.memberships.add(membership);
+    }
+
     @PreUpdate
     @PrePersist
     public void updateTimeStamps() {
@@ -196,7 +212,6 @@ public class User implements UserDetails {
     public void setUsername(String username) {
         this.username = username;
     }
-
 
     public String getPassword() {
         return password;

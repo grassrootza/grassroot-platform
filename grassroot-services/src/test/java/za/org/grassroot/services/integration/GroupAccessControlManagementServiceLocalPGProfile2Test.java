@@ -58,7 +58,7 @@ public class GroupAccessControlManagementServiceLocalPGProfile2Test {
         group = groupManagementService.saveGroup(group,false,"",0L);
 
 
-        Role groupRole = new Role(BaseRoles.ROLE_GROUP_ORGANIZER, group.getId(), group.getGroupName());
+        Role groupRole = new Role(BaseRoles.ROLE_GROUP_ORGANIZER, group.getUid());
         groupRole.setPermissions(ImmutableSet.copyOf(permissionsManagementService.getPermissions()));
 
         groupRole = roleManagementService.createRole(groupRole);

@@ -48,9 +48,9 @@ public class AsyncRoleManager implements AsyncRoleService {
 
 
     private Role fixAndReturnGroupRole(String roleName, Group group, GroupPermissionTemplate template) {
-        group.setGroupRoles(roleManagementService.createGroupRoles(group.getId(), group.getGroupName()));
+        group.setGroupRoles(roleManagementService.createGroupRoles(group.getUid()));
         groupRepository.saveAndFlush(group);
-        return fetchGroupRole(roleName, group.getId());
+        return fetchGroupRole(roleName, group.getUid());
     }
 
     private Role fixPermissionsForRole(Role role, GroupPermissionTemplate template) {
@@ -70,7 +70,7 @@ public class AsyncRoleManager implements AsyncRoleService {
 
         List<User> groupMembers = userRepository.findByGroupsPartOfAndIdNot(group, creatingUserId);
 
-        Role ordinaryRole = fetchGroupRole(BaseRoles.ROLE_ORDINARY_MEMBER, groupId);
+        Role ordinaryRole = fetchGroupRole(BaseRoles.ROLE_ORDINARY_MEMBER, group.getUid());
         if (ordinaryRole == null) { ordinaryRole = fixAndReturnGroupRole(BaseRoles.ROLE_ORDINARY_MEMBER, group, template); }
 
         if (ordinaryRole.getPermissions() == null || ordinaryRole.getPermissions().isEmpty())
@@ -88,7 +88,7 @@ public class AsyncRoleManager implements AsyncRoleService {
     @Override
     public void assignPermissionsToGroupRoles(Group group, GroupPermissionTemplate template) {
         log.info("assignPermissionsToGroupRoles ... for group " + group.getGroupName() + " and template " + template);
-        Map<String, Role> groupRoles = roleManagementService.fetchGroupRoles(group.getId());
+        Map<String, Role> groupRoles = roleManagementService.fetchGroupRoles(group.getUid());
         log.info("assignPermissionsToGroupRoles ... got roles back ... " + groupRoles.toString());
         permissionsManagementService.setRolePermissionsFromTemplate(groupRoles, template);
     }
@@ -97,11 +97,11 @@ public class AsyncRoleManager implements AsyncRoleService {
     // @Async
     @Override
     public Future<Role> fetchOrCreateGroupRole(String roleName, Group group) {
-        Role role = roleRepository.findByNameAndGroupReferenceId(roleName, group.getId());
+        Role role = roleRepository.findByNameAndGroupUid(roleName, group.getUid());
         if (role == null) {
-            group.setGroupRoles(roleManagementService.createGroupRoles(group.getId(), group.getGroupName()));
+            group.setGroupRoles(roleManagementService.createGroupRoles(group.getUid()));
             group = groupRepository.saveAndFlush(group);
-            role = fetchGroupRole(roleName, group.getId());
+            role = fetchGroupRole(roleName, group.getUid());
         }
         return new AsyncResult<>(role);
     }
@@ -113,7 +113,7 @@ public class AsyncRoleManager implements AsyncRoleService {
 
         // note: this doesn't work during group creation because Hibernate hasn't cached yet
 
-        Role role = fetchGroupRole(roleName, group.getId());
+        Role role = fetchGroupRole(roleName, group.getUid());
         addingToUser = flushUserRolesInGroup(addingToUser, group.getId());
 
         if (role==null) { role = fixAndReturnGroupRole(roleName, group, GroupPermissionTemplate.DEFAULT_GROUP); }
@@ -133,7 +133,7 @@ public class AsyncRoleManager implements AsyncRoleService {
 
     @Override
     public void addRoleToGroupAndUsers(String roleName, Group group, List<User> addingToUsers, User callingUser) {
-        Role role = fetchGroupRole(roleName, group.getId());
+        Role role = fetchGroupRole(roleName, group.getUid());
         if (role == null) { role = fixAndReturnGroupRole(roleName, group, GroupPermissionTemplate.DEFAULT_GROUP); }
 
         // todo: make this work off a template instead
@@ -168,8 +168,8 @@ public class AsyncRoleManager implements AsyncRoleService {
         return null;
     }
 
-    private Role fetchGroupRole(String roleName, Long groupId) {
-        return roleRepository.findByNameAndGroupReferenceId(roleName, groupId);
+    private Role fetchGroupRole(String roleName, String groupUid) {
+        return roleRepository.findByNameAndGroupUid(roleName, groupUid);
     }
 
     private User flushUserRolesInGroup(User user, Long groupId) {
