@@ -64,16 +64,16 @@ public class Membership implements Serializable {
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (o == null || !(o instanceof Membership)) {
             return false;
         }
 
         Membership that = (Membership) o;
 
-        if (!getGroup().equals(that.getGroup())) {
+        if (getGroup() != null ? !getGroup().equals(that.getGroup()) : that.getGroup() != null) {
             return false;
         }
-        if (!getUser().equals(that.getUser())) {
+        if (getUser() != null ? !getUser().equals(that.getUser()) : that.getUser() != null) {
             return false;
         }
 
@@ -82,8 +82,8 @@ public class Membership implements Serializable {
 
     @Override
     public int hashCode() {
-        int result = getGroup().hashCode();
-        result = 31 * result + getUser().hashCode();
+        int result = getGroup() != null ? getGroup().hashCode() : 0;
+        result = 31 * result + (getUser() != null ? getUser().hashCode() : 0);
         return result;
     }
 
