@@ -74,7 +74,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(groupManagementServiceMock.canUserMakeGroupInactive(sessionTestUser, dummyGroup)).thenReturn(true);
         when(groupManagementServiceMock.isGroupCreatedByUser(dummyGroup.getId(), sessionTestUser)).thenReturn(true);
         when(groupManagementServiceMock.getLastTimeGroupActive(dummyGroup)).thenReturn(LocalDateTime.now());
-        when(groupManagementServiceMock.canUserModifyGroup(dummyGroup,sessionTestUser)).thenReturn(true);
+        // when(groupManagementServiceMock.canUserModifyGroup(dummyGroup,sessionTestUser)).thenReturn(true);
 
         mockMvc.perform(get("/group/view").param("groupId", String.valueOf(dummyGroup.getId()))).andExpect(view().name("group/view"))
                 .andExpect(model().attribute("group", hasProperty("id", is(dummyId)))).andExpect(model()
