@@ -151,12 +151,12 @@ public class UserRepositoryTest {
     public void shouldSaveAddedRole() {
         User user = userRepository.save(new User(number));
         Role role = roleRepository.save(new Role("TEST_ROLE"));
-        user.addRole(role);
+        user.addStandardRole(role);
         userRepository.save(user);
         User userFromDb = userRepository.findByPhoneNumber(number);
         assertNotNull(userFromDb);
         assertEquals(userFromDb.getId(), user.getId());
-        assertTrue(userFromDb.getRoles().contains(role));
+        assertTrue(userFromDb.getStandardRoles().contains(role));
     }
 
     @Test
@@ -164,15 +164,15 @@ public class UserRepositoryTest {
     public void shouldRemoveRole() {
         User user = userRepository.save(new User(number));
         Role role = roleRepository.save(new Role("TEST_ROLE"));
-        user.addRole(role);
+        user.addStandardRole(role);
         user = userRepository.save(user);
-        assertTrue(user.getRoles().contains(role));
-        user.removeRole(role);
+        assertTrue(user.getStandardRoles().contains(role));
+        user.removeStandardRole(role);
         userRepository.save(user);
         User userfromDb = userRepository.findByPhoneNumber(number);
         assertNotNull(userfromDb);
         assertEquals(userfromDb.getId(), user.getId());
-        assertFalse(userfromDb.getRoles().contains(role));
+        assertFalse(userfromDb.getStandardRoles().contains(role));
     }
 
     @Test

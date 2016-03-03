@@ -12,15 +12,14 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
-import za.org.grassroot.core.domain.*;
-
-
-import static org.hamcrest.Matchers.*;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasItem;
-import static org.junit.Assert.*;
+import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.User;
 
 import javax.transaction.Transactional;
+
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.assertThat;
 
 /**
  * @author Lesetse Kimwaga
@@ -34,18 +33,17 @@ public class UserGroupRoleTest {
 
 
     @Autowired
-    private RoleRepository       roleRepository;
+    private RoleRepository roleRepository;
     @Autowired
     private PermissionRepository permissionRepository;
     @Autowired
-    private GroupRepository      groupRepository;
+    private GroupRepository groupRepository;
     @Autowired
-    private UserRepository       userRepository;
+    private UserRepository userRepository;
 
     @Test
     @Ignore
     public void testCreateGroupRoles() throws Exception {
-
         User user = new User("27729100003");
         user.setFirstName("Java");
         user.setLastName("Pablo");
@@ -55,39 +53,15 @@ public class UserGroupRoleTest {
         Group group1 = new Group("Red Devils", user);
         Group group2 = new Group("Code Nation", user);
 
-        group1 = groupRepository.save(group1);
-        group2 = groupRepository.save(group2);
-
-        Role group1Role1 = new Role("GROUP_ADMINISTRATOR", group1.getId(), group1.getGroupName());
-
-        group1Role1 = roleRepository.save(group1Role1);
-        assertThat(group1Role1.getRoleType(), equalTo(Role.RoleType.GROUP));
-        assertThat(group1Role1.getAuthority(), equalTo("GROUP_ROLE_GROUP_ADMINISTRATOR_GROUP_ID_" + group1.getId() ));
-
-
-        Permission permission1 = new Permission(BasePermissions.GROUP_PERMISSION_DELETE_GROUP_MEMBER, 2);
-        permission1 = permissionRepository.save(permission1);
-
-        group1Role1.addPermission(permission1);
-        group1Role1 = roleRepository.save(group1Role1);
-
-        group1.getGroupRoles().add(group1Role1);
-        // group2.getGroupRoles().add(role1);
-
+        group1.addMember(user, BaseRoles.ROLE_GROUP_ORGANIZER);
+        group2.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER);
 
         group1 = groupRepository.save(group1);
         group2 = groupRepository.save(group2);
-
-        user.addRole(group1.getGroupRoles());
-        user.addRole(group2.getGroupRoles());
-
-        user = userRepository.save(user);
 
         assertThat(user.getAuthorities(), hasSize(2));
-
-        assertThat(user.getAuthorities(), CoreMatchers.hasItem(group1Role1));
-
-        assertThat(user.getAuthorities(), hasItem(Matchers.<GrantedAuthority>hasProperty("authority", equalTo("GROUP_ROLE_GROUP_ADMINISTRATOR_GROUP_ID_" + group1.getId()))));
+//        assertThat(user.getAuthorities(), CoreMatchers.hasItem(group1Role1));
+//        assertThat(user.getAuthorities(), hasItem(Matchers.<GrantedAuthority>hasProperty("authority", equalTo("GROUP_ROLE_GROUP_ADMINISTRATOR_GROUP_ID_" + group1.getId()))));
 
     }
 }

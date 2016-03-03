@@ -144,7 +144,7 @@ public class GroupController extends BaseController {
 
         // todo: all sorts of user/group permission checking
         User user = userManagementService.getUserById(getUserProfile().getId()); // todo: remove this once caching etc working
-        log.info("Loading group, user has this role ..." + user.getRoles());
+        log.info("Loading group, user has this role ..." + user.getStandardRoles());
 
         Long startTime = System.currentTimeMillis();
         // Group group = secureLoadGroup(groupId);
@@ -820,7 +820,7 @@ public class GroupController extends BaseController {
     public String viewGroupRoles(Model model, @RequestParam Long groupId) {
 
         Group group = loadGroup(groupId, BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
-        Map<String, Role> roles = roleService.fetchGroupRoles(groupId);
+        Set<Role> roles = group.getGroupRoles();
 
         // todo: replace this with Membership entity once built ... very badly done kludge for present
 
@@ -832,14 +832,14 @@ public class GroupController extends BaseController {
         model.addAttribute("members", members);
         model.addAttribute("roles", roleDescriptions);
 
-        if (roles.get(BaseRoles.ROLE_GROUP_ORGANIZER) != null)
-            model.addAttribute("organizerPerms", new ArrayList<>(roles.get(BaseRoles.ROLE_GROUP_ORGANIZER).getPermissions()));
+        Role organizer = group.getRole(BaseRoles.ROLE_GROUP_ORGANIZER);
+        model.addAttribute("organizerPerms", organizer.getPermissions());
 
-        if (roles.get(BaseRoles.ROLE_COMMITTEE_MEMBER) != null)
-            model.addAttribute("committeePerms", new ArrayList<>(roles.get(BaseRoles.ROLE_COMMITTEE_MEMBER).getPermissions()));
+        Role committee = group.getRole(BaseRoles.ROLE_COMMITTEE_MEMBER);
+        model.addAttribute("committeePerms", committee.getPermissions());
 
-        if (roles.get(BaseRoles.ROLE_ORDINARY_MEMBER) != null)
-            model.addAttribute("ordinaryPerms", new ArrayList<>(roles.get(BaseRoles.ROLE_ORDINARY_MEMBER).getPermissions()));
+        Role ordinary = group.getRole(BaseRoles.ROLE_ORDINARY_MEMBER);
+        model.addAttribute("ordinaryPerms", ordinary.getPermissions());
 
         return "group/roles";
     }

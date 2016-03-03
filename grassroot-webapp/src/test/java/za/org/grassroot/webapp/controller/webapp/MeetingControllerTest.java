@@ -229,7 +229,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         testGroup.setId(dummyId);
         dummyMeeting.setAppliesToGroup(testGroup);
         List<User> listOfDummyYesResponses = Arrays.asList(new User("", "testUser"));
-        when(groupManagementServiceMock.canUserCallMeeting(dummyId, sessionTestUser)).thenReturn(true);
+        // when(groupManagementServiceMock.canUserCallMeeting(dummyId, sessionTestUser)).thenReturn(true);
         when(eventManagementServiceMock.loadEvent(dummyMeeting.getId())).thenReturn(dummyMeeting);
         when(eventManagementServiceMock.getListOfUsersThatRSVPYesForEvent(dummyMeeting)).thenReturn(listOfDummyYesResponses);
         mockMvc.perform(post("/meeting/modify").param("change", "true").sessionAttr("meeting", dummyMeeting)

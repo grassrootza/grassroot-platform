@@ -460,11 +460,11 @@ public class USSDHomeController extends USSDController {
                                          @RequestParam(value="newUri", required=false) String newUri) throws URISyntaxException {
 
         /*
-         todo: this is going to need a way to pass the purpose of the group, or the permission filter (since which groups are
-         displayed/paginated will vary a lot
+         todo: likely need to add permission checking to the list of parameters, but for now just saying "false"
           */
         return menuBuilder(ussdGroupUtil.
-                userGroupMenuPaginated(userManager.findByInputNumber(inputNumber), prompt, existingUri, newUri, pageNumber,null));
+                userGroupMenuPaginated(userManager.findByInputNumber(inputNumber), prompt, existingUri,
+                                       newUri, pageNumber, null,false));
 
     }
 

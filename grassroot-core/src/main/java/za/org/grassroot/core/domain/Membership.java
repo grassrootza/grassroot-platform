@@ -5,12 +5,13 @@ import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.util.Objects;
 
 @Entity
 @Table(name = "group_user_membership",
         uniqueConstraints = @UniqueConstraint(name = "uk_membership_group_user", columnNames = {"group_id", "user_id"}))
-public class Membership {
+public class Membership implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
@@ -24,7 +25,7 @@ public class Membership {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(optional = false, cascade = CascadeType.PERSIST)
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
 
@@ -63,16 +64,16 @@ public class Membership {
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (o == null || !(o instanceof Membership)) {
             return false;
         }
 
         Membership that = (Membership) o;
 
-        if (!group.equals(that.group)) {
+        if (getGroup() != null ? !getGroup().equals(that.getGroup()) : that.getGroup() != null) {
             return false;
         }
-        if (!user.equals(that.user)) {
+        if (getUser() != null ? !getUser().equals(that.getUser()) : that.getUser() != null) {
             return false;
         }
 
@@ -81,8 +82,8 @@ public class Membership {
 
     @Override
     public int hashCode() {
-        int result = group.hashCode();
-        result = 31 * result + user.hashCode();
+        int result = getGroup() != null ? getGroup().hashCode() : 0;
+        result = 31 * result + (getUser() != null ? getUser().hashCode() : 0);
         return result;
     }
 

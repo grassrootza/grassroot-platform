@@ -49,8 +49,8 @@ public class User implements UserDetails {
     @Column(name = "created_date_time", insertable = true, updatable = false)
     private Timestamp createdDateTime;
 
-//    @OneToMany(mappedBy = "user")
-//    private Set<Membership> memberships;
+    @OneToMany(mappedBy = "user")
+    private Set<Membership> memberships = new HashSet<>();
 
     @Column(name = "user_name", length = 50, unique = true)
     private String username;
@@ -75,7 +75,7 @@ public class User implements UserDetails {
             joinColumns        = {@JoinColumn(name = "user_id", referencedColumnName = "id", unique = false)},
             inverseJoinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id", unique = false)}
     )
-    private Set<Role> roles = new HashSet<>();
+    private Set<Role> standardRoles = new HashSet<>();
 
     @ManyToOne
     @JoinColumn(name = "account_administered")
@@ -181,6 +181,22 @@ public class User implements UserDetails {
     public Account getAccountAdministered() { return accountAdministered; }
     public void setAccountAdministered(Account accountAdministered) { this.accountAdministered = accountAdministered; }
 
+    public Set<Membership> getMemberships() {
+        if (memberships == null) {
+            memberships = new HashSet<>();
+        }
+        return new HashSet<>(memberships);
+    }
+
+    /**
+     * Thisisjust used to manually set inverse side of many-to-many relationship when it  is still not saved in db.
+     * Afterwards Hibernate takes care to set both sides.
+     * @param membership membership
+     */
+    public void addMappedByMembership(Membership membership) {
+        this.memberships.add(membership);
+    }
+
     @PreUpdate
     @PrePersist
     public void updateTimeStamps() {
@@ -196,7 +212,6 @@ public class User implements UserDetails {
     public void setUsername(String username) {
         this.username = username;
     }
-
 
     public String getPassword() {
         return password;
@@ -218,21 +233,24 @@ public class User implements UserDetails {
         this.enabled = enabled;
     }
 
-    public Set<Role> getRoles() {
-        return roles;
+    public Set<Role> getStandardRoles() {
+        if (standardRoles == null) {
+            standardRoles = new HashSet<>();
+        }
+        return new HashSet<>(standardRoles);
     }
 
-    public void setRoles(Set<Role> roles) {
-        this.roles = roles;
+    public  void addStandardRole(Role role) {
+        Objects.requireNonNull(role);
+        if (!role.getRoleType().equals(Role.RoleType.STANDARD)) {
+            throw new IllegalArgumentException("Cannot add role directly to user that is not of standard type: " + role);
+        }
+        this.standardRoles.add(role);
     }
 
-    public  void addRole(Role role) { this.roles.add(role); }
-
-    public void removeRole(Role role) { this.roles.remove(role); }
-
-    public  void addRole(Set<Role> roles)
-    {
-        this.roles.addAll(roles);
+    public void removeStandardRole(Role role) {
+        Objects.requireNonNull(role);
+        this.standardRoles.remove(role);
     }
 
     public String getLastUssdMenu() { return lastUssdMenu; }
@@ -252,7 +270,7 @@ public class User implements UserDetails {
     @Transient
     public Set<Permission> getPermissions() {
         Set<Permission> perms = new HashSet<Permission>();
-        for (Role role : roles) {
+        for (Role role : standardRoles) {
             perms.addAll(role.getPermissions());
         }
         return perms;
@@ -261,8 +279,12 @@ public class User implements UserDetails {
     @Override
     @Transient
     public Collection<GrantedAuthority> getAuthorities() {
-        Set<GrantedAuthority> authorities = new HashSet<GrantedAuthority>();
-        authorities.addAll(getRoles());
+        Set<GrantedAuthority> authorities = new HashSet<>();
+        authorities.addAll(getStandardRoles());
+        // todo: dunno how performant this is, but at least it will work like this
+        for (Membership membership : memberships) {
+            authorities.add(membership.getRole());
+        }
         authorities.addAll(getPermissions());
         return authorities;
     }

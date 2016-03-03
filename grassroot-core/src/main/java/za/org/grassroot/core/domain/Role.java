@@ -2,12 +2,12 @@ package za.org.grassroot.core.domain;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Joiner;
-import com.google.common.base.Objects;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.util.Assert;
 
 import javax.persistence.*;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -18,22 +18,15 @@ import java.util.Set;
 @Inheritance(strategy = InheritanceType.JOINED)
 public class Role extends BaseEntity implements GrantedAuthority {
 
-    public static final String ROLE_NAME_SEPARATOR = "_";
-    public static final String ROLE_NAME_PREFIX    = "ROLE";
-    public static final String GROUP_ID_PREFIX     = "GROUP_ID";
-
     public enum RoleType {
         STANDARD,
         GROUP
     }
 
     private String name;
-    private Long   groupReferenceId;
-    private String groupReferenceName;
+    private String groupUid;
     private RoleType roleType;
-
     private Set<Permission> permissions = new HashSet<>();
-
     private Set<User> users = new HashSet<>();
 
     public Role() {
@@ -41,21 +34,14 @@ public class Role extends BaseEntity implements GrantedAuthority {
     }
 
     public Role(String name) {
-        this.name = name;
+        this(name, null);
         this.roleType = RoleType.STANDARD;
     }
 
-
-    public Role(String name, Long groupReferenceId, String groupReferenceName) {
-
-        Assert.notNull(name);
-        Assert.notNull(groupReferenceId);
-        Assert.notNull(groupReferenceName);
-
-        this.name = name;
-        this.groupReferenceId = groupReferenceId;
-        this.groupReferenceName = formatGroupNameReference(groupReferenceName);
-        this.roleType = RoleType.GROUP;
+    public Role(String name, String groupUid) {
+        this.name = Objects.requireNonNull(name);
+        this.roleType = groupUid == null ? RoleType.STANDARD : RoleType.GROUP;
+        this.groupUid = groupUid;
     }
 
     @Column(name = "role_name", nullable = false, length = 100)
@@ -72,12 +58,24 @@ public class Role extends BaseEntity implements GrantedAuthority {
             joinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id", unique = false)},
             inverseJoinColumns = {@JoinColumn(name = "permission_id", referencedColumnName = "id", unique = false)}
     )
+
     public Set<Permission> getPermissions() {
-        return permissions;
+        if (permissions == null) {
+            permissions = new HashSet<>();
+        }
+        return new HashSet<>(permissions);
+    }
+
+    public void removePermission(Permission permission) {
+        Objects.requireNonNull(permission);
+        this.permissions.remove(permission);
     }
 
     public void setPermissions(Set<Permission> permissions) {
-        this.permissions = permissions;
+        Objects.requireNonNull(permissions);
+
+        this.permissions.clear();
+        this.permissions.addAll(permissions);
     }
 
     @OneToMany(fetch = FetchType.EAGER)
@@ -86,19 +84,21 @@ public class Role extends BaseEntity implements GrantedAuthority {
             inverseJoinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id", unique = false)}
     )
     public Set<User> getUsers() {
-        return users;
+        if (users == null) {
+            users = new HashSet<>();
+        }
+        return new HashSet<>(users);
     }
 
-    public void setUsers(Set<User> users) { this.users = users; }
+    void setUsers(Set<User> users) { this.users = users; }
 
-    @Column(name = "group_reference_id")
-    public Long getGroupReferenceId() {
-        return groupReferenceId;
+    @Column(name = "group_uid")
+    public String getGroupUid() {
+        return groupUid;
     }
 
-    @Column(name = "group_reference_name")
-    public String getGroupReferenceName() {
-        return groupReferenceName;
+    void setGroupUid(String groupUid) {
+        this.groupUid = groupUid;
     }
 
     @Column(name = "role_type")
@@ -107,26 +107,10 @@ public class Role extends BaseEntity implements GrantedAuthority {
         return roleType;
     }
 
-    public void setGroupReferenceId(Long groupReferenceId) {
-        this.groupReferenceId = groupReferenceId;
-    }
-
-    public void setGroupReferenceName(String groupReferenceName) {
-        this.groupReferenceName = formatGroupNameReference(groupReferenceName);
-    }
-
-    public void setRoleType(RoleType roleType) {
+    void setRoleType(RoleType roleType) {
         this.roleType = roleType;
     }
 //~=================================================================================================================
-
-
-    private String formatGroupNameReference(String groupName) {
-        if (groupName != null) {
-            return CharMatcher.JAVA_LETTER_OR_DIGIT.retainFrom(groupName);
-        }
-        return "";
-    }
 
     @Transient
     public void addPermission(Permission permission) {
@@ -134,9 +118,8 @@ public class Role extends BaseEntity implements GrantedAuthority {
     }
 
     @Transient
-    public void setGroup(Group group) {
-        this.setGroupReferenceId(group.getId());
-        this.setGroupReferenceName(group.getGroupName());
+    void setGroup(Group group) {
+        this.groupUid = group.getUid();
     }
 
     // looks like toString() method might be used for other purposes, so creating a helper as a descriptor
@@ -144,12 +127,10 @@ public class Role extends BaseEntity implements GrantedAuthority {
     public String describe() {
         return "Role{" +
                 "role name='" + name + '\'' +
-                ", groupReferenceId ='" + groupReferenceId + '\'' +
-                ", groupReferenceName ='" + groupReferenceName + '\'' +
+                ", groupUid ='" + groupUid + '\'' +
                 ", id=" + id +
                 ", type=" + roleType +
                 ", permissions=" + permissions.toString()+
-
                 '}';
     }
 
@@ -169,8 +150,8 @@ public class Role extends BaseEntity implements GrantedAuthority {
 
         if (o instanceof Role) {
             final Role other = (Role) o;
-            return Objects.equal(getAuthority(), other.getAuthority())
-                    &&  Objects.equal(getId(), other.getId());
+            return com.google.common.base.Objects.equal(getAuthority(), other.getAuthority())
+                    &&  com.google.common.base.Objects.equal(getId(), other.getId());
         }
         return false;
     }
@@ -200,7 +181,7 @@ public class Role extends BaseEntity implements GrantedAuthority {
     @Transient
     public  boolean isGroupRole()
     {
-        return roleType.equals(RoleType.GROUP) && groupReferenceId != null;
+        return roleType.equals(RoleType.GROUP);
     }
 
 }

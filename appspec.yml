@@ -6,19 +6,15 @@ files:
 permissions:
    - object: /var/grassroot
      pattern: "**"
-     owner: ubuntu 
-     group: ubuntu 
+     owner: root 
+     group: root 
      mode: 755
 hooks:
-   ApplicationStop:
-    - location: scripts/stopgrassroot.sh
-      runas: ubuntu
    BeforeInstall:
-    - location: scripts/clearoldgrassroot.sh
-      runas: ubuntu
-   AfterInstall: 
     - location: scripts/compilegrassroot.sh
-      runas: ubuntu 
+    - location: scripts/stopgrassroot.sh
+    - location: scripts/clearoldgrassroot.sh
+      runas: root
    ApplicationStart:
     - location: scripts/startgrassroot.sh
-      runas: ubuntu
+      runas: root

@@ -11,12 +11,12 @@ import java.util.Objects;
 public class MembershipInfo {
 
     private final String phoneNumber;
-    private final Long roleId;
-    private final String displayName;
+    private final String roleName; // optional
+    private final String displayName; // optional
 
-    public MembershipInfo(String phoneNumber, Long roleId, String displayName) {
+    public MembershipInfo(String phoneNumber, String roleName, String displayName) {
         this.phoneNumber = Objects.requireNonNull(phoneNumber);
-        this.roleId = roleId;
+        this.roleName = roleName;
         this.displayName = displayName;
     }
 
@@ -35,8 +35,8 @@ public class MembershipInfo {
         return phoneNumber;
     }
 
-    public Long getRoleId() {
-        return roleId;
+    public String getRoleName() {
+        return roleName;
     }
 
     public String getDisplayName() {
@@ -70,7 +70,7 @@ public class MembershipInfo {
     public String toString() {
         final StringBuilder sb = new StringBuilder("MembershipInfo{");
         sb.append("phoneNumber='").append(phoneNumber).append('\'');
-        sb.append(", roleId=").append(roleId);
+        sb.append(", roleName=").append(roleName);
         sb.append(", displayName='").append(displayName).append('\'');
         sb.append('}');
         return sb.toString();

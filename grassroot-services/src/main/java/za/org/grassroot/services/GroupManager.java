@@ -83,7 +83,7 @@ public class GroupManager implements GroupManagementService {
         Long timeStart = System.currentTimeMillis();
         Group group = groupRepository.save(new Group(groupName, creatingUser));
 
-        if (addDefaultRole) { group.setGroupRoles(roleManagementService.createGroupRoles(group.getId(), group.getGroupName())); }
+        if (addDefaultRole) { group.setGroupRoles(roleManagementService.createGroupRoles(group.getUid())); }
 
         group = groupRepository.saveAndFlush(group);
         Long timeEnd = System.currentTimeMillis();
