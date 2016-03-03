@@ -10,15 +10,11 @@ permissions:
      group: root 
      mode: 755
 hooks:
-   ApplicationStop:
-    - location: scripts/stopgrassroot.sh
-      runas: root
    BeforeInstall:
+    - location: scripts/compilegrassroot.sh
+    - location: scripts/stopgrassroot.sh
     - location: scripts/clearoldgrassroot.sh
       runas: root
-   AfterInstall: 
-    - location: scripts/compilegrassroot.sh
-      runas: root 
    ApplicationStart:
     - location: scripts/startgrassroot.sh
       runas: root
