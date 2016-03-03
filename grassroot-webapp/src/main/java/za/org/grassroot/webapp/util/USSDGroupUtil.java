@@ -218,20 +218,25 @@ public class USSDGroupUtil extends USSDUtil {
     }
 
     public USSDMenu addListOfGroupsToMenu(USSDMenu menu,USSDSection section, String nextMenuUrl, List<Group> groups, User user,boolean modification ) {
+
         final String formedUrl = (!nextMenuUrl.contains("?")) ?
                 (nextMenuUrl + groupIdUrlEnding) :
                 (nextMenuUrl + "&" + groupIdParameter + "=");
+
         for (Group group : groups) {
 
             String name = (group.hasName()) ? group.getGroupName() :
                     getMessage(groupKeyForMessages, "unnamed", "label", unnamedGroupDate.format(group.getCreatedDateTime()), user);
-            if(modification){
-                if(checkPermissions(section,group,user)){
+
+            menu.addMenuOption(formedUrl + group.getId(), name);
+
+            /* if (modification) {
+                if (checkPermissions(section,group,user)) {
                     menu.addMenuOption(formedUrl + group.getId(), name);
                 }
-            }else{
-            menu.addMenuOption(formedUrl + group.getId(), name);
-        }
+            } else {
+                menu.addMenuOption(formedUrl + group.getId(), name);
+            }*/
 
     }
 return menu;
