@@ -50,33 +50,15 @@
 
 <div layout:fragment="content">
     <!-- Central text header -->
-  <div class="well">
-    <div class="row">
-      <h1 th:text="#{web.home.banner}">Meet, vote act</h1>
+  <div class="row">
+    <div class="col-md-12">
+      <h1 th:text="#{web.home.banner}" class="text-center">Meet, vote act</h1>
       <!-- Insert user's name -->
-      <h2 th:text="#{web.home.welcome(${currentUser.firstName})}">Welcome back to GrassRoot, Luke</h2>
+      <h4 th:text="#{web.home.welcome(${currentUser.firstName})}" class="text-center">Welcome back to Grassroot, Luke</h4>
     </div>
-  </div>
 
   <!-- To insert search box for groups, events, etc, once many users -->
 
-  <!-- Row of buttons to take common actions -->
-
-  <div class="well">
-    <div class="row">
-      <div class="col-md-3">
-        <a href="" th:href="@{/group/create}"><button class="btn btn-primary">Create a new group</button></a>
-      </div>
-      <div class="col-md-3">
-        <a href="" th:href="@{/meeting/create}"><button class="btn btn-primary">Call a meeting</button></a>
-      </div>
-      <div class="col-md-3">
-        <a href="" th:href="@{/vote/create}"><button class="btn btn-primary">Take a vote</button></a>
-      </div>
-      <div class="col-md-3">
-        <a href="" th:href="@{/log/create}"><button class="btn btn-primary">Record an action</button></a>
-      </div>
-    </div>
   </div>
 
   <!-- List of outstanding meeting RSVPs, if the user has any -->
@@ -175,7 +157,7 @@
         <div class="col-lg-12">
           <div class="row">
             <div class="col-lg-12">
-              <h2>Your groups</h2>
+              <h4>Your groups</h4>
             </div>
           </div>
           <div class="row">
@@ -188,14 +170,19 @@
                       <h4  class="list-group-item-heading">
                         <a th:href="@{/group/view(groupId=${group.getId()})}"><span th:text="${group.getDisplayName('')}"></span></a>
                       </h4>
-                      <div class="least-content"><span th:text="${group.getGroupMembers()}"></span> Members</div>
-                      <p class="list-group-item-text">Est. <span th:text="${#calendars.format(group.getCreatedDateTime(),'dd MMMM yyyy')}">13 May 2011</span></p>
+                      <div class="least-content">
+                        <p class="list-group-item-text">
+                          Started on <span th:text="${#calendars.format(group.getCreatedDateTime(),'dd MMMM yyyy')}">13 May 2011</span>
+                          |
+                          <span th:text="${group.getGroupMembers()}"></span> Members
+                          |
+                          <a th:href="@{/group/unsubscribe(groupId=${group.getId()})}">
+                            Unsubscribe
+                          </a>
+                        </p>
                       </div>
-                      <div class="col-lg-6">
-                        <a th:href="@{/group/unsubscribe(groupId=${group.getId()})}">
-                          <button class="btn">Unsubscribe from group</button>
-                        </a>
                       </div>
+
                     </div>
                   </div>
                   <div class="list-group-separator"></div>

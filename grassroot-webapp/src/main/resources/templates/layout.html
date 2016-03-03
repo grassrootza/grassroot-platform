@@ -16,6 +16,8 @@
   <link rel="stylesheet" type="text/css" th:href="@{/css/jquery.dropdown.css}" />
   <link rel="stylesheet" type="text/css" th:href="@{/css/jquery.steps.css}" />
   <link rel="stylesheet" type="text/css" th:href="@{/css/bootstrap-datetimepicker.min.css}" />
+  <link href='https://fonts.googleapis.com/css?family=Open+Sans:400' rel='stylesheet' type='text/css' />
+  <link href='https://fonts.googleapis.com/css?family=Roboto:300,400' rel='stylesheet' type='text/css' />
 
 
 
@@ -45,7 +47,7 @@
               <span class="icon-bar"></span>
               <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand"   href="javascript:void(0)" th:href="@{/home}">GrassRoot</a>
+            <a class="navbar-brand"   href="javascript:void(0)" th:href="@{/home}">Grassroot</a>
           </div>
           <div class="navbar-collapse collapse navbar-responsive-collapse">
             <ul class="nav navbar-nav">
@@ -89,7 +91,6 @@
               First Last
             </h1>
             <p class="header-content-subtitle" layout:fragment="overview">
-              Subttitle Ligula Risus Tristique Pharetra
             </p>
           </div>
           <div class="span4">
@@ -135,7 +136,7 @@
       <div class="container-fluid">
         <div class="row-fluid">
           <div class="span8">
-            &copy; <span th:text="${#calendars.format(#calendars.createToday(),'yyyy')}">2015</span> <a href="http://www.grassroot.org.za/">GrassRoot</a>. All Rights Reserved.
+            &copy; <span th:text="${#calendars.format(#calendars.createToday(),'yyyy')}">2015</span> <a href="http://www.grassroot.org.za/">Grassroot</a>. All Rights Reserved.
 
             <span id='authentication' sec:authorize="isFullyAuthenticated()">
               [<a th:href="@{/logout}">Sign out</a>]
