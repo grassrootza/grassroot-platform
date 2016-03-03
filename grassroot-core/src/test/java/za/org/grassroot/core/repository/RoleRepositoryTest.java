@@ -80,7 +80,7 @@ public class RoleRepositoryTest {
         permission = permissionRepository.save(permission);
         role = roleRepository.save(role);
         assertNotNull(role.getId());
-        role.getPermissions().remove(permission);
+        role.removePermission(permission);
         Role rolePersisted = roleRepository.save(role);
         assertThat(rolePersisted.getId(), is(role.getId()));
         assertThat(rolePersisted.getPermissions().contains(permission), is(false));

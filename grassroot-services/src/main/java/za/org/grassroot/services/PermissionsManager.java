@@ -6,16 +6,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import za.org.grassroot.core.domain.BasePermissions;
-import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.Role;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.PermissionRepository;
 import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
 import javax.transaction.Transactional;
 import java.util.*;
+import java.util.function.Supplier;
 
 /**
  * @author Lesetse Kimwaga
@@ -187,11 +185,10 @@ public class PermissionsManager implements PermissionsManagementService {
     }
 
     @Override
-    public Map<String, Role> setRolePermissionsFromTemplate(Map<String, Role> roles, GroupPermissionTemplate template) {
-
-        Role organizer = roles.get(BaseRoles.ROLE_GROUP_ORGANIZER);
-        Role committee = roles.get(BaseRoles.ROLE_COMMITTEE_MEMBER);
-        Role member = roles.get(BaseRoles.ROLE_ORDINARY_MEMBER);
+    public void setRolePermissionsFromTemplate(Group group, GroupPermissionTemplate template) {
+        Role organizer = group.getRole(BaseRoles.ROLE_GROUP_ORGANIZER);
+        Role committee = group.getRole(BaseRoles.ROLE_COMMITTEE_MEMBER);
+        Role member = group.getRole(BaseRoles.ROLE_ORDINARY_MEMBER);
 
         switch(template) {
             case DEFAULT_GROUP:
@@ -210,13 +207,6 @@ public class PermissionsManager implements PermissionsManagementService {
                 member.setPermissions(defaultOrdinaryMemberPermissions());
                 break;
         }
-
-        Map<String, Role> savedRoles = new HashMap<>();
-        savedRoles.put(BaseRoles.ROLE_GROUP_ORGANIZER, roleRepository.save(organizer));
-        savedRoles.put(BaseRoles.ROLE_COMMITTEE_MEMBER, roleRepository.save(committee));
-        savedRoles.put(BaseRoles.ROLE_ORDINARY_MEMBER, roleRepository.save(member));
-
-        return savedRoles;
     }
 
     @Override

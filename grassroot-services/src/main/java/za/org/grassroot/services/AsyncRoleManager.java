@@ -16,6 +16,7 @@ import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Future;
 
 /**
@@ -88,23 +89,9 @@ public class AsyncRoleManager implements AsyncRoleService {
     @Override
     public void assignPermissionsToGroupRoles(Group group, GroupPermissionTemplate template) {
         log.info("assignPermissionsToGroupRoles ... for group " + group.getGroupName() + " and template " + template);
-        Map<String, Role> groupRoles = roleManagementService.fetchGroupRoles(group.getUid());
-        log.info("assignPermissionsToGroupRoles ... got roles back ... " + groupRoles.toString());
-        permissionsManagementService.setRolePermissionsFromTemplate(groupRoles, template);
+        permissionsManagementService.setRolePermissionsFromTemplate(group, template);
     }
 
-
-    // @Async
-    @Override
-    public Future<Role> fetchOrCreateGroupRole(String roleName, Group group) {
-        Role role = roleRepository.findByNameAndGroupUid(roleName, group.getUid());
-        if (role == null) {
-            group.setGroupRoles(roleManagementService.createGroupRoles(group.getUid()));
-            group = groupRepository.saveAndFlush(group);
-            role = fetchGroupRole(roleName, group.getUid());
-        }
-        return new AsyncResult<>(role);
-    }
 
     // @Async
     @Override
@@ -123,7 +110,7 @@ public class AsyncRoleManager implements AsyncRoleService {
         if (role.getPermissions() == null || role.getPermissions().isEmpty()) {
             role = fixPermissionsForRole(role, GroupPermissionTemplate.DEFAULT_GROUP);
         }
-        addingToUser.addRole(role);
+        addingToUser.addStandardRole(role);
         // addingToUser = userRepository.save(addingToUser); // this causes issues with the ACL (many)
 
         // now that we have a role with the right set of permissions, finish off by wiring up access control
@@ -142,7 +129,7 @@ public class AsyncRoleManager implements AsyncRoleService {
         }
 
         for (User user : addingToUsers) {
-            user.addRole(role);
+            user.addStandardRole(role);
         }
         groupAccessControlManagementService.addUsersGroupPermissions(group, addingToUsers, callingUser, role.getPermissions());
     }
@@ -153,21 +140,6 @@ public class AsyncRoleManager implements AsyncRoleService {
         userRepository.save(flushUserRolesInGroup(user, group.getId()));
     }
 
-    @Override
-    public Role assignPermissionsToRole(Role role, List<Permission> permissions) {
-        return null;
-    }
-
-    @Override
-    public Role addPermissionToRole(Role role, Permission permission) {
-        return null;
-    }
-
-    @Override
-    public Role removePermissionFromRole(Role role, Permission permission) {
-        return null;
-    }
-
     private Role fetchGroupRole(String roleName, String groupUid) {
         return roleRepository.findByNameAndGroupUid(roleName, groupUid);
     }
@@ -176,7 +148,7 @@ public class AsyncRoleManager implements AsyncRoleService {
         Role oldRole = roleManagementService.getUserRoleInGroup(user, groupId);
         if (oldRole != null) {
             log.info("Found a group role to flush! User ... " + user.nameToDisplay() + " ... and role ... " + oldRole.toString());
-            user.removeRole(oldRole);
+            user.removeStandardRole(oldRole);
         } else {
             log.info("Didn't find a role to flush ...");
         }

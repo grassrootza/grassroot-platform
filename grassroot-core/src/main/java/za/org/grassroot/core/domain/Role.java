@@ -58,12 +58,24 @@ public class Role extends BaseEntity implements GrantedAuthority {
             joinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id", unique = false)},
             inverseJoinColumns = {@JoinColumn(name = "permission_id", referencedColumnName = "id", unique = false)}
     )
+
     public Set<Permission> getPermissions() {
-        return permissions;
+        if (permissions == null) {
+            permissions = new HashSet<>();
+        }
+        return new HashSet<>(permissions);
+    }
+
+    public void removePermission(Permission permission) {
+        Objects.requireNonNull(permission);
+        this.permissions.remove(permission);
     }
 
     public void setPermissions(Set<Permission> permissions) {
-        this.permissions = permissions;
+        Objects.requireNonNull(permissions);
+
+        this.permissions.clear();
+        this.permissions.addAll(permissions);
     }
 
     @OneToMany(fetch = FetchType.EAGER)

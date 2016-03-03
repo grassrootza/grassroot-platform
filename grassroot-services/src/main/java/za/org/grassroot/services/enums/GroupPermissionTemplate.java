@@ -10,7 +10,7 @@ public enum GroupPermissionTemplate {
 
     private final String text;
 
-    private GroupPermissionTemplate(final String text) { this.text = text; }
+    GroupPermissionTemplate(final String text) { this.text = text; }
 
     @Override
     public String toString() { return text; }

@@ -89,12 +89,6 @@ public class RoleManager implements RoleManagementService {
     }
 
     @Override
-    public Role fetchGroupRoleByName(String name) {
-        List<Role> roles = roleRepository.findByNameAndRoleType(name, Role.RoleType.GROUP);
-        return !roles.isEmpty() ? roles.get(0) : null;
-    }
-
-    @Override
     public Set<Role> createGroupRoles(String groupUid) {
         // todo: make sure these are batch processing by controlling session
         Role organizer = roleRepository.save(new Role(BaseRoles.ROLE_GROUP_ORGANIZER, groupUid));
@@ -105,35 +99,13 @@ public class RoleManager implements RoleManagementService {
     }
 
     @Override
-    public Map<String, Role> fetchGroupRoles(String groupUid) {
-        Map<String, Role> groupRoles = new HashMap<>();
-        groupRoles.put(BaseRoles.ROLE_ORDINARY_MEMBER,
-                       roleRepository.findByNameAndGroupUid(BaseRoles.ROLE_ORDINARY_MEMBER, groupUid));
-        groupRoles.put(BaseRoles.ROLE_COMMITTEE_MEMBER,
-                       roleRepository.findByNameAndGroupUid(BaseRoles.ROLE_COMMITTEE_MEMBER, groupUid));
-        groupRoles.put(BaseRoles.ROLE_GROUP_ORGANIZER,
-                       roleRepository.findByNameAndGroupUid(BaseRoles.ROLE_GROUP_ORGANIZER, groupUid));
-        return groupRoles;
-    }
-
-    @Override
-    public Role fetchGroupRole(String roleName, String groupUid) {
-        return roleRepository.findByNameAndGroupUid(roleName, groupUid);
-    }
-
-    @Override
-    public Role fetchGroupRole(String roleName, Group group) {
-        return fetchGroupRole(roleName, group.getUid());
-    }
-
-    @Override
     public Integer getNumberStandardRoles() {
         return roleRepository.findByRoleType(Role.RoleType.STANDARD).size();
     }
 
     @Override
     public User addStandardRoleToUser(Role role, User user) {
-        user.addRole(role);
+        user.addStandardRole(role);
         return userManagementService.save(user);
     }
 
@@ -144,7 +116,7 @@ public class RoleManager implements RoleManagementService {
 
     @Override
     public User removeStandardRoleFromUser(Role role, User user) {
-        user.removeRole(role);
+        user.removeStandardRole(role);
         return userManagementService.save(user);
     }
 
@@ -169,11 +141,5 @@ public class RoleManager implements RoleManagementService {
                 .filter(membership -> membership.getGroup().getId().equals(groupId))
                 .map(Membership::getRole)
                 .findFirst().orElse(null);
-    }
-
-    @Override
-    public boolean doesUserHaveRoleInGroup(User user, Group group, String roleName) {
-        Role role = fetchGroupRoleByName(roleName);
-        return (getUserRoleInGroup(user, group) == role);
     }
 }

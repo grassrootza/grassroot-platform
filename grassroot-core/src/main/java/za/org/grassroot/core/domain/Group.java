@@ -184,8 +184,7 @@ public class Group implements Serializable {
     public Set<Membership> addMembers(Collection<User> newMembers, String roleName) {
         Objects.requireNonNull(roleName);
 
-        Role role = getRole(roleName)
-                .orElseThrow(() -> new IllegalArgumentException("No role with name " + roleName + " within group " + this));
+        Role role = getRole(roleName);
         return addMembers(newMembers, role);
     }
 
@@ -208,8 +207,7 @@ public class Group implements Serializable {
 
     public Membership addMember(User newMember, String roleName) {
         Objects.requireNonNull(roleName);
-        Role role = getRole(roleName)
-                .orElseThrow(() -> new IllegalArgumentException("No role with name " + roleName + " within group " + this));
+        Role role = getRole(roleName);
         return addMember(newMember, role);
     }
 
@@ -250,11 +248,12 @@ public class Group implements Serializable {
         return null;
     }
 
-    public Optional<Role> getRole(String roleName) {
+    public Role getRole(String roleName) {
         Objects.requireNonNull(roleName);
         return groupRoles.stream()
                 .filter(role -> role.getName().equals(roleName))
-                .findFirst();
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("No role udner name " + roleName + " found in group " + this));
     }
 
     public boolean hasMember(User user) {

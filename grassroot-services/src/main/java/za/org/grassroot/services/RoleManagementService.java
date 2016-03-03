@@ -38,15 +38,7 @@ public interface RoleManagementService {
 
     Role fetchStandardRoleByName(String name);
 
-    Role fetchGroupRoleByName(String name);
-
     Set<Role> createGroupRoles(String groupUid);
-
-    Map<String, Role> fetchGroupRoles(String groupUid);
-
-    Role fetchGroupRole(String roleName, String groupUid);
-
-    Role fetchGroupRole(String roleName, Group group);
 
     Integer getNumberStandardRoles();
 
@@ -69,7 +61,4 @@ public interface RoleManagementService {
     Role getUserRoleInGroup(User user, Group group);
 
     Role getUserRoleInGroup(User user, Long groupId);
-
-    boolean doesUserHaveRoleInGroup(User user, Group group, String roleName);
-
 }
