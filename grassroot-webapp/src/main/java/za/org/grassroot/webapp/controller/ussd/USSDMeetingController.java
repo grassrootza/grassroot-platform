@@ -101,11 +101,12 @@ public class USSDMeetingController extends USSDController {
 
         log.info("Timing a core menu ... meeting start menu has user ... ");
 
-        USSDMenu returnMenu =null;
+        USSDMenu returnMenu;
 
         // todo: replace with call to countFutureEvents plus permission filter
         if (newMeeting || eventManager.getUpcomingEventsUserCreated(user).size() == 0) {
-            returnMenu = ussdGroupUtil.askForGroupAllowCreateNew(user, USSDSection.MEETINGS, nextMenu(startMenu), newGroupMenu, null);
+            returnMenu = ussdGroupUtil.askForGroupAllowCreateNew(user, thisSection, nextMenu(startMenu), newGroupMenu,
+                                                                 groupHandlingMenu, null, false);
         } else {
             returnMenu = eventUtil.askForMeeting(user, startMenu, manageMeetingMenu, startMenu + "?newMtg=1");
         }

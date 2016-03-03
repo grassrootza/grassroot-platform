@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3"
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity4"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       xmlns:data="https://github.com/mxab/thymeleaf-extras-data-attribute">
 <head>
@@ -29,6 +29,9 @@
     if (navigator.userAgent.indexOf("NT 6.1") != -1) {
       document.body.style.WebkitTextStroke = "0.5px";
     }
+    $(document).ready(function(){
+        $('[data-toggle="tooltip"]').tooltip();
+    });
   </script>
   <div>
 

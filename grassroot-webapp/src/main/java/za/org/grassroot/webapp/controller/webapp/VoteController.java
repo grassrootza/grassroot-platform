@@ -10,6 +10,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
@@ -48,9 +49,10 @@ public class VoteController extends BaseController {
         // Event vote = eventManagementService.createVote(user);
 
         if (groupSpecified) {
-            if (!groupManagementService.canUserCallVote(groupId, getUserProfile()))
+            Group group = groupManagementService.loadGroup(groupId);
+            if (!groupManagementService.isUserInGroup(group, getUserProfile()))
                 throw new AccessDeniedException("Sorry, you do not have permission to call a vote on this group");
-            model.addAttribute("group", groupManagementService.loadGroup(groupId));
+            model.addAttribute("group", group);
         } else {
             // todo: filter for permissions
             model.addAttribute("possibleGroups", groupManagementService.getActiveGroupsPartOf(user));
@@ -70,14 +72,15 @@ public class VoteController extends BaseController {
                                HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
         log.info("Vote passed back to us: " + vote);
-        if (!groupManagementService.canUserCallVote(selectedGroupId, getUserProfile()))
+        Group group = groupManagementService.loadGroup(selectedGroupId);
+        if (!groupManagementService.isUserInGroup(group, getUserProfile()))
             throw new AccessDeniedException("");
 
         // choosing to set some default fields here instead of a lot of hidden fields in Thymeleaf
         vote.setEventType(EventType.Vote);
         vote.setCreatedByUser(getUserProfile());
         vote.setRsvpRequired(true);
-        vote.setAppliesToGroup(groupManagementService.loadGroup(selectedGroupId));
+        vote.setAppliesToGroup(group);
 
         log.info("Fleshed out vote: " + vote);
 
