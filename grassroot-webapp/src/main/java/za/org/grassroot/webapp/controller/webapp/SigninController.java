@@ -64,7 +64,7 @@ public class SigninController {
         }
         model.addAttribute("error", error);
 
-        return new ModelAndView("signin", model.asMap());
+        return new ModelAndView("index", model.asMap());
     }
     /**
      * If the login in from remember me cookie, refer

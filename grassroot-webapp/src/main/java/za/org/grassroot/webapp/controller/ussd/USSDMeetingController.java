@@ -167,7 +167,9 @@ public class USSDMeetingController extends USSDController {
                 userManager.setLastUssdMenu(user, USSDUrlUtil.
                         saveMenuUrlWithInput(thisSection, groupHandlingMenu, groupIdUrlSuffix + newGroupId, userInput));
             } else {
-                thisMenu = ussdGroupUtil.addNumbersToExistingGroup(user, groupId, USSDSection.MEETINGS, userInput, groupHandlingMenu);
+                String groupUid = groupManager.loadGroup(groupId).getUid();
+                thisMenu = ussdGroupUtil.addNumbersToExistingGroup(
+                        user, groupUid, USSDSection.MEETINGS, userInput, groupHandlingMenu);
             }
         } else {
             thisMenu = new USSDMenu(true);

@@ -6,17 +6,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.BasePermissions;
+import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.*;
+import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 
 import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 
@@ -33,6 +37,9 @@ public class USSDGroupUtil extends USSDUtil {
 
     @Autowired
     private GroupManagementService groupManager;
+
+    @Autowired
+    private GroupBroker groupBroker;
 
     @Autowired
     private UserManagementService userManager;
@@ -203,25 +210,41 @@ public class USSDGroupUtil extends USSDUtil {
         Long groupId;
         final Map<String, List<String>> enteredNumbers = PhoneNumberUtil.splitPhoneNumbers(userInput);
         log.info("addNumbersToNewGroup ... with user input ... " + userInput);
+
         if (enteredNumbers.get(validNumbers).isEmpty()) {
+
             menu.setPromptMessage(getMessage(section, groupKeyForMessages, promptKey + ".error",
                     String.join(", ", enteredNumbers.get(invalidNumbers)), user));
             menu.setNextURI(section.toPath() + returnUrl);
             groupId = 0L;
+
         } else {
-            log.info("About to create group with these numbers ... " + enteredNumbers.get(validNumbers).toString() + ".... created by this user: " + user.toString());
-            Group createdGroup = groupManager.createNewGroup(user, enteredNumbers.get(validNumbers), true);
-            log.info("Okay, we created this group ... " + createdGroup);
+
+            Set<MembershipInfo> members = turnNumbersIntoMembers(enteredNumbers.get(validNumbers));
+            members.add(new MembershipInfo(phoneNumber, BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName()));
+            String newGroupUid = groupBroker.create(user.getUid(), "", null, members, GroupPermissionTemplate.DEFAULT_GROUP);
+            Group createdGroup = groupManager.loadGroupByUid(newGroupUid);
+
             checkForErrorsAndSetPrompt(user, section, menu, createdGroup.getId(), enteredNumbers.get(invalidNumbers), returnUrl, true);
             groupId = createdGroup.getId();
+
         }
         return groupId;
     }
 
-    public USSDMenu addNumbersToExistingGroup(User user, Long groupId, USSDSection section, String userInput, String returnUrl)
+    private Set<MembershipInfo> turnNumbersIntoMembers(List<String> validNumbers) {
+        Set<MembershipInfo> newMembers = new HashSet<>();
+        for (String validNumber : validNumbers)
+            newMembers.add(new MembershipInfo(validNumber, BaseRoles.ROLE_ORDINARY_MEMBER, null));
+        return newMembers;
+    }
+
+    public USSDMenu addNumbersToExistingGroup(User user, String groupUid, USSDSection section, String userInput, String returnUrl)
             throws URISyntaxException {
+
         Map<String, List<String>> enteredNumbers = PhoneNumberUtil.splitPhoneNumbers(userInput);
-        groupManager.addNumbersToGroup(groupId, enteredNumbers.get(validNumbers), user, true);
+        groupBroker.addMembers(user.getUid(), groupUid, turnNumbersIntoMembers(enteredNumbers.get(validNumbers)));
+        Long groupId = groupManager.loadGroupByUid(groupUid).getId(); // temp, until transitioned all to Uid
         return checkForErrorsAndSetPrompt(user, section, new USSDMenu(true), groupId, enteredNumbers.get(invalidNumbers), returnUrl, false);
     }
 

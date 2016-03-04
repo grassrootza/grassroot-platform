@@ -40,31 +40,34 @@
      <!-- // Navigation -->
 
       <div layout:fragment="navigation">
-        <div class="navbar navbar-default">
+        <div class="navbar navbar-inverse navbar-colour">
           <div class="navbar-header">
             <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-responsive-collapse">
               <span class="icon-bar"></span>
               <span class="icon-bar"></span>
               <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand"   href="javascript:void(0)" th:href="@{/home}">Grassroot</a>
+            <a class="navbar-brand" href="javascript:void(0)" th:href="@{/home}">
+              <!-- <img th:src="@{/images/horizontal-logo.png}" class="img-responsive brand-icon" /> -->
+              <p class="white-text">Grassroot</p>
+            </a>
           </div>
           <div class="navbar-collapse collapse navbar-responsive-collapse">
             <ul class="nav navbar-nav">
 
-              <li sec:authorize="isFullyAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/group/create}">Start Group</a></li>
-              <li sec:authorize="isFullyAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/meeting/create}">Call Meeting</a></li>
-              <li sec:authorize="isFullyAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/vote/create}">Take Vote</a></li>
-              <li sec:authorize="isFullyAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/log/create}">Record Action</a></li>
-              <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active"><a href="javascript:void(0)" th:href="@{/meeting/free}">Send Message</a></li>
-              <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active"><a href="javascript:void(0)" th:href="@{/paid_account/index}">Manage account</a></li>
-              <li sec:authorize="hasRole('ROLE_SYSTEM_ADMIN')" class="active"><a href="javascript:void(0)" th:href="@{/admin/home}">System admin</a></li>
+              <li sec:authorize="isFullyAuthenticated()" class="active white-text"><a href="javascript:void(0)" th:href="@{/group/create}">Start Group</a></li>
+              <li sec:authorize="isFullyAuthenticated()" class="active white-text"><a href="javascript:void(0)" th:href="@{/meeting/create}">Call Meeting</a></li>
+              <li sec:authorize="isFullyAuthenticated()" class="active white-text"><a href="javascript:void(0)" th:href="@{/vote/create}">Take Vote</a></li>
+              <li sec:authorize="isFullyAuthenticated()" class="active white-text"><a href="javascript:void(0)" th:href="@{/log/create}">Record Action</a></li>
+              <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active white-text"><a href="javascript:void(0)" th:href="@{/meeting/free}">Send Message</a></li>
+              <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active white-text"><a href="javascript:void(0)" th:href="@{/paid_account/index}">Manage account</a></li>
+              <li sec:authorize="hasRole('ROLE_SYSTEM_ADMIN')" class="active white-text"><a href="javascript:void(0)" th:href="@{/admin/home}">System admin</a></li>
 
             </ul>
 
             <ul sec:authorize="isAnonymous()" class="nav navbar-nav navbar-right">
-              <li sec:authorize="isAnonymous()" class=""><a href="javascript:void(0)" th:href="@{/home}">Login</a></li>
-              <li sec:authorize="isAnonymous()" class=""><a href="javascript:void(0)" th:href="@{/signup}"><span class="badge">Sign Up</span></a></li>
+              <li sec:authorize="isAnonymous()" class="white-text"><a href="javascript:void(0)" th:href="@{/home}" class="white-text">Login</a></li>
+              <li sec:authorize="isAnonymous()" class="white-text"><a href="javascript:void(0)" th:href="@{/signup}"><span class="badge">Sign Up</span></a></li>
             </ul>
 
             <ul sec:authorize="isFullyAuthenticated()" class="nav navbar-nav navbar-right">

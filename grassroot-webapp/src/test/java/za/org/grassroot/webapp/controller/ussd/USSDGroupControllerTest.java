@@ -6,16 +6,18 @@ import org.mockito.InjectMocks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.core.util.UIDGenerator;
+import za.org.grassroot.services.MembershipInfo;
+import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -30,6 +32,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     private static final Logger log = LoggerFactory.getLogger(USSDGroupControllerTest.class);
 
     private static final String testUserPhone = "27801110000";
+    private static final String testUserUid = "test-user-unique-id";
     private static final String phoneParam = "msisdn";
     private static final String groupParam = "groupId";
     private static final String testGroupIdString = "1";
@@ -38,6 +41,8 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
     private User testUser;
     private Group testGroup;
+    private Set<MembershipInfo> testMembers = new HashSet<>();
+    private GroupPermissionTemplate template = GroupPermissionTemplate.DEFAULT_GROUP;
 
     @InjectMocks
     USSDGroupController ussdGroupController;
@@ -54,6 +59,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
         testUser = new User(testUserPhone);
         testGroup = new Group("test group", testUser);
+        testMembers.add(new MembershipInfo(testUserPhone, BaseRoles.ROLE_GROUP_ORGANIZER, null));
 
     }
 
@@ -418,14 +424,19 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         resetTestGroup();
         String nameToPass = "test group";
         String urlToSave = saveGroupMenuWithInput("create-do", testGroup.getId(), nameToPass);
+        String testGroupUid = "unique-group-id";
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(groupManagementServiceMock.createNewGroupWithCreatorAsMember(testUser, nameToPass, true)).thenReturn(testGroup);
+        when(groupBrokerMock.create(testUserUid, nameToPass, null, testMembers, template)).thenReturn(testGroupUid);
+        when(groupManagementServiceMock.loadGroupByUid(testGroupUid)).thenReturn(testGroup);
+
         mockMvc.perform(get(path + "create-do").param(phoneParam, testUserPhone).param("request", nameToPass)).
                 andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verify(userManagementServiceMock, times(1)).setLastUssdMenu(testUser, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupManagementServiceMock, times(1)).createNewGroupWithCreatorAsMember(testUser, nameToPass, true);
+        verify(groupBrokerMock, times(1)).create(testUserUid, nameToPass, null, testMembers, template);
+        verifyNoMoreInteractions(groupBrokerMock);
+        verify(groupManagementServiceMock, times(1)).loadGroupByUid(testGroupUid);
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }

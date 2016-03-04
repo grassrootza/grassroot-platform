@@ -75,7 +75,7 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
     Testing group member addition and group consolidation
      */
 
-    @Test
+    /* @Test
     @Rollback
     public void shouldNotDuplicateMembers() {
         User user = userManagementService.loadOrSaveUser(testUserBase + "0");
@@ -86,7 +86,7 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         assertThat(group.getMembers().size(), is(2));
         Group group2 = groupManagementService.addGroupMember(group, user2, user.getId(), false);
         assertThat(group2.getMembers().size(), is(2));
-    }
+    }*/
 
     @Test
     @Rollback
@@ -134,7 +134,7 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         assertThat(list2.size(), is(1));
     }
 
-    @Test
+    /*@Test
     @Rollback
     public void shouldMergeGroups() {
         assertThat(groupRepository.count(), is(0L));
@@ -154,9 +154,9 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         assertFalse(group2.isActive());
         assertThat(group1.getMembers().size(), is(6));
         assertTrue(group1.getMembers().contains(userManagementService.findByInputNumber(testUserBase + "6")));
-    }
+    }*/
 
-    @Test
+    /* @Test
     @Rollback
     public void shouldNotFindInactiveGroups() {
         assertThat(groupRepository.count(), is(0L));
@@ -176,9 +176,9 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         assertThat(list2.size(), is(1));
         assertTrue(list2.contains(group1));
         assertFalse(list2.contains(group2));
-    }
+    }*/
 
-    @Test
+    /* @Test
     @Rollback
     public void mergeSpecificOrderShouldWorkForSmallerGroup() {
         assertThat(groupRepository.count(), is(0L));
@@ -195,9 +195,9 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         assertTrue(group2.isActive());
         assertThat(group2.getMembers().size(), is(6));
         assertTrue(group2.getMembers().contains(userManagementService.findByInputNumber(testUserBase + "3")));
-    }
+    }*/
 
-    @Test
+    /* @Test
     @Rollback
     public void groupMergeShouldLeaveActiveIfFlagged() {
         assertThat(groupRepository.count(), is(0L));
@@ -239,9 +239,9 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         assertThat(list2.size(), is(2));
         assertTrue(list2.contains(group2));
         assertTrue(list2.contains(group3));
-    }
+    }*/
 
-    @Test
+/*    @Test
     public void shouldCreateSubGroup() {
 
         User userProfile = userManagementService.createUserProfile(new User("111111111", "aap1"));
@@ -249,10 +249,10 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         Group level1 = groupManagementService.createNewGroup(userProfile, Arrays.asList("111111112", "111111113"), false);
         Group level2 = groupManagementService.createSubGroup(userProfile, level1, "level2 group");
         assertEquals(level2.getParent().getId(), level1.getId());
-    }
+    }*/
 
     //@Test
-    public void shouldReturnGroupAndSubGroups() {
+    /* public void shouldReturnGroupAndSubGroups() {
 
         User userProfile = userManagementService.createUserProfile(new User("111111111", "aap1"));
 
@@ -265,7 +265,7 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         TestTransaction.start();
         List<Group> list = groupManagementService.findGroupAndSubGroupsById(level1.getId());
         assertEquals(2, list.size());
-    }
+    }*/
 
 
 }

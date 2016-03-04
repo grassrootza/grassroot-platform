@@ -26,12 +26,6 @@ public interface GroupManagementService {
 
     public Group createNewGroup(User creatingUser, String groupName, boolean addDefaultRole);
 
-    public Group createNewGroupWithCreatorAsMember(User creatingUser, String groupName, boolean addDefaultRole);
-
-    public Group createNewGroup(User creatingUser, List<String> phoneNumbers, boolean addDefaultRoles);
-
-    public Group createNewGroup(Long creatingUserId, List<String> phoneNumbers, boolean addDefaultRoles);
-
     public Group saveGroup(Group groupToSave, boolean createGroupLog, String description, Long changedByUserId);
 
     public Group renameGroup(Group group, String newGroupName);

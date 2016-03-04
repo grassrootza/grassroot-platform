@@ -96,12 +96,20 @@ public class USSDUrlUtil {
         return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupId=" + groupId + setInterruptedFlag;
     }
 
+    public static String saveGroupMenu(String menu, String groupUid) {
+        return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupId=" + groupUid + setInterruptedFlag;
+    }
+
     public static String saveGroupMenuWithParams(String menu, Long groupId, String params) {
         return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupId=" + groupId + setInterruptedFlag + params;
     }
 
     public static String saveGroupMenuWithInput(String menu, Long groupId, String input) {
         return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupId=" + groupId + addInterruptedInput + encodeParameter(input);
+    }
+
+    public static String saveGroupMenuWithInput(String menu, String groupUid, String input) {
+        return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupId=" + groupUid + addInterruptedInput + encodeParameter(input);
     }
 
     public static String saveVoteMenu(String menu, Long eventId) {
@@ -137,6 +145,10 @@ public class USSDUrlUtil {
 
     public static String groupMenuWithId(String menu, Long groupId) {
         return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupId=" + groupId;
+    }
+
+    public static String groupMenuWithId(String menu, String groupUid) {
+        return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupId=" + groupUid;
     }
 
     public static String logViewExistingUrl(String menu, Long groupId, Boolean done, Integer pageNumber) {

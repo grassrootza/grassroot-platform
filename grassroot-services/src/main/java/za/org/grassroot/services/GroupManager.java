@@ -93,38 +93,6 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public Group createNewGroupWithCreatorAsMember(User creatingUser, String groupName, boolean addDefaultRole) {
-        /* First thing, we create the group with the creator as member */
-
-        Group savedGroup = createNewGroup(creatingUser, groupName, addDefaultRole);
-        savedGroup.addMember(creatingUser);
-        groupRepository.saveAndFlush(savedGroup);
-
-        /* Then we create the standard group roles and save them to the group */
-        if (addDefaultRole) {
-            asyncRoleService.assignPermissionsToGroupRoles(savedGroup, GroupPermissionTemplate.DEFAULT_GROUP);
-        }
-
-        /* Then we call the two async methods--one records the log, the other wires up permissions and role */
-        if (addDefaultRole)
-            asyncRoleService.addRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, savedGroup, creatingUser, creatingUser);
-
-        return savedGroup;
-    }
-
-    @Override
-    public Group createNewGroup(User creatingUser, List<String> phoneNumbers, boolean addDefaultRoles) {
-        // todo: check if a similar group exists and if so prompt
-        Group groupToCreate = createNewGroupWithCreatorAsMember(creatingUser, "", addDefaultRoles);
-        return addNumbersToGroup(groupToCreate.getId(), phoneNumbers, creatingUser, addDefaultRoles);
-    }
-
-    @Override
-    public Group createNewGroup(Long creatingUserId, List<String> phoneNumbers, boolean addDefaultRoles) {
-        return createNewGroup(userManager.getUserById(creatingUserId), phoneNumbers, addDefaultRoles);
-    }
-
-    @Override
     public Group saveGroup(Group groupToSave, boolean createGroupLog, String description, Long changedByuserId) {
         Group group = groupRepository.save(groupToSave);
         if (createGroupLog)

@@ -5,20 +5,23 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GroupLogRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
+import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.GroupManagementService;
+import za.org.grassroot.services.MembershipInfo;
+import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.webapp.model.rest.GroupDTO;
 import za.org.grassroot.webapp.model.rest.UserDTO;
 
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Logger;
 
 /**
@@ -41,12 +44,20 @@ public class GroupRestController {
     GroupRepository groupRepository;
 
     @Autowired
+    GroupBroker groupBroker;
+
+    @Autowired
     GroupLogRepository groupLogRepository;
 
-    @RequestMapping(value = "/add/{userid}/{phonenumbers}", method = RequestMethod.POST)
+
+    // todo: switch to group broker
+    /*@RequestMapping(value = "/add/{userid}/{phonenumbers}", method = RequestMethod.POST)
     public GroupDTO add(@PathVariable("userid") Long userid,@PathVariable("phonenumbers") String phoneNumbers) {
+        Set<MembershipInfo> membershipInfoSet = new HashSet<>();
+        for (String phoneNumber : PhoneNumberUtil.splitPhoneNumbers(phoneNumbers).get("valid"))
+            membershipInfoSet.add(new MembershipInfo(phoneNumber, null, BaseRoles.ROLE_ORDINARY_MEMBER));
         return new GroupDTO(groupManagementService.createNewGroup(userid,PhoneNumberUtil.splitPhoneNumbers(phoneNumbers).get("valid"), true));
-    }
+    }*/
 
     @RequestMapping(value = "/add/subgroup/{userId}/{groupId}/{subGroupName}",
             method = RequestMethod.POST)

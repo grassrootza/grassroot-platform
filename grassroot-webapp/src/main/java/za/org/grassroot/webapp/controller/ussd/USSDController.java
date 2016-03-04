@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.MessageSource;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.EventManagementService;
+import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
@@ -77,11 +78,13 @@ public class USSDController {
     @Autowired
     protected USSDGroupUtil ussdGroupUtil;
     @Autowired
-    UserManagementService userManager;
+    protected UserManagementService userManager;
     @Autowired
-    GroupManagementService groupManager;
+    protected GroupManagementService groupManager;
     @Autowired
-    EventManagementService eventManager;
+    protected GroupBroker groupBroker;
+    @Autowired
+    protected EventManagementService eventManager;
     @Autowired
     @Qualifier("messageSource")
     MessageSource messageSource;
