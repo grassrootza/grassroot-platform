@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.webapp;
 
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -127,9 +128,12 @@ public class GroupController extends BaseController {
     }
 
     @RequestMapping(value = "join", method = RequestMethod.POST)
-    public String joinGroup(Model model, @RequestParam Long groupId, HttpServletRequest request, RedirectAttributes redirectAttributes) {
-        // todo: think through security, privacy, etc
-        groupManagementService.addGroupMember(groupId, getUserProfile().getId(), getUserProfile().getId(), true);
+    public String joinGroup(Model model, @RequestParam String groupUid, HttpServletRequest request,
+                            RedirectAttributes redirectAttributes) {
+        // todo: add in group join requests, etc
+        MembershipInfo member = new MembershipInfo(getUserProfile().getPhoneNumber(), BaseRoles.ROLE_ORDINARY_MEMBER,
+                                                   getUserProfile().getDisplayName());
+        groupBroker.addMembers(getUserProfile().getUid(), groupUid, Sets.newHashSet(member));
         addMessage(redirectAttributes, MessageType.SUCCESS, "group.join.success", request);
         return "redirect:/home"; // redirecting to group view is creating issues ... todo: fix those
     }
@@ -204,7 +208,8 @@ public class GroupController extends BaseController {
             groupCreator = new GroupWrapper();
         }
 
-        MembershipInfo creator = new MembershipInfo(getUserProfile().getPhoneNumber(), null, getUserProfile().getDisplayName());
+        MembershipInfo creator = new MembershipInfo(getUserProfile().getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER,
+                                                    getUserProfile().getDisplayName());
         groupCreator.addMember(creator); // to remove ambiguity about group creator being part of group
 
         model.addAttribute("groupCreator", groupCreator);
@@ -228,35 +233,18 @@ public class GroupController extends BaseController {
         }
 
         timeStart = System.currentTimeMillis();
-
         User userCreator = getUserProfile();
-
         String parentUid = (groupCreator.getHasParent()) ? groupCreator.getParent().getUid() : null;
         String groupUid = groupBroker.create(userCreator.getUid(), groupCreator.getGroupName(),
                                              parentUid, groupCreator.getAddedMembers(), template);
-
-        Group groupToSave = groupManagementService.loadGroupByUid(groupUid);
-
-        boolean creatorInGroup = false;
         timeEnd = System.currentTimeMillis();
-
         log.info(String.format("User load & group creation: %d msecs", timeEnd - timeStart));
 
         timeStart = System.currentTimeMillis();
-        for (MembershipInfo member: groupCreator.getAddedMembers()) {
-            if (member.getPhoneNumber() != null && !member.getPhoneNumber().trim().equals("")) {
-                User memberToAdd = userManagementService.loadOrSaveUser(member.getPhoneNumber());
-                if (memberToAdd.getId().equals(userCreator.getId())) creatorInGroup = true;
-                if (!memberToAdd.hasName() && member.getDisplayName() != null) {
-                    memberToAdd.setDisplayName(member.getDisplayName());
-                    memberToAdd = userManagementService.save(memberToAdd); // todo: move into services to batch
-                }
-                groupManagementService.addGroupMember(groupToSave, memberToAdd, userCreator.getId(), true);
-            }
-        }
-
+        groupBroker.addMembers(userCreator.getUid(), groupUid, groupCreator.getAddedMembers());
         timeEnd = System.currentTimeMillis();
-        log.info(String.format("Refactored group creation took ... ", timeEnd - timeStart));
+
+        log.info(String.format("Adding group members took ... ", timeEnd - timeStart));
 
 
         // removing from master branch until more comfortable about interface and UX for this and security
@@ -769,7 +757,7 @@ public class GroupController extends BaseController {
         User user = userManagementService.loadUser(getUserProfile().getId()); // else equals in "is user in group" fails
 
         if (groupManagementService.isUserInGroup(group, user) && confirmText.toLowerCase().equals("unsubscribe")) {
-            groupManagementService.removeGroupMember(group, user, user);
+            groupBroker.removeMembers(user.getUid(), group.getUid(), Sets.newHashSet(user.getUid()));
             addMessage(redirectAttributes, MessageType.SUCCESS, "group.unsubscribe.success", request);
         } else {
             addMessage(redirectAttributes, MessageType.ERROR, "group.unsubscribe.error", request);

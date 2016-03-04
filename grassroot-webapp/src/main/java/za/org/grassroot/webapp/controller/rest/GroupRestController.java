@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.rest;
 
+import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -73,14 +74,18 @@ public class GroupRestController {
             method = RequestMethod.POST)
     public GroupDTO addUserToGroup(@PathVariable("userId") Long userId,
                                 @PathVariable("groupId") Long groupId) {
-        return new GroupDTO(groupManagementService.addGroupMember(groupId, userId, userId, true));
+        User user = userRepository.findOne(userId);
+        MembershipInfo member = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_ORDINARY_MEMBER, user.getDisplayName());
+        groupBroker.addMembers(user.getUid(), groupManagementService.loadGroup(groupId).getUid(), Sets.newHashSet(member));
+        return new GroupDTO(groupManagementService.loadGroup(groupId));
     }
-    @RequestMapping(value = "/remove/userfromgroup/{userId}/{groupId}",
+
+    /*@RequestMapping(value = "/remove/userfromgroup/{userId}/{groupId}",
             method = RequestMethod.POST)
     public GroupDTO removeUserFromGroup(@PathVariable("userId") Long userId,
                                    @PathVariable("groupId") Long groupId) {
         return new GroupDTO(groupManagementService.removeGroupMember(groupId, userRepository.findOne(userId), userRepository.findOne(userId)));
-    }
+    }*/
 
     @RequestMapping(value = "/get/userjoingroup/{userId}/{groupId}",
             method = RequestMethod.POST)

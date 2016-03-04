@@ -124,7 +124,10 @@ public class USSDGroupController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber);
 
         Group createdGroup;
-        if (!interrupted) {
+
+        if (interrupted) {
+            createdGroup = groupManager.loadGroup(groupId);
+        } else {
             Long startTime = System.currentTimeMillis();
             MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
             String newGroupUid = groupBroker.create(user.getUid(), groupName, null, Sets.newHashSet(creator),
@@ -132,8 +135,6 @@ public class USSDGroupController extends USSDController {
             createdGroup = groupManager.loadGroupByUid(newGroupUid);
             Long endTime = System.currentTimeMillis();
             log.info(String.format("Group has been created ... time taken ... %d msecs", endTime - startTime));
-        } else {
-            createdGroup = groupManager.loadGroup(groupId);
         }
 
         userManager.setLastUssdMenu(user, saveGroupMenuWithInput(createGroupMenu + doSuffix, createdGroup.getId(), groupName));
@@ -453,10 +454,11 @@ public class USSDGroupController extends USSDController {
         // todo: add in a brief description of group, e.g., who created it
 
         User sessionUser = userManager.findByInputNumber(inputNumber, saveGroupMenu(unsubscribePrompt, groupId));
-        String menuKey = groupKey + "." + unsubscribePrompt + ".";
+        String groupUid = groupManager.loadGroup(groupId).getUid(); // todo: just use groupUids
 
+        String menuKey = groupKey + "." + unsubscribePrompt + ".";
         USSDMenu promptMenu = new USSDMenu(getMessage(menuKey + promptKey, sessionUser));
-        promptMenu.addMenuOption(groupMenuWithId(unsubscribePrompt + doSuffix, groupId),
+        promptMenu.addMenuOption(groupMenuWithId(unsubscribePrompt + doSuffix, groupUid),
                                  getMessage(menuKey + optionsKey + "confirm", sessionUser));
         promptMenu.addMenuOption(groupMenuWithId(existingGroupMenu, groupId),
                                  getMessage(menuKey + optionsKey + "back", sessionUser));
@@ -469,12 +471,12 @@ public class USSDGroupController extends USSDController {
     @RequestMapping(value = groupPath + unsubscribePrompt + doSuffix)
     @ResponseBody
     public Request unsubscribeDo(@RequestParam(value= phoneNumber, required=true) String inputNumber,
-                                 @RequestParam(value= groupIdParam, required=true) Long groupId) throws URISyntaxException {
+                                 @RequestParam(value= groupIdParam, required=true) String groupUid) throws URISyntaxException {
 
         User sessionUser = userManager.findByInputNumber(inputNumber, null);
         // todo: add error and exception handling, as well as validation and checking (e.g., if user in group, etc)
-        // todo: thorough integration testing
-        groupManager.removeGroupMember(groupId, sessionUser, sessionUser);
+
+        groupBroker.removeMembers(sessionUser.getUid(), groupUid, Sets.newHashSet(sessionUser.getUid()));
         String returnMessage = getMessage(thisSection, unsubscribePrompt + doSuffix, promptKey, sessionUser);
         return menuBuilder(new USSDMenu(returnMessage, optionsHomeExit(sessionUser)));
     }

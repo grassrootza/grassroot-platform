@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.ussd;
 
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
@@ -15,6 +17,7 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.services.AsyncUserService;
 import za.org.grassroot.services.EventLogManagementService;
+import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDResponseTypes;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -207,8 +210,12 @@ public class USSDHomeController extends USSDController {
         if (groupManager.tokenExists(trailingDigits)) {
             // todo: basic validation, checking, etc.
             log.info("Found a token with these trailing digits ...");
+
             Group groupToJoin = groupManager.getGroupByToken(trailingDigits);
-            groupManager.addGroupMember(groupToJoin, sessionUser, sessionUser.getId(), true);
+            MembershipInfo membershipInfo = new MembershipInfo(sessionUser.getPhoneNumber(), BaseRoles.ROLE_ORDINARY_MEMBER,
+                                                               sessionUser.getDisplayName());
+            groupBroker.addMembers(sessionUser.getUid(), groupToJoin.getUid(), Sets.newHashSet(membershipInfo));
+
             String prompt = (groupToJoin.hasName()) ?
                     getMessage(thisSection, startMenu, promptKey + ".group.token.named", groupToJoin.getGroupName(), sessionUser) :
                     getMessage(thisSection, startMenu, promptKey + ".group.token.unnamed", sessionUser);

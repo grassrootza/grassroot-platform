@@ -134,13 +134,6 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public Group addGroupMember(Long currentGroupId, Long newMemberId, Long addingUserId, boolean addDefaultRole) {
-        User user = userManager.getUserById(newMemberId);
-        Group group = loadGroup(currentGroupId);
-        return addGroupMember(group, user, addingUserId, addDefaultRole);
-    }
-
-    @Override
     public Group addNumbersToGroup(Long groupId, List<String> phoneNumbers, User addingUser, boolean addDefaultRoles) {
 
         Group groupToExpand = loadGroup(groupId);
@@ -159,56 +152,6 @@ public class GroupManager implements GroupManagementService {
         }
 
         return savedGroup;
-    }
-
-    @Override
-    public Group addMembersToGroup(Long groupId, List<User> members, boolean isClosedGroup){
-        Group groupToExpand = loadGroup(groupId);
-        groupToExpand.addMembers(members);
-        Group savedGroup = groupRepository.save(groupToExpand);
-        for (User newMember : members) { // todo: also switch to single async calls
-            asyncGroupService.addNewGroupMemberLogsMessages(savedGroup, newMember, dontKnowTheUser);
-            asyncRoleService.addRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, savedGroup, newMember, newMember);
-        }
-        return savedGroup;
-    }
-
-    @Override
-    public Group removeGroupMember(Group group, User user, User removingUser) {
-        // todo: error handling
-        group.removeMember(user);
-        Group savedGroup = saveGroup(group,false,"",dontKnowTheUser);
-        asyncGroupService.removeGroupMemberLogs(savedGroup, user, removingUser);
-        asyncRoleService.removeUsersRoleInGroup(user, savedGroup);
-        return savedGroup;
-    }
-
-    @Override
-    public Group removeGroupMember(Long groupId, User user, User removingUser) {
-        return removeGroupMember(loadGroup(groupId), user, removingUser);
-    }
-
-    @Override
-    public Group addRemoveGroupMembers(Group group, List<User> revisedUserList, Long modifyingUserId, boolean addDefaultRoles) {
-
-        Set<User> originalUsers = group.getMembers();
-
-        // todo: we need to log each of these removals, hence doing it this way, but should refactor
-        for (User user : originalUsers) {
-            if (!revisedUserList.contains(user)) {
-                log.info("Removing a member: " + user);
-                removeGroupMember(group, user, null);
-            }
-        }
-
-        for (User user : revisedUserList) {
-            if (!originalUsers.contains(user)) {
-                log.info("Adding a member: " + user);
-                addGroupMember(group, user, modifyingUserId, addDefaultRoles);
-            }
-        }
-
-        return saveGroup(group,false,"",dontKnowTheUser);
     }
 
     /*

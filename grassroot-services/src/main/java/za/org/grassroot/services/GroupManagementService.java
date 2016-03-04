@@ -38,17 +38,7 @@ public interface GroupManagementService {
 
     public Group addGroupMember(Group currentGroup, User newMember, Long addingMemberId, boolean addDefaultRole);
 
-    public Group addGroupMember(Long currentGroupId, Long newMemberId, Long addingMemberId, boolean addDefaultRole);
-
     public Group addNumbersToGroup(Long groupId, List<String> phoneNumbers, User addingUser, boolean addDefaultRoles);
-
-    public Group removeGroupMember(Group group, User user, User removingUser);
-
-    public Group removeGroupMember(Long groupId, User user, User removingUser);
-
-    public Group addRemoveGroupMembers(Group group, List<User> revisedUserList, Long modifyingUserId, boolean addDefaultRoles);
-
-    public Group addMembersToGroup(Long groupId, List<User> members, boolean isClosedGroup);
 
     /*
     Methods to load and find groups
