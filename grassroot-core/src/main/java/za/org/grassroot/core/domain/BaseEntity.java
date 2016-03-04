@@ -11,12 +11,11 @@ import java.io.Serializable;
 @MappedSuperclass
 public abstract class BaseEntity {
 
-
-    protected Long id;
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column( name = "id")
+    protected Long id;
+
     public Long getId() {
         return id;
     }

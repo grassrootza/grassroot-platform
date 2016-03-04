@@ -35,8 +35,6 @@ public class UserGroupRoleTest {
     @Autowired
     private RoleRepository roleRepository;
     @Autowired
-    private PermissionRepository permissionRepository;
-    @Autowired
     private GroupRepository groupRepository;
     @Autowired
     private UserRepository userRepository;

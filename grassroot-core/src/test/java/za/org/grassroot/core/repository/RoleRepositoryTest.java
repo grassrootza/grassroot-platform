@@ -28,12 +28,8 @@ import static org.junit.Assert.*;
 @ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
 public class RoleRepositoryTest {
 
-
     @Autowired
     private RoleRepository roleRepository;
-
-    @Autowired
-    private PermissionRepository permissionRepository;
 
     @Autowired
     private GroupRepository groupRepository;
@@ -44,7 +40,6 @@ public class RoleRepositoryTest {
     @Test
     @Rollback
     public void testSaveRole() throws Exception {
-
         Role role = new Role("CREATE_USER");
         role = roleRepository.save(role);
         assertThat(role.getId(), notNullValue());
@@ -53,37 +48,29 @@ public class RoleRepositoryTest {
     @Test
     @Rollback
     public void testSaveWithPermissions() throws Exception {
-
-        Permission permission = new Permission("groups.manage.remove.user");
-
         Role role = new Role("MANAGE_GROUPS");
-        role.addPermission(permission);
-
-        permission = permissionRepository.save(permission);
+        role.addPermission(Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER);
 
         role = roleRepository.save(role);
         assertThat(role.getId(), notNullValue());
 
-        permission  = role.getPermissions().iterator().next();
-        assertThat(permission, notNullValue());
-        assertThat(permission.getId(), notNullValue());
-
+        assertThat(role.getPermissions().iterator().next(), notNullValue());
     }
 
     @Test
     @Rollback
     public void testRemovePermission() throws Exception {
 
-        Permission permission = new Permission("groups.manage.remove.user");
         Role role = new Role("MANAGE_GROUPS");
-        role.addPermission(permission);
-        permission = permissionRepository.save(permission);
+        role.addPermission(Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER);
         role = roleRepository.save(role);
         assertNotNull(role.getId());
-        role.removePermission(permission);
+
+        role.removePermission(Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER);
         Role rolePersisted = roleRepository.save(role);
+
         assertThat(rolePersisted.getId(), is(role.getId()));
-        assertThat(rolePersisted.getPermissions().contains(permission), is(false));
+        assertThat(rolePersisted.getPermissions().contains(Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER), is(false));
 
     }
 

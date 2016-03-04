@@ -92,11 +92,6 @@ public class BaseController {
         return  groupAccessControlManagementService.loadGroup(groupId,permission);
     }
 
-    public Group loadGroup(Long groupId, String permissionName)
-    {
-        return  groupAccessControlManagementService.loadGroup(groupId,permissionName);
-    }
-
     public String getMessage(String id) {
         Locale locale = LocaleContextHolder.getLocale();
         return messageSource.getMessage("web." + id, null, locale);

@@ -1,7 +1,6 @@
 package za.org.grassroot.services;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,7 +10,6 @@ import org.springframework.security.access.PermissionEvaluator;
 import org.springframework.security.acls.domain.ObjectIdentityImpl;
 import org.springframework.security.acls.domain.PermissionFactory;
 import org.springframework.security.acls.domain.PrincipalSid;
-//import org.springframework.security.acls.model.*;
 import org.springframework.security.acls.model.*;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -19,12 +17,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 
 import javax.transaction.Transactional;
-
-import java.util.*;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author Lesetse Kimwaga
@@ -145,9 +142,7 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
     }
 
 
-
     /**
-     *
      * @param group
      * @param user
      * @param groupPermissions
@@ -175,14 +170,13 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
 
 
     /**
-     *
      * @param acl
      * @param permission
      * @param sid
      */
     private void deleteAce(MutableAcl acl, Permission permission, Sid sid) {
         List<AccessControlEntry> entries = ImmutableList.copyOf(acl.getEntries());
-        int                      index   = 0;
+        int index = 0;
         for (AccessControlEntry accessControlEntry : entries) {
             if (accessControlEntry.getSid().equals(sid) && accessControlEntry.getPermission().equals(permission)) {
                 acl.deleteAce(index);
@@ -194,7 +188,6 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
 
 
     /**
-     *
      * @param permission
      * @param group
      * @param user
@@ -223,18 +216,6 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
         return hasGroupPermission(permission, group.getId(), user);
     }
 
-    @Override
-    public boolean hasGroupPermission(String permissionName, Long groupId, User user) {
-        org.springframework.security.acls.model.Permission permission = permissionFactory.buildFromName(permissionName);
-        return hasGroupPermission((Permission) permission, groupId, user);
-    }
-
-    @Override
-    public boolean hasGroupPermission(String permissionName, Group group, User user) {
-        org.springframework.security.acls.model.Permission permission = permissionFactory.buildFromName(permissionName);
-        return hasGroupPermission((Permission) permission, group.getId(), user);
-    }
-
     /**
      * @param groupId
      * @param permission
@@ -255,14 +236,6 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
         }
         return group;
     }
-
-    @Override
-    public Group loadGroup(Long groupId, String permissionName) {
-
-        org.springframework.security.acls.model.Permission permission = permissionFactory.buildFromName(permissionName);
-        return loadGroup(groupId, (Permission) permission);
-    }
-
 
     /**
      * @param objectIdentity
@@ -302,18 +275,4 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
         }
         return false;
     }
-
-    private Set<Permission> getAclPermissions(MutableAcl acl, Sid sid) {
-        Set<Permission> permissions = new HashSet<>();
-
-        List<AccessControlEntry> aceList = ImmutableList.copyOf(acl.getEntries());
-        for (AccessControlEntry accessControlEntry : aceList) {
-            Sid accessControlEntrySid = accessControlEntry.getSid();
-            if (accessControlEntrySid.equals(sid)) {
-                permissions.add((Permission) accessControlEntry.getPermission());
-            }
-        }
-        return permissions;
-    }
-
 }
