@@ -2,7 +2,6 @@ package za.org.grassroot;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.ehcache.EhCacheFactoryBean;
 import org.springframework.cache.ehcache.EhCacheManagerFactoryBean;
 
@@ -12,7 +11,6 @@ import net.sf.ehcache.Ehcache;
 
 import org.springframework.context.annotation.*;
 import org.springframework.core.env.ConfigurableEnvironment;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.access.PermissionEvaluator;
 import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
@@ -31,7 +29,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import za.org.grassroot.core.*;
 import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.repository.PermissionRepository;
 import za.org.grassroot.core.security.CustomAclAuthorizationStrategy;
 import za.org.grassroot.core.security.CustomPermissionFactory;
 import za.org.grassroot.core.security.CustomPermissionGrantingStrategy;
@@ -55,9 +52,6 @@ public class GrassRootCoreConfig {
 
     @Autowired
     DataSource dataSource;
-
-    @Autowired
-    PermissionRepository permissionRepository;
 
     @Autowired
     ConfigurableEnvironment environment;
@@ -90,7 +84,7 @@ public class GrassRootCoreConfig {
     @Bean
     public AclAuthorizationStrategy aclAuthorizationStrategy() {
 
-        return new CustomAclAuthorizationStrategy(aclPermissionFactory(),
+        return new CustomAclAuthorizationStrategy(
                 administratorRole(),
                 administratorRole(),
                 administratorRole());
@@ -102,7 +96,7 @@ public class GrassRootCoreConfig {
 
     @Bean
     public PermissionFactory aclPermissionFactory() {
-        return new CustomPermissionFactory(permissionRepository);
+        return new CustomPermissionFactory();
     }
 
     @Bean

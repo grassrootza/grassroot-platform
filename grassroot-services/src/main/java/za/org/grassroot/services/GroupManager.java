@@ -17,6 +17,7 @@ import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.util.TokenGeneratorService;
 
 import javax.transaction.Transactional;
+import java.security.Permissions;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -319,12 +320,12 @@ public class GroupManager implements GroupManagementService {
 
     @Override
     public boolean canUserCallMeeting(Long groupId, User user) {
-        return accessControlService.hasGroupPermission(BasePermissions.GROUP_PERMISSION_CREATE_GROUP_MEETING, groupId, user);
+        return accessControlService.hasGroupPermission(Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING, groupId, user);
     }
 
     @Override
     public boolean canUserCallVote(Long groupId, User user) {
-        return accessControlService.hasGroupPermission(BasePermissions.GROUP_PERMISSION_CREATE_GROUP_VOTE, groupId, user);
+        return accessControlService.hasGroupPermission(Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE, groupId, user);
     }
 
     /*
@@ -377,8 +378,7 @@ public class GroupManager implements GroupManagementService {
 
     @Override
     public boolean canUserModifyGroup(Group group, User user) {
-        Permission permission = permissionsManager.findByName(BasePermissions.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-        return accessControlService.hasGroupPermission(permission, group, user);
+        return accessControlService.hasGroupPermission(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS, group, user);
     }
 
     /*

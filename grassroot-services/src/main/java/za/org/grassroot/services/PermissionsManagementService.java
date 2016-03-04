@@ -14,23 +14,7 @@ import java.util.Set;
  */
 public interface PermissionsManagementService {
 
-    /*
-    Usual CRUD and find methods for permissions
-     */
-
-    Permission createPermission(Permission permission);
-
-    Permission updatePermission(Permission permission);
-
-    Permission getPermission(Long permissionId);
-
-    void  deletePermission(Permission permission);
-
     List<Permission> getPermissions();
-
-    Permission findByName(String name);
-
-    Set<Permission> findByNames(List<String> permissionNames);
 
     /*
     Default permission structures for key roles

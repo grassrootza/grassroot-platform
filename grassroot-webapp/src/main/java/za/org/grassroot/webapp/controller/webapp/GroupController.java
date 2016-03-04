@@ -96,7 +96,7 @@ public class GroupController extends BaseController {
     }
 
     private Group secureLoadGroup(Long id) {
-        return loadGroup(id, BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        return loadGroup(id, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
     }
 
     /*
@@ -555,7 +555,7 @@ public class GroupController extends BaseController {
      */
     @RequestMapping(value = "modify", params = {"discoverable"})
     public String alterGroupDiscoverability(Model model, @RequestParam("groupId") Long groupId) {
-        Group group = loadGroup(groupId, BasePermissions.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        Group group = loadGroup(groupId, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         model.addAttribute("group", group);
         return "group/discoverable";
     }
@@ -565,7 +565,7 @@ public class GroupController extends BaseController {
                                               @RequestParam(value = "confirm_field", required = false) String confirmField,
                                               RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
-        Group group = loadGroup(groupId, BasePermissions.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        Group group = loadGroup(groupId, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
         if (group.isDiscoverable()) {
             groupManagementService.setGroupDiscoverable(group, false, getUserProfile().getId());
@@ -854,7 +854,7 @@ public class GroupController extends BaseController {
     @RequestMapping(value = "roles/view")
     public String viewGroupRoles(Model model, @RequestParam Long groupId) {
 
-        Group group = loadGroup(groupId, BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        Group group = loadGroup(groupId, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
         Set<Role> roles = group.getGroupRoles();
 
         // todo: replace this with Membership entity once built ... very badly done kludge for present

@@ -14,9 +14,14 @@ public class VerificationTokenCode extends BaseEntity {
     private String username;
 
     protected String code;
+
+    @Column(name = "creation_date")
     protected Timestamp createdDateTime;
+
+    @Column(name = "expiry_date")
     protected Timestamp expiryDateTime;
 
+    @Column(name = "token_access_attempts")
     private int tokenAccessAttempts = 1;
 
     public VerificationTokenCode() {
@@ -44,7 +49,6 @@ public class VerificationTokenCode extends BaseEntity {
         this.username = username;
     }
 
-    @Column(name = "creation_date")
     public Timestamp getCreatedDateTime() {
         return createdDateTime;
     }
@@ -53,12 +57,10 @@ public class VerificationTokenCode extends BaseEntity {
         this.createdDateTime = createdDateTime;
     }
 
-    @Column(name = "expiry_date")
     public Timestamp getExpiryDateTime() { return expiryDateTime; }
 
     public void setExpiryDateTime(Timestamp expiryDateTime) { this.expiryDateTime = expiryDateTime; }
 
-    @Column(name = "token_access_attempts")
     public int getTokenAccessAttempts() {
         return tokenAccessAttempts;
     }
