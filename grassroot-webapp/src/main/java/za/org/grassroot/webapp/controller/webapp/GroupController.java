@@ -226,6 +226,7 @@ public class GroupController extends BaseController {
 
         /* todo: consoldilate these calls into a single 'createNewGroup' with user Id and put code in services layer */
         User userCreator = getUserProfile();
+<<<<<<< Updated upstream
         log.info(String.format("Just user load took: %d msecs", System.currentTimeMillis() - timeStart));
 
         Group groupToSave = groupManagementService.createNewGroup(userCreator, groupCreator.getGroupName(), true);
@@ -233,6 +234,11 @@ public class GroupController extends BaseController {
 
         /* todo: consolidate these into one "assign permissions for group" -- also maybe leave this one within thread */
         asyncRoleService.assignPermissionsToGroupRoles(groupToSave, template);
+=======
+        String parentUid = (groupCreator.getHasParent()) ? groupCreator.getParent().getUid() : null;
+        String groupUid = groupBroker.create(userCreator.getUid(), groupCreator.getGroupName(),
+                                             parentUid, groupCreator.getAddedMembers(), template);
+>>>>>>> Stashed changes
 
         boolean creatorInGroup = false;
         timeEnd = System.currentTimeMillis();
