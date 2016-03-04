@@ -71,8 +71,8 @@ public class GroupRepositoryTest {
         groupToCreate = groupRepository.save(groupToCreate);
         assertThat(groupRepository.count(), is(1L));
         assertNotNull(groupToCreate);
-        assertThat(groupToCreate.getGroupMembers().size(), is(1));
-        assertThat(groupToCreate.getGroupMembers().contains(userForTest), is(true));
+        assertThat(groupToCreate.getMemberships().size(), is(1));
+        assertThat(groupToCreate.getMembers().contains(userForTest), is(true));
     }
 
     @Test
@@ -246,11 +246,11 @@ public class GroupRepositoryTest {
         group2.addMember(user);
         group1 = groupRepository.save(group1);
         group2 = groupRepository.save(group2);
-        List<Group> list1 = groupRepository.findByGroupMembers(user);
+        List<Group> list1 = groupRepository.findByMembershipsUser(user);
         assertThat(list1.size(), is(2));
         group2.setActive(false);
         group2 = groupRepository.save(group2);
-        List<Group> list2 = groupRepository.findByGroupMembersAndActive(user, true);
+        List<Group> list2 = groupRepository.findByMembershipsUserAndActive(user, true);
         assertThat(list2.size(), is(1));
         assertTrue(list2.contains(group1));
         assertFalse(list2.contains(group2));
@@ -264,12 +264,12 @@ public class GroupRepositoryTest {
         for (Group group : testGroups) group.addMember(user);
         testGroups = groupRepository.save(testGroups);
         assertThat(groupRepository.count(), is(4L));
-        Page<Group> pageTest1 = groupRepository.findByGroupMembersAndActive(user, new PageRequest(0, 3), true);
+        Page<Group> pageTest1 = groupRepository.findByMembershipsUserAndActive(user, new PageRequest(0, 3), true);
         assertThat(pageTest1.hasNext(), is(true));
         testGroups.get(0).setActive(false);
         groupRepository.save(testGroups.get(0));
-        Page<Group> allGroups = groupRepository.findByGroupMembers(user, new PageRequest(0, 3));
-        Page<Group> activeGroups = groupRepository.findByGroupMembersAndActive(user, new PageRequest(0,3), true);
+        Page<Group> allGroups = groupRepository.findByMembershipsUser(user, new PageRequest(0, 3));
+        Page<Group> activeGroups = groupRepository.findByMembershipsUserAndActive(user, new PageRequest(0,3), true);
         assertTrue(allGroups.hasNext());
         assertFalse(activeGroups.hasNext());
     }

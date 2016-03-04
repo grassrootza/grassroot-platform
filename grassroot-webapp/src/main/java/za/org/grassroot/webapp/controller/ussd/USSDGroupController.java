@@ -383,7 +383,7 @@ public class USSDGroupController extends USSDController {
         Group groupToList = groupManager.loadGroup(groupId);
 
         List<String> usersList = new ArrayList<>();
-        for (User userToList : groupToList.getGroupMembers()) {
+        for (User userToList : groupToList.getMembers()) {
             usersList.add(PhoneNumberUtil.invertPhoneNumber(userToList.getPhoneNumber()));
         }
 

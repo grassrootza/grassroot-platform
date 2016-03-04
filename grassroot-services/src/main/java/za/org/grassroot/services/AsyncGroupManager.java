@@ -135,7 +135,7 @@ public class AsyncGroupManager implements AsyncGroupService {
     public Future<Group> addMembersWithoutRoles(Long groupId, List<User> newMembers) {
         Group group = groupRepository.findOne(groupId);
         userRepository.save(newMembers);
-        group.getGroupMembers().addAll(newMembers); // todo: make sure not duplicating (switch to set)
+        group.addMembers(newMembers);
         Group savedGroup = groupRepository.saveAndFlush(group);
         return new AsyncResult<>(savedGroup);
     }

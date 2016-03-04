@@ -43,16 +43,17 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     /*
     Find all the groups that a user is part of, with pagination
      */
-    List<Group> findByGroupMembers(User sessionUser);
-    Page<Group> findByGroupMembers(User sessionUser, Pageable pageable);
+    List<Group> findByMembershipsUser(User sessionUser);
+    Page<Group> findByMembershipsUser(User sessionUser, Pageable pageable);
 
     /*
     Find groups which are active
      */
-    List<Group> findByGroupMembersAndActive(User user, boolean active);
-    Page<Group> findByGroupMembersAndActive(User user, Pageable pageable, boolean active);
-    int countByGroupMembersAndActiveTrue(User user);
-    int countByIdAndGroupMembers(Long groupId, User user);
+    List<Group> findByMembershipsUserAndActive(User user, boolean active);
+    Page<Group> findByMembershipsUserAndActive(User user, Pageable pageable, boolean active);
+
+    int countByMembershipsUserAndActiveTrue(User user);
+    int countByIdAndMembershipsUser(Long groupId, User user);
 
     /*
     Find a group by a code

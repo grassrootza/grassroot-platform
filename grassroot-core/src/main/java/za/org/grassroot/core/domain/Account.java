@@ -1,15 +1,13 @@
 package za.org.grassroot.core.domain;
 
-import lombok.EqualsAndHashCode;
-import org.apache.commons.collections4.FactoryUtils;
-import org.apache.commons.collections4.list.LazyList;
+import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.io.Serializable;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Created by luke on 2015/10/18.
@@ -19,13 +17,15 @@ import java.util.List;
 
 @Entity
 @Table(name="paid_account")
-@EqualsAndHashCode
 public class Account implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="id", nullable = false)
     private Long id;
+
+    @Column(name = "uid", nullable = false, unique = true)
+    private String uid;
 
     @Basic
     @Column(name="created_date_time", insertable = true, updatable = false)
@@ -37,10 +37,10 @@ public class Account implements Serializable {
     possibility, but until/unless we have (very) strong user demand, catering to it is not worth many-to-many overheads
      */
     @OneToMany(mappedBy = "accountAdministered")
-    private List<User> administrators = new ArrayList<>();
+    private Set<User> administrators = new HashSet<>();
 
-    @OneToMany(mappedBy = "account")
-    private List<PaidGroup> paidGroups = LazyList.lazyList(new ArrayList<>(), FactoryUtils.instantiateFactory(PaidGroup.class));
+    @OneToMany(mappedBy = "account", fetch = FetchType.LAZY)
+    private Set<PaidGroup> paidGroups = new HashSet<>();
 
     @Basic
     @Column(name = "account_name")
@@ -82,14 +82,15 @@ public class Account implements Serializable {
         }
     }
 
-    public Account() {
+    private Account() {
+        // For JPA
     }
 
     public Account(String accountName, User administrator) {
 
+        this.uid = UIDGenerator.generateId();
         this.accountName = accountName;
 
-        this.administrators = new ArrayList<>();
         this.administrators.add(administrator);
 
         this.enabled = true;
@@ -101,6 +102,7 @@ public class Account implements Serializable {
 
     public Account(String accountName, boolean enabled) {
 
+        this.uid = UIDGenerator.generateId();
         this.accountName = accountName;
         this.enabled = enabled;
         this.freeFormMessages = enabled;
@@ -111,8 +113,9 @@ public class Account implements Serializable {
 
     public Account(String accountName, User administrator, String primaryEmail, boolean enabled) {
 
+        this.uid = UIDGenerator.generateId();
         this.accountName = accountName;
-        this.administrators = new ArrayList<>();
+        this.administrators = new HashSet<>();
         this.administrators.add(administrator);
         this.primaryEmail = primaryEmail;
 
@@ -130,7 +133,7 @@ public class Account implements Serializable {
         return id;
     }
 
-    public void setId(Long id) { this.id = id; }
+    public String getUid() { return uid; }
 
     public Timestamp getCreatedDateTime() {
         return createdDateTime;
@@ -138,19 +141,19 @@ public class Account implements Serializable {
 
     public void setCreatedDateTime(Timestamp createdDateTime) { this.createdDateTime = createdDateTime; }
 
-    public List<User> getAdministrators() {
+    public Set<User> getAdministrators() {
         return administrators;
     }
 
-    public void setAdministrators(List<User> administrators) {
+    public void setAdministrators(Set<User> administrators) {
         this.administrators = administrators;
     }
 
-    public List<PaidGroup> getPaidGroups() {
+    public Set<PaidGroup> getPaidGroups() {
         return paidGroups;
     }
 
-    public void setPaidGroups(List<PaidGroup> paidGroups) {
+    public void setPaidGroups(Set<PaidGroup> paidGroups) {
         this.paidGroups = paidGroups;
     }
 
@@ -217,6 +220,29 @@ public class Account implements Serializable {
 
     public void removePaidGroup(PaidGroup paidGroup) {
         paidGroups.remove(paidGroup);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || !(o instanceof Account)) {
+            return false;
+        }
+
+        Account account = (Account) o;
+
+        if (getUid() != null ? !getUid().equals(account.getUid()) : account.getUid() != null) {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return getUid() != null ? getUid().hashCode() : 0;
     }
 
     @Override

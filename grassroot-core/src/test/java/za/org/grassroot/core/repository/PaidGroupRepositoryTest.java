@@ -75,7 +75,7 @@ public class PaidGroupRepositoryTest {
 
         assertThat(paidGroupRepository.count(), is(0L));
 
-        PaidGroup paidGroup = new PaidGroup();
+        PaidGroup paidGroup = new PaidGroup(testGroup, testAccount, testUser);
         paidGroup = paidGroupRepository.save(paidGroup);
 
         assertNotEquals(null, paidGroup.getId());

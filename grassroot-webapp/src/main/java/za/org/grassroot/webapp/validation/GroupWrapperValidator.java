@@ -8,6 +8,7 @@ import org.springframework.validation.ValidationUtils;
 import org.springframework.validation.Validator;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.PhoneNumberUtil;
+import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
 
 /**
@@ -19,8 +20,8 @@ import za.org.grassroot.webapp.model.web.GroupWrapper;
 public class GroupWrapperValidator implements Validator {
 
     @Autowired
-    @Qualifier("userValidator")
-    private Validator userValidator;
+    @Qualifier("membershipValidator")
+    private Validator memberValidator;
 
     @Override
     public boolean supports(Class<?> clazz) { return GroupWrapper.class.equals(clazz); }
@@ -33,10 +34,10 @@ public class GroupWrapperValidator implements Validator {
         GroupWrapper groupWrapper = (GroupWrapper) target;
 
         int idx = 0;
-        for (User enteredUser : groupWrapper.getAddedMembers()) {
+        for (MembershipInfo member : groupWrapper.getAddedMembers()) {
             errors.pushNestedPath("addedMembers[" + idx + "]");
             try {
-                ValidationUtils.invokeValidator(this.userValidator, enteredUser, errors);
+                ValidationUtils.invokeValidator(this.memberValidator, member, errors);
             } finally {
                 errors.popNestedPath();
                 idx++;

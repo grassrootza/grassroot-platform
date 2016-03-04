@@ -122,7 +122,7 @@ public class UserRepositoryTest {
         User u1 = userRepository.save(new User("0821234560"));
         User u2 = userRepository.save(new User("0821234561"));
         Group group = groupRepository.save(new Group("rsvp yes",u1));
-        group.getGroupMembers().add(u2);
+        group.addMember(u2);
         group = groupRepository.save(group);
         Event event = eventRepository.save(new Event("rsvp event",u1,group,true));
         EventLog eventLog = eventLogRepository.save(new EventLog(u1,event, EventLogType.EventRSVP, EventRSVPResponse.YES.toString()));
@@ -136,7 +136,7 @@ public class UserRepositoryTest {
         User u1 = userRepository.save(new User("0821234570"));
         User u2 = userRepository.save(new User("0821234571"));
         Group group = groupRepository.save(new Group("rsvp yes",u1));
-        group.getGroupMembers().add(u2);
+        group.addMember(u2);
         group = groupRepository.save(group);
         Event event = eventRepository.save(new Event("rsvp event",u1,group,true));
         EventLog eventLog = eventLogRepository.save(new EventLog(u1,event, EventLogType.EventRSVP, EventRSVPResponse.YES.toString()));
@@ -151,12 +151,12 @@ public class UserRepositoryTest {
     public void shouldSaveAddedRole() {
         User user = userRepository.save(new User(number));
         Role role = roleRepository.save(new Role("TEST_ROLE"));
-        user.addRole(role);
+        user.addStandardRole(role);
         userRepository.save(user);
         User userFromDb = userRepository.findByPhoneNumber(number);
         assertNotNull(userFromDb);
         assertEquals(userFromDb.getId(), user.getId());
-        assertTrue(userFromDb.getRoles().contains(role));
+        assertTrue(userFromDb.getStandardRoles().contains(role));
     }
 
     @Test
@@ -164,15 +164,15 @@ public class UserRepositoryTest {
     public void shouldRemoveRole() {
         User user = userRepository.save(new User(number));
         Role role = roleRepository.save(new Role("TEST_ROLE"));
-        user.addRole(role);
+        user.addStandardRole(role);
         user = userRepository.save(user);
-        assertTrue(user.getRoles().contains(role));
-        user.removeRole(role);
+        assertTrue(user.getStandardRoles().contains(role));
+        user.removeStandardRole(role);
         userRepository.save(user);
         User userfromDb = userRepository.findByPhoneNumber(number);
         assertNotNull(userfromDb);
         assertEquals(userfromDb.getId(), user.getId());
-        assertFalse(userfromDb.getRoles().contains(role));
+        assertFalse(userfromDb.getStandardRoles().contains(role));
     }
 
     @Test
@@ -189,8 +189,8 @@ public class UserRepositoryTest {
         User user5 = userRepository.save(new User("0701110002", "no name"));
 
         Group testGroup = groupRepository.save(new Group("test group", user1));
-        testGroup.getGroupMembers().add(user1);
-        testGroup.getGroupMembers().add(user2);
+        testGroup.addMember(user1);
+        testGroup.addMember(user2);
         testGroup = groupRepository.save(testGroup);
 
         List<User> usersByPhone = userRepository.findByPhoneNumberContaining(phoneBase);
@@ -238,10 +238,10 @@ public class UserRepositoryTest {
 
         List<Long> memberIds = Arrays.asList(user2.getId(), user3.getId());
 
-        assertThat(testGroupFromDb.getGroupMembers().size(), is(3));
-        assertTrue(testGroupFromDb.getGroupMembers().contains(testUser));
-        assertTrue(testGroupFromDb.getGroupMembers().contains(user2));
-        assertTrue(testGroupFromDb.getGroupMembers().contains(user3));
+        assertThat(testGroupFromDb.getMemberships().size(), is(3));
+        assertTrue(testGroupFromDb.hasMember(testUser));
+        assertTrue(testGroupFromDb.hasMember(user2));
+        assertTrue(testGroupFromDb.hasMember(user3));
 
         List<User> nonCreatorMembers = userRepository.findByGroupsPartOfAndIdNot(testGroupFromDb, testUser.getId());
 

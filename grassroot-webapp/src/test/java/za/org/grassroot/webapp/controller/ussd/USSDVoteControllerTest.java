@@ -75,7 +75,9 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
         List<Group> testGroups = Arrays.asList(new Group("tg1", testUser),
                                                new Group("tg2", testUser),
                                                new Group("tg3", testUser));
-        testUser.setGroupsPartOf(testGroups);
+        for (Group testGroup : testGroups) {
+            testGroup.addMember(testUser);
+        }
         Page<Group> pageTestGroups = new PageImpl<Group>(testGroups);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
@@ -95,9 +97,6 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
 
     @Test
     public void voteStartIfNoGroupsShouldDisplay() throws Exception {
-
-        testUser.setGroupsPartOf(new ArrayList<>());
-
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(eventManagementServiceMock.userHasEventsToView(testUser, EventType.Vote)).thenReturn(-9);
         when(groupManagementServiceMock.hasActiveGroupsPartOf(testUser)).thenReturn(false);

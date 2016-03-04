@@ -210,7 +210,7 @@ public class WebController {
         }
 
         if (!groupMembers.contains(sessionUser)) { groupMembers.add(sessionUser); }
-        groupToCreate.setGroupMembers(groupMembers);
+        groupToCreate.setAllGroupMembers(groupMembers);
         groupToCreate = groupRepository.save(groupToCreate);
 
         attributeMap.put("user_id", userId);

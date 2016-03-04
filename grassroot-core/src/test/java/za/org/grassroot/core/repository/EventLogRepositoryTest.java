@@ -47,7 +47,7 @@ public class EventLogRepositoryTest {
         User user = userRepository.save(new User("001111111"));
         Group group = groupRepository.save(new Group("test eventlog", user));
         User user2 = userRepository.save(new User("00111112"));
-        group.getGroupMembers().add(user2);
+        group.addMember(user2);
         Event event = eventRepository.save(new Event("drinking again", user, group));
         EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.EventNotification, "you are hereby invited to the drinking again meeting"));
         List<EventLog> list = eventLogRepository.findByEventLogTypeAndEventAndUser(EventLogType.EventNotification, event, user);
@@ -65,7 +65,7 @@ public class EventLogRepositoryTest {
         User user = userRepository.save(new User("001111113"));
         Group group = groupRepository.save(new Group("test eventlog 2", user));
         User user2 = userRepository.save(new User("00111114"));
-        group.getGroupMembers().add(user2);
+        group.addMember(user2);
         Event event = eventRepository.save(new Event("drinking again 2", user, group));
         EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.EventNotification, "you are hereby invited to the drinking again meeting"));
         List<EventLog> list = eventLogRepository.findByEventLogTypeAndEventAndUser(EventLogType.EventReminder,event,user);
@@ -79,7 +79,7 @@ public class EventLogRepositoryTest {
         User user = userRepository.save(new User("001111115"));
         Group group = groupRepository.save(new Group("test eventlog 3", user));
         User user2 = userRepository.save(new User("00111116"));
-        group.getGroupMembers().add(user2);
+        group.addMember(user2);
         Event event = eventRepository.save(new Event("drinking again 3", user, group));
         EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.EventNotification, "you are hereby invited to the drinking again meeting"));
         assertEquals(true, Boolean.parseBoolean(eventLogRepository.notificationSent(event, user).toString()));
@@ -92,7 +92,7 @@ public class EventLogRepositoryTest {
         User user = userRepository.save(new User("001111115"));
         Group group = groupRepository.save(new Group("test eventlog 3", user));
         User user2 = userRepository.save(new User("00111116"));
-        group.getGroupMembers().add(user2);
+        group.addMember(user2);
         Event event = eventRepository.save(new Event("drinking again 3", user, group));
         assertEquals(false, Boolean.parseBoolean(eventLogRepository.notificationSent(event, user).toString()));
 
@@ -105,7 +105,7 @@ public class EventLogRepositoryTest {
         User user = userRepository.save(new User("001111117"));
         Group group = groupRepository.save(new Group("test eventlog 4", user));
         User user2 = userRepository.save(new User("00111118"));
-        group.getGroupMembers().add(user2);
+        group.addMember(user2);
         Event event = eventRepository.save(new Event("drinking again 4", user, group));
         EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.EventReminder, "you are hereby reminded about the drinking again meeting"));
         assertEquals(true, Boolean.parseBoolean(eventLogRepository.reminderSent(event, user).toString()));
@@ -118,7 +118,7 @@ public class EventLogRepositoryTest {
         User user = userRepository.save(new User("001111119"));
         Group group = groupRepository.save(new Group("test eventlog 4", user));
         User user2 = userRepository.save(new User("00111110"));
-        group.getGroupMembers().add(user2);
+        group.addMember(user2);
         Event event = eventRepository.save(new Event("drinking again 4", user, group));
         assertEquals(false, Boolean.parseBoolean(eventLogRepository.reminderSent(event, user).toString()));
 
@@ -130,7 +130,7 @@ public class EventLogRepositoryTest {
         User user = userRepository.save(new User("001111120"));
         Group group = groupRepository.save(new Group("test minutes 1", user));
         User user2 = userRepository.save(new User("001111121"));
-        group.getGroupMembers().add(user2);
+        group.addMember(user2);
         Event event = eventRepository.save(new Event("drinking again 5", user, group));
         EventLog elog1 = eventLogRepository.save(new EventLog(user,event,EventLogType.EventMinutes,"item 1"));
         EventLog elog2 = eventLogRepository.save(new EventLog(user,event,EventLogType.EventMinutes,"item 2"));

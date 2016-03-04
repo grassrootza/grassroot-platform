@@ -1,6 +1,5 @@
 package za.org.grassroot.core.domain;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import org.springframework.security.acls.domain.AclFormattingUtils;
 import org.springframework.security.core.GrantedAuthority;

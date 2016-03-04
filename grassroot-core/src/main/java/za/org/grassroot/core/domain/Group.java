@@ -8,6 +8,7 @@ import javax.persistence.*;
 import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "group_profile") // quoting table name in case "group" is a reserved keyword
@@ -26,13 +27,12 @@ public class Group implements Serializable {
     @Column(name = "created_date_time", insertable = true, updatable = false)
     private Timestamp createdDateTime;
 
-    @ManyToOne
-    @JoinColumn(name = "created_by_user")
+    @ManyToOne()
+    @JoinColumn(name = "created_by_user", nullable = false, updatable = false)
     private User createdByUser;
 
-    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinTable(name = "group_user_membership", joinColumns = @JoinColumn(name = "group_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
-    private List<User> groupMembers = new ArrayList<>();
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "group")
+    private Set<Membership> memberships = new HashSet<>();
 
     @ManyToOne
     @JoinColumn(name = "parent")
@@ -58,10 +58,10 @@ public class Group implements Serializable {
     @Column(name = "reminderminutes")
     private int reminderMinutes;
 
-    @OneToMany(fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.ALL)
     @JoinTable(name = "group_roles",
-            joinColumns = {@JoinColumn(name = "group_id", referencedColumnName = "id")},
-            inverseJoinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id")}
+            joinColumns = @JoinColumn(name = "group_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id")
     )
     private Set<Role> groupRoles = new HashSet<>();
 
@@ -75,13 +75,13 @@ public class Group implements Serializable {
     /*
     Adding group inactive field, for when we want to deactivate a group (e.g., after a user consolidates)
      */
-    @Column(name = "active")
+    @Column(name = "active", nullable = false)
     private boolean active;
 
     /*
     Adding a 'discoverable' field, so group owners can mark if they want others to be able to find them
      */
-    @Column(name = "discoverable")
+    @Column(name = "discoverable", nullable = false)
     private boolean discoverable;
 
     private Group() {
@@ -99,10 +99,26 @@ public class Group implements Serializable {
         this.active = true;
         this.discoverable = false;
         this.parent = parent;
+
+        // automatically add 3 default roles
+        addRole(BaseRoles.ROLE_GROUP_ORGANIZER);
+        addRole(BaseRoles.ROLE_COMMITTEE_MEMBER);
+        addRole(BaseRoles.ROLE_ORDINARY_MEMBER);
+    }
+
+    private void addRole(String roleName) {
+        Objects.requireNonNull(roleName);
+        for (Role role : groupRoles) {
+            if (role.getName().equals(roleName)) {
+                throw new IllegalArgumentException("Role with name " + roleName + " already exists in group: " + this);
+            }
+        }
+        this.groupRoles.add(new Role(roleName, uid));
     }
 
     /**
      * We use this static constructor because no-arg constructor should be only used by JPA
+     *
      * @return group
      */
     public static Group makeEmpty() {
@@ -115,7 +131,6 @@ public class Group implements Serializable {
     public String getUid() {
         return uid;
     }
-
 
     public String getGroupName() {
         return groupName;
@@ -145,19 +160,106 @@ public class Group implements Serializable {
         return this.createdByUser;
     }
 
-    public void setCreatedByUser(User createdByUser) {
+    void setCreatedByUser(User createdByUser) {
         this.createdByUser = createdByUser;
     }
 
-    public List<User> getGroupMembers() {
-        if (groupMembers == null) {
-            groupMembers = new ArrayList<>();
+    public Set<Membership> getMemberships() {
+        if (memberships == null) {
+            memberships = new HashSet<>();
         }
-        return groupMembers;
+        return new HashSet<>(memberships);
     }
 
-    public void setGroupMembers(List<User> groupMembers) {
-        this.groupMembers = groupMembers;
+    public Set<User> getMembers() {
+        return getMemberships().stream()
+                .map(Membership::getUser)
+                .collect(Collectors.toSet());
+    }
+
+    public Set<Membership> addMembers(Collection<User> newMembers) {
+        return addMembers(newMembers, BaseRoles.ROLE_ORDINARY_MEMBER);
+    }
+
+    public Set<Membership> addMembers(Collection<User> newMembers, String roleName) {
+        Objects.requireNonNull(roleName);
+
+        Role role = getRole(roleName);
+        return addMembers(newMembers, role);
+    }
+
+    public Set<Membership> addMembers(Collection<User> newMembers, Role role) {
+        Objects.requireNonNull(newMembers);
+
+        Set<Membership> memberships = new HashSet<>();
+        for (User newMember : newMembers) {
+            Membership membership = addMember(newMember, role);
+            if (membership != null) {
+                memberships.add(membership);
+            }
+        }
+        return memberships;
+    }
+
+    public Membership addMember(User newMember) {
+        return addMember(newMember, BaseRoles.ROLE_ORDINARY_MEMBER);
+    }
+
+    public Membership addMember(User newMember, String roleName) {
+        Objects.requireNonNull(roleName);
+        Role role = getRole(roleName);
+        return addMember(newMember, role);
+    }
+
+    public Membership addMember(User newMember, Role role) {
+        Objects.requireNonNull(newMember);
+        Objects.requireNonNull(role);
+
+        if (!getGroupRoles().contains(role)) {
+            throw new IllegalArgumentException("Role " + role + " is not one of roles belonging to group: " + this);
+        }
+        Membership membership = new Membership(this, newMember, role);
+        boolean added = this.memberships.add(membership);
+        if (added) {
+            newMember.addMappedByMembership(membership);
+            return membership;
+        }
+        return null;
+    }
+
+    public Membership removeMember(User member) {
+        Objects.requireNonNull(member);
+        Membership membership = getMembership(member);
+        if (membership == null) {
+            return null;
+        }
+        this.memberships.remove(membership);
+        return membership;
+    }
+
+    public Membership getMembership(User user) {
+        Objects.requireNonNull(user);
+
+        for (Membership membership : memberships) {
+            if (membership.getUser().equals(user)) {
+                return membership;
+            }
+        }
+        return null;
+    }
+
+    public Role getRole(String roleName) {
+        Objects.requireNonNull(roleName);
+        return groupRoles.stream()
+                .filter(role -> role.getName().equals(roleName))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("No role udner name " + roleName + " found in group " + this));
+    }
+
+    public boolean hasMember(User user) {
+        Objects.requireNonNull(user);
+        Membership membership = getMembership(user);
+        return membership != null;
     }
 
     public Group getParent() {
@@ -168,17 +270,29 @@ public class Group implements Serializable {
         this.parent = parent;
     }
 
-    public boolean isPaidFor() { return paidFor; }
+    public boolean isPaidFor() {
+        return paidFor;
+    }
 
-    public void setPaidFor(boolean paidFor) { this.paidFor = paidFor; }
+    public void setPaidFor(boolean paidFor) {
+        this.paidFor = paidFor;
+    }
 
-    public String getGroupTokenCode() { return groupTokenCode; }
+    public String getGroupTokenCode() {
+        return groupTokenCode;
+    }
 
-    public void setGroupTokenCode(String groupTokenCode) { this.groupTokenCode = groupTokenCode; }
+    public void setGroupTokenCode(String groupTokenCode) {
+        this.groupTokenCode = groupTokenCode;
+    }
 
-    public Timestamp getTokenExpiryDateTime() { return tokenExpiryDateTime; }
+    public Timestamp getTokenExpiryDateTime() {
+        return tokenExpiryDateTime;
+    }
 
-    public void setTokenExpiryDateTime(Timestamp tokenExpiryDateTime) { this.tokenExpiryDateTime = tokenExpiryDateTime; }
+    public void setTokenExpiryDateTime(Timestamp tokenExpiryDateTime) {
+        this.tokenExpiryDateTime = tokenExpiryDateTime;
+    }
 
     public Integer getVersion() {
         return version;
@@ -196,24 +310,41 @@ public class Group implements Serializable {
         this.reminderMinutes = reminderMinutes;
     }
 
-    public String getDefaultLanguage() { return defaultLanguage; }
-
-    public void setDefaultLanguage(String defaultLanguage) { this.defaultLanguage = defaultLanguage; }
-
-    public boolean isActive() { return active; }
-
-    public void setActive(boolean active) { this.active = active; }
-
-    public boolean isDiscoverable() { return discoverable; }
-
-    public void setDiscoverable(boolean discoverable) { this.discoverable = discoverable;}
-
-    public Set<Role> getGroupRoles() {
-        return groupRoles;
+    public String getDefaultLanguage() {
+        return defaultLanguage;
     }
 
+    public void setDefaultLanguage(String defaultLanguage) {
+        this.defaultLanguage = defaultLanguage;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    public boolean isDiscoverable() {
+        return discoverable;
+    }
+
+    public void setDiscoverable(boolean discoverable) {
+        this.discoverable = discoverable;
+    }
+
+    public Set<Role> getGroupRoles() {
+        if (groupRoles == null) {
+            groupRoles = new HashSet<>();
+        }
+        return new HashSet<>(groupRoles);
+    }
+
+    // todo: remove later after refactor
     public void setGroupRoles(Set<Role> groupRoles) {
-        this.groupRoles = groupRoles;
+        this.groupRoles.clear();
+        this.groupRoles.addAll(groupRoles);
     }
 
     @PreUpdate
@@ -223,24 +354,6 @@ public class Group implements Serializable {
             createdDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis());
         }
     }
-
-    /*
-    Adding & removing members and roles
-     */
-
-    public Group addMember(User newMember) {
-        // might alternately put this check in service layer, but leaving it here for now, as sometimes we want to do
-        // the check and add without calling the repository
-        if (!this.groupMembers.contains(newMember))
-            this.groupMembers.add(newMember);
-        return this;
-    }
-
-    public Group addRole(Role role) {
-        this.groupRoles.add(role);
-        return this;
-    }
-
 
     /*
      * Auxiliary methods for checking if blank name, coping with blank names, etc.
@@ -254,7 +367,7 @@ public class Group implements Serializable {
         if (hasName()) {
             return groupName;
         } else if (unnamedPrefix.trim().length() == 0) {
-            return "Unnamed group (" + groupMembers.size() + " members)";
+            return "Unnamed group (" + memberships.size() + " members)";
         } else {
             return unnamedPrefix;
         }
@@ -265,13 +378,13 @@ public class Group implements Serializable {
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (o == null || !(o instanceof Group)) {
             return false;
         }
 
         Group group = (Group) o;
 
-        if (uid != null ? !uid.equals(group.uid) : group.uid != null) {
+        if (getUid() != null ? !getUid().equals(group.getUid()) : group.getUid() != null) {
             return false;
         }
 
@@ -280,7 +393,7 @@ public class Group implements Serializable {
 
     @Override
     public int hashCode() {
-        return uid != null ? uid.hashCode() : 0;
+        return getUid() != null ? getUid().hashCode() : 0;
     }
 
     @Override

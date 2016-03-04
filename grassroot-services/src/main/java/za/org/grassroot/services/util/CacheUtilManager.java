@@ -11,7 +11,9 @@ import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.services.GroupManagementService;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 
 /**
@@ -45,11 +47,11 @@ public class CacheUtilManager implements CacheUtilService {
         log.info("clearCacheForAllUsersInGroup...starting");
         try {
             Cache cache = cacheManager.getCache("userRSVP");
-            List<User> userList;
+            Set<User> userList;
             if (event.isIncludeSubGroups()) {
-                userList = groupManagementService.getAllUsersInGroupAndSubGroups(event.getAppliesToGroup());
+                userList = new HashSet<>(groupManagementService.getAllUsersInGroupAndSubGroups(event.getAppliesToGroup()));
             } else {
-                userList = event.getAppliesToGroup().getGroupMembers();
+                userList = event.getAppliesToGroup().getMembers();
             }
             for (User user : userList) {
                 log.info("clearCacheForAllUsersInGroup...user..." + user.getPhoneNumber());

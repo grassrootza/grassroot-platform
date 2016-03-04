@@ -207,16 +207,19 @@ public class EventRepositoryTest {
         User user2 = userRepository.save(new User("0831111116"));
 
         Group group = groupRepository.save(new Group("tg1", user1));
-        group = groupRepository.save(group.addMember(user1));
-        group = groupRepository.save(group.addMember(user2));
+        group.addMember(user1);
+        group.addMember(user2);
+        group = groupRepository.save(group);
+
         Event event1 = eventRepository.save(new Event("test", user2, group));
 
         Group group2 = groupRepository.save(new Group("tg2", user2));
-        group2 = groupRepository.save(group2.addMember(user2));
+        group2.addMember(user2);
+        group2 = groupRepository.save(group2);
         Event event2 = eventRepository.save(new Event("test2", user2, group2));
 
-        List<Event> events = eventRepository.findByAppliesToGroupGroupMembers(user1);
-        List<Event> events2 = eventRepository.findByAppliesToGroupGroupMembers(user2);
+        List<Event> events = eventRepository.findByAppliesToGroupMembershipsUser(user1);
+        List<Event> events2 = eventRepository.findByAppliesToGroupMembershipsUser(user2);
 
         assertThat(userRepository.count(), is(2L));
         assertThat(groupRepository.count(), is(2L));
@@ -239,7 +242,8 @@ public class EventRepositoryTest {
         assertThat(eventRepository.count(), is(0L));
         User user = userRepository.save(new User("0831111115"));
         Group group = groupRepository.save(new Group("tg1", user));
-        group = groupRepository.save(group.addMember(user));
+        group.addMember(user);
+        group = groupRepository.save(group);
 
         Event event1 = eventRepository.save(new Event("test", user, group));
         event1.setEventType(EventType.Meeting);
@@ -258,7 +262,7 @@ public class EventRepositoryTest {
         event3 = eventRepository.save(event3);
 
         List<Event> events1 = eventRepository.
-                findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled(user, EventType.Meeting, new Date(), false);
+                findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled(user, EventType.Meeting, new Date(), false);
 
         assertFalse(events1.isEmpty());
         assertThat(events1.size(), is(1));
@@ -267,7 +271,7 @@ public class EventRepositoryTest {
         assertFalse(events1.contains(event3));
 
         List<Event> events2 = eventRepository.
-                findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeLessThanAndCanceled(user, EventType.Vote, new Date(), false);
+                findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeLessThanAndCanceled(user, EventType.Vote, new Date(), false);
 
         assertFalse(events2.isEmpty());
         assertThat(events2.size(), is(1));
@@ -276,11 +280,11 @@ public class EventRepositoryTest {
         assertFalse(events2.contains(event3));
 
         List<Event> events3 = eventRepository.
-                findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled(user, EventType.Vote, new Date(), false);
+                findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled(user, EventType.Vote, new Date(), false);
         assertTrue(events3.isEmpty());
 
         List<Event> events4 = eventRepository.
-                findByAppliesToGroupGroupMembersAndEventTypeAndEventStartDateTimeLessThanAndCanceled(user, EventType.Meeting, new Date(), false);
+                findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeLessThanAndCanceled(user, EventType.Meeting, new Date(), false);
         assertTrue(events4.isEmpty());
     }
 
@@ -348,10 +352,13 @@ public class EventRepositoryTest {
         User user = userRepository.save(new User("0710001111"));
         User user2 = userRepository.save(new User("0810001111"));
         Group group = groupRepository.save(new Group("tg1", user));
-        group = groupRepository.save(group.addMember(user));
+        group.addMember(user);
+        group = groupRepository.save(group);
         Group group2 = groupRepository.save(new Group("tg2", user2));
-        group2 = groupRepository.save(group2.addMember(user));
-        group2 = groupRepository.save(group2.addMember(user2));
+
+        group2.addMember(user);
+        group2.addMember(user2);
+        group2 = groupRepository.save(group2);
 
         Event event1 = new Event("count check", user, group);
         event1.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.now().plusDays(2L)));

@@ -9,6 +9,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.UserDTO;
 
 import java.sql.Timestamp;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -31,9 +32,31 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByDisplayNameContaining(String displayName);
     List<User> findByDisplayNameContainingOrPhoneNumberContaining(String userInput, String phoneNumber);
 
-    List<User> findByGroupsPartOfOrderByIdAsc(Group group);
-    List<User> findByGroupsPartOfAndDisplayNameContainingOrPhoneNumberContaining(Group group, String userInput, String phoneNumber);
-    List<User> findByGroupsPartOfAndDisplayNameContainingIgnoreCaseOrPhoneNumberLike(Group group, String userInput, String phoneNumber);
+    @Query("select u from Membership m " +
+            "inner join m.user u " +
+            "inner join m.group g " +
+            "where g = :group order by u.id asc")
+    List<User> findByGroupsPartOfOrderByIdAsc(@Param("group") Group group);
+
+    @Query("select u from Membership m " +
+            "inner join m.user u " +
+            "inner join m.group g " +
+            "where g = :group and (u.displayName like concat('%', :userInput ,'%') or u.phoneNumber like concat('%', :phoneNumber ,'%'))")
+    List<User> findByGroupsPartOfAndDisplayNameContainingOrPhoneNumberContaining(
+            @Param("group") Group group, @Param("userInput") String userInput, @Param("phoneNumber") String phoneNumber);
+
+    @Query("select u from Membership m " +
+            "inner join m.user u " +
+            "inner join m.group g " +
+            "where g = :group and (upper(u.displayName) like concat('%', upper(:userInput) ,'%') or u.phoneNumber like :phoneNumber)")
+    List<User> findByGroupsPartOfAndDisplayNameContainingIgnoreCaseOrPhoneNumberLike(
+            @Param("group") Group group, @Param("userInput") String userInput, @Param("phoneNumber") String phoneNumber);
+
+    @Query("select u from Membership m " +
+            "inner join m.user u " +
+            "inner join m.group g " +
+            "where g = :group and u.id is not :excludedUserId")
+    List<User> findByGroupsPartOfAndIdNot(@Param("group") Group group, @Param("excludedUserId") Long excludedUserId);
 
     User findByUsername(String username);
 
@@ -63,9 +86,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query(value = "select u from User u where u.phoneNumber IN :phone_numbers")
     List<User> findExistingUsers(@Param("phone_numbers") List<String> numbers);
 
-    List<User> findByGroupsPartOfAndIdNot(Group group, Long excludedUserId);
 
     @Query(value = "select id, display_name,phone_number,language_code from user_profile where user_profile.phone_number =?1", nativeQuery = true)
     Object[] findByNumber(String phoneNumber);
 
+    List<User> findByPhoneNumberIn(Collection<String> phoneNumbers);
 }

@@ -78,7 +78,9 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         List<Group> testGroups = Arrays.asList(new Group("tg1", testUser),
                 new Group("tg2", testUser),
                 new Group("tg3", testUser));
-        testUser.setGroupsPartOf(testGroups);
+        for (Group testGroup : testGroups) {
+            testGroup.addMember(testUser);
+        }
         Page<Group> pageOfGroups = new PageImpl<>(testGroups);
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(groupManagementServiceMock.hasActiveGroupsPartOf(testUser)).thenReturn(true);

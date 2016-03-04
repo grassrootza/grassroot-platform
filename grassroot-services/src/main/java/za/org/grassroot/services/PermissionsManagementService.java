@@ -1,5 +1,6 @@
 package za.org.grassroot.services;
 
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
@@ -60,7 +61,7 @@ public interface PermissionsManagementService {
     Strings to return set of default permissions for role name and
      */
 
-    Map<String, Role> setRolePermissionsFromTemplate(Map<String, Role> roles, GroupPermissionTemplate template);
+    void setRolePermissionsFromTemplate(Group group, GroupPermissionTemplate template);
 
     Set<Permission> getPermissions(String roleName, GroupPermissionTemplate template);
 

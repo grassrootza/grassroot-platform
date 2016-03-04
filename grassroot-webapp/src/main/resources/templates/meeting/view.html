@@ -17,7 +17,7 @@
   <div class="well">
     <div class="row">
       Meeting scheduled for <span th:text="${meeting.dateTimeString}">date and time</span>.
-      So far, <span th:text="${meeting.appliesToGroup.groupMembers.size()}">X</span> members have been invited.
+      So far, <span th:text="${meeting.appliesToGroup.members.size()}">X</span> members have been invited.
       <div th:if="${meeting.rsvpRequired}">Members have been asked to respond if they will be attending, and so far
         <span th:text="${rsvpYesTotal}">X</span> people have said 'yes'.</div>
     </div>

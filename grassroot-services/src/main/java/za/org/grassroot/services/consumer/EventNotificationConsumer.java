@@ -228,7 +228,7 @@ public class EventNotificationConsumer {
                 sendNewLogbookNotificationMessage(userRepository.findOne(logBookDTO.getAssignedToUserId()), group, logBookDTO);
 
             } else {
-                for (User user : group.getGroupMembers()) {
+                for (User user : group.getMembers()) {
                     sendNewLogbookNotificationMessage(user, group, logBookDTO);
                 }
             }

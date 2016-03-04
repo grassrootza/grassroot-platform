@@ -170,16 +170,8 @@
                       <h4  class="list-group-item-heading">
                         <a th:href="@{/group/view(groupId=${group.getId()})}"><span th:text="${group.getDisplayName('')}"></span></a>
                       </h4>
-                      <div class="least-content">
-                        <p class="list-group-item-text">
-                          Started on <span th:text="${#calendars.format(group.getCreatedDateTime(),'dd MMMM yyyy')}">13 May 2011</span>
-                          |
-                          <span th:text="${group.getGroupMembers()}"></span> Members
-                          |
-                          <a th:href="@{/group/unsubscribe(groupId=${group.getId()})}">
-                            Unsubscribe
-                          </a>
-                        </p>
+                      <div class="least-content"><span th:text="${group.getMembers()}"></span> Members</div>
+                      <p class="list-group-item-text">Est. <span th:text="${#calendars.format(group.getCreatedDateTime(),'dd MMMM yyyy')}">13 May 2011</span></p>
                       </div>
                       </div>
 

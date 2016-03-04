@@ -87,7 +87,7 @@ public class LogBookController extends BaseController {
             model.addAttribute("numberSubGroups", groupManagementService.getSubGroups(groupSelected).size());
             model.addAttribute("numberMembers", groupManagementService.getGroupSize(groupSelected, true));
         } else {
-            model.addAttribute("groupMembers", groupSelected.getGroupMembers());
+            model.addAttribute("groupMembers", groupSelected.getMembers());
         }
 
         model.addAttribute("reminderTime", reminderTimeDescriptions().get(logBookEntry.getReminderMinutes()));
@@ -230,11 +230,11 @@ public class LogBookController extends BaseController {
     public String modifyLogBookEntry(Model model, @RequestParam(value="logBookId", required = true) Long logBookId) {
         LogBook logBook = logBookService.load(logBookId);
         Group group = groupManagementService.loadGroup(logBook.getGroupId());
-        if (!group.getGroupMembers().contains(getUserProfile())) throw new AccessDeniedException("");
+        if (!group.getMembers().contains(getUserProfile())) throw new AccessDeniedException("");
 
         model.addAttribute("logBook", logBook);
         model.addAttribute("group", group);
-        model.addAttribute("groupMembers", group.getGroupMembers());
+        model.addAttribute("groupMembers", group.getMembers());
         model.addAttribute("reminderTime", reminderTimeDescriptions().get(logBook.getReminderMinutes()));
         model.addAttribute("reminderTimeOptions", reminderTimeDescriptions());
 
