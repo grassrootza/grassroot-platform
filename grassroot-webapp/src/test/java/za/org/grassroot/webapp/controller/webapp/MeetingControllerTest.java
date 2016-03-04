@@ -52,7 +52,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         dummyResponsesMap.put(sessionTestUser, EventRSVPResponse.YES);
         when(eventManagementServiceMock.loadEvent(dummyId)).thenReturn(
                 dummyMeeting);
-        when(groupAccessControlManagementServiceMock.hasGroupPermission(BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS,
+        when(groupAccessControlManagementServiceMock.hasGroupPermission(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS,
                                                                          dummyGroup, sessionTestUser)).thenReturn(true);
         when(eventManagementServiceMock.getListOfUsersThatRSVPYesForEvent(
                 dummyMeeting)).thenReturn(listOfDummyYesResponses);

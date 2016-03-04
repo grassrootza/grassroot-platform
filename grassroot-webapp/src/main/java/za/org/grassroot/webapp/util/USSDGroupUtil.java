@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.BasePermissions;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.*;
@@ -314,16 +315,16 @@ public class USSDGroupUtil extends USSDUtil {
         Long startTime = System.currentTimeMillis();
         switch (section){
             case MEETINGS:
-                canCreate = groupAccessControlManager.hasGroupPermission(BasePermissions.GROUP_PERMISSION_CREATE_GROUP_MEETING, group,user);
+                canCreate = groupAccessControlManager.hasGroupPermission(Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING, group,user);
             break;
             case VOTES:
-                canCreate =groupAccessControlManager.hasGroupPermission(BasePermissions.GROUP_PERMISSION_CREATE_GROUP_VOTE, group,user);
+                canCreate =groupAccessControlManager.hasGroupPermission(Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE, group,user);
                 break;
             case LOGBOOK:
-                canCreate = groupAccessControlManager.hasGroupPermission(BasePermissions.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY,group,user);
+                canCreate = groupAccessControlManager.hasGroupPermission(Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY,group,user);
                 break;
             case GROUP_MANAGER:
-                canCreate = groupAccessControlManager.hasGroupPermission(BasePermissions.GROUP_PERMISSION_UPDATE_GROUP_DETAILS,group,user);
+                canCreate = groupAccessControlManager.hasGroupPermission(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS,group,user);
                 break;
             default:
                 break;

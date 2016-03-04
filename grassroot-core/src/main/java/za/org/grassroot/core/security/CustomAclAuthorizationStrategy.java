@@ -9,10 +9,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.Assert;
-import za.org.grassroot.core.domain.BasePermissions;
+import za.org.grassroot.core.domain.Permission;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -26,7 +27,6 @@ public class CustomAclAuthorizationStrategy implements AclAuthorizationStrategy 
     private final GrantedAuthority gaModifyAuditing;
     private final GrantedAuthority gaTakeOwnership;
     private SidRetrievalStrategy sidRetrievalStrategy = new SidRetrievalStrategyImpl();
-    private  PermissionFactory permissionFactory;
 
     //~ Constructors ===================================================================================================
 
@@ -41,8 +41,7 @@ public class CustomAclAuthorizationStrategy implements AclAuthorizationStrategy 
      * <p>
      * Alternatively, a single value can be supplied for all three permissions.
      */
-    public CustomAclAuthorizationStrategy( PermissionFactory permissionFactory,GrantedAuthority... auths) {
-        this.permissionFactory = permissionFactory;
+    public CustomAclAuthorizationStrategy( GrantedAuthority... auths) {
 
         Assert.isTrue(auths != null && (auths.length == 3 || auths.length == 1),
                 "One or three GrantedAuthority instances required");
@@ -102,9 +101,7 @@ public class CustomAclAuthorizationStrategy implements AclAuthorizationStrategy 
         // Try to get permission via ACEs within the ACL
         List<Sid> sids = sidRetrievalStrategy.getSids(authentication);
 
-        if (acl.isGranted(Arrays.asList(
-                permissionFactory.buildFromName(BasePermissions.GROUP_PERMISSION_FORCE_PERMISSION_CHANGE)
-                ), sids, false)) {
+        if (acl.isGranted(Collections.singletonList(Permission.GROUP_PERMISSION_FORCE_PERMISSION_CHANGE), sids, false)) {
             return;
         }
 
