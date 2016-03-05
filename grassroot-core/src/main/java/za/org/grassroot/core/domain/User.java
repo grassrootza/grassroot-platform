@@ -49,9 +49,6 @@ public class User implements UserDetails {
     @Column(name = "created_date_time", insertable = true, updatable = false)
     private Timestamp createdDateTime;
 
-    @OneToMany(mappedBy = "user")
-    private Set<Membership> memberships = new HashSet<>();
-
     @Column(name = "user_name", length = 50, unique = true)
     private String username;
 
@@ -70,19 +67,22 @@ public class User implements UserDetails {
     @Column(name = "initiated_session")
     private boolean hasInitiatedSession;
 
-    @OneToMany(fetch = FetchType.EAGER)
+    @Version
+    private Integer version;
+
+    @OneToMany
     @JoinTable(name = "user_roles",
             joinColumns        = {@JoinColumn(name = "user_id", referencedColumnName = "id", unique = false)},
             inverseJoinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id", unique = false)}
     )
     private Set<Role> standardRoles = new HashSet<>();
 
+    @OneToMany(mappedBy = "user")
+    private Set<Membership> memberships = new HashSet<>();
+
     @ManyToOne
     @JoinColumn(name = "account_administered")
     private Account accountAdministered;
-
-    @Version
-    private Integer version;
 
     private User() {
         // for JPA
@@ -267,50 +267,48 @@ public class User implements UserDetails {
 
     public void setHasInitiatedSession(boolean hasInitiatedSession) { this.hasInitiatedSession = hasInitiatedSession; }
 
-    @Transient
     public Set<Permission> getPermissions() {
         Set<Permission> perms = new HashSet<Permission>();
-        for (Role role : standardRoles) {
+        for (Role role : getStandardAndGroupRoles()) {
             perms.addAll(role.getPermissions());
         }
         return perms;
     }
 
     @Override
-    @Transient
     public Collection<GrantedAuthority> getAuthorities() {
         Set<GrantedAuthority> authorities = new HashSet<>();
-        authorities.addAll(getStandardRoles());
-        // todo: dunno how performant this is, but at least it will work like this
-        for (Membership membership : memberships) {
-            authorities.add(membership.getRole());
-        }
+        authorities.addAll(getStandardAndGroupRoles());
         authorities.addAll(getPermissions());
         return authorities;
     }
 
-    @Transient
+    private Set<Role> getStandardAndGroupRoles() {
+        Set<Role> roles = getStandardRoles();
+        for (Membership membership : getMemberships()) {
+            roles.add(membership.getRole());
+        }
+        return roles;
+    }
+
     @Override
     public boolean isAccountNonExpired() {
         //return true = account is valid / not expired
         return true;
     }
 
-    @Transient
     @Override
     public boolean isAccountNonLocked() {
         //return true = account is not locked
         return true;
     }
 
-    @Transient
     @Override
     public boolean isCredentialsNonExpired() {
         //return true = password is valid / not expired
         return true;
     }
 
-    @Transient
     @Override
     public boolean isEnabled() {
         return this.getEnabled();
