@@ -187,7 +187,7 @@ public class USSDAbstractIT {
                 build().toUri();
 
         executeQuery(createGroupUri);
-        Group groupToReturn = groupManager.getLastCreatedGroup(testUser);
+        Group groupToReturn = groupManager.getCreatedGroups(testUser).get(0);
 
         return groupToReturn;
 

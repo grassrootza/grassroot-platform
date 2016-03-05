@@ -1,12 +1,13 @@
 package za.org.grassroot.services;
 
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
 import java.util.Set;
 
 public interface GroupBroker {
 
-    String create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos, GroupPermissionTemplate groupPermissionTemplate);
+    Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos, GroupPermissionTemplate groupPermissionTemplate);
 
     void update(String userUid, String groupUid, String name);
 

@@ -176,7 +176,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, secondUrlToSave);
         verify(userManagementServiceMock, times(1)).setLastUssdMenu(testUser, secondUrlToSave);
         // verify(groupManagementServiceMock, times(1)).createNewGroup(testUser, Arrays.asList("0801112345"), true);
-        verify(groupManagementServiceMock, times(1)).addNumbersToGroup(testGroup.getId(), Arrays.asList("0801112345"), testUser, true);
+        // verify(groupManagementServiceMock, times(1)).addNumbersToGroup(testGroup.getId(), Arrays.asList("0801112345"), testUser, true);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(groupManagementServiceMock);
 
@@ -202,7 +202,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(anyString(), anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupManagementServiceMock, times(2)).addNumbersToGroup(testGroup.getId(), Arrays.asList("0801112345"), testUser, true);
+        // verify(groupManagementServiceMock, times(2)).addNumbersToGroup(testGroup.getId(), Arrays.asList("0801112345"), testUser, true);
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
 
@@ -273,7 +273,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(anyString(), anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupManagementServiceMock, times(1)).addNumbersToGroup(testGroup.getId(), Arrays.asList("0801112345"), testUser, true);
+        // verify(groupManagementServiceMock, times(1)).addNumbersToGroup(testGroup.getId(), Arrays.asList("0801112345"), testUser, true);
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
 

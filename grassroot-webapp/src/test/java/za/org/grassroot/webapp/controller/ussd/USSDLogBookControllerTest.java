@@ -247,7 +247,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         when(logBookServiceMock.setAssignedToUser(dummyLogBook.getId(), testUser.getId())).thenReturn(dummyLogBook);
         when(logBookServiceMock.load(dummyLogBook.getId())).thenReturn(dummyLogBook);
         when(userManagementServiceMock.getDisplayName(testUser.getId())).thenReturn(testUser.getDisplayName());
-        when(groupManagementServiceMock.getGroupName(dummyLogBook.getGroupId())).thenReturn(testGroup.getGroupName());
+        when(groupManagementServiceMock.loadGroup(dummyLogBook.getGroupId())).thenReturn(testGroup);
         mockMvc.perform(get(path + confirmMenu).param(logBookIdParam, String.valueOf(dummyLogBook.getId()))
                 .param(phoneParam, testUserPhone).param("assignUserId", String.valueOf(testUser.getId()))
                 .param("request", "1"));
@@ -255,7 +255,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         verify(logBookServiceMock, times(1)).setAssignedToUser(dummyLogBook.getId(), testUser.getId());
         verify(logBookServiceMock, times(1)).load(dummyLogBook.getId());
         verify(userManagementServiceMock, times(1)).getDisplayName(testUser.getId());
-        verify(groupManagementServiceMock, times(1)).getGroupName(dummyLogBook.getId());
+        verify(groupManagementServiceMock, times(1)).loadGroup(dummyLogBook.getId());
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(logBookServiceMock);
         verifyNoMoreInteractions(groupManagementServiceMock);

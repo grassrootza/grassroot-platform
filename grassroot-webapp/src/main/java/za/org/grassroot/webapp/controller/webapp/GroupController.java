@@ -159,7 +159,7 @@ public class GroupController extends BaseController {
         log.info(String.format("Checking group membership took ... %d msec", endTime - startTime));
 
         startTime = System.currentTimeMillis();
-        boolean hasUpdatePermission = groupManagementService.isGroupCreatedByUser(groupId, user);
+        boolean hasUpdatePermission = (group.getCreatedByUser().equals(user));
         endTime = System.currentTimeMillis();
         log.info(String.format("Checking if update permission took ... %d msec", endTime - startTime));
 
@@ -235,13 +235,13 @@ public class GroupController extends BaseController {
         timeStart = System.currentTimeMillis();
         User userCreator = getUserProfile();
         String parentUid = (groupCreator.getHasParent()) ? groupCreator.getParent().getUid() : null;
-        String groupUid = groupBroker.create(userCreator.getUid(), groupCreator.getGroupName(),
+        Group groupCreated = groupBroker.create(userCreator.getUid(), groupCreator.getGroupName(),
                                              parentUid, groupCreator.getAddedMembers(), template);
         timeEnd = System.currentTimeMillis();
         log.info(String.format("User load & group creation: %d msecs", timeEnd - timeStart));
 
         timeStart = System.currentTimeMillis();
-        groupBroker.addMembers(userCreator.getUid(), groupUid, groupCreator.getAddedMembers());
+        groupBroker.addMembers(userCreator.getUid(), groupCreated.getUid(), groupCreator.getAddedMembers());
         timeEnd = System.currentTimeMillis();
 
         log.info(String.format("Adding group members took ... ", timeEnd - timeStart));
@@ -249,13 +249,11 @@ public class GroupController extends BaseController {
 
         // removing from master branch until more comfortable about interface and UX for this and security
 
-        Group groupCreated = groupManagementService.loadGroupByUid(groupUid);
-
         if (groupCreator.isDiscoverable())
             groupCreated = groupManagementService.setGroupDiscoverable(groupCreated, true, userCreator.getId());
 
         if (groupCreator.getGenerateToken())
-            groupCreated = groupManagementService.generateGroupToken(groupCreated, groupCreator.getTokenDaysValid(), userCreator);
+            groupManagementService.generateExpiringGroupToken(groupCreated.getUid(), userCreator.getUid(), groupCreator.getTokenDaysValid());
 
         addMessage(redirectAttributes, MessageType.SUCCESS, "group.creation.success", new Object[]{groupCreated.getGroupName()}, request);
         redirectAttributes.addAttribute("groupId", groupCreated.getId());
@@ -461,14 +459,14 @@ public class GroupController extends BaseController {
                                    @RequestParam(value = "days", required = false) Integer days,
                                    HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
-        Group group = groupManagementService.loadGroup(groupId);
+        Group group = groupManagementService.loadGroup(groupId); // todo: just leave it out once refactored to Uid
 
         switch (action) {
             case "create":
                 if (days == 0)
-                    group = groupManagementService.generateGroupToken(group, getUserProfile());
+                    group = groupManagementService.generateGroupToken(group.getUid(), getUserProfile().getUid());
                 else
-                    group = groupManagementService.generateGroupToken(group, days, getUserProfile());
+                    group = groupManagementService.generateExpiringGroupToken(group.getUid(), getUserProfile().getUid(), days);
                 log.info("New token created with value: " + group.getGroupTokenCode());
                 addMessage(redirectAttributes, MessageType.SUCCESS, "group.token.creation.success",
                         new Object[]{group.getGroupTokenCode()}, request);
@@ -478,7 +476,7 @@ public class GroupController extends BaseController {
                 log.info("Token extended until: " + group.getTokenExpiryDateTime().toString());
                 break;
             case "close":
-                group = groupManagementService.invalidateGroupToken(group, getUserProfile());
+                group = groupManagementService.closeGroupToken(group.getUid(), getUserProfile().getUid());
                 log.info("Token closed!");
                 break;
         }
@@ -570,7 +568,7 @@ public class GroupController extends BaseController {
 
         Group groupToMakeChild = groupManagementService.loadGroup(groupId);
 
-        List<Group> userGroups = groupManagementService.getActiveGroupsPartOf(getUserProfile().getId());
+        List<Group> userGroups = groupManagementService.getActiveGroupsPartOf(getUserProfile());
         userGroups.remove(groupToMakeChild);
         List<Group> possibleParents = new ArrayList<>(userGroups);
 

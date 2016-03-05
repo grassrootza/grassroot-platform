@@ -13,15 +13,16 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.GrassRootServicesConfig;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.services.GroupManagementService;
-import za.org.grassroot.services.PermissionsManagementService;
-import za.org.grassroot.services.RoleManagementService;
-import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.services.*;
+import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
 import javax.transaction.Transactional;
 
+import java.util.HashSet;
+
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static za.org.grassroot.services.enums.GroupPermissionTemplate.DEFAULT_GROUP;
 
 /**
  * Created by luke on 2015/11/19.
@@ -44,6 +45,9 @@ public class RoleManagementServiceTest extends AbstractTransactionalJUnit4Spring
     private GroupManagementService groupManagementService;
 
     @Autowired
+    private GroupBroker groupBroker;
+
+    @Autowired
     private PermissionsManagementService permissionsManagementService;
 
     // @Autowired
@@ -54,7 +58,7 @@ public class RoleManagementServiceTest extends AbstractTransactionalJUnit4Spring
     public void shouldAssignDefaultPermissionsToRole() {
 
         User user = userManagementService.loadOrSaveUser("0810001111");
-        Group group = groupManagementService.createNewGroup(user, "test group", false);
+        Group group = groupBroker.create(user.getUid(), "test group", null, new HashSet<>(), DEFAULT_GROUP);
 
         /* Role organizerRole = roleManagementService.fetchGroupRole(BaseRoles.ROLE_GROUP_ORGANIZER, group);
         Permission addUserPermission = permissionsManagementService.findByName(BasePermissions.GROUP_PERMISSION_ADD_GROUP_MEMBER);
@@ -90,7 +94,7 @@ public class RoleManagementServiceTest extends AbstractTransactionalJUnit4Spring
         assertNotNull(user2.getUsername());
         assertNotNull(user3.getUsername());
 
-        Group group = groupManagementService.createNewGroup(user1, "test group", false);
+        // Group group = groupManagementService.createNewGroup(user1, "test group", false);
 
         // roleManagementService.addRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, group, user1); // todo: fix authentication
         // roleManagementService.addRoleToGroupAndUser(BaseRoles.ROLE_COMMITTEE_MEMBER, group, user2);

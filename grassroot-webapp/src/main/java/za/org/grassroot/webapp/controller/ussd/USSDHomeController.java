@@ -179,7 +179,7 @@ public class USSDHomeController extends USSDController {
         // todo: optimize this -- it is currently doing 2-4 DB calls on every start menu ... need to consolidate somehow to one
         log.info("Checking if user needs to respond to anything, either a vote or an RSVP ...");
         return userManager.needsToVoteOrRSVP(sessionUser) || sessionUser.needsToRenameSelf(5)
-            || groupManager.needsToRenameGroup(sessionUser);
+            || (groupManager.groupToRename(sessionUser) != null);
     }
 
     private USSDResponseTypes neededResponse(User sessionUser) {
@@ -193,7 +193,7 @@ public class USSDHomeController extends USSDController {
         }
         if (userManager.needsToRSVP(sessionUser)) return USSDResponseTypes.MTG_RSVP;
         if (userManager.needsToRenameSelf(sessionUser)) return USSDResponseTypes.RENAME_SELF;
-        if (groupManager.needsToRenameGroup(sessionUser)) return USSDResponseTypes.NAME_GROUP;
+        if (groupManager.groupToRename(sessionUser) != null) return USSDResponseTypes.NAME_GROUP;
 
         return USSDResponseTypes.NONE;
 

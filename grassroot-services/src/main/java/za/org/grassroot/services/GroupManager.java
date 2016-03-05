@@ -49,6 +49,9 @@ public class GroupManager implements GroupManagementService {
     private GroupRepository groupRepository;
 
     @Autowired
+    private GroupBroker groupBroker;
+
+    @Autowired
     private PaidGroupRepository paidGroupRepository;
 
     @Autowired
@@ -75,11 +78,7 @@ public class GroupManager implements GroupManagementService {
     @Autowired
     private AsyncRoleService asyncRoleService;
 
-    /*
-    First, methods to create groups
-     */
-
-    @Override
+/*    @Override
     public Group createNewGroup(User creatingUser, String groupName, boolean addDefaultRole) {
         Long timeStart = System.currentTimeMillis();
         Group group = groupRepository.save(new Group(groupName, creatingUser));
@@ -91,7 +90,7 @@ public class GroupManager implements GroupManagementService {
         log.info(String.format("Setting up a standard group, time taken ... %d msecs", timeEnd - timeStart));
         asyncGroupService.recordGroupLog(group.getId(),creatingUser.getId(),GroupLogType.GROUP_ADDED, 0L, "");;
         return group;
-    }
+    }*/
 
     @Override
     public Group saveGroup(Group groupToSave, boolean createGroupLog, String description, Long changedByuserId) {
@@ -102,57 +101,15 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public Group renameGroup(Group group, String newGroupName) {
-        // only bother if the name has changed (in some instances, web app may call this without actual name change)
-        if (!group.getGroupName().equals(newGroupName)) {
+    public Group renameGroup(String groupUid, String newName, String changingUserUid) {
+        Group group = groupRepository.findOneByUid(groupUid);
+        if (!group.getGroupName().equals(newName)) {
             String oldName = group.getGroupName();
-            group.setGroupName(newGroupName);
-            return saveGroup(group,true,String.format("Old name: %s, New name: %s",oldName,newGroupName),dontKnowTheUser);
+            group.setGroupName(newName);
+            return saveGroup(group,true,String.format("Old name: %s, New name: %s",oldName,newName),dontKnowTheUser);
         } else {
             return group;
         }
-    }
-
-    @Override
-    public Group renameGroup(Long groupId, String newGroupName) {
-        return renameGroup(loadGroup(groupId), newGroupName);
-    }
-
-    /**
-     * SECTION: Methods to add and remove group members, including logging & roles/permissions
-     */
-
-    @Override
-    public Group addGroupMember(Group currentGroup, User newMember, Long addingUserId, boolean addDefaultRole) {
-        if (currentGroup.addMember(newMember) != null) {
-            currentGroup = saveGroup(currentGroup,false,"",dontKnowTheUser);
-            newMember = userManager.save(newMember); // so that this is isntantly double-sided, else getting access control errors
-            asyncGroupService.addNewGroupMemberLogsMessages(currentGroup, newMember, addingUserId);
-            if (addDefaultRole)
-                asyncRoleService.addRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, currentGroup, newMember, newMember);
-        }
-        return currentGroup;
-    }
-
-    @Override
-    public Group addNumbersToGroup(Long groupId, List<String> phoneNumbers, User addingUser, boolean addDefaultRoles) {
-
-        Group groupToExpand = loadGroup(groupId);
-
-        List<User> groupNewMembers = userManager.getUsersFromNumbers(phoneNumbers);
-        for (User newMember : groupNewMembers) {
-            groupToExpand.addMember(newMember);
-        }
-        Group savedGroup = groupRepository.save(groupToExpand);
-
-        for (User newMember : groupNewMembers) {
-            // todo: turn this into a single batch call
-            asyncGroupService.addNewGroupMemberLogsMessages(savedGroup, newMember, addingUser.getId());
-            if (addDefaultRoles)
-                asyncRoleService.addRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, savedGroup, newMember, addingUser);
-        }
-
-        return savedGroup;
     }
 
     /*
@@ -171,22 +128,13 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public String getGroupName(Long groupId) {
-        return loadGroup(groupId).getName("");
-    }
-
-    @Override
     public List<Group> getCreatedGroups(User creatingUser) {
-        return groupRepository.findByCreatedByUserAndActive(creatingUser, true);
+        return groupRepository.findByCreatedByUserAndActiveOrderByCreatedDateTimeDesc(creatingUser, true);
     }
 
     @Override
     public List<Group> getActiveGroupsPartOf(User sessionUser) {
         return groupRepository.findByMembershipsUserAndActive(sessionUser, true);
-    }
-    @Override
-    public List<Group> getActiveGroupsPartOfOrdered(User sessionUser){
-        return groupRepository.findActiveUserGroupsOrderedByRecentActivity(sessionUser.getId());
     }
 
     @Override
@@ -197,11 +145,6 @@ public class GroupManager implements GroupManagementService {
             list.add(new GroupDTO(objArray));
         }
         return list;
-    }
-
-    @Override
-    public List<Group> getActiveGroupsPartOf(Long userId) {
-        return getActiveGroupsPartOf(userManager.getUserById(userId));
     }
 
     @Override
@@ -229,36 +172,19 @@ public class GroupManager implements GroupManagementService {
         return groupRepository.countByIdAndMembershipsUser(group.getId(), user) > 0;
     }
 
-    @Override
-    public boolean canUserCallMeeting(Long groupId, User user) {
-        return accessControlService.hasGroupPermission(Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING, groupId, user);
-    }
-
-    @Override
-    public boolean canUserCallVote(Long groupId, User user) {
-        return accessControlService.hasGroupPermission(Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE, groupId, user);
-    }
-
     /*
     Methods to implement finding last group and prompting to rename if unnamed. May make this a little more complex
     in future (e.g., check not just last created group, but any unnamed created groups above X users, or so on). Hence
     a little duplication / redundancy for now.
      */
-    @Override
-    public Group getLastCreatedGroup(User creatingUser) {
-        return groupRepository.findFirstByCreatedByUserOrderByIdDesc(creatingUser);
-    }
-
-    @Override
-    public boolean needsToRenameGroup(User sessionUser) {
-        // todo: reach back further than just the last created group ... any group that's unnamed
-        Group lastCreatedGroup = getLastCreatedGroup(sessionUser);
-        return (lastCreatedGroup != null && lastCreatedGroup.isActive() && !lastCreatedGroup.hasName());
-    }
 
     @Override
     public Group groupToRename(User sessionUser) {
-        return getLastCreatedGroup(sessionUser);
+        Group lastCreatedGroup = groupRepository.findFirstByCreatedByUserOrderByIdDesc(sessionUser);
+        if (lastCreatedGroup != null && lastCreatedGroup.isActive() && !lastCreatedGroup.hasName())
+            return lastCreatedGroup;
+        else
+            return null;
     }
 
     @Override
@@ -277,21 +203,6 @@ public class GroupManager implements GroupManagementService {
         return (createdByUser && groupCreatedSinceThreshold);
     }
 
-    @Override
-    public boolean canUserMakeGroupInactive(User user, Long groupId) {
-        return canUserMakeGroupInactive(user, loadGroup(groupId));
-    }
-
-    @Override
-    public boolean isGroupCreatedByUser(Long groupId, User user) {
-        return (loadGroup(groupId).getCreatedByUser() == user);
-    }
-
-    @Override
-    public boolean canUserModifyGroup(Group group, User user) {
-        return accessControlService.hasGroupPermission(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS, group, user);
-    }
-
     /*
     Methods to work with group joining tokens and group discovery
      */
@@ -305,14 +216,10 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public Group generateGroupToken(Long groupId, User generatingUser) {
-        // todo: check permissions
-        return generateGroupToken(loadGroup(groupId), generatingUser);
-    }
-
-    @Override
-    public Group generateGroupToken(Group group, User generatingUser) {
+    public Group generateGroupToken(String groupUid, String generatingUserUid) {
         log.info("Generating a token code that is indefinitely open, within postgresql range ... We will have to adjust this before the next century");
+        Group group = groupRepository.findOneByUid(groupUid);
+        User generatingUser = userManager.loadUserByUid(generatingUserUid); // todo: leave out once groupLogs restructured to Uid
         final Timestamp endOfCentury = Timestamp.valueOf(LocalDateTime.of(2099, 12, 31, 23, 59));
         group.setGroupTokenCode(generateCodeString());
         group.setTokenExpiryDateTime(endOfCentury);
@@ -320,15 +227,13 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public Group generateGroupToken(Group group, Integer daysValid, User user) {
-        // todo: checks for whether the code already exists, and/or existing validity of group
-
+    public Group generateExpiringGroupToken(String groupUid, String userUid, Integer daysValid) {
+        Group group = groupRepository.findOneByUid(groupUid);
         log.info("Generating a new group token, for group: " + group.getId());
         Group groupToReturn;
         if (daysValid == 0) {
-            groupToReturn = generateGroupToken(group, user);
+            groupToReturn = generateGroupToken(groupUid, userUid);
         } else {
-
             Integer daysMillis = 24 * 60 * 60 * 1000;
             Timestamp expiryDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis() + daysValid * daysMillis);
 
@@ -337,17 +242,13 @@ public class GroupManager implements GroupManagementService {
 
             log.info("Group code generated: " + group.getGroupTokenCode());
 
-            groupToReturn = saveGroup(group,true,String.format("Set Group Token: %s",group.getGroupTokenCode()),user.getId());
+            // todo: pass User UID to the log call
+            groupToReturn = saveGroup(group,true,String.format("Set Group Token: %s",group.getGroupTokenCode()),dontKnowTheUser);
 
             log.info("Group code after save: " + group.getGroupTokenCode());
         }
 
         return groupToReturn;
-    }
-
-    @Override
-    public Group generateGroupToken(Long groupId, Integer daysValid, User user) {
-        return generateGroupToken(loadGroup(groupId), daysValid, user);
     }
 
     @Override
@@ -359,15 +260,11 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public Group invalidateGroupToken(Group group, User user) {
+    public Group closeGroupToken(String groupUid, String closingUserUid) {
+        Group group = groupRepository.findOneByUid(groupUid);
         group.setTokenExpiryDateTime(new Timestamp(Calendar.getInstance().getTimeInMillis()));
-        group.setGroupTokenCode(null); // alternately, set it to ""
-        return saveGroup(group,true,"Invalidate Group Token",user.getId());
-    }
-
-    @Override
-    public Group invalidateGroupToken(Long groupId, User user) {
-        return invalidateGroupToken(loadGroup(groupId), user);
+        group.setGroupTokenCode(null); // alternately, set it to "" // todo: switch below to Uid
+        return saveGroup(group,true,"Invalidate Group Token",dontKnowTheUser);
     }
 
     @Override
@@ -582,20 +479,6 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public LocalDateTime getLastTimeSubGroupActive(Group group) {
-        // todo: try make this work with recursive call instead of highly inefficient code loop
-        LocalDateTime lastTimeActive = getLastTimeGroupActive(group);
-        if (hasSubGroups(group)) {
-            LocalDateTime currentChildLastActive;
-            for (Group child : getSubGroups(group)) {
-                currentChildLastActive = getLastTimeGroupActive(child);
-                lastTimeActive = (lastTimeActive.isAfter(currentChildLastActive)) ? lastTimeActive : currentChildLastActive;
-            }
-        }
-        return lastTimeActive;
-    }
-
-    @Override
     public Group setGroupInactive(Group group, User user) {
         // todo errors and exception throwing
         group.setActive(false);
@@ -663,11 +546,16 @@ public class GroupManager implements GroupManagementService {
     @Override
     public Group mergeGroupsSpecifyOrder(Group groupInto, Group groupFrom, boolean setFromGroupInactive, Long mergingUserId) {
 
-        // todo: optimize this, almost certainly very slow
-        // todo: figure out how to transfer roles ... original group roles move over?
-        for (User user : groupFrom.getMembers()) {
-            addGroupMember(groupInto, user, mergingUserId, false);
-        }
+        // todo: notify user that roles will all transfer over (may want to not transfer "organizer"
+        // todo: make this all cleaner & faster (the next four lines should be able to do in one or two)
+        String mergingUserUid = userManager.getUserById(mergingUserId).getUid();
+        String groupIntoUid = groupInto.getUid();
+        Set<MembershipInfo> membersToTransfer = new HashSet<>();
+        for (Membership member : groupFrom.getMemberships())
+            membersToTransfer.add(new MembershipInfo(member.getUser().getPhoneNumber(), member.getRole().getName(),
+                                                     member.getUser().getDisplayName()));
+
+        groupBroker.addMembers(mergingUserUid, groupIntoUid, membersToTransfer);
         groupFrom.setActive(!setFromGroupInactive);
         saveGroup(groupFrom,true,String.format("Set group %d inactive",groupFrom.getId()),dontKnowTheUser);
         return saveGroup(groupInto,true,String.format("Merged group %d into %d",groupFrom.getId(),groupInto.getId()),dontKnowTheUser);

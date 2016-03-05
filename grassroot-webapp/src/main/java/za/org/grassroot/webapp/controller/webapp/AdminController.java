@@ -138,9 +138,10 @@ public class AdminController extends BaseController {
             addMessage(model, MessageType.ERROR, "no.one.found", request);
             pageToDisplay = "admin/users/home";
         } else if (foundUsers.size() == 1) {
-            // display just that user
+            // display just that user, todo: rethink this once refactored all to Uids
+            User user = userManagementService.getUserById(foundUsers.get(0).getId());
             model.addAttribute("user", foundUsers.get(0));
-            model.addAttribute("numberGroups", groupManagementService.getActiveGroupsPartOf(foundUsers.get(0).getId()).size());
+            model.addAttribute("numberGroups", groupManagementService.getActiveGroupsPartOf(user).size());
             pageToDisplay = "admin/users/view";
         } else {
             // display a list of users

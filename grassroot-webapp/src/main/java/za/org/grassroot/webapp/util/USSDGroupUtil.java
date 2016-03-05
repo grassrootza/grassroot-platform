@@ -222,8 +222,7 @@ public class USSDGroupUtil extends USSDUtil {
 
             Set<MembershipInfo> members = turnNumbersIntoMembers(enteredNumbers.get(validNumbers));
             members.add(new MembershipInfo(phoneNumber, BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName()));
-            String newGroupUid = groupBroker.create(user.getUid(), "", null, members, GroupPermissionTemplate.DEFAULT_GROUP);
-            Group createdGroup = groupManager.loadGroupByUid(newGroupUid);
+            Group createdGroup = groupBroker.create(user.getUid(), "", null, members, GroupPermissionTemplate.DEFAULT_GROUP);
 
             checkForErrorsAndSetPrompt(user, section, menu, createdGroup.getId(), enteredNumbers.get(invalidNumbers), returnUrl, true);
             groupId = createdGroup.getId();
@@ -287,16 +286,17 @@ public class USSDGroupUtil extends USSDUtil {
                 break;
             case GROUP_MANAGER:
                 sessionUser = userManager.findByInputNumber(sessionUser.getPhoneNumber(), saveGroupMenu(existingGroupMenu, groupId));
+                Group group = groupManager.loadGroup(groupId);
                 menu = new USSDMenu(getMessage(section, existingGroupMenu, promptKey, sessionUser));
                 String menuKey = section.toKey() + existingGroupMenu + "." + optionsKey;
                 menu.addMenuOption(groupMenuWithId(groupTokenMenu, groupId), getMessage(menuKey + groupTokenMenu, sessionUser));
                 menu.addMenuOption(groupMenuWithId(addMemberPrompt, groupId), getMessage(menuKey + addMemberPrompt, sessionUser));
                 menu.addMenuOption(groupMenuWithId(unsubscribePrompt, groupId), getMessage(menuKey + unsubscribePrompt, sessionUser));
                 menu.addMenuOption(groupMenuWithId(renameGroupPrompt, groupId), getMessage(menuKey + renameGroupPrompt, sessionUser));
-                if (groupManager.isGroupCreatedByUser(groupId, sessionUser)) {
+                if (group.getCreatedByUser().equals(sessionUser)) {
                     menu.addMenuOption(groupMenuWithId(mergeGroupMenu, groupId), getMessage(menuKey + mergeGroupMenu, sessionUser));
                 }
-                if (groupManager.canUserMakeGroupInactive(sessionUser, groupId)) {
+                if (groupManager.canUserMakeGroupInactive(sessionUser, group)) {
                     menu.addMenuOption(groupMenuWithId(inactiveMenu, groupId), getMessage(menuKey + inactiveMenu, sessionUser));
                 }
                 menu.addMenuOption(urlForNewGroup, getMessage(groupKeyForMessages, "create", "option", sessionUser));

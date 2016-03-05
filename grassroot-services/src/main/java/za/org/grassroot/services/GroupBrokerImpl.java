@@ -30,7 +30,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
     @Override
     @Transactional
-    public String create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos, GroupPermissionTemplate groupPermissionTemplate) {
+    public Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos, GroupPermissionTemplate groupPermissionTemplate) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(name);
         Objects.requireNonNull(membershipInfos);
@@ -56,7 +56,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
         logger.info("Group created under UID {}", group.getUid());
 
-        return group.getUid();
+        return group;
     }
 
     @Override

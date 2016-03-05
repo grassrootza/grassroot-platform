@@ -210,7 +210,7 @@ public class USSDLogBookController extends USSDController {
         String formattedDueDate = dateFormat.format(logBook.getActionByDate().toLocalDateTime());
         String assignedUser = (assignToUser) ? userManager.getDisplayName(logBook.getAssignedToUserId()) : "";
 
-        String[] promptFields = new String[]{logBook.getMessage(), groupManager.getGroupName(logBook.getGroupId()),
+        String[] promptFields = new String[]{logBook.getMessage(), groupManager.loadGroup(logBook.getGroupId()).getName(""),
                 formattedDueDate, assignedUser};
 
         String assignedKey = (assignToUser) ? ".assigned" : ".unassigned";

@@ -73,7 +73,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(groupManagementServiceMock.getSubGroups(dummyGroup)).thenReturn(subGroups);
         when(groupManagementServiceMock.groupHasValidToken(dummyGroup)).thenReturn(false);
         when(groupManagementServiceMock.canUserMakeGroupInactive(sessionTestUser, dummyGroup)).thenReturn(true);
-        when(groupManagementServiceMock.isGroupCreatedByUser(dummyGroup.getId(), sessionTestUser)).thenReturn(true);
         when(groupManagementServiceMock.getLastTimeGroupActive(dummyGroup)).thenReturn(LocalDateTime.now());
         // when(groupManagementServiceMock.canUserModifyGroup(dummyGroup,sessionTestUser)).thenReturn(true);
 
@@ -130,18 +129,18 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         Group dummyGroup = new Group(dummyGroupCreator.getGroupName(), sessionTestUser);
         dummyGroup.addMember(sessionTestUser);
 
-        when(groupManagementServiceMock.createNewGroup(sessionTestUser, dummyGroupCreator.getGroupName(), true))
-                .thenReturn(dummyGroup);
+        // when(groupManagementServiceMock.createNewGroup(sessionTestUser, dummyGroupCreator.getGroupName(), true))
+        //        .thenReturn(dummyGroup);
         when(userManagementServiceMock.getUserById(sessionTestUser.getId())).thenReturn(sessionTestUser);
         when((userManagementServiceMock.loadOrSaveUser(sessionTestUser.getPhoneNumber()))).thenReturn(sessionTestUser);
         when(userManagementServiceMock.save(sessionTestUser)).thenReturn(sessionTestUser);
-        when(groupManagementServiceMock.addGroupMember(dummyGroup, sessionTestUser, dummyId, true)).thenReturn(dummyGroup);
+        // when(groupManagementServiceMock.addGroupMember(dummyGroup, sessionTestUser, dummyId, true)).thenReturn(dummyGroup);
 
         mockMvc.perform(post("/group/create").sessionAttr("groupCreator", dummyGroupCreator).
                 param("groupTemplate", GroupPermissionTemplate.DEFAULT_GROUP.toString())).
                 andExpect(view().name("redirect:view")).andExpect(model().attribute("groupId", dummyGroup.getId()))
                 .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("view"));
-        verify(groupManagementServiceMock, times(1)).createNewGroup(sessionTestUser, dummyGroupCreator.getGroupName(), true);
+        // verify(groupManagementServiceMock, times(1)).createNewGroup(sessionTestUser, dummyGroupCreator.getGroupName(), true);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(groupManagementServiceMock);
     }
@@ -245,13 +244,13 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(userManagementServiceMock.getUserById(sessionTestUser.getId())).thenReturn(sessionTestUser);
         when(groupManagementServiceMock.loadGroup(groupModifier.getGroup().getId())).thenReturn(testGroup);
         when(groupManagementServiceMock.isUserInGroup(testGroup, sessionTestUser)).thenReturn(true);
-        when(groupManagementServiceMock.renameGroup(testGroup, groupModifier.getGroupName())).thenReturn(testGroup);
+        // when(groupManagementServiceMock.renameGroup(testGroup, groupModifier.getGroupName())).thenReturn(testGroup);
         // when(groupManagementServiceMock.addRemoveGroupMembers(testGroup, testUpdatedUserList, sessionTestUser.getId(), true)).thenReturn(testGroup);
         mockMvc.perform(post("/group/modify").sessionAttr("groupModifier", groupModifier)).andExpect(status().is3xxRedirection())
                 .andExpect(view().name("redirect:view")).andExpect(model()
                 .attribute("groupId", is(String.valueOf(dummyId))));
         verify(groupManagementServiceMock, times(1)).loadGroup(groupModifier.getGroup().getId());
-        verify(groupManagementServiceMock, times(1)).renameGroup(testGroup, groupModifier.getGroupName());
+        //verify(groupManagementServiceMock, times(1)).renameGroup(testGroup, groupModifier.getGroupName());
         //verify(groupManagementServiceMock, times(1)).addRemoveGroupMembers(testGroup, testUpdatedUserList, sessionTestUser.getId(), true);
         verify(groupManagementServiceMock, times(1)).isUserInGroup(testGroup, sessionTestUser);
 //        verify(userManagementServiceMock, times(1)).getUserById(sessionTestUser.getId());
@@ -311,8 +310,8 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         Integer days = 5;
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
         when(groupManagementServiceMock.extendGroupToken(testGroup, days, sessionTestUser)).thenReturn(testGroup);
-        when(groupManagementServiceMock.generateGroupToken(testGroup, days, sessionTestUser)).thenReturn(testGroup);
-        when(groupManagementServiceMock.invalidateGroupToken(testGroup, sessionTestUser)).thenReturn(testGroup);
+        // when(groupManagementServiceMock.generateGroupToken(testGroup, days, sessionTestUser)).thenReturn(testGroup);
+        // when(groupManagementServiceMock.invalidateGroupToken(testGroup, sessionTestUser)).thenReturn(testGroup);
         for (String action : actions) {
             mockMvc.perform(post("/group/token").param("groupId", String.valueOf(dummyId))
                     .param("action", action).param("days", String.valueOf(days))).andExpect(status().is3xxRedirection())
@@ -320,8 +319,8 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         }
         verify(groupManagementServiceMock, times(3)).loadGroup(dummyId);
         verify(groupManagementServiceMock, times(1)).extendGroupToken(testGroup, days, sessionTestUser);
-        verify(groupManagementServiceMock, times(1)).generateGroupToken(testGroup, days, sessionTestUser);
-        verify(groupManagementServiceMock, times(1)).invalidateGroupToken(testGroup, sessionTestUser);
+        // verify(groupManagementServiceMock, times(1)).generateGroupToken(testGroup, days, sessionTestUser);
+        // verify(groupManagementServiceMock, times(1)).invalidateGroupToken(testGroup, sessionTestUser);
         verifyNoMoreInteractions(groupManagementServiceMock);
 
     }
@@ -355,13 +354,13 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         List<Group> testPossibleParents = new ArrayList<>(testUsergroups);
         testPossibleParents.add(testParentGroup);
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testChildGroup);
-        when(groupManagementServiceMock.getActiveGroupsPartOf(sessionTestUser.getId())).thenReturn(testUsergroups);
+        when(groupManagementServiceMock.getActiveGroupsPartOf(sessionTestUser)).thenReturn(testUsergroups);
         when(groupManagementServiceMock.isGroupAlsoParent(testChildGroup, testParentGroup)).thenReturn(true);
         mockMvc.perform(get("/group/parent").param("groupId", String.valueOf(dummyId))).andExpect(status()
                 .is3xxRedirection()).andExpect(view().name("redirect:view")).andExpect(redirectedUrl("view?groupId=1"))
                 .andExpect(model().attribute("groupId", is(String.valueOf(dummyId))));
         verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
-        verify(groupManagementServiceMock, times(1)).getActiveGroupsPartOf(sessionTestUser.getId());
+        verify(groupManagementServiceMock, times(1)).getActiveGroupsPartOf(sessionTestUser);
         verifyNoMoreInteractions(groupManagementServiceMock);
 
     }

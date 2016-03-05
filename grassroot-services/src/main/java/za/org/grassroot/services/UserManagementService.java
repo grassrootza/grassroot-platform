@@ -25,6 +25,8 @@ public interface UserManagementService {
 
     User getUserById(Long userId);
 
+    User loadUserByUid(String userUid);
+
     boolean userExist(String phoneNumber);
 
     boolean isFirstInitiatedSession(String phoneNumber);

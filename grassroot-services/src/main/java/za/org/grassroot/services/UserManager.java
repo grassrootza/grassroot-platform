@@ -144,6 +144,11 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
+    public User loadUserByUid(String userUid) {
+        return userRepository.findOneByUid(userUid);
+    }
+
+    @Override
     public Page<User> getDeploymentLog(Integer pageNumber) {
 
         PageRequest request = new PageRequest(pageNumber - 1, PAGE_SIZE, Sort.Direction.DESC);

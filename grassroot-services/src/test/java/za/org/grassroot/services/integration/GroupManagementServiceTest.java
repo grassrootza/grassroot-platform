@@ -10,7 +10,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.AbstractTransactionalJUnit4SpringContextTests;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.transaction.TestTransaction;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.GrassRootServicesConfig;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
@@ -21,7 +20,6 @@ import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
 
-import java.util.Arrays;
 import java.util.List;
 
 import static org.hamcrest.Matchers.is;
@@ -92,9 +90,9 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
     @Rollback
     public void shouldAddMultipleNumbersToGroup() {
         User user = userManagementService.loadOrSaveUser("0810001111");
-        Group group = groupManagementService.createNewGroup(user, "test group", false);
+        Group group = groupRepository.save(new Group("test group", user));
         log.info("ZOG: Group created ..." + group.toString());
-        groupManagementService.addNumbersToGroup(group.getId(), Arrays.asList("0810001111", "0810001112", "0810001113", "0810001114"), user, false);
+        // groupManagementService.addNumbersToGroup(group.getId(), Arrays.asList("0810001111", "0810001112", "0810001113", "0810001114"), user, false);
         log.info("ZOG: Group now looks like ... " + group.toString() + "... with groupMembers ... " + group.getMembers());
         assertNotNull(group.getMembers());
         assertEquals(4, group.getMembers().size());
@@ -106,8 +104,8 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
     public void shouldSetGroupInactive() {
         assertThat(groupRepository.count(), is(0L));
         User user = userManagementService.loadOrSaveUser(testUserBase + "1");
-        Group group = groupManagementService.createNewGroup(user, testGroupBase + "1", false);
-        Group group2 = groupManagementService.createNewGroup(user, testGroupBase + "2", false);
+        Group group = groupRepository.save(new Group(testGroupBase + "1", user));
+        Group group2 = groupRepository.save(new Group(testGroupBase + "2", user));
         groupManagementService.setGroupInactive(group, user);
 
         // todo: do a 'find by active' and count here instead
@@ -122,10 +120,10 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         assertThat(groupRepository.count(), is(0L));
         User user1 = userManagementService.loadOrSaveUser(testUserBase + "1");
         User user2 = userManagementService.loadOrSaveUser(testUserBase + "2");
-        Group group1 = groupManagementService.createNewGroup(user1, testGroupBase + "1", false);
-        Group group2 = groupManagementService.createNewGroup(user2, testGroupBase + "2", false);
-        groupManagementService.addGroupMember(group1, user1, user1.getId(), false);
-        groupManagementService.addGroupMember(group2, user1, user1.getId(), false);
+        Group group1 = groupRepository.save(new Group(testGroupBase + "1", user1));
+        Group group2 = groupRepository.save(new Group(testGroupBase + "2", user2));
+        //groupManagementService.addGroupMember(group1, user1, user1.getId(), false);
+        //groupManagementService.addGroupMember(group2, user1, user1.getId(), false);
         assertTrue(group2.getMembers().contains(user1));
         List<Group> list1 = groupManagementService.getActiveGroupsPartOf(user1);
         List<Group> list2 = groupManagementService.getCreatedGroups(user1);
