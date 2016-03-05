@@ -158,10 +158,14 @@ public class UserManager implements UserManagementService, UserDetailsService {
         }
 
         User user = userRepository.findByUsername(username.toLowerCase().trim());
-
         if (user == null) {
             throw new UsernameNotFoundException("Username not found.");
         }
+
+        // let's initialize standard roles and membership hibernate collection this way
+        user.getMemberships().size();
+        user.getStandardRoles().size();
+
         return user;
     }
 
