@@ -1,13 +1,11 @@
 package za.org.grassroot.webapp.model.web;
 
-import org.apache.commons.collections4.FactoryUtils;
-import org.apache.commons.collections4.list.LazyList;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.MembershipInfo;
-import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
-import java.util.*;
+import java.util.LinkedHashSet;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * Created by luke on 2015/09/13.
@@ -32,7 +30,7 @@ public class GroupWrapper {
 
     // private GroupPermissionTemplate template;
 
-    private Set<MembershipInfo> addedMembers = new HashSet<>();
+    private Set<MembershipInfo> addedMembers = new LinkedHashSet<>(); // need linked so appear in order
 
     // leaving out setters for group and parent as those are set at construction
 
@@ -50,7 +48,7 @@ public class GroupWrapper {
         this.parentGroup = Objects.requireNonNull(parentGroup);
         this.parentId = parentGroup.getId();
         this.parentName = parentGroup.getGroupName();
-        this.addedMembers.addAll(convertUsersToMemberships(parentGroup.getMembers(), parentGroup));
+        this.addedMembers.addAll(MembershipInfo.createFromMembers(parentGroup.getMemberships()));
         this.discoverable = parentGroup.isDiscoverable();
         // this.template = GroupPermissionTemplate.DEFAULT_GROUP; // todo: figure out if/how to store / inherit this
     }
@@ -126,20 +124,8 @@ public class GroupWrapper {
             this.parentName = parentGroup.getGroupName();
         }
 
-        this.addedMembers.addAll(convertUsersToMemberships(groupToModify.getMembers(), groupToModify));
+        this.addedMembers.addAll(MembershipInfo.createFromMembers(groupToModify.getMemberships()));
 
-    }
-
-    /*
-    Helper method to convert users into membership info, temporary until group members converted to membership info
-     */
-    private Set<MembershipInfo> convertUsersToMemberships(Set<User> users, Group group) {
-        Set<MembershipInfo> membershipInfos = new HashSet<>();
-        for (User user : users) {
-            // todo: extract the roleId for the group
-            membershipInfos.add(new MembershipInfo(user.getPhoneNumber(), null, user.getDisplayName()));
-        }
-        return membershipInfos;
     }
 
 }

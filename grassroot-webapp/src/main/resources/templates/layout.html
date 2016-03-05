@@ -40,7 +40,7 @@
      <!-- // Navigation -->
 
       <div layout:fragment="navigation">
-        <div class="navbar navbar-inverse navbar-colour">
+        <div class="navbar navbar-colour">
           <div class="navbar-header">
             <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-responsive-collapse">
               <span class="icon-bar"></span>
@@ -55,13 +55,13 @@
           <div class="navbar-collapse collapse navbar-responsive-collapse">
             <ul class="nav navbar-nav">
 
-              <li sec:authorize="isFullyAuthenticated()" class="active white-text"><a href="javascript:void(0)" th:href="@{/group/create}">Start Group</a></li>
-              <li sec:authorize="isFullyAuthenticated()" class="active white-text"><a href="javascript:void(0)" th:href="@{/meeting/create}">Call Meeting</a></li>
-              <li sec:authorize="isFullyAuthenticated()" class="active white-text"><a href="javascript:void(0)" th:href="@{/vote/create}">Take Vote</a></li>
-              <li sec:authorize="isFullyAuthenticated()" class="active white-text"><a href="javascript:void(0)" th:href="@{/log/create}">Record Action</a></li>
-              <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active white-text"><a href="javascript:void(0)" th:href="@{/meeting/free}">Send Message</a></li>
-              <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active white-text"><a href="javascript:void(0)" th:href="@{/paid_account/index}">Manage account</a></li>
-              <li sec:authorize="hasRole('ROLE_SYSTEM_ADMIN')" class="active white-text"><a href="javascript:void(0)" th:href="@{/admin/home}">System admin</a></li>
+              <li sec:authorize="isFullyAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/group/create}"><span class="white-text">Start Group</span></a></li>
+              <li sec:authorize="isFullyAuthenticated()" class="active white-text"><a href="javascript:void(0)" th:href="@{/meeting/create}"><span class="white-text">Call Meeting</span></a></li>
+              <li sec:authorize="isFullyAuthenticated()" class="active white-text"><a href="javascript:void(0)" th:href="@{/vote/create}"><span class="white-text">Take Vote</span></a></li>
+              <li sec:authorize="isFullyAuthenticated()" class="active white-text"><a href="javascript:void(0)" th:href="@{/log/create}"><span class="white-text">Record Action</span></a></li>
+              <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active white-text"><a href="javascript:void(0)" th:href="@{/meeting/free}"><span class="white-text">Send Message</span></a></li>
+              <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active white-text"><a href="javascript:void(0)" th:href="@{/paid_account/index}"><span class="white-text">Manage account</span></a></li>
+              <li sec:authorize="hasRole('ROLE_SYSTEM_ADMIN')" class="active white-text"><a href="javascript:void(0)" th:href="@{/admin/home}"><span class="white-text">System admin</span></a></li>
 
             </ul>
 
@@ -72,7 +72,7 @@
 
             <ul sec:authorize="isFullyAuthenticated()" class="nav navbar-nav navbar-right">
               <li class="dropdown">
-                <a href="javascript:void(0)" data-target="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false">My Profile <b class="caret"></b><div class="ripple-wrapper"></div></a>
+                <a href="javascript:void(0)" data-target="#" class="dropdown-toggle white-text" data-toggle="dropdown" aria-expanded="false">My Profile <b class="caret"></b><div class="ripple-wrapper"></div></a>
                 <ul class="dropdown-menu">
                   <li><a href="javascript:void(0)" th:href="@{/user-profile}" >Profile</a></li>
                   <li><a href="javascript:void(0)">Settings</a></li>

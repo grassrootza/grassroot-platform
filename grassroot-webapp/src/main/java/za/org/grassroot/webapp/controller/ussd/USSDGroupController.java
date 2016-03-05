@@ -540,16 +540,18 @@ public class USSDGroupController extends USSDController {
 
         switch (action) {
             case "inactive":
-                returnGroupId = groupManager.mergeGroups(firstGroupId, secondGroupId, user.getId()).getId();
+                returnGroupId = groupManager.mergeGroups(firstGroupId, secondGroupId, user.getId(), false, false, false).getId();
                 break;
             case "active":
-                returnGroupId = groupManager.mergeGroupsLeaveActive(firstGroupId, secondGroupId, user.getId()).getId();
+                returnGroupId = groupManager.mergeGroups(firstGroupId, secondGroupId, user.getId(), true, false, false).getId();
                 break;
             case "new":
-                returnGroupId = groupManager.mergeGroupsIntoNew(firstGroupId, secondGroupId, userInput, user).getId();
+                Group group = groupManager.mergeGroups(firstGroupId, secondGroupId, user.getId(), false, false, true);
+                groupManager.renameGroup(group.getUid(), userInput, user.getUid());
+                returnGroupId = group.getId();
                 break;
             default:
-                returnGroupId = groupManager.mergeGroups(firstGroupId, secondGroupId, user.getId()).getId();
+                returnGroupId = groupManager.mergeGroups(firstGroupId, secondGroupId, user.getId(), false, false, false).getId();
                 break;
         }
 

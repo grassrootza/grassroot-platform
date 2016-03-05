@@ -78,7 +78,7 @@ public class USSDGroupControllerIT extends USSDAbstractIT {
         String code = reloadedGroup.getGroupTokenCode();
         assertNotNull(code);
         assertTrue(groupManager.tokenExists(code));
-        assertNotNull(groupManager.getGroupByToken(code));*/
+        assertNotNull(groupManager.findGroupByToken(code));*/
 
 
 

@@ -168,7 +168,7 @@ public class USSDHomeControllerIT extends USSDAbstractIT {
         assertThat(responseEntity.getStatusCode(), is(OK));
         assertThat(groupManager.tokenExists(groupToken), is(true));
         assertThat(groupManager.groupHasValidToken(testGroup), is(true));
-        assertThat(groupManager.getGroupByToken(groupToken).getId(), is(testGroup.getId()));
+        assertThat(groupManager.findGroupByToken(groupToken).getId(), is(testGroup.getId()));
         assertThat(groupManager.isUserInGroup(testGroup, nonGroupUser), is(false));*/
 
     }

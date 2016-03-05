@@ -46,8 +46,8 @@ public class GroupViewNode {
 
         this.groupName = group.getGroupName();
 
-        this.numberMembers = groupManagementService.getGroupSize(group, false);
-        Group possibleParent = groupManagementService.getParent(group);
+        this.numberMembers = groupManagementService.getGroupSize(group.getId(), false);
+        Group possibleParent = group.getParent();
 
         if (possibleParent != null && groupManagementService.isUserInGroup(possibleParent, viewingUser)) {
             // this.parent = new GroupViewNode(possibleParent, viewingUser, groupManagementService); // think this creates infinite loop

@@ -28,6 +28,7 @@ public class MembershipValidator implements Validator {
     @Override
     public void validate(Object target, Errors errors) {
 
+        log.info("membershipValidator ... checking this member ... " + target.toString());
         ValidationUtils.rejectIfEmpty(errors, "phoneNumber", "user.enter.error.phoneNumber.empty");
 
         MembershipInfo inputedMember = (MembershipInfo) target;

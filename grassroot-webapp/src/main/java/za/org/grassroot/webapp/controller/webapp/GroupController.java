@@ -113,7 +113,7 @@ public class GroupController extends BaseController {
 
     @RequestMapping(value = "search", method = RequestMethod.POST)
     public String searchForGroup(Model model, @RequestParam String searchTerm) {
-        Group groupByToken = groupManagementService.getGroupByToken(searchTerm);
+        Group groupByToken = groupManagementService.findGroupByToken(searchTerm);
         if (groupByToken != null) {
             model.addAttribute("group", groupByToken);
         } else {
@@ -164,7 +164,7 @@ public class GroupController extends BaseController {
         log.info(String.format("Checking if update permission took ... %d msec", endTime - startTime));
 
         model.addAttribute("group", group);
-        model.addAttribute("hasParent", groupManagementService.hasParent(group));
+        model.addAttribute("hasParent", (group.getParent() != null));
         model.addAttribute("groupMeetings", eventManagementService.getUpcomingMeetings(group));
         model.addAttribute("groupVotes", eventManagementService.getUpcomingVotes(group));
         model.addAttribute("subGroups", groupManagementService.getSubGroups(group));
@@ -213,6 +213,7 @@ public class GroupController extends BaseController {
         groupCreator.addMember(creator); // to remove ambiguity about group creator being part of group
 
         model.addAttribute("groupCreator", groupCreator);
+        model.addAttribute("roles", roleDescriptions);
         model.addAttribute("permissionTemplates", permissionTemplates);
 
         return "group/create";
@@ -236,12 +237,12 @@ public class GroupController extends BaseController {
         User userCreator = getUserProfile();
         String parentUid = (groupCreator.getHasParent()) ? groupCreator.getParent().getUid() : null;
         Group groupCreated = groupBroker.create(userCreator.getUid(), groupCreator.getGroupName(),
-                                             parentUid, groupCreator.getAddedMembers(), template);
+                                             parentUid, new HashSet<>(groupCreator.getAddedMembers()), template);
         timeEnd = System.currentTimeMillis();
         log.info(String.format("User load & group creation: %d msecs", timeEnd - timeStart));
 
         timeStart = System.currentTimeMillis();
-        groupBroker.addMembers(userCreator.getUid(), groupCreated.getUid(), groupCreator.getAddedMembers());
+        groupBroker.addMembers(userCreator.getUid(), groupCreated.getUid(), new HashSet<>(groupCreator.getAddedMembers()));
         timeEnd = System.currentTimeMillis();
 
         log.info(String.format("Adding group members took ... ", timeEnd - timeStart));
@@ -265,14 +266,17 @@ public class GroupController extends BaseController {
     public String addMember(Model model, @ModelAttribute("groupCreator") @Validated GroupWrapper groupCreator,
                             BindingResult bindingResult, HttpServletRequest request) {
 
+        // major todo: shift this to client side
+        log.info(String.format("The group wrapper passed back has %d members ...", groupCreator.getAddedMembers().size()));
         if (bindingResult.hasErrors()) {
-            log.debug("binding_error", "");
+            log.info("binding_error thrown within binding result");
             // print out the error
             addMessage(model, MessageType.ERROR, "user.enter.error.phoneNumber.invalid", request);
         } else {
-            log.debug("binding_error", "");
-            groupCreator.setAddedMembers(addMember(groupCreator));
+            groupCreator.getAddedMembers().add(MembershipInfo.makeEmpty());
+            log.info(String.format("Group wrapper going back has %d members", groupCreator.getAddedMembers().size()));
         }
+        model.addAttribute("roles", roleDescriptions);
         model.addAttribute("permissionTemplates", permissionTemplates);
         return "group/create";
     }
@@ -295,7 +299,7 @@ public class GroupController extends BaseController {
     @RequestMapping(value = "modify", method = RequestMethod.POST, params = {"group_modify"})
     public String modifyGroup(Model model, @RequestParam("groupId") Long groupId) {
 
-        // todo: replace getGroupMembers with actual thing
+        // todo: check permissions
         Group group = groupManagementService.loadGroup(groupId);
         if (!isUserPartOfGroup(getUserProfile(), group)) throw new AccessDeniedException("");
 
@@ -415,7 +419,6 @@ public class GroupController extends BaseController {
         Set<MembershipInfo> groupMembers = groupWrapper.getAddedMembers();
         groupMembers.add(MembershipInfo.makeEmpty());
         return groupMembers;
-
     }
 
     private Set<MembershipInfo> removeMember(GroupWrapper groupWrapper, MembershipInfo member) {
@@ -510,12 +513,7 @@ public class GroupController extends BaseController {
         log.info("Okay, setting the language to: " + locale);
 
         Group group = groupManagementService.loadGroup(groupId);
-
-        if (!includeSubGroups) {
-            group = groupManagementService.setGroupDefaultLanguage(group, locale);
-        } else {
-            group = groupManagementService.setGroupAndSubGroupDefaultLanguage(group, locale);
-        }
+        groupManagementService.setGroupDefaultLanguage(group, locale, includeSubGroups);
 
         // todo: there is probably a more efficient way to do this than the redirect
         redirectAttributes.addAttribute("groupId", group.getId());
@@ -648,13 +646,18 @@ public class GroupController extends BaseController {
 
         Group groupInto;
         Group groupFrom;
-        Long[] orderedIds;
 
         switch (order) {
             case "small_to_large":
-                orderedIds = groupManagementService.orderPairByNumberMembers(groupId1, groupId2);
-                groupInto = groupManagementService.loadGroup(orderedIds[0]);
-                groupFrom = groupManagementService.loadGroup(orderedIds[1]);
+                Group groupA = groupManagementService.loadGroup(groupId1);
+                Group groupB = groupManagementService.loadGroup(groupId2);
+                if (groupA.getMemberships().size() >= groupB.getMemberships().size()) {
+                    groupInto = groupA;
+                    groupFrom = groupB;
+                } else {
+                    groupInto = groupB;
+                    groupFrom = groupA;
+                }
                 break;
             case "2_into_1":
                 groupInto = groupManagementService.loadGroup(groupId1);
@@ -665,15 +668,14 @@ public class GroupController extends BaseController {
                 groupFrom = groupManagementService.loadGroup(groupId1);
                 break;
             default:
-                orderedIds = groupManagementService.orderPairByNumberMembers(groupId1, groupId2);
-                groupInto = groupManagementService.loadGroup(orderedIds[0]);
-                groupFrom = groupManagementService.loadGroup(orderedIds[1]);
+                groupInto = groupManagementService.loadGroup(groupId1);
+                groupFrom = groupManagementService.loadGroup(groupId2);
                 break;
         }
 
         model.addAttribute("groupInto", groupInto);
         model.addAttribute("groupFrom", groupFrom);
-        model.addAttribute("numberFrom", groupManagementService.getGroupSize(groupFrom, false));
+        model.addAttribute("numberFrom", groupManagementService.getGroupSize(groupFrom.getId(), false));
         model.addAttribute("leaveActive", leaveActive);
 
         return "group/consolidate_confirm";
@@ -686,9 +688,9 @@ public class GroupController extends BaseController {
         // todo: add error handling
         Group groupInto = groupManagementService.loadGroup(groupIdInto);
         Group groupFrom = groupManagementService.loadGroup(groupIdFrom);
-        Group consolidatedGroup = groupManagementService.mergeGroupsSpecifyOrder(groupInto, groupFrom, !leaveActive, getUserProfile().getId());
+        Group consolidatedGroup = groupManagementService.mergeGroups(groupIdInto, groupIdFrom, getUserProfile().getId(), leaveActive, true, false);
         Integer[] userCounts = new Integer[]{groupFrom.getMembers().size(),
-                groupManagementService.getGroupSize(consolidatedGroup, false)};
+                groupManagementService.getGroupSize(consolidatedGroup.getId(), false)};
         redirectAttributes.addAttribute("groupId", consolidatedGroup.getId());
         addMessage(redirectAttributes, MessageType.SUCCESS, "group.merge.success", userCounts, request);
         return "redirect:/group/view";

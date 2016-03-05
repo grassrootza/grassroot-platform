@@ -28,6 +28,8 @@ public interface GroupManagementService {
 
     public Group renameGroup(String groupUid, String newName, String changingUserUid);
 
+    public Group groupToRename(User sessionUser);
+
     /*
     Methods to load and find groups
     */
@@ -38,7 +40,7 @@ public interface GroupManagementService {
 
     public List<Group> getCreatedGroups(User creatingUser);
 
-    public boolean hasActiveGroupsPartOf(User user);
+    public boolean hasActiveGroupsPartOf(User user); // replace in time wth getGroupsByPermission
 
     public List<Group> getActiveGroupsPartOf(User sessionUser);
 
@@ -54,15 +56,11 @@ public interface GroupManagementService {
 
     public boolean isUserInGroup(Group group, User user);
 
-    public Group groupToRename(User sessionUser);
-
     public boolean canUserMakeGroupInactive(User user, Group group);
 
     /*
     Methods to work with group joining tokens and group discovery
      */
-
-    public Group getGroupByToken(String groupToken);
 
     public Group generateGroupToken(String groupUid, String generatingUserUid);
 
@@ -74,9 +72,8 @@ public interface GroupManagementService {
 
     public boolean groupHasValidToken(Group group);
 
-    public boolean tokenExists(String groupToken);
+    public Group findGroupByToken(String groupToken);
 
-    // @PreAuthorize("hasPermission(#groupId, 'za.org.grassroot.core.domain.Group', 'GROUP_PERMISSION_UPDATE_GROUP_DETAILS')")
     public Group setGroupDiscoverable(Group group, boolean discoverable, Long userId);
 
     public List<Group> findDiscoverableGroups(String groupName);
@@ -85,23 +82,13 @@ public interface GroupManagementService {
     Methods do deal with sub groups and parent groups
      */
 
-    public Group createSubGroup(User createdByUser, Group group, String subGroupName);
-
-    public Group createSubGroup(Long createdByUserId, Long groupId, String subGroupName);
-
     public List<Group> getSubGroups(Group group);
-
-    public boolean hasSubGroups(Group group);
 
     public List<User> getUsersInGroupNotSubGroups(Long groupId);
 
     public List<User> getAllUsersInGroupAndSubGroups(Long groupId);
 
     public List<User> getAllUsersInGroupAndSubGroups(Group group);
-
-    boolean hasParent(Group group);
-
-    public Group getParent(Group group);
 
     public Group linkSubGroup(Group child, Group parent);
 
@@ -120,17 +107,10 @@ public interface GroupManagementService {
 
     public Group setGroupDefaultReminderMinutes(Group group, Integer minutes);
 
-    public Group setGroupDefaultLanguage(Group group, String locale);
-
-    public Group setGroupAndSubGroupDefaultLanguage(Group group, String locale);
-
-    public Integer getGroupSize(Group group, boolean includeSubGroups);
+    public Group setGroupDefaultLanguage(Group group, String locale, boolean setSubGroups);
 
     public Integer getGroupSize(Long groupId, boolean includeSubGroups);
 
-    /*
-    Two methods to get when a group last 'did' something, or else was modified
-     */
     public LocalDateTime getLastTimeGroupActive(Group group);
 
     public LocalDateTime getLastTimeGroupModified(Group group);
@@ -141,25 +121,10 @@ public interface GroupManagementService {
 
     public Group setGroupInactive(Group group, User user);
 
-    public Group setGroupInactive(Long groupId, User user);
-
-    public Group mergeGroups(Long firstGroupId, Long secondGroupId, Long mergingUserId);
-
-    public Group mergeGroupsLeaveActive(Long firstGroupId, Long secondGroupId, Long mergingUserId);
-
-    public Group mergeGroupsIntoNew(Long firstGroupId, Long secondGroupId, String newGroupName, User creatingUser);
-
-    public Group mergeGroups(Group firstGroup, Group secondGroup, Long mergingUserId);
-
-    public Group mergeGroups(Group firstGroup, Group secondGroup, boolean setConsolidatedGroupInactive, Long mergingUserId);
-
-    public Group mergeGroupsSpecifyOrder(Group groupInto, Group groupFrom, boolean setFromGroupInactive, Long mergingUserId);
-
-    public Group mergeGroupsSpecifyOrder(Long groupIntoId, Long groupFromId, boolean setFromGroupInactive, Long mergingUserId);
+    public Group mergeGroups(Long firstGroupId, Long secondGroupId, Long mergingUserId,
+                             boolean leaveActive, boolean orderSpecified, boolean createNew); // "normal" case is all 3 false
 
     public List<Group> getMergeCandidates(User mergingUser, Long firstGroupSelected);
-
-    public Long[] orderPairByNumberMembers(Long groupId1, Long groupId2);
 
     /*
     Methods to get group properties if paid or not

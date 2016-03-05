@@ -24,33 +24,40 @@
       <div class="form-group">
         <label for="groupName" class="col-lg-2 control-label">Group Name</label>
         <div class="col-lg-4">
-          <input th:field="*{groupName}" type="text" class="form-control" id="groupName" placeholder="Group Name" maxlength="10" data-toggle="tooltip"
-                 title="Group name may not be longer than 10 characters and must not contain any symbols "/>
+          <input th:field="*{groupName}" type="text" class="form-control" id="groupName" placeholder="Group Name" maxlength="20" data-toggle="tooltip"
+                 title="Group name may not be longer than 20 characters and must not contain any symbols "/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="groupTemplate" class="col-lg-2 control-label">Permissions:</label>
+        <div class="col-lg-4">
+          <select name="groupTemplate" id="groupTemplate" class="form-control">
+            <option th:each="template : ${permissionTemplates}"
+                    th:value="${template[0]}"
+                    th:text="${template[1]}"></option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="row">
+          <label class="col-lg-2 control-label">Public:</label>
+          <div class="checkbox col-lg-4">
+            <label>
+              <input type="checkbox" th:field="*{discoverable}" id="discoverable" />
+              Allows non-members to search for and ask to join group
+            </label>
+          </div>
         </div>
       </div>
       <!-- Note: removing this option from group create until comfortable it's clear to users, and roles/permissions in place -->
-      <!-- <div class="form-group">
-        <div class="row">
-          <label for="discoverable" class="col-lg-2 control-label">
-            <p class="list-group-item-text">Make group public?</p>
-          </label>
-          <div class="col-lg-4">
-            <input type="checkbox" th:field="*{discoverable}" class="form-control" id="discoverable" />
-          </div>
-        </div>
-        <div class="row">
-          <div class="col-lg-6 control-label text-center">
-            <small><mark>NB</mark>Ticking this box will allow anyone to find and join your group. Select it only if you wish your
-            group to be open.</small>
-          </div>
-        </div>
-      </div> -->
+
       <div class="form-group col-lg-10 col-lg-offset-2">
         <table class="table col-md-8" id="member-input">
           <thead>
           <tr>
             <th>Name</th>
             <th>Phone</th>
+            <th>Role</th>
             <th></th>
           </tr>
           </thead>
@@ -67,6 +74,14 @@
               </div>
             </td>
             <td>
+              <select name="roleName" class="form-control">
+                <option th:each="role : ${roles}"
+                        th:value="${role[0]}"
+                        th:text="${role[1]}"
+                        th:selected="${#strings.equals(member.roleName, role[0])}"></option>
+              </select>
+            </td>
+            <td>
               <button type="submit" name="removeMember" class="btn btn-default" aria-label="Remove"
                       th:value="${iterStat.index}">
                 <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
@@ -81,16 +96,6 @@
           <button type="submit" name="addMember" class="btn btn-default">
             <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
             Add another member</button>
-        </div>
-      </div>
-      <div class="form-group">
-        <label for="groupTemplate" class="col-lg-2 control-label">What permissions should members have?</label>
-        <div class="col-lg-4">
-          <select name="groupTemplate" id="groupTemplate">
-            <option th:each="template : ${permissionTemplates}"
-                    th:value="${template[0]}"
-                    th:text="${template[1]}"></option>
-          </select>
         </div>
       </div>
       <div class="form-group">

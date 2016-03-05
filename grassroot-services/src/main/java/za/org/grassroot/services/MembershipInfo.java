@@ -1,8 +1,11 @@
 package za.org.grassroot.services;
 
+import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.User;
 
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Represents all info needed to add new member.
@@ -29,6 +32,14 @@ public class MembershipInfo {
 
     public static MembershipInfo makeEmpty() {
         return new MembershipInfo("", null, "");
+    }
+
+    public static Set<MembershipInfo> createFromMembers(Set<Membership> members) {
+        Set<MembershipInfo> membershipInfoSet = new HashSet<>();
+        for (Membership member : members)
+            membershipInfoSet.add(new MembershipInfo(member.getUser().getPhoneNumber(), member.getRole().getName(),
+                                                     member.getUser().getDisplayName()));
+        return membershipInfoSet;
     }
 
     public String getPhoneNumber() {

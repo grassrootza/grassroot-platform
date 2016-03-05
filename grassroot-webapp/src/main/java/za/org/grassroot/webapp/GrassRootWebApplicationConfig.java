@@ -43,9 +43,10 @@ public class GrassRootWebApplicationConfig {
     }
 
     private Connector createNonSSLConnector() {
+
         Connector connector = new Connector("org.apache.coyote.http11.Http11NioProtocol");
-        connector.setPort(8080);
-        connector.setRedirectPort(8443);
+        connector.setPort(80);
+        connector.setRedirectPort(443);
         return connector;
     }
 

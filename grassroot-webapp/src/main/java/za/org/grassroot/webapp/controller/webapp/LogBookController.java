@@ -85,7 +85,7 @@ public class LogBookController extends BaseController {
             // todo: use the tree methods to make this more coherent
             // todo: restrict this to paid groups, and add in message numbers / cost estimates
             model.addAttribute("numberSubGroups", groupManagementService.getSubGroups(groupSelected).size());
-            model.addAttribute("numberMembers", groupManagementService.getGroupSize(groupSelected, true));
+            model.addAttribute("numberMembers", groupManagementService.getGroupSize(groupSelected.getId(), true));
         } else {
             model.addAttribute("groupMembers", groupSelected.getMembers());
         }

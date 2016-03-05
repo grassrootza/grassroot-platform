@@ -67,7 +67,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         // when(groupAccessControlManagementServiceMock.
         //        loadGroup(dummyGroup.getId(), BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS)).thenReturn(dummyGroup);
 
-        when(groupManagementServiceMock.hasParent(dummyGroup)).thenReturn(false);
         when(eventManagementServiceMock.getUpcomingMeetings(dummyGroup)).thenReturn(dummyMeetings);
         when(eventManagementServiceMock.getUpcomingVotes(dummyGroup)).thenReturn(dummyVotes);
         when(groupManagementServiceMock.getSubGroups(dummyGroup)).thenReturn(subGroups);
@@ -86,7 +85,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         // verify(groupAccessControlManagementServiceMock, times(1)).loadGroup(dummyGroup.getId(), BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
         verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
         // verify(groupAccessControlManagementServiceMock, times(1)).loadGroup(dummyGroup.getId(), BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
-        verify(groupManagementServiceMock, times(1)).hasParent(dummyGroup);
         verify(eventManagementServiceMock, times(1)).getUpcomingMeetings(dummyGroup);
         verify(eventManagementServiceMock, times(1)).getUpcomingVotes(dummyGroup);
         verify(groupManagementServiceMock, times(1)).getSubGroups(dummyGroup);
@@ -430,10 +428,9 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
         Long[] orderedIds = {1L, 0L};
         String[] orders = {"small_to_large", "2_into_1", "1_into_2"};
-        when(groupManagementServiceMock.orderPairByNumberMembers(1L, 0L)).thenReturn(orderedIds);
         when(groupManagementServiceMock.loadGroup(orderedIds[0])).thenReturn(testGroupInto);
         when(groupManagementServiceMock.loadGroup(orderedIds[1])).thenReturn(testGroupFrom);
-        when(groupManagementServiceMock.getGroupSize(testGroupFrom, false)).thenReturn(testGroupFrom.getMembers().size());
+        when(groupManagementServiceMock.getGroupSize(testGroupFrom.getId(), false)).thenReturn(testGroupFrom.getMembers().size());
         for (int i = 0; i < orders.length; i++) {
             if (i < 2) {
                 mockMvc.perform(post("/group/consolidate/confirm").param("groupId1", String.valueOf(1L))
@@ -453,11 +450,10 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
                         .andExpect(model().attribute("leaveActive", is(true)));
             }
         }
-        verify(groupManagementServiceMock, times(1)).orderPairByNumberMembers(1L, 0L);
         verify(groupManagementServiceMock, times(3)).loadGroup(orderedIds[0]);
         verify(groupManagementServiceMock, times(3)).loadGroup(orderedIds[1]);
-        verify(groupManagementServiceMock, times(2)).getGroupSize(testGroupFrom, false);
-        verify(groupManagementServiceMock, times(1)).getGroupSize(testGroupInto, false);
+        verify(groupManagementServiceMock, times(2)).getGroupSize(testGroupFrom.getId(), false);
+        verify(groupManagementServiceMock, times(1)).getGroupSize(testGroupInto.getId(), false);
         verifyNoMoreInteractions(groupManagementServiceMock);
 
 
@@ -474,9 +470,9 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         testGroupFrom.addMember(sessionTestUser);
         testGroupFrom.setId(1L);
         when(groupManagementServiceMock.loadGroup(testGroupFrom.getId())).thenReturn(testGroupFrom);
-        when(groupManagementServiceMock.mergeGroupsSpecifyOrder(testGroupInto, testGroupFrom, !true, sessionTestUser.getId()))
+        when(groupManagementServiceMock.mergeGroups(testGroupInto.getId(), testGroupFrom.getId(), sessionTestUser.getId(), !true, true, false))
                 .thenReturn(testGroupInto);
-        when(groupManagementServiceMock.getGroupSize(testGroupInto, false)).thenReturn(1);
+        when(groupManagementServiceMock.getGroupSize(testGroupInto.getId(), false)).thenReturn(1);
         when(groupManagementServiceMock.loadGroup(testGroupInto.getId())).thenReturn(testGroupInto);
         mockMvc.perform(post("/group/consolidate/do").param("groupInto", String.valueOf(testGroupInto.getId()))
                 .param("groupFrom", String.valueOf(testGroupFrom.getId())).param("leaveActive", String.valueOf(true)))
@@ -485,8 +481,8 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(view().name("redirect:/group/view"));
         verify(groupManagementServiceMock, times(1)).loadGroup(testGroupFrom.getId());
         verify(groupManagementServiceMock, times(1)).loadGroup(testGroupInto.getId());
-        verify(groupManagementServiceMock, times(1)).mergeGroupsSpecifyOrder(testGroupInto, testGroupFrom, false, sessionTestUser.getId());
-        verify(groupManagementServiceMock, times(1)).getGroupSize(testGroupInto, false);
+        verify(groupManagementServiceMock, times(1)).mergeGroups(testGroupInto.getId(), testGroupFrom.getId(), sessionTestUser.getId(), !true, true, false);
+        verify(groupManagementServiceMock, times(1)).getGroupSize(testGroupInto.getId(), false);
         verifyNoMoreInteractions(groupManagementServiceMock);
 
 

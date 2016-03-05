@@ -60,13 +60,13 @@ public class GroupRestController {
         return new GroupDTO(groupManagementService.createNewGroup(userid,PhoneNumberUtil.splitPhoneNumbers(phoneNumbers).get("valid"), true));
     }*/
 
-    @RequestMapping(value = "/add/subgroup/{userId}/{groupId}/{subGroupName}",
+    /*@RequestMapping(value = "/add/subgroup/{userId}/{groupId}/{subGroupName}",
             method = RequestMethod.POST)
     public GroupDTO addSubGroup(@PathVariable("userId") Long userId,
                                 @PathVariable("groupId") Long groupId,
                                 @PathVariable("subGroupName") String subGroupName) {
         return new GroupDTO(groupManagementService.createSubGroup(userId, groupId, subGroupName));
-    }
+    }*/
 
 
 

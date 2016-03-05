@@ -263,7 +263,7 @@ public class MeetingController extends BaseController {
         model.addAttribute("includeSubGroups", includeSubgroups);
 
         model.addAttribute("message", message);
-        int recipients = groupManagementService.getGroupSize(groupManagementService.loadGroup(groupId), includeSubgroups);
+        int recipients = groupManagementService.getGroupSize(groupId, includeSubgroups);
         model.addAttribute("recipients", recipients);
         model.addAttribute("cost", recipients * 0.2);
         return "meeting/remind_confirm";

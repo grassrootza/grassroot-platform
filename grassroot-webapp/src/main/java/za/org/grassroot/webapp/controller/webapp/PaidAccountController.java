@@ -22,7 +22,6 @@ import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.EventWrapper;
 
 import javax.servlet.http.HttpServletRequest;
-import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -142,7 +141,7 @@ public class PaidAccountController extends BaseController {
         model.addAttribute("tokenSearch", tokenSearch);
 
         if (tokenSearch) {
-            model.addAttribute("groupFound", groupManagementService.getGroupByToken(searchTerm));
+            model.addAttribute("groupFound", groupManagementService.findGroupByToken(searchTerm));
         } else {
             model.addAttribute("groupCandidates", groupManagementService.findDiscoverableGroups(searchTerm));
         }

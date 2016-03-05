@@ -713,7 +713,7 @@ public class EventManager implements EventManagementService {
         // todo: check this works ...
 
         Map<String, Integer> results = new HashMap<>();
-        int totalAsked = groupManager.getGroupSize(vote.getAppliesToGroup(), vote.isIncludeSubGroups());
+        int totalAsked = groupManager.getGroupSize(vote.getAppliesToGroup().getId(), vote.isIncludeSubGroups());
         RSVPTotalsDTO totalsDTO = eventLogManagementService.getVoteResultsForEvent(vote);
 
         results.put("yes", totalsDTO.getYes());

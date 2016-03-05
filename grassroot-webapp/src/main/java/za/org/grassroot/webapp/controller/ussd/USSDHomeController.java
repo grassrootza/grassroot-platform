@@ -14,8 +14,6 @@ import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.core.enums.UserLogType;
-import za.org.grassroot.services.AsyncUserService;
 import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
@@ -207,11 +205,9 @@ public class USSDHomeController extends USSDController {
 
         System.out.println("Processing trailing digits ..." + trailingDigits);
 
-        if (groupManager.tokenExists(trailingDigits)) {
-            // todo: basic validation, checking, etc.
+        Group groupToJoin = groupManager.findGroupByToken(trailingDigits);
+        if (groupToJoin != null) {
             log.info("Found a token with these trailing digits ...");
-
-            Group groupToJoin = groupManager.getGroupByToken(trailingDigits);
             MembershipInfo membershipInfo = new MembershipInfo(sessionUser.getPhoneNumber(), BaseRoles.ROLE_ORDINARY_MEMBER,
                                                                sessionUser.getDisplayName());
             groupBroker.addMembers(sessionUser.getUid(), groupToJoin.getUid(), Sets.newHashSet(membershipInfo));

@@ -17,7 +17,6 @@ import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.util.TokenGeneratorService;
 
 import javax.transaction.Transactional;
-import java.security.Permissions;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -208,11 +207,15 @@ public class GroupManager implements GroupManagementService {
      */
 
     @Override
-    public Group getGroupByToken(String groupToken) {
+    public Group findGroupByToken(String groupToken) {
         Group groupToReturn = groupRepository.findByGroupTokenCode(groupToken);
         if (groupToReturn == null) return null;
         if (groupToReturn.getTokenExpiryDateTime().before(Timestamp.valueOf(LocalDateTime.now()))) return null;
         return groupToReturn;
+    }
+
+    private String generateTokenString() {
+        return String.valueOf(tokenGeneratorService.getNextToken());
     }
 
     @Override
@@ -221,7 +224,7 @@ public class GroupManager implements GroupManagementService {
         Group group = groupRepository.findOneByUid(groupUid);
         User generatingUser = userManager.loadUserByUid(generatingUserUid); // todo: leave out once groupLogs restructured to Uid
         final Timestamp endOfCentury = Timestamp.valueOf(LocalDateTime.of(2099, 12, 31, 23, 59));
-        group.setGroupTokenCode(generateCodeString());
+        group.setGroupTokenCode(generateTokenString());
         group.setTokenExpiryDateTime(endOfCentury);
         return saveGroup(group, true, String.format("Set Group Token: %s",group.getGroupTokenCode()), generatingUser.getId());
     }
@@ -237,7 +240,7 @@ public class GroupManager implements GroupManagementService {
             Integer daysMillis = 24 * 60 * 60 * 1000;
             Timestamp expiryDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis() + daysValid * daysMillis);
 
-            group.setGroupTokenCode(generateCodeString());
+            group.setGroupTokenCode(generateTokenString());
             group.setTokenExpiryDateTime(expiryDateTime);
 
             log.info("Group code generated: " + group.getGroupTokenCode());
@@ -279,14 +282,6 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public boolean tokenExists(String groupToken) {
-        // separating this from getGroupByToken because in time we will want to hone its performance, a lot
-        // todo: find a way to make this very, very fast--in some use cases, will be triggered by 10k+ users within seconds
-        log.info("Looking for this token ... " + groupToken);
-        return (groupRepository.findByGroupTokenCode(groupToken) != null);
-    }
-
-    @Override
     public Group setGroupDiscoverable(Group group, boolean discoverable, Long userId) {
         // todo: create a dedicated permission for this, and uncomment, when we have permission setting working on group create
         // todo: once we have implemented 'request to join', will need to wire that up here
@@ -301,37 +296,14 @@ public class GroupManager implements GroupManagementService {
         return groupRepository.findByGroupNameContainingAndDiscoverable(groupName, true);
     }
 
-    private String generateCodeString() {
-        return String.valueOf(tokenGeneratorService.getNextToken());
-    }
 
     /**
      * Methods for working with subgroups
      */
 
-    /*
-    returns the new sub-group
-     */
-    public Group createSubGroup(Long createdByUserId, Long groupId, String subGroupName) {
-        return createSubGroup(userManager.getUserById(createdByUserId), loadGroup(groupId), subGroupName);
-    }
-
-    public Group createSubGroup(User createdByUser, Group group, String subGroupName) {
-        Group subGroup = groupRepository.save(new Group(subGroupName, createdByUser, group));
-        asyncGroupService.recordGroupLog(group.getId(),createdByUser.getId(),GroupLogType.SUBGROUP_ADDED, subGroup.getId(),
-                       String.format("Subgroup: %s added",subGroupName));
-        return subGroup;
-    }
-
     @Override
     public List<Group> getSubGroups(Group group) {
         return groupRepository.findByParent(group);
-    }
-
-    @Override
-    public boolean hasSubGroups(Group group) {
-        // slightly redundant for now, but if trees get large & complex may want to replace with quick count query (a la 'if user exists')
-        return !getSubGroups(group).isEmpty();
     }
 
     @Override
@@ -356,17 +328,6 @@ public class GroupManager implements GroupManagementService {
         List<Group> parentGroups = new ArrayList<Group>();
         recursiveParentGroups(group, parentGroups);
         return parentGroups;
-    }
-
-    @Override
-    public boolean hasParent(Group group) {
-        return group.getParent() != null;
-    }
-
-    @Override
-    public Group getParent(Group group) {
-        // trivial method, but seems safer to do a trivial services call than have this sort of thing sitting in view
-        return group.getParent();
     }
 
     @Override
@@ -404,10 +365,11 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public Group setGroupDefaultLanguage(Group group, String locale) {
+    public Group setGroupDefaultLanguage(Group group, String locale, boolean setSubGroups) {
 
         /*
-         todo: the copying of the list is probably an expensive way to do this, but better ways to avoid concurrent modification error are above my pay grade.
+         todo: the copying of the list is probably an expensive way to do this, but better ways to avoid
+         concurrent modification error are above my pay grade.
           */
 
         log.info("Okay, we are inside the group language setting function ...");
@@ -421,28 +383,24 @@ public class GroupManager implements GroupManagementService {
             }
         }
         group.setDefaultLanguage(locale);
+
+        if (setSubGroups) {
+            List<Group> subGroups = getSubGroups(group);
+            if (subGroups != null && !subGroups.isEmpty()) {
+                for (Group subGroup : subGroups)
+                    setGroupDefaultLanguage(subGroup, locale, true);
+            }
+        }
+
         return saveGroup(group,true,String.format("Set default language to %s", locale),dontKnowTheUser);
 
     }
 
     @Override
-    public Group setGroupAndSubGroupDefaultLanguage(Group group, String locale) {
-
-        group = setGroupDefaultLanguage(group, locale);
-
-        // todo: there is almost certainly a more elegant way to do this recursion
-        if (hasSubGroups(group)) {
-            for (Group subGroup : getSubGroups(group))
-                setGroupAndSubGroupDefaultLanguage(subGroup, locale);
-        }
-
-        return group;
-    }
-
-    @Override
-    public Integer getGroupSize(Group group, boolean includeSubGroups) {
+    public Integer getGroupSize(Long groupId, boolean includeSubGroups) {
         // as with a few above, a little trivial as implemented here, but may change in future, so rather here than code in webapp
 
+        Group group = groupRepository.findOne(groupId);
         log.info("Getting group member size");
         if (!includeSubGroups) {
             log.info("Getting group size, for group: " + group);
@@ -452,11 +410,6 @@ public class GroupManager implements GroupManagementService {
             return getAllUsersInGroupAndSubGroups(group).size();
         }
 
-    }
-
-    @Override
-    public Integer getGroupSize(Long groupId, boolean includeSubGroups) {
-        return getGroupSize(loadGroup(groupId), includeSubGroups);
     }
 
     @Override
@@ -488,82 +441,44 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public Group setGroupInactive(Long groupId, User user) {
-        return setGroupInactive(loadGroup(groupId), user);
-    }
+    public Group mergeGroups(Long firstGroupId, Long secondGroupId, Long mergingUserId, boolean leaveActive, boolean orderSpecified, boolean createNew) {
 
-    @Override
-    public Group mergeGroups(Long firstGroupId, Long secondGroupId, Long mergingUserId) {
-        log.info("Okay, trying to merge these groups");
-        return mergeGroups(loadGroup(firstGroupId), loadGroup(secondGroupId), mergingUserId);
-    }
+        // todo: proper logging in GroupLogs of everything that happens in here
 
-    @Override
-    public Group mergeGroupsLeaveActive(Long firstGroupId, Long secondGroupId, Long mergingUserId) {
-        return mergeGroups(loadGroup(firstGroupId), loadGroup(secondGroupId), false, mergingUserId);
-    }
+        Group groupInto, groupFrom;
+        Group firstGroup = groupRepository.findOne(firstGroupId);
+        Group secondGroup = groupRepository.findOne(secondGroupId);
+        User mergingUser = userManager.getUserById(mergingUserId);
 
-    @Override
-    public Group mergeGroupsIntoNew(Long firstGroupId, Long secondGroupId, String newGroupName, User creatingUser) {
-        Set<User> firstGroupMembers = loadGroup(firstGroupId).getMembers();
-        Set<User> secondGroupMembers = loadGroup(secondGroupId).getMembers();
-
-        Group consolidatedGroup = new Group(newGroupName, creatingUser);
-        consolidatedGroup.addMembers(firstGroupMembers);
-        consolidatedGroup.addMembers(secondGroupMembers);
-        Group savedGroup = saveGroup(consolidatedGroup,true,String.format("Merged group %d with %d",secondGroupId,firstGroupId),creatingUser.getId());
-
-        for (User u : firstGroupMembers) {
-            asyncGroupService.addNewGroupMemberLogsMessages(savedGroup, u, creatingUser.getId());
-            asyncRoleService.addRoleToGroupAndUser(BaseRoles.ROLE_ORDINARY_MEMBER, savedGroup, u, creatingUser);
-        }
-
-        return savedGroup;
-    }
-
-    @Override
-    public Group mergeGroups(Group groupA, Group groupB, Long mergingUserId) {
-        return mergeGroups(groupA, groupB, true, mergingUserId);
-    }
-
-    @Override
-    public Group mergeGroups(Group groupA, Group groupB, boolean setConsolidatedGroupInactive, Long mergingUserId) {
-
-        Group largerGroup, smallerGroup;
-
-        // note: if the groups are the same size, this will default to merging into the first-passed group
-        if (groupA.getMembers().size() >= groupB.getMembers().size()) {
-            largerGroup = groupA;
-            smallerGroup = groupB;
+        if (orderSpecified || getGroupSize(firstGroupId, false) > getGroupSize(secondGroupId, true)) {
+            groupInto = firstGroup;
+            groupFrom = secondGroup;
         } else {
-            largerGroup = groupB;
-            smallerGroup = groupA;
+            groupInto = firstGroup;
+            groupFrom = secondGroup;
         }
 
-        return mergeGroupsSpecifyOrder(largerGroup, smallerGroup, setConsolidatedGroupInactive, mergingUserId);
-    }
+        Group groupToReturn;
 
-    @Override
-    public Group mergeGroupsSpecifyOrder(Group groupInto, Group groupFrom, boolean setFromGroupInactive, Long mergingUserId) {
+        if (createNew) {
+            Set<MembershipInfo> members = MembershipInfo.createFromMembers(groupInto.getMemberships());
+            members.addAll(MembershipInfo.createFromMembers(groupFrom.getMemberships()));
+            // todo: work out what to do about templates ... probably a UX issue more than solving here
+            groupToReturn = groupBroker.create(mergingUser.getUid(), "", null, members, GroupPermissionTemplate.DEFAULT_GROUP);
+            if (!leaveActive) {
+                groupInto.setActive(false);
+                groupFrom.setActive(false);
+            }
+        } else {
+            // Group savedGroup = saveGroup(consolidatedGroup,true,String.format("Merged group %d with %d",secondGroupId,firstGroupId),creatingUser.getId());
+            // asyncGroupService.addNewGroupMemberLogsMessages(savedGroup, u, creatingUser.getId());
+            Set<MembershipInfo> membersToAdd = MembershipInfo.createFromMembers(groupFrom.getMemberships());
+            groupBroker.addMembers(mergingUser.getUid(), groupInto.getUid(), membersToAdd);
+            groupToReturn = groupInto;
+            if (!leaveActive) groupFrom.setActive(false);
+        }
 
-        // todo: notify user that roles will all transfer over (may want to not transfer "organizer"
-        // todo: make this all cleaner & faster (the next four lines should be able to do in one or two)
-        String mergingUserUid = userManager.getUserById(mergingUserId).getUid();
-        String groupIntoUid = groupInto.getUid();
-        Set<MembershipInfo> membersToTransfer = new HashSet<>();
-        for (Membership member : groupFrom.getMemberships())
-            membersToTransfer.add(new MembershipInfo(member.getUser().getPhoneNumber(), member.getRole().getName(),
-                                                     member.getUser().getDisplayName()));
-
-        groupBroker.addMembers(mergingUserUid, groupIntoUid, membersToTransfer);
-        groupFrom.setActive(!setFromGroupInactive);
-        saveGroup(groupFrom,true,String.format("Set group %d inactive",groupFrom.getId()),dontKnowTheUser);
-        return saveGroup(groupInto,true,String.format("Merged group %d into %d",groupFrom.getId(),groupInto.getId()),dontKnowTheUser);
-    }
-
-    @Override
-    public Group mergeGroupsSpecifyOrder(Long groupIntoId, Long groupFromId, boolean setFromGroupInactive, Long mergingUserId) {
-        return mergeGroupsSpecifyOrder(loadGroup(groupIntoId), loadGroup(groupFromId), setFromGroupInactive, mergingUserId);
+        return groupToReturn;
     }
 
     @Override
@@ -573,13 +488,6 @@ public class GroupManager implements GroupManagementService {
         List<Group> createdGroups = getCreatedGroups(mergingUser);
         createdGroups.remove(loadGroup(firstGroupSelected));
         return createdGroups;
-    }
-
-    @Override
-    public Long[] orderPairByNumberMembers(Long groupId1, Long groupId2) {
-        Integer group1size = loadGroup(groupId1).getMembers().size(),
-                group2size = loadGroup(groupId2).getMembers().size();
-        return (group1size >= group2size) ? new Long[] {groupId1, groupId2} : new Long[] {groupId2, groupId1};
     }
 
     @Override

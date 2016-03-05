@@ -1,5 +1,7 @@
 package za.org.grassroot.webapp.validation;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -19,6 +21,8 @@ import za.org.grassroot.webapp.model.web.GroupWrapper;
 @Component("groupWrapperValidator")
 public class GroupWrapperValidator implements Validator {
 
+    private static final Logger log = LoggerFactory.getLogger(GroupWrapperValidator.class);
+
     @Autowired
     @Qualifier("membershipValidator")
     private Validator memberValidator;
@@ -29,10 +33,10 @@ public class GroupWrapperValidator implements Validator {
     @Override
     public void validate(Object target, Errors errors) {
 
-        // todo: add validation of group name and other things later
-
+        log.info("groupWrapperValidator ... starting validation ... ");
         GroupWrapper groupWrapper = (GroupWrapper) target;
 
+        log.info("groupWrapperValidator ... got wrapper, memberships ... " + groupWrapper.getAddedMembers());
         int idx = 0;
         for (MembershipInfo member : groupWrapper.getAddedMembers()) {
             errors.pushNestedPath("addedMembers[" + idx + "]");
