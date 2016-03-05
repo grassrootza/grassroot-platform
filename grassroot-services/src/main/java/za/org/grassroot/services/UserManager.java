@@ -168,8 +168,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         }
 
         // let's initialize standard roles and membership hibernate collection this way
-        user.getMemberships().size();
-        user.getStandardRoles().size();
+        user.getAuthorities();
 
         return user;
     }
