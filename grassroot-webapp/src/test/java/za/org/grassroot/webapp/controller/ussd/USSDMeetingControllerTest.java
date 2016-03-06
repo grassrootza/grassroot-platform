@@ -381,7 +381,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     @Test
     public void meetingChangeTimeShouldWork() throws Exception {
         User testUser = new User(testUserPhone);
-        String urlToSave = saveMeetingMenu("time_only", 1L, false) + "?next_menu=confirm";
+        String urlToSave = saveMeetingMenu("time_only", 1L, false) + "&next_menu=confirm";
         Event meetingForTest = new Event("unit test", testUser);
         meetingForTest.setId(1L);
         meetingForTest.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.now()));
@@ -401,7 +401,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     @Test
     public void meetingChangeDateShouldWork() throws Exception {
         User testUser = new User(testUserPhone);
-        String urlToSave = saveMeetingMenu("date_only", 1L, false) + "?next_menu=confirm";
+        String urlToSave = saveMeetingMenu("date_only", 1L, false) + "&next_menu=confirm";
         Event meetingForTest = new Event("unit test", testUser);
         meetingForTest.setId(1L);
         meetingForTest.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.now()));
@@ -572,7 +572,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         Event testMeeting = new Event("test meeeting", testUser);
         testMeeting.setId(1L);
         testMeeting.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.now()));
-        String urlToSave = saveMeetingMenu("date_only", 1L, false) + "?next_menu=changeDateTime";
+        String urlToSave = saveMeetingMenu("date_only", 1L, false) + "&next_menu=changeDateTime";
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(eventManagementServiceMock.loadEvent(testMeeting.getId())).thenReturn(testMeeting);
@@ -595,7 +595,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         Event testMeeting = new Event("test meeeting", testUser);
         testMeeting.setId(1L);
         testMeeting.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.now()));
-        String urlToSave = saveMeetingMenu("time_only", 1L, false) + "?next_menu=changeDateTime";
+        String urlToSave = saveMeetingMenu("time_only", 1L, false) + "&next_menu=changeDateTime";
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(eventManagementServiceMock.loadEvent(testMeeting.getId())).thenReturn(testMeeting);

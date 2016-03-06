@@ -132,7 +132,7 @@ public class USSDGroupUtil extends USSDUtil {
         USSDMenu menu = new USSDMenu(prompt);
 
         Page<Group> groupsPartOf = groupManager.getPageOfActiveGroups(user, pageNumber, PAGE_LENGTH);
-        if (groupsPartOf.getTotalElements() == 1) {
+        if (groupsPartOf.getTotalElements() == 1 && section != USSDSection.MEETINGS) { // exclude meetings since can create new in it
             menu = skipGroupSelection(user, section,urlForNewGroup, groupsPartOf.iterator().next().getId());
         } else {
             menu = addListOfGroupsToMenu(menu,section, urlForExistingGroups, groupsPartOf.getContent(), user, checkPermissions);
@@ -266,6 +266,7 @@ public class USSDGroupUtil extends USSDUtil {
                 sessionUser = userManager.findByInputNumber(sessionUser.getPhoneNumber(), saveGroupMenu(existingGroupMenu, groupId));
                 menu = new USSDMenu(getMessage(section, existingGroupMenu, promptKey, sessionUser));
                 String menuKey = section.toKey() + existingGroupMenu + "." + optionsKey;
+                menu.addMenuOption(urlForNewGroup, getMessage(groupKeyForMessages, "create", "option", sessionUser));
                 menu.addMenuOption(groupMenuWithId(groupTokenMenu, groupId), getMessage(menuKey + groupTokenMenu, sessionUser));
                 menu.addMenuOption(groupMenuWithId(addMemberPrompt, groupId), getMessage(menuKey + addMemberPrompt, sessionUser));
                 menu.addMenuOption(groupMenuWithId(unsubscribePrompt, groupId), getMessage(menuKey + unsubscribePrompt, sessionUser));
@@ -276,7 +277,6 @@ public class USSDGroupUtil extends USSDUtil {
                 if (groupManager.canUserMakeGroupInactive(sessionUser, groupId)) {
                     menu.addMenuOption(groupMenuWithId(inactiveMenu, groupId), getMessage(menuKey + inactiveMenu, sessionUser));
                 }
-                menu.addMenuOption(urlForNewGroup, getMessage(groupKeyForMessages, "create", "option", sessionUser));
                 break;
             default:
                 break;

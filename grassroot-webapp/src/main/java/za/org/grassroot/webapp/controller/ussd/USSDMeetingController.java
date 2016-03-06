@@ -257,7 +257,8 @@ public class USSDMeetingController extends USSDController {
                                   @RequestParam(value = "load_string", required = false) boolean loadString) throws URISyntaxException {
 
         if (nextMenu == null) nextMenu = priorMenu;
-        User user = userManager.findByInputNumber(inputNumber, saveMeetingMenu(timeOnly, eventId, false) + "?next_menu=" + nextMenu);
+        User user = userManager.findByInputNumber(inputNumber,
+                                                  saveMeetingMenu(timeOnly, eventId, false) + "&next_menu=" + nextMenu);
 
         String currentlySetTime = (!loadString) ?
                 eventManager.loadEvent(eventId).getEventStartDateTime().toLocalDateTime().format(DateTimeUtil.preferredTimeFormat) :
@@ -282,7 +283,7 @@ public class USSDMeetingController extends USSDController {
                                   @RequestParam(value = "load_string", required = false) boolean loadString) throws URISyntaxException {
 
         if (nextMenu == null) nextMenu = priorMenu;
-        User user = userManager.findByInputNumber(inputNumber, saveMeetingMenu(dateOnly, eventId, false) + "?next_menu=" + nextMenu);
+        User user = userManager.findByInputNumber(inputNumber, saveMeetingMenu(dateOnly, eventId, false) + "&next_menu=" + nextMenu);
 
         String currentDate = (!loadString) ?
                 eventManager.loadEvent(eventId).getEventStartDateTime().toLocalDateTime().format(DateTimeUtil.preferredDateFormat) :
