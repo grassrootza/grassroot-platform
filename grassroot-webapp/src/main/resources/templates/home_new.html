@@ -19,9 +19,9 @@
     <!-- Central text header -->
   <div class="well">
     <div class="row">
-      <h1 th:text="#{web.home.banner}">Meet, vote, act</h1>
+      <h1 th:text="#{web.home.banner}" class="text-center">Meet, vote, act</h1>
       <!-- Insert user's name -->
-      <h2 th:text="#{web.home.welcome(${currentUser.firstName})}">Welcome to GrassRoot, Luke</h2>
+      <h2 th:text="#{web.home.welcome(${currentUser.firstName})}" class="text-center">Welcome to GrassRoot, Luke</h2>
     </div>
   </div>
 
@@ -30,25 +30,24 @@
   <div class="well">
     <div class="row row-centered">
       <div class="col-md-12 col-centered">
-        <h3>Create or join a group to get started</h3>
-        <h4>You can start by creating your own group, searching by name for groups that have marked themselves public, or
-            entering a group's 'joining code' if you know it:</h4>
+        <h4>Get started by creating or joining a group</h4>
+        <h4>Enter a group's joining code, search for it by name (if it is public), or create a new group:</h4>
       </div>
     </div>
     <div class="row row-centered">
-      <form th:action="@{/group/search}" method="post">
-        <div class="form-group">
+      <div class="form-group">
+        <form th:action="@{/group/search}" method="post">
           <div class="col-md-4 col-centered">
             <input name="searchTerm" type="text" class="form-control" id="name" placeholder="Enter join code or name to search" />
           </div>
-          <div class="col-md-4 col-centered">
+          <div class="col-md-2 col-centered">
             <button type="submit" class="btn btn-primary">Search by name or code</button>
           </div>
-          <div class="col-md-4 col-centered">
-            <a th:href="@{/group/create}"><button class="btn btn-primary">Create a new group</button></a>
-          </div>
+        </form>
+        <div class="col-md-2 col-centered">
+          <a th:href="@{/group/create}"><button class="btn btn-primary">Create a new group</button></a>
         </div>
-      </form>
+      </div>
     </div>
   </div>
 

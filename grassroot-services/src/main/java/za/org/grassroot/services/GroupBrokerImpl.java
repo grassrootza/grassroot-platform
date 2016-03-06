@@ -31,6 +31,7 @@ public class GroupBrokerImpl implements GroupBroker {
     @Override
     @Transactional
     public Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos, GroupPermissionTemplate groupPermissionTemplate) {
+
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(name);
         Objects.requireNonNull(membershipInfos);
@@ -61,7 +62,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
     @Override
     @Transactional
-    public void update(String userUid, String groupUid, String name) {
+    public void updateName(String userUid, String groupUid, String name) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
 
@@ -81,12 +82,14 @@ public class GroupBrokerImpl implements GroupBroker {
     }
 
     private void addMembers(User initiator, Group group, Set<MembershipInfo> membershipInfos) {
-        Set<String> memberPhoneNumbers = membershipInfos.stream().map(MembershipInfo::getPhoneNumber).collect(Collectors.toSet());
+        // note: User objects should only ever store phone numbers in the msisdn format (i.e, with country code at front, no '+')
+        Set<String> memberPhoneNumbers = membershipInfos.stream().map(MembershipInfo::getPhoneNumberWithCCode).collect(Collectors.toSet());
+        logger.info("phoneNumbers returned: ...." + memberPhoneNumbers);
         Set<User> existingUsers = new HashSet<>(userRepository.findByPhoneNumberIn(memberPhoneNumbers));
         Map<String, User> existingUserMap = existingUsers.stream().collect(Collectors.toMap(User::getPhoneNumber, user -> user));
 
         for (MembershipInfo membershipInfo : membershipInfos) {
-            User user = existingUserMap.getOrDefault(membershipInfo.getPhoneNumber(), new User(membershipInfo.getPhoneNumber(), membershipInfo.getDisplayName()));
+            User user = existingUserMap.getOrDefault(membershipInfo.getPhoneNumberWithCCode(), new User(membershipInfo.getPhoneNumberWithCCode(), membershipInfo.getDisplayName()));
             String roleName = membershipInfo.getRoleName();
             if (roleName == null) {
                 group.addMember(user);
@@ -111,6 +114,8 @@ public class GroupBrokerImpl implements GroupBroker {
                 .filter(membership -> memberUids.contains(membership.getUser().getUid()))
                 .map(Membership::getUser)
                 .forEach(group::removeMember);
+
+        groupRepository.save(group);
     }
 
     @Override

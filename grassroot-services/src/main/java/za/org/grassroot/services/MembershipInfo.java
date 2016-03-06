@@ -2,6 +2,7 @@ package za.org.grassroot.services;
 
 import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -13,9 +14,10 @@ import java.util.Set;
  */
 public class MembershipInfo {
 
-    private final String phoneNumber;
-    private final String roleName; // optional
-    private final String displayName; // optional
+    // note: removing 'final' so Thymeleaf can populate this (can find a better way if needed)
+    private String phoneNumber;
+    private String roleName; // optional
+    private String displayName; // optional
 
     public MembershipInfo(String phoneNumber, String roleName, String displayName) {
         this.phoneNumber = Objects.requireNonNull(phoneNumber);
@@ -53,6 +55,20 @@ public class MembershipInfo {
     public String getDisplayName() {
         return displayName;
     }
+
+    // need to add setters so that Thymeleaf can fill the entities
+
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+
+    public void setRoleName(String roleName) { this.roleName = roleName; }
+
+    public void setDisplayName(String displayName) { this.displayName = displayName; }
+
+    // need to use PhoneNumberUtil here to make sure return number with country code (or vice versa)
+
+    public String getPhoneNumberWithCCode() { return PhoneNumberUtil.convertPhoneNumber(phoneNumber); }
+
+    public String getPhoneNumberWithoutCCode() { return PhoneNumberUtil.invertPhoneNumber(phoneNumber); }
 
     @Override
     public boolean equals(Object o) {

@@ -178,8 +178,14 @@
     border-radius: 0;
 }
 
+/* This actually has no effect -- FCKING CSS -- have put it in the head */
+.active > a:hover, a:focus {
+    background-color: #200000 !important;
+}
+
 .white-text {
     color: #ffffff;
+    font-family: 'Roboto', sans-serif;
 }
 
 .brand-icon {

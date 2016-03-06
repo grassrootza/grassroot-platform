@@ -9,7 +9,7 @@ public interface GroupBroker {
 
     Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos, GroupPermissionTemplate groupPermissionTemplate);
 
-    void update(String userUid, String groupUid, String name);
+    void updateName(String userUid, String groupUid, String name);
 
     void addMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos);
 

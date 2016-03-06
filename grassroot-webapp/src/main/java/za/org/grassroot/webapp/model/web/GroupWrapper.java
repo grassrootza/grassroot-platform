@@ -3,9 +3,7 @@ package za.org.grassroot.webapp.model.web;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.services.MembershipInfo;
 
-import java.util.LinkedHashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by luke on 2015/09/13.
@@ -30,7 +28,7 @@ public class GroupWrapper {
 
     // private GroupPermissionTemplate template;
 
-    private Set<MembershipInfo> addedMembers = new LinkedHashSet<>(); // need linked so appear in order
+    private Set<MembershipInfo> addedMembers = new LinkedHashSet<>();
 
     // leaving out setters for group and parent as those are set at construction
 
@@ -86,6 +84,10 @@ public class GroupWrapper {
     public void setTokenDaysValid(Integer tokenDaysValid) { this.tokenDaysValid = tokenDaysValid; }
 
     public Set<MembershipInfo> getAddedMembers() { return addedMembers; }
+
+    public List<MembershipInfo> getListOfMembers() { return new ArrayList<>(addedMembers); }
+
+    public void setListOfMembers(List<MembershipInfo> members) { this.addedMembers.addAll(members); }
 
     public boolean isDiscoverable() { return discoverable; }
 

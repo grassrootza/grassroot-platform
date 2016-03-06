@@ -67,18 +67,18 @@
 
     <div class="well">
       <div class="row">
-        <div class="col-lg-12">
+        <div class="col-md-12">
           <h3>Will you be attending these meetings?</h3>
         </div>
       </div>
       <div class="row">
-        <div class="col-lg-12">
+        <div class="col-md-12">
           <div th:each="event : ${meetingRsvps}" class="bs-component">
             <form class="list-group" th:action="@{meeting/rsvp}" method="post">
               <input type="hidden" name="eventId" th:value="${event.id}" />
               <div class="list-group-item">
                 <div class="row">
-                  <div class="col-lg-4">
+                  <div class="col-md-4">
                     <h4>
                       <p class="list-group-item-heading">Group: <span th:text="${event.appliesToGroup.getName('')}">group name</span></p>
                       <p class="list-group-item-heading">Subject: <span th:text="${event.name}">Meeting subject</span><br/></p>
@@ -89,7 +89,7 @@
                       and will be held at <span th:text="${event.eventLocation}">meeting location</span>.
                     </div>
                   </div>
-                  <div class="col-lg-4">
+                  <div class="col-md-4">
                     <p class="list-group-item-heading">
                       <button class="btn btn-primary" type="submit" name="yes">Yes</button>
                       <button class="btn btn-danger" type="submit" name="no">No</button>
@@ -111,18 +111,18 @@
 
     <div class="well">
       <div class="row">
-        <div class="col-lg-12">
+        <div class="col-md-12">
           <h3>These votes have been called. What is your vote?</h3>
         </div>
       </div>
       <div class="row">
-        <div class="col-lg-12">
+        <div class="col-md-12">
           <div th:each="event : ${votesToAnswer}" class="bs-component">
             <form class="list-group" th:action="@{vote/answer}" method="post">
               <input type="hidden" name="eventId" th:value="${event.id}" />
               <div class="list-group-item">
                 <div class="row">
-                  <div class="col-lg-4">
+                  <div class="col-md-4">
                     <h4>
                       <p class="list-group-item-heading">Group: <span th:text="${event.appliesToGroup.getName('')}">group name</span></p>
                       <p class="list-group-item-heading">Issue: <span th:text="${event.name}">Meeting subject</span><br/></p>
@@ -132,7 +132,7 @@
                       Vote called by <span th:text="${event.createdByUser.nameToDisplay()}">meeting caller</span>.
                     </div>
                   </div>
-                  <div class="col-lg-4">
+                  <div class="col-md-4">
                     <p class="list-group-item-heading">
                       <button class="btn btn-primary" type="submit" name="answer" value="yes">Yes</button>
                       <button class="btn btn-danger" type="submit" name="answer" value="no">No</button>
@@ -154,19 +154,19 @@
   <div th:if="${not #lists.isEmpty(userGroups)}">
     <div class="well">
       <div class="row">
-        <div class="col-lg-12">
+        <div class="col-md-12">
           <div class="row">
-            <div class="col-lg-12">
+            <div class="col-md-12">
               <h4>Your groups</h4>
             </div>
           </div>
           <div class="row">
-            <div class="col-lg-12">
+            <div class="col-md-12">
               <div  th:each="group,iterStat : ${userGroups}" class="bs-component">
                 <div class="list-group">
                   <div class="list-group-item">
                     <div class="row">
-                      <div class="col-lg-6">
+                      <div class="col-md-6">
                       <h4  class="list-group-item-heading">
                         <a th:href="@{/group/view(groupId=${group.getId()})}"><span th:text="${group.getDisplayName('')}"></span></a>
                       </h4>

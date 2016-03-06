@@ -15,49 +15,49 @@
     <div class="jumbotron">
         <div class="cover-container">
           <div class="row">
-            <div class="col-lg-12">
+            <div class="col-md-12">
             <h1 class="cover-heading text-center">GRASSROOT</h1>
             <p class="lead text-center">Tools for a nation self-organizing</p>
             </div>
           </div>
           <div class="row">
-            <div class="col-lg-12">
+            <div class="col-md-12">
 
               <form id="signin-form" class="form-horizontal" th:action="@{/login}"  method="post">
 
-                <div th:class="${error}? '  alert alert-danger alert-dismissable' : ' hide'">
-                  <p th:if="${error}">Invalid GrassRoot ID or password. Please try again. <span th:text="${error}"></span></p>
+                <div th:class="${error}? 'alert alert-danger alert-dismissable' : ' hide'">
+                  <h5 th:if="${error}">Invalid GrassRoot ID or password. Please try again. <span th:text="${error}"></span></h5>
                 </div>
 
                 <div class="form-group">
 
-                  <label for="username" class="col-lg-4 control-label" th:text="#{web.signin.username}">User Name</label>
+                  <label for="username" class="col-md-4 control-label" th:text="#{web.signin.username}">User Name</label>
 
-                  <div class="col-lg-5">
+                  <div class="col-md-5">
                     <input type="text" class="form-control" id="mobile-number" name="mobile-number" placeholder="Mobile Number"/>
                     <input type="hidden" class="form-control" id="username" name="username" placeholder="Mobile Number"/>
                   </div>
                 </div>
                 <div class="form-group">
-                  <label for="password" class="col-lg-4 control-label">Password</label>
+                  <label for="password" class="col-md-4 control-label">Password</label>
 
-                  <div class="col-lg-5">
+                  <div class="col-md-5">
                     <input type="password" class="form-control"  id="password" name="password" placeholder="Password"/>
                   </div>
                 </div>
                 <div class="form-group">
-                  <div class="col-lg-5 col-lg-offset-4">
+                  <div class="col-md-5 col-md-offset-4">
                     <button class="btn btn-lg btn-default btn-block" id="signin" type="submit">Sign in</button>
                   </div>
                 </div>
                 <div class="form-group">
-                  <div class="col-lg-offset-4 col-lg-4 text-center">
+                  <div class="col-md-offset-4 col-md-4 text-center">
                     <input type="checkbox" name="remember-me" id="remember-me" />
                     <label for="remember-me" class="control-label">Stay signed in</label>
                   </div>
                 <!-- </div>
                 <div class="form-group"> -->
-                  <div class="col-lg-offset-4 col-lg-4 text-center">
+                  <div class="col-md-offset-4 col-md-4 text-center">
                     <a th:href="@{/accounts/recovery}" href="" class="text-center">Forgot password?</a>
                   </div>
                 </div>
@@ -66,7 +66,7 @@
                 </fieldset>
 
                 <div class="row ">
-                  <div class="col-lg-8 col-md-offset-2 text-center">
+                  <div class="col-md-8 col-md-offset-2 text-center">
                     New user? <a th:href="@{/signup}" href="" class="text-left">Sign up</a>
                   </div>
 

@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.webapp.controller.BaseController;
@@ -76,11 +77,17 @@ public class GroupController extends BaseController {
     @Qualifier("groupWrapperValidator")
     private Validator groupWrapperValidator;
 
-    // todo: when cleaning up, figure out how to move this to groupwrapper
+    // todo: when cleaning up, figure out how to move these to group wrapper and/or message sources
 
     List<String[]> permissionTemplates = Arrays.asList(
-            new String[]{GroupPermissionTemplate.DEFAULT_GROUP.toString(), "Any member can call a meeting or vote or record a to-do"},
-            new String[]{GroupPermissionTemplate.CLOSED_GROUP.toString(), "Only designated members can call a meeting or vote or record a to-do"});
+            new String[]{GroupPermissionTemplate.DEFAULT_GROUP.toString(),
+                    "Any member can call a meeting or vote or record a to-do"},
+            new String[]{GroupPermissionTemplate.CLOSED_GROUP.toString(),
+                    "Only designated members can call a meeting or vote or record a to-do"});
+
+    List<String[]> roleDescriptions = Arrays.asList(new String[]{BaseRoles.ROLE_ORDINARY_MEMBER, "Ordinary member"},
+                                                    new String[]{BaseRoles.ROLE_COMMITTEE_MEMBER, "Committee member"},
+                                                    new String[]{BaseRoles.ROLE_GROUP_ORGANIZER, "Group organizer"});
 
     /*
     Binding validators to model attributes. We could just user groupWrapper for both Creator and Modifier, but in the
@@ -171,8 +178,7 @@ public class GroupController extends BaseController {
         model.addAttribute("openToken", groupManagementService.groupHasValidToken(group));
 
         // if (groupAccessControlManagementService.hasGroupPermission(BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS, group, user)) {
-            model.addAttribute("canSeeMembersDetails", true);
-            model.addAttribute("groupMembers", userManagementService.getGroupMembersSortedById(group));
+            model.addAttribute("groupMembers", MembershipInfo.createFromMembers(group.getMemberships()));
         // } removing from master until reset historical groups' roles, else will cause UX issues
 
         if (hasUpdatePermission) {
@@ -180,10 +186,11 @@ public class GroupController extends BaseController {
             model.addAttribute("canDeleteGroup", groupManagementService.canUserMakeGroupInactive(user, group));
             model.addAttribute("canMergeWithOthers", hasUpdatePermission); // replace w/ permission later
             model.addAttribute("isDiscoverable", group.isDiscoverable());
+            model.addAttribute("roles", roleDescriptions);
         }
 
         // todo: use Thyemeleaf Java 8 localdatetime library; also, use subgroup method, when that is less of a kludge
-        model.addAttribute("lastActiveTime", Timestamp.valueOf(groupManagementService.getLastTimeGroupActive(group)));
+        // model.addAttribute("lastActiveTime", Timestamp.valueOf(groupManagementService.getLastTimeGroupActive(group)));
 
         return "group/view";
     }
@@ -241,13 +248,6 @@ public class GroupController extends BaseController {
         timeEnd = System.currentTimeMillis();
         log.info(String.format("User load & group creation: %d msecs", timeEnd - timeStart));
 
-        timeStart = System.currentTimeMillis();
-        groupBroker.addMembers(userCreator.getUid(), groupCreated.getUid(), new HashSet<>(groupCreator.getAddedMembers()));
-        timeEnd = System.currentTimeMillis();
-
-        log.info(String.format("Adding group members took ... ", timeEnd - timeStart));
-
-
         // removing from master branch until more comfortable about interface and UX for this and security
 
         if (groupCreator.isDiscoverable())
@@ -270,11 +270,9 @@ public class GroupController extends BaseController {
         log.info(String.format("The group wrapper passed back has %d members ...", groupCreator.getAddedMembers().size()));
         if (bindingResult.hasErrors()) {
             log.info("binding_error thrown within binding result");
-            // print out the error
             addMessage(model, MessageType.ERROR, "user.enter.error.phoneNumber.invalid", request);
         } else {
-            groupCreator.getAddedMembers().add(MembershipInfo.makeEmpty());
-            log.info(String.format("Group wrapper going back has %d members", groupCreator.getAddedMembers().size()));
+            groupCreator.getAddedMembers().add(new MembershipInfo("", BaseRoles.ROLE_ORDINARY_MEMBER, ""));
         }
         model.addAttribute("roles", roleDescriptions);
         model.addAttribute("permissionTemplates", permissionTemplates);
@@ -295,6 +293,56 @@ public class GroupController extends BaseController {
     SECTION: Methods for handling group modification
     Major todo: permissions, throughout
      */
+
+    @RequestMapping(value = "remove")
+    public String removeMember(Model model, @RequestParam String groupUid, @RequestParam String msisdn) {
+        log.info(String.format("Alright, removing user with number " + msisdn + "from group with UID " + groupUid));
+        Long startTime = System.currentTimeMillis();
+        Group group = groupManagementService.loadGroupByUid(groupUid); // todo: remove once passing Uids everywhere
+        // being cautious ... in use, if user doesn't have permission, button shouldn't appear on prior page
+        // todo: uncomment once roles & permissions are working properly
+        /* if (!groupAccessControlManagementService.hasGroupPermission(Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER,
+                                                                    group, getUserProfile()))
+            throw new AccessDeniedException("You do not have permission to remove this member");*/
+        Set<String> memberToRemove = Sets.newHashSet(userManagementService.findByInputNumber(msisdn).getUid());
+        groupBroker.removeMembers(getUserProfile().getUid(), groupUid, memberToRemove);
+        log.info(String.format("Removing user from group took ... %d msecs", System.currentTimeMillis() - startTime));
+        return viewGroupIndex(model, group.getId());
+    }
+
+    @RequestMapping(value = "addmember")
+    public String addMember(Model model, @RequestParam String groupUid, @RequestParam String phoneNumber,
+                            @RequestParam String displayName, @RequestParam String roleName, HttpServletRequest request) {
+
+        Group group = groupManagementService.loadGroupByUid(groupUid);
+        /* if (!groupAccessControlManagementService.hasGroupPermission(Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER,
+                                                                    group, getUserProfile()))
+            throw new AccessDeniedException("You do not have permission to add members to this group");*/
+
+        if (PhoneNumberUtil.testInputNumber(phoneNumber)) { //todo: do this client side
+            log.info("tested phone number and it is valid ... " + phoneNumber);
+            MembershipInfo newMember = new MembershipInfo(phoneNumber, roleName, displayName);
+            groupBroker.addMembers(getUserProfile().getUid(), groupUid, Sets.newHashSet(newMember));
+            addMessage(model, MessageType.SUCCESS, "group.addmember.success", request);
+        } else {
+            addMessage(model, MessageType.ERROR, "user.enter.error.phoneNumber.invalid", request);
+        }
+
+        return viewGroupIndex(model, group.getId());
+    }
+
+    @RequestMapping(value = "rename")
+    public String renameGroup(Model model, @RequestParam String groupUid, @RequestParam String groupName,
+                              HttpServletRequest request) {
+        Group group = groupManagementService.loadGroupByUid(groupUid);
+        /* if (!groupAccessControlManagementService.hasGroupPermission(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS,
+                                                                    group, getUserProfile()))
+            throw new AccessDeniedException(""); */
+        // todo: some validation & checking of group name
+        groupBroker.updateName(getUserProfile().getUid(), groupUid, groupName);
+        addMessage(model, MessageType.SUCCESS, "group.rename.success", request);
+        return viewGroupIndex(model, group.getId());
+    }
 
     @RequestMapping(value = "modify", method = RequestMethod.POST, params = {"group_modify"})
     public String modifyGroup(Model model, @RequestParam("groupId") Long groupId) {
@@ -821,11 +869,6 @@ public class GroupController extends BaseController {
      * Group role view pages
      */
 
-    List<String[]> roleDescriptions = Arrays.asList(new String[]{"NULL", "Not set"},
-                                              new String[]{BaseRoles.ROLE_ORDINARY_MEMBER, "Ordinary member"},
-                                              new String[]{BaseRoles.ROLE_COMMITTEE_MEMBER, "Committee member"},
-                                              new String[]{BaseRoles.ROLE_GROUP_ORGANIZER, "Group organizer"});
-
     @RequestMapping(value = "roles/view")
     public String viewGroupRoles(Model model, @RequestParam Long groupId) {
 
@@ -837,6 +880,9 @@ public class GroupController extends BaseController {
         List<MemberWrapper> members = new ArrayList<>();
         for (User user : userManagementService.getGroupMembersSortedById(group))
             members.add(new MemberWrapper(user, group, roleService.getUserRoleInGroup(user, group)));
+
+        List<String[]> roleDescriptionsWithNull = new ArrayList<>(roleDescriptions);
+        roleDescriptionsWithNull.add(0, new String[] { "NULL", "Not set"});
 
         model.addAttribute("group", group);
         model.addAttribute("members", members);

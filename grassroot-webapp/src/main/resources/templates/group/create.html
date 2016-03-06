@@ -74,7 +74,7 @@
               </div>
             </td>
             <td>
-              <select name="roleName" class="form-control">
+              <select th:field="*{addedMembers[__${iterStat.index}__].roleName}" class="form-control">
                 <option th:each="role : ${roles}"
                         th:value="${role[0]}"
                         th:text="${role[1]}"

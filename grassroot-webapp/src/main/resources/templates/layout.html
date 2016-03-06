@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity4"
-      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      xmlns:data="https://github.com/mxab/thymeleaf-extras-data-attribute">
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
 <head>
   <title>Layout</title>
   <meta id="Viewport" name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, minimum-scale=1, user-scalable=no"/>
@@ -19,11 +18,21 @@
   <link href='https://fonts.googleapis.com/css?family=Open+Sans:400' rel='stylesheet' type='text/css' />
   <link href='https://fonts.googleapis.com/css?family=Roboto:300,400' rel='stylesheet' type='text/css' />
 
-
-
   <script th:inline="javascript">
         var baseUrl = /*[[@{/}]]*/ '../static/';
   </script>
+
+  <style type="text/css">
+    .active > a:hover, a:focus {
+      background-color: #185625 !important;
+    }
+
+    .dropdown > a:hover, a:focus {
+      background-color: #185625 !important;
+      color: white;
+    }
+  </style>
+
 </head>
 <body>
   <script type="text/javascript">
@@ -48,19 +57,18 @@
               <span class="icon-bar"></span>
             </button>
             <a class="navbar-brand" href="javascript:void(0)" th:href="@{/home}">
-              <!-- <img th:src="@{/images/horizontal-logo.png}" class="img-responsive brand-icon" /> -->
               <p class="white-text">Grassroot</p>
             </a>
           </div>
-          <div class="navbar-collapse collapse navbar-responsive-collapse">
+          <div class="collapse navbar-collapse navbar-responsive-collapse">
             <ul class="nav navbar-nav">
 
               <li sec:authorize="isFullyAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/group/create}"><span class="white-text">Start Group</span></a></li>
-              <li sec:authorize="isFullyAuthenticated()" class="active white-text"><a href="javascript:void(0)" th:href="@{/meeting/create}"><span class="white-text">Call Meeting</span></a></li>
-              <li sec:authorize="isFullyAuthenticated()" class="active white-text"><a href="javascript:void(0)" th:href="@{/vote/create}"><span class="white-text">Take Vote</span></a></li>
-              <li sec:authorize="isFullyAuthenticated()" class="active white-text"><a href="javascript:void(0)" th:href="@{/log/create}"><span class="white-text">Record Action</span></a></li>
-              <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active white-text"><a href="javascript:void(0)" th:href="@{/meeting/free}"><span class="white-text">Send Message</span></a></li>
-              <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active white-text"><a href="javascript:void(0)" th:href="@{/paid_account/index}"><span class="white-text">Manage account</span></a></li>
+              <li sec:authorize="isFullyAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/meeting/create}"><span class="white-text">Call Meeting</span></a></li>
+              <li sec:authorize="isFullyAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/vote/create}"><span class="white-text">Take Vote</span></a></li>
+              <li sec:authorize="isFullyAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/log/create}"><span class="white-text">Record Action</span></a></li>
+              <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active"><a href="javascript:void(0)" th:href="@{/meeting/free}"><span class="white-text">Send Message</span></a></li>
+              <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active"><a href="javascript:void(0)" th:href="@{/paid_account/index}"><span class="white-text">Manage account</span></a></li>
               <li sec:authorize="hasRole('ROLE_SYSTEM_ADMIN')" class="active white-text"><a href="javascript:void(0)" th:href="@{/admin/home}"><span class="white-text">System admin</span></a></li>
 
             </ul>
