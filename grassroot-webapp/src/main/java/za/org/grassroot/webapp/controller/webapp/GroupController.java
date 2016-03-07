@@ -177,9 +177,9 @@ public class GroupController extends BaseController {
         model.addAttribute("subGroups", groupManagementService.getSubGroups(group));
         model.addAttribute("openToken", groupManagementService.groupHasValidToken(group));
 
-         if (groupAccessControlManagementService.hasGroupPermission(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS, group, user)) {
+//         if (groupAccessControlManagementService.hasGroupPermission(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS, group, user)) {
             model.addAttribute("groupMembers", MembershipInfo.createFromMembers(group.getMemberships()));
-         } // removing from master until reset historical groups' roles, else will cause UX issues
+//         } // removing from master until reset historical groups' roles, else will cause UX issues
 
         if (hasUpdatePermission) {
             model.addAttribute("canAlter", hasUpdatePermission);
