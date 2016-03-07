@@ -296,7 +296,7 @@ public class USSDGroupUtil extends USSDUtil {
                 if (group.getCreatedByUser().equals(sessionUser)) {
                     menu.addMenuOption(groupMenuWithId(mergeGroupMenu, groupId), getMessage(menuKey + mergeGroupMenu, sessionUser));
                 }
-                if (groupManager.canUserMakeGroupInactive(sessionUser, group)) {
+                if (groupBroker.isDeactivationAvailable(sessionUser, group)) {
                     menu.addMenuOption(groupMenuWithId(inactiveMenu, groupId), getMessage(menuKey + inactiveMenu, sessionUser));
                 }
                 menu.addMenuOption(urlForNewGroup, getMessage(groupKeyForMessages, "create", "option", sessionUser));

@@ -1,9 +1,6 @@
 package za.org.grassroot.services;
 
-import com.google.common.collect.Lists;
 import edu.emory.mathcs.backport.java.util.Collections;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
@@ -13,7 +10,6 @@ import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
 import javax.transaction.Transactional;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -23,11 +19,9 @@ import java.util.Set;
 @Transactional
 public class PermissionsManager implements PermissionsManagementService {
 
-    private static final Logger log = LoggerFactory.getLogger(PermissionsManager.class);
-
     // major todo: externalize these permissions
 
-    private static final Set<Permission> defaultOrdinaryMemberPermissions = constructPersmissionSet(Collections.emptySet(),
+    private static final Set<Permission> defaultOrdinaryMemberPermissions = constructPermissionSet(Collections.emptySet(),
             Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS,
             Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING,
             Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE,
@@ -37,7 +31,7 @@ public class PermissionsManager implements PermissionsManagementService {
             Permission.GROUP_PERMISSION_CLOSE_OPEN_LOGBOOK
     );
 
-    private static final Set<Permission> defaultCommitteeMemberPermissions = constructPersmissionSet(defaultOrdinaryMemberPermissions,
+    private static final Set<Permission> defaultCommitteeMemberPermissions = constructPermissionSet(defaultOrdinaryMemberPermissions,
             Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER,
             Permission.GROUP_PERMISSION_FORCE_ADD_MEMBER,
             Permission.GROUP_PERMISSION_CREATE_SUBGROUP,
@@ -45,7 +39,7 @@ public class PermissionsManager implements PermissionsManagementService {
             Permission.GROUP_PERMISSION_DELEGATE_SUBGROUP_CREATION
     );
 
-    private static final Set<Permission> defaultGroupOrganizerPermissions = constructPersmissionSet(defaultCommitteeMemberPermissions,
+    private static final Set<Permission> defaultGroupOrganizerPermissions = constructPermissionSet(defaultCommitteeMemberPermissions,
             Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER,
             Permission.GROUP_PERMISSION_AUTHORIZE_SUBGROUP,
             Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER,
@@ -56,11 +50,11 @@ public class PermissionsManager implements PermissionsManagementService {
     );
 
     // closed group structure ... again, externalize
-    private static final Set<Permission> closedOrdinaryMemberPermissions = constructPersmissionSet(Collections.emptySet(),
+    private static final Set<Permission> closedOrdinaryMemberPermissions = constructPermissionSet(Collections.emptySet(),
             Permission.GROUP_PERMISSION_READ_UPCOMING_EVENTS
     );
 
-    private static final Set<Permission> closedCommitteeMemberPermissions = constructPersmissionSet(defaultOrdinaryMemberPermissions,
+    private static final Set<Permission> closedCommitteeMemberPermissions = constructPermissionSet(defaultOrdinaryMemberPermissions,
             Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS,
             Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING,
             Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE,
@@ -69,7 +63,7 @@ public class PermissionsManager implements PermissionsManagementService {
             Permission.GROUP_PERMISSION_CLOSE_OPEN_LOGBOOK
     );
 
-    private static final Set<Permission> closedGroupOrganizerPermissions = constructPersmissionSet(defaultCommitteeMemberPermissions,
+    private static final Set<Permission> closedGroupOrganizerPermissions = constructPermissionSet(defaultCommitteeMemberPermissions,
             Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER,
             Permission.GROUP_PERMISSION_FORCE_ADD_MEMBER,
             Permission.GROUP_PERMISSION_CREATE_SUBGROUP,
@@ -83,77 +77,13 @@ public class PermissionsManager implements PermissionsManagementService {
     );
 
 
-    private static final Set<Permission> constructPersmissionSet(Set<Permission> baseSet, Permission... permissions) {
+    private static final Set<Permission> constructPermissionSet(Set<Permission> baseSet, Permission... permissions) {
         Set<Permission> set = new HashSet<>();
         set.addAll(baseSet);
         for (Permission permission : permissions) {
             set.add(permission);
         }
-        return set;
-    }
-
-    @Override
-    public List<Permission> getPermissions() {
-        return Lists.newArrayList(Permission.values());
-    }
-
-    @Override
-    public Set<Permission> defaultGroupOrganizerPermissions() {
-        return defaultGroupOrganizerPermissions;
-    }
-
-    @Override
-    public Set<Permission> defaultCommitteeMemberPermissions() {
-        return defaultCommitteeMemberPermissions;
-    }
-
-    @Override
-    public Set<Permission> defaultOrdinaryMemberPermissions() {
-        return defaultOrdinaryMemberPermissions;
-    }
-
-    @Override
-    public Set<Permission> defaultPermissionsGroupRole(String roleName) {
-        // todo: error handling if passed a strange or null role; for now, return ordinary member
-        switch (roleName) {
-            case BaseRoles.ROLE_GROUP_ORGANIZER:
-                return defaultGroupOrganizerPermissions();
-            case BaseRoles.ROLE_COMMITTEE_MEMBER:
-                return defaultCommitteeMemberPermissions();
-            case BaseRoles.ROLE_ORDINARY_MEMBER:
-                return defaultOrdinaryMemberPermissions();
-            default:
-                return defaultOrdinaryMemberPermissions();
-        }
-    }
-
-    @Override
-    public Set<Permission> closedGroupOrganizerPermissions() {
-        return closedGroupOrganizerPermissions;
-    }
-
-    @Override
-    public Set<Permission> closedGroupCommitteeMemberPermissions() {
-        return closedCommitteeMemberPermissions;
-    }
-
-    @Override
-    public Set<Permission> closedGroupOrdinaryMemberPermissions() {
-        return closedOrdinaryMemberPermissions;
-    }
-
-    @Override
-    public Set<Permission> closedPermissionsGroupRole(String roleName) {
-        switch (roleName) {
-            case BaseRoles.ROLE_GROUP_ORGANIZER:
-                return closedGroupOrganizerPermissions();
-            case BaseRoles.ROLE_COMMITTEE_MEMBER:
-                return closedGroupCommitteeMemberPermissions();
-            case BaseRoles.ROLE_ORDINARY_MEMBER:
-                return closedGroupOrdinaryMemberPermissions();
-            default:
-                return closedGroupOrdinaryMemberPermissions();
-        }
+        return java.util.Collections.unmodifiableSet(set);
     }
 
     @Override
@@ -164,20 +94,47 @@ public class PermissionsManager implements PermissionsManagementService {
 
         switch (template) {
             case DEFAULT_GROUP:
-                organizer.setPermissions(defaultGroupOrganizerPermissions());
-                committee.setPermissions(defaultCommitteeMemberPermissions());
-                member.setPermissions(defaultOrdinaryMemberPermissions());
+                organizer.setPermissions(defaultGroupOrganizerPermissions);
+                committee.setPermissions(defaultCommitteeMemberPermissions);
+                member.setPermissions(defaultOrdinaryMemberPermissions);
                 break;
             case CLOSED_GROUP:
-                organizer.setPermissions(closedGroupOrganizerPermissions());
-                committee.setPermissions(closedGroupCommitteeMemberPermissions());
-                member.setPermissions(closedGroupOrdinaryMemberPermissions());
+                organizer.setPermissions(closedGroupOrganizerPermissions);
+                committee.setPermissions(closedCommitteeMemberPermissions);
+                member.setPermissions(closedOrdinaryMemberPermissions);
                 break;
             default:
-                organizer.setPermissions(defaultGroupOrganizerPermissions());
-                committee.setPermissions(defaultCommitteeMemberPermissions());
-                member.setPermissions(defaultOrdinaryMemberPermissions());
+                organizer.setPermissions(defaultGroupOrganizerPermissions);
+                committee.setPermissions(defaultCommitteeMemberPermissions);
+                member.setPermissions(defaultOrdinaryMemberPermissions);
                 break;
+        }
+    }
+
+    private Set<Permission> defaultPermissionsGroupRole(String roleName) {
+        // todo: error handling if passed a strange or null role; for now, return ordinary member
+        switch (roleName) {
+            case BaseRoles.ROLE_GROUP_ORGANIZER:
+                return defaultGroupOrganizerPermissions;
+            case BaseRoles.ROLE_COMMITTEE_MEMBER:
+                return defaultCommitteeMemberPermissions;
+            case BaseRoles.ROLE_ORDINARY_MEMBER:
+                return defaultOrdinaryMemberPermissions;
+            default:
+                return defaultOrdinaryMemberPermissions;
+        }
+    }
+
+    private Set<Permission> closedPermissionsGroupRole(String roleName) {
+        switch (roleName) {
+            case BaseRoles.ROLE_GROUP_ORGANIZER:
+                return closedGroupOrganizerPermissions;
+            case BaseRoles.ROLE_COMMITTEE_MEMBER:
+                return closedCommitteeMemberPermissions;
+            case BaseRoles.ROLE_ORDINARY_MEMBER:
+                return closedOrdinaryMemberPermissions;
+            default:
+                return closedOrdinaryMemberPermissions;
         }
     }
 

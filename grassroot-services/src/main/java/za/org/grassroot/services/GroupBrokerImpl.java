@@ -3,17 +3,25 @@ package za.org.grassroot.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
+import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
 
-import java.util.*;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,6 +35,8 @@ public class GroupBrokerImpl implements GroupBroker {
     private UserRepository userRepository;
     @Autowired
     private PermissionsManagementService permissionsManagementService;
+    @Autowired
+    private ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     @Transactional
@@ -58,6 +68,33 @@ public class GroupBrokerImpl implements GroupBroker {
         logger.info("Group created under UID {}", group.getUid());
 
         return group;
+    }
+
+    @Override
+    @Transactional
+    public void deactivate(String userUid, String groupUid) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+
+        if (!isDeactivationAvailable(user, group)) {
+            throw new GroupDeactivationNotAvailableException();
+        }
+
+        logger.info("Deactivating group: {}", group);
+        group.setActive(false);
+//        asyncGroupService.recordGroupLog(group.getId(),user.getId(), GroupLogType.GROUP_REMOVED,0L,String.format("Set group inactive"));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isDeactivationAvailable(User user, Group group) {
+        // todo: Integrate with permission checking -- for now, just checking if group created by user in last 48 hours
+        boolean isUserGroupCreator = group.getCreatedByUser().equals(user);
+        Instant deactivationTimeThreshold = group.getCreatedDateTime().toInstant().plus(Duration.ofHours(48));
+        return isUserGroupCreator && Instant.now().isBefore(deactivationTimeThreshold);
     }
 
     @Override
@@ -112,10 +149,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
         group.getMemberships().stream()
                 .filter(membership -> memberUids.contains(membership.getUser().getUid()))
-                .map(Membership::getUser)
-                .forEach(group::removeMember);
-
-        groupRepository.save(group);
+                .forEach(group::removeMembership);
     }
 
     @Override

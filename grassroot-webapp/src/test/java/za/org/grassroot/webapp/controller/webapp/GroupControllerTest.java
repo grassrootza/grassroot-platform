@@ -71,7 +71,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(eventManagementServiceMock.getUpcomingVotes(dummyGroup)).thenReturn(dummyVotes);
         when(groupManagementServiceMock.getSubGroups(dummyGroup)).thenReturn(subGroups);
         when(groupManagementServiceMock.groupHasValidToken(dummyGroup)).thenReturn(false);
-        when(groupManagementServiceMock.canUserMakeGroupInactive(sessionTestUser, dummyGroup)).thenReturn(true);
+        when(groupBrokerMock.isDeactivationAvailable(sessionTestUser, dummyGroup)).thenReturn(true);
         when(groupManagementServiceMock.getLastTimeGroupActive(dummyGroup)).thenReturn(LocalDateTime.now());
         // when(groupManagementServiceMock.canUserModifyGroup(dummyGroup,sessionTestUser)).thenReturn(true);
 
@@ -90,7 +90,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         verify(groupManagementServiceMock, times(1)).getSubGroups(dummyGroup);
         verify(groupManagementServiceMock, times(1)).groupHasValidToken(dummyGroup);
         // verify(groupManagementServiceMock, times(1)).canUserModifyGroup(dummyGroup,sessionTestUser);
-        verify(groupManagementServiceMock, times(1)).canUserMakeGroupInactive(sessionTestUser, dummyGroup);
+        verify(groupBrokerMock, times(1)).isDeactivationAvailable(sessionTestUser, dummyGroup);
         // verify(groupManagementServiceMock, times(1)).isGroupCreatedByUser(dummyGroup.getId(), sessionTestUser);
         verify(groupManagementServiceMock, times(1)).getLastTimeGroupActive(dummyGroup);
         // verifyNoMoreInteractions(groupManagementServiceMock);
@@ -493,12 +493,12 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         Group group = new Group("someGroupname", new User("234345345"));
         group.setId(dummyId);
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(group);
-        when(groupManagementServiceMock.canUserMakeGroupInactive(sessionTestUser, group)).thenReturn(true);
+        when(groupBrokerMock.isDeactivationAvailable(sessionTestUser, group)).thenReturn(true);
         mockMvc.perform(get("/group/modify").param("group_delete", "").param("groupId", String.valueOf(dummyId)))
                 .andExpect(status().isOk()).andExpect(view().name("group/delete_confirm"))
                 .andExpect(model().attribute("group", hasProperty("id", is(dummyId))));
         verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
-        verify(groupManagementServiceMock, times(1)).canUserMakeGroupInactive(sessionTestUser, group);
+        verify(groupBrokerMock, times(1)).isDeactivationAvailable(sessionTestUser, group);
         verifyNoMoreInteractions(groupManagementServiceMock);
 
     }
@@ -508,15 +508,15 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         Group group = new Group("someGroupname", new User("234345345"));
 
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(group);
-        when(groupManagementServiceMock.canUserMakeGroupInactive(sessionTestUser, group)).thenReturn(true);
-        when(groupManagementServiceMock.setGroupInactive(group, sessionTestUser)).thenReturn(group);
+        when(groupBrokerMock.isDeactivationAvailable(sessionTestUser, group)).thenReturn(true);
+//        when(groupBrokerMock.deactivate(sessionTestUser.getUid(), group.getUid())).thenReturn(group);
         mockMvc.perform(get("/group/delete").param("groupId", String.valueOf(dummyId)).param("confirm_field", "delete"))
                 .andExpect(status().is3xxRedirection()).andExpect(view().name("redirect:/home"))
                 .andExpect(redirectedUrl("/home")).andExpect(flash()
                 .attributeExists(BaseController.MessageType.SUCCESS.getMessageKey()));
         verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
-        verify(groupManagementServiceMock, times(1)).canUserMakeGroupInactive(sessionTestUser, group);
-        verify(groupManagementServiceMock, times(1)).setGroupInactive(group, sessionTestUser);
+        verify(groupBrokerMock, times(1)).isDeactivationAvailable(sessionTestUser, group);
+        verify(groupBrokerMock, times(1)).deactivate(sessionTestUser.getUid(), group.getUid());
         verifyNoMoreInteractions(groupManagementServiceMock);
     }
 
@@ -528,7 +528,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(group);
         when(groupManagementServiceMock.isUserInGroup(group, sessionTestUser)).thenReturn(true);
         when(groupAccessControlManagementServiceMock.loadGroup(dummyId, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)).thenReturn(group);
-        when(groupManagementServiceMock.canUserMakeGroupInactive(sessionTestUser, group)).thenReturn(true);
+        when(groupBrokerMock.isDeactivationAvailable(sessionTestUser, group)).thenReturn(true);
         when(groupManagementServiceMock.getLastTimeGroupActive(group)).thenReturn(LocalDateTime.now());
 
         group.addMember(sessionTestUser);
@@ -538,7 +538,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(model()
                         .attributeExists(BaseController.MessageType.ERROR.getMessageKey()));
         verify(userManagementServiceMock, times(1)).getUserById(sessionTestUser.getId());
-        verify(groupManagementServiceMock, times(1)).canUserMakeGroupInactive(sessionTestUser, group);
+        verify(groupBrokerMock, times(1)).isDeactivationAvailable(sessionTestUser, group);
         verify(groupManagementServiceMock, times(1)).isUserInGroup(group, sessionTestUser);
         verify(groupManagementServiceMock, times(2)).loadGroup(dummyId);
         // redirect to view causes all view method calls, no point repeating them here, but leaving verify written & commented

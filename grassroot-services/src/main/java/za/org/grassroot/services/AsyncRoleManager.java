@@ -5,19 +5,18 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Role;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Future;
 
 /**
  * Created by luke on 2016/02/17.
@@ -87,14 +86,6 @@ public class AsyncRoleManager implements AsyncRoleService {
 
     // @Async
     @Override
-    public void assignPermissionsToGroupRoles(Group group, GroupPermissionTemplate template) {
-        log.info("assignPermissionsToGroupRoles ... for group " + group.getGroupName() + " and template " + template);
-        permissionsManagementService.setRolePermissionsFromTemplate(group, template);
-    }
-
-
-    // @Async
-    @Override
     // @Transactional
     public void addRoleToGroupAndUser(String roleName, Group group, User addingToUser, User callingUser) {
 
@@ -118,8 +109,7 @@ public class AsyncRoleManager implements AsyncRoleService {
 
     }
 
-    @Override
-    public void addRoleToGroupAndUsers(String roleName, Group group, List<User> addingToUsers, User callingUser) {
+    private void addRoleToGroupAndUsers(String roleName, Group group, List<User> addingToUsers, User callingUser) {
         Role role = fetchGroupRole(roleName, group.getUid());
         if (role == null) { role = fixAndReturnGroupRole(roleName, group, GroupPermissionTemplate.DEFAULT_GROUP); }
 
@@ -132,12 +122,6 @@ public class AsyncRoleManager implements AsyncRoleService {
             user.addStandardRole(role);
         }
         groupAccessControlManagementService.addUsersGroupPermissions(group, addingToUsers, callingUser, role.getPermissions());
-    }
-
-    @Override
-    public void removeUsersRoleInGroup(User user, Group group) {
-        // todo: make sure this is properly flushing throughout (else security leak)
-        userRepository.save(flushUserRolesInGroup(user, group.getId()));
     }
 
     private Role fetchGroupRole(String roleName, String groupUid) {

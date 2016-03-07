@@ -8,6 +8,7 @@ import javax.persistence.*;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 //todo: reconsider if language should be nullable, or not null and set to "en" by default (when set not nullable, broke tests)
 
@@ -189,12 +190,21 @@ public class User implements UserDetails {
     }
 
     /**
-     * Thisisjust used to manually set inverse side of many-to-many relationship when it  is still not saved in db.
+     * This is just used to manually set inverse side of many-to-many relationship when it  is still not saved in db.
      * Afterwards Hibernate takes care to set both sides.
      * @param membership membership
      */
     public void addMappedByMembership(Membership membership) {
         this.memberships.add(membership);
+    }
+
+    /**
+     * This is just used to manually set inverse side of many-to-many relationship when it  is still not saved in db.
+     * Afterwards Hibernate takes care to set both sides.
+     * @param membership membership
+     */
+    public void removeMappedByMembership(Membership membership) {
+        this.memberships.remove(membership);
     }
 
     @PreUpdate
@@ -267,19 +277,17 @@ public class User implements UserDetails {
 
     public void setHasInitiatedSession(boolean hasInitiatedSession) { this.hasInitiatedSession = hasInitiatedSession; }
 
-    public Set<Permission> getPermissions() {
-        Set<Permission> perms = new HashSet<Permission>();
-        for (Role role : getStandardAndGroupRoles()) {
-            perms.addAll(role.getPermissions());
-        }
-        return perms;
-    }
-
     @Override
     public Collection<GrantedAuthority> getAuthorities() {
         Set<GrantedAuthority> authorities = new HashSet<>();
-        authorities.addAll(getStandardAndGroupRoles());
-        authorities.addAll(getPermissions());
+        Set<Role> roles = getStandardAndGroupRoles();
+        authorities.addAll(roles);
+
+        Set<Permission> permissions = roles.stream()
+                .flatMap(role -> role.getPermissions().stream())
+                .collect(Collectors.toSet());
+        authorities.addAll(permissions);
+
         return authorities;
     }
 

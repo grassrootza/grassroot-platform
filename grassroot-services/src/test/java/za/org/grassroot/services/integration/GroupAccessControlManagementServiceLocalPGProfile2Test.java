@@ -1,7 +1,6 @@
 package za.org.grassroot.services.integration;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -13,7 +12,10 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.GrassRootServicesConfig;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.services.*;
+import za.org.grassroot.services.GroupAccessControlManagementService;
+import za.org.grassroot.services.GroupManagementService;
+import za.org.grassroot.services.RoleManagementService;
+import za.org.grassroot.services.UserManagementService;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
@@ -40,16 +42,10 @@ public class GroupAccessControlManagementServiceLocalPGProfile2Test {
     private UserManagementService userManagementService;
 
     @Autowired
-    private PermissionsManagementService permissionsManagementService;
-
-    @Autowired
     private RoleManagementService roleManagementService;
 
     @Test
     public void testAssignGroupRoles() throws Exception {
-
-        assertThat(permissionsManagementService.getPermissions(), is(not(empty())));
-
         User user = userManagementService.getAllUsers().get(0);//
 
         assertThat(user.getUsername(), is(notNullValue()));
@@ -59,7 +55,7 @@ public class GroupAccessControlManagementServiceLocalPGProfile2Test {
 
 
         Role groupRole = new Role(BaseRoles.ROLE_GROUP_ORGANIZER, group.getUid());
-        groupRole.setPermissions(ImmutableSet.copyOf(permissionsManagementService.getPermissions()));
+        groupRole.setPermissions(ImmutableSet.copyOf(Permission.values()));
 
         groupRole = roleManagementService.createRole(groupRole);
 
@@ -72,7 +68,7 @@ public class GroupAccessControlManagementServiceLocalPGProfile2Test {
 
          groupAccessControlManagementService.addUserGroupPermissions(group, user, groupRole.getPermissions());
 
-         Permission somePermission = Iterables.getFirst(permissionsManagementService.getPermissions(), null);
+         Permission somePermission = Permission.values() [0];
 
          assertTrue(groupAccessControlManagementService.hasGroupPermission(somePermission, group, user));
 

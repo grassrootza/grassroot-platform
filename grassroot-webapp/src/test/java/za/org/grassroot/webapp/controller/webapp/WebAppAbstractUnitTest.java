@@ -40,6 +40,8 @@ public abstract class WebAppAbstractUnitTest {
     @Mock
     protected GroupManagementService groupManagementServiceMock;
     @Mock
+    protected GroupBroker groupBrokerMock;
+    @Mock
     protected EventManagementService eventManagementServiceMock;
     @Mock
     protected GroupLogService groupLogServiceMock;

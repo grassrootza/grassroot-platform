@@ -1,7 +1,6 @@
 package za.org.grassroot.services.integration;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -17,7 +16,9 @@ import za.org.grassroot.GrassRootServicesConfig;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.services.*;
+import za.org.grassroot.services.GroupAccessControlManagementService;
+import za.org.grassroot.services.RoleManagementService;
+import za.org.grassroot.services.UserManagementService;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.*;
@@ -42,9 +43,6 @@ public class GroupAccessControlManagementServiceTest {
     private UserManagementService userManagementService;
 
     @Autowired
-    private PermissionsManagementService permissionsManagementService;
-
-    @Autowired
     private RoleManagementService roleManagementService;
 
     @Test
@@ -57,7 +55,7 @@ public class GroupAccessControlManagementServiceTest {
 
         Role groupRole = new Role(BaseRoles.ROLE_GROUP_ORGANIZER, group.getUid());
 
-        groupRole.setPermissions(ImmutableSet.copyOf(permissionsManagementService.getPermissions()));
+        groupRole.setPermissions(ImmutableSet.copyOf(Permission.values()));
 
         groupRole = roleManagementService.createRole(groupRole);
         assertThat(groupRole.getPermissions(), hasSize(30));
@@ -73,7 +71,7 @@ public class GroupAccessControlManagementServiceTest {
 
         groupAccessControlManagementService.addUserGroupPermissions(group, user, groupRole.getPermissions());
 
-        Permission somePermission = Iterables.getFirst(permissionsManagementService.getPermissions(), null);
+        Permission somePermission = Permission.values() [0];
 
         assertTrue(groupAccessControlManagementService.hasGroupPermission(somePermission, group, user));
 

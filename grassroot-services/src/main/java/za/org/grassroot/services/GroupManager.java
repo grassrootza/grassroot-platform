@@ -192,16 +192,6 @@ public class GroupManager implements GroupManagementService {
         return groupRepository.countByMembershipsUserAndActiveTrue(user) > 0;
     }
 
-    @Override
-    public boolean canUserMakeGroupInactive(User user, Group group) {
-        // todo: Integrate with permission checking -- for now, just checking if group created by user in last 48 hours
-        // todo: the time checking would be so much easier if we use Joda or Java 8 DateTime ...
-        boolean createdByUser = (group.getCreatedByUser().getId() == user.getId()); // full equals doesn't work on session-loaded user
-        Timestamp thresholdTime = new Timestamp(Calendar.getInstance().getTimeInMillis() - (48 * 60 * 60 * 1000));
-        boolean groupCreatedSinceThreshold = (group.getCreatedDateTime().after(thresholdTime));
-        return (createdByUser && groupCreatedSinceThreshold);
-    }
-
     /*
     Methods to work with group joining tokens and group discovery
      */
@@ -429,15 +419,6 @@ public class GroupManager implements GroupManagementService {
         GroupLog latestGroupLog = groupLogRepository.findFirstByGroupIdOrderByCreatedDateTimeDesc(group.getId());
         return (latestGroupLog != null) ? LocalDateTime.ofInstant(latestGroupLog.getCreatedDateTime().toInstant(), ZoneId.systemDefault()) :
                 group.getCreatedDateTime().toLocalDateTime();
-    }
-
-    @Override
-    public Group setGroupInactive(Group group, User user) {
-        // todo errors and exception throwing
-        group.setActive(false);
-        Group savedGroup = groupRepository.save(group);
-        asyncGroupService.recordGroupLog(group.getId(),user.getId(),GroupLogType.GROUP_REMOVED,0L,String.format("Set group inactive"));
-        return savedGroup;
     }
 
     @Override

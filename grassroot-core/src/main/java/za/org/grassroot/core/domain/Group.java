@@ -31,7 +31,7 @@ public class Group implements Serializable {
     @JoinColumn(name = "created_by_user", nullable = false, updatable = false)
     private User createdByUser;
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "group")
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "group", orphanRemoval = true)
     private Set<Membership> memberships = new HashSet<>();
 
     @ManyToOne
@@ -60,8 +60,8 @@ public class Group implements Serializable {
 
     @OneToMany(cascade = CascadeType.ALL)
     @JoinTable(name = "group_roles",
-            joinColumns = @JoinColumn(name = "group_id", referencedColumnName = "id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id")
+            joinColumns = @JoinColumn(name = "group_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<Role> groupRoles = new HashSet<>();
 
@@ -228,13 +228,21 @@ public class Group implements Serializable {
     }
 
     public Membership removeMember(User member) {
-        Objects.requireNonNull(member);
         Membership membership = getMembership(member);
         if (membership == null) {
             return null;
         }
-        this.memberships.remove(membership);
+        removeMembership(membership);
         return membership;
+    }
+
+    public boolean removeMembership(Membership membership) {
+        Objects.requireNonNull(membership);
+        boolean removed = this.memberships.remove(membership);
+        if (removed) {
+            membership.getUser().removeMappedByMembership(membership);
+        }
+        return removed;
     }
 
     public Membership getMembership(User user) {

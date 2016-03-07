@@ -56,8 +56,6 @@ public interface GroupManagementService {
 
     public boolean isUserInGroup(Group group, User user);
 
-    public boolean canUserMakeGroupInactive(User user, Group group);
-
     /*
     Methods to work with group joining tokens and group discovery
      */
@@ -118,8 +116,6 @@ public interface GroupManagementService {
     /*
     Methods to consolidate groups, and to manage active / inactive
      */
-
-    public Group setGroupInactive(Group group, User user);
 
     public Group mergeGroups(Long firstGroupId, Long secondGroupId, Long mergingUserId,
                              boolean leaveActive, boolean orderSpecified, boolean createNew); // "normal" case is all 3 false

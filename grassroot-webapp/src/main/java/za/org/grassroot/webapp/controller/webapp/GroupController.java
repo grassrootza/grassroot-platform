@@ -177,13 +177,13 @@ public class GroupController extends BaseController {
         model.addAttribute("subGroups", groupManagementService.getSubGroups(group));
         model.addAttribute("openToken", groupManagementService.groupHasValidToken(group));
 
-        // if (groupAccessControlManagementService.hasGroupPermission(BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS, group, user)) {
+         if (groupAccessControlManagementService.hasGroupPermission(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS, group, user)) {
             model.addAttribute("groupMembers", MembershipInfo.createFromMembers(group.getMemberships()));
-        // } removing from master until reset historical groups' roles, else will cause UX issues
+         } // removing from master until reset historical groups' roles, else will cause UX issues
 
         if (hasUpdatePermission) {
             model.addAttribute("canAlter", hasUpdatePermission);
-            model.addAttribute("canDeleteGroup", groupManagementService.canUserMakeGroupInactive(user, group));
+            model.addAttribute("canDeleteGroup", groupBroker.isDeactivationAvailable(user, group));
             model.addAttribute("canMergeWithOthers", hasUpdatePermission); // replace w/ permission later
             model.addAttribute("isDiscoverable", group.isDiscoverable());
             model.addAttribute("roles", roleDescriptions);
@@ -756,7 +756,7 @@ public class GroupController extends BaseController {
         User user = getUserProfile();
         Group group = groupManagementService.loadGroup(groupId);
 
-        if (groupManagementService.canUserMakeGroupInactive(user, group)) {
+        if (groupBroker.isDeactivationAvailable(user, group)) {
             model.addAttribute("group", group);
             return "group/delete_confirm";
         } else {
@@ -774,9 +774,9 @@ public class GroupController extends BaseController {
 
         Group group = groupManagementService.loadGroup(groupId);
 
-        if (groupManagementService.canUserMakeGroupInactive(getUserProfile(), group) &&
+        if (groupBroker.isDeactivationAvailable(getUserProfile(), group) &&
                 confirmText.toLowerCase().equals("delete")) {
-            groupManagementService.setGroupInactive(group, getUserProfile());
+            groupBroker.deactivate(getUserProfile().getUid(), group.getUid());
             addMessage(redirectAttributes, MessageType.SUCCESS, "group.delete.success", request);
             return "redirect:/home";
         } else {

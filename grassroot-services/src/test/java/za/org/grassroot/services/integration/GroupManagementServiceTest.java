@@ -17,6 +17,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
 
@@ -45,6 +46,9 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private GroupBroker groupBroker;
 
     private final String testUserBase = "081000555";
     private final String testGroupBase = "test group ";
@@ -101,15 +105,15 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
 
     @Test
     @Rollback
-    public void shouldSetGroupInactive() {
+    public void shouldDeactivateGroup() {
         assertThat(groupRepository.count(), is(0L));
         User user = userManagementService.loadOrSaveUser(testUserBase + "1");
         Group group = groupRepository.save(new Group(testGroupBase + "1", user));
         Group group2 = groupRepository.save(new Group(testGroupBase + "2", user));
-        groupManagementService.setGroupInactive(group, user);
+        groupBroker.deactivate(user.getUid(), group.getUid());
 
         // todo: do a 'find by active' and count here instead
-        Group groupFromDb = groupManagementService.loadGroup(group.getId());
+        Group groupFromDb = groupRepository.findOneByUid(group.getUid());
         assertNotNull(groupFromDb);
         assertFalse(groupFromDb.isActive());
     }

@@ -92,7 +92,7 @@ public class USSDGroupController extends USSDController {
         if (group.getCreatedByUser().equals(sessionUser))
             listMenu.addMenuOption(groupMenuWithId(mergeGroupMenu, groupId), getMessage(menuKey + mergeGroupMenu, sessionUser));
 
-        if (groupManager.canUserMakeGroupInactive(sessionUser, group))
+        if (groupBroker.isDeactivationAvailable(sessionUser, group))
             listMenu.addMenuOption(groupMenuWithId(inactiveMenu, groupId), getMessage(menuKey + inactiveMenu, sessionUser));
 
         return menuBuilder(listMenu);
@@ -592,8 +592,8 @@ public class USSDGroupController extends USSDController {
         USSDMenu menu;
 
         // todo: rather make this rely on an exception from services layer and move logic there
-        if (groupManager.canUserMakeGroupInactive(user, group)) {
-            groupManager.setGroupInactive(group, user);
+        if (groupBroker.isDeactivationAvailable(user, group)) {
+            groupBroker.deactivate(user.getUid(), group.getUid());
             menu = new USSDMenu(getMessage(thisSection, inactiveMenu + doSuffix, promptKey + ".success", user), optionsHomeExit(user));
         } else {
             menu = new USSDMenu(getMessage(thisSection, inactiveMenu + doSuffix, errorPromptKey, user), optionsHomeExit(user));

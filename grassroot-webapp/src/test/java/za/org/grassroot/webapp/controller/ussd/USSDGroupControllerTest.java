@@ -85,7 +85,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         // when(groupManagementServiceMock.isGroupCreatedByUser(testGroup.getId(), testUser)).thenReturn(false); // but note length issues
-        when(groupManagementServiceMock.canUserMakeGroupInactive(testUser, testGroup)).thenReturn(false);
+        when(groupBrokerMock.isDeactivationAvailable(testUser, testGroup)).thenReturn(false);
 
         mockMvc.perform(get(path + "menu").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
                 andExpect(status().isOk());
@@ -95,7 +95,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
         // verify(groupManagementServiceMock, times(2)).isGroupCreatedByUser(testGroup.getId(), testUser);
-        verify(groupManagementServiceMock, times(2)).canUserMakeGroupInactive(testUser, testGroup);
+        verify(groupBrokerMock, times(2)).isDeactivationAvailable(testUser, testGroup);
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
@@ -392,8 +392,8 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         Group errorGroup = new Group("error", testUser);
         errorGroup.setId(2L);
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(groupManagementServiceMock.canUserMakeGroupInactive(testUser, testGroup)).thenReturn(true);
-        when(groupManagementServiceMock.canUserMakeGroupInactive(testUser, errorGroup)).thenReturn(false);
+        when(groupBrokerMock.isDeactivationAvailable(testUser, testGroup)).thenReturn(true);
+        when(groupBrokerMock.isDeactivationAvailable(testUser, errorGroup)).thenReturn(false);
 
         mockMvc.perform(get(path + "inactive-do").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
                 andExpect(status().isOk());
@@ -402,8 +402,8 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupManagementServiceMock, times(2)).canUserMakeGroupInactive(testUser, testGroup);
-        verify(groupManagementServiceMock, times(1)).setGroupInactive(testGroup, testUser);
+        verify(groupBrokerMock, times(2)).isDeactivationAvailable(testUser, testGroup);
+        verify(groupBrokerMock, times(1)).deactivate(testUser.getUid(), testGroup.getUid());
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
