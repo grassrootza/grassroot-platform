@@ -18,6 +18,13 @@ public class UserDTO implements Serializable {
         this.phoneNumber = user.getPhoneNumber();
     }
 
+    public UserDTO(String phoneNumber, String displayName){
+        this.phoneNumber = phoneNumber;
+        this.displayName=displayName;
+    }
+    public UserDTO(){
+    }
+
     public Long getId() {
         return id;
     }

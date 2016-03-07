@@ -18,6 +18,7 @@ public class UserDTO implements Serializable {
     private String phoneNumber;
 
 
+
     public UserDTO() {
     }
 
@@ -29,6 +30,11 @@ public class UserDTO implements Serializable {
         this.lastName = user.getLastName();
         this.languageCode = user.getLanguageCode();
         this.enabled = user.getEnabled();
+    }
+
+    public UserDTO(String phoneNumber, String displayName){
+        this.phoneNumber = phoneNumber;
+        this.displayName=displayName;
     }
 
     public UserDTO(Object[] objArray) {
