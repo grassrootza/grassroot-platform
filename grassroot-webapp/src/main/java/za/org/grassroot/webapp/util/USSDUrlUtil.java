@@ -85,7 +85,7 @@ public class USSDUrlUtil {
 
     public static String saveMeetingMenu(String menu, Long eventId, boolean revising) {
         String revisingFlag = (revising) ? "&revising=1" : "";
-        return USSDSection.MEETINGS.toPath() + menu + "?eventId=" + eventId + setInterruptedFlag;
+        return USSDSection.MEETINGS.toPath() + menu + "?eventId=" + eventId + setInterruptedFlag + revisingFlag;
     }
 
     public static String saveMtgMenuWithAction(String menu, Long eventId, String action) {
