@@ -59,6 +59,10 @@ public class User implements UserDetails {
     @Column(name = "web")
     private boolean hasWebProfile = false;
 
+    @Column(name ="android")
+    private boolean hasAndroidProfile = false;
+
+
     @Column(name = "enabled")
     private boolean enabled = true;
 
@@ -233,6 +237,14 @@ public class User implements UserDetails {
 
     public boolean isHasWebProfile() { return hasWebProfile; }
 
+    public boolean hasAndroidProfile(){
+        return hasAndroidProfile;
+    }
+
+    public void setHasAndroidProfile(boolean hasAndroidProfile){
+        this.hasAndroidProfile =hasAndroidProfile;
+    }
+
     public void setHasWebProfile(boolean hasWebProfile) { this.hasWebProfile = hasWebProfile; }
 
     public boolean getEnabled() {
@@ -400,11 +412,8 @@ public class User implements UserDetails {
 
         User user = (User) o;
 
-        if (getUid() != null ? !getUid().equals(user.getUid()) : user.getUid() != null) {
-            return false;
-        }
+        return getUid() != null ? getUid().equals(user.getUid()) : user.getUid() == null;
 
-        return true;
     }
 
     @Override

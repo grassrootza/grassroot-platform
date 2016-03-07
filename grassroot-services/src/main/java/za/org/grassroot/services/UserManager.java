@@ -31,6 +31,7 @@ import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Lesetse Kimwaga
@@ -126,6 +127,62 @@ public class UserManager implements UserManagementService, UserDetailsService {
         }
 
     }
+
+    @Override
+    public User createAndroidUserProfile(User userProfile) throws UserExistsException{
+        Assert.notNull(userProfile);
+        User userToSave;
+        String phoneNumber = PhoneNumberUtil.convertPhoneNumber(userProfile.getPhoneNumber());
+        boolean userExists = userExist(phoneNumber);
+
+        if (userExists) {
+
+            System.out.println("The user exists, and their web profile is set to: " + userProfile.isHasWebProfile());
+
+            User userToUpdate = loadOrSaveUser(phoneNumber);
+            if (userToUpdate.hasAndroidProfile() ){
+                System.out.println("This user has a web profile already");
+                throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a web profile!");
+            }
+
+            userToUpdate.setUsername(phoneNumber);
+            userToUpdate.setHasAndroidProfile(true);
+            userToUpdate.setHasInitiatedSession(true);
+            userToSave = userToUpdate;
+
+        } else {
+
+            userProfile.setPhoneNumber(phoneNumber);
+            userProfile.setUsername(phoneNumber);
+            userProfile.setDisplayName(userProfile.getFirstName() + " " + userProfile.getLastName());
+            userProfile.setHasAndroidProfile(true);
+            userToSave = userProfile;
+        }
+
+        try {
+            User userToReturn = userRepository.saveAndFlush(userToSave);
+            if (userExists)
+                asyncUserService.recordUserLog(userToReturn.getId(), UserLogType.CREATED_IN_DB, "User first created via web sign up");
+            asyncUserService.recordUserLog(userToReturn.getId(), UserLogType.REGISTERED_ANDROID, "User created android profile");
+            return userToReturn;
+        } catch (final Exception e) {
+            e.printStackTrace();
+            log.warn(e.getMessage());
+            throw new UserExistsException("User '" + userProfile.getUsername() + "' already exists!");
+        }
+
+    }
+
+    @Override
+    public void generateAndroidUserVerifier(String phoneNumber){
+        Objects.nonNull(phoneNumber);
+        phoneNumber = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
+        jmsTemplateProducerService.sendWithNoReply("send-verification", phoneNumber);
+
+
+
+    }
+
 
     @Override
     public List<User> getAllUsers() {

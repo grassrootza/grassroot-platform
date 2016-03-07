@@ -57,6 +57,10 @@ public class EventNotificationConsumer {
     @Autowired
     AccountManagementService accountManagementService;
 
+    @Autowired
+    PasswordTokenService passwordTokenService;
+
+
     /*
     change this to add messages or stop messages altogether by leaving it empty.
      */
@@ -245,7 +249,12 @@ public class EventNotificationConsumer {
         sendCouldNotProcessReply(user);
     }
 
+    @JmsListener(destination = "send-verification", containerFactory = "messagingJmsContainerFactory", concurrency = "3")
+    public void sendPhoneNumberVerificationCode(String phoneNumber){
+        VerificationTokenCode token =  passwordTokenService.generateAndroidVerificationCode(phoneNumber);
+        sendVerificationToken(token);
 
+    }
 
     private void sendWelcomeMessages(UserDTO userDTO) {
         log.info("sendWelcomeMessages..." + userDTO + "...messages..." + welcomeMessages);
@@ -253,6 +262,13 @@ public class EventNotificationConsumer {
             String message = meetingNotificationService.createWelcomeMessage(messageId,userDTO);
             messageSendingService.sendMessage(message,userDTO.getPhoneNumber(),MessageProtocol.SMS);
         }
+    }
+
+    private void sendVerificationToken(VerificationTokenCode verificationTokenCode){
+        log.info("sendingVerficationToken..."+verificationTokenCode.getUsername()+ "...token "+verificationTokenCode.getCode());
+        String message =verificationTokenCode.getCode();
+
+        messageSendingService.sendMessage(message,verificationTokenCode.getUsername(),MessageProtocol.SMS);
     }
 
     private void sendVoteResultsToUser(User user, EventWithTotals eventWithTotals) {

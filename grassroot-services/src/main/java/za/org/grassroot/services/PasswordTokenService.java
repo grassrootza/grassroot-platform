@@ -2,6 +2,7 @@ package za.org.grassroot.services;
 
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.VerificationTokenCode;
+import za.org.grassroot.core.dto.UserDTO;
 
 /**
  * @author Lesetse Kimwaga
@@ -14,9 +15,15 @@ public interface PasswordTokenService {
 
     VerificationTokenCode generateVerificationCode(String username);
 
+    VerificationTokenCode generateAndroidVerificationCode(String phoneNumber);
+
     boolean isVerificationCodeValid(User user, String code);
+
+    boolean isVerificationCodeValid(UserDTO userDTO, String code);
 
     boolean isVerificationCodeValid(String username, String code);
 
     void invalidateVerificationCode(User user, String code);
+
+    VerificationTokenCode generateLongLivedCode(User user);
 }

@@ -63,7 +63,7 @@ public class USSDGroupUtil extends USSDUtil {
             unsubscribePrompt = "unsubscribe",
             groupTokenMenu = "token", renameGroupPrompt = "rename",
             addMemberPrompt = "addnumber", mergeGroupMenu = "merge",
-            inactiveMenu = "inactive", doSuffix="=do";
+            inactiveMenu = "inactive";
 
     private static final SimpleDateFormat unnamedGroupDate = new SimpleDateFormat("d MMM");
 
