@@ -23,6 +23,11 @@ public interface UserManagementService {
 
     User createUserWebProfile(User userProfile) throws UserExistsException;
 
+    User createAndroidUserProfile(User userProfile) throws UserExistsException;
+
+    void generateAndroidUserVerifier(String phoneNumber);
+
+
     User getUserById(Long userId);
 
     User loadUserByUid(String userUid);
@@ -45,7 +50,7 @@ public interface UserManagementService {
 
     User loadOrSaveUser(String inputNumber, boolean isInitiatingSession);
 
-    public User loadOrSaveUser(User passedUser);
+    User loadOrSaveUser(User passedUser);
 
     User findByInputNumber(String inputNumber) throws NoSuchUserException;
 

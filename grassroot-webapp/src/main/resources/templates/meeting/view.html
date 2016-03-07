@@ -78,10 +78,10 @@
         <th>Response</th>
         </thead>
         <tbody>
-        <tr th:each="response : ${rsvpResponses}">
-          <td><span th:text="${response.key.nameToDisplay()}">Member name</span></td>
-          <td><span th:text="${response.key.phoneNumber}">Phone number</span></td>
-          <td><span th:text="${response.value}">Response</span></td>
+        <tr th:each="status : ${rsvpResponses}">
+          <td><span th:text="${status.key.nameToDisplay()}">Member name</span></td>
+          <td><span th:text="${status.key.phoneNumber}">Phone number</span></td>
+          <td><span th:text="${status.value}">Response</span></td>
         </tr>
         </tbody>
       </table>

@@ -11,10 +11,12 @@ public class GroupDTO implements Serializable {
 
     private final Long id;
     private final String groupName;
+  //  private final String description;
 
     public GroupDTO(Group group) {
         this.id =  group.getId();
         this.groupName = group.getGroupName();
+      //  this.description = group.
     }
 
     public Long getId() {

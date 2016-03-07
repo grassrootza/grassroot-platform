@@ -11,10 +11,18 @@ public class UserDTO implements Serializable {
 
     private Long id;
     private String phoneNumber;
+    private String displayName;
 
     public UserDTO(User user) {
         this.id = user.getId();
         this.phoneNumber = user.getPhoneNumber();
+    }
+
+    public UserDTO(String phoneNumber, String displayName){
+        this.phoneNumber = phoneNumber;
+        this.displayName=displayName;
+    }
+    public UserDTO(){
     }
 
     public Long getId() {

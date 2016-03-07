@@ -8,15 +8,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.VerificationTokenCode;
+import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.repository.VerificationTokenCodeRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.Period;
 import java.util.Random;
 
 /**
@@ -26,6 +25,7 @@ import java.util.Random;
 public class PasswordTokenManager implements PasswordTokenService {
 
     public static final int TOKEN_LIFE_SPAN_MINUTES = 10;
+    public static final int TOKEN_LIFE_SPAN_DAYS =10;
     private Logger log = LoggerFactory.getLogger(PasswordTokenManager.class);
 
     @Autowired
@@ -60,6 +60,30 @@ public class PasswordTokenManager implements PasswordTokenService {
         return verificationTokenCode;
     }
 
+
+    @Override
+    public VerificationTokenCode generateAndroidVerificationCode(String phoneNumber) {
+
+        VerificationTokenCode verificationTokenCode = verificationTokenCodeRepository.findByUsername(phoneNumber);
+
+        String code = String.valueOf(100000 + new Random().nextInt(999999));
+
+
+        if (verificationTokenCode == null) {
+            verificationTokenCode = new VerificationTokenCode(PhoneNumberUtil.convertPhoneNumber(phoneNumber), code);
+
+        } else {
+            verificationTokenCode.setCode(code);
+            verificationTokenCode.updateTimeStamp();
+            verificationTokenCode.incrementTokenAttempts();
+        }
+
+        verificationTokenCode.setExpiryDateTime( getExpiryDateFromNow() );
+        verificationTokenCode = verificationTokenCodeRepository.save(verificationTokenCode);
+
+        return verificationTokenCode;
+    }
+
     @Override
     public VerificationTokenCode generateVerificationCode(String username) {
 
@@ -79,6 +103,7 @@ public class PasswordTokenManager implements PasswordTokenService {
 
     }
 
+
     @Override
     public boolean isVerificationCodeValid(User user, String code) {
 
@@ -94,10 +119,6 @@ public class PasswordTokenManager implements PasswordTokenService {
             return false;
         }
 
-        /*boolean isGreaterThanLifeSpanMinutes =
-                Minutes.minutesBetween(new DateTime(verificationTokenCode.getCreatedDateTime().getTime()),
-                new DateTime())
-                .isGreaterThan(Minutes.minutes(TOKEN_LIFE_SPAN_MINUTES));*/
 
         boolean isGreaterThanLifeSpanMinutes =
                 Duration.between(LocalDateTime.now(), verificationTokenCode.getCreatedDateTime().toLocalDateTime()).toMinutes()
@@ -109,6 +130,21 @@ public class PasswordTokenManager implements PasswordTokenService {
     @Override
     public boolean isVerificationCodeValid(String username, String code) {
         return isVerificationCodeValid(userRepository.findByUsername(username),code);
+    }
+
+    @Override
+    public boolean isVerificationCodeValid(UserDTO userDTO, String code){
+
+        VerificationTokenCode verificationTokenCode =verificationTokenCodeRepository.findByUsernameAndCode((PhoneNumberUtil.convertPhoneNumber(userDTO.getPhoneNumber())),code);
+        if (verificationTokenCode == null) {
+            return false;
+        }
+        boolean isGreaterThanLifeSpanMinutes =
+                Duration.between(LocalDateTime.now(), verificationTokenCode.getCreatedDateTime().toLocalDateTime()).toMinutes()
+                        > TOKEN_LIFE_SPAN_MINUTES;
+
+        return !isGreaterThanLifeSpanMinutes;
+
     }
 
     @Override
@@ -126,4 +162,17 @@ public class PasswordTokenManager implements PasswordTokenService {
         return Timestamp.valueOf(LocalDateTime.now().plusMinutes(TOKEN_LIFE_SPAN_MINUTES));
     }
 
-}
+    public VerificationTokenCode generateLongLivedCode(User user) {
+
+        VerificationTokenCode verificationTokenCode = verificationTokenCodeRepository.findByUsername(user.getUsername());
+        verificationTokenCode.setCode( String.valueOf(100000 + new Random().nextInt(999999)));
+        verificationTokenCode.setExpiryDateTime(Timestamp.valueOf(LocalDateTime.now().plusDays(TOKEN_LIFE_SPAN_DAYS)));
+        verificationTokenCodeRepository.save(verificationTokenCode);
+
+        return verificationTokenCode;
+
+    }
+
+    }
+
+
