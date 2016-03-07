@@ -72,7 +72,7 @@ public interface GroupManagementService {
 
     public Group findGroupByToken(String groupToken);
 
-    public Group setGroupDiscoverable(Group group, boolean discoverable, Long userId);
+    public Group setGroupDiscoverable(Group group, boolean discoverable, Long userId, String authorizingUserPhoneNumber);
 
     public List<Group> findDiscoverableGroups(String groupName);
 

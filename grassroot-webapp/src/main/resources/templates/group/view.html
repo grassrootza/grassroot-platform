@@ -11,8 +11,94 @@
   <h2 class="text-center">Group: "<span th:text="${group.groupName}">Group</span>"</h2>
 </div>
 
+<div layout:fragment="overview">
+  <h4 class="text-center" th:if="${canAlter}">
+
+    <span th:if="${openToken}">Join code: *134*1994*<span th:text="${group.groupTokenCode}">1234</span>#
+    <a href="javascript:void(0)" data-toggle="modal" data-target="#joiningModal">(manage it)</a>
+    </span>
+    <span th:unless="${openToken}">No open join code
+    <a href="javascript:void(0)" data-toggle="modal" data-target="#joiningModal">(create one)</a></span>
+    |
+    <span th:if="${group.discoverable}">Group is public</span>
+    <span th:unless="${group.discoverable}">Group is private</span>
+
+    <a href="javascript:void(0)" data-toggle="modal" data-target="#publicModal">(change this)</a>
+  </h4>
+
+  <div th:if="${canAlter}" class="modal fade" id="joiningModal" tabindex="-1" role="dialog" aria-labelledby="joiningModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="joiningModalLabel">Manage joining code</h4>
+        </div>
+        <form th:action="@{/group/token}" method="post">
+          <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
+          <div class="modal-body">
+            <div class="form-group" th:if="${openToken}">
+              Close joining code? If you confirm, then anyone using the code from now on will not be added to the group.
+            </div>
+            <div class="form-group" th:unless="${openToken}">
+              A joining code allows anyone to join your group just by typing it into their phone. You can close it anytime. Continue?
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Confirm</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div th:if="${canAlter}" class="modal fade" id="publicModal" tabindex="-1" role="dialog" aria-labelledby="publicModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="publicModalLabel">
+            <span th:if="${group.discoverable}">Take group private</span>
+            <span th:unless="${group.discoverable}">Make group public</span>
+          </h4>
+        </div>
+        <form th:action="@{/group/discoverable}" method="get">
+          <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
+          <div class="modal-body">
+            <div class="form-group" th:if="${group.discoverable}">
+              Make group private? If you confirm, non-members will no longer be able to find your group by searching for it.
+              <p class="small">Join requests are currently approved by <span th:text="${group.joinApprover.displayName}">name</span></p>
+            </div>
+            <div class="form-group" th:unless="${group.discoverable}">
+              <label for="authorizing-member" class="control-label">
+                Are you sure?
+              </label>
+              <p class="small">Making the group public will allow non-members to see it on search results, and request to join. To proceed,
+              please select which organizer will be responsible for approving or rejecting join requests:</p>
+              <select class="form-control" id="authorizing-member" name="approverPhoneNumber">
+                <option th:each="member : ${groupMembers}"
+                        th:if="${member.roleName == 'ROLE_GROUP_ORGANIZER'}"
+                        th:value="${member.getPhoneNumberWithCCode()}"
+                        th:text="${member.displayName}"></option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Confirm</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+
 <div layout:fragment="content">
-  <div layout:fragment="messages"></div>
+
+  <div class="col-md-8 col-md-offset-2"> <!-- todo: get this to work -->
+    <div layout:fragment="messages"></div>
+  </div>
 
   <!-- list any upcoming meetings, votes, or logs -->
   <!-- todo: use event type to distinguish / classify among them -->
@@ -36,10 +122,7 @@
           <ul class="dropdown-menu">
             <li><a th:href="@{/group/history(groupId=${group.id})}">View group history</a></li>
             <li><a data-toggle="modal" data-target="#renameModal">Rename group</a></li>
-            <li><a th:href="@{/group/token(groupId=${group.id})}">Manage joining code</a></li>
-            <li><a th:href="@{/group/discoverable(groupId=${group.id})}">Change discoverable options</a></li>
             <li><a th:href="@{/group/add(groupId=${group.id})}">Add multiple members</a></li>
-            <li><a th:href="@{/group/remove(groupId=${group.id})}">Remove members</a></li>
             <li><a th:href="@{/group/language(groupId=${group.id})}">Set default language</a></li>
             <li class="divider"></li>
             <li th:if="${not hasParent}"><a th:href="@{/group/parent(groupId=${group.id})}">Link to a parent group</a></li>
@@ -76,61 +159,43 @@
 
     </div>
 
-
-
   </div>
 
 
-  <div th:if="${not #lists.isEmpty(groupMeetings)}">
-    <div class="well">
-      <div class="row">
-        <div class="col-md-12">
-          <h2>Upcoming meetings</h2>
-        </div>
+  <div class="well" th:if="${not #lists.isEmpty(groupMeetings)}">
+    <div class="row">
+      <div class="col-md-8 col-md-offset-2">
+        <h4>Upcoming meetings</h4>
       </div>
-      <div class="row">
-        <div class="col-md-12">
-          <div th:each="event, iterStat : ${groupMeetings}" class="bs-component">
-            <div class="list-group">
-              <div class="list-group-item">
-                <div class="row-content">
-                  <h4 class="list-group-item">
-                    <!-- todo: redirect this based on the event type -->
-                    <a href="" th:href="@{/meeting/view(eventId=${event.id})}"><span th:text="${event.name}"></span></a>
-                  </h4>
-                  <p class="list=group-time-text">Scheduled for <span th:text="${#calendars.format(event.getEventStartDateTime(),'dd MMMM yyyy')}">11 September 2015</span></p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+    </div>
+    <div class="row">
+      <div class="col-md-8 col-md-offset-2">
+        <ul class="list-group">
+          <li class="list-group-item" th:each="event, iterStat : ${groupMeetings}">
+              <!-- todo: redirect this based on the event type -->
+                <a href="" th:href="@{/meeting/view(eventId=${event.id})}"><span th:text="${event.name}"></span></a>
+                <span class="badge" th:text="${#calendars.format(event.getEventStartDateTime(),'dd MMMM yyyy')}">11 September 2015</span>
+          </li>
+        </ul>
       </div>
     </div>
   </div>
 
-  <div th:if="${not #lists.isEmpty(groupVotes)}">
-    <div class="well">
-      <div class="row">
-        <div class="col-md-12">
-          <h2>Open votes</h2>
-        </div>
+  <div class="well" th:if="${not #lists.isEmpty(groupVotes)}">
+    <div class="row">
+      <div class="col-md-8 col-md-offset-2">
+        <h4>Open votes</h4>
       </div>
-      <div class="row">
-        <div class="col-md-12">
-          <div th:each="event, iterStat : ${groupVotes}" class="bs-component">
-            <div class="list-group">
-              <div class="list-group-item">
-                <div class="row-content">
-                  <h4 class="list-group-item">
-                    <!-- todo: redirect this based on the event type -->
-                    <a href="" th:href="@{/vote/view(eventId=${event.id})}"><span th:text="${event.name}"></span></a>
-                  </h4>
-                  <p class="list=group-time-text">Closing on <span th:text="${#calendars.format(event.getEventStartDateTime(),'dd MMMM yyyy')}">11 September 2015</span></p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+    </div>
+    <div class="row">
+      <div class="col-md-8 col-md-offset-2">
+        <ul class="list-group">
+          <li class="list-group-item" th:each="event, iterStat : ${groupVotes}">
+            <!-- todo: redirect this based on the event type -->
+              <a href="" th:href="@{/vote/view(eventId=${event.id})}"><span th:text="${event.name}"></span></a>
+              <span class="badge">Closes <span th:text="${#calendars.format(event.getEventStartDateTime(),'dd MMM, HH:mm')}">11 September 2015</span></span>
+          </li>
+        </ul>
       </div>
     </div>
   </div>

@@ -79,10 +79,15 @@ public class Group implements Serializable {
     private boolean active;
 
     /*
-    Adding a 'discoverable' field, so group owners can mark if they want others to be able to find them
+    Adding a 'discoverable' field, so group owners can mark if they want others to be able to find them, and a link
+    to the UID of the user who will authorize this (UID so we can set it blank and leave nullable)
      */
     @Column(name = "discoverable", nullable = false)
     private boolean discoverable;
+
+    @ManyToOne(optional = true)
+    @JoinColumn(name= "join_approver_id", nullable = true)
+    private User joinApprover;
 
     private Group() {
         // for JPA
@@ -341,6 +346,10 @@ public class Group implements Serializable {
     public void setDiscoverable(boolean discoverable) {
         this.discoverable = discoverable;
     }
+
+    public User getJoinApprover() { return joinApprover; }
+
+    public void setJoinApprover(User joinApprover) { this.joinApprover = joinApprover; }
 
     public Set<Role> getGroupRoles() {
         if (groupRoles == null) {

@@ -272,12 +272,16 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public Group setGroupDiscoverable(Group group, boolean discoverable, Long userId) {
+    public Group setGroupDiscoverable(Group group, boolean discoverable, Long userId, String authorizingUserPhoneNumber) {
         // todo: create a dedicated permission for this, and uncomment, when we have permission setting working on group create
         // todo: once we have implemented 'request to join', will need to wire that up here
         if (group.isDiscoverable() == discoverable) return group;
         String logEntry = discoverable ? "Set group publicly discoverable" : "Set group hidden from public";
         group.setDiscoverable(discoverable);
+        if (discoverable)
+            group.setJoinApprover(userManager.findByInputNumber(authorizingUserPhoneNumber));
+        else
+            group.setJoinApprover(null);
         return saveGroup(group, true, logEntry, userId);
     }
 

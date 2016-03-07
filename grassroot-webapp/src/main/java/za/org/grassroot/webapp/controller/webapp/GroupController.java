@@ -185,7 +185,6 @@ public class GroupController extends BaseController {
             model.addAttribute("canAlter", hasUpdatePermission);
             model.addAttribute("canDeleteGroup", groupBroker.isDeactivationAvailable(user, group));
             model.addAttribute("canMergeWithOthers", hasUpdatePermission); // replace w/ permission later
-            model.addAttribute("isDiscoverable", group.isDiscoverable());
             model.addAttribute("roles", roleDescriptions);
         }
 
@@ -250,9 +249,6 @@ public class GroupController extends BaseController {
 
         // removing from master branch until more comfortable about interface and UX for this and security
 
-        if (groupCreator.isDiscoverable())
-            groupCreated = groupManagementService.setGroupDiscoverable(groupCreated, true, userCreator.getId());
-
         if (groupCreator.getGenerateToken())
             groupManagementService.generateExpiringGroupToken(groupCreated.getUid(), userCreator.getUid(), groupCreator.getTokenDaysValid());
 
@@ -294,7 +290,7 @@ public class GroupController extends BaseController {
     Major todo: permissions, throughout
      */
 
-    @RequestMapping(value = "remove")
+    @RequestMapping(value = "remove", method = RequestMethod.POST)
     public String removeMember(Model model, @RequestParam String groupUid, @RequestParam String msisdn) {
         log.info(String.format("Alright, removing user with number " + msisdn + "from group with UID " + groupUid));
         Long startTime = System.currentTimeMillis();
@@ -310,7 +306,7 @@ public class GroupController extends BaseController {
         return viewGroupIndex(model, group.getId());
     }
 
-    @RequestMapping(value = "addmember")
+    @RequestMapping(value = "addmember", method = RequestMethod.POST)
     public String addMember(Model model, @RequestParam String groupUid, @RequestParam String phoneNumber,
                             @RequestParam String displayName, @RequestParam String roleName, HttpServletRequest request) {
 
@@ -343,6 +339,40 @@ public class GroupController extends BaseController {
         addMessage(model, MessageType.SUCCESS, "group.rename.success", request);
         return viewGroupIndex(model, group.getId());
     }
+
+    @RequestMapping(value = "token", method = RequestMethod.POST)
+    public String manageToken(Model model, @RequestParam String groupUid, HttpServletRequest request) {
+        // todo: make sure services layer checks permissions
+        Group group = groupManagementService.loadGroupByUid(groupUid);
+        if (!groupManagementService.groupHasValidToken(group)) {
+            groupManagementService.generateGroupToken(groupUid, getUserProfile().getUid());
+            addMessage(model, MessageType.SUCCESS, "group.token.created", request);
+        } else {
+            groupManagementService.closeGroupToken(groupUid, getUserProfile().getUid());
+            addMessage(model, MessageType.SUCCESS, "group.token.closed", request);
+        }
+        return viewGroupIndex(model, group.getId());
+    }
+
+    @RequestMapping(value = "discoverable")
+    public String changeDiscoverableConfirmed(Model model, @RequestParam String groupUid,
+                                              @RequestParam(value="approverPhoneNumber", required = false) String approverPhoneNumber,
+                                              HttpServletRequest request) {
+
+        // Group group = loadGroup(groupId, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        Group group = groupManagementService.loadGroupByUid(groupUid);
+
+        if (group.isDiscoverable()) {
+            groupManagementService.setGroupDiscoverable(group, false, getUserProfile().getId(), "");
+            addMessage(model, MessageType.SUCCESS, "group.invisible.success", request);
+        } else {
+            groupManagementService.setGroupDiscoverable(group, true, getUserProfile().getId(), approverPhoneNumber);
+            addMessage(model, MessageType.SUCCESS, "group.visible.success", request);
+        }
+
+        return viewGroupIndex(model, group.getId());
+    }
+
 
     @RequestMapping(value = "modify", method = RequestMethod.POST, params = {"group_modify"})
     public String modifyGroup(Model model, @RequestParam("groupId") Long groupId) {
@@ -480,63 +510,6 @@ public class GroupController extends BaseController {
     Methods for handling join tokens
      */
 
-    @RequestMapping(value = "modify", method = RequestMethod.POST, params = {"token_create"})
-    public String newToken(Model model, @RequestParam("groupId") Long groupId) {
-
-        Group group = groupManagementService.loadGroup(groupId);
-        if (!isUserPartOfGroup(getUserProfile(), group)) throw new AccessDeniedException("");
-        model.addAttribute("group", group);
-        return "group/new_token";
-    }
-
-    @RequestMapping(value = "modify", method = RequestMethod.POST, params = {"token_extend"})
-    public String extendToken(Model model, @RequestParam("groupId") Long groupId) {
-
-        Group group = groupManagementService.loadGroup(groupId);
-        model.addAttribute("group", group);
-        return "group/extend_token";
-    }
-
-    @RequestMapping(value = "modify", method = RequestMethod.POST, params = {"token_cancel"})
-    public String cancelToken(Model model, @RequestParam("groupId") Long groupId) {
-
-        Group group = groupManagementService.loadGroup(groupId);
-        model.addAttribute("group", group);
-        return "group/close_token";
-    }
-
-    @RequestMapping(value = "token", method = RequestMethod.POST)
-    public String createGroupToken(Model model, @RequestParam("groupId") Long groupId, @RequestParam("action") String action,
-                                   @RequestParam(value = "days", required = false) Integer days,
-                                   HttpServletRequest request, RedirectAttributes redirectAttributes) {
-
-        Group group = groupManagementService.loadGroup(groupId); // todo: just leave it out once refactored to Uid
-
-        switch (action) {
-            case "create":
-                if (days == 0)
-                    group = groupManagementService.generateGroupToken(group.getUid(), getUserProfile().getUid());
-                else
-                    group = groupManagementService.generateExpiringGroupToken(group.getUid(), getUserProfile().getUid(), days);
-                log.info("New token created with value: " + group.getGroupTokenCode());
-                addMessage(redirectAttributes, MessageType.SUCCESS, "group.token.creation.success",
-                        new Object[]{group.getGroupTokenCode()}, request);
-                break;
-            case "extend":
-                group = groupManagementService.extendGroupToken(group, days, getUserProfile());
-                log.info("Token extended until: " + group.getTokenExpiryDateTime().toString());
-                break;
-            case "close":
-                group = groupManagementService.closeGroupToken(group.getUid(), getUserProfile().getUid());
-                log.info("Token closed!");
-                break;
-        }
-
-        redirectAttributes.addAttribute("groupId", group.getId());
-        return "redirect:/group/view";
-
-    }
-
     @RequestMapping(value = "modify", params = {"group_language"})
     public String requestGroupLanguage(Model model, @RequestParam("groupId") Long groupId) {
 
@@ -569,38 +542,7 @@ public class GroupController extends BaseController {
         return "redirect:/group/view";
     }
 
-    /**
-     * Methods to handle changing group discoverability
-     */
-    @RequestMapping(value = "modify", params = {"discoverable"})
-    public String alterGroupDiscoverability(Model model, @RequestParam("groupId") Long groupId) {
-        Group group = loadGroup(groupId, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-        model.addAttribute("group", group);
-        return "group/discoverable";
-    }
 
-    @RequestMapping(value = "discoverable", method = RequestMethod.POST)
-    public String changeDiscoverableConfirmed(Model model, @RequestParam Long groupId,
-                                              @RequestParam(value = "confirm_field", required = false) String confirmField,
-                                              RedirectAttributes redirectAttributes, HttpServletRequest request) {
-
-        Group group = loadGroup(groupId, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-
-        if (group.isDiscoverable()) {
-            groupManagementService.setGroupDiscoverable(group, false, getUserProfile().getId());
-            addMessage(redirectAttributes, MessageType.SUCCESS, "group.invisible.success", request);
-        } else {
-            if (confirmField.equalsIgnoreCase("visible")) {
-                groupManagementService.setGroupDiscoverable(group, true, getUserProfile().getId());
-                addMessage(redirectAttributes, MessageType.SUCCESS, "group.visible.success", request);
-            } else {
-                addMessage(redirectAttributes, MessageType.ERROR, "group.visible.error", request);
-            }
-        }
-
-        redirectAttributes.addAttribute("groupId", groupId);
-        return "redirect:/group/view";
-    }
 
     /*
     Methods for handling group linking to a parent (as observing that users often create group first, link later)
