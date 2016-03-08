@@ -4,33 +4,8 @@ declare
 	myid bigint;
 BEGIN
 FOR gd IN
-	select g.id, g.uid from group_profile g where not exists (select gr.group_id from group_roles gr where gr.group_id = g.id)
+select g.id, g.uid from group_profile g where not exists (select gr.group_id from group_roles gr, role r where gr.group_id = g.id and gr.role_id = r.id and r.role_name = 'ROLE_GROUP_ORGANIZER')
 LOOP
-	INSERT INTO role (group_uid, role_type, role_name) VALUES (gd.uid, 'GROUP', 'ROLE_COMMITTEE_MEMBER') returning id into myid;
-	INSERT INTO group_roles (group_id, role_id) VALUES (gd.id, myid);
-	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 16);
-	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 17);
-	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 24);
-	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 29);
-	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 28);
-	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 26);
-	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 18);
-	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 21);
-	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 27);
-	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 30);
-	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 25);
-	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 20);
-
-	INSERT INTO role (group_uid, role_type, role_name) VALUES (gd.uid, 'GROUP', 'ROLE_ORDINARY_MEMBER') returning id into myid;
-	INSERT INTO group_roles (group_id, role_id) VALUES (gd.id, myid);
-	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 24);
-	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 29);
-	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 28);
-	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 26);
-	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 27);
-	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 30);
-	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 25);
-
 	INSERT INTO role (group_uid, role_type, role_name) VALUES (gd.uid, 'GROUP', 'ROLE_GROUP_ORGANIZER') returning id into myid;
 	INSERT INTO group_roles (group_id, role_id) VALUES (gd.id, myid);
 	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 17);
@@ -47,6 +22,55 @@ LOOP
 	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 26);
 	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 19);
 	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 21);
+	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 30);
+	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 25);
+
+END LOOP;
+end;
+$$;
+
+do $$
+declare
+	gd record;
+	myid bigint;
+BEGIN
+FOR gd IN
+select g.id, g.uid from group_profile g where not exists (select gr.group_id from group_roles gr, role r where gr.group_id = g.id and gr.role_id = r.id and r.role_name = 'ROLE_COMMITTEE_MEMBER')
+LOOP
+	INSERT INTO role (group_uid, role_type, role_name) VALUES (gd.uid, 'GROUP', 'ROLE_COMMITTEE_MEMBER') returning id into myid;
+	INSERT INTO group_roles (group_id, role_id) VALUES (gd.id, myid);
+	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 16);
+	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 17);
+	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 24);
+	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 29);
+	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 28);
+	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 26);
+	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 18);
+	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 21);
+	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 27);
+	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 30);
+	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 25);
+	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 20);
+
+END LOOP;
+end;
+$$;
+
+do $$
+declare
+	gd record;
+	myid bigint;
+BEGIN
+FOR gd IN
+select g.id, g.uid from group_profile g where not exists (select gr.group_id from group_roles gr, role r where gr.group_id = g.id and gr.role_id = r.id and r.role_name = 'ROLE_ORDINARY_MEMBER')
+LOOP
+	INSERT INTO role (group_uid, role_type, role_name) VALUES (gd.uid, 'GROUP', 'ROLE_ORDINARY_MEMBER') returning id into myid;
+	INSERT INTO group_roles (group_id, role_id) VALUES (gd.id, myid);
+	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 24);
+	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 29);
+	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 28);
+	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 26);
+	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 27);
 	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 30);
 	INSERT INTO role_permissions (role_id, permission_id) VALUES (myid, 25);
 
