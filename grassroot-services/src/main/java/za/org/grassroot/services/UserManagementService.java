@@ -23,7 +23,7 @@ public interface UserManagementService {
 
     User createUserWebProfile(User userProfile) throws UserExistsException;
 
-    User createAndroidUserProfile(User userProfile) throws UserExistsException;
+    User createAndroidUserProfile(UserDTO userDTO) throws UserExistsException;
 
     void generateAndroidUserVerifier(String phoneNumber);
 

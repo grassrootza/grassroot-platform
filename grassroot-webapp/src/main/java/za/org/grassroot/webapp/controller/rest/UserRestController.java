@@ -5,12 +5,18 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.PasswordTokenService;
 import za.org.grassroot.services.UserManagementService;
-import za.org.grassroot.services.exception.UserExistsException;
-import za.org.grassroot.webapp.model.rest.UserRegistrationResponseWrapper;
+import za.org.grassroot.webapp.enums.RestMessage;
+import za.org.grassroot.webapp.enums.RestStatus;
+import za.org.grassroot.webapp.model.rest.ResponseWrappers.LoginResponseWrapper;
+import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
+import za.org.grassroot.webapp.model.rest.ResponseWrappers.TokenWrapper;
+import za.org.grassroot.webapp.model.rest.ResponseWrappers.UserResponseWrapper;
 
 import java.util.List;
 import java.util.logging.Logger;
@@ -24,6 +30,7 @@ public class UserRestController {
 
     private Logger log = Logger.getLogger(getClass().getCanonicalName());
 
+
     @Autowired
     UserRepository userRepository;
 
@@ -33,7 +40,7 @@ public class UserRestController {
     @Autowired
     PasswordTokenService passwordTokenService;
 
-    //TODO this method should be admin group only, or removed when testing completed
+
     @RequestMapping(value = "/list", method = RequestMethod.GET)
     public List<User> list() {
         return userRepository.findAll();
@@ -41,39 +48,72 @@ public class UserRestController {
 
 
     @RequestMapping(value = "/add/{phoneNumber}", method = RequestMethod.GET)
-    public ResponseEntity<String> add(@PathVariable("phoneNumber") String phoneNumber){
-       userManagementService.generateAndroidUserVerifier(phoneNumber);
-       return new ResponseEntity<>("success", HttpStatus.OK);
+    public ResponseEntity<ResponseWrapper> add(@PathVariable("phoneNumber") String phoneNumber) {
+
+        UserResponseWrapper responseWrapper;
+
+        if (!checkIfExists(phoneNumber)) {
+            userManagementService.generateAndroidUserVerifier(phoneNumber);
+            responseWrapper = new UserResponseWrapper(HttpStatus.OK, RestMessage.VERIFICATION_TOKEN_SENT, RestStatus.SUCCESS);
+
+            return new ResponseEntity<>(responseWrapper, HttpStatus.OK);
+        }
+        responseWrapper = new UserResponseWrapper(HttpStatus.CONFLICT, RestMessage.USER_ALREADY_EXISTS, RestStatus.FAILURE);
+        return new ResponseEntity<>(responseWrapper,
+                HttpStatus.CONFLICT);
 
     }
 
     @RequestMapping(value = "/verify/{code}", method = RequestMethod.POST)
-    public ResponseEntity<UserRegistrationResponseWrapper> verify( @PathVariable("code") String code, @RequestBody UserDTO userDto){
+    public ResponseEntity<ResponseWrapper> verify(@PathVariable("code") String code, @RequestBody UserDTO userDTO)
+            throws Exception {
 
-       log.info(code + " " + userDto.toString());
-        UserRegistrationResponseWrapper responseWrapper = new UserRegistrationResponseWrapper();
+        if (passwordTokenService.isVerificationCodeValid(userDTO, code)) {
+            User user = userManagementService.createAndroidUserProfile(userDTO);
+            VerificationTokenCode token = passwordTokenService.generateLongLivedCode(user);
+            TokenWrapper responseWrapper = new TokenWrapper(HttpStatus.OK, RestMessage.USER_REGISTRATION_SUCCESSFUL,
+                    RestStatus.SUCCESS, token);
+            return new ResponseEntity<>(responseWrapper, HttpStatus.OK);
 
-        if(passwordTokenService.isVerificationCodeValid(userDto,code)){
-            User user =  new User(userDto.getPhoneNumber(), userDto.getDisplayName());
-
-            try {
-                userManagementService.createAndroidUserProfile(user);
-
-            } catch (UserExistsException e) {
-
-                responseWrapper.setMessage(e.getMessage());
-                return new ResponseEntity<>(responseWrapper,HttpStatus.CONFLICT);
-            }
-            responseWrapper.setMessage("success");
-            responseWrapper.setVerificationTokenCode(passwordTokenService.generateLongLivedCode(user));
-            return new ResponseEntity<>(responseWrapper,HttpStatus.OK);
-
-        }else{
-            responseWrapper.setMessage("Could not validate token");
-            return new  ResponseEntity<>(responseWrapper,HttpStatus.UNAUTHORIZED);
+        } else {
+            UserResponseWrapper responseWrapper = new UserResponseWrapper(HttpStatus.UNAUTHORIZED,RestMessage.INVALID_TOKEN,RestStatus.FAILURE);
+            return new ResponseEntity<>(responseWrapper, HttpStatus.UNAUTHORIZED);
         }
 
 
+    }
+
+    @RequestMapping(value = "/login/{phoneNumber}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> logon(@PathVariable("phoneNumber") String phoneNumber) {
+
+        UserResponseWrapper responseWrapper;
+        if (checkIfExists(phoneNumber)) {
+            userManagementService.generateAndroidUserVerifier(phoneNumber);
+            responseWrapper = new UserResponseWrapper(HttpStatus.OK,RestMessage.VERIFICATION_TOKEN_SENT,RestStatus.SUCCESS);
+            return new ResponseEntity<>(responseWrapper, HttpStatus.OK);
+
+        } else {
+            responseWrapper = new UserResponseWrapper(HttpStatus.OK,RestMessage.USER_DOES_NOT_EXIST, RestStatus.FAILURE);
+            return new ResponseEntity<>(responseWrapper, HttpStatus.NOT_FOUND);
+        }
+
+    }
+
+    @RequestMapping(value = "/login/authenticate/{phoneNumber}/{code}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> authenticate(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String token) {
+
+        if (passwordTokenService.isVerificationCodeValid(phoneNumber, token)) {
+            User user = userManagementService.loadOrSaveUser(phoneNumber);
+            VerificationTokenCode longLivedToken = passwordTokenService.generateLongLivedCode(user);
+            LoginResponseWrapper responseWrapper = new LoginResponseWrapper(HttpStatus.OK, RestMessage.LOGIN_SUCCESS,
+                    RestStatus.SUCCESS,longLivedToken, user.getDisplayName());
+            return new ResponseEntity<>(responseWrapper, HttpStatus.OK);
+
+        } else {
+            UserResponseWrapper responseWrapper = new UserResponseWrapper(HttpStatus.UNAUTHORIZED,RestMessage.INVALID_TOKEN,
+                    RestStatus.FAILURE);
+            return new ResponseEntity<>(responseWrapper, HttpStatus.UNAUTHORIZED);
+        }
 
     }
 
@@ -88,6 +128,10 @@ public class UserRestController {
     public UserDTO setInitiatedSession(@PathVariable("userId") Long userId) {
         return new UserDTO(userManagementService.setInitiatedSession(userManagementService.loadUser(userId)));
 
+    }
+
+    private boolean checkIfExists(String phoneNumber) {
+        return userManagementService.userExist(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
     }
 
 

@@ -129,20 +129,19 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public User createAndroidUserProfile(User userProfile) throws UserExistsException{
-        Assert.notNull(userProfile);
+    public User createAndroidUserProfile(UserDTO userDTO) throws UserExistsException{
+        Assert.notNull(userDTO);
+        User userProfile = new User(userDTO.getPhoneNumber(),userDTO.getDisplayName());
         User userToSave;
         String phoneNumber = PhoneNumberUtil.convertPhoneNumber(userProfile.getPhoneNumber());
         boolean userExists = userExist(phoneNumber);
 
         if (userExists) {
 
-            System.out.println("The user exists, and their web profile is set to: " + userProfile.isHasWebProfile());
-
             User userToUpdate = loadOrSaveUser(phoneNumber);
             if (userToUpdate.hasAndroidProfile() ){
-                System.out.println("This user has a web profile already");
-                throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a web profile!");
+
+                throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a android profile!");
             }
 
             userToUpdate.setUsername(phoneNumber);
@@ -154,7 +153,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
             userProfile.setPhoneNumber(phoneNumber);
             userProfile.setUsername(phoneNumber);
-            userProfile.setDisplayName(userProfile.getFirstName() + " " + userProfile.getLastName());
+            userProfile.setDisplayName(userProfile.getDisplayName());
             userProfile.setHasAndroidProfile(true);
             userToSave = userProfile;
         }

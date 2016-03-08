@@ -1,4 +1,6 @@
-package za.org.grassroot.webapp.model.rest;
+package za.org.grassroot.webapp.model.rest.ResponseWrappers;
+
+import za.org.grassroot.webapp.model.rest.TaskDTO;
 
 import java.util.List;
 
@@ -45,11 +47,11 @@ public class TaskResponseWrapper {
         this.permissions = permissions;
     }
 
-    public List<TaskDTO> getEventLogBook() {
+    public List<TaskDTO> getTasks() {
         return eventLogBook;
     }
 
-    public void setEventLogBook(List<TaskDTO> eventLogBook) {
+    public void setTasks(List<TaskDTO> eventLogBook) {
         this.eventLogBook = eventLogBook;
     }
 }
