@@ -1,6 +1,7 @@
 package za.org.grassroot.services;
 
 import com.google.common.collect.ImmutableList;
+import edu.emory.mathcs.backport.java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,43 +49,7 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
 
     @Override
     public void addUserGroupPermissions(Group group, User user, Set<Permission> groupPermissions) {
-
-        try {
-
-            // log.info("ZOG: Adding permissions for this group ... {}", group.toString());
-            // log.info("ZOG: Adding them to this user ... {}", user.toString());
-            // log.info("ZOG: Adding this set of permissions ... {}", groupPermissions);
-
-            log.info("inside ACL setting .... Current authentication is ... " + SecurityContextHolder.getContext().getAuthentication());
-            ObjectIdentity objectIdentity = new ObjectIdentityImpl(Group.class, group.getId());
-            log.info("Principal SID with user name ... " + user.getUsername());
-            Sid sid = new PrincipalSid(user.getUsername());
-
-
-            /**************************************************************
-             * Clear ALL permissions
-             **************************************************************/
-
-            removePermissions(objectIdentity, sid);
-
-            MutableAcl acl = getMutableAcl(objectIdentity);
-
-            /**************************************************************
-             * Grant Permissions via an access control entry (ACE)
-             **************************************************************/
-
-            for (Permission permission : groupPermissions) {
-
-                acl.insertAce(acl.getEntries().size(), permission, sid, true);
-                mutableAclService.updateAcl(acl);
-            }
-
-        } catch (Exception e) {
-            log.error("Could not add group permissions for user", e);
-            throw new RuntimeException("Could not add group permissions for user", e);
-        }
-
-
+        addGroupPermissions(group, Collections.singletonList(user), groupPermissions);
     }
 
     @Override
@@ -96,31 +61,40 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
             SecurityContextHolder.getContext().setAuthentication(auth);
         }
         log.info("After null check & setting, context set to ... " + SecurityContextHolder.getContext().getAuthentication());
-        addUserGroupPermissions(group, addingToUser, groupPermissions);
+        addGroupPermissions(group, Collections.singletonList(addingToUser), groupPermissions);
     }
 
     @Override
     public void addUsersGroupPermissions(Group group, List<User> addingToUsers, User modifyingUser, Set<Permission> groupPermissions) {
+        addGroupPermissions(group, addingToUsers, groupPermissions);
+    }
+
+    private void addGroupPermissions(Group group, List<User> addingToUsers, Set<Permission> groupPermissions) {
         try {
-
-            log.info("inside ACL setting .... Current authentication is ... " + SecurityContextHolder.getContext().getAuthentication());
+            log.info("Inside ACL setting .... Current authentication is ... " + SecurityContextHolder.getContext().getAuthentication());
             ObjectIdentity objectIdentity = new ObjectIdentityImpl(Group.class, group.getId());
-
-            log.info("about to try setting permisssions for a number of users ...");
             MutableAcl acl = getMutableAcl(objectIdentity);
+
             for (User user : addingToUsers) {
+                log.info("Principal SID with user name ... " + user.getUsername());
                 Sid sid = new PrincipalSid(user.getUsername());
-                removePermissions(objectIdentity, sid);
+
+                /**************************************************************
+                 * Clear ALL permissions
+                 **************************************************************/
+                removePermissions(acl, sid);
+
+                /**************************************************************
+                 * Grant Permissions via an access control entry (ACE)
+                 **************************************************************/
 
                 for (Permission permission : groupPermissions) {
                     acl.insertAce(acl.getEntries().size(), permission, sid, true);
                 }
             }
             mutableAclService.updateAcl(acl);
-            log.info("done setting permissions ....");
 
         } catch (Exception e) {
-            log.error("Could not add group permissions for batch of users", e);
             throw new RuntimeException("Could not add group permissions for user", e);
         }
     }
@@ -151,9 +125,10 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
     public void removeUserGroupPermissions(Group group, User user, Set<Permission> groupPermissions) {
 
         try {
-            MutableAcl acl = (MutableAcl) mutableAclService.readAclById(new ObjectIdentityImpl(Group.class, group.getId()));
-            Sid sid = new PrincipalSid(user.getUsername());
+            ObjectIdentityImpl objectIdentity = new ObjectIdentityImpl(Group.class, group.getId());
 
+            MutableAcl acl = (MutableAcl) mutableAclService.readAclById(objectIdentity);
+            Sid sid = new PrincipalSid(user.getUsername());
 
             for (Permission permission : groupPermissions) {
                 deleteAce(acl, permission, sid);
@@ -187,17 +162,10 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
     }
 
 
-    /**
-     * @param permission
-     * @param group
-     * @param user
-     * @return
-     */
     @Override
-    public boolean hasGroupPermission(Permission permission, Long groupId, User user) {
-
+    public boolean hasGroupPermission(Permission permission, Group group, User user) {
         try {
-            ObjectIdentity objectIdentity = new ObjectIdentityImpl(Group.class, groupId);
+            ObjectIdentity objectIdentity = new ObjectIdentityImpl(Group.class, group.getId());
 
             ImmutableList<Sid> sids = ImmutableList.of(new PrincipalSid(user.getUsername()));
             MutableAcl acl = (MutableAcl) mutableAclService.readAclById(objectIdentity, sids);
@@ -208,12 +176,6 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
             log.info("Returning false - No ACLs apply for this principal");
             return false;
         }
-
-    }
-
-    @Override
-    public boolean hasGroupPermission(Permission permission, Group group, User user) {
-        return hasGroupPermission(permission, group.getId(), user);
     }
 
     /**
@@ -239,12 +201,11 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
 
     /**
      * @param objectIdentity
+     * @param acl
      * @param sid
      */
-    private void removePermissions(ObjectIdentity objectIdentity, Sid sid) {
+    private void removePermissions(MutableAcl acl, Sid sid) {
         try {
-
-            MutableAcl acl = getMutableAcl(objectIdentity);
 
             while (hasPermissionsForRecipient(acl, sid)) {
                 for (int i = 0; i < acl.getEntries().size(); i++) {
@@ -252,8 +213,6 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
                     Sid aclEntrySid = entry.getSid();
                     if (aclEntrySid.equals(sid)) {
                         acl.deleteAce(i);
-                        mutableAclService.updateAcl(acl);
-                        // break;
                     }
                 }
             }

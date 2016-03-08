@@ -39,8 +39,6 @@ public interface GroupAccessControlManagementService {
      * @param user
      * @return
      */
-    boolean hasGroupPermission(Permission permission, Long groupId, User user);
-
     boolean hasGroupPermission(Permission permission, Group group, User user);
 
     /**
