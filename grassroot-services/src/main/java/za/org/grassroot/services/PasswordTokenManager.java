@@ -17,6 +17,7 @@ import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Random;
+import java.util.UUID;
 
 /**
  * @author Lesetse Kimwaga
@@ -66,7 +67,7 @@ public class PasswordTokenManager implements PasswordTokenService {
 
         VerificationTokenCode verificationTokenCode = verificationTokenCodeRepository.findByUsername(phoneNumber);
 
-        String code = String.valueOf(100000 + new Random().nextInt(999999));
+        String code = UUID.randomUUID().toString();
 
 
         if (verificationTokenCode == null) {
@@ -129,7 +130,7 @@ public class PasswordTokenManager implements PasswordTokenService {
 
     @Override
     public boolean isVerificationCodeValid(String username, String code) {
-        return isVerificationCodeValid(userRepository.findByUsername(username),code);
+        return isVerificationCodeValid(userRepository.findByUsername(PhoneNumberUtil.convertPhoneNumber(username)),code);
     }
 
     @Override
@@ -165,7 +166,7 @@ public class PasswordTokenManager implements PasswordTokenService {
     public VerificationTokenCode generateLongLivedCode(User user) {
 
         VerificationTokenCode verificationTokenCode = verificationTokenCodeRepository.findByUsername(user.getUsername());
-        verificationTokenCode.setCode( String.valueOf(100000 + new Random().nextInt(999999)));
+        verificationTokenCode.setCode(UUID.randomUUID().toString());
         verificationTokenCode.setExpiryDateTime(Timestamp.valueOf(LocalDateTime.now().plusDays(TOKEN_LIFE_SPAN_DAYS)));
         verificationTokenCodeRepository.save(verificationTokenCode);
 

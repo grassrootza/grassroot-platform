@@ -1,5 +1,6 @@
 package za.org.grassroot.services.integration;
 
+import com.google.common.collect.Sets;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -13,15 +14,18 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.GrassRootServicesConfig;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
+import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.GroupManagementService;
+import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.UserManagementService;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
@@ -95,8 +99,13 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
     public void shouldAddMultipleNumbersToGroup() {
         User user = userManagementService.loadOrSaveUser("0810001111");
         Group group = groupRepository.save(new Group("test group", user));
+        String ordinaryRole = BaseRoles.ROLE_ORDINARY_MEMBER;
         log.info("ZOG: Group created ..." + group.toString());
-        // groupManagementService.addNumbersToGroup(group.getId(), Arrays.asList("0810001111", "0810001112", "0810001113", "0810001114"), user, false);
+        Set<MembershipInfo> members = Sets.newHashSet(new MembershipInfo("0810001111", ordinaryRole, ""),
+                                                      new MembershipInfo("0810001112", ordinaryRole, ""),
+                                                      new MembershipInfo("0810001113", ordinaryRole, ""),
+                                                      new MembershipInfo("0810001114", ordinaryRole, ""));
+        groupBroker.addMembers(user.getUid(), group.getUid(), members);
         log.info("ZOG: Group now looks like ... " + group.toString() + "... with groupMembers ... " + group.getMembers());
         assertNotNull(group.getMembers());
         assertEquals(4, group.getMembers().size());
@@ -126,8 +135,13 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         User user2 = userManagementService.loadOrSaveUser(testUserBase + "2");
         Group group1 = groupRepository.save(new Group(testGroupBase + "1", user1));
         Group group2 = groupRepository.save(new Group(testGroupBase + "2", user2));
-        //groupManagementService.addGroupMember(group1, user1, user1.getId(), false);
-        //groupManagementService.addGroupMember(group2, user1, user1.getId(), false);
+        MembershipInfo member1 = new MembershipInfo(user1.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER,
+                                                    user1.getDisplayName());
+        MembershipInfo member2 = new MembershipInfo(user2.getPhoneNumber(), BaseRoles.ROLE_ORDINARY_MEMBER,
+                                                    user2.getDisplayName());
+        groupBroker.addMembers(user1.getUid(), group1.getUid(), Sets.newHashSet(member1));
+        groupBroker.addMembers(user1.getUid(), group1.getUid(), Sets.newHashSet(member2));
+        groupBroker.addMembers(user2.getUid(), group2.getUid(), Sets.newHashSet(member1));
         assertTrue(group2.getMembers().contains(user1));
         List<Group> list1 = groupManagementService.getActiveGroupsPartOf(user1);
         List<Group> list2 = groupManagementService.getCreatedGroups(user1);

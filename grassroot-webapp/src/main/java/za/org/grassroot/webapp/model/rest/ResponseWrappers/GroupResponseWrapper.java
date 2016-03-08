@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.model.rest;
+package za.org.grassroot.webapp.model.rest.ResponseWrappers;
 
 import java.sql.Timestamp;
 import java.util.List;
