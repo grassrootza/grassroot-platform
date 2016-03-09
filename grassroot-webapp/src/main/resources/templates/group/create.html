@@ -38,18 +38,6 @@
           </select>
         </div>
       </div>
-      <!-- Note: Since need to designate someone to handle join requests, for now doing it after (might default to here) -->
-      <!-- <div class="form-group">
-        <div class="row">
-          <label class="col-lg-2 control-label">Public:</label>
-          <div class="checkbox col-lg-4">
-            <label>
-              <input type="checkbox" th:field="*{discoverable}" id="discoverable" />
-              Allows non-members to search for and ask to join group
-            </label>
-          </div>
-        </div>
-      </div> -->
 
       <div class="form-group col-lg-10 col-lg-offset-2">
         <table class="table col-md-8" id="member-input">
@@ -62,19 +50,19 @@
           </tr>
           </thead>
           <tbody>
-          <tr th:each="member, iterStat: *{addedMembers}">
+          <tr th:each="member, iterStat: *{listOfMembers}">
             <td>
-              <input type="text" th:field="*{addedMembers[__${iterStat.index}__].displayName}" class="form-control" placeholder="Member's name"/>
+              <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].displayName}" class="form-control" placeholder="Member's name"/>
             </td>
             <td>
-              <div class="form-group" th:class="${#fields.hasErrors('addedMembers[__${iterStat.index}__].phoneNumber')}? has-error">
+              <div class="form-group" th:class="${#fields.hasErrors('listOfMembers[__${iterStat.index}__].phoneNumber')}? has-error">
                 <!-- todo: format / mask this as on sign-in page -->
-                <input type="text" th:field="*{addedMembers[__${iterStat.index}__].phoneNumber}" class="form-control" th:errorclass="error" placeholder="Phone number"/>
-                <span th:if="${#fields.hasErrors('addedMembers[__${iterStat.index}__].phoneNumber')}" class="alert has-error">Error!</span>
+                <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].phoneNumber}" class="form-control" th:errorclass="error" placeholder="Phone number"/>
+                <span th:if="${#fields.hasErrors('listOfMembers[__${iterStat.index}__].phoneNumber')}" class="alert has-error">Error!</span>
               </div>
             </td>
             <td>
-              <select th:field="*{addedMembers[__${iterStat.index}__].roleName}" class="form-control">
+              <select th:field="*{listOfMembers[__${iterStat.index}__].roleName}" class="form-control">
                 <option th:each="role : ${roles}"
                         th:value="${role[0]}"
                         th:text="${role[1]}"

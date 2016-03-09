@@ -468,32 +468,17 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     }
 
     @Test
-    public void confirmDeleteWorks() throws Exception {
-        Group group = new Group("someGroupname", new User("234345345"));
-        group.setId(dummyId);
-        when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(group);
-        when(groupBrokerMock.isDeactivationAvailable(sessionTestUser, group)).thenReturn(true);
-        mockMvc.perform(get("/group/modify").param("group_delete", "").param("groupId", String.valueOf(dummyId)))
-                .andExpect(status().isOk()).andExpect(view().name("group/delete_confirm"))
-                .andExpect(model().attribute("group", hasProperty("id", is(dummyId))));
-        verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
-        verify(groupBrokerMock, times(1)).isDeactivationAvailable(sessionTestUser, group);
-        verifyNoMoreInteractions(groupManagementServiceMock);
-
-    }
-
-    @Test
     public void deleteGroupWorksWithConfirmFieldValueValid() throws Exception {
         Group group = new Group("someGroupname", new User("234345345"));
 
-        when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(group);
+        when(groupManagementServiceMock.loadGroupByUid(group.getUid())).thenReturn(group);
         when(groupBrokerMock.isDeactivationAvailable(sessionTestUser, group)).thenReturn(true);
 //        when(groupBrokerMock.deactivate(sessionTestUser.getUid(), group.getUid())).thenReturn(group);
-        mockMvc.perform(get("/group/delete").param("groupId", String.valueOf(dummyId)).param("confirm_field", "delete"))
+        mockMvc.perform(post("/group/inactive").param("groupUid", group.getUid()).param("confirm_field", "delete"))
                 .andExpect(status().is3xxRedirection()).andExpect(view().name("redirect:/home"))
                 .andExpect(redirectedUrl("/home")).andExpect(flash()
                 .attributeExists(BaseController.MessageType.SUCCESS.getMessageKey()));
-        verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
+        verify(groupManagementServiceMock, times(1)).loadGroupByUid(group.getUid());
         verify(groupBrokerMock, times(1)).isDeactivationAvailable(sessionTestUser, group);
         verify(groupBrokerMock, times(1)).deactivate(sessionTestUser.getUid(), group.getUid());
         verifyNoMoreInteractions(groupManagementServiceMock);
@@ -503,26 +488,24 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     public void deleteGroupWorksWithConfirmFieldValueInvalid() throws Exception {
 
         Group group = new Group("someGroupname", new User("234345345"));
+        group.setId(dummyId);
+
+        when(groupManagementServiceMock.loadGroupByUid(group.getUid())).thenReturn(group);
+        when(groupBrokerMock.isDeactivationAvailable(sessionTestUser, group)).thenReturn(true);
+
         when(userManagementServiceMock.getUserById(sessionTestUser.getId())).thenReturn(sessionTestUser);
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(group);
         when(groupManagementServiceMock.isUserInGroup(group, sessionTestUser)).thenReturn(true);
-        when(groupAccessControlManagementServiceMock.loadGroup(dummyId, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)).thenReturn(group);
-        when(groupBrokerMock.isDeactivationAvailable(sessionTestUser, group)).thenReturn(true);
-        when(groupManagementServiceMock.getLastTimeGroupActive(group)).thenReturn(LocalDateTime.now());
 
-        group.addMember(sessionTestUser);
-
-        mockMvc.perform(get("/group/delete").param("groupId", String.valueOf(dummyId)).param("confirm_field", "d"))
+        mockMvc.perform(post("/group/inactive").param("groupUid", group.getUid()).param("confirm_field", "d"))
                 .andExpect(status().isOk()).andExpect(view().name("group/view"))
-                .andExpect(model()
-                        .attributeExists(BaseController.MessageType.ERROR.getMessageKey()));
-        verify(userManagementServiceMock, times(1)).getUserById(sessionTestUser.getId());
+                .andExpect(model().attributeExists(BaseController.MessageType.ERROR.getMessageKey()));
+
+        verify(groupManagementServiceMock, times(1)).loadGroupByUid(group.getUid());
         verify(groupBrokerMock, times(1)).isDeactivationAvailable(sessionTestUser, group);
-        verify(groupManagementServiceMock, times(1)).isUserInGroup(group, sessionTestUser);
-        verify(groupManagementServiceMock, times(2)).loadGroup(dummyId);
+
         // redirect to view causes all view method calls, no point repeating them here, but leaving verify written & commented
-        // verifyNoMoreInteractions(groupManagementServiceMock);
-        //verifyNoMoreInteractions(userManagementServiceMock);
+
     }
 
     @Test

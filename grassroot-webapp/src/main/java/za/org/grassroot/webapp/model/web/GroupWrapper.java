@@ -26,9 +26,9 @@ public class GroupWrapper {
     private boolean generateToken;
     private Integer tokenDaysValid;
 
-    // private GroupPermissionTemplate template;
 
-    private Set<MembershipInfo> addedMembers = new LinkedHashSet<>();
+    // need to use a list so that we can add and remove
+    private List<MembershipInfo> listOfMembers = new ArrayList<>();
 
     // leaving out setters for group and parent as those are set at construction
 
@@ -46,7 +46,7 @@ public class GroupWrapper {
         this.parentGroup = Objects.requireNonNull(parentGroup);
         this.parentId = parentGroup.getId();
         this.parentName = parentGroup.getGroupName();
-        this.addedMembers.addAll(MembershipInfo.createFromMembers(parentGroup.getMemberships()));
+        this.listOfMembers.addAll(MembershipInfo.createFromMembers(parentGroup.getMemberships()));
         this.discoverable = parentGroup.isDiscoverable();
         // this.template = GroupPermissionTemplate.DEFAULT_GROUP; // todo: figure out if/how to store / inherit this
     }
@@ -83,28 +83,18 @@ public class GroupWrapper {
 
     public void setTokenDaysValid(Integer tokenDaysValid) { this.tokenDaysValid = tokenDaysValid; }
 
-    public Set<MembershipInfo> getAddedMembers() { return addedMembers; }
+    public Set<MembershipInfo> getAddedMembers() { return new HashSet<>(listOfMembers); }
 
-    public List<MembershipInfo> getListOfMembers() { return new ArrayList<>(addedMembers); }
+    public List<MembershipInfo> getListOfMembers() { return listOfMembers; }
 
-    public void setListOfMembers(List<MembershipInfo> members) { this.addedMembers.addAll(members); }
-
-    public boolean isDiscoverable() { return discoverable; }
-
-    public void setDiscoverable(boolean discoverable) { this.discoverable = discoverable; }
-
-    // public GroupPermissionTemplate getTemplate() { return template; }
-
-    // public void setTemplate(GroupPermissionTemplate template) { this.template = template; }
+    public void setListOfMembers(List<MembershipInfo> listOfMembers) { this.listOfMembers = new ArrayList<>(listOfMembers); }
 
     public void setAddedMembers(Set<MembershipInfo> addedMembers) {
-        for (MembershipInfo memberToAdd : addedMembers) {
-            this.addMember(memberToAdd);
-        }
+        this.listOfMembers = new ArrayList<>(addedMembers);
     }
 
     public void addMember(MembershipInfo newMember) {
-        this.addedMembers.add(newMember);
+        this.listOfMembers.add(newMember);
     }
 
     /*
@@ -126,7 +116,7 @@ public class GroupWrapper {
             this.parentName = parentGroup.getGroupName();
         }
 
-        this.addedMembers.addAll(MembershipInfo.createFromMembers(groupToModify.getMemberships()));
+        this.listOfMembers.addAll(MembershipInfo.createFromMembers(groupToModify.getMemberships()));
 
     }
 

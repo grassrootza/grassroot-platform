@@ -268,7 +268,7 @@ public class GroupController extends BaseController {
             log.info("binding_error thrown within binding result");
             addMessage(model, MessageType.ERROR, "user.enter.error.phoneNumber.invalid", request);
         } else {
-            groupCreator.getAddedMembers().add(new MembershipInfo("", BaseRoles.ROLE_ORDINARY_MEMBER, ""));
+            groupCreator.getListOfMembers().add(new MembershipInfo("", BaseRoles.ROLE_ORDINARY_MEMBER, ""));
         }
         model.addAttribute("roles", roleDescriptions);
         model.addAttribute("permissionTemplates", permissionTemplates);
@@ -276,14 +276,15 @@ public class GroupController extends BaseController {
     }
 
 
-    /*@RequestMapping(value = "create", params = {"removeMember"})
+    @RequestMapping(value = "create", params = {"removeMember"})
     public String removeMember(Model model, @ModelAttribute("groupCreator") GroupWrapper groupCreator,
-                               @RequestParam("removeMember") Integer memberId) {
+                               @RequestParam("removeMember") int memberIndex) {
 
-        groupCreator.setAddedMembers(removeMember(groupCreator, memberId));
+        groupCreator.getListOfMembers().remove(memberIndex);
+        model.addAttribute("roles", roleDescriptions);
         model.addAttribute("permissionTemplates", permissionTemplates);
         return "group/create";
-    }*/
+    }
 
     /*
     SECTION: Methods for handling group modification
@@ -372,6 +373,7 @@ public class GroupController extends BaseController {
 
         return viewGroupIndex(model, group.getId());
     }
+
 
 
     @RequestMapping(value = "modify", method = RequestMethod.POST, params = {"group_modify"})
@@ -499,11 +501,12 @@ public class GroupController extends BaseController {
         return groupMembers;
     }
 
-    private Set<MembershipInfo> removeMember(GroupWrapper groupWrapper, MembershipInfo member) {
-        // todo: fully rethink / redo this
-        Set<MembershipInfo> groupMembers = groupWrapper.getAddedMembers();
-        groupMembers.remove(member);
-        return groupMembers;
+    private List<MembershipInfo> removeMember(GroupWrapper groupWrapper, int memberIndex) {
+        // todo: make sure this isn't tooo wasteful
+        List<MembershipInfo> revisedList = new ArrayList<>(groupWrapper.getListOfMembers());
+        revisedList.remove(memberIndex);
+        log.info("removeMember helper is returning this list ... " + revisedList);
+        return revisedList;
     }
 
     /*
@@ -540,6 +543,47 @@ public class GroupController extends BaseController {
         redirectAttributes.addAttribute("groupId", group.getId());
         addMessage(redirectAttributes, MessageType.SUCCESS, "group.language.success", request);
         return "redirect:/group/view";
+    }
+
+
+    /*
+    Methods to handle group deactivation and group unsubscribe
+    todo: add Spring Security annotations to stop unauthorized users from even accessing the URLs
+     */
+
+    @RequestMapping(value = "inactive", method = RequestMethod.POST)
+    public String deleteGroup(Model model, @RequestParam String groupUid, @RequestParam("confirm_field") String confirmText,
+                              HttpServletRequest request, RedirectAttributes redirectAttributes) {
+
+        Group group = groupManagementService.loadGroupByUid(groupUid);
+
+        if (groupBroker.isDeactivationAvailable(getUserProfile(), group) &&
+                confirmText.toLowerCase().equals("delete")) {
+            groupBroker.deactivate(getUserProfile().getUid(), group.getUid());
+            addMessage(redirectAttributes, MessageType.SUCCESS, "group.delete.success", request);
+            return "redirect:/home";
+        } else {
+            addMessage(model, MessageType.ERROR, "group.delete.error", request);
+            return viewGroupIndex(model, group.getId());
+        }
+    }
+
+    @RequestMapping(value = "unsubscribe", method = RequestMethod.POST)
+    public String unsubGroup(Model model, @RequestParam("groupId") Long groupId, @RequestParam("confirm_field") String confirmText,
+                             HttpServletRequest request, RedirectAttributes redirectAttributes) {
+
+        // todo: again, check the user is part of the group and/or do error handling
+        Group group = groupManagementService.loadGroup(groupId);
+        User user = userManagementService.loadUser(getUserProfile().getId()); // else equals in "is user in group" fails
+
+        if (groupManagementService.isUserInGroup(group, user) && confirmText.toLowerCase().equals("unsubscribe")) {
+            groupBroker.removeMembers(user.getUid(), group.getUid(), Sets.newHashSet(user.getUid()));
+            addMessage(redirectAttributes, MessageType.SUCCESS, "group.unsubscribe.success", request);
+        } else {
+            addMessage(redirectAttributes, MessageType.ERROR, "group.unsubscribe.error", request);
+        }
+
+        return "redirect:/home";
     }
 
 
@@ -684,76 +728,6 @@ public class GroupController extends BaseController {
         redirectAttributes.addAttribute("groupId", consolidatedGroup.getId());
         addMessage(redirectAttributes, MessageType.SUCCESS, "group.merge.success", userCounts, request);
         return "redirect:/group/view";
-    }
-
-    /*
-    Methods to handle group deactivation and group unsubscribe
-    Simple method to delete a group, if it was recently created and this is the creating user, after a confirmation screen
-    todo: add Spring Security annotations to stop unauthorized users from even accessing the URLs
-     */
-    @RequestMapping(value = "modify", params = {"group_delete"})
-    public String confirmDelete(Model model, @RequestParam("groupId") Long groupId,
-                                HttpServletRequest request, RedirectAttributes redirectAttributes) {
-
-        User user = getUserProfile();
-        Group group = groupManagementService.loadGroup(groupId);
-
-        if (groupBroker.isDeactivationAvailable(user, group)) {
-            model.addAttribute("group", group);
-            return "group/delete_confirm";
-        } else {
-            log.info("Nope, can't make the group inactive ...");
-            addMessage(redirectAttributes, MessageType.ERROR, "group.delete.error", request);
-            redirectAttributes.addAttribute("groupId", groupId);
-            return "group/view";
-        }
-
-    }
-
-    @RequestMapping(value = "delete")
-    public String deleteGroup(Model model, @RequestParam("groupId") Long groupId, @RequestParam("confirm_field") String confirmText,
-                              HttpServletRequest request, RedirectAttributes redirectAttributes) {
-
-        Group group = groupManagementService.loadGroup(groupId);
-
-        if (groupBroker.isDeactivationAvailable(getUserProfile(), group) &&
-                confirmText.toLowerCase().equals("delete")) {
-            groupBroker.deactivate(getUserProfile().getUid(), group.getUid());
-            addMessage(redirectAttributes, MessageType.SUCCESS, "group.delete.success", request);
-            return "redirect:/home";
-        } else {
-            addMessage(model, MessageType.ERROR, "group.delete.error", request);
-            return viewGroupIndex(model, groupId);
-        }
-
-    }
-
-    @RequestMapping(value = "unsubscribe")
-    public String unsubscribeGroup(Model model, @RequestParam("groupId") Long groupId) {
-
-        Group group = groupManagementService.loadGroup(groupId);
-        // todo: check if the user is part of the group
-        model.addAttribute("group", group);
-        return "group/unsubscribe_confirm";
-
-    }
-
-    @RequestMapping(value = "unsubscribe", method = RequestMethod.POST)
-    public String unsubGroup(Model model, @RequestParam("groupId") Long groupId, @RequestParam("confirm_field") String confirmText,
-                             HttpServletRequest request, RedirectAttributes redirectAttributes) {
-
-        // todo: again, check the user is part of the group and/or do error handling
-        Group group = groupManagementService.loadGroup(groupId);
-        User user = userManagementService.loadUser(getUserProfile().getId()); // else equals in "is user in group" fails
-
-        if (groupManagementService.isUserInGroup(group, user) && confirmText.toLowerCase().equals("unsubscribe")) {
-            groupBroker.removeMembers(user.getUid(), group.getUid(), Sets.newHashSet(user.getUid()));
-            addMessage(redirectAttributes, MessageType.SUCCESS, "group.unsubscribe.success", request);
-        } else {
-            addMessage(redirectAttributes, MessageType.ERROR, "group.unsubscribe.error", request);
-        }
-
-        return "redirect:/home";
     }
 
     /**
