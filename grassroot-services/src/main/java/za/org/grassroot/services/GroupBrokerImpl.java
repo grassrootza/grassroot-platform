@@ -1,15 +1,13 @@
 package za.org.grassroot.services;
 
+import edu.emory.mathcs.backport.java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Membership;
-import za.org.grassroot.core.domain.Role;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
@@ -36,7 +34,11 @@ public class GroupBrokerImpl implements GroupBroker {
     @Autowired
     private PermissionsManagementService permissionsManagementService;
     @Autowired
+    private GroupAccessControlManagementService groupAccessControlManagementService;
+    @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
+    @Autowired
+    private AsyncGroupEventLogger asyncGroupEventLogger;
 
     @Override
     @Transactional
@@ -58,16 +60,54 @@ public class GroupBrokerImpl implements GroupBroker {
                 name, membershipInfos, groupPermissionTemplate, parent, user);
 
         Group group = new Group(name, user);
-        if (parent != null) {
+        GroupLog groupAddedEventLog;
+        if (parent == null) {
+            groupAddedEventLog = new GroupLog(group.getId(), user.getId(), GroupLogType.GROUP_ADDED, null);
+        } else {
             group.setParent(parent);
+            groupAddedEventLog = new GroupLog(parent.getId(), user.getId(), GroupLogType.GROUP_ADDED, group.getId());
         }
-        addMembers(user, group, membershipInfos);
+
+        Set<Membership> memberships = addMembers(user, group, membershipInfos);
+
         permissionsManagementService.setRolePermissionsFromTemplate(group, groupPermissionTemplate);
         group = groupRepository.save(group);
 
         logger.info("Group created under UID {}", group.getUid());
 
+        // we record event in async manner, after this TX has committed
+        Set<GroupLog> groupLogs = new HashSet<>();
+        groupLogs.add(groupAddedEventLog);
+        for (Membership membership : memberships) {
+            groupLogs.add(new GroupLog(group.getId(), user.getId(), GroupLogType.GROUP_MEMBER_ADDED, membership.getUser().getId()));
+        }
+
+        logGroupEventsAfterCommit(groupLogs);
+
         return group;
+    }
+
+    private void logGroupEventsAfterCommit(Set<GroupLog> groupLogs) {
+        // we want to log group events after transaction has committed
+        AfterTxCommitTask afterTxCommitTask = () -> asyncGroupEventLogger.logGroupEvents(groupLogs);
+        applicationEventPublisher.publishEvent(afterTxCommitTask);
+    }
+
+    // Just trying out the impact of straightforward manual ACL check
+
+    private void validateGroupPermission(User user, Group targetGroup, Permission requiredPermission) {
+        if (!isGroupPermissionAvailable(user, targetGroup, requiredPermission)) {
+            throw new RuntimeException("User " + user + " has no permission " + requiredPermission + " available for group " + targetGroup);
+        }
+    }
+
+    private boolean isGroupPermissionAvailable(User user, Group group, Permission requiredPermission) {
+        for (Membership membership : user.getMemberships()) {
+            if (membership.getGroup().equals(group)) {
+                return membership.getRole().getPermissions().contains(requiredPermission);
+            }
+        }
+        return false;
     }
 
     @Override
@@ -85,7 +125,16 @@ public class GroupBrokerImpl implements GroupBroker {
 
         logger.info("Deactivating group: {}", group);
         group.setActive(false);
-//        asyncGroupService.recordGroupLog(group.getId(),user.getId(), GroupLogType.GROUP_REMOVED,0L,String.format("Set group inactive"));
+
+        GroupLog groupAddedEventLog;
+        if (group.getParent() == null) {
+            groupAddedEventLog = new GroupLog(group.getId(), user.getId(), GroupLogType.GROUP_REMOVED, null);
+        } else {
+            groupAddedEventLog = new GroupLog(group.getParent().getId(), user.getId(), GroupLogType.GROUP_REMOVED, group.getId());
+        }
+
+        Set<GroupLog> groupLogs = Collections.singleton(groupAddedEventLog);
+        logGroupEventsAfterCommit(groupLogs);
     }
 
     @Override
@@ -106,6 +155,9 @@ public class GroupBrokerImpl implements GroupBroker {
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
         group.setGroupName(name);
+
+        Set<GroupLog> groupLogs = Collections.singleton(new GroupLog(group.getId(), user.getId(), GroupLogType.GROUP_RENAMED, group.getId(), "Group renamed to " + group.getGroupName()));
+        logGroupEventsAfterCommit(groupLogs);
     }
 
     @Override
@@ -114,26 +166,36 @@ public class GroupBrokerImpl implements GroupBroker {
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
+        validateGroupPermission(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
+
         logger.info("Adding members: group={}, memberships={}, user={}", group, membershipInfos, user);
-        addMembers(user, group, membershipInfos);
+        Set<Membership> memberships = addMembers(user, group, membershipInfos);
+
+        Set<GroupLog> groupLogs = new HashSet<>();
+        for (Membership membership : memberships) {
+            groupLogs.add(new GroupLog(group.getId(), user.getId(), GroupLogType.GROUP_MEMBER_ADDED, membership.getUser().getId()));
+        }
+        logGroupEventsAfterCommit(groupLogs);
     }
 
-    private void addMembers(User initiator, Group group, Set<MembershipInfo> membershipInfos) {
+    private Set<Membership> addMembers(User initiator, Group group, Set<MembershipInfo> membershipInfos) {
         // note: User objects should only ever store phone numbers in the msisdn format (i.e, with country code at front, no '+')
         Set<String> memberPhoneNumbers = membershipInfos.stream().map(MembershipInfo::getPhoneNumberWithCCode).collect(Collectors.toSet());
         logger.info("phoneNumbers returned: ...." + memberPhoneNumbers);
         Set<User> existingUsers = new HashSet<>(userRepository.findByPhoneNumberIn(memberPhoneNumbers));
         Map<String, User> existingUserMap = existingUsers.stream().collect(Collectors.toMap(User::getPhoneNumber, user -> user));
 
+        Set<Membership> memberships = new HashSet<>();
         for (MembershipInfo membershipInfo : membershipInfos) {
             User user = existingUserMap.getOrDefault(membershipInfo.getPhoneNumberWithCCode(), new User(membershipInfo.getPhoneNumberWithCCode(), membershipInfo.getDisplayName()));
             String roleName = membershipInfo.getRoleName();
-            if (roleName == null) {
-                group.addMember(user);
-            } else {
-                group.addMember(user, roleName);
+            Membership membership = roleName == null ? group.addMember(user) : group.addMember(user, roleName);
+            if (membership != null) {
+                memberships.add(membership);
             }
         }
+
+        return memberships;
     }
 
     @Override
@@ -147,9 +209,17 @@ public class GroupBrokerImpl implements GroupBroker {
 
         logger.info("Removing members: group={}, memberUids={}, user={}", group, memberUids, user);
 
-        group.getMemberships().stream()
+        Set<Membership> memberships = group.getMemberships().stream()
                 .filter(membership -> memberUids.contains(membership.getUser().getUid()))
-                .forEach(group::removeMembership);
+                .collect(Collectors.toSet());
+
+        Set<GroupLog> groupLogs = new HashSet<>();
+        for (Membership membership : memberships) {
+            group.removeMembership(membership);
+            groupLogs.add(new GroupLog(group.getId(), user.getId(), GroupLogType.GROUP_MEMBER_REMOVED, membership.getUser().getId()));
+        }
+
+        logGroupEventsAfterCommit(groupLogs);
     }
 
     @Override
