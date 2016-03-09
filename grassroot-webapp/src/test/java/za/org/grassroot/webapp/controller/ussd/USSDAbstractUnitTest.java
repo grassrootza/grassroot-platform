@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.ussd;
 
+import com.google.common.collect.Sets;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -12,10 +13,13 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.handler.SimpleMappingExceptionResolver;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
+import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.util.USSDGroupUtil;
 
 import java.util.Properties;
+import java.util.Set;
 
 /**
  * Created by luke on 2015/11/20.
@@ -89,5 +93,14 @@ public abstract class USSDAbstractUnitTest {
         controller.setMessageSource(messageSource());
         groupUtil.setMessageSource(messageSource());
         controller.setUssdGroupUtil(groupUtil);
+    }
+
+    // helper method to generate a set of membership info ... used often
+    protected Set<MembershipInfo> ordinaryMember(String phoneNumber) {
+        return Sets.newHashSet(new MembershipInfo(phoneNumber, BaseRoles.ROLE_ORDINARY_MEMBER, null));
+    }
+
+    protected Set<MembershipInfo> organizer(User user) {
+        return Sets.newHashSet(new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName()));
     }
 }

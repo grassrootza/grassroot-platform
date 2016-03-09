@@ -221,9 +221,9 @@ public class USSDGroupUtil extends USSDUtil {
         } else {
 
             Set<MembershipInfo> members = turnNumbersIntoMembers(enteredNumbers.get(validNumbers));
-            members.add(new MembershipInfo(phoneNumber, BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName()));
+            members.add(new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName()));
+            log.info("ZOGG : In GroupUtil ... Calling create with members ... " + members);
             Group createdGroup = groupBroker.create(user.getUid(), "", null, members, GroupPermissionTemplate.DEFAULT_GROUP);
-
             checkForErrorsAndSetPrompt(user, section, menu, createdGroup.getId(), enteredNumbers.get(invalidNumbers), returnUrl, true);
             groupId = createdGroup.getId();
 
