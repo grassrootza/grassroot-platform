@@ -6,6 +6,7 @@ import za.org.grassroot.core.domain.User;
 
 import javax.persistence.*;
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.Objects;
 
 @Entity
@@ -29,14 +30,18 @@ public class Membership implements Serializable {
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
 
+    @Column(name = "join_time", nullable = false)
+    private Instant joinTime;
+
     private Membership() {
         // for JPA
     }
 
-    public Membership(Group group, User user, Role role) {
+    public Membership(Group group, User user, Role role, Instant joinTime) {
         this.group = Objects.requireNonNull(group);
         this.user = Objects.requireNonNull(user);
         this.role = Objects.requireNonNull(role);
+        this.joinTime = Objects.requireNonNull(joinTime);
     }
 
     public Long getId() {
@@ -57,6 +62,10 @@ public class Membership implements Serializable {
 
     public void setRole(Role role) {
         this.role = Objects.requireNonNull(role);
+    }
+
+    public Instant getJoinTime() {
+        return joinTime;
     }
 
     @Override

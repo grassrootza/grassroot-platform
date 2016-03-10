@@ -7,6 +7,7 @@ import za.org.grassroot.core.util.UIDGenerator;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -223,7 +224,7 @@ public class Group implements Serializable {
         if (!getGroupRoles().contains(role)) {
             throw new IllegalArgumentException("Role " + role + " is not one of roles belonging to group: " + this);
         }
-        Membership membership = new Membership(this, newMember, role);
+        Membership membership = new Membership(this, newMember, role, Instant.now());
         boolean added = this.memberships.add(membership);
         if (added) {
             newMember.addMappedByMembership(membership);
