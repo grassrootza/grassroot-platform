@@ -536,28 +536,29 @@ public class USSDGroupController extends USSDController {
                            @RequestParam(value=userInputParam, required = false) String userInput) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber, null); // resetting return flag
-        Long returnGroupId;
+        Group firstGroup = groupManager.loadGroup(firstGroupId);
+        Group secondGroup = groupManager.loadGroup(secondGroupId);
+
+        Group resultGroup;
 
         switch (action) {
             case "inactive":
-                returnGroupId = groupManager.mergeGroups(firstGroupId, secondGroupId, user.getId(), false, false, false).getId();
+                resultGroup = groupBroker.merge(user.getUid(), firstGroup.getUid(), secondGroup.getUid(), false, false, false, null);
                 break;
             case "active":
-                returnGroupId = groupManager.mergeGroups(firstGroupId, secondGroupId, user.getId(), true, false, false).getId();
+                resultGroup = groupBroker.merge(user.getUid(), firstGroup.getUid(), secondGroup.getUid(), true, false, false, null);
                 break;
             case "new":
-                Group group = groupManager.mergeGroups(firstGroupId, secondGroupId, user.getId(), false, false, true);
-                groupManager.renameGroup(group.getUid(), userInput, user.getUid());
-                returnGroupId = group.getId();
+                resultGroup = groupBroker.merge(user.getUid(), firstGroup.getUid(), secondGroup.getUid(), false, false, true, userInput);
                 break;
             default:
-                returnGroupId = groupManager.mergeGroups(firstGroupId, secondGroupId, user.getId(), false, false, false).getId();
+                resultGroup = groupBroker.merge(user.getUid(), firstGroup.getUid(), secondGroup.getUid(), false, false, false, null);
                 break;
         }
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, mergeGroupMenu + doSuffix, promptKey, user));
 
-        menu.addMenuOption(groupMenuWithId(existingGroupMenu, returnGroupId),
+        menu.addMenuOption(groupMenuWithId(existingGroupMenu, resultGroup.getId()),
                            getMessage(thisSection, mergeGroupMenu + doSuffix, optionsKey + "group", user));
         menu.addMenuOptions(optionsHomeExit(user));
 

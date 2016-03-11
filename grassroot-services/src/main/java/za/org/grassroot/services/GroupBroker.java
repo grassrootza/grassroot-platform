@@ -22,4 +22,7 @@ public interface GroupBroker {
     void removeMembers(String userUid, String groupUid, Set<String> memberUids);
 
     void updateMembershipRole(String userUid, String groupUid, String memberUid, String roleName);
+
+    Group merge(String userUid, String firstGroupUid, String secondGroupUid,
+                boolean leaveActive, boolean orderSpecified, boolean createNew, String newGroupName);
 }

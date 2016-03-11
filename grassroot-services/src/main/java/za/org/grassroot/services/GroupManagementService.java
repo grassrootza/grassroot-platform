@@ -117,9 +117,6 @@ public interface GroupManagementService {
     Methods to consolidate groups, and to manage active / inactive
      */
 
-    public Group mergeGroups(Long firstGroupId, Long secondGroupId, Long mergingUserId,
-                             boolean leaveActive, boolean orderSpecified, boolean createNew); // "normal" case is all 3 false
-
     public List<Group> getMergeCandidates(User mergingUser, Long firstGroupSelected);
 
     /*

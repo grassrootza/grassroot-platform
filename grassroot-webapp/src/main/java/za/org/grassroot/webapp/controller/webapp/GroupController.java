@@ -25,7 +25,6 @@ import za.org.grassroot.webapp.model.web.MemberWrapper;
 import za.org.grassroot.webapp.util.BulkUserImportUtil;
 
 import javax.servlet.http.HttpServletRequest;
-import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -722,7 +721,7 @@ public class GroupController extends BaseController {
         // todo: add error handling
         Group groupInto = groupManagementService.loadGroup(groupIdInto);
         Group groupFrom = groupManagementService.loadGroup(groupIdFrom);
-        Group consolidatedGroup = groupManagementService.mergeGroups(groupIdInto, groupIdFrom, getUserProfile().getId(), leaveActive, true, false);
+        Group consolidatedGroup = groupBroker.merge(getUserProfile().getUid(), groupInto.getUid(), groupFrom.getUid(), leaveActive, true, false, null);
         Integer[] userCounts = new Integer[]{groupFrom.getMembers().size(),
                 groupManagementService.getGroupSize(consolidatedGroup.getId(), false)};
         redirectAttributes.addAttribute("groupId", consolidatedGroup.getId());

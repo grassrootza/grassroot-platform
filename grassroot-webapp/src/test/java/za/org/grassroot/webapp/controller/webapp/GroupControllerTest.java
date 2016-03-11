@@ -449,7 +449,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         testGroupFrom.addMember(sessionTestUser);
         testGroupFrom.setId(1L);
         when(groupManagementServiceMock.loadGroup(testGroupFrom.getId())).thenReturn(testGroupFrom);
-        when(groupManagementServiceMock.mergeGroups(testGroupInto.getId(), testGroupFrom.getId(), sessionTestUser.getId(), !true, true, false))
+        when(groupBrokerMock.merge(sessionTestUser.getUid(), testGroupInto.getUid(), testGroupFrom.getUid(), !true, true, false, null))
                 .thenReturn(testGroupInto);
         when(groupManagementServiceMock.getGroupSize(testGroupInto.getId(), false)).thenReturn(1);
         when(groupManagementServiceMock.loadGroup(testGroupInto.getId())).thenReturn(testGroupInto);
@@ -460,7 +460,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(view().name("redirect:/group/view"));
         verify(groupManagementServiceMock, times(1)).loadGroup(testGroupFrom.getId());
         verify(groupManagementServiceMock, times(1)).loadGroup(testGroupInto.getId());
-        verify(groupManagementServiceMock, times(1)).mergeGroups(testGroupInto.getId(), testGroupFrom.getId(), sessionTestUser.getId(), !true, true, false);
+        verify(groupBrokerMock, times(1)).merge(sessionTestUser.getUid(), testGroupInto.getUid(), testGroupFrom.getUid(), !true, true, false, null);
         verify(groupManagementServiceMock, times(1)).getGroupSize(testGroupInto.getId(), false);
         verifyNoMoreInteractions(groupManagementServiceMock);
 

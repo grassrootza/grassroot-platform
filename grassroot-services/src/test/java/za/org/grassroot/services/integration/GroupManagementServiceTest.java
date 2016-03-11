@@ -163,7 +163,7 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         assertTrue(group1.isActive());
         assertThat(group2.getMembers().size(), is(3));
 
-        groupManagementService.mergeGroups(group1, group2, user.getId());
+        groupManagementService.merge(group1, group2, user.getId());
         assertNotNull(group1);
         assertNotNull(group2);
         assertTrue(group1.isActive());
@@ -220,7 +220,7 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         User user = userManagementService.loadOrSaveUser(testUserBase + "1");
         Group group1 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "2"), false);
         Group group2 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "3"), false);
-        groupManagementService.mergeGroups(group1, group2, false, user.getId());
+        groupManagementService.merge(group1, group2, false, user.getId());
         assertNotNull(group1);
         assertNotNull(group2);
         assertTrue(group1.isActive());

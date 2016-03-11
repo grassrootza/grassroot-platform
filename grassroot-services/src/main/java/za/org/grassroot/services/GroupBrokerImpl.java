@@ -241,4 +241,48 @@ public class GroupBrokerImpl implements GroupBroker {
         Role role = group.getRole(roleName);
         membership.setRole(role);
     }
+
+    public Group merge(String userUid, String firstGroupUid, String secondGroupUid,
+                       boolean leaveActive, boolean orderSpecified, boolean createNew, String newGroupName) {
+        User user = userRepository.findOneByUid(userUid);
+        Group firstGroup = groupRepository.findOneByUid(firstGroupUid);
+        Group secondGroup = groupRepository.findOneByUid(secondGroupUid);
+
+        logger.info("Merging groups: firstGroup={}, secondGroup={}, user={}, leaveActive={}, orderSpecified={}, createNew={}, newGroupName={}",
+                firstGroup, secondGroup, user, leaveActive, orderSpecified, createNew, newGroupName);
+
+        Group groupInto, groupFrom;
+        if (orderSpecified || firstGroup.getMemberships().size() > secondGroup.getMemberships().size()) {
+            groupInto = firstGroup;
+            groupFrom = secondGroup;
+        } else {
+            groupInto = secondGroup;
+            groupFrom = firstGroup;
+        }
+
+        Group resultGroup;
+
+        if (createNew) {
+            Set<MembershipInfo> membershipInfos = MembershipInfo.createFromMembers(groupInto.getMemberships());
+            membershipInfos.addAll(MembershipInfo.createFromMembers(groupFrom.getMemberships()));
+            // todo: work out what to do about templates ... probably a UX issue more than solving here
+            resultGroup = create(user.getUid(), newGroupName, null, membershipInfos, GroupPermissionTemplate.DEFAULT_GROUP);
+            if (!leaveActive) {
+                groupInto.setActive(false);
+                groupFrom.setActive(false);
+            }
+        } else {
+            // Group savedGroup = saveGroup(consolidatedGroup,true,String.format("Merged group %d with %d",secondGroupId,firstGroupId),creatingUser.getId());
+            // asyncGroupService.addNewGroupMemberLogsMessages(savedGroup, u, creatingUser.getId());
+
+            Set<MembershipInfo> membershipInfos = MembershipInfo.createFromMembers(groupFrom.getMemberships());
+            addMembers(user, groupInto, membershipInfos);
+            resultGroup = groupInto;
+            if (!leaveActive) {
+                groupFrom.setActive(false);
+            }
+        }
+
+        return resultGroup;
+    }
 }

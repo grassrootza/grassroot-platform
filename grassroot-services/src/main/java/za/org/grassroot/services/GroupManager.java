@@ -6,14 +6,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.GroupLog;
+import za.org.grassroot.core.domain.LogBook;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.repository.GroupLogRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.PaidGroupRepository;
-import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.util.TokenGeneratorService;
 
 import javax.transaction.Transactional;
@@ -46,9 +48,6 @@ public class GroupManager implements GroupManagementService {
 
     @Autowired
     private GroupRepository groupRepository;
-
-    @Autowired
-    private GroupBroker groupBroker;
 
     @Autowired
     private PaidGroupRepository paidGroupRepository;
@@ -423,47 +422,6 @@ public class GroupManager implements GroupManagementService {
         GroupLog latestGroupLog = groupLogRepository.findFirstByGroupIdOrderByCreatedDateTimeDesc(group.getId());
         return (latestGroupLog != null) ? LocalDateTime.ofInstant(latestGroupLog.getCreatedDateTime().toInstant(), ZoneId.systemDefault()) :
                 group.getCreatedDateTime().toLocalDateTime();
-    }
-
-    @Override
-    public Group mergeGroups(Long firstGroupId, Long secondGroupId, Long mergingUserId, boolean leaveActive, boolean orderSpecified, boolean createNew) {
-
-        // todo: proper logging in GroupLogs of everything that happens in here
-
-        Group groupInto, groupFrom;
-        Group firstGroup = groupRepository.findOne(firstGroupId);
-        Group secondGroup = groupRepository.findOne(secondGroupId);
-        User mergingUser = userManager.getUserById(mergingUserId);
-
-        if (orderSpecified || getGroupSize(firstGroupId, false) > getGroupSize(secondGroupId, true)) {
-            groupInto = firstGroup;
-            groupFrom = secondGroup;
-        } else {
-            groupInto = firstGroup;
-            groupFrom = secondGroup;
-        }
-
-        Group groupToReturn;
-
-        if (createNew) {
-            Set<MembershipInfo> members = MembershipInfo.createFromMembers(groupInto.getMemberships());
-            members.addAll(MembershipInfo.createFromMembers(groupFrom.getMemberships()));
-            // todo: work out what to do about templates ... probably a UX issue more than solving here
-            groupToReturn = groupBroker.create(mergingUser.getUid(), "", null, members, GroupPermissionTemplate.DEFAULT_GROUP);
-            if (!leaveActive) {
-                groupInto.setActive(false);
-                groupFrom.setActive(false);
-            }
-        } else {
-            // Group savedGroup = saveGroup(consolidatedGroup,true,String.format("Merged group %d with %d",secondGroupId,firstGroupId),creatingUser.getId());
-            // asyncGroupService.addNewGroupMemberLogsMessages(savedGroup, u, creatingUser.getId());
-            Set<MembershipInfo> membersToAdd = MembershipInfo.createFromMembers(groupFrom.getMemberships());
-            groupBroker.addMembers(mergingUser.getUid(), groupInto.getUid(), membersToAdd);
-            groupToReturn = groupInto;
-            if (!leaveActive) groupFrom.setActive(false);
-        }
-
-        return groupToReturn;
     }
 
     @Override
