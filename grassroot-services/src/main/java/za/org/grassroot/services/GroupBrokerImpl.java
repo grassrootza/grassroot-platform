@@ -300,6 +300,10 @@ public class GroupBrokerImpl implements GroupBroker {
 
     public Group merge(String userUid, String firstGroupUid, String secondGroupUid,
                        boolean leaveActive, boolean orderSpecified, boolean createNew, String newGroupName) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(firstGroupUid);
+        Objects.requireNonNull(secondGroupUid);
+
         User user = userRepository.findOneByUid(userUid);
         Group firstGroup = groupRepository.findOneByUid(firstGroupUid);
         Group secondGroup = groupRepository.findOneByUid(secondGroupUid);
@@ -324,19 +328,23 @@ public class GroupBrokerImpl implements GroupBroker {
             // todo: work out what to do about templates ... probably a UX issue more than solving here
             resultGroup = create(user.getUid(), newGroupName, null, membershipInfos, GroupPermissionTemplate.DEFAULT_GROUP);
             if (!leaveActive) {
-                groupInto.setActive(false);
-                groupFrom.setActive(false);
+                deactivate(user.getUid(), groupInto.getUid());
+                deactivate(user.getUid(), groupFrom.getUid());
             }
         } else {
-            // Group savedGroup = saveGroup(consolidatedGroup,true,String.format("Merged group %d with %d",secondGroupId,firstGroupId),creatingUser.getId());
-            // asyncGroupService.addNewGroupMemberLogsMessages(savedGroup, u, creatingUser.getId());
-
             Set<MembershipInfo> membershipInfos = MembershipInfo.createFromMembers(groupFrom.getMemberships());
-            addMembers(user, groupInto, membershipInfos);
+            Set<Membership> memberships = addMembers(user, groupInto, membershipInfos);
             resultGroup = groupInto;
             if (!leaveActive) {
-                groupFrom.setActive(false);
+                deactivate(user.getUid(), groupFrom.getUid());
             }
+
+            // logging group events about new members added
+            Set<GroupLog> groupLogs = new HashSet<>();
+            for (Membership membership : memberships) {
+                groupLogs.add(new GroupLog(groupInto.getId(), user.getId(), GroupLogType.GROUP_MEMBER_ADDED, membership.getUser().getId()));
+            }
+            logGroupEventsAfterCommit(groupLogs);
         }
 
         return resultGroup;
