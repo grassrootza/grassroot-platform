@@ -23,12 +23,14 @@ import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
 import java.util.List;
 import java.util.Set;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
+import static za.org.grassroot.services.enums.GroupPermissionTemplate.DEFAULT_GROUP;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -98,7 +100,9 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
     @Rollback
     public void shouldAddMultipleNumbersToGroup() {
         User user = userManagementService.loadOrSaveUser("0810001111");
-        Group group = groupRepository.save(new Group("test group", user));
+        Set<MembershipInfo> organizer = Sets.newHashSet(
+                new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, null));
+        Group group = groupBroker.create(user.getUid(), "testGroup", null, organizer, DEFAULT_GROUP);
         String ordinaryRole = BaseRoles.ROLE_ORDINARY_MEMBER;
         log.info("ZOG: Group created ..." + group.toString());
         Set<MembershipInfo> members = Sets.newHashSet(new MembershipInfo("0810001111", ordinaryRole, ""),
@@ -133,14 +137,18 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         assertThat(groupRepository.count(), is(0L));
         User user1 = userManagementService.loadOrSaveUser(testUserBase + "1");
         User user2 = userManagementService.loadOrSaveUser(testUserBase + "2");
-        Group group1 = groupRepository.save(new Group(testGroupBase + "1", user1));
-        Group group2 = groupRepository.save(new Group(testGroupBase + "2", user2));
         MembershipInfo member1 = new MembershipInfo(user1.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER,
                                                     user1.getDisplayName());
+        MembershipInfo member1a = new MembershipInfo(user1.getPhoneNumber(), BaseRoles.ROLE_ORDINARY_MEMBER,
+                                                     user1.getDisplayName());
         MembershipInfo member2 = new MembershipInfo(user2.getPhoneNumber(), BaseRoles.ROLE_ORDINARY_MEMBER,
                                                     user2.getDisplayName());
-        groupBroker.addMembers(user1.getUid(), group1.getUid(), Sets.newHashSet(member1));
-        groupBroker.addMembers(user1.getUid(), group1.getUid(), Sets.newHashSet(member2));
+        MembershipInfo member2a = new MembershipInfo(user2.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER,
+                                                     user2.getDisplayName());
+
+        Group group1 = groupBroker.create(user1.getUid(), testGroupBase + "1", null, Sets.newHashSet(member1, member2), DEFAULT_GROUP);
+        Group group2 = groupBroker.create(user2.getUid(), testGroupBase + "2", null, Sets.newHashSet(member2a, member1a), DEFAULT_GROUP);
+
         groupBroker.addMembers(user2.getUid(), group2.getUid(), Sets.newHashSet(member1));
         assertTrue(group2.getMembers().contains(user1));
         List<Group> list1 = groupManagementService.getActiveGroupsPartOf(user1);

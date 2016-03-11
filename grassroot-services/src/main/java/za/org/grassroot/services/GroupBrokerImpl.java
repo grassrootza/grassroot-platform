@@ -101,7 +101,9 @@ public class GroupBrokerImpl implements GroupBroker {
         }
     }
 
-    private boolean isGroupPermissionAvailable(User user, Group group, Permission requiredPermission) {
+    // todo : annotate as transactional?
+    @Override
+    public boolean isGroupPermissionAvailable(User user, Group group, Permission requiredPermission) {
         for (Membership membership : user.getMemberships()) {
             if (membership.getGroup().equals(group)) {
                 return membership.getRole().getPermissions().contains(requiredPermission);
@@ -207,6 +209,8 @@ public class GroupBrokerImpl implements GroupBroker {
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
+        validateGroupPermission(user, group, Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER);
+
         logger.info("Removing members: group={}, memberUids={}, user={}", group, memberUids, user);
 
         Set<Membership> memberships = group.getMemberships().stream()
@@ -231,6 +235,8 @@ public class GroupBrokerImpl implements GroupBroker {
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
+        validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+
         Membership membership = group.getMemberships().stream()
                 .filter(membership1 -> membership1.getUser().getUid().equals(memberUid))
                 .findFirst()
@@ -240,6 +246,56 @@ public class GroupBrokerImpl implements GroupBroker {
 
         Role role = group.getRole(roleName);
         membership.setRole(role);
+    }
+
+    @Override
+    @Transactional
+    public void updateMembers(String userUid, String groupUid, Set<MembershipInfo> modifiedMembers) {
+
+        // note: a simpler way to do this might be to in effect replace the members, but then will create issues with logging
+        // also, we want to check permissions separately, hence ...
+
+        Group savedGroup = groupRepository.findOneByUid(groupUid);
+
+        Set<MembershipInfo> savedMembers = MembershipInfo.createFromMembers(savedGroup.getMemberships());
+
+        Set<String> membersToRemove = new HashSet<>();
+        Set<MembershipInfo> membersToAdd = new HashSet<>();
+
+        // todo: replace this with a cleaner & faster (fewer query) removeAll followed by Map
+        for (MembershipInfo memberInfo : savedMembers) {
+            if (!modifiedMembers.contains(memberInfo)) {
+                String uid = userRepository.findByPhoneNumber(memberInfo.getPhoneNumber()).getUid();
+                membersToRemove.add(uid);
+            }
+        }
+
+        for (MembershipInfo m : modifiedMembers) {
+            if (savedMembers.contains(m)) {
+                // todo: this seems incredibly inefficient, figure out how to do without all these entity loads
+                User savedUser = userRepository.findByPhoneNumber(m.getPhoneNumber());
+                Membership savedMembership = savedGroup.getMembership(savedUser);
+                if (savedMembership.getRole().getName() != m.getRoleName())
+                    updateMembershipRole(userUid, groupUid, savedUser.getUid(), m.getRoleName());
+            } else {
+                // note: could also just do this with a removeAll, but since we're running the contain check, may as well
+                membersToAdd.add(m);
+            }
+        }
+
+        if (!membersToRemove.isEmpty()) {
+            // note: only call if non-empty to avoid throwing no permission error if user hasn't removed anyone
+            removeMembers(userUid, groupUid, membersToRemove);
+        }
+
+        if (!membersToAdd.isEmpty()) {
+            // note: as above, only call if non-empty so permission check only happens
+            addMembers(userUid, groupUid, membersToAdd);
+        }
+
+        // might not be necessary, but adding just in case, given extent of changes ...
+        groupRepository.save(savedGroup);
+
     }
 
     public Group merge(String userUid, String firstGroupUid, String secondGroupUid,

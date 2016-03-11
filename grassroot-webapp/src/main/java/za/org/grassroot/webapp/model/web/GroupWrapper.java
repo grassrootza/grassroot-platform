@@ -22,10 +22,9 @@ public class GroupWrapper {
 
     private String parentName;
 
-    private boolean discoverable;
-    private boolean generateToken;
-    private Integer tokenDaysValid;
-
+    private boolean canAddMembers;
+    private boolean canRemoveMembers;
+    private boolean canUpdateDetails;
 
     // need to use a list so that we can add and remove
     private List<MembershipInfo> listOfMembers = new ArrayList<>();
@@ -34,8 +33,6 @@ public class GroupWrapper {
 
     public GroupWrapper() {
         this.group = Group.makeEmpty();
-        this.generateToken = false;
-        this.discoverable = false;
         // this.template = GroupPermissionTemplate.DEFAULT_GROUP;
     }
 
@@ -47,7 +44,6 @@ public class GroupWrapper {
         this.parentId = parentGroup.getId();
         this.parentName = parentGroup.getGroupName();
         this.listOfMembers.addAll(MembershipInfo.createFromMembers(parentGroup.getMemberships()));
-        this.discoverable = parentGroup.isDiscoverable();
         // this.template = GroupPermissionTemplate.DEFAULT_GROUP; // todo: figure out if/how to store / inherit this
     }
 
@@ -61,27 +57,11 @@ public class GroupWrapper {
 
     public boolean getHasParent() { return hasParent; }
 
-    public void setHasParent(boolean hasParent) { this.hasParent = hasParent; }
-
     public Long getParentId() { return parentId; }
-
-    public void setParentId(Long parentId) { this.parentId = parentId; }
 
     public String getParentName() {
         return parentName;
     }
-
-    public void setParentName(String parentName) {
-        this.parentName = parentName;
-    }
-
-    public boolean getGenerateToken() { return generateToken; }
-
-    public void setGenerateToken(boolean generateToken) { this.generateToken = generateToken; }
-
-    public Integer getTokenDaysValid() { return tokenDaysValid; }
-
-    public void setTokenDaysValid(Integer tokenDaysValid) { this.tokenDaysValid = tokenDaysValid; }
 
     public Set<MembershipInfo> getAddedMembers() { return new HashSet<>(listOfMembers); }
 
@@ -89,12 +69,32 @@ public class GroupWrapper {
 
     public void setListOfMembers(List<MembershipInfo> listOfMembers) { this.listOfMembers = new ArrayList<>(listOfMembers); }
 
-    public void setAddedMembers(Set<MembershipInfo> addedMembers) {
-        this.listOfMembers = new ArrayList<>(addedMembers);
-    }
-
     public void addMember(MembershipInfo newMember) {
         this.listOfMembers.add(newMember);
+    }
+
+    public boolean isCanAddMembers() {
+        return canAddMembers;
+    }
+
+    public void setCanAddMembers(boolean canAddMembers) {
+        this.canAddMembers = canAddMembers;
+    }
+
+    public boolean isCanRemoveMembers() {
+        return canRemoveMembers;
+    }
+
+    public void setCanRemoveMembers(boolean canRemoveMembers) {
+        this.canRemoveMembers = canRemoveMembers;
+    }
+
+    public boolean isCanUpdateDetails() {
+        return canUpdateDetails;
+    }
+
+    public void setCanUpdateDetails(boolean canUpdateDetails) {
+        this.canUpdateDetails = canUpdateDetails;
     }
 
     /*
@@ -108,7 +108,6 @@ public class GroupWrapper {
         this.group = groupToModify;
         this.groupName = group.getGroupName();
         this.parentGroup = group.getParent();
-        this.discoverable = group.isDiscoverable();
 
         if (parentGroup != null) {
             this.hasParent = true;

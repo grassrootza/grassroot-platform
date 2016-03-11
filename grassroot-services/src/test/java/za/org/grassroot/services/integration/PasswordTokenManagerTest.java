@@ -53,7 +53,7 @@ public class PasswordTokenManagerTest {
     @Test
     public void testGenerateVerificationCode2() throws Exception {
 
-        User user = userManagementService.createUserProfile(new User("27700000"));
+        User user = userManagementService.createUserProfile(new User("27701110000"));
 
         VerificationTokenCode verificationTokenCode = passwordTokenManager.generateVerificationCode(user);
 

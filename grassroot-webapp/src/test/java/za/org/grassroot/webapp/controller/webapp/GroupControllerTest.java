@@ -64,8 +64,10 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(userManagementServiceMock.getUserById(sessionTestUser.getId())).thenReturn(sessionTestUser);
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(dummyGroup);
         when(groupManagementServiceMock.isUserInGroup(dummyGroup, sessionTestUser)).thenReturn(true);
-        // when(groupAccessControlManagementServiceMock.
-        //        loadGroup(dummyGroup.getId(), BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS)).thenReturn(dummyGroup);
+        when(groupBrokerMock.isGroupPermissionAvailable(sessionTestUser, dummyGroup,
+                                                        Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)).thenReturn(true);
+        when(groupBrokerMock.isGroupPermissionAvailable(sessionTestUser, dummyGroup,
+                                                        Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS)).thenReturn(true);
 
         when(eventManagementServiceMock.getUpcomingMeetings(dummyGroup)).thenReturn(dummyMeetings);
         when(eventManagementServiceMock.getUpcomingVotes(dummyGroup)).thenReturn(dummyVotes);
@@ -73,27 +75,23 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(groupManagementServiceMock.groupHasValidToken(dummyGroup)).thenReturn(false);
         when(groupBrokerMock.isDeactivationAvailable(sessionTestUser, dummyGroup)).thenReturn(true);
         when(groupManagementServiceMock.getLastTimeGroupActive(dummyGroup)).thenReturn(LocalDateTime.now());
-        // when(groupManagementServiceMock.canUserModifyGroup(dummyGroup,sessionTestUser)).thenReturn(true);
 
-        mockMvc.perform(get("/group/view").param("groupId", String.valueOf(dummyGroup.getId()))).andExpect(view().name("group/view"))
-                .andExpect(model().attribute("group", hasProperty("id", is(dummyId)))).andExpect(model()
-                .attribute("groupMeetings", hasItem(dummyMeeting))).andExpect(model().attribute("groupVotes",
-                hasItem(dummyVote))).andExpect(model().attribute("subGroups", hasItem(dummySubGroup)))
-                .andExpect(model().attribute("hasParent", is(false))).andExpect(model().attribute("openToken",
-                is(false))).andExpect(model().attribute("canMergeWithOthers", is(true)));
+        mockMvc.perform(get("/group/view").param("groupId", String.valueOf(dummyGroup.getId()))).
+                andExpect(view().name("group/view")).
+                andExpect(model().attribute("group", hasProperty("id", is(dummyId)))).
+                andExpect(model().attribute("groupMeetings", hasItem(dummyMeeting))).
+                andExpect(model().attribute("groupVotes", hasItem(dummyVote))).
+                andExpect(model().attribute("subGroups", hasItem(dummySubGroup))).
+                andExpect(model().attribute("hasParent", is(false))).
+                andExpect(model().attribute("openToken", is(false)));
 
-        // verify(groupAccessControlManagementServiceMock, times(1)).loadGroup(dummyGroup.getId(), BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        // todo: verify calls to isPermissionAvailable
         verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
-        // verify(groupAccessControlManagementServiceMock, times(1)).loadGroup(dummyGroup.getId(), BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
         verify(eventManagementServiceMock, times(1)).getUpcomingMeetings(dummyGroup);
         verify(eventManagementServiceMock, times(1)).getUpcomingVotes(dummyGroup);
         verify(groupManagementServiceMock, times(1)).getSubGroups(dummyGroup);
         verify(groupManagementServiceMock, times(1)).groupHasValidToken(dummyGroup);
-        // verify(groupManagementServiceMock, times(1)).canUserModifyGroup(dummyGroup,sessionTestUser);
         verify(groupBrokerMock, times(1)).isDeactivationAvailable(sessionTestUser, dummyGroup);
-        // verify(groupManagementServiceMock, times(1)).isGroupCreatedByUser(dummyGroup.getId(), sessionTestUser);
-        verify(groupManagementServiceMock, times(1)).getLastTimeGroupActive(dummyGroup);
-        // verifyNoMoreInteractions(groupManagementServiceMock);
         verifyNoMoreInteractions(eventManagementServiceMock);
     }
 

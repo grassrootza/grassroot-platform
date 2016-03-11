@@ -121,17 +121,17 @@
 
     <div layout:fragment="messages" class="container-fluid">
       <div layout:fragment="alert">
-        <div th:if="${errorMessage}" class="alert alert-warning alert-dismissible col-lg-8" role="alert">
+        <div th:if="${errorMessage}" class="alert alert-warning alert-dismissible col-md-8 col-md-offset-2" role="alert">
           <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
           <p th:text="${errorMessage}"></p>
         </div>
 
-        <div th:if="${infoMessage != null}" class="alert alert-info alert-dismissible col-lg-8" role="alert">
+        <div th:if="${infoMessage != null}" class="alert alert-info alert-dismissible col-md-8 col-md-offset-2" role="alert">
           <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
           <p th:text="${infoMessage}"></p>
         </div>
 
-        <div th:if="${successMessage != null}" class="alert alert-success alert-dismissible col-lg-8" role="alert">
+        <div th:if="${successMessage != null}" class="alert alert-success alert-dismissible col-md-8 col-md-offset-2" role="alert">
           <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
           <p th:text="${successMessage}"></p>
         </div>

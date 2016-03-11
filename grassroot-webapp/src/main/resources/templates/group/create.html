@@ -7,10 +7,9 @@
 <body>
 
 <div layout:fragment="header" th:switch="${groupCreator.hasParent}">
-  <h2 th:case="false">Start a new group</h2>
-  <h2 th:case="true">Start a subgroup of: <span th:text="${groupCreator.parentName}">parent</span></h2>
+  <h2 th:case="false" class="text-center">Start a new group</h2>
+  <h2 th:case="true" class="text-center">Start a subgroup of: "<span th:text="${groupCreator.parentName}">parent</span>"</h2>
 </div>
-<div layout:fragment="overview">Create a new group and add members</div>
 
 <div layout:fragment="content">
   <div layout:fragment="messages"></div>
@@ -22,15 +21,16 @@
         <input th:field="*{hasParent}" type="hidden" th:value="*{hasParent}"/>
       </div>
       <div class="form-group">
-        <label for="groupName" class="col-lg-2 control-label">Group Name</label>
-        <div class="col-lg-4">
-          <input th:field="*{groupName}" type="text" class="form-control" id="groupName" placeholder="Group Name" maxlength="20" data-toggle="tooltip"
+        <div class="col-md-offset-2 col-md-8">
+          <label for="groupName" class="control-label">What's the group's name?</label>
+          <input th:field="*{groupName}" type="text" class="form-control" id="groupName"
+                 placeholder="Please keep to 20 characters or less" maxlength="20" data-toggle="tooltip"
                  title="Group name may not be longer than 20 characters and must not contain any symbols "/>
         </div>
       </div>
       <div class="form-group">
-        <label for="groupTemplate" class="col-lg-2 control-label">Permissions:</label>
-        <div class="col-lg-4">
+        <div class="col-md-offset-2 col-md-8">
+          <label for="groupTemplate" class="control-label">Who will be able to call meetings, events, etc?</label>
           <select name="groupTemplate" id="groupTemplate" class="form-control">
             <option th:each="template : ${permissionTemplates}"
                     th:value="${template[0]}"
@@ -39,8 +39,9 @@
         </div>
       </div>
 
-      <div class="form-group col-lg-10 col-lg-offset-2">
-        <table class="table col-md-8" id="member-input">
+      <div class="form-group">
+        <div class="col-md-offset-2 col-md-8">
+          <table class="table" id="member-input">
           <thead>
           <tr>
             <th>Name</th>
@@ -78,16 +79,17 @@
           </tr>
           </tbody>
         </table>
+        </div>
       </div>
       <div class="form-group">
-        <div class="col-lg-4">
+        <div class="col-md-offset-2 col-md-8">
           <button type="submit" name="addMember" class="btn btn-default">
             <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
             Add another member</button>
         </div>
       </div>
       <div class="form-group">
-        <div class="col-lg-8">
+        <div class="col-md-offset-2 col-md-8">
           <a th:href="@{/home}" role="button" class="btn btn-default">Cancel</a>
           <button type="submit" class="btn btn-primary">Create Group</button>
         </div>

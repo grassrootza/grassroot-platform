@@ -122,7 +122,7 @@
           <ul class="dropdown-menu">
             <li><a th:href="@{/group/history(groupId=${group.id})}">View group history</a></li>
             <li><a href="javascript:void(0)" data-toggle="modal" data-target="#renameModal">Rename group</a></li>
-            <li><a th:href="@{/group/add(groupId=${group.id})}">Add multiple members</a></li>
+            <li><a th:href="@{/group/change_multiple(groupUid=${group.Uid})}">Change multiple members</a></li>
             <li><a th:href="@{/group/language(groupId=${group.id})}">Set default language</a></li>
             <li class="divider"></li>
             <li th:if="${not hasParent}"><a th:href="@{/group/parent(groupId=${group.id})}">Link to a parent group</a></li>
@@ -185,11 +185,7 @@
           </div>
         </div>
       </div>
-
-
-
     </div>
-
   </div>
 
 
@@ -245,7 +241,7 @@
           <th>Name</th>
           <th>Phone number</th>
           <th>Role in group</th>
-          <th th:if="${canAlter}"></th>
+          <th th:if="${canDeleteMembers}"></th>
           </thead>
           <tbody>
           <tr th:each="member : ${groupMembers}">
@@ -253,7 +249,7 @@
             <td><span th:text="${member.getPhoneNumberWithoutCCode()}">Phone number</span></td>
             <td><span th:text="#{web.group.role.__${member.roleName}__}">Role name</span></td>
 
-            <td th:if="${canAlter}">
+            <td th:if="${canDeleteMembers}">
               <!-- <a th:href="@{/group/remove(groupId=${group.id}, userPhone=${member.getPhoneNumberWithCCode()})}"> -->
                 <button type="button" class="btn btn-default" data-toggle="modal" data-target="#rmModal"
                         th:attr="data-phone=${member.getPhoneNumberWithCCode()}" th:unless="${member.getPhoneNumberWithCCode() == currentUser.getUsername()}">
@@ -265,7 +261,7 @@
           </tbody>
         </table>
 
-        <div th:if="${canAlter}" class="modal fade" id="rmModal" tabindex="-1" role="dialog" aria-labelledby="rmModalLabel">
+        <div th:if="${canDeleteMembers}" class="modal fade" id="rmModal" tabindex="-1" role="dialog" aria-labelledby="rmModalLabel">
           <div class="modal-dialog" role="document">
             <div class="modal-content">
               <div class="modal-header">
@@ -289,7 +285,7 @@
           </div>
         </div>
 
-        <div th:if="${canAlter}" class="form-group">
+        <div th:if="${canAddMembers}" class="form-group">
           <div class="col-md-4">
             <button type="button" class="btn btn-default" data-toggle="modal" data-target="#addModal">
               <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
@@ -298,7 +294,7 @@
           </div>
         </div>
 
-        <div th:if="${canAlter}" class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-labelledby="addModalLabel">
+        <div th:if="${canAddMembers}" class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-labelledby="addModalLabel">
           <div class="modal-dialog" role="document">
             <div class="modal-content">
               <div class="modal-header">
