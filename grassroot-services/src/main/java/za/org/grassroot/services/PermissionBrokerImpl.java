@@ -27,4 +27,9 @@ public class PermissionBrokerImpl implements PermissionBroker {
         return false;
     }
 
+    @Override
+    public Set<Permission> getPermissions(Group group, String roleName) {
+        return group.getRole(roleName).getPermissions();
+    }
+
 }

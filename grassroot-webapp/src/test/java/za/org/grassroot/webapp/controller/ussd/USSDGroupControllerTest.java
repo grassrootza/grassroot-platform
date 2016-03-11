@@ -380,6 +380,8 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         Group mergingGroup = new Group("tg1", testUser);
         mergingGroup.setId(2L);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
+        when(groupManagementServiceMock.loadGroup(testGroup.getId())).thenReturn(testGroup);
+        when(groupManagementServiceMock.loadGroup(mergingGroup.getId())).thenReturn(mergingGroup);
         when(groupBrokerMock.merge(testUser.getUid(), testGroup.getUid(), mergingGroup.getUid(),
                                                     false, false, false, null)).thenReturn(mergingGroup);
         mockMvc.perform(get(path + "merge-do").param(phoneParam, testUserPhone).param("groupId1", testGroupIdString).
@@ -387,6 +389,8 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupBrokerMock, times(1)).merge(testUser.getUid(), testGroup.getUid(), mergingGroup.getUid(), false, false, false, null);
+        verifyNoMoreInteractions(groupBrokerMock);
+        verify(groupManagementServiceMock, times(2)).loadGroup(anyLong());
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }

@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.webapp;
 
+import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
@@ -47,6 +48,9 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
     }
 
+    // todo: check for languages, check permissions, etc etc -- in effect, expand this to lots of testing, since
+    // group view is the principal screen now for most group actions
+    
     @Test
     public void viewGroupIndexWorks() throws Exception {
         Group dummyGroup = new Group("Dummy Group2", new User("234345345"));
@@ -64,9 +68,9 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(userManagementServiceMock.getUserById(sessionTestUser.getId())).thenReturn(sessionTestUser);
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(dummyGroup);
         when(groupManagementServiceMock.isUserInGroup(dummyGroup, sessionTestUser)).thenReturn(true);
-        when(groupBrokerMock.isGroupPermissionAvailable(sessionTestUser, dummyGroup,
+        when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, dummyGroup,
                                                         Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)).thenReturn(true);
-        when(groupBrokerMock.isGroupPermissionAvailable(sessionTestUser, dummyGroup,
+        when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, dummyGroup,
                                                         Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS)).thenReturn(true);
 
         when(eventManagementServiceMock.getUpcomingMeetings(dummyGroup)).thenReturn(dummyMeetings);
@@ -173,14 +177,17 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         dummyGroup.addMember(sessionTestUser);
 
         when(userManagementServiceMock.getUserById(sessionTestUser.getId())).thenReturn(sessionTestUser);
-        when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(dummyGroup);
+        when(groupManagementServiceMock.loadGroupByUid(dummyGroup.getUid())).thenReturn(dummyGroup);
         when(groupManagementServiceMock.isUserInGroup(dummyGroup, sessionTestUser)).thenReturn(true);
-        mockMvc.perform(post("/group/modify").param("group_modify", "").param("groupId", String.valueOf(dummyId)))
-                .andExpect(status().isOk()).andExpect(view().name("group/modify"))
+
+        mockMvc.perform(get("/group/change_multiple").param("groupUid", dummyGroup.getUid()))
+                .andExpect(status().isOk())
+                .andExpect(view().name("group/change_multiple"))
                 .andExpect(model().attribute("groupModifier", instanceOf(GroupWrapper.class)));
-//        verify(userManagementServiceMock, times(1)).getUserById(sessionTestUser.getId());
-        verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
+
+        verify(groupManagementServiceMock, times(1)).loadGroupByUid(dummyGroup.getUid());
         verify(groupManagementServiceMock, times(1)).isUserInGroup(dummyGroup, sessionTestUser);
+        verify(userManagementServiceMock, times(1)).loadUserByUid(sessionTestUser.getUid());
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(groupManagementServiceMock);
     }
@@ -198,9 +205,9 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     public void addMemberModifyWorks() throws Exception {
         GroupWrapper groupCreator = new GroupWrapper();
         groupCreator.addMember(new MembershipInfo(sessionTestUser));
-        mockMvc.perform(post("/group/modify").param("addMember", "")
+        mockMvc.perform(post("/group/change_multiple").param("addMember", "")
                 .sessionAttr("groupModifier", groupCreator))
-                .andExpect(status().isOk()).andExpect(view().name("group/modify"));
+                .andExpect(status().isOk()).andExpect(view().name("group/change_multiple"));
 
     }
 
@@ -208,53 +215,47 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     public void addMemberModifyFails() throws Exception {
         GroupWrapper groupCreator = new GroupWrapper();
         groupCreator.addMember(new MembershipInfo(new User("100001")));
-        MvcResult result = mockMvc.perform(post("/group/modify").param("addMember", "")
+        MvcResult result = mockMvc.perform(post("/group/change_multiple").param("addMember", "")
                 .sessionAttr("groupModifier", groupCreator))
                 .andExpect(status().isOk())
-
-               // .andExpect(model().attributeHasErrors())
-                .andExpect(view().name("group/modify")).andReturn();
+                .andExpect(model().attributeHasErrors())
+                .andExpect(view().name("group/change_multiple")).andReturn();
         Map<String, Object> map = result.getModelAndView().getModel();
         Set<Map.Entry<String,Object>> entrySet =map.entrySet();
         Iterator<Map.Entry<String,Object>> iter = entrySet.iterator();
         while (iter.hasNext()){
             logger.debug(iter.next().getValue().toString());
         }
-
-
     }
 
     @Test
     public void removeMemberModifyWorks() throws Exception {
         GroupWrapper groupCreator = new GroupWrapper();
         groupCreator.addMember(new MembershipInfo(sessionTestUser));
-        mockMvc.perform(post("/group/modify").param("removeMember", String.valueOf(0)).param("removeMember", "")
+        mockMvc.perform(post("/group/change_multiple").param("removeMember", String.valueOf(0)).param("removeMember", "")
                 .sessionAttr("groupModifier", groupCreator))
-                .andExpect(status().isOk()).andExpect(view().name("group/modify"));
+                .andExpect(status().isOk()).andExpect(view().name("group/change_multiple"));
     }
 
     @Test
     public void modifyGroupDoWorks() throws Exception {
+
         Group testGroup = new Group("Dummy Group", new User("234345345"));
-        GroupWrapper groupModifier = new GroupWrapper(testGroup);
-        groupModifier.setGroupName("DummyGroup");
+        GroupWrapper groupModifier = new GroupWrapper();
+        groupModifier.populate(testGroup);
+        groupModifier.setGroupName("Dummy Group");
         testGroup.setId(dummyId);
         testGroup.addMember(sessionTestUser);
         List<User> testUpdatedUserList = new ArrayList<>();
 
-        when(userManagementServiceMock.getUserById(sessionTestUser.getId())).thenReturn(sessionTestUser);
-        when(groupManagementServiceMock.loadGroup(groupModifier.getGroup().getId())).thenReturn(testGroup);
-        when(groupManagementServiceMock.isUserInGroup(testGroup, sessionTestUser)).thenReturn(true);
-        // when(groupManagementServiceMock.renameGroup(testGroup, groupModifier.getGroupName())).thenReturn(testGroup);
-        // when(groupManagementServiceMock.addRemoveGroupMembers(testGroup, testUpdatedUserList, sessionTestUser.getId(), true)).thenReturn(testGroup);
-        mockMvc.perform(post("/group/modify").sessionAttr("groupModifier", groupModifier)).andExpect(status().is3xxRedirection())
-                .andExpect(view().name("redirect:view")).andExpect(model()
-                .attribute("groupId", is(String.valueOf(dummyId))));
-        verify(groupManagementServiceMock, times(1)).loadGroup(groupModifier.getGroup().getId());
-        //verify(groupManagementServiceMock, times(1)).renameGroup(testGroup, groupModifier.getGroupName());
-        //verify(groupManagementServiceMock, times(1)).addRemoveGroupMembers(testGroup, testUpdatedUserList, sessionTestUser.getId(), true);
-        verify(groupManagementServiceMock, times(1)).isUserInGroup(testGroup, sessionTestUser);
-//        verify(userManagementServiceMock, times(1)).getUserById(sessionTestUser.getId());
+        when(groupManagementServiceMock.loadGroupByUid(testGroup.getUid())).thenReturn(testGroup);
+
+        mockMvc.perform(post("/group/change_multiple").sessionAttr("groupModifier", groupModifier))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(view().name("redirect:view"))
+                .andExpect(model().attribute("groupId", is(String.valueOf(dummyId))));
+
+        verify(groupManagementServiceMock, times(1)).loadGroupByUid(testGroup.getUid());
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyNoMoreInteractions(userManagementServiceMock);
 
@@ -297,23 +298,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
         // note: since the model returns to group view, testing all verifications would be tedious and somewhat pointless
         verify(groupManagementServiceMock, times(1)).closeGroupToken(group.getUid(), sessionTestUser.getUid());
-
-    }
-
-    @Test
-    public void requestGroupLanguageWorks() throws Exception {
-        Group testGroup = new Group("Dummy Group", new User("234345345"));
-        testGroup.setId(dummyId);
-        LinkedHashMap<String, String> testImplementedLanguages = new LinkedHashMap<>();
-        when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
-        when(userManagementServiceMock.getImplementedLanguages()).thenReturn(testImplementedLanguages);
-        mockMvc.perform(get("/group/modify").param("group_language", "").param("groupId", String.valueOf(dummyId)))
-                .andExpect(model().attribute("group", hasProperty("id", is(1L)))).andExpect(model().attribute("languages"
-                , instanceOf(List.class)));
-        verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
-        verify(userManagementServiceMock, times(1)).getImplementedLanguages();
-        verifyNoMoreInteractions(groupManagementServiceMock);
-        verifyNoMoreInteractions(userManagementServiceMock);
 
     }
 
@@ -645,22 +629,20 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         numbers_to_be_added.add("27616780986");
         numbers_to_be_added.add("27833403013");
         numbers_to_be_added.add("27799814669");
-        List<User> testUsers = Arrays.asList(
-                new User("27616780986"),
-                new User("27833403013"),
-                new User("27799814669"));
+
+        Set<MembershipInfo> testMembers = Sets.newHashSet(
+                new MembershipInfo("27616780986", BaseRoles.ROLE_ORDINARY_MEMBER, null),
+                new MembershipInfo("27833403013", BaseRoles.ROLE_ORDINARY_MEMBER, null),
+                new MembershipInfo("27799814669", BaseRoles.ROLE_ORDINARY_MEMBER, null));
 
         Group testGroup = new Group("someGroupName", new User("27616780989"));
-        when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
-   //     when(userManagementServiceMock.getExistingUsersFromNumbers(numbers_to_be_added)).thenReturn(testUsers);
-        // when(groupManagementServiceMock.addMembersToGroup(dummyId,testUsers,true)).thenReturn(testGroup);
+        when(groupManagementServiceMock.loadGroupByUid(testGroup.getUid())).thenReturn(testGroup);
 
-        mockMvc.perform(post("/group/add_members_do").param("groupId", String.valueOf(dummyId)).param("list",testNumbers)
-                .param("closed", String.valueOf(true)))
-                .andExpect(status().isOk()).andExpect(view().name("group/add_members_do"));
-        verify(groupManagementServiceMock,times(1)).loadGroup(dummyId);
-        verify(asyncGroupService,times(1)).addBulkMembers(dummyId, numbers_to_be_added, sessionTestUser);
+        mockMvc.perform(post("/group/add_bulk").param("groupUid", String.valueOf(testGroup.getUid())).param("list",testNumbers))
+                .andExpect(status().isOk()).andExpect(view().name("group/add_bulk_error"));
+        verify(groupManagementServiceMock,times(1)).loadGroupByUid(testGroup.getUid());
         verifyNoMoreInteractions(groupManagementServiceMock);
+        verify(groupBrokerMock, times(1)).addMembers(sessionTestUser.getUid(), testGroup.getUid(), testMembers);
       //  verifyNoMoreInteractions(userManagementServiceMock);
 
     }

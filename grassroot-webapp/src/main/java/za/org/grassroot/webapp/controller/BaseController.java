@@ -160,6 +160,10 @@ public class BaseController {
         model.addAttribute(messageType.getMessageKey(), getText(messageKey, request.getLocale()));
     }
 
+    public void addMessage(Model model, MessageType messageType, String messageKey, Object[] arguments, HttpServletRequest request) {
+        model.addAttribute(messageType.getMessageKey(), getText(messageKey, arguments, request.getLocale()));
+    }
+
     /**
      *
      * @param redirectAttributes

@@ -3,7 +3,7 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorator="layout">
 <head>
-    <title>GrassRoot - View Group</title>
+    <title>Grassroot - View Group</title>
 </head>
 <body>
 
@@ -123,7 +123,7 @@
             <li><a th:href="@{/group/history(groupId=${group.id})}">View group history</a></li>
             <li><a href="javascript:void(0)" data-toggle="modal" data-target="#renameModal">Rename group</a></li>
             <li><a th:href="@{/group/change_multiple(groupUid=${group.Uid})}">Change multiple members</a></li>
-            <li><a th:href="@{/group/language(groupId=${group.id})}">Set default language</a></li>
+            <li><a href="javascript:void(0)" data-toggle="modal" data-target="#languageModal">Set default language</a></li>
             <li class="divider"></li>
             <li th:if="${not hasParent}"><a th:href="@{/group/parent(groupId=${group.id})}">Link to a parent group</a></li>
             <li><a href="" th:href="@{/group/consolidate/select(groupId=${group.id})}">Merge with another group</a></li>
@@ -153,6 +153,39 @@
               <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                 <button type="submit" class="btn btn-primary">Rename</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div th:if="${canAlter}" class="modal fade" id="languageModal" tabindex="-1" role="dialog" aria-labelledby="languageModalLabel">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+              <h4 class="modal-title" id="languageModalLabel">Change group language</h4>
+            </div>
+            <form th:action="@{/group/language}" method="get">
+              <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
+              <div class="modal-body">
+                <div class="form-group">
+                  <label for="group-locale" class="control-label">Select language:</label>
+                  <select name="locale" id="group-locale" class="form-control">
+                    <option th:each="language: ${languages}"
+                            th:value="${language.key}"
+                            th:text="${language.value}" />
+                  </select>
+                </div>
+                <div class="checkbox" th:if="${not #lists.isEmpty(subGroups)}">
+                  <label>
+                    <input type="checkbox" name="includeSubGroups" /> Set for subgroups too?
+                  </label>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Set</button>
               </div>
             </form>
           </div>
@@ -227,9 +260,6 @@
     </div>
   </div>
 
-
-  <!-- todo: use Thymeleaf spring security instead of the boolean flag  -->
-  <!-- <div class="well" sec:authorize="hasPermission(group.id, 'GROUP_PERMISSION_SEE_MEMBER_DETAILS')"> -->
   <div class="well col-md-12" th:unless="${#lists.isEmpty(groupMembers)}">
     <div class="row col-md-8 col-md-offset-2">
       <h4>Group members</h4>
@@ -250,7 +280,6 @@
             <td><span th:text="#{web.group.role.__${member.roleName}__}">Role name</span></td>
 
             <td th:if="${canDeleteMembers}">
-              <!-- <a th:href="@{/group/remove(groupId=${group.id}, userPhone=${member.getPhoneNumberWithCCode()})}"> -->
                 <button type="button" class="btn btn-default" data-toggle="modal" data-target="#rmModal"
                         th:attr="data-phone=${member.getPhoneNumberWithCCode()}" th:unless="${member.getPhoneNumberWithCCode() == currentUser.getUsername()}">
                   Remove
@@ -335,10 +364,7 @@
     </div>
   </div>
 
-
   <!-- todo: add button that will get all users from subgroups too and display them in one list -->
-
-
 
   <!-- list subgroups -->
   <!-- todo: create a fragment to display a list of groups, to be used in a bunch of places -->

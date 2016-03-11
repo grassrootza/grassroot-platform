@@ -35,11 +35,8 @@ import java.util.*;
  * @author Lesetse Kimwaga
  */
 @Controller
-
-
 @RequestMapping("/group/")
 @SessionAttributes({"groupCreator", "groupModifier"})
-
 public class GroupController extends BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(GroupController.class);
@@ -52,10 +49,6 @@ public class GroupController extends BaseController {
 
     @Autowired
     private GroupBroker groupBroker;
-
-
-    @Autowired
-    private AsyncGroupService asyncGroupService;
 
     @Autowired
     private EventManagementService eventManagementService;
@@ -70,9 +63,6 @@ public class GroupController extends BaseController {
     private RoleManagementService roleService;
 
     @Autowired
-    private AsyncRoleService asyncRoleService;
-
-    @Autowired
     @Qualifier("groupWrapperValidator")
     private Validator groupWrapperValidator;
 
@@ -84,7 +74,7 @@ public class GroupController extends BaseController {
             new String[]{GroupPermissionTemplate.CLOSED_GROUP.toString(),
                     "Only designated members can call a meeting or vote or record a to-do"});
 
-    List<String[]> roleDescriptions = Arrays.asList(new String[]{BaseRoles.ROLE_ORDINARY_MEMBER, "Ordinary member"},
+    final static List<String[]> roleDescriptions = Arrays.asList(new String[]{BaseRoles.ROLE_ORDINARY_MEMBER, "Ordinary member"},
                                                     new String[]{BaseRoles.ROLE_COMMITTEE_MEMBER, "Committee member"},
                                                     new String[]{BaseRoles.ROLE_GROUP_ORGANIZER, "Group organizer"});
 
@@ -158,6 +148,7 @@ public class GroupController extends BaseController {
 
         model.addAttribute("group", group);
         model.addAttribute("roles", roleDescriptions);
+        model.addAttribute("languages", userManagementService.getImplementedLanguages().entrySet());
         model.addAttribute("hasParent", (group.getParent() != null));
         model.addAttribute("groupMeetings", eventManagementService.getUpcomingMeetings(group));
         model.addAttribute("groupVotes", eventManagementService.getUpcomingVotes(group));
@@ -356,6 +347,7 @@ public class GroupController extends BaseController {
 
         // todo: check permissions
         Group group = groupManagementService.loadGroupByUid(groupUid);
+        User user = userManagementService.loadUserByUid(getUserProfile().getUid());
         if (!isUserPartOfGroup(getUserProfile(), group)) throw new AccessDeniedException("");
 
         log.info("Okay, modifying this group: " + group.toString());
@@ -363,9 +355,10 @@ public class GroupController extends BaseController {
         GroupWrapper groupModifier = new GroupWrapper();
         groupModifier.populate(group);
 
-        groupModifier.setCanRemoveMembers(permissionBroker.isGroupPermissionAvailable(getUserProfile(), group, Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER));
-        groupModifier.setCanAddMembers(permissionBroker.isGroupPermissionAvailable(getUserProfile(), group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER));
-        groupModifier.setCanUpdateDetails(permissionBroker.isGroupPermissionAvailable(getUserProfile(), group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS));
+        log.info("Checking permissions ... can add member? : " + permissionBroker.isGroupPermissionAvailable(getUserProfile(), group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER));
+        groupModifier.setCanRemoveMembers(permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER));
+        groupModifier.setCanAddMembers(permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER));
+        groupModifier.setCanUpdateDetails(permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS));
 
         log.info("The GroupWrapper now contains: " + groupModifier.getGroup().toString());
 
@@ -421,65 +414,74 @@ public class GroupController extends BaseController {
         Group group = groupManagementService.loadGroupByUid(groupUid);
         model.addAttribute("group", group);
 
-        return "group/add_members";
+        Set<Permission> ordinaryPermissions = permissionBroker.getPermissions(group, BaseRoles.ROLE_ORDINARY_MEMBER);
+
+        boolean canCallMeetings = ordinaryPermissions.contains(Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
+        boolean canCallVotes = ordinaryPermissions.contains(Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
+        boolean canRecordToDo = ordinaryPermissions.contains(Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
+        boolean canViewMembers = ordinaryPermissions.contains(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+
+        boolean closedGroup = !(canCallMeetings || canCallVotes || canRecordToDo || canViewMembers);
+
+        if (closedGroup) {
+            model.addAttribute("closedGroup", closedGroup);
+        } else {
+            model.addAttribute("canCallMeetings", canCallMeetings);
+            model.addAttribute("canCallVotes", canCallVotes);
+            model.addAttribute("canRecordToDos", canRecordToDo);
+            model.addAttribute("canViewMembers", canViewMembers);
+        }
+
+        return "group/add_bulk";
+
     }
 
-    @RequestMapping(value = "add_members_do", method = RequestMethod.POST)
-    public String addMembersBulkDo(Model model, @RequestParam String groupUid, @RequestParam String list) {
-
+    @RequestMapping(value = "add_bulk", method = RequestMethod.POST)
+    public String addMembersBulkDo(Model model, @RequestParam String groupUid, @RequestParam String list,
+                                   HttpServletRequest request) {
 
         Group group = groupManagementService.loadGroupByUid(groupUid);
         Map<String, List<String>> mapOfNumbers = BulkUserImportUtil.splitPhoneNumbers(list);
+
         List<String> numbersToBeAdded = mapOfNumbers.get("valid");
 
         if (!numbersToBeAdded.isEmpty()) {
-            // do the thing
+            Long startTime = System.currentTimeMillis();
+            Set<MembershipInfo> membershipInfoSet = new HashSet<>();
+            for (String number : numbersToBeAdded)
+                membershipInfoSet.add(new MembershipInfo(number, BaseRoles.ROLE_ORDINARY_MEMBER, null));
+            groupBroker.addMembers(getUserProfile().getUid(), groupUid, membershipInfoSet);
+            Long duration = System.currentTimeMillis() - startTime;
+            log.info(String.format("Time taken to add %d numbers: %d msecs", numbersToBeAdded.size(), duration));
         }
 
-        boolean errors = (mapOfNumbers.get("error").isEmpty()) ? false : true;
-        model.addAttribute("errors", errors);
-        model.addAttribute("group", group);
-        model.addAttribute("invalid", mapOfNumbers.get("error"));
-        model.addAttribute("members_added", numbersToBeAdded.size());
-
-        return "group/add_members_do";
+        if (mapOfNumbers.get("error").isEmpty()) {
+            addMessage(model, MessageType.SUCCESS, "group.bulk.success", new Integer[] { numbersToBeAdded.size() }, request);
+            return viewGroupIndex(model, group.getId());
+        } else {
+            model.addAttribute("errors", true);
+            model.addAttribute("group", group);
+            model.addAttribute("invalid", mapOfNumbers.get("error"));
+            model.addAttribute("members_added", numbersToBeAdded.size());
+            return "group/add_bulk_error";
+        }
     }
 
-
-    /*
-    Methods for handling join tokens
-     */
-
-    @RequestMapping(value = "modify", params = {"group_language"})
-    public String requestGroupLanguage(Model model, @RequestParam("groupId") Long groupId) {
-
-        Group group = groupManagementService.loadGroup(groupId);
-
-        List<Map.Entry<String, String>> languages = new ArrayList<>(userManagementService.getImplementedLanguages().entrySet());
-
-        model.addAttribute("group", group);
-        model.addAttribute("languages", languages);
-
-        return "group/language_pick";
-
-    }
-
-    @RequestMapping(value = "language", method = RequestMethod.POST)
-    public String setGroupLanguage(Model model, @RequestParam("groupId") Long groupId, @RequestParam("locale") String locale,
+    @RequestMapping(value = "language")
+    public String setGroupLanguage(Model model, @RequestParam String groupUid, @RequestParam String locale,
                                    @RequestParam(value = "includeSubGroups", required = false) boolean includeSubGroups,
-                                   RedirectAttributes redirectAttributes, HttpServletRequest request) {
+                                   HttpServletRequest request) {
 
         // todo: add permissions checking, exception handling, etc.
 
         log.info("Okay, setting the language to: " + locale);
 
-        Group group = groupManagementService.loadGroup(groupId);
+        Group group = groupManagementService.loadGroupByUid(groupUid);
         groupManagementService.setGroupDefaultLanguage(group, locale, includeSubGroups);
 
         // todo: there is probably a more efficient way to do this than the redirect
-        redirectAttributes.addAttribute("groupId", group.getId());
-        addMessage(redirectAttributes, MessageType.SUCCESS, "group.language.success", request);
-        return "redirect:/group/view";
+        addMessage(model, MessageType.SUCCESS, "group.language.success", request);
+        return viewGroupIndex(model, group.getId());
     }
 
 
