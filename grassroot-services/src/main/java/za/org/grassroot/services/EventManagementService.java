@@ -139,6 +139,9 @@ public interface EventManagementService {
 
     public Event removeSendBlock(Long eventId);
 
+    public Event getMostRecentEvent(Group group);
+
+
     /*
     Methods to get important details about events, including users by RSVP response, and a descriptive hashmap of strings
      */

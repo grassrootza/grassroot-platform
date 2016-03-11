@@ -13,6 +13,8 @@ import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.repository.VerificationTokenCodeRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 
+import java.math.BigInteger;
+import java.security.SecureRandom;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -28,6 +30,7 @@ public class PasswordTokenManager implements PasswordTokenService {
     public static final int TOKEN_LIFE_SPAN_MINUTES = 10;
     public static final int TOKEN_LIFE_SPAN_DAYS =10;
     private Logger log = LoggerFactory.getLogger(PasswordTokenManager.class);
+
 
     @Autowired
     private PasswordEncoder passwordTokenEncoder;
@@ -66,10 +69,8 @@ public class PasswordTokenManager implements PasswordTokenService {
     public VerificationTokenCode generateAndroidVerificationCode(String phoneNumber) {
 
         VerificationTokenCode verificationTokenCode = verificationTokenCodeRepository.findByUsername(phoneNumber);
-
-        String code = UUID.randomUUID().toString();
-
-
+        Random random = new SecureRandom();
+        String code = String.valueOf(new BigInteger(130, random));
         if (verificationTokenCode == null) {
             verificationTokenCode = new VerificationTokenCode(PhoneNumberUtil.convertPhoneNumber(phoneNumber), code);
 
@@ -165,8 +166,9 @@ public class PasswordTokenManager implements PasswordTokenService {
 
     public VerificationTokenCode generateLongLivedCode(User user) {
 
+        Random random = new SecureRandom();
         VerificationTokenCode verificationTokenCode = verificationTokenCodeRepository.findByUsername(user.getUsername());
-        verificationTokenCode.setCode(UUID.randomUUID().toString());
+        verificationTokenCode.setCode( String.valueOf( new BigInteger(130, random)));
         verificationTokenCode.setExpiryDateTime(Timestamp.valueOf(LocalDateTime.now().plusDays(TOKEN_LIFE_SPAN_DAYS)));
         verificationTokenCodeRepository.save(verificationTokenCode);
 

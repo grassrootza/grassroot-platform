@@ -329,6 +329,15 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
+    public Event getMostRecentEvent(Group group) {
+        List<Event> events = eventRepository.findByAppliesToGroupOrderByEventStartDateTimeDesc(group);
+        if(!events.isEmpty()){
+            return events.get(0);
+        }
+        return null;
+    }
+
+    @Override
     public Map<String, Integer> getMeetingRsvpTotals(Event meeting) {
         Map<String, Integer> results = new HashMap<>();
         RSVPTotalsDTO totalsDTO = eventLogManagementService.getRSVPTotalsForEvent(meeting);

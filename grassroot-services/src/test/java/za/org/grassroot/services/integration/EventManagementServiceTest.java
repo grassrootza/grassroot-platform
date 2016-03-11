@@ -77,7 +77,7 @@ public class EventManagementServiceTest {
 /*        User userProfile = userManagementService.createUserProfile(new User("111222333", "aap1"));
         Group group = groupManagementService.createNewGroup(userProfile, Arrays.asList("111222444", "111222555"), false);
         Event event = eventManagementService.createEvent("Drink till you drop", userProfile, group);
-        assertEquals("Drink till you drop", event.getName());
+        assertEquals("Drink till you drop", event.getGroupName());
         assertEquals(userProfile.getId(), event.getCreatedByUser().getId());
         assertEquals(group.getId(), event.getAppliesToGroup().getId());*/
 

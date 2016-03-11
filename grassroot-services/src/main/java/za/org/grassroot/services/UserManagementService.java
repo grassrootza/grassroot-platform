@@ -25,7 +25,7 @@ public interface UserManagementService {
 
     User createAndroidUserProfile(UserDTO userDTO) throws UserExistsException;
 
-    void generateAndroidUserVerifier(String phoneNumber);
+    String generateAndroidUserVerifier(String phoneNumber);
 
 
     User getUserById(Long userId);

@@ -140,6 +140,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
             User userToUpdate = loadOrSaveUser(phoneNumber);
             if (userToUpdate.hasAndroidProfile() ){
+
                 throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a android profile!");
             }
 
@@ -158,13 +159,11 @@ public class UserManager implements UserManagementService, UserDetailsService {
         }
 
         try {
-
             User userToReturn = userRepository.saveAndFlush(userToSave);
             if (userExists)
-                asyncUserService.recordUserLog(userToReturn.getId(), UserLogType.CREATED_IN_DB, "User first created via android set up");
+                asyncUserService.recordUserLog(userToReturn.getId(), UserLogType.CREATED_IN_DB, "User first created via web sign up");
             asyncUserService.recordUserLog(userToReturn.getId(), UserLogType.REGISTERED_ANDROID, "User created android profile");
             return userToReturn;
-
         } catch (final Exception e) {
             e.printStackTrace();
             log.warn(e.getMessage());
@@ -174,10 +173,14 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public void generateAndroidUserVerifier(String phoneNumber){
+    public String generateAndroidUserVerifier(String phoneNumber){
         Objects.nonNull(phoneNumber);
         phoneNumber = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
         jmsTemplateProducerService.sendWithNoReply("send-verification", phoneNumber);
+        return phoneNumber;
+
+
+
     }
 
 

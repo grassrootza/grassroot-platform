@@ -93,7 +93,7 @@ public class BaseController {
     /* protected User getUserProfile() {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return userManagementService.fetchUserByUsername(authentication.getName());
+        return userManagementService.fetchUserByUsername(authentication.getGroupName());
     }*/
 
     public Group loadAuthorizedGroup(Long groupId, Permission permission) {
