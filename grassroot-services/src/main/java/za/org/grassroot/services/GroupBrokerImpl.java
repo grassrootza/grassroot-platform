@@ -34,7 +34,7 @@ public class GroupBrokerImpl implements GroupBroker {
     @Autowired
     private PermissionsManagementService permissionsManagementService;
     @Autowired
-    private GroupAccessControlManagementService groupAccessControlManagementService;
+    private PermissionBroker permissionBroker;
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
     @Autowired
@@ -93,25 +93,6 @@ public class GroupBrokerImpl implements GroupBroker {
         applicationEventPublisher.publishEvent(afterTxCommitTask);
     }
 
-    // Just trying out the impact of straightforward manual ACL check
-
-    private void validateGroupPermission(User user, Group targetGroup, Permission requiredPermission) {
-        if (!isGroupPermissionAvailable(user, targetGroup, requiredPermission)) {
-            throw new RuntimeException("User " + user + " has no permission " + requiredPermission + " available for group " + targetGroup);
-        }
-    }
-
-    // todo : annotate as transactional?
-    @Override
-    public boolean isGroupPermissionAvailable(User user, Group group, Permission requiredPermission) {
-        for (Membership membership : user.getMemberships()) {
-            if (membership.getGroup().equals(group)) {
-                return membership.getRole().getPermissions().contains(requiredPermission);
-            }
-        }
-        return false;
-    }
-
     @Override
     @Transactional
     public void deactivate(String userUid, String groupUid) {
@@ -156,6 +137,9 @@ public class GroupBrokerImpl implements GroupBroker {
 
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
+
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+
         group.setGroupName(name);
 
         Set<GroupLog> groupLogs = Collections.singleton(new GroupLog(group.getId(), user.getId(), GroupLogType.GROUP_RENAMED, group.getId(), "Group renamed to " + group.getGroupName()));
@@ -168,7 +152,7 @@ public class GroupBrokerImpl implements GroupBroker {
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
-        validateGroupPermission(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
 
         logger.info("Adding members: group={}, memberships={}, user={}", group, membershipInfos, user);
         Set<Membership> memberships = addMembers(user, group, membershipInfos);
@@ -209,7 +193,7 @@ public class GroupBrokerImpl implements GroupBroker {
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
-        validateGroupPermission(user, group, Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER);
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER);
 
         logger.info("Removing members: group={}, memberUids={}, user={}", group, memberUids, user);
 
@@ -235,7 +219,7 @@ public class GroupBrokerImpl implements GroupBroker {
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
-        validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
         Membership membership = group.getMemberships().stream()
                 .filter(membership1 -> membership1.getUser().getUid().equals(memberUid))

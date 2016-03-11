@@ -105,10 +105,6 @@ public class GroupController extends BaseController {
         return groupManagementService.isUserInGroup(group, sessionUser);
     }
 
-    private Group secureLoadGroup(Long id) {
-        return loadGroup(id, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
-    }
-
     /*
     First method is for users brand new and without any group membership, and/or later for any user, to find & join group
      */
@@ -168,12 +164,12 @@ public class GroupController extends BaseController {
         model.addAttribute("subGroups", groupManagementService.getSubGroups(group));
         model.addAttribute("openToken", groupManagementService.groupHasValidToken(group));
 
-        if (groupBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
+        if (permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
             model.addAttribute("groupMembers", MembershipInfo.createFromMembers(group.getMemberships()));
         }
 
         startTime = System.currentTimeMillis();
-        boolean hasUpdatePermission = groupBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        boolean hasUpdatePermission = permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         endTime = System.currentTimeMillis();
         log.info(String.format("Checking if update permission took ... %d msec", endTime - startTime));
 
@@ -181,8 +177,8 @@ public class GroupController extends BaseController {
         model.addAttribute("canDeleteGroup", hasUpdatePermission && groupBroker.isDeactivationAvailable(user, group));
         model.addAttribute("canMergeWithOthers", hasUpdatePermission); // replace with specific permission later
 
-        model.addAttribute("canAddMembers", groupBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER));
-        model.addAttribute("canDeleteMembers", groupBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER));
+        model.addAttribute("canAddMembers", permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER));
+        model.addAttribute("canDeleteMembers", permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER));
 
         return "group/view";
     }
@@ -294,10 +290,6 @@ public class GroupController extends BaseController {
                             @RequestParam String displayName, @RequestParam String roleName, HttpServletRequest request) {
 
         Group group = groupManagementService.loadGroupByUid(groupUid);
-        /* if (!groupAccessControlManagementService.hasGroupPermission(Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER,
-                                                                    group, getUserProfile()))
-            throw new AccessDeniedException("You do not have permission to add members to this group");*/
-
         if (PhoneNumberUtil.testInputNumber(phoneNumber)) { //todo: do this client side
             log.info("tested phone number and it is valid ... " + phoneNumber);
             MembershipInfo newMember = new MembershipInfo(phoneNumber, roleName, displayName);
@@ -314,9 +306,6 @@ public class GroupController extends BaseController {
     public String renameGroup(Model model, @RequestParam String groupUid, @RequestParam String groupName,
                               HttpServletRequest request) {
         Group group = groupManagementService.loadGroupByUid(groupUid);
-        /* if (!groupAccessControlManagementService.hasGroupPermission(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS,
-                                                                    group, getUserProfile()))
-            throw new AccessDeniedException(""); */
         // todo: some validation & checking of group name
         groupBroker.updateName(getUserProfile().getUid(), groupUid, groupName);
         addMessage(model, MessageType.SUCCESS, "group.rename.success", request);
@@ -342,7 +331,7 @@ public class GroupController extends BaseController {
                                               @RequestParam(value="approverPhoneNumber", required = false) String approverPhoneNumber,
                                               HttpServletRequest request) {
 
-        // Group group = loadGroup(groupId, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        // Group group = loadAuthorizedGroup(groupId, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         Group group = groupManagementService.loadGroupByUid(groupUid);
 
         if (group.isDiscoverable()) {
@@ -374,9 +363,9 @@ public class GroupController extends BaseController {
         GroupWrapper groupModifier = new GroupWrapper();
         groupModifier.populate(group);
 
-        groupModifier.setCanRemoveMembers(groupBroker.isGroupPermissionAvailable(getUserProfile(), group, Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER));
-        groupModifier.setCanAddMembers(groupBroker.isGroupPermissionAvailable(getUserProfile(), group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER));
-        groupModifier.setCanUpdateDetails(groupBroker.isGroupPermissionAvailable(getUserProfile(), group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS));
+        groupModifier.setCanRemoveMembers(permissionBroker.isGroupPermissionAvailable(getUserProfile(), group, Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER));
+        groupModifier.setCanAddMembers(permissionBroker.isGroupPermissionAvailable(getUserProfile(), group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER));
+        groupModifier.setCanUpdateDetails(permissionBroker.isGroupPermissionAvailable(getUserProfile(), group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS));
 
         log.info("The GroupWrapper now contains: " + groupModifier.getGroup().toString());
 
@@ -736,8 +725,7 @@ public class GroupController extends BaseController {
     @RequestMapping(value = "roles/view")
     public String viewGroupRoles(Model model, @RequestParam Long groupId) {
 
-        Group group = loadGroup(groupId, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
-        Set<Role> roles = group.getGroupRoles();
+        Group group = loadAuthorizedGroup(groupId, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
 
         // todo: replace this with Membership entity once built ... very badly done kludge for present
 
@@ -770,7 +758,7 @@ public class GroupController extends BaseController {
 
         User userToModify = userManagementService.loadUser(userId);
         Group group = groupManagementService.loadGroup(groupId);
-        asyncRoleService.addRoleToGroupAndUser(roleName, group, userToModify, getUserProfile());
+        groupBroker.updateMembershipRole(getUserProfile().getUid(), group.getUid(), userToModify.getUid(), roleName);
 
         addMessage(model, MessageType.INFO, "group.role.done", request);
         return viewGroupRoles(model, groupId);
