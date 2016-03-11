@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.MessageSourceAccessor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,6 +22,8 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.GroupAccessControlManagementService;
+import za.org.grassroot.services.GroupManagementService;
+import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.util.SqlTimestampPropertyEditor;
 
@@ -70,6 +73,12 @@ public class BaseController {
     @Autowired
     protected GroupAccessControlManagementService groupAccessControlManagementService;
 
+    @Autowired
+    protected GroupManagementService groupManagementService;
+
+    @Autowired
+    protected PermissionBroker permissionBroker;
+
 
     protected User getUserProfile() {
 
@@ -87,9 +96,18 @@ public class BaseController {
         return userManagementService.fetchUserByUsername(authentication.getName());
     }*/
 
-    public Group loadGroup(Long groupId, Permission permission)
-    {
-        return  groupAccessControlManagementService.loadGroup(groupId,permission);
+    public Group loadAuthorizedGroup(Long groupId, Permission permission) {
+        Group group = groupManagementService.loadGroup(groupId);
+        if (group == null) {
+            throw new IllegalArgumentException("Group '" + groupId + "' does not exist.");
+        }
+
+        User user = getUserProfile();
+        if (!permissionBroker.isGroupPermissionAvailable(user, group, permission)) {
+            throw new AccessDeniedException("Unauthorised access '" + permission.getAuthority() + "' for Group '" + group.getGroupName() + "'");
+        }
+        return group;
+//        return  groupAccessControlManagementService.loadAuthorizedGroup(groupId,permission);
     }
 
     public String getMessage(String id) {
