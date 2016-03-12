@@ -123,7 +123,7 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         User user = userManagementService.loadOrSaveUser(testUserBase + "1");
         Group group = groupRepository.save(new Group(testGroupBase + "1", user));
         Group group2 = groupRepository.save(new Group(testGroupBase + "2", user));
-        groupBroker.deactivate(user.getUid(), group.getUid());
+        groupBroker.deactivate(user.getUid(), group.getUid(), true);
 
         // todo: do a 'find by active' and count here instead
         Group groupFromDb = groupRepository.findOneByUid(group.getUid());

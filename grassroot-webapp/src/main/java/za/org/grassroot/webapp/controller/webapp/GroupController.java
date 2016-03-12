@@ -165,7 +165,7 @@ public class GroupController extends BaseController {
         log.info(String.format("Checking if update permission took ... %d msec", endTime - startTime));
 
         model.addAttribute("canAlter", hasUpdatePermission);
-        model.addAttribute("canDeleteGroup", hasUpdatePermission && groupBroker.isDeactivationAvailable(user, group));
+        model.addAttribute("canDeleteGroup", hasUpdatePermission && groupBroker.isDeactivationAvailable(user, group, true));
         model.addAttribute("canMergeWithOthers", hasUpdatePermission); // replace with specific permission later
 
         model.addAttribute("canAddMembers", permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER));
@@ -496,9 +496,8 @@ public class GroupController extends BaseController {
 
         Group group = groupManagementService.loadGroupByUid(groupUid);
 
-        if (groupBroker.isDeactivationAvailable(getUserProfile(), group) &&
-                confirmText.toLowerCase().equals("delete")) {
-            groupBroker.deactivate(getUserProfile().getUid(), group.getUid());
+        if (confirmText.toLowerCase().equals("delete")) {
+            groupBroker.deactivate(getUserProfile().getUid(), group.getUid(), true);
             addMessage(redirectAttributes, MessageType.SUCCESS, "group.delete.success", request);
             return "redirect:/home";
         } else {
@@ -524,8 +523,6 @@ public class GroupController extends BaseController {
             return viewGroupIndex(model, group.getId());
         }
     }
-
-
 
     /*
     Methods for handling group linking to a parent (as observing that users often create group first, link later)
@@ -594,7 +591,7 @@ public class GroupController extends BaseController {
      */
 
     @RequestMapping(value = "consolidate/select")
-    public String selectConsolidate(Model model, @RequestParam("groupId") Long groupId,
+    public String selectConsolidate(Model model, @RequestParam Long groupId,
                                     RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
         User user = getUserProfile();
@@ -613,9 +610,8 @@ public class GroupController extends BaseController {
 
 
     @RequestMapping(value = "consolidate/confirm", method = RequestMethod.POST)
-    public String consolidateGroupsConfirm(Model model, @RequestParam("groupId1") Long groupId1, @RequestParam("groupId2") Long groupId2,
-                                           @RequestParam("order") String order, @RequestParam(value = "leaveActive", required = false) boolean leaveActive,
-                                           HttpServletRequest request) {
+    public String consolidateGroupsConfirm(Model model, @RequestParam Long groupId1, @RequestParam Long groupId2, @RequestParam String order,
+                                           @RequestParam(value = "leaveActive", required = false) boolean leaveActive) {
 
         Group groupInto;
         Group groupFrom;
@@ -656,17 +652,24 @@ public class GroupController extends BaseController {
 
     @RequestMapping(value = "consolidate/do", method = RequestMethod.POST)
     public String consolidateGroupsDo(Model model, @RequestParam("groupInto") Long groupIdInto, @RequestParam("groupFrom") Long groupIdFrom,
-                                      @RequestParam(value = "leaveActive", required = false) boolean leaveActive, RedirectAttributes redirectAttributes, HttpServletRequest request) {
+                                      @RequestParam(value = "leaveActive", required = false) boolean leaveActive,
+                                      @RequestParam(value="confirm_field") String confirmField, RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
         // todo: add error handling
-        Group groupInto = groupManagementService.loadGroup(groupIdInto);
-        Group groupFrom = groupManagementService.loadGroup(groupIdFrom);
-        Group consolidatedGroup = groupBroker.merge(getUserProfile().getUid(), groupInto.getUid(), groupFrom.getUid(), leaveActive, true, false, null);
-        Integer[] userCounts = new Integer[]{groupFrom.getMembers().size(),
-                groupManagementService.getGroupSize(consolidatedGroup.getId(), false)};
-        redirectAttributes.addAttribute("groupId", consolidatedGroup.getId());
-        addMessage(redirectAttributes, MessageType.SUCCESS, "group.merge.success", userCounts, request);
-        return "redirect:/group/view";
+        if (!confirmField.toLowerCase().equals("merge")) {
+            addMessage(redirectAttributes, MessageType.ERROR, "group.merge.error", request);
+            return "redirect:/home";
+        } else {
+            Group groupInto = groupManagementService.loadGroup(groupIdInto);
+            Group groupFrom = groupManagementService.loadGroup(groupIdFrom);
+            Group consolidatedGroup =
+                    groupBroker.merge(getUserProfile().getUid(), groupInto.getUid(), groupFrom.getUid(), leaveActive, true, false, null);
+            Integer[] userCounts = new Integer[]{groupFrom.getMembers().size(),
+                    groupManagementService.getGroupSize(consolidatedGroup.getId(), false)};
+            redirectAttributes.addAttribute("groupId", consolidatedGroup.getId());
+            addMessage(redirectAttributes, MessageType.SUCCESS, "group.merge.success", userCounts, request);
+            return "redirect:/group/view";
+        }
     }
 
     /**

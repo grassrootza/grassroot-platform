@@ -297,7 +297,7 @@ public class USSDGroupUtil extends USSDUtil {
                 if (group.getCreatedByUser().equals(sessionUser)) {
                     menu.addMenuOption(groupMenuWithId(mergeGroupMenu, groupId), getMessage(menuKey + mergeGroupMenu, sessionUser));
                 }
-                if (groupBroker.isDeactivationAvailable(sessionUser, group)) {
+                if (groupBroker.isDeactivationAvailable(sessionUser, group, true)) {
                     menu.addMenuOption(groupMenuWithId(inactiveMenu, groupId), getMessage(menuKey + inactiveMenu, sessionUser));
                 }
                 break;

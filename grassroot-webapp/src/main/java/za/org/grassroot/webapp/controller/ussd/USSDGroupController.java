@@ -15,6 +15,7 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
+import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -92,7 +93,7 @@ public class USSDGroupController extends USSDController {
         if (group.getCreatedByUser().equals(sessionUser))
             listMenu.addMenuOption(groupMenuWithId(mergeGroupMenu, groupId), getMessage(menuKey + mergeGroupMenu, sessionUser));
 
-        if (groupBroker.isDeactivationAvailable(sessionUser, group))
+        if (groupBroker.isDeactivationAvailable(sessionUser, group, true))
             listMenu.addMenuOption(groupMenuWithId(inactiveMenu, groupId), getMessage(menuKey + inactiveMenu, sessionUser));
 
         return menuBuilder(listMenu);
@@ -593,10 +594,10 @@ public class USSDGroupController extends USSDController {
         USSDMenu menu;
 
         // todo: rather make this rely on an exception from services layer and move logic there
-        if (groupBroker.isDeactivationAvailable(user, group)) {
-            groupBroker.deactivate(user.getUid(), group.getUid());
+        try {
+            groupBroker.deactivate(user.getUid(), group.getUid(), true);
             menu = new USSDMenu(getMessage(thisSection, inactiveMenu + doSuffix, promptKey + ".success", user), optionsHomeExit(user));
-        } else {
+        } catch (GroupDeactivationNotAvailableException e) {
             menu = new USSDMenu(getMessage(thisSection, inactiveMenu + doSuffix, errorPromptKey, user), optionsHomeExit(user));
         }
 

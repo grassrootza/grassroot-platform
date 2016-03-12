@@ -86,7 +86,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(groupManagementServiceMock.loadGroup(testGroup.getId())).thenReturn(testGroup);
-        when(groupBrokerMock.isDeactivationAvailable(testUser, testGroup)).thenReturn(false);
+        when(groupBrokerMock.isDeactivationAvailable(testUser, testGroup, true)).thenReturn(false);
 
         mockMvc.perform(get(path + "menu").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
                 andExpect(status().isOk());
@@ -95,7 +95,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupBrokerMock, times(2)).isDeactivationAvailable(testUser, testGroup);
+        verify(groupBrokerMock, times(2)).isDeactivationAvailable(testUser, testGroup, true);
         verify(groupManagementServiceMock, times(2)).loadGroup(testGroup.getId());
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
@@ -416,9 +416,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         errorGroup.setId(2L);
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(groupManagementServiceMock.loadGroup(testGroup.getId())).thenReturn(testGroup);
-        when(groupManagementServiceMock.loadGroup(errorGroup.getId())).thenReturn(errorGroup);
-        when(groupBrokerMock.isDeactivationAvailable(testUser, testGroup)).thenReturn(true);
-        when(groupBrokerMock.isDeactivationAvailable(testUser, errorGroup)).thenReturn(false);
+        when(groupManagementServiceMock.loadGroup(errorGroup.getId())).thenReturn(errorGroup); // test exception throwing later
 
         mockMvc.perform(get(path + "inactive-do").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
                 andExpect(status().isOk());
@@ -427,10 +425,8 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupBrokerMock, times(1)).isDeactivationAvailable(testUser, testGroup);
-        verify(groupBrokerMock, times(1)).isDeactivationAvailable(testUser, errorGroup);
-        verify(groupBrokerMock, times(1)).deactivate(testUser.getUid(), testGroup.getUid());
-        verifyNoMoreInteractions(groupBrokerMock);
+        verify(groupBrokerMock, times(1)).deactivate(testUser.getUid(), testGroup.getUid(), true);
+        // verifyNoMoreInteractions(groupBrokerMock); // need to test exception is thrown ...
         verify(groupManagementServiceMock, times(1)).loadGroup(testGroup.getId());
         verify(groupManagementServiceMock, times(1)).loadGroup(errorGroup.getId());
         verifyNoMoreInteractions(groupManagementServiceMock);

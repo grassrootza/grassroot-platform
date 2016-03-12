@@ -7,37 +7,42 @@
 <body>
 
 <div layout:fragment="header">
-  <h2>Confirm group merging</h2>
+  <h2 class="text-center">Confirm group merging</h2>
 </div>
 
-<div layout:fragment="overview">Merge one group into another</div>
+<div layout:fragment="overview">
+  <h4 class="text-center">Are you sure you want to merge these groups?</h4>
+</div>
+
+<!-- todo: turn this into just a modal confirm on prior page, once rest done -->
 
 <div layout:fragment="content">
   <div layout:fragment="messages"></div>
   <div class="well">
     <div class="row">
-      <h4>
-        You are merging ''<span th:text="${groupFrom.getName('')}">group name</span>'', into the group
-        ''<span th:text="${groupInto.getName('')}">group name</span>''.
-        This means <span th:text="${numberFrom}">X</span> members will be added to
-        <span th:text="${groupInto.getName('')}">group into</span>.
-        <div th:unless="${leaveActive}">
-          After the merge, <span th:text="${groupFrom.getName('')}">group name</span> will be deactivated.
-        </div>
-      </h4>
-    </div>
-    <div class="row">
-    <form th:action="@{/group/consolidate/do}" method="post" class="form-horizontal">
-      <input type="hidden" name="groupInto" th:value="${groupInto.id}" />
-      <input type="hidden" name="groupFrom" th:value="${groupFrom.id}" />
-      <input type="hidden" name="leaveActive" th:value="${leaveActive}" />
-      <div class="form-group">
-        <div class="col-lg-12">
-          <button type="submit" class="btn btn-primary">Confirm</button>
-          <a href="" th:href="@{/group/view(groupId=${groupFrom.id})}"><button class="btn btn-link" role="link">Cancel</button></a>
-        </div>
+      <div class="col-md-8 col-md-offset-2">
+        <form th:action="@{/group/consolidate/do}" method="post" class="form-vertical">
+          <input type="hidden" name="groupInto" th:value="${groupInto.id}" />
+          <input type="hidden" name="groupFrom" th:value="${groupFrom.id}" />
+          <input type="hidden" name="leaveActive" th:value="${leaveActive}" />
+          <div class="form-group">
+            <label for="confirm_field">
+              <p>You are merging <span th:text="${numberFrom}">X</span> members from
+              "<span th:text="${groupFrom.getName('')}">group name</span>", into
+              "<span th:text="${groupInto.getName('')}">group name</span>".
+              <span th:unless="${leaveActive}">
+                After the merge, <span th:text="${groupFrom.getName('')}">group name</span> will be deactivated.
+              </span></p>
+              <small>To confirm, please type "merge" below.</small>
+            </label>
+            <input type="text" class="form-control" id="confirm_field" name="confirm_field" autocomplete="off" />
+          </div>
+          <div clas="form-group">
+            <a th:href="@{/group/view(groupId=${groupFrom.id})}" role="button" class="btn btn-default">Cancel</a>
+            <button type="submit" class="btn btn-primary">Confirm</button>
+          </div>
+        </form>
       </div>
-    </form>
     </div>
   </div>
 </div>

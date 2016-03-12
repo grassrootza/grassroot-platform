@@ -255,7 +255,7 @@ public class USSDHomeController extends USSDController {
                 break;
             case NAME_GROUP:
                 Group group = groupManager.groupToRename(sessionUser);
-                openingMenu = (groupBroker.isDeactivationAvailable(sessionUser, group)) ?
+                openingMenu = (groupBroker.isDeactivationAvailable(sessionUser, group, true)) ?
                         renameGroupAllowInactive(sessionUser, group.getId(), dateFormat.format(group.getCreatedDateTime().toLocalDateTime())) :
                         renameGroupNoInactiveOption(sessionUser, group.getId(), dateFormat.format(group.getCreatedDateTime().toLocalDateTime()));
                 break;
@@ -445,7 +445,7 @@ public class USSDHomeController extends USSDController {
         User sessionUser = userManager.findByInputNumber(inputNumber);
         Group group = groupManager.loadGroup(groupId);
         log.info("At the request of user: " + sessionUser + ", we are setting inactive this group ... " + group);
-        groupBroker.deactivate(sessionUser.getUid(), group.getUid());
+        groupBroker.deactivate(sessionUser.getUid(), group.getUid(), true);
         String welcomeMessage = getMessage(thisSection, "group", "inactive." + promptKey + ".done", sessionUser);
         return menuBuilder(welcomeMenu(welcomeMessage, sessionUser));
     }

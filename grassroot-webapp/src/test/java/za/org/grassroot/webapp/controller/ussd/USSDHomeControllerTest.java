@@ -278,7 +278,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(1)).loadOrSaveUser(phoneForTests);
         verify(userManagementServiceMock, times(1)).findByInputNumber(phoneForTests);
         verify(groupManagementServiceMock, times(1)).saveGroup(testGroup,true,"Group renamed from  to Test Group", null);
-        verify(groupManagementServiceMock, times(2)).groupToRename(testUser);
+        verify(groupManagementServiceMock, times(3)).groupToRename(testUser);
     }
 
     /*
