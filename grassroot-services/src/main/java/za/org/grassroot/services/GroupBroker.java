@@ -22,6 +22,8 @@ public interface GroupBroker {
 
     void removeMembers(String userUid, String groupUid, Set<String> memberUids);
 
+    void unsubscribeMember(String userUid, String groupUid);
+
     void updateMembershipRole(String userUid, String groupUid, String memberUid, String roleName);
 
     void updateMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos);

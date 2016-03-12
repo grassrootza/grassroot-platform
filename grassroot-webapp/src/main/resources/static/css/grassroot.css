@@ -196,3 +196,7 @@
 .control-label {
     text-align: left;
 }
+
+.borderless {
+    border: 0px solid transparent !important;
+}

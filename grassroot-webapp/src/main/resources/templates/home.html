@@ -50,18 +50,14 @@
 
 <div layout:fragment="content">
     <!-- Central text header -->
+
   <div class="row">
     <div class="col-md-12">
       <h1 th:text="#{web.home.banner}" class="text-center">Meet, vote act</h1>
       <!-- Insert user's name -->
       <h4 th:text="#{web.home.welcome(${currentUser.firstName})}" class="text-center">Welcome back to Grassroot, Luke</h4>
     </div>
-
-  <!-- To insert search box for groups, events, etc, once many users -->
-
   </div>
-
-  <!-- List of outstanding meeting RSVPs, if the user has any -->
 
   <div th:if="${not #lists.isEmpty(meetingRsvps)}">
 
@@ -104,8 +100,6 @@
     </div>
 
   </div>
-
-  <!-- List of outstanding votes to answer, if any -->
 
   <div th:if="${not #lists.isEmpty(votesToAnswer)}">
 
@@ -154,38 +148,58 @@
   <div th:if="${not #lists.isEmpty(userGroups)}">
     <div class="well">
       <div class="row">
-        <div class="col-md-12">
-          <div class="row">
-            <div class="col-md-12">
-              <h4>Your groups</h4>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-md-12">
-              <div  th:each="group,iterStat : ${userGroups}" class="bs-component">
-                <div class="list-group">
-                  <div class="list-group-item">
-                    <div class="row">
-                      <div class="col-md-6">
-                      <h4  class="list-group-item-heading">
-                        <a th:href="@{/group/view(groupId=${group.getId()})}"><span th:text="${group.getDisplayName('')}"></span></a>
-                      </h4>
-                      <div class="least-content"><span th:text="${group.getGroupMembers()}"></span> Members</div>
-                      <p class="list-group-item-text">Est. <span th:text="${#calendars.format(group.getCreatedDateTime(),'dd MMMM yyyy')}">13 May 2011</span></p>
-                      </div>
-                      </div>
-
-                    </div>
-                  </div>
-                  <div class="list-group-separator"></div>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div class="col-md-8 col-md-offset-2">
+          <h4 class="text-center">Your groups</h4>
+          <ul class="list-group">
+            <li th:each="group,iterStat : ${userGroups}" class="list-group-item">
+              <h4 class="list-group-item-heading"><a th:href="@{/group/view(groupId=${group.getId()})}">
+                <span th:text="${group.getDisplayName('')}"></span></a></h4>
+              <span class="badge"><span th:text="${group.getGroupMembers()}"></span> Members</span>
+              <small>
+                Est. <span th:text="${#calendars.format(group.getCreatedDateTime(),'d MMM yyyy')}">13 May 2011</span> |
+                <button type="button" class="btn btn-link" data-toggle="modal"
+                        data-target="#unsubModal" th:attr="data-id=${group.id}">
+                  Unsubscribe
+                </button>
+              </small>
+            </li>
+          </ul>
         </div>
       </div>
     </div>
   </div>
+
+  <div class="modal fade" id="unsubModal" tabindex="-1" role="dialog" aria-labelledby="unsubModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+          <h4 class="modal-title" id="unsubModalLabel">Are you sure?</h4>
+        </div>
+        <form th:action="@{/group/unsubscribe}" method="post">
+          <input type="hidden" name="groupId" id="groupId" value="ABC" />
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="confirm_field" class="control-label">
+              You are about to unsusbcribe from this group.
+              </label>
+              <p class="small">You will only be able to rejoin if someone adds you back. Are you sure you want to leave? Please type
+                'unsubscribe' below to confirm.</p>
+              <input type="text" class="form-control" id="confirm_field"
+                     name="confirm_field" autocomplete="off" />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-warning">Unsubscribe</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
 
   <!-- form to allow joining a group, if it is flagged as discoverable -->
   <div class="well">
@@ -210,7 +224,7 @@
 
   <!-- Trying out the group tree view idea - sql version -->
 
-  <div th:if="${not #lists.isEmpty(groupTreesSql)}">
+  <!-- <div th:if="${not #lists.isEmpty(groupTreesSql)}">
     <div class="well">
       <div class="just-padding">
         <h3>Groups in tree view:</h3>
@@ -227,13 +241,26 @@
         </div>
       </div>
     </div>
-  </div>
+  </div> -->
 
   <!-- <div th:fragment="fragment_node(node)">
     <li th:each="subGroup : ${node.Subgroups}" th:text="${subGroup.groupName}">
       <span layout:include="this :: fragment_node(${subGroup})"></span>
     </li>
   </div> -->
+
+</div>
+
+<div class="header-container" layout:fragment="script-container">
+  <script>
+    $('#unsubModal').on('show.bs.modal', function (event) {
+      var button = $(event.relatedTarget); // Button that triggered the modal
+      var group = button.data('id'); // Extract info from data-* attributes
+      var modal = $(this);
+      modal.find('#groupId').val(group);
+    })
+  </script>
+</div>
 
 </body>
 </html>

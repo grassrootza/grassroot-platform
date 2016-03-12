@@ -508,21 +508,21 @@ public class GroupController extends BaseController {
     }
 
     @RequestMapping(value = "unsubscribe", method = RequestMethod.POST)
-    public String unsubGroup(Model model, @RequestParam("groupId") Long groupId, @RequestParam("confirm_field") String confirmText,
-                             HttpServletRequest request, RedirectAttributes redirectAttributes) {
+    public String unsubGroup(Model model, @RequestParam Long groupId, HttpServletRequest request,
+                             @RequestParam("confirm_field") String confirmText, RedirectAttributes redirectAttributes) {
 
         // todo: again, check the user is part of the group and/or do error handling
         Group group = groupManagementService.loadGroup(groupId);
         User user = userManagementService.loadUser(getUserProfile().getId()); // else equals in "is user in group" fails
 
-        if (groupManagementService.isUserInGroup(group, user) && confirmText.toLowerCase().equals("unsubscribe")) {
-            groupBroker.removeMembers(user.getUid(), group.getUid(), Sets.newHashSet(user.getUid()));
+        if (confirmText != null && "unsubscribe".equals(confirmText.toLowerCase().trim())) {
+            groupBroker.unsubscribeMember(user.getUid(), group.getUid());
             addMessage(redirectAttributes, MessageType.SUCCESS, "group.unsubscribe.success", request);
+            return "redirect:/home";
         } else {
-            addMessage(redirectAttributes, MessageType.ERROR, "group.unsubscribe.error", request);
+            addMessage(model, MessageType.ERROR, "group.unsubscribe.error", request);
+            return viewGroupIndex(model, group.getId());
         }
-
-        return "redirect:/home";
     }
 
 

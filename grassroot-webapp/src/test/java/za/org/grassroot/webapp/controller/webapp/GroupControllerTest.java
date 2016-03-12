@@ -45,12 +45,11 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Before
     public void setUp() {
         setUp(groupController);
-
     }
 
     // todo: check for languages, check permissions, etc etc -- in effect, expand this to lots of testing, since
     // group view is the principal screen now for most group actions
-    
+
     @Test
     public void viewGroupIndexWorks() throws Exception {
         Group dummyGroup = new Group("Dummy Group2", new User("234345345"));
@@ -490,35 +489,22 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
     }
 
-    @Test
-    public void unSubscribeWorks() throws Exception {
-        Group testGroup = new Group("Dummy Group2", new User("234345345"));
-        testGroup.setId(dummyId);
-        when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
-        mockMvc.perform(get("/group/unsubscribe").param("groupId", String.valueOf(dummyId)))
-                .andExpect(status().isOk()).andExpect(model().attribute("group", hasProperty("id", is(1L))))
-                .andExpect(view().name("group/unsubscribe_confirm"));
-        verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
-        verifyNoMoreInteractions(groupManagementServiceMock);
-
-    }
-
+    // todo: add checks for security exceptions if user not a member of group
     @Test
     public void unSubgroupWorks() throws Exception {
         Group testGroup = new Group("Dummy Group2", new User("234345345"));
         testGroup.setId(dummyId);
+
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
         when(userManagementServiceMock.loadUser(sessionTestUser.getId())).thenReturn(sessionTestUser);
-        when(groupManagementServiceMock.isUserInGroup(testGroup, sessionTestUser)).thenReturn(true);
-        // when(groupManagementServiceMock.removeGroupMember(testGroup, sessionTestUser, sessionTestUser)).thenReturn(testGroup);
+
         mockMvc.perform(post("/group/unsubscribe").param("groupId", String.valueOf(dummyId))
                 .param("confirm_field", "unsubscribe")).andExpect(status().is3xxRedirection())
                 .andExpect(view().name("redirect:/home")).andExpect(redirectedUrl("/home"))
                 .andExpect(flash().attributeExists(BaseController.MessageType.SUCCESS.getMessageKey()));
         verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
-        verify(groupManagementServiceMock, times(1)).isUserInGroup(anyObject(), anyObject());
-        // verify(groupManagementServiceMock, times(1)).removeGroupMember(testGroup, sessionTestUser, sessionTestUser);
         verify(userManagementServiceMock, times(1)).loadUser(sessionTestUser.getId());
+        verify(groupBrokerMock, times(1)).unsubscribeMember(sessionTestUser.getUid(), testGroup.getUid());
         verifyNoMoreInteractions(groupManagementServiceMock);
 
     }

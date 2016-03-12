@@ -1,5 +1,6 @@
 package za.org.grassroot.services;
 
+import com.google.common.collect.Sets;
 import edu.emory.mathcs.backport.java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -208,6 +209,23 @@ public class GroupBrokerImpl implements GroupBroker {
         }
 
         logGroupEventsAfterCommit(groupLogs);
+    }
+
+    @Override
+    @Transactional
+    public void unsubscribeMember(String userUid, String groupUid) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+
+        // since it's an unsubscribe, don't need to check permissions
+        Group group = groupRepository.findOneByUid(groupUid);
+        User user = userRepository.findOneByUid(userUid);
+
+        Membership membership = group.getMembership(user);
+        group.removeMembership(membership);
+
+        logGroupEventsAfterCommit(Sets.newHashSet(new GroupLog(group.getId(), user.getId(),
+                                                               GroupLogType.GROUP_MEMBER_REMOVED, user.getId())));
     }
 
     @Override
