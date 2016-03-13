@@ -49,6 +49,7 @@ public class SigninController {
 
     @RequestMapping(value = "/login", method = RequestMethod.GET)
     public ModelAndView getLoginPage(@RequestParam (required = false) String error, Model model, HttpServletRequest request) {
+
         logger.info("Getting login page, error={}", error);
         authenticationUtil.debugAuthentication();
         if (isRememberMeAuthenticated()) {

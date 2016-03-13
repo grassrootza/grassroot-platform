@@ -12,19 +12,25 @@
 </div>
 
 <div layout:fragment="overview">
-  <h5 class="text-center" th:if="${canAlter}">
+  <div class="row no-padding no-margins">
+    <h5 class="text-center" th:if="${canAlter}">
 
-    <span th:if="${openToken}">Join code: <a href="javascript:void(0)" data-toggle="modal" data-target="#joiningModal">
-      *134*1994*<span th:text="${group.groupTokenCode}">1234</span>#</a>
-    </span>
-    <span th:unless="${openToken}">No open join code
-    <a href="javascript:void(0)" data-toggle="modal" data-target="#joiningModal">(create one)</a></span>
-    |
-    <span th:if="${group.discoverable}">Group is public</span>
-    <span th:unless="${group.discoverable}">Group is private</span>
+      <span th:if="${openToken}">Join code: <a href="javascript:void(0)" data-toggle="modal" data-target="#joiningModal">
+        *134*1994*<span th:text="${group.groupTokenCode}">1234</span>#</a>
+      </span>
+      <span th:unless="${openToken}">No open join code
+      <a href="javascript:void(0)" data-toggle="modal" data-target="#joiningModal">(create one)</a></span>
+      |
+      <span th:if="${group.discoverable}">Group is public</span>
+      <span th:unless="${group.discoverable}">Group is private</span>
 
-    <a href="javascript:void(0)" data-toggle="modal" data-target="#publicModal">(change this)</a>
-  </h5>
+      <a href="javascript:void(0)" data-toggle="modal" data-target="#publicModal">(change this)</a>
+    </h5>
+    <h5 class="text-center">
+      Group established <span th:text="${#calendars.format(group.getCreatedDateTime(),'d MMM yyyy')}">Some date</span>
+      (<a href="javascript:void(0)" data-toggle="modal" data-target="#unsubModal">unsubscribe</a>)
+    </h5>
+  </div>
 
   <div th:if="${canAlter}" class="modal fade" id="joiningModal" tabindex="-1" role="dialog" aria-labelledby="joiningModalLabel">
     <div class="modal-dialog" role="document">
@@ -208,6 +214,37 @@
               </div>
             </form>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="unsubModal" tabindex="-1" role="dialog" aria-labelledby="unsubModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+            <h4 class="modal-title" id="unsubModalLabel">Are you sure?</h4>
+          </div>
+          <form th:action="@{/group/unsubscribe}" method="post">
+            <input type="hidden" name="groupId" id="groupId" th:value="${group.id}" />
+            <div class="modal-body">
+              <div class="form-group">
+                <label for="confirm_field" class="control-label">
+                  You are about to unsusbcribe from this group.
+                </label>
+                <p class="small">You will only be able to rejoin if someone adds you back. Are you sure you want to leave? Please type
+                  'unsubscribe' below to confirm.</p>
+                <input type="text" class="form-control" id="confirm_field"
+                       name="confirm_field" autocomplete="off" />
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+              <button type="submit" class="btn btn-warning">Unsubscribe</button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

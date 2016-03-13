@@ -63,6 +63,9 @@ public class GroupController extends BaseController {
     private RoleManagementService roleService;
 
     @Autowired
+    private GroupJoinRequestService groupJoinRequestService;
+
+    @Autowired
     @Qualifier("groupWrapperValidator")
     private Validator groupWrapperValidator;
 
@@ -97,18 +100,18 @@ public class GroupController extends BaseController {
 
     /*
     First method is for users brand new and without any group membership, and/or later for any user, to find & join group
+    todo: probably move these out into their own controller
      */
 
-    // todo: work out how to prevent a computer just cycling through all possible numbers on the token code
+    // todo: work out how to prevent a computer just cycling through all possible numbers on the token code (as, e.g., DoS)
 
-    @RequestMapping(value = "search", method = RequestMethod.POST)
+    @RequestMapping(value = "search")
     public String searchForGroup(Model model, @RequestParam String searchTerm) {
         Group groupByToken = groupManagementService.findGroupByToken(searchTerm);
         if (groupByToken != null) {
             model.addAttribute("group", groupByToken);
         } else {
-            // todo: deal with case sensitivity
-            List<Group> possibleGroups = groupManagementService.findDiscoverableGroups(searchTerm);
+            List<Group> possibleGroups = groupBroker.findPublicGroups(searchTerm);
             if (!possibleGroups.isEmpty())
                 model.addAttribute("groupCandidates", possibleGroups);
             else
@@ -117,7 +120,15 @@ public class GroupController extends BaseController {
         return "group/results";
     }
 
-    @RequestMapping(value = "join", method = RequestMethod.POST)
+    @RequestMapping(value = "search", method = RequestMethod.POST)
+    public String requestToJoinGroup(Model model, @RequestParam String groupToJoinUid,
+                                     HttpServletRequest request, RedirectAttributes attributes) {
+        String requestUid = groupJoinRequestService.open(getUserProfile().getUid(), groupToJoinUid);
+        addMessage(attributes, MessageType.INFO, "group.join.request.done", request);
+        return "redirect:/home";
+    }
+
+    /* @RequestMapping(value = "join", method = RequestMethod.POST)
     public String joinGroup(Model model, @RequestParam String groupUid, HttpServletRequest request,
                             RedirectAttributes redirectAttributes) {
         // todo: add in group join requests, etc
@@ -126,7 +137,7 @@ public class GroupController extends BaseController {
         groupBroker.addMembers(getUserProfile().getUid(), groupUid, Sets.newHashSet(member));
         addMessage(redirectAttributes, MessageType.SUCCESS, "group.join.success", request);
         return "redirect:/home"; // redirecting to group view is creating issues ... todo: fix those
-    }
+    }*/
 
     /*
     Next methods are to view a group, core part of interface

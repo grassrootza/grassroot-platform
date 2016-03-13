@@ -59,7 +59,7 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     Find a group by a code
      */
     Group findByGroupTokenCode(String groupTokenCode);
-    Group findByGroupTokenCodeAndTokenExpiryDateTimeAfter(String groupTokenCode, Date expiryTime);
+    Group findByGroupTokenCodeAndTokenExpiryDateTimeAfter(String groupTokenCode, Timestamp expiryTime);
 
     /*
     Find all groups, with pagination--for system admin
@@ -72,7 +72,7 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     /*
     Couple of methods to be able to discover groups, as long as those have opted in
      */
-    List<Group> findByGroupNameContainingAndDiscoverable(String nameFragment, boolean discoverable);
+    List<Group> findByGroupNameContainingIgnoreCaseAndDiscoverable(String nameFragment, boolean discoverable);
 
     /*
     Methods for analytical service, to retrieve and count groups in periods (by created date time)

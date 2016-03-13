@@ -15,12 +15,11 @@ import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
 
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -354,5 +353,13 @@ public class GroupBrokerImpl implements GroupBroker {
         }
 
         return resultGroup;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Group> findPublicGroups(String searchTerm) {
+        String modifiedSearchTerm = searchTerm.trim();
+        // Group foundByToken = groupRepository.findByGroupTokenCodeAndTokenExpiryDateTimeAfter(searchTerm, Timestamp.valueOf(LocalDateTime.now()));
+        return groupRepository.findByGroupNameContainingIgnoreCaseAndDiscoverable(searchTerm, true);
     }
 }

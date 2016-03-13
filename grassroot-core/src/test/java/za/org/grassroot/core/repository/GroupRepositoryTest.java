@@ -2,6 +2,8 @@ package za.org.grassroot.core.repository;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.data.domain.Page;
@@ -12,12 +14,13 @@ import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
-import java.util.*;
-import java.util.logging.Logger;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
@@ -31,8 +34,7 @@ import static org.junit.Assert.*;
 @ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
 public class GroupRepositoryTest {
 
-    private Logger log = Logger.getLogger(getClass().getName());
-
+    private Logger log = LoggerFactory.getLogger(GroupRepositoryTest.class);
 
     @Autowired
     GroupRepository groupRepository;
@@ -103,7 +105,7 @@ public class GroupRepositoryTest {
         Group group2 = new Group("TestGroup2", userToDoTests);
         Group savedGroup2 = groupRepository.save(group2);
         Group groupFromDb = groupRepository.findFirstByCreatedByUserOrderByIdDesc(userToDoTests);
-        log.finest("latest group........." + groupFromDb.toString());
+        log.debug("latest group........." + groupFromDb.toString());
         assertEquals(savedGroup2.getId(), groupFromDb.getId());
     }
 
@@ -125,7 +127,7 @@ public class GroupRepositoryTest {
         List<Group> children = groupRepository.findByParent(gb);
         assertEquals(2,children.size());
         for (Group child : children) {
-            log.finest("child......" + child.toString());
+            log.debug("child......" + child.toString());
         }
     }
 
@@ -182,9 +184,9 @@ public class GroupRepositoryTest {
         User user = userRepository.save(new User("3335551111"));
         Group group = groupRepository.save(new Group("tg", user));
         String token = String.valueOf(groupRepository.getMaxTokenValue());
-        Date testDate1 = DateTimeUtil.addHoursToDate(new Date(), 12);
-        Date testDate2 = DateTimeUtil.addHoursToDate(new Date(), 24);
-        Date testDate3 = DateTimeUtil.addHoursToDate(new Date(), 36);
+        Timestamp testDate1 = Timestamp.valueOf(LocalDateTime.now().plusHours(12L));
+        Timestamp testDate2 = Timestamp.valueOf(LocalDateTime.now().plusHours(24L));
+        Timestamp testDate3 = Timestamp.valueOf(LocalDateTime.now().plusHours(36L));
 
         group.setGroupTokenCode(token);
         group.setTokenExpiryDateTime(new Timestamp(testDate2.getTime()));
@@ -207,8 +209,8 @@ public class GroupRepositoryTest {
         User user = userRepository.save(new User("3335550000"));
         Group group = groupRepository.save(new Group("tg", user));
         String token = String.valueOf(groupRepository.getMaxTokenValue());
-        Date testDate1 = DateTimeUtil.addHoursToDate(new Date(), 12);
-        Date testDate2 = DateTimeUtil.addHoursToDate(new Date(), 24);
+        Timestamp testDate1 = Timestamp.valueOf(LocalDateTime.now().plusHours(12L));
+        Timestamp testDate2 = Timestamp.valueOf(LocalDateTime.now().plusHours(24L));
 
         group.setGroupTokenCode(token);
         group.setTokenExpiryDateTime(new Timestamp(testDate2.getTime()));
@@ -313,13 +315,13 @@ public class GroupRepositoryTest {
         testGroup1.setDiscoverable(true);
         testGroup1 = groupRepository.save(testGroup1);
 
-        List<Group> firstList = groupRepository.findByGroupNameContainingAndDiscoverable("test", true);
+        List<Group> firstList = groupRepository.findByGroupNameContainingIgnoreCaseAndDiscoverable("test", true);
         assertNotNull(firstList);
         assertThat(firstList.size(), is(1));
         assertTrue(firstList.contains(testGroup1));
         assertFalse(firstList.contains(testGroup2));
 
-        List<Group> secondList = groupRepository.findByGroupNameContainingAndDiscoverable("1", true);
+        List<Group> secondList = groupRepository.findByGroupNameContainingIgnoreCaseAndDiscoverable("1", true);
         assertNotNull(secondList);
         assertThat(secondList.size(), is(1));
         assertTrue(secondList.contains(testGroup1));

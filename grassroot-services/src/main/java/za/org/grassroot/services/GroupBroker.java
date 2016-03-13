@@ -6,6 +6,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
 
+import java.util.List;
 import java.util.Set;
 
 public interface GroupBroker {
@@ -30,5 +31,7 @@ public interface GroupBroker {
 
     Group merge(String userUid, String firstGroupUid, String secondGroupUid,
                 boolean leaveActive, boolean orderSpecified, boolean createNew, String newGroupName);
+
+    List<Group> findPublicGroups(String searchTerm);
 
 }

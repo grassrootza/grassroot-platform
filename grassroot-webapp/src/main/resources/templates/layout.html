@@ -15,7 +15,6 @@
   <link rel="stylesheet" type="text/css" th:href="@{/css/jquery.dropdown.css}" />
   <link rel="stylesheet" type="text/css" th:href="@{/css/jquery.steps.css}" />
   <link rel="stylesheet" type="text/css" th:href="@{/css/bootstrap-datetimepicker.min.css}" />
-  <link href='https://fonts.googleapis.com/css?family=Open+Sans:400' rel='stylesheet' type='text/css' />
   <link href='https://fonts.googleapis.com/css?family=Roboto:300,400' rel='stylesheet' type='text/css' />
 
   <script th:inline="javascript">
@@ -75,7 +74,7 @@
 
             <ul sec:authorize="isAnonymous()" class="nav navbar-nav navbar-right">
               <li sec:authorize="isAnonymous()" class="white-text"><a href="javascript:void(0)" th:href="@{/home}" class="white-text">Login</a></li>
-              <li sec:authorize="isAnonymous()" class="white-text"><a href="javascript:void(0)" th:href="@{/signup}"><span class="badge">Sign Up</span></a></li>
+              <li sec:authorize="isAnonymous()" class="white-text"><a href="javascript:void(0)" th:href="@{/signup}"><span class="badge">Register</span></a></li>
             </ul>
 
             <ul sec:authorize="isFullyAuthenticated()" class="nav navbar-nav navbar-right">

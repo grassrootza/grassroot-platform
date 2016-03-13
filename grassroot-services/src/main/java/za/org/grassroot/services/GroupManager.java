@@ -284,12 +284,6 @@ public class GroupManager implements GroupManagementService {
         return saveGroup(group, true, logEntry, userId);
     }
 
-    @Override
-    public List<Group> findDiscoverableGroups(String groupName) {
-        return groupRepository.findByGroupNameContainingAndDiscoverable(groupName, true);
-    }
-
-
     /**
      * Methods for working with subgroups
      */

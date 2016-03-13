@@ -414,8 +414,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         verify(groupManagementServiceMock, times(1)).getGroupSize(testGroupLarge.getId(), false);
         verify(groupManagementServiceMock, times(2)).getGroupSize(testGroupSmall.getId(), false);
         verifyNoMoreInteractions(groupManagementServiceMock);
-
-
     }
 
     @Test

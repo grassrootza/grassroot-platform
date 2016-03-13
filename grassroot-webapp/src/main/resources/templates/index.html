@@ -3,7 +3,7 @@
         layout:decorator="layout"
         xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>GrassRoot - Home</title>
+    <title>Grassroot - Home</title>
 </head>
 <body>
 
@@ -12,90 +12,80 @@
 
 <div layout:fragment="content">
 
-    <div class="jumbotron">
-        <div class="cover-container">
-          <div class="row">
-            <div class="col-md-12">
-            <h1 class="cover-heading text-center">GRASSROOT</h1>
-            <p class="lead text-center">Tools for a nation self-organizing</p>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-md-12">
-
-              <form id="signin-form" class="form-horizontal" th:action="@{/login}"  method="post">
-
-                <div th:class="${error}? 'alert alert-danger alert-dismissable' : ' hide'">
-                  <h5 th:if="${error}">Invalid GrassRoot ID or password. Please try again. <span th:text="${error}"></span></h5>
-                </div>
-
-                <div class="form-group">
-
-                  <label for="username" class="col-md-4 control-label" th:text="#{web.signin.username}">User Name</label>
-
-                  <div class="col-md-5">
-                    <input type="text" class="form-control" id="mobile-number" name="mobile-number" placeholder="Mobile Number"/>
-                    <input type="hidden" class="form-control" id="username" name="username" placeholder="Mobile Number"/>
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label for="password" class="col-md-4 control-label">Password</label>
-
-                  <div class="col-md-5">
-                    <input type="password" class="form-control"  id="password" name="password" placeholder="Password"/>
-                  </div>
-                </div>
-                <div class="form-group">
-                  <div class="col-md-5 col-md-offset-4">
-                    <button class="btn btn-lg btn-default btn-block" id="signin" type="submit">Sign in</button>
-                  </div>
-                </div>
-                <div class="form-group">
-                  <div class="col-md-offset-4 col-md-4 text-center">
-                    <input type="checkbox" name="remember-me" id="remember-me" />
-                    <label for="remember-me" class="control-label">Stay signed in</label>
-                  </div>
-                <!-- </div>
-                <div class="form-group"> -->
-                  <div class="col-md-offset-4 col-md-4 text-center">
-                    <a th:href="@{/accounts/recovery}" href="" class="text-center">Forgot password?</a>
-                  </div>
-                </div>
-                <fieldset>
-                  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                </fieldset>
-
-                <div class="row ">
-                  <div class="col-md-8 col-md-offset-2 text-center">
-                    New user? <a th:href="@{/signup}" href="" class="text-left">Sign up</a>
-                  </div>
-
-                </div>
-
-              </form>
-
-
-          </div>
+  <div class="jumbotron">
+    <div class="cover-container">
+      <div class="row">
+        <div class="col-md-12">
+        <h1 class="cover-heading text-center">GRASSROOT</h1>
+        <p class="lead text-center">Tools for a nation self-organizing</p>
         </div>
-
-        </div>
+      </div>
     </div>
 
+    <div class="container">
+      <div class="row">
+        <div class="col-md-4 col-md-offset-4">
+
+          <form id="signin-form" action="login" th:action="@{/login}" method="post" autocomplete="off">
+
+            <div th:class="${error}? 'alert alert-danger alert-dismissable' : 'hide'">
+              <h5 th:if="${error}">Sorry, invalid phone number or password.<span th:text="${error}"></span></h5>
+            </div>
+
+            <div class="form-group">
+              <label for="mobile-number" class="control-label" th:text="#{web.signin.username}">Phone number</label>
+              <input type="text" class="form-control" id="mobile-number" name="mobile-number" placeholder="Mobile Number"/>
+              <input type="hidden" class="form-control" id="username" name="username"/>
+            </div>
+
+            <div class="form-group">
+              <label for="password" class="control-label">Password</label>
+              <input type="password" class="form-control"  id="password" name="password" placeholder="Password"/>
+            </div>
+
+            <div class="form-group">
+                <label class="checkbox-inline">
+                  <input type="checkbox" name="remember-me" id="remember-me" />Remember me
+                </label>
+                <label class="checkbox-inline pull-right">
+                  <a th:href="@{/accounts/recovery}" href="" class="text-center">Forgot password?</a>
+                </label>
+            </div>
+
+            <button class="btn btn-lg btn-default btn-block" id="signin" type="submit">Sign in</button>
+
+            <fieldset>
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+            </fieldset>
+
+            <div class="row ">
+              <div class="col-md-8 col-md-offset-2 text-center top-buffer">
+                <a th:href="@{/signup}" href="" class="text-left">New user? Register here</a>
+              </div>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </div>
+
+  </div>
 </div>
 
 <div class="header-container" layout:fragment="script-container">
   <script>
     $(document).ready(function () {
-
-      $("#mobile-number").intlTelInput({
-        onlyCountries: ["za"],
-        utilsScript: "../js/intl-tel-input-utils.js"
-      });
-
+      console.log("Working, anything?");
       $( "#signin" ).click(function() {
-
-        $("#username").val( $("#mobile-number").intlTelInput("getNumber").replace("+","") );
-
+        var phone = $("#mobile-number").val();
+        console.log("Phone number: " + phone);
+        var user = phone.trim().replace(/\s/g, '');
+        if (user.charAt(0) == '0') {
+          user = user.replace("0", "27");
+        }
+        console.log("Adjusted username: " + user);
+        $("#username").val(user);
+        console.log("And username now : " + $("#username").val());
         $( "#signin-form" ).submit();
       });
     });

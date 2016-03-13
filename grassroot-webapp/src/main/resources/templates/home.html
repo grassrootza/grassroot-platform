@@ -2,7 +2,7 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorator="layout">
 <head>
-    <title>GrassRoot Platform</title>
+    <title>Grassroot Platform</title>
 
     <meta property="og:title" content="grassroot.org.za"/>
     <meta property="og:image" content="/img/grass.png"/>
@@ -145,22 +145,46 @@
 
   <!-- List of user's groups, if they have any -->
 
+  <!-- form to allow joining a group, if it is flagged as discoverable -->
+  <div class="well">
+    <div class="row">
+      <div class="col-md-8 col-md-offset-2">
+        <form th:action="@{/group/search}" method="post" class="form-vertical">
+          <div class="input-group">
+            <input type="text" name="searchTerm" class="form-control" id="searchTerm" placeholder="Enter join code or name to search" />
+            <span class="input-group-btn">
+              <button type="submit" class="btn btn-primary">Search for groups</button>
+            </span>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <div th:if="${not #lists.isEmpty(userGroups)}">
-    <div class="well">
+    <div class="col-md-8 col-md-offset-2">
       <div class="row">
-        <div class="col-md-8 col-md-offset-2">
-          <h4 class="text-center">Your groups</h4>
+        <div class="col-md-3">
+          <h4><b>Your groups</b></h4>
+        </div>
+        <div class="col-md-2 pull-right">
+          <a th:href="@{/group/create}" role="button" class="btn btn-default">
+            <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+            New group
+          </a>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12">
           <ul class="list-group">
             <li th:each="group,iterStat : ${userGroups}" class="list-group-item">
-              <h4 class="list-group-item-heading"><a th:href="@{/group/view(groupId=${group.getId()})}">
-                <span th:text="${group.getDisplayName('')}"></span></a></h4>
-              <span class="badge"><span th:text="${group.getGroupMembers()}"></span> Members</span>
-              <small>
-                Est. <span th:text="${#calendars.format(group.getCreatedDateTime(),'d MMM yyyy')}">13 May 2011</span> |
-                <button type="button" class="btn btn-link" data-toggle="modal"
-                        data-target="#unsubModal" th:attr="data-id=${group.id}">
-                  Unsubscribe
-                </button>
+              <a th:href="@{/group/view(groupId=${group.getId()})}">
+                <span th:text="${group.getDisplayName('')}"></span></a>
+              <span class="badge">
+                <span th:text="${group.getGroupMembers()}"></span> Members
+              </span>
+              <small class="clearfix">
+                Est. <span th:text="${#calendars.format(group.getCreatedDateTime(),'d MMM yyyy')}">13 May 2011</span>
               </small>
             </li>
           </ul>
@@ -169,58 +193,6 @@
     </div>
   </div>
 
-  <div class="modal fade" id="unsubModal" tabindex="-1" role="dialog" aria-labelledby="unsubModalLabel">
-    <div class="modal-dialog" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
-          <h4 class="modal-title" id="unsubModalLabel">Are you sure?</h4>
-        </div>
-        <form th:action="@{/group/unsubscribe}" method="post">
-          <input type="hidden" name="groupId" id="groupId" value="ABC" />
-          <div class="modal-body">
-            <div class="form-group">
-              <label for="confirm_field" class="control-label">
-              You are about to unsusbcribe from this group.
-              </label>
-              <p class="small">You will only be able to rejoin if someone adds you back. Are you sure you want to leave? Please type
-                'unsubscribe' below to confirm.</p>
-              <input type="text" class="form-control" id="confirm_field"
-                     name="confirm_field" autocomplete="off" />
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-            <button type="submit" class="btn btn-warning">Unsubscribe</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-
-  <!-- form to allow joining a group, if it is flagged as discoverable -->
-  <div class="well">
-    <div class="row row-centered">
-      <div class="col-md-12 col-centered">
-        <h4>Join a group by entering its 'joining code' or searching by name among 'public' groups:</h4>
-      </div>
-    </div>
-    <div class="row row-centered">
-      <form th:action="@{/group/search}" method="post">
-        <div class="form-group">
-          <div class="col-md-4 col-centered">
-            <input name="searchTerm" type="text" class="form-control" id="name" placeholder="Enter join code or name to search" />
-          </div>
-          <div class="col-md-4 col-centered">
-            <button type="submit" class="btn btn-primary">Search by name or code</button>
-          </div>
-        </div>
-      </form>
-    </div>
-  </div>
 
   <!-- Trying out the group tree view idea - sql version -->
 

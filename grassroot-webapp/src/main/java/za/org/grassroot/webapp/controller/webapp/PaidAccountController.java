@@ -14,10 +14,7 @@ import org.springframework.web.bind.annotation.SessionAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.services.AccountManagementService;
-import za.org.grassroot.services.EventLogManagementService;
-import za.org.grassroot.services.EventManagementService;
-import za.org.grassroot.services.GroupManagementService;
+import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.EventWrapper;
 
@@ -44,6 +41,9 @@ public class PaidAccountController extends BaseController {
 
     @Autowired
     private GroupManagementService groupManagementService;
+
+    @Autowired
+    private GroupBroker groupBroker;
 
     @Autowired
     private EventManagementService eventManagementService;
@@ -143,7 +143,7 @@ public class PaidAccountController extends BaseController {
         if (tokenSearch) {
             model.addAttribute("groupFound", groupManagementService.findGroupByToken(searchTerm));
         } else {
-            model.addAttribute("groupCandidates", groupManagementService.findDiscoverableGroups(searchTerm));
+            model.addAttribute("groupCandidates", groupBroker.findPublicGroups(searchTerm));
         }
 
         return "paid_account/find_group";

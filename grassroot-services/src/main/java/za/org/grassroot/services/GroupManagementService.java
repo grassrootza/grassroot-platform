@@ -74,8 +74,6 @@ public interface GroupManagementService {
 
     public Group setGroupDiscoverable(Group group, boolean discoverable, Long userId, String authorizingUserPhoneNumber);
 
-    public List<Group> findDiscoverableGroups(String groupName);
-
     /*
     Methods do deal with sub groups and parent groups
      */
