@@ -107,7 +107,10 @@ public class GroupController extends BaseController {
 
     @RequestMapping(value = "search")
     public String searchForGroup(Model model, @RequestParam String searchTerm) {
-        Group groupByToken = groupManagementService.findGroupByToken(searchTerm);
+        String tokenSearch = searchTerm.contains("*134*1994*") ?
+                    searchTerm.substring("*134*1994*".length(), searchTerm.length() - 1) : searchTerm;
+        log.info("searching for group ... token to use ... " + tokenSearch);
+        Group groupByToken = groupManagementService.findGroupByToken(tokenSearch);
         if (groupByToken != null) {
             model.addAttribute("group", groupByToken);
         } else {
@@ -120,7 +123,7 @@ public class GroupController extends BaseController {
         return "group/results";
     }
 
-    @RequestMapping(value = "search", method = RequestMethod.POST)
+    @RequestMapping(value = "join", method = RequestMethod.POST)
     public String requestToJoinGroup(Model model, @RequestParam String groupToJoinUid,
                                      HttpServletRequest request, RedirectAttributes attributes) {
         String requestUid = groupJoinRequestService.open(getUserProfile().getUid(), groupToJoinUid);
