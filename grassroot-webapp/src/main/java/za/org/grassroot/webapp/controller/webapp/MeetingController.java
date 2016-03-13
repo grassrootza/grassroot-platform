@@ -297,45 +297,29 @@ public class MeetingController extends BaseController {
      * RSVP handling
      */
 
-    /* These are to handle RSVPs that come in via the web application
-    If it's a 'yes', we add it as such; it it's a 'no, we just need to make sure the service layer excludes the user
-    from reminders and cancellations, but does include them on change notices (in case that changes RSVP ...). */
-    @RequestMapping(value = "/meeting/rsvp", method = RequestMethod.POST, params={"yes"})
-    public String rsvpYes(Model model, @RequestParam(value="eventId") Long eventId, HttpServletRequest request) {
+    @RequestMapping(value = "/meeting/rsvp")
+    public String rsvpYes(Model model, @RequestParam Long eventId, @RequestParam String answer,
+                          HttpServletRequest request, RedirectAttributes attributes) {
 
         Event meeting = eventManagementService.loadEvent(eventId);
         User user = getUserProfile();
 
-        eventLogManagementService.rsvpForEvent(meeting, user, EventRSVPResponse.YES);
-
-
-        int rsvpYesTotal = eventManagementService.getListOfUsersThatRSVPYesForEvent(meeting).size();
-        Set<Map.Entry<User, EventRSVPResponse>> rsvpResponses =
-                eventManagementService.getRSVPResponses(meeting).entrySet();
-
-        model.addAttribute("meeting", meeting);
-        model.addAttribute("rsvpYesTotal", rsvpYesTotal);
-        model.addAttribute("rsvpResponses", rsvpResponses);
-
-        addMessage(model, MessageType.SUCCESS, "meeting.rsvp.yes", request);
-
-        return "meeting/view";
+        switch (answer) {
+            case "yes":
+                eventLogManagementService.rsvpForEvent(meeting, user, EventRSVPResponse.YES);
+                addMessage(model, MessageType.SUCCESS, "meeting.rsvp.yes", request);
+                return viewMeetingDetails(model, eventId);
+            case "no":
+                eventLogManagementService.rsvpForEvent(meeting, user, EventRSVPResponse.NO);
+                addMessage(attributes, MessageType.ERROR, "meeting.rsvp.no", request);
+                return "redirect:/home";
+            default:
+                addMessage(attributes, MessageType.ERROR, "meeting.rsvp.no", request);
+                return "redirect:/home";
+        }
     }
 
-    @RequestMapping(value = "/meeting/rsvp", method = RequestMethod.POST, params={"no"})
-    public String rsvpNo(Model model, @RequestParam(value="eventId") Long eventId,
-                          HttpServletRequest request, RedirectAttributes redirectAttributes) {
-
-        Event event = eventManagementService.loadEvent(eventId);
-        User user = getUserProfile();
-
-        eventLogManagementService.rsvpForEvent(event, user, EventRSVPResponse.NO);
-
-        addMessage(redirectAttributes, MessageType.ERROR, "meeting.rsvp.no", request);
-        return "redirect:/home";
-    }
-
-    /*
+     /*
     Helper functions for reminders -- may make this call group, if there is group, for defaults, and so on ... for now, just assembles the list
     Would have done this as a list of array strings but Java has seriously terrible array/list handling for this sort of thing
      */

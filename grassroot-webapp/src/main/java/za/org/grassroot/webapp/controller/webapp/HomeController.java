@@ -11,10 +11,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.ModelAndView;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.GroupJoinRequest;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.util.AuthenticationUtil;
 import za.org.grassroot.services.EventManagementService;
+import za.org.grassroot.services.GroupJoinRequestService;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupViewNodeSql;
@@ -36,6 +38,9 @@ public class HomeController extends BaseController {
 
     @Autowired
     EventManagementService eventManagementService;
+
+    @Autowired
+    GroupJoinRequestService groupJoinRequestService;
 
     @Autowired
     AuthenticationUtil authenticationUtil;
@@ -168,11 +173,18 @@ public class HomeController extends BaseController {
             votesToAnswer = eventManagementService.getOutstandingVotesForUser(user);
         }
         Long endTime3 = System.currentTimeMillis();
-
         log.info(String.format("Retrieved %d events for the user ... took %d msecs", upcomingEvents, endTime3 - startTime3));
 
         model.addAttribute("meetingRsvps", meetingsToRsvp);
         model.addAttribute("votesToAnswer", votesToAnswer);
+
+        Long startTime4 = System.currentTimeMillis();
+        List<GroupJoinRequest> joinRequests = groupJoinRequestService.getOpenRequestsForUser(user.getUid());
+        if (joinRequests != null && !joinRequests.isEmpty()) {
+            model.addAttribute("joinRequestsPending", joinRequests);
+            log.info("Found join requests pending ... " + joinRequests);
+        }
+        log.info(String.format("Checking join requests took %d msecs", System.currentTimeMillis() - startTime4));
 
         return new ModelAndView("home", model.asMap());
 

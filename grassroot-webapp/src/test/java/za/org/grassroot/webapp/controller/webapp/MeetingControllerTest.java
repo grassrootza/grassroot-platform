@@ -255,7 +255,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         when(userManagementServiceMock.fetchUserByUsername(testUserPhone)).thenReturn(sessionTestUser);
         when(eventLogManagementServiceMock.rsvpForEvent(dummyMeeting, sessionTestUser, EventRSVPResponse.NO))
                 .thenReturn(dummyEventLog);
-        mockMvc.perform(post("/meeting/rsvp").param("eventId", String.valueOf(dummyId)).param("no", ""))
+        mockMvc.perform(post("/meeting/rsvp").param("eventId", String.valueOf(dummyId)).param("answer", "no"))
                 .andExpect(view().name("redirect:/home"))
                 .andExpect(redirectedUrl("/home"));
         verify(eventManagementServiceMock, times(1)).loadEvent(dummyId);
@@ -280,13 +280,13 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         when(eventLogManagementServiceMock.rsvpForEvent(dummyMeeting, sessionTestUser, EventRSVPResponse.YES))
                 .thenReturn(dummyEventLog);
         when(eventManagementServiceMock.getRSVPResponses(dummyMeeting)).thenReturn(dummyResponsesMap);
-        mockMvc.perform(post("/meeting/rsvp").param("eventId", String.valueOf(dummyId)).param("yes", ""))
+        mockMvc.perform(post("/meeting/rsvp").param("eventId", String.valueOf(dummyId)).param("answer", "yes"))
                 .andExpect(view().name("meeting/view"))
                 .andExpect(model().attribute("meeting", hasProperty("id", is(dummyId))))
                 .andExpect(model().attribute("rsvpYesTotal", equalTo(listOfDummyYesResponses.size())))
                 .andExpect(model().attribute("rsvpResponses", hasItems(dummyResponsesMap.entrySet().toArray())));
         verify(eventManagementServiceMock, times(1)).getListOfUsersThatRSVPYesForEvent(dummyMeeting);
-        verify(eventManagementServiceMock, times(1)).loadEvent(dummyId);
+        verify(eventManagementServiceMock, times(2)).loadEvent(dummyId);
         verify(eventLogManagementServiceMock, times(1)).rsvpForEvent(dummyMeeting, sessionTestUser, EventRSVPResponse.YES);
         verify(eventManagementServiceMock, times(1)).getRSVPResponses(dummyMeeting);
         verifyZeroInteractions(groupManagementServiceMock);

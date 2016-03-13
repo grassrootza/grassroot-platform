@@ -59,29 +59,26 @@
     </div>
   </div>
 
-  <div th:if="${not #lists.isEmpty(meetingRsvps)}">
-
-    <div class="well">
-      <div class="row">
-        <div class="col-md-8 col-md-offset-2">
-          <h4><b>Meeting called: Will you attend?</b></h4>
-          <ul class="list-group">
-            <li th:each="event : ${meetingRsvps}" class="list-group-item" >
-              <div class="row">
-                <div class="col-md-9">
-                  <span th:text="${event.appliesToGroup.getName('')}">group name</span>, meeting about
-                  "<span th:text="${event.name}" class="mark">Meeting subject</span>", on
-                  <span th:text="${#calendars.format(event.getEventStartDateTime(),'dd MMMM')}">date and time</span>
-                  at <span th:text="${event.eventLocation}">meeting location</span>.
-                </div>
-                <div class="col-md-3 pull-right">
-                  <button class="btn btn-primary btn-sm" type="submit" name="yes">Yes</button>
-                  <button class="btn btn-danger btn-sm" type="submit" name="no">No</button>
-                </div>
+  <div class="well" th:if="${not #lists.isEmpty(meetingRsvps)}">
+    <div class="row">
+      <div class="col-md-8 col-md-offset-2">
+        <h4><b>Meeting called: Will you attend?</b></h4>
+        <ul class="list-group">
+          <li th:each="event : ${meetingRsvps}" class="list-group-item" >
+            <div class="row">
+              <div class="col-md-9">
+                <span th:text="${event.appliesToGroup.getName('')}">group name</span>, meeting about
+                "<span th:text="${event.name}" class="mark">Meeting subject</span>", on
+                <span th:text="${#calendars.format(event.getEventStartDateTime(),'dd MMMM')}">date and time</span>
+                at <span th:text="${event.eventLocation}">meeting location</span>.
               </div>
-            </li>
-          </ul>
-        </div>
+              <div class="col-md-3 pull-right">
+                <a th:href="@{meeting/rsvp(eventId=${event.id},answer=yes)}"><button class="btn btn-primary btn-sm" type="submit" name="yes">Yes</button></a>
+                <a th:href="@{meeting/rsvp(eventId=${event.id},answer=no)}"><button class="btn btn-danger btn-sm" type="submit" name="no">No</button></a>
+              </div>
+            </div>
+          </li>
+        </ul>
       </div>
     </div>
 
@@ -129,13 +126,39 @@
 
   </div>
 
+  <div class="well" th:if="${not #lists.isEmpty(joinRequestsPending)}">
+    <div class="row">
+      <div class="col-md-8 col-md-offset-2">
+        <h4><b>People have asked to join some of your groups:</b></h4>
+        <ul class="list-group">
+          <li th:each="request : ${joinRequestsPending}" class="list-group-item" >
+            <div class="row">
+              <div class="col-md-8">
+                <span th:text="${request.requestor.getName('')}">Name</span> has asked to join
+                "<span th:text="${request.group.getName('')}">group name</span>".
+              </div>
+              <div class="col-md-4 pull-right">
+                <a th:href="@{/group/join/approve(requestUid=${request.uid})}">
+                  <button class="btn btn-default btn-sm" type="submit">Approve</button></a>
+                <a th:href="@{/group/join/decline(requestUid=${request.uid})}">
+                  <button class="btn btn-default btn-sm" type="submit">Reject</button></a>
+                <a th:href="@{/group/join/details(requestUid=${request.uid})}">
+                  <button class="btn btn-default btn-sm" type="submit">See details</button></a>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
   <!-- List of user's groups, if they have any -->
 
   <!-- form to allow joining a group, if it is flagged as discoverable -->
   <div class="well">
     <div class="row">
       <div class="col-md-8 col-md-offset-2">
-        <form th:action="@{/group/search}" method="post" class="form-vertical">
+        <form th:action="@{/group/search}" method="get" class="form-vertical">
           <div class="input-group">
             <input type="text" name="searchTerm" class="form-control" id="searchTerm" placeholder="Enter join code or name to search" />
             <span class="input-group-btn">

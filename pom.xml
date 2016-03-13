@@ -24,6 +24,7 @@
     <modules>
         <module>grassroot-webapp</module>
         <module>grassroot-core</module>
+        <module>grassroot-messaging</module>
         <module>grassroot-integration</module>
         <module>grassroot-services</module>
     </modules>

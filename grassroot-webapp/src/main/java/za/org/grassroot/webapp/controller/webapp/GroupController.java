@@ -123,12 +123,28 @@ public class GroupController extends BaseController {
         return "group/results";
     }
 
-    @RequestMapping(value = "join", method = RequestMethod.POST)
-    public String requestToJoinGroup(Model model, @RequestParam String groupToJoinUid,
+    @RequestMapping(value = "join/request", method = RequestMethod.POST)
+    public String requestToJoinGroup(Model model, @RequestParam(value="uid") String groupToJoinUid,
                                      HttpServletRequest request, RedirectAttributes attributes) {
         String requestUid = groupJoinRequestService.open(getUserProfile().getUid(), groupToJoinUid);
         addMessage(attributes, MessageType.INFO, "group.join.request.done", request);
         return "redirect:/home";
+    }
+
+    // todo: think about security carefully on these (e.g., on the sequence of calls)
+    @RequestMapping(value = "join/approve")
+    public String approveJoinRequest(Model model, @RequestParam String requestUid, HttpServletRequest request) {
+        // note: join request service will do the permission checking etc and throw an error
+        groupJoinRequestService.approve(getUserProfile().getUid(), requestUid);
+        addMessage(model, MessageType.INFO, "group.join.request.approved", request);
+        return viewGroupIndex(model, groupJoinRequestService.loadRequest(requestUid).getGroup().getId());
+    }
+
+    @RequestMapping(value = "join/decline")
+    public String declineJoinRequest(Model model, @RequestParam String requestUid, HttpServletRequest request) {
+        groupJoinRequestService.decline(getUserProfile().getUid(), requestUid);
+        addMessage(model, MessageType.INFO, "group.join.request.declined", request);
+        return viewGroupIndex(model, groupJoinRequestService.loadRequest(requestUid).getGroup().getId());
     }
 
     /* @RequestMapping(value = "join", method = RequestMethod.POST)

@@ -62,33 +62,7 @@ public class GroupManager implements GroupManagementService {
     private GroupLogRepository groupLogRepository;
 
     @Autowired
-    private RoleManagementService roleManagementService;
-
-    @Autowired
-    private PermissionsManagementService permissionsManager;
-
-    @Autowired
-    private GroupAccessControlManagementService accessControlService;
-
-    @Autowired
     private AsyncGroupService asyncGroupService;
-
-    @Autowired
-    private AsyncRoleService asyncRoleService;
-
-/*    @Override
-    public Group createNewGroup(User creatingUser, String groupName, boolean addDefaultRole) {
-        Long timeStart = System.currentTimeMillis();
-        Group group = groupRepository.save(new Group(groupName, creatingUser));
-
-        if (addDefaultRole) { group.setGroupRoles(roleManagementService.createGroupRoles(group.getUid())); }
-
-        group = groupRepository.saveAndFlush(group);
-        Long timeEnd = System.currentTimeMillis();
-        log.info(String.format("Setting up a standard group, time taken ... %d msecs", timeEnd - timeStart));
-        asyncGroupService.recordGroupLog(group.getId(),creatingUser.getId(),GroupLogType.GROUP_ADDED, 0L, "");;
-        return group;
-    }*/
 
     @Override
     public Group saveGroup(Group groupToSave, boolean createGroupLog, String description, Long changedByuserId) {
