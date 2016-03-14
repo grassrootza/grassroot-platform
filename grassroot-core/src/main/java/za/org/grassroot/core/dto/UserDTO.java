@@ -1,6 +1,7 @@
 package za.org.grassroot.core.dto;
 
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.UserCreateRequest;
 
 import java.io.Serializable;
 
@@ -14,22 +15,20 @@ public class UserDTO implements Serializable {
     private String lastName;
     private String firstName;
     private String displayName;
-    private Long id;
+    private String id;
     private String phoneNumber;
-
-
 
     public UserDTO() {
     }
 
     public UserDTO(User user) {
-        this.id = user.getId();
         this.phoneNumber = user.getPhoneNumber();
         this.displayName =  user.getDisplayName();
         this.firstName = user.getFirstName();
         this.lastName = user.getLastName();
         this.languageCode = user.getLanguageCode();
         this.enabled = user.getEnabled();
+        this.id = user.getUid();
     }
 
     public UserDTO(String phoneNumber, String displayName){
@@ -37,8 +36,13 @@ public class UserDTO implements Serializable {
         this.displayName=displayName;
     }
 
+    public UserDTO(UserCreateRequest userCreateRequest){
+        this.phoneNumber = userCreateRequest.getPhoneNumber();
+        this.displayName=userCreateRequest.getDisplayName();
+    }
+
     public UserDTO(Object[] objArray) {
-        this.id = Long.parseLong(objArray[0].toString());
+
         this.displayName = String.valueOf(objArray[1]);
         this.phoneNumber =String.valueOf(objArray[2]);
         this.languageCode =String.valueOf(objArray[3]);
@@ -85,12 +89,9 @@ public class UserDTO implements Serializable {
         this.displayName = displayName;
     }
 
-    public Long getId() {
-        return id;
-    }
 
-    public void setId(Long id) {
-        this.id = id;
+    public String getId() {
+        return id;
     }
 
     public String getPhoneNumber() {
@@ -109,7 +110,6 @@ public class UserDTO implements Serializable {
                 ", lastName='" + lastName + '\'' +
                 ", firstName='" + firstName + '\'' +
                 ", displayName='" + displayName + '\'' +
-                ", id=" + id +
                 ", phoneNumber='" + phoneNumber + '\'' +
                 '}';
     }

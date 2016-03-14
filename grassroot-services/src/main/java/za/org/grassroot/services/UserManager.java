@@ -17,9 +17,12 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.UserCreateRequest;
+import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.repository.UserRequestRepository;
 import za.org.grassroot.core.util.MaskingUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
@@ -28,6 +31,7 @@ import za.org.grassroot.services.exception.UserExistsException;
 import za.org.grassroot.services.util.CacheUtilService;
 
 import javax.transaction.Transactional;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -60,6 +64,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
     private CacheUtilService cacheUtilService;
     @Autowired
     private AsyncUserService asyncUserService;
+    @Autowired
+    private UserRequestRepository userCreateRequestRepository;
 
     @Override
     public User createUserProfile(User userProfile) {
@@ -140,6 +146,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
             User userToUpdate = loadOrSaveUser(phoneNumber);
             if (userToUpdate.hasAndroidProfile() ){
+
                 throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a android profile!");
             }
 
@@ -158,13 +165,11 @@ public class UserManager implements UserManagementService, UserDetailsService {
         }
 
         try {
-
             User userToReturn = userRepository.saveAndFlush(userToSave);
             if (userExists)
-                asyncUserService.recordUserLog(userToReturn.getId(), UserLogType.CREATED_IN_DB, "User first created via android set up");
+                asyncUserService.recordUserLog(userToReturn.getId(), UserLogType.CREATED_IN_DB, "User first created via web sign up");
             asyncUserService.recordUserLog(userToReturn.getId(), UserLogType.REGISTERED_ANDROID, "User created android profile");
             return userToReturn;
-
         } catch (final Exception e) {
             e.printStackTrace();
             log.warn(e.getMessage());
@@ -174,10 +179,17 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public void generateAndroidUserVerifier(String phoneNumber){
+    public String generateAndroidUserVerifier(String phoneNumber, String displayName){
         Objects.nonNull(phoneNumber);
         phoneNumber = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
-        jmsTemplateProducerService.sendWithNoReply("send-verification", phoneNumber);
+        if(displayName !=null) {
+            userCreateRequestRepository.save(new UserCreateRequest(phoneNumber, displayName, Instant.now()));
+        }
+        VerificationTokenCode token =  passwordTokenService.generateAndroidVerificationCode(phoneNumber);
+        return token.getCode();
+
+
+
     }
 
 
@@ -595,6 +607,13 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public UserDTO loadUser(String phoneNumber) {
         return new UserDTO(userRepository.findByNumber(phoneNumber));
+    }
+
+
+    @Override
+    public UserDTO loadUserCreateRequest(String phoneNumber) {
+        UserCreateRequest userCreateRequest = userCreateRequestRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
+        return(new UserDTO(userCreateRequest));
     }
 
     public void setPasswordEncoder(final PasswordEncoder passwordEncoder) {

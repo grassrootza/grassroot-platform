@@ -13,45 +13,19 @@ public class TaskResponseWrapper {
     private String groupName;
     private Long userId;
     private List<String> permissions;
-    private List<TaskDTO> eventLogBook;
+    private List<TaskDTO> tasks;
 
 
     public Long getId() {
         return id;
     }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
     public String getGroupName() {
         return groupName;
-    }
-
-    public void setGroupName(String groupName) {
-        this.groupName = groupName;
     }
     public Long getUserId() {
         return userId;
     }
+    public List<String> getPermissions() {return permissions;}
+    public List<TaskDTO> getTasks() {return tasks;}
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-    public List<String> getPermissions() {
-        return permissions;
-    }
-
-    public void setPermissions(List<String> permissions) {
-        this.permissions = permissions;
-    }
-
-    public List<TaskDTO> getTasks() {
-        return eventLogBook;
-    }
-
-    public void setTasks(List<TaskDTO> eventLogBook) {
-        this.eventLogBook = eventLogBook;
-    }
 }

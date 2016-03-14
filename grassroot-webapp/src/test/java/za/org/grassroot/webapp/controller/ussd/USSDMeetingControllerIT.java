@@ -105,9 +105,9 @@ public class USSDMeetingControllerIT extends USSDAbstractIT {
         assertNotNull(userCreated.getId());
         assertNotNull(groupCreated.getId());
         assertThat(groupCreated.getCreatedByUser(), is(userCreated));
-        assertThat(groupCreated.getGroupMembers().size(), is(testGroupSize));
+        assertThat(groupCreated.getGroupSize().size(), is(testGroupSize));
 
-        List<User> groupMembers = groupCreated.getGroupMembers();
+        List<User> groupMembers = groupCreated.getGroupSize();
         log.info("Group members ArrayList: " + groupMembers);
 
         for (User groupMember : groupMembers) {
@@ -155,7 +155,7 @@ public class USSDMeetingControllerIT extends USSDAbstractIT {
         assertNotNull(userCreated.getId());
         assertNotNull(groupCreated.getId());
         assertThat(groupCreated.getCreatedByUser(), is(userCreated));
-        assertThat(groupCreated.getGroupMembers().size(), is(testGroupSize));
+        assertThat(groupCreated.getGroupSize().size(), is(testGroupSize));
 
         // todo: this is where the checks for message building need to go
 

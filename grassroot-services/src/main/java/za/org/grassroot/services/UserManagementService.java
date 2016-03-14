@@ -3,6 +3,7 @@ package za.org.grassroot.services;
 import org.springframework.data.domain.Page;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.UserCreateRequest;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.exception.UserExistsException;
@@ -25,7 +26,7 @@ public interface UserManagementService {
 
     User createAndroidUserProfile(UserDTO userDTO) throws UserExistsException;
 
-    void generateAndroidUserVerifier(String phoneNumber);
+    String generateAndroidUserVerifier(String phoneNumber, String displayName);
 
 
     User getUserById(Long userId);
@@ -139,5 +140,8 @@ public interface UserManagementService {
     List<User> loadSubsetUsersMasked(List<Long> ids);
 
     UserDTO loadUser(String phoneNumber);
+
+
+    UserDTO loadUserCreateRequest(String phoneNumber);
 
 }

@@ -70,12 +70,13 @@ where e.canceled = FALSE
     @Query(value = "SELECT count(*) from Event e where e.start_date_time > current_timestamp and e.applies_to_group in (select group_id from group_user_membership where user_id = ?1)", nativeQuery = true)
     int countFutureEvents(Long userId);
 
+
+
     /*
     Some queries to find a user's events : leaving query stub in, as the property traversal by JPA may be expensive, and may want to do counts later
      */
     // @Query(value = "SELECT * FROM event e WHERE applies_to_group IN (SELECT group_id FROM group_user_membership ")
     List<Event> findByAppliesToGroupMembershipsUser(User user);
-
     List<Event> findByAppliesToGroupMembershipsUserAndEventTypeAndCanceledOrderByEventStartDateTimeDesc(User user, EventType type, boolean canceled);
     List<Event> findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled(User user, EventType eventType, Date startTime, boolean cancelled);
     List<Event> findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeLessThanAndCanceled(User user, EventType eventType, Date starTime, boolean cancelled);
