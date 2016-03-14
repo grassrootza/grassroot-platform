@@ -11,6 +11,7 @@ import java.util.List;
 public class GroupDTO {
 
     private Long id;
+    private String uid;
     private boolean active;
     private Timestamp created_date_time;
     private String description;
@@ -53,6 +54,8 @@ public class GroupDTO {
     }
 
     public Long getId() {return id;}
+
+    public String getUid() { return uid; }
 
     public boolean hasName() {
         return (groupName != null && groupName.trim().length() != 0);

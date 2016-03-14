@@ -51,7 +51,7 @@ public class USSDGroupUtil extends USSDUtil {
     private LogBookService logBookService;
 
     @Autowired
-    GroupAccessControlManagementService groupAccessControlManager;
+    PermissionBroker permissionBroker;
 
     private static final String groupKeyForMessages = "group";
     private static final String groupIdParameter = "groupId";
@@ -314,16 +314,16 @@ public class USSDGroupUtil extends USSDUtil {
         Long startTime = System.currentTimeMillis();
         switch (section){
             case MEETINGS:
-                canCreate = groupAccessControlManager.hasGroupPermission(Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING, group,user);
+                canCreate = permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
             break;
             case VOTES:
-                canCreate =groupAccessControlManager.hasGroupPermission(Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE, group,user);
+                canCreate = permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
                 break;
             case LOGBOOK:
-                canCreate = groupAccessControlManager.hasGroupPermission(Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY,group,user);
+                canCreate = permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
                 break;
             case GROUP_MANAGER:
-                canCreate = groupAccessControlManager.hasGroupPermission(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS,group,user);
+                canCreate = permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
                 break;
             default:
                 break;

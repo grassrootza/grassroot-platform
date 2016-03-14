@@ -1,5 +1,7 @@
 package za.org.grassroot.core;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -10,7 +12,6 @@ import org.springframework.jdbc.datasource.init.DataSourceInitializer;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 
 import javax.sql.DataSource;
-import java.util.logging.Logger;
 
 /**
  * @author Lesetse Kimwaga
@@ -19,7 +20,7 @@ import java.util.logging.Logger;
 @Profile(GrassRootApplicationProfiles.INMEMORY)
 public class StandaloneDatabaseConfig extends DatabaseConfig {
 
-    private Logger log = Logger.getLogger(getClass().getCanonicalName());
+    private Logger log = LoggerFactory.getLogger(StandaloneDatabaseConfig.class);
 
 
     @Override

@@ -15,10 +15,11 @@ import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.*;
-import za.org.grassroot.webapp.model.rest.UserDTO;
+import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrapper;
+import za.org.grassroot.webapp.model.rest.ResponseWrappers.GroupResponseWrapper;
+import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
+import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
 
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -38,9 +39,6 @@ public class GroupRestController {
 
     @Autowired
     EventManagementService eventManagementService;
-
-    @Autowired
-    PermissionsManagementService permissionsManagementService;
 
     @Autowired
     RoleManagementService roleManagementService;
@@ -93,7 +91,7 @@ public class GroupRestController {
             List<GroupResponseWrapper> groups = new ArrayList<>();
             for (Group group : groupList) {
                 Event event = eventManagementService.getMostRecentEvent(group);
-                Role role = roleManagementService.getUserRoleInGroup(user, group);
+                Role role = group.getMembership(user).getRole();
                 if (event != null) {
                     //todo implement some form of sorting
                     groups.add(new GroupResponseWrapper(group, event, role));

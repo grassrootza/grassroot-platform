@@ -1,4 +1,4 @@
-package za.org.grassroot.services;
+package za.org.grassroot.services.acl;
 
 
 import za.org.grassroot.core.domain.Group;

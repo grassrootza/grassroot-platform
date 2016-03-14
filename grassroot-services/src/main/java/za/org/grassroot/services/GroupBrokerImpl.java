@@ -32,8 +32,6 @@ public class GroupBrokerImpl implements GroupBroker {
     @Autowired
     private UserRepository userRepository;
     @Autowired
-    private PermissionsManagementService permissionsManagementService;
-    @Autowired
     private PermissionBroker permissionBroker;
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
@@ -70,7 +68,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
         Set<Membership> memberships = addMembers(user, group, membershipInfos);
 
-        permissionsManagementService.setRolePermissionsFromTemplate(group, groupPermissionTemplate);
+        permissionBroker.setRolePermissionsFromTemplate(group, groupPermissionTemplate);
         group = groupRepository.save(group);
 
         logger.info("Group created under UID {}", group.getUid());

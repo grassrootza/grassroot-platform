@@ -765,8 +765,8 @@ public class GroupController extends BaseController {
         // todo: replace this with Membership entity once built ... very badly done kludge for present
 
         List<MemberWrapper> members = new ArrayList<>();
-        for (User user : userManagementService.getGroupMembersSortedById(group))
-            members.add(new MemberWrapper(user, group, roleService.getUserRoleInGroup(user, group)));
+        /*for (User user : userManagementService.getGroupMembersSortedById(group))
+            members.add(new MemberWrapper(user, group, roleService.getUserRoleInGroup(user, group)));*/
 
         List<String[]> roleDescriptionsWithNull = new ArrayList<>(roleDescriptions);
         roleDescriptionsWithNull.add(0, new String[] { "NULL", "Not set"});

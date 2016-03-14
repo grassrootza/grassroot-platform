@@ -1,8 +1,7 @@
 package za.org.grassroot.services;
 
-import net.sf.ehcache.Cache;
-import net.sf.ehcache.CacheManager;
-import org.apache.commons.lang.enums.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Event;
@@ -20,10 +19,10 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.util.CacheUtilService;
 
-import javax.jws.soap.SOAPBinding;
 import java.sql.Timestamp;
-import java.util.*;
-import java.util.logging.Logger;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 /**
  * Created by aakilomar on 8/26/15.
@@ -31,7 +30,7 @@ import java.util.logging.Logger;
 @Component
 public class EventLogManager implements EventLogManagementService {
 
-    private Logger log = Logger.getLogger(getClass().getCanonicalName());
+    private Logger log = LoggerFactory.getLogger(EventLogManager.class);
 
     @Autowired
     EventLogRepository eventLogRepository;
@@ -105,7 +104,7 @@ public class EventLogManager implements EventLogManagementService {
 
     @Override
     public EventLog rsvpForEvent(Event event, User user, EventRSVPResponse rsvpResponse) {
-        log.finest("rsvpForEvent...event..." + event.getId() + "...user..." + user.getPhoneNumber() + "...rsvp..." + rsvpResponse.toString());
+        log.trace("rsvpForEvent...event..." + event.getId() + "...user..." + user.getPhoneNumber() + "...rsvp..." + rsvpResponse.toString());
         EventLog eventLog = new EventLog();
         // dont allow the user to rsvp/vote twice
 
@@ -117,7 +116,7 @@ public class EventLogManager implements EventLogManagementService {
             if (event.getEventType() == EventType.Vote) {
                 // see if everyone voted, if they did expire the vote so that the results are sent out
                 RSVPTotalsDTO rsvpTotalsDTO = getVoteResultsForEvent(event);
-                log.finest("rsvpForEvent...after..." + rsvpTotalsDTO.toString());
+                log.trace("rsvpForEvent...after..." + rsvpTotalsDTO.toString());
                 if (rsvpTotalsDTO.getNumberNoRSVP() < 1) {
                     Date now = new Date();
                     event.setEventStartDateTime(new Timestamp(now.getTime()));

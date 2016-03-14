@@ -12,16 +12,15 @@ import org.springframework.test.context.junit4.AbstractTransactionalJUnit4Spring
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.GrassRootServicesConfig;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
-import za.org.grassroot.core.domain.*;
-import za.org.grassroot.services.*;
-import za.org.grassroot.services.enums.GroupPermissionTemplate;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.services.GroupBroker;
+import za.org.grassroot.services.UserManagementService;
 
 import javax.transaction.Transactional;
-
 import java.util.HashSet;
 
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import static za.org.grassroot.services.enums.GroupPermissionTemplate.DEFAULT_GROUP;
 
 /**
@@ -36,19 +35,10 @@ public class RoleManagementServiceTest extends AbstractTransactionalJUnit4Spring
     private static final Logger log = LoggerFactory.getLogger(RoleManagementServiceTest.class);
 
     @Autowired
-    private RoleManagementService roleManagementService;
-
-    @Autowired
     private UserManagementService userManagementService;
 
     @Autowired
-    private GroupManagementService groupManagementService;
-
-    @Autowired
     private GroupBroker groupBroker;
-
-    @Autowired
-    private PermissionsManagementService permissionsManagementService;
 
     // @Autowired
     // private GroupAccessControlManagementService groupAccessControlManagementService;

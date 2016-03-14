@@ -1,4 +1,4 @@
-package za.org.grassroot.services;
+package za.org.grassroot.services.acl;
 
 import com.google.common.collect.ImmutableList;
 import edu.emory.mathcs.backport.java.util.Collections;
@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.services.GroupManagementService;
 
 import javax.transaction.Transactional;
 import java.util.List;

@@ -1,10 +1,11 @@
 package za.org.grassroot.core.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
-import java.util.logging.Logger;
 
 /**
  * Created by aakilomar on 11/15/15.
@@ -12,7 +13,7 @@ import java.util.logging.Logger;
 @Component
 public class AuthenticationUtil {
 
-    private Logger log = Logger.getLogger(getClass().getCanonicalName());
+    private Logger log = LoggerFactory.getLogger(AuthenticationUtil.class);
 
 
     public void debugAuthentication() {

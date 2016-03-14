@@ -2,12 +2,9 @@ package za.org.grassroot.webapp.model.web;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import za.org.grassroot.core.domain.*;
-import za.org.grassroot.services.GroupAccessControlManagementService;
-import za.org.grassroot.services.PermissionsManagementService;
-import za.org.grassroot.services.RoleManagementService;
-
-import java.util.Set;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Role;
+import za.org.grassroot.core.domain.User;
 
 /**
  * Created by luke on 2016/01/14.

@@ -1,5 +1,7 @@
 package za.org.grassroot.services.consumer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
@@ -17,7 +19,6 @@ import za.org.grassroot.services.*;
 import za.org.grassroot.services.util.CacheUtilService;
 
 import java.util.List;
-import java.util.logging.Logger;
 
 /**
  * Created by aakilomar on 8/31/15.
@@ -25,7 +26,7 @@ import java.util.logging.Logger;
 @Component
 public class EventNotificationConsumer {
 
-    private Logger log = Logger.getLogger(getClass().getCanonicalName());
+    private Logger log = LoggerFactory.getLogger(EventNotificationConsumer.class);
 
     @Autowired
     GroupManagementService groupManagementService;
@@ -74,7 +75,7 @@ public class EventNotificationConsumer {
             concurrency = "5")
     public void sendNewEventNotifications(EventDTO event) {
 
-        log.finest("sendNewEventNotifications... <" + event.toString() + ">");
+        log.trace("sendNewEventNotifications... <" + event.toString() + ">");
 
         for (User user : getAllUsersForGroup(event.getEventObject())) {
             cacheUtilService.clearRsvpCacheForUser(user,event.getEventType());
@@ -105,7 +106,7 @@ public class EventNotificationConsumer {
     @JmsListener(destination = "event-cancelled", containerFactory = "messagingJmsContainerFactory",
             concurrency = "1")
     public void sendCancelledEventNotifications(EventDTO event) {
-        log.finest("sendCancelledEventNotifications... <" + event.toString() + ">");
+        log.trace("sendCancelledEventNotifications... <" + event.toString() + ">");
         for (User user : getAllUsersForGroup(event.getEventObject())) {
             //generate message based on user language
             String message = meetingNotificationService.createCancelMeetingNotificationMessage(user, event);

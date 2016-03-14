@@ -1,15 +1,13 @@
 package za.org.grassroot.messaging.event;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationListener;
-import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 import za.org.grassroot.core.event.EventChangeEvent;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 
-import java.util.logging.Logger;
 
 /**
  * Created by aakilomar on 8/30/15.
@@ -17,7 +15,7 @@ import java.util.logging.Logger;
 @Component
 public class EventChangeEventListener implements ApplicationListener<EventChangeEvent> {
 
-    private Logger log = Logger.getLogger(getClass().getCanonicalName());
+    private Logger log = LoggerFactory.getLogger(getClass().getCanonicalName());
 
     @Autowired
     GenericJmsTemplateProducerService genericJmsTemplateProducerService;
