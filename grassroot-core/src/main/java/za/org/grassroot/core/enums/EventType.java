@@ -5,8 +5,8 @@ package za.org.grassroot.core.enums;
  * Enum that will help us distinguish among event types
  */
 public enum EventType {
-    Meeting,
-    Vote,
+    MEETING,
+    VOTE,
     LogEntry,
     DummyEvent
 }

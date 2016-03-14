@@ -92,7 +92,7 @@ public class EventDTO  implements Serializable {
     }
 
     public EventDTO(Event event) {
-        this.eventLocation = event.getEventLocation();
+//        this.eventLocation = event.getEventLocation();
         this.id = event.getId();
         this.createdDateTime = event.getCreatedDateTime();
         this.eventStartDateTime = event.getEventStartDateTime();
@@ -115,7 +115,8 @@ public class EventDTO  implements Serializable {
 
 
     public Event getEventObject() {
-        return new Event(eventLocation, id, createdDateTime, eventStartDateTime, createdByUser, appliesToGroup, canceled, eventType, name, dateTimeString, includeSubGroups, reminderMinutes, rsvpRequired, relayable, sendBlocked, version);
+//        return new Event(eventLocation, id, createdDateTime, eventStartDateTime, createdByUser, appliesToGroup, canceled, eventType, name, dateTimeString, includeSubGroups, reminderMinutes, rsvpRequired, relayable, sendBlocked, version);
+        return null;
     }
 
     public String getEventLocation() {

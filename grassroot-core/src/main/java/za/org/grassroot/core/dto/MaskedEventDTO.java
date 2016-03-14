@@ -27,7 +27,7 @@ public class MaskedEventDTO {
     public MaskedEventDTO(Event event) {
         this.id = event.getId();
         this.name = MaskingUtil.maskName(event.getName());
-        this.eventLocation = MaskingUtil.maskName(event.getEventLocation());
+//        this.eventLocation = MaskingUtil.maskName(event.getEventLocation());
         this.createdDateTime = event.getCreatedDateTime();
         this.eventStartDateTime = event.getCreatedDateTime();
 

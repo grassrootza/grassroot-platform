@@ -88,9 +88,11 @@ public class GroupBrokerImpl implements GroupBroker {
     }
 
     private void logGroupEventsAfterCommit(Set<GroupLog> groupLogs) {
-        // we want to log group events after transaction has committed
-        AfterTxCommitTask afterTxCommitTask = () -> asyncGroupEventLogger.logGroupEvents(groupLogs);
-        applicationEventPublisher.publishEvent(afterTxCommitTask);
+        if (!groupLogs.isEmpty()) {
+            // we want to log group events after transaction has committed
+            AfterTxCommitTask afterTxCommitTask = () -> asyncGroupEventLogger.logGroupEvents(groupLogs);
+            applicationEventPublisher.publishEvent(afterTxCommitTask);
+        }
     }
 
     @Override

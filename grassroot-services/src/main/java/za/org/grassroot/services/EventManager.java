@@ -880,7 +880,7 @@ public class EventManager implements EventManagementService {
         if (priorEventIncompleteOrBlocked && savedEventOkayToSend) {
 
             //so that the attendance tally adds up
-            if(savedEvent.getEventType() == EventType.Meeting){
+            if(savedEvent.getEventType() == EventType.MEETING){
                 eventLogManagementService.rsvpForEvent(savedEvent,savedEvent.getCreatedByUser(),EventRSVPResponse.YES);
             }
             jmsTemplateProducerService.sendWithNoReply("event-added", new EventDTO(savedEvent));
@@ -900,7 +900,7 @@ public class EventManager implements EventManagementService {
 
         if (priorEventComplete && savedEventOkayToSend && !addedNewEventToQueue) {
             // let's send out a change notification if something changed in minimum required values
-            if (!savedEvent.minimumEquals(beforeEvent)) {
+            if (!savedEvent.equals(beforeEvent)) {
                 boolean startTimeChanged = false;
                 if (!beforeEvent.getEventStartDateTime().equals(savedEvent.getEventStartDateTime()))
                     startTimeChanged = true;

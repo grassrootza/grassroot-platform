@@ -72,7 +72,7 @@ public class SmsSendingManager implements SmsSendingService {
             User testMessageUser = (userRepository.existsByPhoneNumber(testMessagePhone)) ?
                     userRepository.findByPhoneNumber(testMessagePhone) :
                     userRepository.save(new User(testMessagePhone));
-            Event messageEvent = eventRepository.save(new Event(testMessageUser, EventType.DummyEvent));
+            Event messageEvent = eventRepository.save(new Event(testMessageUser, EventType.MEETING));
             EventLog messageRecord = new EventLog(testMessageUser, messageEvent, EventLogType.EventTest, message);
             log.info("Saving a dummy EventLog ... " + messageRecord);
             messageRecord = eventLogRepository.save(messageRecord);

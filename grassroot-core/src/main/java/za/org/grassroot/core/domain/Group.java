@@ -102,6 +102,7 @@ public class Group implements Serializable {
         this.uid = UIDGenerator.generateId();
         this.groupName = Objects.requireNonNull(groupName);
         this.createdByUser = Objects.requireNonNull(createdByUser);
+        this.createdDateTime = Timestamp.from(Instant.now());
         this.active = true;
         this.discoverable = false;
         this.parent = parent;
