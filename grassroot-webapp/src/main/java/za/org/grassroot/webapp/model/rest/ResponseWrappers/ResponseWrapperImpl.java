@@ -7,18 +7,25 @@ import za.org.grassroot.webapp.enums.RestStatus;
 /**
  * Created by paballo on 2016/03/07.
  */
-public class UserResponseWrapper implements ResponseWrapper {
+public class ResponseWrapperImpl implements ResponseWrapper {
 
     private String status;
     private int code;
     private String message;
 
-    public UserResponseWrapper(){}
+    public ResponseWrapperImpl(){}
 
-    public UserResponseWrapper(HttpStatus code, RestMessage message, RestStatus status) {
+    public ResponseWrapperImpl(HttpStatus code, RestMessage message, RestStatus status) {
         this.code = code.value();
         this.message = String.valueOf(message);
         this.status = String.valueOf(status);
+    }
+
+    public ResponseWrapperImpl(HttpStatus code, String message,RestStatus status){
+        this.code = code.value();
+        this.message = message;
+        this.status = String.valueOf(status);
+
     }
     @Override
     public String getMessage() {

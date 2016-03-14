@@ -152,7 +152,7 @@ public class WebController {
         model.addAttribute("users", getUserListFromGroup(groupToDisplay));
         model.addAttribute("user_id", userId);
         model.addAttribute("group_id", groupId);
-        model.addAttribute("group_name", groupToDisplay.getName(""));
+        model.addAttribute("group_name", groupToDisplay.getGroupName(""));
         model.addAttribute("created_date", groupToDisplay.getCreatedDateTime().toLocalDateTime().toString());
         model.addAttribute("created_by", groupToDisplay.getCreatedByUser().getDisplayName());
 
@@ -168,7 +168,7 @@ public class WebController {
         catch (Exception e) { return "user_error"; }
 
         model.addAttribute("user_id", userId);
-        model.addAttribute("user_name", sessionUser.getName(""));
+        model.addAttribute("user_name", sessionUser.getGroupName(""));
 
         return "group/new_form";
 
@@ -236,7 +236,7 @@ public class WebController {
             HashMap<String,String> userAttributes = new HashMap<>();
             userAttributes.put("user_id", "" + userToList.getId());
             userAttributes.put("phone_number", User.invertPhoneNumber(userToList.getPhoneNumber()));
-            userAttributes.put("display_name", userToList.getName("Unnamed user"));
+            userAttributes.put("display_name", userToList.getGroupName("Unnamed user"));
             userList.add(userAttributes);
         }
 
@@ -252,7 +252,7 @@ public class WebController {
             HashMap<String,String> groupAttributes = new HashMap<>();
             groupAttributes.put("group_id", "" + groupToList.getId());
             groupAttributes.put("group_name", groupToList.getGroupName());
-            groupAttributes.put("created_by", groupToList.getCreatedByUser().getName("Unnamed user"));
+            groupAttributes.put("created_by", groupToList.getCreatedByUser().getGroupName("Unnamed user"));
             groupAttributes.put("number_users", "" + groupToList.getNumberMembers().size());
             groupList.add(groupAttributes);
         }

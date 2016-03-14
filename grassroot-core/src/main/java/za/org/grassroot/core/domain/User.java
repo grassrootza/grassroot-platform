@@ -369,7 +369,7 @@ public class User implements UserDetails {
         }
     }
 
-    // can't call this the more natural getName, or any variant, or Spring's getter handling throws a fit
+    // can't call this the more natural getGroupName, or any variant, or Spring's getter handling throws a fit
     // refactoring to avoid confusion with property displayName -- point is this returns name, or phone number if no name
     public String nameToDisplay() { return getName(""); }
 

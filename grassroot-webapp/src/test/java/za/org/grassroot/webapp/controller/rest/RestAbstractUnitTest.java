@@ -4,11 +4,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.repository.VerificationTokenCodeRepository;
 import za.org.grassroot.services.*;
 
 /**
@@ -31,6 +33,11 @@ public class RestAbstractUnitTest
     protected UserManagementService userManagementServiceMock;
     @Mock
     protected EventManagementService eventManagementServiceMock;
+    @Mock
+    protected PasswordTokenService passwordTokenServiceMock;
+
+    @Mock
+    protected VerificationTokenCodeRepository verificationTokenCodeRepositoryMock;
 
     protected MessageSource messageSource() {
 
@@ -40,6 +47,9 @@ public class RestAbstractUnitTest
 
         return messageSource;
     }
+
+
+
     @Test
     public void dummyTest() throws Exception{
 

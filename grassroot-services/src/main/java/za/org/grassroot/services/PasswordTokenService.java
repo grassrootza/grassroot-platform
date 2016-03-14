@@ -17,6 +17,10 @@ public interface PasswordTokenService {
 
     VerificationTokenCode generateAndroidVerificationCode(String phoneNumber);
 
+
+    //todo: remove in future, only for android purposes
+    VerificationTokenCode getVerificationCode(String phoneNumber);
+
     boolean isVerificationCodeValid(User user, String code);
 
     boolean isVerificationCodeValid(UserDTO userDTO, String code);
