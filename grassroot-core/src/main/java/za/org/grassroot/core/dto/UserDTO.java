@@ -1,6 +1,7 @@
 package za.org.grassroot.core.dto;
 
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.UserCreateRequest;
 
 import java.io.Serializable;
 
@@ -33,6 +34,11 @@ public class UserDTO implements Serializable {
     public UserDTO(String phoneNumber, String displayName){
         this.phoneNumber = phoneNumber;
         this.displayName=displayName;
+    }
+
+    public UserDTO(UserCreateRequest userCreateRequest){
+        this.phoneNumber = userCreateRequest.getPhoneNumber();
+        this.displayName=userCreateRequest.getDisplayName();
     }
 
     public UserDTO(Object[] objArray) {

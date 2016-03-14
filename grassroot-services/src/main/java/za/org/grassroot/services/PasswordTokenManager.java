@@ -65,6 +65,10 @@ public class PasswordTokenManager implements PasswordTokenService {
     }
 
 
+
+
+
+
     @Override
     public VerificationTokenCode generateAndroidVerificationCode(String phoneNumber) {
 
@@ -84,6 +88,11 @@ public class PasswordTokenManager implements PasswordTokenService {
         verificationTokenCode = verificationTokenCodeRepository.save(verificationTokenCode);
 
         return verificationTokenCode;
+    }
+
+    @Override
+    public VerificationTokenCode getVerificationCode(String phoneNumber) {
+       return verificationTokenCodeRepository.findByUsername(phoneNumber);
     }
 
     @Override
