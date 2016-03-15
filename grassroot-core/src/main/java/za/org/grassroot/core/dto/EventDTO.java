@@ -27,12 +27,6 @@ public class EventDTO  implements Serializable {
      */
     private String name;
     /*
-    for various reasons at present we want to be able to store date and time as strings without being forced to
-    parse and convert into a timestamp -- might move these into a Meeting sub-class, or handle in controller, but
-    doing it this way for now. to clean up.
-     */
-    private String dateTimeString;
-    /*
     used to determine if notifications should be sent only to the group linked to the event, or any subgroups as well
      */
     private boolean includeSubGroups;
@@ -78,7 +72,6 @@ public class EventDTO  implements Serializable {
         this.canceled = canceled;
         this.eventType = eventType;
         this.name = name;
-        this.dateTimeString = dateTimeString;
         this.includeSubGroups = includeSubGroups;
         this.reminderMinutes = reminderMinutes;
         this.rsvpRequired = rsvpRequired;
@@ -101,15 +94,12 @@ public class EventDTO  implements Serializable {
         this.canceled = event.isCanceled();
         this.eventType = event.getEventType();
         this.name = event.getName();
-        this.dateTimeString = event.getDateTimeString();
         this.includeSubGroups = event.isIncludeSubGroups();
-        this.reminderMinutes = event.getReminderMinutes();
+        this.reminderMinutes = event.getCustomReminderMinutes();
         this.rsvpRequired = event.isRsvpRequired();
         this.relayable = event.isRelayable();
         this.version = event.getVersion();
-        this.sendBlocked = event.isSendBlocked();
         this.message = "";
-
     }
 
 
@@ -191,14 +181,6 @@ public class EventDTO  implements Serializable {
         this.name = name;
     }
 
-    public String getDateTimeString() {
-        return dateTimeString;
-    }
-
-    public void setDateTimeString(String dateTimeString) {
-        this.dateTimeString = dateTimeString;
-    }
-
     public boolean isIncludeSubGroups() {
         return includeSubGroups;
     }
@@ -263,7 +245,6 @@ public class EventDTO  implements Serializable {
                 ", canceled=" + canceled +
                 ", eventType=" + eventType +
                 ", name='" + name + '\'' +
-                ", dateTimeString='" + dateTimeString + '\'' +
                 ", includeSubGroups=" + includeSubGroups +
                 ", reminderMinutes=" + reminderMinutes +
                 ", rsvpRequired=" + rsvpRequired +

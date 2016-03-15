@@ -30,15 +30,13 @@ public interface EventManagementService {
 
     Event createEvent(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups);
 
-    public Event createEvent(String name, User createdByUser, Group group);
-
     Event createEvent(String name, Long createdByUserId, Long appliesToGroupId, boolean includeSubGroups);
 
-    public Event createMeeting(User createdByUser);
+    Event createMeeting(User createdByUser);
 
-    public Event createMeeting(String inputNumber, Long groupId);
+    Event createMeeting(String inputNumber, Long groupId);
 
-    public Event createMeeting(User createdByUser, Long groupId);
+    Event createMeeting(User createdByUser, Long groupId);
 
     Event createVote(String issue, User createdByUser);
 
@@ -115,13 +113,7 @@ public interface EventManagementService {
 
     public Event setLocation(Long eventId, String location);
 
-    public Event setDateTimeString(Long eventId, String dateTimeString);
-
-    public Event storeDateTimeString(Long eventId, String dateTimeString);
-
     public Event setEventTimestamp(Long eventId, Timestamp eventDateTime);
-
-    public Event setEventTimestampToStoredString(Long eventId);
 
     public Event setEventReminderMinutes(Long eventId, Integer minutes);
 
@@ -167,8 +159,6 @@ public interface EventManagementService {
     int getNumberInvitees(Event event);
 
     String getGroupName(Event event);
-
-    LocalDateTime getDateTimeFromString(Long eventId);
 
     /*
     Methods to retrieve information about votes

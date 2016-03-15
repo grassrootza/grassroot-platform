@@ -5,7 +5,6 @@ import za.org.grassroot.core.enums.EventType;
 import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
 import java.sql.Timestamp;
-import java.time.Instant;
 
 @Entity
 @DiscriminatorValue("VOTE")
@@ -15,8 +14,17 @@ public class Vote extends Event {
 		// for JPA
 	}
 
-	public Vote(String name, User createdByUser, Group appliesToGroup, boolean rsvpRequired) {
-		super(Timestamp.from(Instant.now()), null, createdByUser, appliesToGroup, false, name, false, 0, rsvpRequired, false, false);
+	public Vote(String name, Timestamp startDateTime, User user, Group group) {
+		this(name, startDateTime, user, group, false);
+	}
+
+	public Vote(String name, Timestamp startDateTime, User user, Group group, boolean includeSubGroups) {
+		this(name, startDateTime, user, group, includeSubGroups, false, false, false, EventReminderType.DISABLED, 0);
+	}
+
+	public Vote(String name, Timestamp startDateTime, User user, Group group, boolean includeSubGroups,
+				boolean canceled, boolean rsvpRequired, boolean relayable, EventReminderType reminderType, int customReminderMinutes) {
+		super(startDateTime, user, group, canceled, name, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes);
 	}
 
 	@Override

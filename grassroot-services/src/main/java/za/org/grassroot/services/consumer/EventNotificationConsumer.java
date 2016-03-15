@@ -310,7 +310,7 @@ public class EventNotificationConsumer {
         /*
         Do not send vote reminder if the user already voted (userRsvpForEvent)
          */
-        if (event.getEventType() == EventType.Vote) {
+        if (event.getEventType() == EventType.VOTE) {
             if (!eventLogManagementService.reminderSentToUser(event.getEventObject(), user)
                     && !eventLogManagementService.userRsvpForEvent(event.getEventObject(), user)) {
                 sendMeetingReminderMessageAction(user,event,message);
@@ -342,7 +342,7 @@ public class EventNotificationConsumer {
         /*
         Do not send vote reminder if the user already voted (userRsvpForEvent)
          */
-        if (event.getEventType() == EventType.Vote) {
+        if (event.getEventType() == EventType.VOTE) {
             if (!eventLogManagementService.userRsvpForEvent(event.getEventObject(), user)) {
                 sendManualMessageAction(user,event,message);
             }

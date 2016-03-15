@@ -11,15 +11,13 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Meeting;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -58,9 +56,7 @@ public class EventRepositoryTest {
 
         Timestamp testStartDateTime = Timestamp.valueOf("2015-08-18 10:00:00.0");
 
-        Meeting eventToCreate = new Meeting("", userToDoTests, groupToDoTests);
-        eventToCreate.setEventLocation("The testing location");
-        eventToCreate.setEventStartDateTime(testStartDateTime);
+        Meeting eventToCreate = new Meeting("", testStartDateTime, userToDoTests, groupToDoTests, "The testing location");
 
         assertNull(eventToCreate.getId());
         assertNull(eventToCreate.getCreatedDateTime());
@@ -83,20 +79,18 @@ public class EventRepositoryTest {
     public void shouldReturnEventsForGroupAfterDate() {
         User user = userRepository.save(new User("0827654321"));
         Group group = groupRepository.save(new Group("events for group test",user));
-        Event pastEvent = eventRepository.save(new Meeting("past event", user, group, false));
+
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.MINUTE, -10);
         Date pastDate = cal.getTime();
+        Event pastEvent = eventRepository.save(new Meeting("past event", new Timestamp(pastDate.getTime()), user, group,"someLoc", false));
         cal.add(Calendar.MINUTE, 20);
         Date futureDate = cal.getTime();
-        pastEvent.setEventStartDateTime(new Timestamp(pastDate.getTime()));
         pastEvent = eventRepository.save(pastEvent);
-        Event futureEvent = eventRepository.save(new Meeting("future event",user,group,false));
-        futureEvent.setEventStartDateTime(new Timestamp(futureDate.getTime()));
+        Event futureEvent = eventRepository.save(new Meeting("future event", new Timestamp(futureDate.getTime()), user,group,"someLoc"));
         futureEvent = eventRepository.save(futureEvent);
         // cancelled event
-        Event futureEventCan = eventRepository.save(new Meeting("future event cancelled", user, group, false));
-        futureEventCan.setEventStartDateTime(new Timestamp(futureDate.getTime()));
+        Event futureEventCan = eventRepository.save(new Meeting("future event cancelled", new Timestamp(futureDate.getTime()), user, group, "someLocation"));
         futureEventCan.setCanceled(true);
         futureEventCan = eventRepository.save(futureEventCan);
 
@@ -110,7 +104,7 @@ public class EventRepositoryTest {
     public void shouldReturnSameObjectOnSecondUpdate() {
         User user = userRepository.save(new User("085551234","test dup event user"));
         Group group = groupRepository.save(new Group("test dup event",user));
-        Meeting event = (Meeting) eventRepository.save(new Meeting("duplicate event test",user,group));
+        Meeting event = (Meeting) eventRepository.save(new Meeting("duplicate event test", Timestamp.from(Instant.now()), user, group, "someLoc"));
         event.setEventLocation("dup location");
         Event event2 = eventRepository.save(event);
         assertEquals(event.getId(),event2.getId());
@@ -120,11 +114,13 @@ public class EventRepositoryTest {
     @Test
     public void shouldFindOneFutureVote() {
         User user = userRepository.save(new User("0831111112"));
-        Event vote = eventRepository.save(new Event(user, EventType.Vote,true));
-        vote.setName("testing vote query");
+        Group group = groupRepository.save(new Group("events for group test",user));
+
         Date expiry = DateTimeUtil.roundHourUp(DateTimeUtil.addHoursToDate(new Date(), 1));
         Timestamp expiryTS = new Timestamp(expiry.getTime());
-        vote.setEventStartDateTime(expiryTS);
+
+        Event vote = eventRepository.save(new Vote("testing vote query", expiryTS, user, group, true));
+
         vote = eventRepository.save(vote);
         List<Event> list = eventRepository.findAllVotesAfterTimeStamp(new Date());
         assertEquals(1,list.size());
@@ -134,36 +130,28 @@ public class EventRepositoryTest {
     @Test
     public void shouldNotFindOneFutureVote() {
         User user = userRepository.save(new User("0831111113"));
-        Event vote = eventRepository.save(new Event(user, EventType.Vote,true));
-        vote.setName("testing vote query");
+        Group group = groupRepository.save(new Group("events for group test",user));
+
         Date expiry = DateTimeUtil.roundHourDown(new Date());
         Timestamp expiryTS = new Timestamp(expiry.getTime());
-        vote.setEventStartDateTime(expiryTS);
+        Event vote = eventRepository.save(new Vote("testing vote query", expiryTS, user, group, true));
         vote = eventRepository.save(vote);
         List<Event> list = eventRepository.findAllVotesAfterTimeStamp(new Date());
         assertEquals(0,list.size());
-
     }
 
     @Test
     public void shouldNotFindOneFutureVoteBecauseMeeting() {
         User user = userRepository.save(new User("0831111114"));
-        Event vote = eventRepository.save(new Event(user, EventType.Vote,true));
-        vote.setName("testing vote query");
+        Group group = groupRepository.save(new Group("events for group test",user));
+
         Date expiry = DateTimeUtil.roundHourUp(DateTimeUtil.addHoursToDate(new Date(), 1));
         Timestamp expiryTS = new Timestamp(expiry.getTime());
-        vote.setEventStartDateTime(expiryTS);
+
+        Event vote = eventRepository.save(new Vote("testing vote query", expiryTS, user, group, true));
         vote = eventRepository.save(vote);
         List<Event> list = eventRepository.findAllVotesAfterTimeStamp(new Date());
         assertEquals(0,list.size());
-
-    }
-
-    @Test
-    public void shouldIdentifyEventTypeVote() {
-        User user = userRepository.save(new User("0831111115"));
-        Event vote = eventRepository.save(new Event(user, EventType.Vote, true));
-        assertEquals(EventType.Vote,vote.getEventType());
 
     }
 
@@ -179,12 +167,12 @@ public class EventRepositoryTest {
         group.addMember(user2);
         group = groupRepository.save(group);
 
-        Event event1 = eventRepository.save(new Meeting("test", user2, group));
+        Event event1 = eventRepository.save(new Meeting("test", Timestamp.from(Instant.now()), user2, group, "someLoc"));
 
         Group group2 = groupRepository.save(new Group("tg2", user2));
         group2.addMember(user2);
         group2 = groupRepository.save(group2);
-        Event event2 = eventRepository.save(new Meeting("test2", user2, group2));
+        Event event2 = eventRepository.save(new Meeting("test2", Timestamp.from(Instant.now()), user2, group2, "someLoc"));
 
         List<Event> events = eventRepository.findByAppliesToGroupMembershipsUser(user1);
         List<Event> events2 = eventRepository.findByAppliesToGroupMembershipsUser(user2);
@@ -213,22 +201,19 @@ public class EventRepositoryTest {
         group.addMember(user);
         group = groupRepository.save(group);
 
-        Event event1 = eventRepository.save(new Meeting("test", user, group));
-        event1.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.now().plusWeeks(1L)));
+        Event event1 = eventRepository.save(new Meeting("test", Timestamp.valueOf(LocalDateTime.now().plusWeeks(1L)), user, group, "someLoc"));
         event1 = eventRepository.save(event1);
 
-        Event event2 = eventRepository.save(new Meeting("test2", user, group));
-        event2.setEventType(EventType.Vote);
+        Event event2 = eventRepository.save(new Vote("test2", Timestamp.from(Instant.now()), user, group));
         event2.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.now().minusWeeks(1L)));
         event2 = eventRepository.save(event2);
 
-        Event event3 = eventRepository.save(new Meeting("test3", user, group));
-        event3.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.now().plusDays(2L)));
+        Event event3 = eventRepository.save(new Meeting("test3", Timestamp.valueOf(LocalDateTime.now().plusDays(2L)), user, group, "someLoc"));
         event3.setCanceled(true);
         event3 = eventRepository.save(event3);
 
         List<Event> events1 = eventRepository.
-                findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled(user, EventType.Meeting, new Date(), false);
+                findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled(user, EventType.MEETING, new Date(), false);
 
         assertFalse(events1.isEmpty());
         assertThat(events1.size(), is(1));
@@ -237,7 +222,7 @@ public class EventRepositoryTest {
         assertFalse(events1.contains(event3));
 
         List<Event> events2 = eventRepository.
-                findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeLessThanAndCanceled(user, EventType.Vote, new Date(), false);
+                findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeLessThanAndCanceled(user, EventType.VOTE, new Date(), false);
 
         assertFalse(events2.isEmpty());
         assertThat(events2.size(), is(1));
@@ -246,11 +231,11 @@ public class EventRepositoryTest {
         assertFalse(events2.contains(event3));
 
         List<Event> events3 = eventRepository.
-                findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled(user, EventType.Vote, new Date(), false);
+                findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled(user, EventType.VOTE, new Date(), false);
         assertTrue(events3.isEmpty());
 
         List<Event> events4 = eventRepository.
-                findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeLessThanAndCanceled(user, EventType.Meeting, new Date(), false);
+                findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeLessThanAndCanceled(user, EventType.MEETING, new Date(), false);
         assertTrue(events4.isEmpty());
     }
 
@@ -262,21 +247,16 @@ public class EventRepositoryTest {
         Group group1 = groupRepository.save(new Group("tg1", user));
         Group group2 = groupRepository.save(new Group("tg2", user));
 
-        Event event1 = eventRepository.save(new Meeting("test", user, group1));
-        event1.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.now().minusWeeks(1L)));
+        Event event1 = eventRepository.save(new Meeting("test", Timestamp.valueOf(LocalDateTime.now().minusWeeks(1L)), user, group1, "someLoc"));
         event1 = eventRepository.save(event1);
 
-        Event event2 = eventRepository.save(new Meeting("test2", user, group1));
-        event2.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.now().minusWeeks(5L)));
+        Event event2 = eventRepository.save(new Meeting("test2", Timestamp.valueOf(LocalDateTime.now().minusWeeks(5L)), user, group1, "someLoc"));
         event2 = eventRepository.save(event2);
 
-        Event event3 = eventRepository.save(new Event("test3", user, group1));
-        event3.setEventType(EventType.Vote);
-        event3.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.now().minusWeeks(1L)));
+        Event event3 = eventRepository.save(new Vote("test3", Timestamp.valueOf(LocalDateTime.now().minusWeeks(1L)), user, group1));
         event3 = eventRepository.save(event3);
 
-        Event event4 = eventRepository.save(new Meeting("test4", user, group2));
-        event4.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.now().minusWeeks(1L)));
+        Event event4 = eventRepository.save(new Meeting("test4", Timestamp.valueOf(LocalDateTime.now().minusWeeks(1L)), user, group2, "someLoc"));
         event4 = eventRepository.save(event4);
 
         Timestamp now = Timestamp.valueOf(LocalDateTime.now());
@@ -284,13 +264,13 @@ public class EventRepositoryTest {
         Timestamp twoMonthsBack = Timestamp.valueOf(LocalDateTime.now().minusMonths(2L));
 
         List<Event> test1 = eventRepository.
-                findByAppliesToGroupAndEventTypeAndEventStartDateTimeBetween(group1, EventType.Meeting, oneMonthBack, now);
+                findByAppliesToGroupAndEventTypeAndEventStartDateTimeBetween(group1, EventType.MEETING, oneMonthBack, now);
         List<Event> test2 = eventRepository.
-                findByAppliesToGroupAndEventTypeAndEventStartDateTimeBetween(group1, EventType.Meeting, twoMonthsBack, oneMonthBack);
+                findByAppliesToGroupAndEventTypeAndEventStartDateTimeBetween(group1, EventType.MEETING, twoMonthsBack, oneMonthBack);
         List<Event> test3 = eventRepository.
-                findByAppliesToGroupAndEventTypeAndEventStartDateTimeBetween(group1, EventType.Vote, oneMonthBack, now);
+                findByAppliesToGroupAndEventTypeAndEventStartDateTimeBetween(group1, EventType.VOTE, oneMonthBack, now);
         List<Event> test4 = eventRepository.
-                findByAppliesToGroupAndEventTypeAndEventStartDateTimeBetween(group2, EventType.Meeting, oneMonthBack, now);
+                findByAppliesToGroupAndEventTypeAndEventStartDateTimeBetween(group2, EventType.MEETING, oneMonthBack, now);
         List<Event> test5 = eventRepository.
                 findByAppliesToGroupAndEventStartDateTimeBetween(group1, oneMonthBack, now, new Sort(Sort.Direction.ASC, "EventStartDateTime"));
 
@@ -323,10 +303,8 @@ public class EventRepositoryTest {
         group2.addMember(user2);
         group2 = groupRepository.save(group2);
 
-        Event event1 = new Meeting("count check", user, group);
-        event1.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.now().plusDays(2L)));
-        Event event2 = new Meeting("count check 2", user, group2);
-        event2.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.now().minusDays(2L)));
+        Event event1 = new Meeting("count check", Timestamp.valueOf(LocalDateTime.now().plusDays(2L)), user, group, "someLoc");
+        Event event2 = new Meeting("count check 2", Timestamp.valueOf(LocalDateTime.now().minusDays(2L)), user, group2, "someLoc");
 
         event1 = eventRepository.save(event1);
         event2 = eventRepository.save(event2);

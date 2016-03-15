@@ -14,13 +14,14 @@ import za.org.grassroot.core.util.UIDGenerator;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Calendar;
 import java.util.Objects;
 
 
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "type", discriminatorType = DiscriminatorType.STRING)
-public abstract class Event implements Serializable {
+public abstract class Event extends AbstractEventContent implements Serializable {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "id", nullable = false)
@@ -32,66 +33,10 @@ public abstract class Event implements Serializable {
 	@Column(name = "created_date_time", insertable = true, updatable = false)
 	private Timestamp createdDateTime;
 
-	/*
-	For meetings this the meeting start time
-	For voting this the vote expire time
-	 */
-	@Column(name = "start_date_time", nullable = false)
-	private Timestamp eventStartDateTime;
-
-	@ManyToOne
-	@JoinColumn(name = "created_by_user", nullable = false)
-	private User createdByUser;
-
-	@ManyToOne
-	@JoinColumn(name = "applies_to_group", nullable = false)
-	private Group appliesToGroup;
-
+	private AbstractEventContent content = new AbstractEventContent();
 
 	@Column(name = "canceled")
 	private boolean canceled;
-
-	/*
-	could also have been called description but as group has a name, kept it the same
-	 */
-	@Column(name = "name", nullable = false)
-	private String name;
-
-	/*
-	used to determine if notifications should be sent only to the group linked to the event, or any subgroups as well
-	 */
-	@Column(name = "includesubgroups", nullable = false)
-	private boolean includeSubGroups;
-
-	//todo aakil this feels a bit clunky, re-visit and see if there is not a cleaner way
-	/*
-	used to calculate when a reminder must be sent, before the eventStartTime
-    if it is set to -1 it means there will be no reminders set for the event
-    if it is set to 0, then we will take the reminderminutes from group if appliestogroup is not null
-    if group = null or group.reminderminutes = 0 then set it to site.reminderminutes
-
-     */
-	@Column(name = "reminderminutes")
-	private int reminderMinutes;
-
-	/*
-	Used primarily for meetings, to note if an RSVP is necessary
-	Also used for voting, and will default to true for voting. Wont serve any purpose for voting at this stage.
-	 */
-	@Column(name = "rsvprequired", nullable = false)
-	private boolean rsvpRequired;
-
-	/*
-	Used to determine if a recipient should have the option to forward an invite, vote, etc., when they receive it
-	 */
-	@Column(name = "can_relay", nullable = false)
-	private boolean relayable;
-
-	/*
-	Used to prevent a formed entity from sending out when on the confirm screen of USSD
-	 */
-	@Column(name = "send_blocked", nullable = false)
-	private boolean sendBlocked;
 
     /*
 	Version used by hibernate to resolve conflicting updates. Do not update set it, it is for Hibernate only
@@ -110,7 +55,7 @@ public abstract class Event implements Serializable {
 	the vote results.
 	 */
 	@Column(name = "noreminderssent")
-	private Integer noRemindersSent;
+	private int noRemindersSent;
 
 	public abstract EventType getEventType();
 
@@ -184,23 +129,14 @@ public abstract class Event implements Serializable {
 	}
 */
 
-	protected Event(Timestamp createdDateTime, Timestamp eventStartDateTime, User user, Group group,
-					boolean canceled, String name, boolean includeSubGroups, int reminderMinutes,
-					boolean rsvpRequired, boolean relayable, boolean sendBlocked) {
+	protected Event(Timestamp eventStartDateTime, User user, Group group, boolean canceled, String name, boolean includeSubGroups,
+					boolean rsvpRequired, boolean relayable, EventReminderType reminderType, int customReminderMinutes) {
+		super(name, eventStartDateTime, user, group, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes);
 
 		this.uid = UIDGenerator.generateId();
-		this.eventStartDateTime = Objects.requireNonNull(eventStartDateTime);
-		this.name = Objects.requireNonNull(name);
-		this.createdByUser = Objects.requireNonNull(user);
-		this.appliesToGroup = Objects.requireNonNull(group);
-		this.createdDateTime = Objects.requireNonNull(createdDateTime);
-
-		this.includeSubGroups = includeSubGroups;
-		this.rsvpRequired = rsvpRequired;
 		this.canceled = canceled;
-		this.reminderMinutes = reminderMinutes;
-		this.relayable = relayable;
-		this.sendBlocked = sendBlocked;
+		this.noRemindersSent = 0;
+		this.createdDateTime = Timestamp.from(Instant.now());
 	}
 
 	public Long getId() {
@@ -211,92 +147,8 @@ public abstract class Event implements Serializable {
 		this.id = id;
 	}
 
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public Timestamp getEventStartDateTime() {
-		return eventStartDateTime;
-	}
-
-	public void setEventStartDateTime(Timestamp eventStartDateTime) {
-		this.eventStartDateTime = eventStartDateTime;
-	}
-
-	public Timestamp getCreatedDateTime() {
-		return createdDateTime;
-	}
-
-	public void setCreatedDateTime(Timestamp createdDateTime) {
-		this.createdDateTime = createdDateTime;
-	}
-
-	public User getCreatedByUser() {
-		return createdByUser;
-	}
-
-	public void setCreatedByUser(User createdByUser) {
-		this.createdByUser = createdByUser;
-	}
-
-	public Group getAppliesToGroup() {
-		return appliesToGroup;
-	}
-
-	public void setAppliesToGroup(Group appliesToGroup) {
-		this.appliesToGroup = appliesToGroup;
-	}
-
-	public boolean isCanceled() {
-		return canceled;
-	}
-
-	public void setCanceled(boolean canceled) {
-		this.canceled = canceled;
-	}
-
-	public boolean isIncludeSubGroups() {
-		return includeSubGroups;
-	}
-
-	public void setIncludeSubGroups(boolean includeSubGroups) {
-		this.includeSubGroups = includeSubGroups;
-	}
-
-	public int getReminderMinutes() {
-		return reminderMinutes;
-	}
-
-	public void setReminderMinutes(int reminderMinutes) {
-		this.reminderMinutes = reminderMinutes;
-	}
-
-	public boolean isRsvpRequired() {
-		return rsvpRequired;
-	}
-
-	public void setRsvpRequired(boolean rsvpRequired) {
-		this.rsvpRequired = rsvpRequired;
-	}
-
-	public boolean isRelayable() {
-		return relayable;
-	}
-
-	public void setRelayable(boolean relayable) {
-		this.relayable = relayable;
-	}
-
-	public boolean isSendBlocked() {
-		return sendBlocked;
-	}
-
-	public void setSendBlocked(boolean sendBlocked) {
-		this.sendBlocked = sendBlocked;
+	public String getUid() {
+		return uid;
 	}
 
 	public Integer getVersion() {
@@ -307,12 +159,24 @@ public abstract class Event implements Serializable {
 		this.version = version;
 	}
 
-	public Integer getNoRemindersSent() {
+	public int getNoRemindersSent() {
 		return noRemindersSent;
 	}
 
-	public void setNoRemindersSent(Integer noRemindersSent) {
+	public void setNoRemindersSent(int noRemindersSent) {
 		this.noRemindersSent = noRemindersSent;
+	}
+
+	public void setCanceled(boolean canceled) {
+		this.canceled = canceled;
+	}
+
+	public Timestamp getCreatedDateTime() {
+		return createdDateTime;
+	}
+
+	public boolean isCanceled() {
+		return canceled;
 	}
 
 	@PreUpdate
@@ -323,6 +187,12 @@ public abstract class Event implements Serializable {
 		}
 	}
 
+	public AbstractEventContent getContent() {
+		if (content == null) {
+			content = new AbstractEventContent();
+		}
+		return content;
+	}
 
 	@Override
 	public boolean equals(Object o) {
@@ -350,22 +220,11 @@ public abstract class Event implements Serializable {
 	@Override
 	public String toString() {
 		return getClass().getSimpleName() + "{" +
-				"eventName='" + name + '\'' +
-				", uid='" + uid + '\'' +
+				"uid='" + uid + '\'' +
 				", id=" + id +
-				", createdDateTime=" + createdDateTime +
-				", eventStartDateTime=" + eventStartDateTime +
-				", createdByUser=" + createdByUser +
-				", appliesToGroup=" + appliesToGroup +
-				", name='" + name + '\'' +
-				", rsvpRequired=\'" + rsvpRequired + '\'' +
-				", includeSubGroups=" + includeSubGroups + '\'' +
-				", reminderMinutes=" + reminderMinutes + '\'' +
-				", sendBlocked=" + sendBlocked + '\'' +
+				", content=" + content +
 				", canceled=" + canceled + '\'' +
-				", version=" + version + '\'' +
-
+				", createdDateTime=" + createdDateTime +
 				'}';
 	}
-
 }

@@ -177,43 +177,6 @@ public class USSDAbstractIT {
         return userManager.findByInputNumber(testPhone);
     }
 
-
-
-    protected Group createTestGroup() {
-
-        // possibly redundant to create test user, but don't want to generate false fails depending on how this is called
-        User testUser = createTestUser();
-        final URI createGroupUri = testPhoneUri("group/create-do").queryParam(freeTextParam, String.join(" ", testPhones)).
-                build().toUri();
-
-        executeQuery(createGroupUri);
-        Group groupToReturn = groupManager.getCreatedGroups(testUser).get(0);
-
-        return groupToReturn;
-
-    }
-
-    protected Event createTestMeeting() {
-
-        User testUser = createTestUser();
-        Group testGroup = createTestGroup();
-
-        // by default, our test event does not include sub-groups but does ask for an RSVP;
-        Event eventToTest = eventManager.createEvent("testEvent", testUser, testGroup, false, true);
-        Long eventId = eventToTest.getId();
-
-        eventToTest = eventManager.setLocation(eventId, testMtgLocation);
-        eventToTest = eventManager.setDateTimeString(eventId, testMtgDateTime);
-        eventToTest = eventManager.setEventTimestamp(eventId, Timestamp.valueOf(DateTimeUtil.parseDateTime(testMtgDateTime)));
-
-        return eventToTest;
-
-    }
-    @Test
-    public void dummyTest() throws Exception{
-
-    }
-
     /**
      * Http Request Factory for ignoring SSL hostname errors. Not for production use!
      */

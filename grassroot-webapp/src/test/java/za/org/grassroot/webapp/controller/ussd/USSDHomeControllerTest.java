@@ -12,12 +12,14 @@ import org.springframework.test.annotation.Rollback;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Meeting;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -215,7 +217,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         resetTestUser();
         Group testGroup = new Group(testGroupName, testUser);
 
-        Event meeting = new Event("Meeting about testing", testUser, testGroup, false);
+        Event meeting = new Meeting("Meeting about testing", Timestamp.from(Instant.now()), testUser, testGroup, "someLocation");
         meeting.setId(2L);
 
         List<User> groupMembers = new ArrayList<>(languageUsers);
@@ -230,7 +232,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
             when(userManagementServiceMock.findByInputNumber(user.getPhoneNumber())).thenReturn(user);
             when(userManagementServiceMock.needsToVoteOrRSVP(user)).thenReturn(true);
             when(userManagementServiceMock.needsToRSVP(user)).thenReturn(true);
-            when(eventManagementServiceMock.getOutstandingRSVPForUser(user)).thenReturn(Arrays.asList(meeting));
+            when(eventManagementServiceMock.getOutstandingRSVPForUser(user)).thenReturn(Collections.singletonList(meeting));
 
             String[] mockMeetingFields = new String[] { testGroup.getGroupName(), testUser.getDisplayName(), meeting.getName(),
                                                         "Tomorrow 10am", "Braam" };

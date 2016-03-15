@@ -20,12 +20,17 @@ public class Meeting extends Event {
 		// for JPA
 	}
 
-	public Meeting(String name, User user, Group group) {
-		this(name, user, group, false);
+	public Meeting(String name, Timestamp startDateTime, User user, Group group, String eventLocation) {
+		this(name, startDateTime, user, group, eventLocation, false);
 	}
 
-	public Meeting(String name, User user, Group group, boolean includeSubGroups) {
-		super(Timestamp.from(Instant.now()), null, user, group, false, name, includeSubGroups, 0, false, false, false);
+	public Meeting(String name, Timestamp startDateTime, User user, Group group, String eventLocation, boolean includeSubGroups) {
+		this(name, startDateTime, user, group, eventLocation, includeSubGroups, false, false, false, EventReminderType.DISABLED, 0);
+	}
+
+	public Meeting(String name, Timestamp startDateTime, User user, Group group, String eventLocation, boolean includeSubGroups,
+				   boolean canceled, boolean rsvpRequired, boolean relayable, EventReminderType reminderType, int customReminderMinutes) {
+		super(startDateTime, user, group, canceled, name, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes);
 		this.eventLocation = Objects.requireNonNull(eventLocation);
 	}
 

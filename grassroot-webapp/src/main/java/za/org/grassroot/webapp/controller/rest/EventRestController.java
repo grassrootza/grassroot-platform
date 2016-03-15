@@ -86,8 +86,8 @@ public class EventRestController {
     @RequestMapping(value = "/settime/{eventId}/{time}", method = RequestMethod.POST)
     public EventDTO setTime(@PathVariable("eventId") Long eventId,@PathVariable("time") String time) {
         //TODO this is very inefficient and should be refactored, it is just how Luke implemented it currently for USSD
-        eventManagementService.setEventTimestamp(eventId, Timestamp.valueOf(DateTimeUtil.parseDateTime(time)));
-        return new EventDTO(eventManagementService.setDateTimeString(eventId,time));
+        Event event = eventManagementService.setEventTimestamp(eventId, Timestamp.valueOf(DateTimeUtil.parseDateTime(time)));
+        return new EventDTO(event);
     }
 
     @RequestMapping(value = "/cancel/{eventId}", method = RequestMethod.POST)

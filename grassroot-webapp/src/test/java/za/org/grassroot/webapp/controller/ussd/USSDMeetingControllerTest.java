@@ -653,8 +653,6 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(2)).findByInputNumber(eq(testUserPhone), anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventManagementServiceMock, times(2)).loadEvent(testMeeting.getId());
-        verify(eventManagementServiceMock, times(1)).storeDateTimeString(testMeeting.getId(), "15-06-2016 09:00");
-        verify(eventManagementServiceMock, times(1)).storeDateTimeString(testMeeting.getId(), "16-06-2016 10:00");
         verifyNoMoreInteractions(eventManagementServiceMock);
     }
 
