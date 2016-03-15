@@ -19,6 +19,11 @@ public class GroupResponseWrapper {
 
     public GroupResponseWrapper(){}
 
+    public GroupResponseWrapper(Group group){
+        this.id =group.getUid();
+        this.groupName = group.getGroupName();
+    }
+
     public GroupResponseWrapper(Group group, Event event, Role role){
 
         this.id = group.getUid();
@@ -30,6 +35,7 @@ public class GroupResponseWrapper {
         this.permissions = role.getPermissions();
 
     }
+
 
     public GroupResponseWrapper(Group group, Role role){
         this.id = group.getUid();
