@@ -30,4 +30,6 @@ public interface PasswordTokenService {
     void invalidateVerificationCode(User user, String code);
 
     VerificationTokenCode generateLongLivedCode(User user);
+
+
 }

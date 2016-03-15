@@ -28,13 +28,13 @@ public class GroupDTO {
 
     }
 
-
     public GroupDTO(Object[] objArray) {
         id = Long.parseLong(objArray[0].toString());
-        created_date_time = (Timestamp) objArray[1];
-        groupName = objArray[2].toString();
-        active = (Boolean) objArray[3];
-        group_size = (Integer) objArray[4];
+        uid = objArray[1].toString();
+        created_date_time = (Timestamp) objArray[2];
+        groupName = objArray[3].toString();
+        active = (Boolean) objArray[4];
+        group_size = (Integer) objArray[5];
     }
 
     public boolean isActive() {
@@ -49,13 +49,13 @@ public class GroupDTO {
         return groupName;
     }
 
+    public String getUid(){return uid;};
+
     public int getGroupSize() {
         return group_size;
     }
 
     public Long getId() {return id;}
-
-    public String getUid() { return uid; }
 
     public boolean hasName() {
         return (groupName != null && groupName.trim().length() != 0);
