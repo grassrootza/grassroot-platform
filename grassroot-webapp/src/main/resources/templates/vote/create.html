@@ -3,74 +3,95 @@
       layout:decorator="layout">
 <head>
   <title>GrassRoot - Call a vote</title>
-<script>
+  <style>
+    .horizontal-padding {
+      margin-right: 5px;
+      margin-left: 5px;
+    }
+  </style>
 
-</script>
 </head>
 <body>
 
 <div layout:fragment="header">
-  <h2>Call a vote</h2>
+  <h2 class="text-center">Call a vote</h2>
 </div>
-<div layout:fragment="overview">Call a vote by specifying the issue and expiry time</div>
+
+<div layout:fragment="overview">
+  <h5 class="text-center">Specify who is voting, by when, and on what</h5>
+</div>
 
 <div layout:fragment="content">
   <div layout:fragment="messages"></div>
-  <div class="well">
-    <form th:object="${vote}" th:action="@{/vote/create}" method="post" autocomplete="off" class="form-horizontal">
-      <input th:field="*{id}" type="hidden" />
-      <input th:field="*{rsvpRequired}" type="hidden" />
 
-      <div class="form-group">
-        <label for="group" class="col-md-2 control-label">Group which is voting</label>
-        <div th:switch="${groupSpecified}" class="col-md-4">
-          <div th:case="false" class="">
-            <select name="selectedGroupId" id="selectedgroup" class="form-control">
+  <div class="well">
+    <div class="row">
+      <div class="col-md-6 col-md-offset-3">
+
+        <form th:object="${vote}" th:action="@{/vote/create}" method="post" class="form-vertical">
+
+          <input th:field="*{id}" type="hidden" />
+          <input th:field="*{rsvpRequired}" type="hidden" />
+
+          <div class="form-group">
+            <label for="group" class="control-label">Group which is voting</label>
+            <select th:unless="${groupSpecified}" name="selectedGroupId" id="selectedgroup" class="form-control">
               <option th:each="group: ${possibleGroups}"
                       th:value="${group.id}"
                       th:text="${group.groupName}">Groupname</option>
             </select>
+
+            <input th:if="${groupSpecified}" class="form-control" readonly="true" th:placeholder="${group.groupName}" id="group" />
+            <input th:if="${groupSpecified}" type="hidden" name="selectedGroupId" th:value="${group.id}" />
+
           </div>
-          <div th:case="true" class="col-md-4">
-            <input type="hidden" name="selectedGroupId" th:value="${group.id}" />
-            <span th:text="${group.groupName}" id="group">Group name</span>
+          <div class="form-group">
+            <label for="name" class="control-label">Subject for the vote?</label>
+            <small>Members will only be able to answer with "yes", "no" or "abstain"</small>
+            <input th:field="*{name}" type="text" class="form-control" id="name" placeholder="The issue for the vote" maxlength="35" data-toggle="tooltip"
+                     title="Issue description may not be longer than 35 characters. "/>
           </div>
-        </div>
-      </div>
-      <div class="form-group">
-        <label for="name" class="col-md-2 control-label">Vote issue</label>
-        <div class="col-md-4">
-          <input th:field="*{name}" type="text" class="form-control" id="name" placeholder="The issue for the vote" maxlength="35" data-toggle="tooltip"
-                 title="Issue description may not be longer than 35 characters. "/>
-        </div>
-      </div>
-      <div class="form-group">
-        <div th:fragment="date-picker">
-          <label for="datepicker" class="col-md-2 control-label">Vote closing date and time</label>
-          <div class="col-md-4">
-            <div class="input-group date" id="datepicker">
-              <input th:field="*{eventStartDateTime}" type="text" class="form-control" />
-                    <span class="input-group-addon">
-                        <span class="glyphicon glyphicon-calendar"></span>
-                    </span>
+
+          <div class="form-group">
+            <div th:fragment="date-picker">
+              <label for="datepicker" class="control-label">Vote closing date and time</label>
+              <div class="input-group date" id="datepicker">
+                <input th:field="*{eventStartDateTime}" type="text" class="form-control" />
+                  <span class="input-group-addon">
+                    <span class="glyphicon glyphicon-calendar"></span>
+                  </span>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div class="form-group">
-        <label for="subgroups" class="col-md-2 control-label">Include sub-groups?</label>
-        <div class="col-md-4">
-          <input th:field="*{includeSubGroups}" type="checkbox" id="subgroups" class="form-control"/>
-        </div>
-      </div>
+          <div class="form-group">
+            <label class="control-label">Reminder timing:</label>
+            <div class="radio">
+              <label class="radio-inline" th:each="option, iterStat : ${reminderOptions}">
+                <input type="radio" th:field="*{reminderMinutes}" th:value="${option[0]}" />
+                <span th:text="${option[1]}" >No reminder</span>
+              </label>
+            </div>
+          </div>
 
-      <div class="form-group">
-        <div class="col-md-8">
-          <button type="submit" class="btn btn-primary">Call vote</button>
-        </div>
+          <div class="form-group">
+            <label class="checkbox-inline">
+              <input th:field="*{includeSubGroups}" type="checkbox" id="subgroups" th:checked="${true}" />
+              Include subgroups?
+            </label>
+            <div class="btn-container pull-right">
+              <a th:if="${groupSpecified}"
+                 th:href="@{/group/view(groupId=${group.id})}" role="button" class="btn btn-default horizontal-padding">Cancel</a>
+              <a th:if="${not groupSpecified}"
+                 th:href="@{/home}" role="button" class="btn btn-default">Cancel</a>
+              <button type="submit" class="btn btn-primary horizontal-padding">Call vote</button>
+            </div>
+          </div>
+        </form>
       </div>
-    </form>
+    </div>
+
+
   </div>
 </div>
 
