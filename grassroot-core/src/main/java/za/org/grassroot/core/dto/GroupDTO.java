@@ -57,8 +57,6 @@ public class GroupDTO {
 
     public Long getId() {return id;}
 
-    public String getUid() { return uid; }
-
     public boolean hasName() {
         return (groupName != null && groupName.trim().length() != 0);
     }
