@@ -1,0 +1,135 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+  <title>Grassroot - Change members' roles</title>
+  <!-- todo: fix whatever is causing on-server glyphicons to not load; this is a temp fix -->
+</head>
+<body>
+
+<div layout:fragment="header">
+  <h2 class="text-center"><span th:text="${group.groupName}">group</span></h2>
+</div>
+
+<div layout:fragment="overview">
+  <h4 class="text-center">Change the roles assigned to members</h4>
+  <h4 class="text-center">
+    <a th:href="@{/group/view(groupId=${group.id})}">Back to group</a>
+  </h4>
+</div>
+
+<div layout:fragment="content">
+
+  <div layout:fragment="messages"></div>
+
+  <div class="modal fade" id="confirmModal" tabindex="-1" role="dialog" aria-labelledby="confirmModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="confirmModalLabel">Confirm change?</h4>
+        </div>
+        <form th:action="@{/group/roles/members}" method="post">
+          <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
+          <input type="hidden" name="msisdn" id="msisdn" value="ABC" />
+          <input type="hidden" name="new_role" id="new_role" value="ABC" />
+          <div class="modal-body">
+            <div class="form-group">
+              You are about to change <span id="memberName">name</span> from <span id="fromRole">from role</span>
+              to <span id="toRole">to role</span>. Confirmed?
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Confirm</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="well">
+    <div class="row">
+      <div class="col-md-6 col-md-offset-3">
+        <div class="form-horizontal">
+          <div class="form-group">
+            <table class="table table-striped" id="member-input">
+              <thead>
+              <tr>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Role</th>
+                <th></th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr th:each="member, iterStat: *{listOfMembers}">
+                <td>
+                  <span th:text="${member.displayName}" th:id="|name_${iterStat.index}|">Name</span>
+                </td>
+                <td>
+                  <span th:text="${member.getPhoneNumberWithoutCCode()}">Number</span>
+                </td>
+                <td>
+                  <select th:id="|role_${iterStat.index}|" class="form-control">
+                    <option th:each="role : ${roles}"
+                            th:value="${role[0]}"
+                            th:text="${role[1]}"
+                            th:selected="${#strings.equals(member.roleName, role[0])}"></option>
+                  </select>
+                </td>
+                <td>
+                  <input type="hidden" th:id="|msisdn_${iterStat.index}|" th:value="${member.phoneNumber}" />
+                  <input type="hidden" th:id="|oldrole_${iterStat.index}|" th:value="${member.roleName}" />
+                  <button type="button" name="changeRole" class="btn btn-default" aria-label="Change role"
+                          data-toggle="modal" data-target="#confirmModal" th:attr="data-index=${iterStat.index}">
+                    Change
+                  </button>
+                </td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 col-md-offset-3 text-center">
+        <a th:href="@{/group/view(groupId=${group.id})}" role="button" class="btn btn-default">
+          Back to group</a>
+        <a th:href="@{permissions(groupUid=${group.Uid})}" role="button" class="btn btn-default">
+          Change permissions for roles</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="header-container" layout:fragment="script-container">
+  <script>
+
+    var roleDescriptions = {
+      "ROLE_ORDINARY_MEMBER" : "ordinary member",
+      "ROLE_COMMITTEE_MEMBER" : "committee member",
+      "ROLE_GROUP_ORGANIZER" : "group organizer"
+    };
+
+    $('#confirmModal').on('show.bs.modal', function (event) {
+      var button = $(event.relatedTarget); // Button that triggered the modal
+      var index = button.data('index'); // Extract info from data-* attributes
+      console.log("Okay, extracted this index ..." + index);
+      var phone = $("#msisdn_" + index).val();
+      var name = $("#name_" + index).text();
+      var oldrole = $("#oldrole_" + index).val();
+      var newrole = $("#role_" + index).val();
+      console.log("Extracted name: " + name + "; phone: " + phone + "; old role: " + oldrole + "; new role: " + newrole);
+      var modal = $(this);
+      modal.find("#msisdn").val(phone);
+      modal.find("#new_role").val(newrole);
+      modal.find("#toRole").text(roleDescriptions[newrole]);
+      modal.find("#fromRole").text(roleDescriptions[oldrole]);
+      modal.find("#memberName").text(name);
+    })
+  </script>
+</div>
+
+</body>
+</html>

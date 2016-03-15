@@ -1,0 +1,47 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+    <title>Grassroot -- Change role permissions</title>
+</head>
+<body>
+
+<div layout:fragment="header">
+  <h2 class="text-center"><span th:text="${group.groupName}">Group name</span></h2>
+</div>
+
+<div layout:fragment="overview">
+  <h4 class="text-center">Adjust permissions assigned to roles
+    (<a th:href="@{/group/view(groupId=${group.id})}">back to group</a>)</h4>
+</div>
+
+<div layout:fragment="content">
+  <div layout:fragment="messages"></div>
+
+  <div id="permissionsTable">
+    <div class="well">
+      <table class="table">
+        <thead>
+        <tr>
+          <th>Permission</th>
+          <th><span th:text="#{web.group.role.ROLE_ORDINARY_MEMBER}">Ordinary member</span></th>
+          <th><span th:text="#{web.group.role.ROLE_COMMITTEE_MEMBER}">Committee member</span></th>
+          <th><span th:text="#{web.group.role.ROLE_GROUP_ORGANIZER}">Group organizer</span></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="permission, iterStat: ${permissionsImplemented}">
+          <td><span th:text="#{web.permission.__${permission.getName()}__}">Permission</span></td>
+          <td><span th:if="${#lists.contains(ordinaryPermissions, permission)}">Yes</span></td>
+          <td><span th:if="${#lists.contains(committeePermissions, permission)}">Yes</span></td>
+          <td><span th:if="${#lists.contains(organizerPermissions, permission)}">Yes</span></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
