@@ -2,22 +2,18 @@ package za.org.grassroot.webapp.controller.ussd;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.IntegrationTest;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.boot.test.TestRestTemplate;
 import org.springframework.boot.test.WebIntegrationTest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
-import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.AbstractTransactionalJUnit4SpringContextTests;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.transaction.TransactionConfiguration;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
@@ -41,7 +37,6 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Logger;
 
 /**
  * Created by luke on 2015/09/10.
@@ -54,7 +49,7 @@ import java.util.logging.Logger;
 @ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
 public class USSDAbstractIT {
 
-    private Logger log = Logger.getLogger(getClass().getCanonicalName());
+    private Logger log = LoggerFactory.getLogger(USSDAbstractIT.class);
 
     @Autowired
     protected UserManagementService userManager;
@@ -158,7 +153,7 @@ public class USSDAbstractIT {
     protected List<ResponseEntity<String>> executeQueries(List<URI> urisToExecute) {
         List<ResponseEntity<String>> responseEntities = new ArrayList<>();
         for (URI uriToExecute : urisToExecute) {
-            log.finest("before calling..." + uriToExecute);
+            log.trace("before calling..." + uriToExecute);
             responseEntities.add(template.getForEntity(uriToExecute, String.class));
         }
         return responseEntities;

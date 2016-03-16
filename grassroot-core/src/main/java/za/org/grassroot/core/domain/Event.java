@@ -9,31 +9,17 @@ package za.org.grassroot.core.domain;
 
 
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.io.Serializable;
 import java.sql.Timestamp;
-import java.time.Instant;
 import java.util.Calendar;
-import java.util.Objects;
 
-
+@Entity
+@Table(name = "event")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "type", discriminatorType = DiscriminatorType.STRING)
-public abstract class Event extends AbstractEventContent implements Serializable {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "id", nullable = false)
-	private Long id;
-
-	@Column(name = "uid", length = 50)
-	private String uid;
-
-	@Column(name = "created_date_time", insertable = true, updatable = false)
-	private Timestamp createdDateTime;
-
-	private AbstractEventContent content = new AbstractEventContent();
+public abstract class Event extends AbstractEventEntity implements Serializable {
 
 	@Column(name = "canceled")
 	private boolean canceled;
@@ -132,23 +118,8 @@ public abstract class Event extends AbstractEventContent implements Serializable
 	protected Event(Timestamp eventStartDateTime, User user, Group group, boolean canceled, String name, boolean includeSubGroups,
 					boolean rsvpRequired, boolean relayable, EventReminderType reminderType, int customReminderMinutes) {
 		super(name, eventStartDateTime, user, group, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes);
-
-		this.uid = UIDGenerator.generateId();
 		this.canceled = canceled;
 		this.noRemindersSent = 0;
-		this.createdDateTime = Timestamp.from(Instant.now());
-	}
-
-	public Long getId() {
-		return id;
-	}
-
-	public void setId(Long id) {
-		this.id = id;
-	}
-
-	public String getUid() {
-		return uid;
 	}
 
 	public Integer getVersion() {
@@ -171,10 +142,6 @@ public abstract class Event extends AbstractEventContent implements Serializable
 		this.canceled = canceled;
 	}
 
-	public Timestamp getCreatedDateTime() {
-		return createdDateTime;
-	}
-
 	public boolean isCanceled() {
 		return canceled;
 	}
@@ -185,13 +152,6 @@ public abstract class Event extends AbstractEventContent implements Serializable
 		if (createdDateTime == null) {
 			createdDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis());
 		}
-	}
-
-	public AbstractEventContent getContent() {
-		if (content == null) {
-			content = new AbstractEventContent();
-		}
-		return content;
 	}
 
 	@Override
@@ -219,12 +179,14 @@ public abstract class Event extends AbstractEventContent implements Serializable
 
 	@Override
 	public String toString() {
-		return getClass().getSimpleName() + "{" +
-				"uid='" + uid + '\'' +
-				", id=" + id +
-				", content=" + content +
-				", canceled=" + canceled + '\'' +
-				", createdDateTime=" + createdDateTime +
-				'}';
+		final StringBuilder sb = new StringBuilder("Event{");
+		sb.append("id=").append(id);
+		sb.append(", uid='").append(uid).append('\'');
+		sb.append(", createdDateTime=").append(createdDateTime);
+		sb.append(", canceled=").append(canceled);
+		sb.append(", version=").append(version);
+		sb.append(", noRemindersSent=").append(noRemindersSent);
+		sb.append('}');
+		return sb.toString();
 	}
 }

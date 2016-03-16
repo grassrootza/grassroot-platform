@@ -6,6 +6,8 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.joestelmach.natty.DateGroup;
 import com.joestelmach.natty.Parser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
@@ -15,7 +17,6 @@ import java.time.format.DateTimeParseException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,6 +24,8 @@ import java.util.regex.Pattern;
  * Created by aakilomar on 9/19/15.
  */
 public class DateTimeUtil {
+
+    private static Logger log = LoggerFactory.getLogger(DateTimeUtil.class);
 
     // todo: replace with getters
     public static final DateTimeFormatter preferredDateFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy");
@@ -40,16 +43,16 @@ public class DateTimeUtil {
     private static final Pattern dateVariationWithYear = Pattern.compile("\\d{1,2}[- /.]\\d{1,2}[- /.]\\d{4}$");
     private static final Pattern getDateVariationWithOutYear = Pattern.compile("\\d{1,2}[- /.]\\d{1,2}");
 
-        /*
-        Inserting method to parse date time user input and, if it can be parsed, set the timestamp accordingly.
-        todo: a lot of error handling and looking through the tree to make sure this is right.
-        todo: come up with a more sensible default if the parsing fails, rather than current time
-        todo: work on handling methods / customize the util library to handle local languages
-        todo: make sure the timezone is being set properly
-         */
-        private static final Pattern neededDateOutput = Pattern.compile("^(0?[1-9]|[12][0-9]|3[01])-(0?[1-9]|1[012])-^(19|20)\\d\\d$");
+    /*
+    Inserting method to parse date time user input and, if it can be parsed, set the timestamp accordingly.
+    todo: a lot of error handling and looking through the tree to make sure this is right.
+    todo: come up with a more sensible default if the parsing fails, rather than current time
+    todo: work on handling methods / customize the util library to handle local languages
+    todo: make sure the timezone is being set properly
+     */
+    private static final Pattern neededDateOutput = Pattern.compile("^(0?[1-9]|[12][0-9]|3[01])-(0?[1-9]|1[012])-^(19|20)\\d\\d$");
     private static final Joiner dateJoiner = Joiner.on("-").skipNulls();
-    private static Logger log = Logger.getLogger("DateTimeUtil");
+
 
     /*
     Helper method to deal with messy user input of a time string, more strict but also more likely to be accurate than

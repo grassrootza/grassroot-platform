@@ -171,7 +171,8 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         testUser.setLanguageCode("en");
         Group testGroup = new Group(testGroupName, testUser);
 
-        Event vote = new Event(testUser, EventType.Vote, true);
+//        Event vote = new Event(testUser, EventType.VOTE, true);
+        Event vote = null; // todo: new design?
         vote.setId(1L); // since we will need this in getting and displaying
         vote.setName("Are unit tests working?");
         vote.setAppliesToGroup(testGroup);

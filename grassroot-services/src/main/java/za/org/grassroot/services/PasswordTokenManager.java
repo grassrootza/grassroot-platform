@@ -173,6 +173,7 @@ public class PasswordTokenManager implements PasswordTokenService {
         return Timestamp.valueOf(LocalDateTime.now().plusMinutes(TOKEN_LIFE_SPAN_MINUTES));
     }
 
+    @Override
     public VerificationTokenCode generateLongLivedCode(User user) {
 
         Random random = new SecureRandom();
@@ -184,6 +185,8 @@ public class PasswordTokenManager implements PasswordTokenService {
         return verificationTokenCode;
 
     }
+
+
 
     }
 

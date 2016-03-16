@@ -31,25 +31,6 @@ public class RoleManager implements RoleManagementService {
     @Autowired
     private GroupManagementService groupManagementService;
 
-    @Autowired
-    private PermissionsManagementService permissionsManagementService;
-
-    @Autowired
-    private GroupAccessControlManagementService groupAccessControlManagementService;
-    /*
-    N.B.
-
-    When we refactor to pass the user doing actions around so that it can be recorded then replace the
-    dontKnowTheUser whereever it is used with the actual user
-    */
-    private final Long dontKnowTheUser = 0L;
-
-
-    @Override
-    public Role createRole(Role role) {
-        return roleRepository.save(role);
-    }
-
     /*
     NB: only to be used in tests, to populate in-memory DB
      */
@@ -75,27 +56,12 @@ public class RoleManager implements RoleManagementService {
     }
 
     @Override
-    public List<Role> getAllRoles() {
-        return Lists.newArrayList(roleRepository.findAll());
-    }
-
-    @Override
     public Role fetchStandardRoleByName(String name) {
         // log.info("Attempting to fetch a standard role from this role name ... " + name);
         List<Role> roles = roleRepository.findByNameAndRoleType(name, Role.RoleType.STANDARD);
         //we really should have one standard Role
         log.info("Found these roles: " + roles);
          return  !roles.isEmpty()? roles.get(0): null;
-    }
-
-    @Override
-    public Set<Role> createGroupRoles(String groupUid) {
-        // todo: make sure these are batch processing by controlling session
-        Role organizer = roleRepository.save(new Role(BaseRoles.ROLE_GROUP_ORGANIZER, groupUid));
-        Role committee = roleRepository.save(new Role(BaseRoles.ROLE_COMMITTEE_MEMBER, groupUid));
-        Role ordinary = roleRepository.save(new Role(BaseRoles.ROLE_ORDINARY_MEMBER, groupUid));
-        roleRepository.flush();
-        return new HashSet<>(Arrays.asList(organizer, committee, ordinary));
     }
 
     @Override
@@ -125,21 +91,4 @@ public class RoleManager implements RoleManagementService {
         return removeStandardRoleFromUser(fetchStandardRoleByName(roleName), user);
     }
 
-    @Override
-    public Role getUserRoleInGroup(User user, Group group) {
-
-        // note: this is currently used just to display user's role in a view already secured, hence redundant here (but keep eye)
-        /* if (!groupManagementService.isUserInGroup(group, user))
-            throw new RuntimeException("Get user role in group: Error! User not in group"); */
-
-        return getUserRoleInGroup(user, group.getId()); // if the user has not been given a role in the group, this is what we return
-    }
-
-    @Override
-    public Role getUserRoleInGroup(User user, Long groupId) {
-        return user.getMemberships().stream()
-                .filter(membership -> membership.getGroup().getId().equals(groupId))
-                .map(Membership::getRole)
-                .findFirst().orElse(null);
-    }
 }

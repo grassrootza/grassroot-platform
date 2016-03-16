@@ -106,11 +106,6 @@
     <div layout:fragment="messages"></div>
   </div>
 
-  <!-- list any upcoming meetings, votes, or logs -->
-  <!-- todo: use event type to distinguish / classify among them -->
-  <!-- First, buttons for common actions -->
-  <!-- todo: make these a fragment, as we'll probably use a lot -->
-
   <div class="well">
     <div th:if="${canAlter}" class="row">
       <div class="col-md-2 col-md-push-5">
@@ -119,8 +114,9 @@
             Manage and modify group<b class="caret"></b><div class="ripple-wrapper"></div></a>
           <ul class="dropdown-menu">
             <li><a th:href="@{/group/history(groupId=${group.id})}">View group history</a></li>
+            <li><a th:href="@{/group/change_multiple(groupUid=${group.Uid})}">Add, remove multiple members</a></li>
+            <li><a th:href="@{/group/roles/members(groupUid=${group.Uid})}">Change member roles</a></li>
             <li><a href="javascript:void(0)" data-toggle="modal" data-target="#renameModal">Rename group</a></li>
-            <li><a th:href="@{/group/change_multiple(groupUid=${group.Uid})}">Change multiple members</a></li>
             <li><a href="javascript:void(0)" data-toggle="modal" data-target="#languageModal">Set default language</a></li>
             <li class="divider"></li>
             <li th:if="${not hasParent}"><a th:href="@{/group/parent(groupId=${group.id})}">Link to a parent group</a></li>
@@ -308,7 +304,7 @@
         </button>
       </div>
     </div>
-    <div class="row">
+    <div class="row" id="">
       <div class="col-md-8 col-md-offset-2">
         <table class="table table-striped">
           <thead>
@@ -357,8 +353,6 @@
             </div>
           </div>
         </div>
-
-
 
         <div th:if="${canAddMembers}" class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-labelledby="addModalLabel">
           <div class="modal-dialog" role="document">

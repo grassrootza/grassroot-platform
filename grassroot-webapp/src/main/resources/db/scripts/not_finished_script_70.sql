@@ -22,3 +22,12 @@ ALTER TABLE event ALTER COLUMN rsvprequired SET NOT NULL;
 ALTER TABLE event ALTER COLUMN can_relay SET NOT NULL;
 ALTER TABLE event ALTER COLUMN send_blocked SET NOT NULL;
 ALTER TABLE event ALTER COLUMN noreminderssent SET NOT NULL;
+
+ALTER TABLE event ADD COLUMN reminder_type varchar(50);
+UPDATE event SET reminder_type = 'DISABLED';
+ALTER TABLE event ALTER COLUMN reminder_type SET NOT NULL;
+
+ALTER TABLE event ADD COLUMN custom_reminder_minutes int4;
+UPDATE event SET custom_reminder_minutes = 0;
+ALTER TABLE event ALTER COLUMN custom_reminder_minutes SET NOT NULL;
+

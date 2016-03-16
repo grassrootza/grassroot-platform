@@ -1,65 +1,82 @@
 package za.org.grassroot.core.domain;
 
+import za.org.grassroot.core.util.UIDGenerator;
+
 import javax.persistence.*;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Objects;
 
 @MappedSuperclass
-public class AbstractEventContent {
+public class AbstractEventEntity {
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "id", nullable = false)
+	protected Long id;
+
+	@Column(name = "uid", length = 50)
+	protected String uid;
+
+	@Column(name = "created_date_time", insertable = true, updatable = false)
+	protected Timestamp createdDateTime;
+
 	/*
 	could also have been called description but as group has a name, kept it the same
 	 */
 	@Column(name = "name")
-	private String name;
+	protected String name;
 
 	/*
 	For meetings this the meeting start time
 	For voting this the vote expire time
 	 */
 	@Column(name = "start_date_time")
-	private Timestamp eventStartDateTime;
+	protected Timestamp eventStartDateTime;
 
 	@ManyToOne
 	@JoinColumn(name = "created_by_user")
-	private User createdByUser;
+	protected User createdByUser;
 
 	@ManyToOne
 	@JoinColumn(name = "applies_to_group")
-	private Group appliesToGroup;
+	protected Group appliesToGroup;
 
 	/*
 	used to determine if notifications should be sent only to the group linked to the event, or any subgroups as well
 	 */
 	@Column(name = "includesubgroups")
-	private boolean includeSubGroups;
+	protected boolean includeSubGroups;
 
 	/*
 	Used primarily for meetings, to note if an RSVP is necessary
 	Also used for voting, and will default to true for voting. Wont serve any purpose for voting at this stage.
 	 */
 	@Column(name = "rsvprequired")
-	private boolean rsvpRequired;
+	protected boolean rsvpRequired;
 
 	/*
 	Used to determine if a recipient should have the option to forward an invite, vote, etc., when they receive it
 	 */
 	@Column(name = "can_relay")
-	private boolean relayable;
+	protected boolean relayable;
 
 	@Enumerated(EnumType.STRING)
-	@Column(name = "reminder_type")
-	private EventReminderType reminderType;
+	@Column(name = "reminder_type", length = 50)
+	protected EventReminderType reminderType;
 
 	@Column(name = "custom_reminder_minutes")
-	private int customReminderMinutes;
+	protected int customReminderMinutes;
 
-	protected AbstractEventContent() {
+	protected AbstractEventEntity() {
 		// for JPA
 	}
 
-	protected AbstractEventContent(String name, Timestamp eventStartDateTime, User createdByUser, Group appliesToGroup,
-								boolean includeSubGroups, boolean rsvpRequired, boolean relayable,
-								EventReminderType reminderType, int customReminderMinutes) {
+	protected AbstractEventEntity(String name, Timestamp eventStartDateTime, User createdByUser, Group appliesToGroup,
+								  boolean includeSubGroups, boolean rsvpRequired, boolean relayable,
+								  EventReminderType reminderType, int customReminderMinutes) {
+		this.uid = UIDGenerator.generateId();
+		this.createdDateTime = Timestamp.from(Instant.now());
+
 		this.name = Objects.requireNonNull(name);
 		this.eventStartDateTime = Objects.requireNonNull(eventStartDateTime);
 		this.createdByUser = Objects.requireNonNull(createdByUser);
@@ -69,6 +86,26 @@ public class AbstractEventContent {
 		this.relayable = relayable;
 		this.reminderType = Objects.requireNonNull(reminderType);
 		this.customReminderMinutes = customReminderMinutes;
+	}
+
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	public String getUid() {
+		return uid;
+	}
+
+	public Timestamp getCreatedDateTime() {
+		return createdDateTime;
+	}
+
+	public void setCreatedDateTime(Timestamp createdDateTime) {
+		this.createdDateTime = createdDateTime;
 	}
 
 	public String getName() {

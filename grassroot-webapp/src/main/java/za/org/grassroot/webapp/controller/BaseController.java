@@ -11,25 +11,20 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.ServletRequestDataBinder;
 import org.springframework.web.bind.annotation.InitBinder;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.services.GroupAccessControlManagementService;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.util.SqlTimestampPropertyEditor;
 
 import javax.servlet.http.HttpServletRequest;
-import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -71,14 +66,10 @@ public class BaseController {
     protected UserManagementService userManagementService;
 
     @Autowired
-    protected GroupAccessControlManagementService groupAccessControlManagementService;
-
-    @Autowired
     protected GroupManagementService groupManagementService;
 
     @Autowired
     protected PermissionBroker permissionBroker;
-
 
     protected User getUserProfile() {
 

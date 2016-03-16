@@ -1,7 +1,8 @@
 package za.org.grassroot.services.job;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Event;
@@ -14,10 +15,7 @@ import za.org.grassroot.services.EventLogManagementService;
 
 import javax.jms.Message;
 import javax.jms.ObjectMessage;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
-import java.util.logging.Logger;
 
 /**
  * Created by aakilomar on 10/5/15.
@@ -26,7 +24,7 @@ import java.util.logging.Logger;
 @Component
 public class ScheduledTasks {
 
-    private Logger log = Logger.getLogger(getClass().getCanonicalName());
+    private Logger log = LoggerFactory.getLogger(getClass().getCanonicalName());
 
     //@Value("${reminderminutes}")
     //private int reminderminutes;

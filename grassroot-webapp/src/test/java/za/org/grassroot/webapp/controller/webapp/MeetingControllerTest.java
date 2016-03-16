@@ -41,7 +41,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
      @Test
     public void shouldShowMeetingDetails() throws Exception {
 
-         Event dummyMeeting = new Event();
+         Event dummyMeeting = null;
 
          Group dummyGroup = new Group("Dummy Group3", new User("234345345"));
         dummyMeeting.setId(dummyId);
@@ -52,8 +52,8 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         dummyResponsesMap.put(sessionTestUser, EventRSVPResponse.YES);
         when(eventManagementServiceMock.loadEvent(dummyId)).thenReturn(
                 dummyMeeting);
-        when(groupAccessControlManagementServiceMock.hasGroupPermission(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS,
-                                                                         dummyGroup, sessionTestUser)).thenReturn(true);
+        when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, dummyGroup,
+                                                             Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)).thenReturn(true);
         when(eventManagementServiceMock.getListOfUsersThatRSVPYesForEvent(
                 dummyMeeting)).thenReturn(listOfDummyYesResponses);
         when(eventManagementServiceMock.getRSVPResponses(dummyMeeting)).
@@ -77,7 +77,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void testCreateMeetingWorks() throws Exception {
-        Event dummyMeeting = new Event();
+        Event dummyMeeting = null;
         dummyMeeting.setId(1L);
 
         Group dummyGroup = new Group("Dummy Group3", new User("234345345"));
@@ -143,7 +143,8 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     public void createMeetingIndexWorksWithGroupSpecified() throws Exception {
         Group testGroup = new Group("", sessionTestUser);
         testGroup.setId(dummyId);
-        Event dummyMeeting = new Event();
+//        Event dummyMeeting = new Event();
+        Event dummyMeeting = null; // todo: new design?
         dummyMeeting.setId(dummyId);
         List<String[]> minuteOptions = new ArrayList<>();
         String[] oneDay = new String[]{"" + 24 * 60, "One day ahead"};
@@ -172,7 +173,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         Group dummyGroup = new Group("", sessionTestUser);
         dummyGroup.setId(dummyId);
         dummyGroups.add(dummyGroup);
-        Event dummyMeeting = new Event();
+        Event dummyMeeting = null;
         dummyMeeting.setId(dummyId);
         List<String[]> minuteOptions = new ArrayList<>();
         String[] oneDay = new String[]{"" + 24 * 60, "One day ahead"};
@@ -199,7 +200,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     public void sendFreeMsgWorks() throws Exception {
         Group dummyGroup = new Group("Dummy Group3", new User("234345345"));
         dummyGroup.setId(dummyId);
-        Event testEvent = new Event();
+        Event testEvent = null;
         testEvent.setId(dummyId);
         boolean includeSubGroups = true;
         String message = "message";
@@ -223,7 +224,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void initiateMeetingModificationWorks() throws Exception {
-        Event dummyMeeting = new Event();
+        Event dummyMeeting = null;
         dummyMeeting.setId(dummyId);
         Group testGroup = new Group("tg1", sessionTestUser);
         testGroup.setId(dummyId);
@@ -248,13 +249,16 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void rsvpNoShouldWork() throws Exception {
-        Event dummyMeeting = new Event();
+        Event dummyMeeting = null;
         dummyMeeting.setId(dummyId);
         EventLog dummyEventLog = new EventLog();
         when(eventManagementServiceMock.loadEvent(dummyId)).thenReturn(dummyMeeting);
         when(userManagementServiceMock.fetchUserByUsername(testUserPhone)).thenReturn(sessionTestUser);
+        // todo: new design?
+/*
         when(eventLogManagementServiceMock.rsvpForEvent(dummyMeeting, sessionTestUser, EventRSVPResponse.NO))
                 .thenReturn(dummyEventLog);
+*/
         mockMvc.perform(post("/meeting/rsvp").param("eventId", String.valueOf(dummyId)).param("answer", "no"))
                 .andExpect(view().name("redirect:/home"))
                 .andExpect(redirectedUrl("/home"));
@@ -268,7 +272,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void rsvpYesShouldWork() throws Exception {
-        Event dummyMeeting = new Event();
+        Event dummyMeeting = null;
         dummyMeeting.setId(dummyId);
         EventLog dummyEventLog = new EventLog();
         List<User> listOfDummyYesResponses = new ArrayList<>();
@@ -277,8 +281,11 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         when(eventManagementServiceMock.getListOfUsersThatRSVPYesForEvent(dummyMeeting))
                 .thenReturn(listOfDummyYesResponses);
         when(eventManagementServiceMock.loadEvent(dummyId)).thenReturn(dummyMeeting);
+        // todo: new design?
+/*
         when(eventLogManagementServiceMock.rsvpForEvent(dummyMeeting, sessionTestUser, EventRSVPResponse.YES))
                 .thenReturn(dummyEventLog);
+*/
         when(eventManagementServiceMock.getRSVPResponses(dummyMeeting)).thenReturn(dummyResponsesMap);
         mockMvc.perform(post("/meeting/rsvp").param("eventId", String.valueOf(dummyId)).param("answer", "yes"))
                 .andExpect(view().name("meeting/view"))
@@ -297,7 +304,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void sendReminderWorks() throws Exception {
-        Event dummyMeeting = new Event();
+        Event dummyMeeting = null;
         dummyMeeting.setId(dummyId);
         when(eventManagementServiceMock.loadEvent(dummyId)).thenReturn(dummyMeeting);
         when(eventManagementServiceMock.sendManualReminder(dummyMeeting, "")).thenReturn(true);

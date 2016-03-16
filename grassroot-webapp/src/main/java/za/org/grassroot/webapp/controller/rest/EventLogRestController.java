@@ -41,7 +41,9 @@ public class EventLogRestController {
     public EventDTO rsvpForPhoneNumber(@PathVariable("eventId") Long eventId,
                          @PathVariable("userId") Long userId,
                          @PathVariable("yesNo") String yesNo) {
-        return new EventDTO(eventLogManagementService.rsvpForEvent(eventId,userId,yesNo));
+        eventLogManagementService.rsvpForEvent(eventId, userId, yesNo);
+        Event event = eventRepository.findOne(eventId);
+        return new EventDTO(event);
 
     }
 

@@ -9,9 +9,7 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.services.EventLogManagementService;
@@ -58,7 +56,10 @@ public class VoteController extends BaseController {
             model.addAttribute("possibleGroups", groupManagementService.getActiveGroupsPartOf(user));
         }
 
-        model.addAttribute("vote", new Event(user, EventType.Vote, true));
+        VoteRequest voteRequest = VoteRequest.makeEmpty(user);
+        voteRequest.setRsvpRequired(true);
+
+        model.addAttribute("vote", voteRequest);
         model.addAttribute("groupSpecified", groupSpecified);
 
         // log.info("Vote that we are passing: " + vote);
@@ -67,7 +68,7 @@ public class VoteController extends BaseController {
     }
 
     @RequestMapping(value = "/vote/create", method = RequestMethod.POST)
-    public String createVoteDo(Model model, @ModelAttribute("vote") Event vote, BindingResult bindingResult,
+    public String createVoteDo(Model model, @ModelAttribute("vote") VoteRequest vote, BindingResult bindingResult,
                                @RequestParam("selectedGroupId") Long selectedGroupId,
                                HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
@@ -77,14 +78,14 @@ public class VoteController extends BaseController {
             throw new AccessDeniedException("");
 
         // choosing to set some default fields here instead of a lot of hidden fields in Thymeleaf
-        vote.setEventType(EventType.Vote);
         vote.setCreatedByUser(getUserProfile());
         vote.setRsvpRequired(true);
         vote.setAppliesToGroup(group);
 
         log.info("Fleshed out vote: " + vote);
 
-        vote = eventManagementService.createVote(vote);
+        // todo: implement using new design!!!
+//        vote = eventManagementService.createVote(vote);
         log.info("Stored vote, at end of creation: " + vote.toString());
 
         addMessage(model, MessageType.SUCCESS, "vote.creation.success", request);

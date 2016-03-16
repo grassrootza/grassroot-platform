@@ -190,7 +190,7 @@
               <a th:href="@{/group/view(groupId=${group.getId()})}">
                 <span th:text="${group.getDisplayName('')}"></span></a>
               <span class="badge">
-                <span th:text="${group.getGroupMembers()}"></span> Members
+                <span th:text="${group.getGroupSize()}"></span> Members
               </span>
               <small class="clearfix">
                 Est. <span th:text="${#calendars.format(group.getCreatedDateTime(),'d MMM yyyy')}">13 May 2011</span>

@@ -49,7 +49,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     private static final int PAGE_SIZE = 50;
     @Autowired
-   GenericJmsTemplateProducerService jmsTemplateProducerService;
+    GenericJmsTemplateProducerService jmsTemplateProducerService;
     @Autowired
     private PasswordEncoder passwordEncoder;
     @Autowired
@@ -135,9 +135,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public User createAndroidUserProfile(UserDTO userDTO) throws UserExistsException{
+    public User createAndroidUserProfile(UserDTO userDTO) throws UserExistsException {
         Assert.notNull(userDTO);
-        User userProfile = new User(userDTO.getPhoneNumber(),userDTO.getDisplayName());
+        User userProfile = new User(userDTO.getPhoneNumber(), userDTO.getDisplayName());
         User userToSave;
         String phoneNumber = PhoneNumberUtil.convertPhoneNumber(userProfile.getPhoneNumber());
         boolean userExists = userExist(phoneNumber);
@@ -145,7 +145,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         if (userExists) {
 
             User userToUpdate = loadOrSaveUser(phoneNumber);
-            if (userToUpdate.hasAndroidProfile() ){
+            if (userToUpdate.hasAndroidProfile()) {
 
                 throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a android profile!");
             }
@@ -179,17 +179,21 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public String generateAndroidUserVerifier(String phoneNumber, String displayName){
+    public String generateAndroidUserVerifier(String phoneNumber, String displayName) {
         Objects.nonNull(phoneNumber);
         phoneNumber = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
-        if(displayName !=null) {
-            userCreateRequestRepository.save(new UserCreateRequest(phoneNumber, displayName, Instant.now()));
+        if (displayName != null) {
+            UserCreateRequest userCreateRequest = userCreateRequestRepository.findByPhoneNumber(phoneNumber);
+            if (userCreateRequest == null) {
+                userCreateRequest = new UserCreateRequest(phoneNumber, displayName, Instant.now());
+            } else {
+                userCreateRequest.setDisplayName(displayName);
+                userCreateRequest.setCreationTime(Instant.now());
+            }
+            userCreateRequestRepository.save(userCreateRequest);
         }
-        VerificationTokenCode token =  passwordTokenService.generateAndroidVerificationCode(phoneNumber);
+        VerificationTokenCode token = passwordTokenService.generateAndroidVerificationCode(phoneNumber);
         return token.getCode();
-
-
-
     }
 
 
@@ -335,7 +339,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public User findByInputNumber(String inputNumber, String currentUssdMenu) throws NoSuchUserException {
 
-        User  sessionUser =userRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(inputNumber));
+        User sessionUser = userRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(inputNumber));
         cacheUtilService.putUssdMenuForUser(inputNumber, currentUssdMenu);
 
         return sessionUser;
@@ -355,7 +359,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public List<User> searchByGroupAndNameNumber(Long groupId, String nameOrNumber) {
         return userRepository.findByGroupsPartOfAndDisplayNameContainingIgnoreCaseOrPhoneNumberLike(
-                groupManagementService.loadGroup(groupId), "%"+nameOrNumber+"%", "%"+nameOrNumber+"%");
+                groupManagementService.loadGroup(groupId), "%" + nameOrNumber + "%", "%" + nameOrNumber + "%");
     }
 
 
@@ -521,14 +525,15 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     public User setLastUssdMenu(User sessionUser, String lastUssdMenu) {
-        cacheUtilService.putUssdMenuForUser(sessionUser.getPhoneNumber(),lastUssdMenu);
+        cacheUtilService.putUssdMenuForUser(sessionUser.getPhoneNumber(), lastUssdMenu);
         return sessionUser;
     }
 
     @Override
-    public void putLastUSSDMenu(String phoneNumber, String lastUssdMenu){
-        cacheUtilService.putUssdMenuForUser(phoneNumber,lastUssdMenu);
+    public void putLastUSSDMenu(String phoneNumber, String lastUssdMenu) {
+        cacheUtilService.putUssdMenuForUser(phoneNumber, lastUssdMenu);
     }
+
     @Override
     public User setDisplayName(User user, String displayName) {
         user.setDisplayName(displayName);
@@ -543,7 +548,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public User setUserLanguage(User sessionUser, String locale) {
         sessionUser.setLanguageCode(locale);
-        cacheUtilService.putUserLanguage(sessionUser.getPhoneNumber(),locale);
+        cacheUtilService.putUserLanguage(sessionUser.getPhoneNumber(), locale);
         return userRepository.save(sessionUser);
     }
 
@@ -604,6 +609,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             maskedUsers.add(MaskingUtil.maskUser(user));
         return maskedUsers;
     }
+
     @Override
     public UserDTO loadUser(String phoneNumber) {
         return new UserDTO(userRepository.findByNumber(phoneNumber));
@@ -613,7 +619,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public UserDTO loadUserCreateRequest(String phoneNumber) {
         UserCreateRequest userCreateRequest = userCreateRequestRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
-        return(new UserDTO(userCreateRequest));
+        return (new UserDTO(userCreateRequest));
     }
 
     public void setPasswordEncoder(final PasswordEncoder passwordEncoder) {

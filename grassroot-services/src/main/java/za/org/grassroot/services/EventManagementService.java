@@ -26,8 +26,6 @@ public interface EventManagementService {
     Methods to create events, in various different forms
      */
 
-    Event createEvent(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups, boolean rsvpRequired);
-
     Event createEvent(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups);
 
     Event createEvent(String name, Long createdByUserId, Long appliesToGroupId, boolean includeSubGroups);

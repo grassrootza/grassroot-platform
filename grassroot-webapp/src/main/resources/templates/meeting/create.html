@@ -2,97 +2,104 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorator="layout">
 <head>
-  <title>GrassRoot - Call a meeting</title>
-<script>
-
-
-
-</script>
+  <title>Grassroot - Call a meeting</title>
+  <!-- todo: fix whatever is causing on-server glyphicons to not load; this is a temp fix -->
+  <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css" rel="stylesheet" />
 </head>
 <body>
 
 <div layout:fragment="header">
-  <h2>Call a meeting</h2>
+  <h2 class="text-center">Call a meeting</h2>
 </div>
-<div layout:fragment="overview">Call a meeting by specifying subject, time, place</div>
 
+<div layout:fragment="overview">
+  <h5 class="text-center">Specify who is meeting, where, when and about what</h5>
+</div>
 <div layout:fragment="content">
   <div layout:fragment="messages"></div>
+
   <div class="well">
-    <form th:object="${meeting}" th:action="@{/meeting/create}" method="post" autocomplete="off" class="form-horizontal">
-      <input th:field="*{id}" type="hidden" />
-      <div class="form-group">
-        <label for="group" class="col-md-2 control-label">Meeting group</label>
-        <div th:switch="${groupSpecified}" class="col-md-4">
-          <div th:case="false" class="">
-            <select name="selectedGroupId" id="selectedgroup" class="form-control">
+
+    <div class="row">
+      <div class="col-md-6 col-md-offset-3">
+
+        <form th:object="${meeting}" th:action="@{/meeting/create}" method="post" class="form-vertical">
+
+          <input th:field="*{id}" type="hidden" />
+          <div class="form-group">
+            <label for="group" class="control-label">Who is meeting? Group:</label>
+            <select th:unless="${groupSpecified}" name="selectedGroupId" id="selectedgroup" class="form-control">
               <option th:each="group: ${userGroups}"
                       th:value="${group.id}"
                       th:text="${group.groupName}">Groupname</option>
             </select>
+            <input th:if="${groupSpecified}" class="form-control" readonly="true" th:placeholder="${group.groupName}" id="group" />
           </div>
-          <div th:case="true" class="col-md-4">
-            <span th:text="${group.groupName}" id="group">Group name</span>
+          <div class="form-group">
+            <label for="name" class="control-label">Meeting subject</label>
+            <input th:field="*{name}" type="text" class="form-control" id="name" placeholder="The topic of the meeting" maxlength="35" data-toggle="tooltip"
+            title="Meeting subject may not be longer than 35 characters. " />
           </div>
-        </div>
-      </div>
-      <div class="form-group">
-        <label for="name" class="col-md-2 control-label">Meeting subject</label>
-        <div class="col-md-4">
-          <input th:field="*{name}" type="text" class="form-control" id="name" placeholder="The topic of the meeting" maxlength="35" data-toggle="tooltip"
-                 title="Meeting subject may not be longer than 35 characters. " />
-        </div>
-      </div>
-      <div class="form-group">
-        <label for="location" class="col-md-2 control-label">Meeting location</label>
-        <div class="col-md-4">
-          <input th:field="*{eventLocation}" type="text" class="form-control" id="location" placeholder="Where the meeting will happen"/>
-        </div>
-      </div>
-      <div class="form-group">
-        <div th:fragment="date-picker">
-          <label for="datepicker" class="col-md-2 control-label">Meeting date and time</label>
-          <div class="col-md-4">
-            <div class="input-group date" id="datepicker">
-              <input th:field="*{eventStartDateTime}" type="text" class="form-control" />
-                    <span class="input-group-addon">
-                        <span class="glyphicon glyphicon-calendar"></span>
-                    </span>
+          <div class="form-group">
+            <label for="location" class="control-label">Meeting location</label>
+            <input th:field="*{eventLocation}" type="text" class="form-control" id="location" placeholder="Where the meeting will happen"/>
+          </div>
+          <div class="form-group">
+            <div th:fragment="date-picker">
+              <label for="datepicker" class="control-label">Meeting date and time</label>
+              <div class="input-group date" id="datepicker">
+                <input th:field="*{eventStartDateTime}" type="text" class="form-control" />
+                <span class="input-group-addon">
+                <span class="glyphicon glyphicon-calendar"></span>
+                </span>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div class="form-group">
-        <label class="col-md-2 control-label">Reminder timing:</label>
-        <div class="col-md-4">
-          <span th:each="option, iterStat : ${reminderOptions}">
-            <input type="radio" th:field="*{reminderMinutes}" th:value="${option[0]}" />
-            <label th:for="${#ids.prev('reminderMinutes')}" th:text="${option[1]}">No reminder</label>
-          </span>
-        </div>
-      </div>
+          <div class="form-group">
+            <label class="control-label">Reminder timing:</label>
+            <div class="radio">
+                <label class="radio-inline" th:each="option, iterStat : ${reminderOptions}">
+                  <input type="radio" th:field="*{reminderMinutes}" th:value="${option[0]}" />
+                  <span th:text="${option[1]}" >No reminder</span>
+                </label>
+            </div>
+          </div>
 
-      <div class="form-group">
-        <label for="rsvp" class="col-md-2 control-label">Ask members if they will attend (RSVP)?</label>
-        <div class="col-md-4">
-          <input th:field="*{rsvpRequired}" type="checkbox" id="rsvp" class="form-control" th:checked="${true}" />
-        </div>
-      </div>
+          <!--
+           <div class="form-group">
+                <label class="checkbox-inline">
+                  <input type="checkbox" name="remember-me" id="remember-me" />Remember me
+                </label>
+                <label class="checkbox-inline pull-right">
+                  <a th:href="@{/accounts/recovery}" href="" class="text-center">Forgot password?</a>
+                </label>
+            </div>
+            -->
 
-      <div class="form-group">
-        <label for="subgroups" class="col-md-2 control-label">Include sub-groups?</label>
-        <div class="col-md-4">
-          <input th:field="*{includeSubGroups}" type="checkbox" id="subgroups" class="form-control"/>
-        </div>
-      </div>
+          <div class="form-group">
+            <label class="checkbox-inline">
+              <input th:field="*{rsvpRequired}" type="checkbox" id="rsvp" th:checked="${true}" />
+              Ask if members will attend (RSVP)?
+            </label>
+            <label class="checkbox-inline pull-right">
+              <input th:field="*{includeSubGroups}" type="checkbox" id="subgroups"/>
+              Include sub-groups?
+            </label>
 
-      <div class="form-group">
-        <div class="col-md-8">
-          <button type="submit" class="btn btn-primary">Call meeting</button>
-        </div>
+          </div>
+
+          <div class="form-group pull-right">
+            <a th:if="${groupSpecified}"
+               th:href="@{/group/view(groupId=${group.id})}" role="button" class="btn btn-default">Cancel</a>
+            <a th:if="${not groupSpecified}"
+               th:href="@{/home}" role="button" class="btn btn-default">Cancel</a>
+            <button type="submit" class="btn btn-primary">Call meeting</button>
+          </div>
+        </form>
       </div>
-    </form>
+    </div>
+
   </div>
 </div>
 

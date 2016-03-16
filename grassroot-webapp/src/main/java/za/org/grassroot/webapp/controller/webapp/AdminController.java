@@ -45,13 +45,13 @@ public class AdminController extends BaseController {
     private GroupManagementService groupManagementService;
 
     @Autowired
+    private GroupBroker groupBroker;
+
+    @Autowired
     private AccountManagementService accountManagementService;
 
     @Autowired
     private RoleManagementService roleManagementService;
-
-    @Autowired
-    private AsyncRoleService asyncRoleService;
 
     @Autowired
     private AnalyticalService analyticalService;
@@ -89,13 +89,13 @@ public class AdminController extends BaseController {
         model.addAttribute("groupsLastMonth", analyticalService.countGroupsCreatedInInterval(month, now));
         model.addAttribute("groupsTotal", analyticalService.countActiveGroups());
 
-        model.addAttribute("meetingsLastWeek", analyticalService.countEventsCreatedInInterval(week, now, EventType.Meeting));
-        model.addAttribute("meetingsLastMonth", analyticalService.countEventsCreatedInInterval(month, now, EventType.Meeting));
-        model.addAttribute("meetingsTotal", analyticalService.countAllEvents(EventType.Meeting));
+        model.addAttribute("meetingsLastWeek", analyticalService.countEventsCreatedInInterval(week, now, EventType.MEETING));
+        model.addAttribute("meetingsLastMonth", analyticalService.countEventsCreatedInInterval(month, now, EventType.MEETING));
+        model.addAttribute("meetingsTotal", analyticalService.countAllEvents(EventType.MEETING));
 
-        model.addAttribute("votesLastWeek", analyticalService.countEventsCreatedInInterval(week, now, EventType.Vote));
-        model.addAttribute("votesLastMonth", analyticalService.countEventsCreatedInInterval(month, now, EventType.Vote));
-        model.addAttribute("votesTotal", analyticalService.countAllEvents(EventType.Vote));
+        model.addAttribute("votesLastWeek", analyticalService.countEventsCreatedInInterval(week, now, EventType.VOTE));
+        model.addAttribute("votesLastMonth", analyticalService.countEventsCreatedInInterval(month, now, EventType.VOTE));
+        model.addAttribute("votesTotal", analyticalService.countAllEvents(EventType.VOTE));
 
         model.addAttribute("todosLastWeek", analyticalService.countLogBooksRecordedInInterval(week, now));
         model.addAttribute("todosLastMonth", analyticalService.countLogBooksRecordedInInterval(month, now));
@@ -234,7 +234,7 @@ public class AdminController extends BaseController {
 
         List<MemberWrapper> members = new ArrayList<>();
         for (User user : userManagementService.getGroupMembersSortedById(group)) {
-            Role roleInGroup = roleManagementService.getUserRoleInGroup(user, group);
+            Role roleInGroup = group.getMembership(user).getRole();
             log.info("constructingMemberWrapper ... user's role is ... " + ((roleInGroup != null) ? roleInGroup.describe() : "null"));
             members.add(new MemberWrapper(user, group, roleInGroup));
         }
@@ -262,13 +262,16 @@ public class AdminController extends BaseController {
         log.info("About to do role assignment etc ... Role: " + roleName + " ... to user ... " + userToModify.nameToDisplay() +
                          " ... to group ... " + group.getGroupName());
 
-        asyncRoleService.addRoleToGroupAndUser(roleName, group, userToModify, getUserProfile());
+        groupBroker.updateMembershipRole(getUserProfile().getUid(), group.getUid(), userToModify.getUid(), roleName);
 
         addMessage(model, MessageType.INFO, "admin.done", request);
         return adminViewGroup(model, groupId);
     }
 
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    // NOTE: should be redundant as dealt with via the Liquibase SQL script (if need for user to do, then implement in
+    // permissionBroker or groupBroker
+
+    /* @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping(value = "/admin/groups/roles/reset")
     public String resetGroupRoles(Model model, @RequestParam Long groupId, HttpServletRequest request) {
 
@@ -296,7 +299,7 @@ public class AdminController extends BaseController {
             asyncRoleService.resetGroupToDefaultRolesPermissions(id, GroupPermissionTemplate.DEFAULT_GROUP, getUserProfile());
         }
         return allGroups(model, 0);
-    }
+    } */
 
     /**
      * Methods to create institutional accounts and designate their administrators

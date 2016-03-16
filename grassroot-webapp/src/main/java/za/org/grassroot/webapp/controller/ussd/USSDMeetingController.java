@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.Meeting;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
@@ -262,9 +263,11 @@ public class USSDMeetingController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber,
                                                   saveMeetingMenu(timeOnly, eventId, false) + "&next_menu=" + nextMenu);
 
-        String currentlySetTime = (!loadString) ?
-                eventManager.loadEvent(eventId).getEventStartDateTime().toLocalDateTime().format(DateTimeUtil.preferredTimeFormat) :
-                eventManager.getDateTimeFromString(eventId).format(DateTimeUtil.preferredTimeFormat);
+        // todo: implement with new design!!!
+//        String currentlySetTime = (!loadString) ?
+//                eventManager.loadEvent(eventId).getEventStartDateTime().toLocalDateTime().format(DateTimeUtil.preferredTimeFormat) :
+//                eventManager.getDateTimeFromString(eventId).format(DateTimeUtil.preferredTimeFormat);
+        String currentlySetTime = "";
 
         String passingField = "&" + ((nextMenu.equals(confirmMenu)) ? previousMenu : "action") + "=" + timeOnly;
         String loadFlag = (loadString) ? "&load_string=1" : "";
@@ -287,9 +290,11 @@ public class USSDMeetingController extends USSDController {
         if (nextMenu == null) nextMenu = priorMenu;
         User user = userManager.findByInputNumber(inputNumber, saveMeetingMenu(dateOnly, eventId, false) + "&next_menu=" + nextMenu);
 
-        String currentDate = (!loadString) ?
-                eventManager.loadEvent(eventId).getEventStartDateTime().toLocalDateTime().format(DateTimeUtil.preferredDateFormat) :
-                eventManager.getDateTimeFromString(eventId).format(DateTimeUtil.preferredDateFormat);
+        // todo: implement with new design!!!
+//        String currentDate = (!loadString) ?
+//                eventManager.loadEvent(eventId).getEventStartDateTime().toLocalDateTime().format(DateTimeUtil.preferredDateFormat) :
+//                eventManager.getDateTimeFromString(eventId).format(DateTimeUtil.preferredDateFormat);
+        String currentDate = "";
 
         // modify & confirm screens name params differently & during modification we have to pass along that we are using the string
         String passingField = "&" + ((nextMenu.equals(confirmMenu)) ? previousMenu : "action") + "=" + dateOnly;
@@ -324,7 +329,7 @@ public class USSDMeetingController extends USSDController {
 
         // todo: decide whether to keep this here with getter or to move into services logic
         String dateString = meeting.getEventStartDateTime().toLocalDateTime().format(dateTimeFormat);
-        String[] confirmFields = new String[]{dateString, meeting.getName(), meeting.getEventLocation()};
+        String[] confirmFields = new String[]{dateString, meeting.getName(), meeting instanceof Meeting ? ((Meeting)meeting).getEventLocation() : null};
         String confirmPrompt = getMessage(thisSection, confirmMenu, promptKey, confirmFields, sessionUser);
 
         // based on user feedback, give options to return to any prior screen, then back here.
@@ -437,7 +442,9 @@ public class USSDMeetingController extends USSDController {
 
         User sessionUser = userManager.findByInputNumber(inputNumber, meetingMenus + changeMeetingLocation + eventIdUrlSuffix + eventId);
 
-        String prompt = getMessage(thisSection, changeMeetingLocation, promptKey, eventManager.loadEvent(eventId).getEventLocation(), sessionUser);
+        Event event = eventManager.loadEvent(eventId);
+        String eventLocation = event instanceof Meeting ? ((Meeting) event).getEventLocation() : null;
+        String prompt = getMessage(thisSection, changeMeetingLocation, promptKey, eventLocation, sessionUser);
 
         USSDMenu promptMenu = new USSDMenu(prompt);
         promptMenu.setFreeText(true);
@@ -482,7 +489,7 @@ public class USSDMeetingController extends USSDController {
 
         // todo: probably want to straighten out / harmonize use of Timestamp / ValueOf
         Timestamp modifyingTimestamp = (!load_string) ? eventManager.loadEvent(eventId).getEventStartDateTime() :
-                Timestamp.valueOf(DateTimeUtil.parsePreformattedString(eventManager.loadEvent(eventId).getDateTimeString()));
+                Timestamp.valueOf(DateTimeUtil.parsePreformattedString(eventManager.loadEvent(eventId).getEventStartDateTime().toString()));
         LocalDateTime newDateTime;
         String otherMenu;
 
@@ -504,7 +511,8 @@ public class USSDMeetingController extends USSDController {
 
         log.info("Modifying time or date ... formatted string is ... " + newDateTimeString);
 
-        if (!interrupted) eventManager.storeDateTimeString(eventId, newDateTimeString);
+        // todo: implement with new design!!!
+//        if (!interrupted) eventManager.storeDateTimeString(eventId, newDateTimeString);
 
         String[] promptFields = (action.equals(timeOnly)) ? new String[]{formattedTime, formattedDate} :
                 new String[]{formattedDate, formattedTime};

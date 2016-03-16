@@ -13,11 +13,16 @@ import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.services.*;
+import za.org.grassroot.services.EventLogManagementService;
+import za.org.grassroot.services.EventManagementService;
+import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -37,9 +42,6 @@ public class MeetingController extends BaseController {
 
     @Autowired
     EventLogManagementService eventLogManagementService;
-
-    @Autowired
-    GroupAccessControlManagementService groupAccessControlManagementService;
 
     @RequestMapping("/meeting/view")
     public String viewMeetingDetails(Model model, @RequestParam Long eventId) {

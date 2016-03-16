@@ -28,6 +28,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
+import za.org.grassroot.webapp.validation.TokenValidationInterceptor;
 
 import javax.servlet.Filter;
 import javax.servlet.http.HttpServletRequest;
@@ -70,6 +71,11 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
         return filter;
     }
 
+    @Bean
+    public TokenValidationInterceptor tokenValidationInterceptor() {
+        return new TokenValidationInterceptor();
+    }
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
 
@@ -86,6 +92,10 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
         });
 
         registry.addInterceptor(localeChangeInterceptor());
+        registry.addInterceptor(tokenValidationInterceptor())
+                .addPathPatterns("/api/group/**")
+                .addPathPatterns("/api/user/profile/**")
+                .excludePathPatterns("/api/group/search");
     }
 
     @Override

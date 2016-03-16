@@ -72,13 +72,9 @@ public class EventManager implements EventManagementService {
     with varying degrees of information. Am defaulting to a meeting requires an RSVP, since that will be most cases.
      */
 
-    public Event createEvent(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups, boolean rsvpRequired) {
-        return createNewEvent(createdByUser, EventType.MEETING, rsvpRequired, name, appliesToGroup, includeSubGroups, 0);
-    }
-
     @Override
     public Event createEvent(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups) {
-        return createEvent(name, createdByUser, appliesToGroup, includeSubGroups, true);
+        return createNewEvent(createdByUser, EventType.MEETING, true, name, appliesToGroup, includeSubGroups, 0);
     }
 
     @Override
@@ -86,18 +82,6 @@ public class EventManager implements EventManagementService {
         return createEvent(name, userManagementService.getUserById(createdByUserId),
                 groupManager.loadGroup(appliesToGroupId), includeSubGroups);
     }
-
-    /* These appear not to be used anymore, hence commenting out ... to reduce clutter in the service interface
-
-    @Override
-    public Event createEvent(String name, Long createdByUserId, Long appliesToGroupId) {
-        return createEvent(name, createdByUserId, appliesToGroupId, false);
-    }
-
-    @Override
-    public Event createEvent(String name, User createdByUser) {
-        return createNewEvent(createdByUser, EventType.Meeting, true, name, null, false, 0);
-    }*/
 
     @Override
     public Event createMeeting(User createdByUser) {
@@ -139,6 +123,7 @@ public class EventManager implements EventManagementService {
 
     private Event createNewEvent(User createdByUser, EventType eventType, boolean rsvpRequired
             , String name, Group appliesToGroup, boolean includeSubGroups, int reminderMinutes) {
+/*
         Event event = eventType == null || eventType.equals(EventType.MEETING) ? new Meeting() : new Vote();
         event.setCreatedByUser(createdByUser);
         if (eventType == null) {
@@ -173,6 +158,8 @@ public class EventManager implements EventManagementService {
         Event createdEvent = eventRepository.save(event);
         log.fine("createNewEvent...created..." + createdEvent.toString());
         return createdEvent;
+*/
+        throw new UnsupportedOperationException("Not supported anymore. Please use new refactored Vote/Meeting design.");
     }
 
 
@@ -225,14 +212,15 @@ public class EventManager implements EventManagementService {
     @Override
     public Event setEventReminderMinutes(Long eventId, Integer minutes) {
         Event event = loadEvent(eventId);
-        event.setReminderMinutes(minutes);
+        event.setReminderType(EventReminderType.CUSTOM);
+        event.setCustomReminderMinutes(minutes);
         return eventRepository.save(event); // note: not doing save and check changes, because this shouldn't trigger an update or anything
     }
 
     @Override
     public Event setEventNoReminder(Long eventId) {
         Event event = loadEvent(eventId);
-        event.setReminderMinutes(-1);
+        event.setReminderType(EventReminderType.DISABLED);
         return eventRepository.save(event); // as above, not using saveandCheckChanges for this, at least for now
     }
 
@@ -284,7 +272,7 @@ public class EventManager implements EventManagementService {
     public Event setSendBlock(Long eventId) {
         Event eventToUpdate = eventRepository.findOne(eventId);
         Event beforeEvent = SerializationUtils.clone(eventToUpdate);
-        eventToUpdate.setSendBlocked(true);
+//        eventToUpdate.setSendBlocked(true);
         eventToUpdate.setRsvpRequired(false); // otherwise events aborted on confirm screen dirty the 'rsvpRequired' methods
         return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
     }
@@ -293,7 +281,7 @@ public class EventManager implements EventManagementService {
     public Event removeSendBlock(Long eventId) {
         Event eventToUpdate = eventRepository.findOne(eventId);
         Event beforeEvent = SerializationUtils.clone(eventToUpdate);
-        eventToUpdate.setSendBlocked(false);
+//        eventToUpdate.setSendBlocked(false);
         eventToUpdate.setRsvpRequired(true);
         return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
     }
@@ -842,7 +830,9 @@ public class EventManager implements EventManagementService {
                 + "; savedEventComplete=" + minimumDataAvailable(savedEvent) + "; cancelled flages (beforeEvent / savedEvent: "
                 + beforeEvent.isCanceled() + " / " + savedEvent.isCanceled());
 
-        final boolean savedEventOkayToSend = !savedEvent.isSendBlocked() && !savedEvent.isCanceled() && minimumDataAvailable(savedEvent);
+//        final boolean savedEventOkayToSend = !savedEvent.isSendBlocked() && !savedEvent.isCanceled() && minimumDataAvailable(savedEvent);
+        // todo: how to implement this on new design
+        final boolean savedEventOkayToSend = true;
 
         /*
         Check if we need to send meeting notifications
@@ -948,8 +938,8 @@ public class EventManager implements EventManagementService {
         if (passedEvent.getCreatedByUser() == null && savedEvent.getCreatedByUser() != null)
             passedEvent.setCreatedByUser(savedEvent.getCreatedByUser());
 
-        if (passedEvent.getCreatedDateTime() == null && savedEvent.getCreatedDateTime() != null)
-            passedEvent.setCreatedDateTime(savedEvent.getCreatedDateTime());
+//        if (passedEvent.getCreatedDateTime() == null && savedEvent.getCreatedDateTime() != null)
+//            passedEvent.setCreatedDateTime(savedEvent.getCreatedDateTime());
 
         if (passedEvent.getEventStartDateTime() == null && savedEvent.getEventStartDateTime() != null)
             passedEvent.setEventStartDateTime(savedEvent.getEventStartDateTime());
@@ -957,8 +947,8 @@ public class EventManager implements EventManagementService {
 //        if (passedEvent.getEventType() == null && savedEvent.getEventType() != null)
 //            passedEvent.setEventType(savedEvent.getEventType());
 
-        if (passedEvent.getReminderMinutes() == 0 && savedEvent.getReminderMinutes() != 0)
-            passedEvent.setReminderMinutes(savedEvent.getReminderMinutes());
+        if (passedEvent.getReminderType().equals(EventReminderType.GROUP_CONFIGURED) && savedEvent.getCustomReminderMinutes() != 0)
+            passedEvent.setCustomReminderMinutes(savedEvent.getCustomReminderMinutes());
 
         /*
         We do not touch the two boolean fields, rsvpRequired and includeSubGroups, since those are set by

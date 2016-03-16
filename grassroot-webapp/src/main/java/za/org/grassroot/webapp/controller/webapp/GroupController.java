@@ -21,7 +21,6 @@ import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
-import za.org.grassroot.webapp.model.web.MemberWrapper;
 import za.org.grassroot.webapp.util.BulkUserImportUtil;
 
 import javax.servlet.http.HttpServletRequest;
@@ -60,9 +59,6 @@ public class GroupController extends BaseController {
     private GroupLogService groupLogService;
 
     @Autowired
-    private RoleManagementService roleService;
-
-    @Autowired
     private GroupJoinRequestService groupJoinRequestService;
 
     @Autowired
@@ -80,6 +76,27 @@ public class GroupController extends BaseController {
     final static List<String[]> roleDescriptions = Arrays.asList(new String[]{BaseRoles.ROLE_ORDINARY_MEMBER, "Ordinary member"},
                                                     new String[]{BaseRoles.ROLE_COMMITTEE_MEMBER, "Committee member"},
                                                     new String[]{BaseRoles.ROLE_GROUP_ORGANIZER, "Group organizer"});
+
+    // todo: probably move to permissions broker as 'permissions implemented' or something
+    final static List<Permission> permissionsImplemented = Arrays.asList(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS,
+                                                                       Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING,
+                                                                       Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS,
+                                                                       Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE,
+                                                                       Permission.GROUP_PERMISSION_READ_UPCOMING_EVENTS,
+                                                                       Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY,
+                                                                       Permission.GROUP_PERMISSION_CLOSE_OPEN_LOGBOOK,
+                                                                       // Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE,
+                                                                       // Permission.GROUP_PERMISSION_FORCE_PERMISSION_CHANGE,
+                                                                       Permission.GROUP_PERMISSION_CREATE_SUBGROUP,
+                                                                       // Permission.GROUP_PERMISSION_AUTHORIZE_SUBGROUP,
+                                                                       // Permission.GROUP_PERMISSION_DELEGATE_SUBGROUP_CREATION,
+                                                                       // Permission.GROUP_PERMISSION_DELINK_SUBGROUP,
+                                                                       Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER,
+                                                                       // Permission.GROUP_PERMISSION_FORCE_ADD_MEMBER,
+                                                                       Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER,
+                                                                       Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+                                                                       // Permission.GROUP_PERMISSION_FORCE_DELETE_MEMBER);
+
 
     /*
     Binding validators to model attributes. We could just user groupWrapper for both Creator and Modifier, but in the
@@ -747,7 +764,7 @@ public class GroupController extends BaseController {
     public String redirectToEvent(Model model, @RequestParam Long eventId, @RequestParam EventType eventType,
                                   RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
-        String path = (eventType == EventType.Meeting) ? "/meeting/" : "/vote/";
+        String path = (eventType == EventType.MEETING) ? "/meeting/" : "/vote/";
         redirectAttributes.addAttribute("eventId", eventId);
         return "redirect:" + path + "view";
 
@@ -757,37 +774,52 @@ public class GroupController extends BaseController {
      * Group role view pages
      */
 
-    @RequestMapping(value = "roles/view")
-    public String viewGroupRoles(Model model, @RequestParam Long groupId) {
-
-        Group group = loadAuthorizedGroup(groupId, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
-
-        // todo: replace this with Membership entity once built ... very badly done kludge for present
-
-        List<MemberWrapper> members = new ArrayList<>();
-        for (User user : userManagementService.getGroupMembersSortedById(group))
-            members.add(new MemberWrapper(user, group, roleService.getUserRoleInGroup(user, group)));
-
-        List<String[]> roleDescriptionsWithNull = new ArrayList<>(roleDescriptions);
-        roleDescriptionsWithNull.add(0, new String[] { "NULL", "Not set"});
+    @RequestMapping(value = "roles/members")
+    public String viewMemberRoles(Model model, @RequestParam String groupUid) {
+        // service layer will take care of checking permissions, but at least here make sure user is in group
+        Group group = groupManagementService.loadGroupByUid(groupUid);
+        if (!isUserPartOfGroup(getUserProfile(), group)) throw new AccessDeniedException("Sorry, you are not a member of this group");
+        List<MembershipInfo> members = new ArrayList<>(MembershipInfo.createFromMembers(group.getMemberships())); // todo: remember to sort members, by role etc
 
         model.addAttribute("group", group);
-        model.addAttribute("members", members);
+        model.addAttribute("listOfMembers", members);
         model.addAttribute("roles", roleDescriptions);
 
-        Role organizer = group.getRole(BaseRoles.ROLE_GROUP_ORGANIZER);
-        model.addAttribute("organizerPerms", organizer.getPermissions());
+        model.addAttribute("ordinaryPermissions", permissionBroker.getPermissions(group, BaseRoles.ROLE_ORDINARY_MEMBER));
+        model.addAttribute("committeePermissions", permissionBroker.getPermissions(group, BaseRoles.ROLE_COMMITTEE_MEMBER));
+        model.addAttribute("organizerPermissions", permissionBroker.getPermissions(group, BaseRoles.ROLE_COMMITTEE_MEMBER));
 
-        Role committee = group.getRole(BaseRoles.ROLE_COMMITTEE_MEMBER);
-        model.addAttribute("committeePerms", committee.getPermissions());
-
-        Role ordinary = group.getRole(BaseRoles.ROLE_ORDINARY_MEMBER);
-        model.addAttribute("ordinaryPerms", ordinary.getPermissions());
-
-        return "group/roles";
+        return "group/roles/view";
     }
 
-    @RequestMapping(value = "roles/change", method = RequestMethod.POST)
+    @RequestMapping(value = "roles/members", method = RequestMethod.POST)
+    public String alterMemberRoles(Model model, @RequestParam String groupUid, @RequestParam String msisdn,
+                                   @RequestParam(name = "new_role") String newRole, HttpServletRequest request) {
+        User memberToChange = userManagementService.findByInputNumber(msisdn);
+        groupBroker.updateMembershipRole(getUserProfile().getUid(), groupUid, memberToChange.getUid(), newRole);
+        String[] labels = new String[] { memberToChange.nameToDisplay(), newRole }; // todo really need role descriptions as hashmap
+        addMessage(model, MessageType.SUCCESS, "group.update.roles.done", labels, request);
+        return viewMemberRoles(model, groupUid);
+    }
+
+    @RequestMapping(value = "roles/permissions")
+    public String viewRolePermissions(Model model, @RequestParam String groupUid) {
+
+        Group group = groupManagementService.loadGroupByUid(groupUid);
+        if (!isUserPartOfGroup(getUserProfile(), group)) throw new AccessDeniedException("Sorry, you are not a member of this group");
+
+        model.addAttribute("group", group);
+        model.addAttribute("ordinaryPermissions", permissionBroker.getPermissions(group, BaseRoles.ROLE_ORDINARY_MEMBER));
+        model.addAttribute("committeePermissions", permissionBroker.getPermissions(group, BaseRoles.ROLE_COMMITTEE_MEMBER));
+        model.addAttribute("organizerPermissions", permissionBroker.getPermissions(group, BaseRoles.ROLE_GROUP_ORGANIZER));
+
+        model.addAttribute("roles", roleDescriptions);
+        model.addAttribute("permissionsImplemented", permissionsImplemented);
+
+        return "group/roles/permissions";
+    }
+
+    @RequestMapping(value = "roles/permissions", method = RequestMethod.POST)
     public String changeGroupRole(Model model, @RequestParam Long groupId, @RequestParam Long userId,
                                   @RequestParam("roleName") String roleName, HttpServletRequest request) {
 
@@ -796,7 +828,7 @@ public class GroupController extends BaseController {
         groupBroker.updateMembershipRole(getUserProfile().getUid(), group.getUid(), userToModify.getUid(), roleName);
 
         addMessage(model, MessageType.INFO, "group.role.done", request);
-        return viewGroupRoles(model, groupId);
+        return viewMemberRoles(model, group.getUid());
     }
 
 }
