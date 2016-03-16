@@ -67,8 +67,7 @@ public class GroupRestController {
     @RequestMapping(value = "create/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> createGroup(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
                                                        @RequestParam("groupName") String groupName, @RequestParam(value = "description", required = false) String description,
-                                                       @RequestParam(value = "phoneNumbers", required = false) List<String> phoneNumbers
-    ) {
+                                                       @RequestParam(value = "phoneNumbers", required = false) List<String> phoneNumbers) {
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());

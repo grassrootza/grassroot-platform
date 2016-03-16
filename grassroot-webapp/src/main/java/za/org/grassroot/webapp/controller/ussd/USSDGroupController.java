@@ -153,23 +153,23 @@ public class USSDGroupController extends USSDController {
     @RequestMapping(value = groupPath + createGroupAddToken)
     @ResponseBody
     public Request createGroupCreateIndefiniteToken(@RequestParam(phoneNumber) String inputNumber,
-                                                    @RequestParam(groupIdParam) String groupUid,
+                                                    @RequestParam(groupIdParam) Long groupId,
                                                     @RequestParam(value = "interrupted", required = false) boolean interrupted) throws URISyntaxException {
 
         // todo: various forms of error and permission checking
-        User user = userManager.findByInputNumber(inputNumber, saveGroupMenu(createGroupAddToken, groupUid));
-        Group group = groupManager.loadGroupByUid(groupUid);
+        User user = userManager.findByInputNumber(inputNumber, saveGroupMenu(createGroupAddToken, groupId));
+        Group group = groupManager.loadGroup(groupId);
 
         /*  the only case of coming here and the group has a code is after interruption or after 'add numbers' via create
             hence there is no need to check if the code expiry date has passed (by definition, the code is valid) */
 
         String token = (interrupted || (group.getGroupTokenCode() != null && !group.getGroupTokenCode().equals(""))) ?
-            groupManager.loadGroupByUid(groupUid).getGroupTokenCode() :
-            groupManager.generateGroupToken(groupUid, user.getUid()).getGroupTokenCode();
+            group.getGroupTokenCode() :
+            groupManager.generateGroupToken(group.getUid(), user.getUid()).getGroupTokenCode();
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, createGroupAddToken, promptKey, token, user));
 
-        menu.addMenuOption(groupMenuWithId(createGroupAddNumbers, groupManager.loadGroupByUid(groupUid).getId()),
+        menu.addMenuOption(groupMenuWithId(createGroupAddNumbers, groupId),
                            getMessage(thisSection, createGroupAddToken, optionsKey + "add", user));
         menu.addMenuOption(groupMenus + startMenu + "?interrupted=1",
                            getMessage(thisSection, createGroupAddToken, optionsKey + "home", user));
