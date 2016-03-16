@@ -37,7 +37,6 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
     PasswordTokenService passwordTokenService;
 
     private static final Logger log = LoggerFactory.getLogger(TokenValidationInterceptor.class);
-    private static final int TOKEN_LIFE_SPAN_DAYS = 10;
     private ObjectMapper mapper;
     private ObjectWriter ow;
     private ResponseWrapper responseWrapper;
@@ -55,7 +54,8 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
             mapper = new ObjectMapper();
             ow = mapper.writer();
             VerificationTokenCode tokenCode = passwordTokenService.getVerificationCode(phoneNumber);
-            if(tokenCode !=null && isExpired(tokenCode)) {
+            boolean isExpired = passwordTokenService.isExpired(tokenCode);
+            if(tokenCode !=null && isExpired) {
                 responseWrapper = new ResponseWrapperImpl(HttpStatus.UNAUTHORIZED, RestMessage.TOKEN_EXPIRED,
                         RestStatus.FAILURE);
             }else {
@@ -64,15 +64,12 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
             }
             response.setContentType("application/json");
             response.getWriter().write(ow.writeValueAsString(responseWrapper));
+            response.setStatus(responseWrapper.getCode());
 
         return false;
 
     }
 
-    private boolean isExpired(VerificationTokenCode tokenCode){
-        return Duration.between(LocalDateTime.now(),tokenCode.getCreatedDateTime().toLocalDateTime()).toDays()>
-                TOKEN_LIFE_SPAN_DAYS;
-    }
 
 
 

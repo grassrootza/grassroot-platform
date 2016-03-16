@@ -14,10 +14,7 @@ import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrapper;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.GroupResponseWrapper;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
+import za.org.grassroot.webapp.model.rest.ResponseWrappers.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -95,6 +92,7 @@ public class GroupRestController {
         List<Group> groupList = groupManagementService.getActiveGroupsPartOf(user);
         if (!groupList.isEmpty()) {
             List<GroupResponseWrapper> groups = new ArrayList<>();
+
             for (Group group : groupList) {
                 Event event = eventManagementService.getMostRecentEvent(group);
                 Role role = group.getMembership(user).getRole();
@@ -103,7 +101,9 @@ public class GroupRestController {
                 } else {
                     groups.add(new GroupResponseWrapper(group, role));
                 }
+
             }
+
             return new ResponseEntity<>(new GenericResponseWrapper(HttpStatus.OK, RestMessage.USER_GROUPS,
                     RestStatus.SUCCESS, groups), HttpStatus.OK);
         }
@@ -121,15 +121,17 @@ public class GroupRestController {
         Group groupByToken = groupManagementService.findGroupByToken(tokenSearch);
         ResponseWrapper responseWrapper;
         if (groupByToken != null) {
-            GroupResponseWrapper groupWrapper = new GroupResponseWrapper(groupByToken);
+            Event event = eventManagementService.getMostRecentEvent(groupByToken);
+            GroupSearchWrapper groupWrapper = new GroupSearchWrapper(groupByToken,event);
             responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.GROUP_FOUND, RestStatus.SUCCESS, groupWrapper);
         } else {
             List<Group> possibleGroups = groupBroker.findPublicGroups(searchTerm);
-            List<GroupResponseWrapper> groups;
+            List<GroupSearchWrapper> groups;
             if (!possibleGroups.isEmpty()) {
                 groups = new ArrayList<>();
                 for (Group group : possibleGroups) {
-                    groups.add(new GroupResponseWrapper(group));
+                    Event event = eventManagementService.getMostRecentEvent(group);
+                    groups.add(new GroupSearchWrapper(group,event));
                 }
                 responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.POSSIBLE_GROUP_MATCHES, RestStatus.SUCCESS, groups);
             } else {
@@ -152,7 +154,6 @@ public class GroupRestController {
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
 
     }
-
 
     private void addMembersToGroup(List<String> phoneNumbers, Set<MembershipInfo> members) {
         if (phoneNumbers != null) {

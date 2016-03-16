@@ -27,9 +27,12 @@ public interface PasswordTokenService {
 
     boolean isVerificationCodeValid(String username, String code);
 
+    boolean isExpired(VerificationTokenCode verificationTokenCode);
+
     void invalidateVerificationCode(User user, String code);
 
     VerificationTokenCode generateLongLivedCode(User user);
+
 
 
 }
