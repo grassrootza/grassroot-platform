@@ -2,7 +2,9 @@ package za.org.grassroot.webapp.model.rest.ResponseWrappers;
 
 import za.org.grassroot.core.domain.*;
 
+import java.sql.Timestamp;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Created by paballo on 2016/03/01.
@@ -11,10 +13,11 @@ public class GroupResponseWrapper {
 
     private String id;
     private String groupName;
-    private String description;
+    private String description = "Group has no event";
     private String groupCreator;
     private String role;
     private Integer groupMemberCount;
+    private Timestamp timestamp;
     private Set<Permission> permissions;
 
     public GroupResponseWrapper(){}
@@ -29,10 +32,11 @@ public class GroupResponseWrapper {
         this.id = group.getUid();
         this.groupName = group.getGroupName();
         this.description = event.getName();
+        this.timestamp = event.getEventStartDateTime();
         this.groupCreator = group.getCreatedByUser().getDisplayName();
         this.role = role.getName();
         this.groupMemberCount = group.getMemberships().size();
-        this.permissions = role.getPermissions();
+        this.permissions = filterPermissions(role.getPermissions());
 
     }
 
@@ -43,7 +47,7 @@ public class GroupResponseWrapper {
         this.groupCreator = group.getCreatedByUser().getDisplayName();
         this.role = role.getName();
         this.groupMemberCount = group.getMemberships().size();
-        this.permissions = role.getPermissions();
+        this.permissions = filterPermissions(role.getPermissions());
 
     }
 
@@ -72,6 +76,13 @@ public class GroupResponseWrapper {
     }
     public Set<Permission> getPermissions() {
         return permissions;
+    }
+    public Timestamp getTimestamp(){return timestamp;}
+
+
+    private Set<Permission> filterPermissions(Set<Permission> permissions){
+        return permissions.stream().filter(p -> p.toString().contains("CREATE")).collect(Collectors.toSet());
+
     }
 
 }
