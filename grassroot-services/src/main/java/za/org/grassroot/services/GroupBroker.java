@@ -21,6 +21,8 @@ public interface GroupBroker {
 
     void addMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos);
 
+    void addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed);
+
     void removeMembers(String userUid, String groupUid, Set<String> memberUids);
 
     void unsubscribeMember(String userUid, String groupUid);

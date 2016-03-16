@@ -166,6 +166,20 @@ public class GroupBrokerImpl implements GroupBroker {
         logGroupEventsAfterCommit(groupLogs);
     }
 
+    @Override
+    @Transactional
+    public void addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed) {
+        User user = userRepository.findOneByUid(userUidToAdd);
+        Group group = groupRepository.findOneByUid(groupUid);
+        if (!tokenPassed.equals(group.getGroupTokenCode()) || Instant.now().isAfter(group.getTokenExpiryDateTime().toInstant()))
+            throw new RuntimeException(""); // todo: create a custom version
+
+        logger.info("Adding a member via token code: group={}, user={}, code={}", group, user, tokenPassed);
+        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER);
+        logGroupEventsAfterCommit(Collections.singleton(new GroupLog(group.getId(), user.getId(), GroupLogType.GROUP_MEMBER_ADDED,
+                                               user.getId(), "Member joined via join code: " + tokenPassed)));
+    }
+
     private Set<Membership> addMembers(User initiator, Group group, Set<MembershipInfo> membershipInfos) {
         // note: User objects should only ever store phone numbers in the msisdn format (i.e, with country code at front, no '+')
         Set<String> memberPhoneNumbers = membershipInfos.stream().map(MembershipInfo::getPhoneNumberWithCCode).collect(Collectors.toSet());

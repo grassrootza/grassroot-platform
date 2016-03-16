@@ -208,16 +208,15 @@ public class USSDHomeController extends USSDController {
         Group groupToJoin = groupManager.findGroupByToken(trailingDigits);
         if (groupToJoin != null) {
             log.info("Found a token with these trailing digits ...");
-            MembershipInfo membershipInfo = new MembershipInfo(sessionUser.getPhoneNumber(), BaseRoles.ROLE_ORDINARY_MEMBER,
-                                                               sessionUser.getDisplayName());
-            groupBroker.addMembers(sessionUser.getUid(), groupToJoin.getUid(), Sets.newHashSet(membershipInfo));
+            // todo: remove "findBy" above and consolidate into the service call (which throws the 'cant find error'
+            groupBroker.addMemberViaJoinCode(sessionUser.getUid(), groupToJoin.getUid(), trailingDigits);
 
             String prompt = (groupToJoin.hasName()) ?
                     getMessage(thisSection, startMenu, promptKey + ".group.token.named", groupToJoin.getGroupName(), sessionUser) :
                     getMessage(thisSection, startMenu, promptKey + ".group.token.unnamed", sessionUser);
             returnMenu = welcomeMenu(prompt, sessionUser);
         } else {
-            System.out.println("Whoops, couldn't find the code");
+            log.info("Whoops, couldn't find the code");
             returnMenu = welcomeMenu(getMessage(thisSection, startMenu, promptKey + ".unknown.request", sessionUser), sessionUser);
         }
 
