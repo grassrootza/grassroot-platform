@@ -6,7 +6,6 @@ import javax.persistence.Column;
 import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
 import java.sql.Timestamp;
-import java.time.Instant;
 import java.util.Objects;
 
 @Entity
@@ -25,13 +24,15 @@ public class Meeting extends Event {
 	}
 
 	public Meeting(String name, Timestamp startDateTime, User user, Group group, String eventLocation, boolean includeSubGroups) {
-		this(name, startDateTime, user, group, eventLocation, includeSubGroups, false, false, false, EventReminderType.DISABLED, 0);
+		this(name, startDateTime, user, group, eventLocation, includeSubGroups, false, false, EventReminderType.DISABLED, 0);
 	}
 
 	public Meeting(String name, Timestamp startDateTime, User user, Group group, String eventLocation, boolean includeSubGroups,
-				   boolean canceled, boolean rsvpRequired, boolean relayable, EventReminderType reminderType, int customReminderMinutes) {
-		super(startDateTime, user, group, canceled, name, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes);
+				   boolean rsvpRequired, boolean relayable, EventReminderType reminderType, int customReminderMinutes) {
+		super(startDateTime, user, group, name, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes);
 		this.eventLocation = Objects.requireNonNull(eventLocation);
+		updateScheduledReminderTime();
+		setScheduledReminderActive(true);
 	}
 
 	@Override

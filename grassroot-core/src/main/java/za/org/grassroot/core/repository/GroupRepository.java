@@ -78,7 +78,6 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     Methods for analytical service, to retrieve and count groups in periods (by created date time)
      */
     int countByCreatedDateTimeBetweenAndActive(Timestamp periodStart, Timestamp periodEnd, boolean active);
-    List<Group> findByCreatedDateTimeBetweenAndActive(Timestamp periodStart, Timestamp periodEnd, boolean active);
 
 
     /*

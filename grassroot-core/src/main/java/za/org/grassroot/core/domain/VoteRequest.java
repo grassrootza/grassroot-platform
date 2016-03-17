@@ -15,19 +15,25 @@ public class VoteRequest extends EventRequest {
 		return EventType.VOTE;
 	}
 
+	@Override
+	public boolean isFilled() {
+		return isFilledWithCommonFields();
+	}
+
 	private VoteRequest() {
 		// for JPA
 	}
 
 	public static VoteRequest makeEmpty() {
-		return makeEmpty(null);
+		return makeEmpty(null, null);
 	}
 
-	public static VoteRequest makeEmpty(User user) {
+	public static VoteRequest makeEmpty(User user, Group group) {
 		VoteRequest request = new VoteRequest();
 		request.reminderType = EventReminderType.DISABLED;
 		request.uid = UIDGenerator.generateId();
 		request.createdByUser = user;
+		request.appliesToGroup = group;
 		return request;
 	}
 }

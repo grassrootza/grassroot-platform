@@ -56,7 +56,7 @@ public class VoteController extends BaseController {
             model.addAttribute("possibleGroups", groupManagementService.getActiveGroupsPartOf(user));
         }
 
-        VoteRequest voteRequest = VoteRequest.makeEmpty(user);
+        VoteRequest voteRequest = VoteRequest.makeEmpty(user, null);
         voteRequest.setRsvpRequired(true);
 
         model.addAttribute("vote", voteRequest);

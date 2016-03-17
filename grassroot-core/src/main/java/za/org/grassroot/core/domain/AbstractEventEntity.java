@@ -180,11 +180,27 @@ public class AbstractEventEntity {
 		this.customReminderMinutes = customReminderMinutes;
 	}
 
-	public void checkRequiredFields() {
-		Objects.requireNonNull(name);
-		Objects.requireNonNull(eventStartDateTime);
-		Objects.requireNonNull(appliesToGroup);
-		Objects.requireNonNull(createdByUser);
-		Objects.requireNonNull(reminderType);
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+
+		Event event = (Event) o;
+
+		if (uid != null ? !uid.equals(event.uid) : event.uid != null) {
+			return false;
+		}
+
+		return true;
 	}
+
+	@Override
+	public int hashCode() {
+		return uid != null ? uid.hashCode() : 0;
+	}
+
 }

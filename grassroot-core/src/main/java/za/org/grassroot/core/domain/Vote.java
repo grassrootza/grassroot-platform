@@ -1,7 +1,6 @@
 package za.org.grassroot.core.domain;
 
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
@@ -20,12 +19,12 @@ public class Vote extends Event {
 	}
 
 	public Vote(String name, Timestamp startDateTime, User user, Group group, boolean includeSubGroups) {
-		this(name, startDateTime, user, group, includeSubGroups, false, false, false, EventReminderType.DISABLED, 0);
+		this(name, startDateTime, user, group, includeSubGroups, false, false, EventReminderType.DISABLED, 0);
 	}
 
 	public Vote(String name, Timestamp startDateTime, User user, Group group, boolean includeSubGroups,
-				boolean canceled, boolean rsvpRequired, boolean relayable, EventReminderType reminderType, int customReminderMinutes) {
-		super(startDateTime, user, group, canceled, name, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes);
+				boolean rsvpRequired, boolean relayable, EventReminderType reminderType, int customReminderMinutes) {
+		super(startDateTime, user, group, name, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes);
 	}
 
 	@Override

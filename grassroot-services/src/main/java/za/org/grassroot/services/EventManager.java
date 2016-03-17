@@ -210,14 +210,6 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
-    public Event setEventReminderMinutes(Long eventId, Integer minutes) {
-        Event event = loadEvent(eventId);
-        event.setReminderType(EventReminderType.CUSTOM);
-        event.setCustomReminderMinutes(minutes);
-        return eventRepository.save(event); // note: not doing save and check changes, because this shouldn't trigger an update or anything
-    }
-
-    @Override
     public Event setEventNoReminder(Long eventId) {
         Event event = loadEvent(eventId);
         event.setReminderType(EventReminderType.DISABLED);
@@ -524,7 +516,7 @@ public class EventManager implements EventManagementService {
     @Override
     public List<Event> getUpcomingEventsUserCreated(User requestingUser) {
         List<Event> possibleEvents = eventRepository.
-                findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceledAndSendBlockedFalse(requestingUser, new Date(), false);
+                findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(requestingUser, new Date(), false);
 
         // take out events that were only partially formed ... todo: think if a way to make this faster than the iteration below
         List<Event> fullyFormedEvents = new ArrayList<>();
@@ -546,7 +538,7 @@ public class EventManager implements EventManagementService {
     @Override
     public List<Event> getPaginatedEventsCreatedByUser(User sessionUser, int pageNumber, int pageSize) {
         Page<Event> pageOfEvents =
-                eventRepository.findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceledAndSendBlockedFalse(sessionUser, new Date(), false, new PageRequest(pageNumber, pageSize));
+                eventRepository.findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(sessionUser, new Date(), false, new PageRequest(pageNumber, pageSize));
         return pageOfEvents.getContent();
     }
 

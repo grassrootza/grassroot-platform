@@ -13,7 +13,8 @@ import za.org.grassroot.core.enums.EventType;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.sql.Timestamp;
-import java.util.Calendar;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 @Entity
 @Table(name = "event")
@@ -43,82 +44,22 @@ public abstract class Event extends AbstractEventEntity implements Serializable 
 	@Column(name = "noreminderssent")
 	private int noRemindersSent;
 
+	@Column(name = "scheduled_reminder_time")
+	private Instant scheduledReminderTime;
+
+	@Column(name = "scheduled_reminder_active")
+	private boolean scheduledReminderActive = false;
+
 	public abstract EventType getEventType();
 
 	protected Event() {
 		// for JPA
 	}
 
-/*
-	public Event(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups, boolean rsvpRequired, boolean relayable) {
-		this.name = name;
-		this.createdByUser = createdByUser;
-		this.appliesToGroup = appliesToGroup;
-		this.eventLocation = ""; // otherwise we get null violations
-		this.eventType = EventType.Meeting;
-		this.includeSubGroups = includeSubGroups;
-		this.rsvpRequired = rsvpRequired;
-		this.relayable = relayable;
-		this.sendBlocked = false;
-	}
-
-	public Event(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups, boolean rsvpRequired) {
-		this.name = name;
-		this.createdByUser = createdByUser;
-		this.appliesToGroup = appliesToGroup;
-		this.eventLocation = ""; // otherwise we get null violations
-		this.eventType = EventType.MEETING;
-		this.includeSubGroups = includeSubGroups;
-		this.rsvpRequired = rsvpRequired;
-		this.sendBlocked = false;
-	}
-
-	public Event(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups) {
-		this.name = name;
-		this.createdByUser = createdByUser;
-		this.appliesToGroup = appliesToGroup;
-		this.eventLocation = ""; // otherwise we get null violations
-		this.eventType = EventType.MEETING;
-		this.includeSubGroups = includeSubGroups;
-		this.sendBlocked = false;
-	}
-
-	public Event(String name, User createdByUser, Group appliesToGroup) {
-		this.name = name;
-		this.createdByUser = createdByUser;
-		this.appliesToGroup = appliesToGroup;
-		this.eventLocation = ""; // otherwise we get null violations
-		this.eventType = EventType.MEETING;
-		this.sendBlocked = false;
-	}
-
-	public Event(User createdByUser, EventType eventType, boolean rsvpRequired) {
-		this.createdByUser = createdByUser;
-		this.eventType = eventType;
-		this.rsvpRequired = rsvpRequired;
-		this.sendBlocked = false;
-	}
-
-	public Event(String name, User createdByUser) {
-		this.name = name;
-		this.createdByUser = createdByUser;
-		this.eventLocation = ""; // otherwise we get null violations
-		this.eventType = EventType.MEETING;
-		this.rsvpRequired = true; // this is our default
-		this.sendBlocked = false;
-	}
-
-	public Event(User createdByUser, EventType eventType) {
-		this.createdByUser = createdByUser;
-		this.eventType = eventType;
-		this.sendBlocked = false;
-	}
-*/
-
-	protected Event(Timestamp eventStartDateTime, User user, Group group, boolean canceled, String name, boolean includeSubGroups,
+	protected Event(Timestamp eventStartDateTime, User user, Group group, String name, boolean includeSubGroups,
 					boolean rsvpRequired, boolean relayable, EventReminderType reminderType, int customReminderMinutes) {
 		super(name, eventStartDateTime, user, group, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes);
-		this.canceled = canceled;
+		this.canceled = false;
 		this.noRemindersSent = 0;
 	}
 
@@ -146,35 +87,24 @@ public abstract class Event extends AbstractEventEntity implements Serializable 
 		return canceled;
 	}
 
-	@PreUpdate
-	@PrePersist
-	public void updateTimeStamps() {
-		if (createdDateTime == null) {
-			createdDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis());
-		}
+	public Instant getScheduledReminderTime() {
+		return scheduledReminderTime;
 	}
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-
-		Event event = (Event) o;
-
-		if (uid != null ? !uid.equals(event.uid) : event.uid != null) {
-			return false;
-		}
-
-		return true;
+	public boolean isScheduledReminderActive() {
+		return scheduledReminderActive;
 	}
 
-	@Override
-	public int hashCode() {
-		return uid != null ? uid.hashCode() : 0;
+	public void setScheduledReminderActive(boolean scheduledReminderActive) {
+		this.scheduledReminderActive = scheduledReminderActive;
+	}
+
+	public void updateScheduledReminderTime() {
+		if (getReminderType().equals(EventReminderType.CUSTOM)) {
+			this.scheduledReminderTime = getEventStartDateTime().toInstant().minus(getCustomReminderMinutes(), ChronoUnit.MINUTES);
+		} else {
+			this.scheduledReminderTime = null;
+		}
 	}
 
 	@Override

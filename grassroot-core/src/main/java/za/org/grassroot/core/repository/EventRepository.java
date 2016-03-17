@@ -12,20 +12,13 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
 
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 
 public interface EventRepository extends JpaRepository<Event, Long> {
 
-    /*
-    Find all the groups created by a specific user
-     */
-    List<Event> findByCreatedByUser(User createdByUser);
-    /*
-    Find the last group created by a specific user
-     */
-    Event findFirstByCreatedByUserOrderByIdDesc(User createdByUser);
-
+    Event findOneByUid(String uid);
 
     List<Event> findByAppliesToGroup(Group group);
     List<Event> findByAppliesToGroupOrderByEventStartDateTimeDesc(Group group);
@@ -33,15 +26,14 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     List<Event> findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(Group group, Date startTime, boolean cancelled);
     List<Event> findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceledAndEventType(Group group, Date startTime, boolean cancelled, EventType eventType);
 
-    List<Event> findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceledAndSendBlockedFalse(User user, Date startTime, boolean cancelled);
-    Page<Event> findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceledAndSendBlockedFalse(User user, Date startTime, boolean cancelled, Pageable page);
+    List<Event> findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(User user, Date startTime, boolean cancelled);
+    Page<Event> findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(User user, Date startTime, boolean cancelled, Pageable page);
 
     /*
     Some methods for analytical services, to count, find events, etc
      */
-    Long countByEventTypeAndEventStartDateTimeNotNullAndSendBlockedFalse(EventType eventType);
-    List<Event> findByEventTypeAndCreatedDateTimeBetweenAndSendBlockedAndEventStartDateTimeNotNull(EventType type, Timestamp start, Timestamp end, boolean sendBlocked);
-    int countByEventTypeAndCreatedDateTimeBetweenAndSendBlockedFalseAndEventStartDateTimeNotNull(EventType type, Timestamp start, Timestamp end);
+    Long countByEventTypeAndEventStartDateTimeNotNull(EventType eventType);
+    int countByEventTypeAndCreatedDateTimeBetweenAndEventStartDateTimeNotNull(EventType type, Timestamp start, Timestamp end);
 
 
     /*
@@ -58,8 +50,8 @@ where e.canceled = FALSE
       and e.noreminderssent = 0
 
      */
-    @Query(value = "select * from event e where e.canceled = FALSE and start_date_time > current_timestamp and (start_date_time - e.reminderminutes * INTERVAL '1 minute') < current_timestamp and (start_date_time - e.reminderminutes * INTERVAL '1 minute') > e.created_date_time and e.reminderminutes > 0 and e.noreminderssent = 0",nativeQuery = true)
-    List<Event> findEventsForReminders();
+    @Query(value = "select e from event e where e.canceled = false and eventStartDateTime > :time and e.scheduledReminderTime < :time and e.scheduledReminderActive = true")
+    List<Event> findEventsForReminders(Instant time);
 
     @Query(value = "select v from Event v where v.eventType = za.org.grassroot.core.enums.EventType.Vote and v.eventStartDateTime > ?1 and v.canceled = false")
     List<Event> findAllVotesAfterTimeStamp(Date date);
@@ -91,9 +83,4 @@ where e.canceled = FALSE
      */
     List<Event> findByAppliesToGroupAndEventStartDateTimeBetween(Group group, Timestamp start, Timestamp end, Sort sort);
     List<Event> findByAppliesToGroupAndEventTypeAndEventStartDateTimeBetween(Group group, EventType type, Timestamp startDateTime, Timestamp endDateTime);
-
-    /*
-    Queries to find out when a group last had an event applied to it
-     */
-    Event findFirstByAppliesToGroupAndEventStartDateTimeNotNullOrderByEventStartDateTimeDesc(Group group);
 }

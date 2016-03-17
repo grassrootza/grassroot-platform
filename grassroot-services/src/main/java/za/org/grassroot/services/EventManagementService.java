@@ -113,8 +113,6 @@ public interface EventManagementService {
 
     public Event setEventTimestamp(Long eventId, Timestamp eventDateTime);
 
-    public Event setEventReminderMinutes(Long eventId, Integer minutes);
-
     public Event setEventNoReminder(Long eventId);
 
     public Event updateEvent(Event eventToUpdate);

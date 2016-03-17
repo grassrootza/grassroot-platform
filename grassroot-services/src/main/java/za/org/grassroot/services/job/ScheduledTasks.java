@@ -11,10 +11,12 @@ import za.org.grassroot.core.dto.*;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.LogBookRepository;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
+import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.EventLogManagementService;
 
 import javax.jms.Message;
 import javax.jms.ObjectMessage;
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -26,45 +28,24 @@ public class ScheduledTasks {
 
     private Logger log = LoggerFactory.getLogger(getClass().getCanonicalName());
 
-    //@Value("${reminderminutes}")
-    //private int reminderminutes;
-
-    //private static final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
+    @Autowired
+    private EventRepository eventRepository;
 
     @Autowired
-    EventRepository eventRepository;
+    private EventBroker eventBroker;
 
     @Autowired
-    EventLogManagementService eventLogManagementService;
+    private EventLogManagementService eventLogManagementService;
 
     @Autowired
-    GenericJmsTemplateProducerService jmsTemplateProducerService;
+    private GenericJmsTemplateProducerService jmsTemplateProducerService;
 
     @Autowired
-    LogBookRepository logBookRepository;
+    private LogBookRepository logBookRepository;
 
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendReminders() {
-        log.info("sendReminders...starting");
-        try {
-            List<Event> eventList = eventRepository.findEventsForReminders();
-            if (eventList != null) {
-                for (Event event : eventList) {
-                    log.info("sendReminders...event..." + event.getId());
-                    // queue reminder request
-                    jmsTemplateProducerService.sendWithNoReply("event-reminder", new EventDTO(event));
-                    // update event with noreminderssent = noremindersent + 1 so we dont send it again
-                    event.setNoRemindersSent(event.getNoRemindersSent() + 1);
-                    event = eventRepository.save(event);
-
-                }
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        log.info("sendReminders...done");
-
+        eventBroker.sendScheduledReminders();
     }
 
     @Scheduled(fixedRate = 60000) //runs every 1 minutes

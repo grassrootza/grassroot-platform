@@ -18,18 +18,36 @@ public class MeetingRequest extends EventRequest {
 		return EventType.MEETING;
 	}
 
+	@Override
+	public boolean isFilled() {
+		if (eventLocation == null || eventLocation.trim().equals("")) {
+			return false;
+		}
+		return isFilledWithCommonFields();
+	}
+
 	private MeetingRequest() {
 		// for JPA
 	}
 
 	public static MeetingRequest makeEmpty() {
+		return makeEmpty(null, null);
+	}
+
+	public static MeetingRequest makeEmpty(User user, Group group) {
 		MeetingRequest request = new MeetingRequest();
 		request.reminderType = EventReminderType.DISABLED;
 		request.uid = UIDGenerator.generateId();
+		request.createdByUser = user;
+		request.appliesToGroup = group;
 		return request;
 	}
 
 	public String getEventLocation() {
 		return eventLocation;
+	}
+
+	public void setEventLocation(String eventLocation) {
+		this.eventLocation = eventLocation;
 	}
 }

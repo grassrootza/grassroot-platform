@@ -305,31 +305,30 @@ public class EventNotificationConsumer {
 
     }
 
-    private void sendMeetingReminderMessage(User user, EventDTO event) {
-        //generate message based on user language
-        String message = meetingNotificationService.createMeetingReminderMessage(user, event);
+    private void sendMeetingReminderMessage(User target, EventDTO event) {
+        //generate message based on target language
+        String message = meetingNotificationService.createMeetingReminderMessage(target, event);
         /*
-        Do not send vote reminder if the user already voted (userRsvpForEvent)
+        Do not send vote reminder if the target already voted (userRsvpForEvent)
          */
         if (event.getEventType() == EventType.VOTE) {
-            if (!eventLogManagementService.reminderSentToUser(event.getEventObject(), user)
-                    && !eventLogManagementService.userRsvpForEvent(event.getEventObject(), user)) {
-                sendMeetingReminderMessageAction(user,event,message);
+            if (!eventLogManagementService.reminderSentToUser(event.getEventObject(), target)
+                    && !eventLogManagementService.userRsvpForEvent(event.getEventObject(), target)) {
+                sendMeetingReminderMessageAction(target,event,message);
             }
 
         } else {
         /*
-        Do not send meeting reminder if the user already rsvp'ed "no"
+        Do not send meeting reminder if the target already rsvp'ed "no"
          */
 
-            if (!eventLogManagementService.reminderSentToUser(event.getEventObject(), user)
-                    && !eventLogManagementService.userRsvpNoForEvent(event.getEventObject(), user)) {
-                sendMeetingReminderMessageAction(user,event,message);
+            if (!eventLogManagementService.reminderSentToUser(event.getEventObject(), target)
+                    && !eventLogManagementService.userRsvpNoForEvent(event.getEventObject(), target)) {
+                sendMeetingReminderMessageAction(target,event,message);
             }
-
         }
-
     }
+
     private void sendManualReminderMessage(User user, EventDTO event) {
         //generate message based on user language if message not captured by the user
         String message = event.getMessage();
