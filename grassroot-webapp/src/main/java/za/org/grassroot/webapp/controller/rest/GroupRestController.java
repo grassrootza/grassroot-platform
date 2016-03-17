@@ -157,7 +157,8 @@ public class GroupRestController {
         GroupLog groupLog = groupLogService.load(group.getId());
         GroupResponseWrapper responseWrapper;
         if (event != null) {
-            if (event.getEventStartDateTime().after(new Timestamp(groupLog.getCreatedDateTime().getTime()))) {
+            if (event.getEventStartDateTime() != null && event.getEventStartDateTime()
+                    .after(new Timestamp(groupLog.getCreatedDateTime().getTime()))) {
                 responseWrapper = new GroupResponseWrapper(group, event, role);
             } else {
                 responseWrapper = new GroupResponseWrapper(group, groupLog, role);
