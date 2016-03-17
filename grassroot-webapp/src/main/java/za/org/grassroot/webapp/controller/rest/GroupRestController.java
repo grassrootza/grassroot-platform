@@ -56,7 +56,7 @@ public class GroupRestController {
 
     @RequestMapping(value = "create/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> createGroup(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
-                                                       @RequestParam("groupName") String groupName, @RequestParam(value = "description", required = false) String description,
+                                                       @RequestParam("groupName") String groupName, @RequestParam(value = "description", required = true) String description,
                                                        @RequestParam(value = "phoneNumbers", required = false) List<String> phoneNumbers) {
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
@@ -66,8 +66,10 @@ public class GroupRestController {
 
         try {
             addMembersToGroup(phoneNumbers, membersToAdd);
-            groupBroker.create(user.getUid(), groupName, null, membersToAdd,
+            Group group = groupBroker.create(user.getUid(), groupName, null, membersToAdd,
                     GroupPermissionTemplate.DEFAULT_GROUP);
+             groupManagementService.changeGroupDescription(group.getUid(),description,user.getUid());
+
         } catch (RuntimeException e) {
             return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, e.getMessage(), RestStatus.FAILURE),
                     HttpStatus.BAD_REQUEST);
@@ -155,7 +157,8 @@ public class GroupRestController {
         GroupLog groupLog = groupLogService.load(group.getId());
         GroupResponseWrapper responseWrapper;
         if (event != null) {
-            if (event.getEventStartDateTime().after(new Timestamp(groupLog.getCreatedDateTime().getTime()))) {
+            if (event.getEventStartDateTime() != null && event.getEventStartDateTime()
+                    .after(new Timestamp(groupLog.getCreatedDateTime().getTime()))) {
                 responseWrapper = new GroupResponseWrapper(group, event, role);
             } else {
                 responseWrapper = new GroupResponseWrapper(group, groupLog, role);
