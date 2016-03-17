@@ -56,7 +56,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
         logger.info("Creating new group: name={}, membershipInfos={}, groupPermissionTemplate={},  parent={}, user={}",
                 name, membershipInfos, groupPermissionTemplate, parent, user);
-
+        //todo: refactor and include description
         Group group = new Group(name, user);
         GroupLog groupAddedEventLog;
         if (parent == null) {
@@ -84,6 +84,8 @@ public class GroupBrokerImpl implements GroupBroker {
 
         return group;
     }
+
+
 
     private void logGroupEventsAfterCommit(Set<GroupLog> groupLogs) {
         // we want to log group events after transaction has committed

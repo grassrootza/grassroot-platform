@@ -84,6 +84,15 @@ public class GroupManager implements GroupManagementService {
         }
     }
 
+    @Override
+    public Group changeGroupDescription(String uid, String description, String changinUserUid){
+        Group group = groupRepository.findOneByUid(uid);
+        String oldDescription = group.getDescription();
+        group.setDescription(description);
+        return saveGroup(group,true,String.format("Old name: %s, New name: %s",oldDescription,description),dontKnowTheUser);
+    }
+
+
     /*
     SECTION: Loading groups, finding properties, etc
      */
