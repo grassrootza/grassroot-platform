@@ -28,6 +28,8 @@ public interface GroupManagementService {
 
     public Group renameGroup(String groupUid, String newName, String changingUserUid);
 
+    public Group changeGroupDescription(String groupUid, String description, String changingUserUid);
+
     public Group groupToRename(User sessionUser);
 
     /*

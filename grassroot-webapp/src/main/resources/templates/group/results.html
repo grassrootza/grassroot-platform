@@ -54,8 +54,9 @@
       </div>
     </div>
     <div class="row row-centered">
-      <form th:action="@{join}" method="post">
-        <input type="hidden" name="groupId" th:value="${group.id}" />
+      <form th:action="@{join/token}" method="post">
+        <input type="hidden" name="groupUid" th:value="${group.Uid}" />
+        <input type="hidden" name="token" th:value="${group.groupTokenCode}" />
         <div class="form-group">
           <button type="submit" class="btn btn-primary">Join</button>
           <a th:href="@{/home}">No, back</a>

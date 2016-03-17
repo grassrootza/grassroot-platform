@@ -2,7 +2,15 @@ package za.org.grassroot.webapp.model.rest.ResponseWrappers;
 
 import za.org.grassroot.core.domain.*;
 
+import java.sql.Timestamp;
+import java.time.Instant;
+
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Set;
+import java.util.TimeZone;
+import java.util.stream.Collectors;
+
 
 /**
  * Created by paballo on 2016/03/01.
@@ -11,11 +19,13 @@ public class GroupResponseWrapper {
 
     private String id;
     private String groupName;
-    private String description;
+    private String description = "Group has no event.";
     private String groupCreator;
     private String role;
     private Integer groupMemberCount;
+    private Timestamp dateTime;
     private Set<Permission> permissions;
+    private static final String filterString ="CREATE";
 
     public GroupResponseWrapper(){}
 
@@ -29,10 +39,25 @@ public class GroupResponseWrapper {
         this.id = group.getUid();
         this.groupName = group.getGroupName();
         this.description = event.getName();
+        this.dateTime = event.getEventStartDateTime();
         this.groupCreator = group.getCreatedByUser().getDisplayName();
-        this.role = role.getName();
+        this.role = (role!=null)?role.getName():null;
         this.groupMemberCount = group.getMemberships().size();
-        this.permissions = role.getPermissions();
+        this.permissions = filterPermissions(role.getPermissions());
+
+    }
+
+    public GroupResponseWrapper(Group group, GroupLog groupLog, Role role){
+        this.id = group.getUid();
+        this.groupName = group.getGroupName();
+        this.description = groupLog.getDescription();
+        Instant instant = Instant.ofEpochMilli(groupLog.getCreatedDateTime().getTime());
+        this.dateTime =new Timestamp(groupLog.getCreatedDateTime().getTime());
+        this.groupCreator = group.getCreatedByUser().getDisplayName();
+        this.role = (role!=null)?role.getName():null;
+        this.groupMemberCount = group.getMemberships().size();
+        this.permissions = filterPermissions(role.getPermissions());
+
 
     }
 
@@ -41,9 +66,9 @@ public class GroupResponseWrapper {
         this.id = group.getUid();
         this.groupName = group.getGroupName();
         this.groupCreator = group.getCreatedByUser().getDisplayName();
-        this.role = role.getName();
+        this.role = (role!=null)?role.getName():null;
         this.groupMemberCount = group.getMemberships().size();
-        this.permissions = role.getPermissions();
+        this.permissions = filterPermissions(role.getPermissions());
 
     }
 
@@ -72,6 +97,13 @@ public class GroupResponseWrapper {
     }
     public Set<Permission> getPermissions() {
         return permissions;
+    }
+    public Timestamp getDateTime(){return dateTime;}
+
+
+    private Set<Permission> filterPermissions(Set<Permission> permissions){
+        return permissions.stream().filter(p -> p.toString().contains(filterString)).collect(Collectors.toSet());
+
     }
 
 }

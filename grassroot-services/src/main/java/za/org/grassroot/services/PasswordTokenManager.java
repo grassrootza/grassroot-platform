@@ -186,6 +186,11 @@ public class PasswordTokenManager implements PasswordTokenService {
 
     }
 
+    @Override
+    public boolean isExpired(VerificationTokenCode tokenCode){
+        return Duration.between(LocalDateTime.now(),tokenCode.getCreatedDateTime().toLocalDateTime()).toDays()>
+                TOKEN_LIFE_SPAN_DAYS;
+    }
 
 
     }

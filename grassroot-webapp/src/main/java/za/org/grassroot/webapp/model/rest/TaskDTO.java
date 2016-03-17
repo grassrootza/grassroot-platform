@@ -3,6 +3,11 @@ package za.org.grassroot.webapp.model.rest;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.webapp.enums.TodoStatus;
+
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.time.Instant;
 
 /**
  * Created by paballo on 2016/03/02.
@@ -14,8 +19,8 @@ public abstract class TaskDTO {
     private String subject;
     private String name;
     private String type;
-    private String timestamp;
-    private boolean rsvpRequired;
+    private Timestamp timestamp;
+    private boolean hasResponded;
     private String status;
     private String response;
     private String isOverDue;
@@ -23,17 +28,17 @@ public abstract class TaskDTO {
 
     public TaskDTO(Event event){
         this.id = event.getId();
-        this.appliesToGroup = event.getAppliesToGroup().getId();
         this.subject = event.getName();
         this.name = event.getCreatedByUser().getDisplayName();
-        this.rsvpRequired = event.isRsvpRequired();
+        this.hasResponded = event.isRsvpRequired();
         this.type = event.getEventType().toString();
+        this.timestamp = event.getEventStartDateTime();
     }
     public TaskDTO(LogBook logBook, User user){
         this.id = logBook.getId();
-        this.appliesToGroup = logBook.getGroupId();
+        this.subject = logBook.getMessage();
         this.name = user.getDisplayName();
-        this.rsvpRequired = false;
+        this.hasResponded = false;
     }
 
     public Long getId() {
@@ -54,7 +59,7 @@ public abstract class TaskDTO {
     public String getType() {
         return type;
     }
-    public String getTimestamp() {
+    public Timestamp getTimestamp() {
         return timestamp;
     }
     public String getStatus() {
@@ -62,6 +67,19 @@ public abstract class TaskDTO {
     }
     public String getResponse() {
         return response;
+    }
+
+    private String todoStatus(LogBook logBook){
+
+        if(logBook.isCompleted()){
+            return String.valueOf(TodoStatus.COMPLETED);
+        }
+        else if(logBook.getActionByDate().before(Timestamp.from(Instant.now()))){
+            return "overdue";
+        }else {
+            return  "pending";
+        }
+
     }
 
 

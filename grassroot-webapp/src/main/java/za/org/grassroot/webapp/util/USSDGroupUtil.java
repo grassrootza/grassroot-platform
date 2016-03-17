@@ -17,6 +17,7 @@ import za.org.grassroot.webapp.enums.USSDSection;
 
 import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -285,27 +286,53 @@ public class USSDGroupUtil extends USSDUtil {
                 menu = new USSDMenu(getMessage(section, subjectMenu, promptKey, user), nextUrl);
                 break;
             case GROUP_MANAGER:
-                sessionUser = userManager.findByInputNumber(sessionUser.getPhoneNumber(), saveGroupMenu(existingGroupMenu, groupId));
-                Group group = groupManager.loadGroup(groupId);
-                menu = new USSDMenu(getMessage(section, existingGroupMenu, promptKey, sessionUser));
-                String menuKey = section.toKey() + existingGroupMenu + "." + optionsKey;
-                menu.addMenuOption(urlForNewGroup, getMessage(groupKeyForMessages, "create", "option", sessionUser));
-                menu.addMenuOption(groupMenuWithId(groupTokenMenu, groupId), getMessage(menuKey + groupTokenMenu, sessionUser));
-                menu.addMenuOption(groupMenuWithId(addMemberPrompt, groupId), getMessage(menuKey + addMemberPrompt, sessionUser));
-                menu.addMenuOption(groupMenuWithId(unsubscribePrompt, groupId), getMessage(menuKey + unsubscribePrompt, sessionUser));
-                menu.addMenuOption(groupMenuWithId(renameGroupPrompt, groupId), getMessage(menuKey + renameGroupPrompt, sessionUser));
-                if (group.getCreatedByUser().equals(sessionUser)) {
-                    menu.addMenuOption(groupMenuWithId(mergeGroupMenu, groupId), getMessage(menuKey + mergeGroupMenu, sessionUser));
-                }
-                if (groupBroker.isDeactivationAvailable(sessionUser, group, true)) {
-                    menu.addMenuOption(groupMenuWithId(inactiveMenu, groupId), getMessage(menuKey + inactiveMenu, sessionUser));
-                }
+                menu = existingGroupMenu(sessionUser, groupId);
                 break;
             default:
                 break;
 
         }
         return menu;
+    }
+
+    public USSDMenu existingGroupMenu(User sessionUser, Long groupId) {
+
+        USSDSection thisSection = USSDSection.GROUP_MANAGER;
+        Group group = groupManager.loadGroup(groupId);
+        String menuKey = thisSection.toKey() + existingGroupMenu + "." + optionsKey;
+
+        String prompt, tokenKey;
+        if (group.getGroupTokenCode() != null && Instant.now().isBefore(group.getTokenExpiryDateTime().toInstant())) {
+            String dial = "*134*1994*" + group.getGroupTokenCode() + "#";
+            prompt = getMessage(thisSection, existingGroupMenu, promptKey + ".token", dial, sessionUser);
+            tokenKey = menuKey + groupTokenMenu + ".exists";
+        } else {
+            prompt = getMessage(thisSection, existingGroupMenu, promptKey, sessionUser);
+            tokenKey = menuKey + groupTokenMenu + ".create";
+        }
+
+        USSDMenu listMenu = new USSDMenu(prompt);
+
+        if (permissionBroker.isGroupPermissionAvailable(sessionUser, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER))
+            listMenu.addMenuOption(groupMenuWithId(addMemberPrompt, groupId), getMessage(menuKey + addMemberPrompt, sessionUser));
+
+        if (permissionBroker.isGroupPermissionAvailable(sessionUser, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS))
+            listMenu.addMenuOption(groupMenuWithId(groupTokenMenu, groupId), getMessage(tokenKey, sessionUser));
+
+        listMenu.addMenuOption(groupMenuWithId(unsubscribePrompt, groupId), getMessage(menuKey + unsubscribePrompt, sessionUser));
+
+        if (permissionBroker.isGroupPermissionAvailable(sessionUser, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS))
+            listMenu.addMenuOption(groupMenuWithId(renameGroupPrompt, groupId), getMessage(menuKey + renameGroupPrompt, sessionUser));
+
+        // removing this for now until have 'advanced sub-menu', or the like
+        // if (group.getCreatedByUser().equals(sessionUser))
+        //    listMenu.addMenuOption(groupMenuWithId(mergeGroupMenu, groupId), getMessage(menuKey + mergeGroupMenu, sessionUser));
+
+        if (groupBroker.isDeactivationAvailable(sessionUser, group, true))
+            listMenu.addMenuOption(groupMenuWithId(inactiveMenu, groupId), getMessage(menuKey + inactiveMenu, sessionUser));
+
+        return listMenu;
+
     }
 
     private boolean hasPermission(USSDSection section, Group group, User user){

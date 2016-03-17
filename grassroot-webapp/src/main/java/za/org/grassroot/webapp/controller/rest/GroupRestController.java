@@ -6,19 +6,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.repository.GroupLogRepository;
-import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrapper;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.GroupResponseWrapper;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
+import za.org.grassroot.webapp.model.rest.ResponseWrappers.*;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -49,16 +44,11 @@ public class GroupRestController {
     UserManagementService userManagementService;
 
     @Autowired
-    UserRepository userRepository;
+    GroupLogService groupLogService;
 
-    @Autowired
-    GroupRepository groupRepository;
 
     @Autowired
     GroupBroker groupBroker;
-
-    @Autowired
-    GroupLogRepository groupLogRepository;
 
     @Autowired
     private GroupJoinRequestService groupJoinRequestService;
@@ -66,9 +56,8 @@ public class GroupRestController {
 
     @RequestMapping(value = "create/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> createGroup(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
-                                                       @RequestParam("groupName") String groupName, @RequestParam(value = "description", required = false) String description,
-                                                       @RequestParam(value = "phoneNumbers", required = false) List<String> phoneNumbers
-    ) {
+                                                       @RequestParam("groupName") String groupName, @RequestParam(value = "description", required = true) String description,
+                                                       @RequestParam(value = "phoneNumbers", required = false) List<String> phoneNumbers) {
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
@@ -77,8 +66,10 @@ public class GroupRestController {
 
         try {
             addMembersToGroup(phoneNumbers, membersToAdd);
-            groupBroker.create(user.getUid(), groupName, null, membersToAdd,
+            Group group = groupBroker.create(user.getUid(), groupName, null, membersToAdd,
                     GroupPermissionTemplate.DEFAULT_GROUP);
+             groupManagementService.changeGroupDescription(group.getUid(),description,user.getUid());
+
         } catch (RuntimeException e) {
             return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, e.getMessage(), RestStatus.FAILURE),
                     HttpStatus.BAD_REQUEST);
@@ -97,13 +88,8 @@ public class GroupRestController {
         if (!groupList.isEmpty()) {
             List<GroupResponseWrapper> groups = new ArrayList<>();
             for (Group group : groupList) {
-                Event event = eventManagementService.getMostRecentEvent(group);
                 Role role = group.getMembership(user).getRole();
-                if (event != null) {
-                    groups.add(new GroupResponseWrapper(group, event, role));
-                } else {
-                    groups.add(new GroupResponseWrapper(group, role));
-                }
+                groups.add(createWrapper(group,role));
             }
             return new ResponseEntity<>(new GenericResponseWrapper(HttpStatus.OK, RestMessage.USER_GROUPS,
                     RestStatus.SUCCESS, groups), HttpStatus.OK);
@@ -122,15 +108,17 @@ public class GroupRestController {
         Group groupByToken = groupManagementService.findGroupByToken(tokenSearch);
         ResponseWrapper responseWrapper;
         if (groupByToken != null) {
-            GroupResponseWrapper groupWrapper = new GroupResponseWrapper(groupByToken);
+            Event event = eventManagementService.getMostRecentEvent(groupByToken);
+            GroupSearchWrapper groupWrapper = new GroupSearchWrapper(groupByToken, event);
             responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.GROUP_FOUND, RestStatus.SUCCESS, groupWrapper);
         } else {
             List<Group> possibleGroups = groupBroker.findPublicGroups(searchTerm);
-            List<GroupResponseWrapper> groups;
+            List<GroupSearchWrapper> groups;
             if (!possibleGroups.isEmpty()) {
                 groups = new ArrayList<>();
                 for (Group group : possibleGroups) {
-                    groups.add(new GroupResponseWrapper(group));
+                    Event event = eventManagementService.getMostRecentEvent(group);
+                    groups.add(new GroupSearchWrapper(group, event));
                 }
                 responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.POSSIBLE_GROUP_MATCHES, RestStatus.SUCCESS, groups);
             } else {
@@ -154,15 +142,32 @@ public class GroupRestController {
 
     }
 
-
-    private void addMembersToGroup(List<String> phoneNumbers, Set<MembershipInfo> members) {
+    private Set<MembershipInfo> addMembersToGroup(List<String> phoneNumbers, Set<MembershipInfo> members) {
         if (phoneNumbers != null) {
             for (String phoneNumber : phoneNumbers)
                 if (PhoneNumberUtil.testInputNumber(phoneNumber)) {
                     members.add(new MembershipInfo(PhoneNumberUtil.convertPhoneNumber(phoneNumber), BaseRoles.ROLE_ORDINARY_MEMBER, null));
                 }
         }
+        return members;
     }
 
+    private GroupResponseWrapper createWrapper(Group group, Role role) {
+        Event event = eventManagementService.getMostRecentEvent(group);
+        GroupLog groupLog = groupLogService.load(group.getId());
+        GroupResponseWrapper responseWrapper;
+        if (event != null) {
+            if (event.getEventStartDateTime() != null && event.getEventStartDateTime()
+                    .after(new Timestamp(groupLog.getCreatedDateTime().getTime()))) {
+                responseWrapper = new GroupResponseWrapper(group, event, role);
+            } else {
+                responseWrapper = new GroupResponseWrapper(group, groupLog, role);
+            }
+        } else {
+            responseWrapper = new GroupResponseWrapper(group, groupLog, role);
+        }
+        return responseWrapper;
+
+    }
 
 }

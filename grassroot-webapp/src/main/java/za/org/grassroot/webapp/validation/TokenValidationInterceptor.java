@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerMapping;
+import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.services.PasswordTokenManager;
@@ -37,10 +38,10 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
     PasswordTokenService passwordTokenService;
 
     private static final Logger log = LoggerFactory.getLogger(TokenValidationInterceptor.class);
-    private static final int TOKEN_LIFE_SPAN_DAYS = 10;
     private ObjectMapper mapper;
     private ObjectWriter ow;
     private ResponseWrapper responseWrapper;
+    private String contentType = "application/json";
 
     @Override
     public boolean preHandle(HttpServletRequest request,
@@ -55,25 +56,20 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
             mapper = new ObjectMapper();
             ow = mapper.writer();
             VerificationTokenCode tokenCode = passwordTokenService.getVerificationCode(phoneNumber);
-            if(tokenCode !=null && isExpired(tokenCode)) {
+            if(tokenCode !=null &&  passwordTokenService.isExpired(tokenCode)) {
                 responseWrapper = new ResponseWrapperImpl(HttpStatus.UNAUTHORIZED, RestMessage.TOKEN_EXPIRED,
                         RestStatus.FAILURE);
             }else {
                 responseWrapper = new ResponseWrapperImpl(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_TOKEN,
                         RestStatus.FAILURE);
             }
-            response.setContentType("application/json");
+            response.setContentType(contentType);
             response.getWriter().write(ow.writeValueAsString(responseWrapper));
+            response.setStatus(responseWrapper.getCode());
 
         return false;
 
     }
-
-    private boolean isExpired(VerificationTokenCode tokenCode){
-        return Duration.between(LocalDateTime.now(),tokenCode.getCreatedDateTime().toLocalDateTime()).toDays()>
-                TOKEN_LIFE_SPAN_DAYS;
-    }
-
 
 
 

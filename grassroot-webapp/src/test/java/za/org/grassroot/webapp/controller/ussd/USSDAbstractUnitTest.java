@@ -47,6 +47,9 @@ public abstract class USSDAbstractUnitTest {
     @Mock
     protected LogBookService logBookServiceMock;
 
+    @Mock
+    protected PermissionBroker permissionBroker;
+
     @InjectMocks
     protected USSDGroupUtil ussdGroupUtil;
 

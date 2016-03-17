@@ -90,6 +90,10 @@ public class Group implements Serializable {
     @JoinColumn(name= "join_approver_id", nullable = true)
     private User joinApprover;
 
+    /* Adding an optional field that allows longer descriptions than just the group name, which has to be kept short */
+    @Column(name = "description", nullable = false)
+    private String description;
+
     private Group() {
         // for JPA
     }
@@ -106,6 +110,7 @@ public class Group implements Serializable {
         this.active = true;
         this.discoverable = false;
         this.parent = parent;
+        this.description = ""; // at some point may want to add to the constructor
 
         // automatically add 3 default roles
         addRole(BaseRoles.ROLE_GROUP_ORGANIZER);
@@ -352,6 +357,11 @@ public class Group implements Serializable {
     public User getJoinApprover() { return joinApprover; }
 
     public void setJoinApprover(User joinApprover) { this.joinApprover = joinApprover; }
+
+    // inserting this in the getter, to avoid having to reset group description,
+    public String getDescription() { return description; }
+
+    public void setDescription(String description) { this.description = description; }
 
     public Set<Role> getGroupRoles() {
         if (groupRoles == null) {

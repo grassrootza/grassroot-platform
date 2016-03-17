@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.core.dto.TokenDTO;
@@ -22,7 +21,7 @@ import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.SignInResponseWrapper;
+import za.org.grassroot.webapp.model.rest.ResponseWrappers.AuthenticationResponseWrapper;
 
 import java.util.List;
 import java.util.logging.Logger;
@@ -112,7 +111,7 @@ public class UserRestController {
             User user = userManagementService.loadOrSaveUser(phoneNumber);
             VerificationTokenCode longLivedToken = passwordTokenService.generateLongLivedCode(user);
             boolean hasGroups =  groupManagementService.getActiveGroupsPartOf(user).size() >0;
-            return new ResponseEntity<>(new SignInResponseWrapper(HttpStatus.OK, RestMessage.LOGIN_SUCCESS,
+            return new ResponseEntity<>(new AuthenticationResponseWrapper(HttpStatus.OK, RestMessage.LOGIN_SUCCESS,
                     RestStatus.SUCCESS, new TokenDTO(longLivedToken),hasGroups), HttpStatus.OK);
         }
         return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_TOKEN,

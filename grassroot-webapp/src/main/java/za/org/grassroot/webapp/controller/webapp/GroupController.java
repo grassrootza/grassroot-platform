@@ -164,16 +164,13 @@ public class GroupController extends BaseController {
         return viewGroupIndex(model, groupJoinRequestService.loadRequest(requestUid).getGroup().getId());
     }
 
-    /* @RequestMapping(value = "join", method = RequestMethod.POST)
-    public String joinGroup(Model model, @RequestParam String groupUid, HttpServletRequest request,
-                            RedirectAttributes redirectAttributes) {
+    @RequestMapping(value = "join/token", method = RequestMethod.POST)
+    public String joinGroup(Model model, @RequestParam String groupUid, @RequestParam String token, HttpServletRequest request) {
         // todo: add in group join requests, etc
-        MembershipInfo member = new MembershipInfo(getUserProfile().getPhoneNumber(), BaseRoles.ROLE_ORDINARY_MEMBER,
-                                                   getUserProfile().getDisplayName());
-        groupBroker.addMembers(getUserProfile().getUid(), groupUid, Sets.newHashSet(member));
-        addMessage(redirectAttributes, MessageType.SUCCESS, "group.join.success", request);
-        return "redirect:/home"; // redirecting to group view is creating issues ... todo: fix those
-    }*/
+        groupBroker.addMemberViaJoinCode(getUserProfile().getUid(), groupUid, token);
+        addMessage(model, MessageType.SUCCESS, "group.join.success", request);
+        return viewGroupIndex(model, groupManagementService.loadGroupByUid(groupUid).getId()); // replace when refactor all to Uid
+    }
 
     /*
     Next methods are to view a group, core part of interface
