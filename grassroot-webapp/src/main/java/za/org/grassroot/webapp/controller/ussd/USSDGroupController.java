@@ -1,8 +1,10 @@
 package za.org.grassroot.webapp.controller.ussd;
 
 import com.google.common.collect.Sets;
+import edu.emory.mathcs.backport.java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -10,18 +12,22 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.MembershipInfo;
+import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
+import za.org.grassroot.webapp.util.USSDGroupUtil;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,11 +41,14 @@ import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 @RestController
 public class USSDGroupController extends USSDController {
 
+    @Autowired
+    private PermissionBroker permissionBroker;
+
     private static final Logger log = LoggerFactory.getLogger(USSDGroupController.class);
 
     private static final String existingGroupMenu = "menu",
             createGroupMenu = "create",
-            createGroupAddToken = "create-token",
+            closeGroupToken = "create-token",
             createGroupAddNumbers = "add-numbers",
             listGroupMembers = "list",
             renameGroupPrompt = "rename",
@@ -77,26 +86,8 @@ public class USSDGroupController extends USSDController {
     public Request groupMenu(@RequestParam(value= phoneNumber, required=true) String inputNumber,
                              @RequestParam(value= groupIdParam, required=true) Long groupId) throws URISyntaxException {
 
-        if (groupId == 0) { return createPrompt(inputNumber); }
-
-        User sessionUser = userManager.findByInputNumber(inputNumber, saveGroupMenu(existingGroupMenu, groupId));
-        Group group = groupManager.loadGroup(groupId);
-        USSDMenu listMenu = new USSDMenu(getMessage(thisSection, existingGroupMenu, promptKey, sessionUser));
-
-        String menuKey = thisSection.toKey() + existingGroupMenu + "." + optionsKey;
-
-        listMenu.addMenuOption(groupMenuWithId(groupTokenMenu, groupId), getMessage(menuKey + groupTokenMenu, sessionUser));
-        listMenu.addMenuOption(groupMenuWithId(addMemberPrompt, groupId), getMessage(menuKey + addMemberPrompt, sessionUser));
-        listMenu.addMenuOption(groupMenuWithId(unsubscribePrompt, groupId), getMessage(menuKey + unsubscribePrompt, sessionUser));
-        listMenu.addMenuOption(groupMenuWithId(renameGroupPrompt, groupId), getMessage(menuKey + renameGroupPrompt, sessionUser));
-
-        if (group.getCreatedByUser().equals(sessionUser))
-            listMenu.addMenuOption(groupMenuWithId(mergeGroupMenu, groupId), getMessage(menuKey + mergeGroupMenu, sessionUser));
-
-        if (groupBroker.isDeactivationAvailable(sessionUser, group, true))
-            listMenu.addMenuOption(groupMenuWithId(inactiveMenu, groupId), getMessage(menuKey + inactiveMenu, sessionUser));
-
-        return menuBuilder(listMenu);
+        return (groupId == 0) ? createPrompt(inputNumber) :
+                menuBuilder(ussdGroupUtil.existingGroupMenu(userManager.findByInputNumber(inputNumber), groupId));
     }
 
     /*
@@ -130,19 +121,22 @@ public class USSDGroupController extends USSDController {
         } else {
             Long startTime = System.currentTimeMillis();
             MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
-            createdGroup = groupBroker.create(user.getUid(), groupName, null, Sets.newHashSet(creator),
+            createdGroup = groupBroker.create(user.getUid(), groupName, null, Collections.singleton(creator),
                                                     GroupPermissionTemplate.DEFAULT_GROUP);
+            groupManager.generateGroupToken(createdGroup.getUid(), user.getUid());
             Long endTime = System.currentTimeMillis();
             log.info(String.format("Group has been created ... time taken ... %d msecs", endTime - startTime));
         }
 
+        String joiningCode = "*134*1994*" + createdGroup.getGroupTokenCode() + "#";
         userManager.setLastUssdMenu(user, saveGroupMenuWithInput(createGroupMenu + doSuffix, createdGroup.getId(), groupName));
-        USSDMenu menu = new USSDMenu(getMessage(thisSection, createGroupMenu + doSuffix, promptKey, groupName, user));
+        USSDMenu menu = new USSDMenu(getMessage(thisSection, createGroupMenu + doSuffix, promptKey,
+                                                new String[]{ groupName, joiningCode}, user));
 
-        menu.addMenuOption(groupMenuWithId(createGroupAddToken, createdGroup.getId()),
-                           getMessage(thisSection, createGroupMenu + doSuffix, optionsKey + "token", user));
         menu.addMenuOption(groupMenuWithId(createGroupAddNumbers, createdGroup.getId()),
                            getMessage(thisSection, createGroupMenu + doSuffix, optionsKey + "numbers", user));
+        menu.addMenuOption(groupMenuWithId(closeGroupToken, createdGroup.getId()),
+                           getMessage(thisSection, createGroupMenu + doSuffix, optionsKey + "token", user));
 
         return menuBuilder(menu);
     }
@@ -150,29 +144,27 @@ public class USSDGroupController extends USSDController {
     /*
     Create an indefinite token and then give the options to go home or add some numbers
      */
-    @RequestMapping(value = groupPath + createGroupAddToken)
+    @RequestMapping(value = groupPath + closeGroupToken)
     @ResponseBody
     public Request createGroupCreateIndefiniteToken(@RequestParam(phoneNumber) String inputNumber,
                                                     @RequestParam(groupIdParam) Long groupId,
                                                     @RequestParam(value = "interrupted", required = false) boolean interrupted) throws URISyntaxException {
 
         // todo: various forms of error and permission checking
-        User user = userManager.findByInputNumber(inputNumber, saveGroupMenu(createGroupAddToken, groupId));
+        User user = userManager.findByInputNumber(inputNumber, saveGroupMenu(closeGroupToken, groupId));
         Group group = groupManager.loadGroup(groupId);
 
         /*  the only case of coming here and the group has a code is after interruption or after 'add numbers' via create
             hence there is no need to check if the code expiry date has passed (by definition, the code is valid) */
 
-        String token = (interrupted || (group.getGroupTokenCode() != null && !group.getGroupTokenCode().equals(""))) ?
-            group.getGroupTokenCode() :
-            groupManager.generateGroupToken(group.getUid(), user.getUid()).getGroupTokenCode();
+        groupManager.closeGroupToken(group.getUid(), user.getUid());
 
-        USSDMenu menu = new USSDMenu(getMessage(thisSection, createGroupAddToken, promptKey, token, user));
+        USSDMenu menu = new USSDMenu(getMessage(thisSection, closeGroupToken, promptKey, user));
 
         menu.addMenuOption(groupMenuWithId(createGroupAddNumbers, groupId),
-                           getMessage(thisSection, createGroupAddToken, optionsKey + "add", user));
+                           getMessage(thisSection, closeGroupToken, optionsKey + "add", user));
         menu.addMenuOption(groupMenus + startMenu + "?interrupted=1",
-                           getMessage(thisSection, createGroupAddToken, optionsKey + "home", user));
+                           getMessage(thisSection, closeGroupToken, optionsKey + "home", user));
         menu.addMenuOption("exit", getMessage("exit.option", user));
 
         return menuBuilder(menu);
@@ -210,11 +202,15 @@ public class USSDGroupController extends USSDController {
             thisMenu = ussdGroupUtil.addNumbersToExistingGroup(user, groupUid, thisSection,
                                                                userResponse, createGroupAddNumbers + doSuffix);
         } else { // stop asking for numbers, reset interrupt prompt and give options to go back
-            thisMenu = new USSDMenu(getMessage(thisSection, createGroupAddNumbers, promptKey + ".done", user));
-            thisMenu.addMenuOption(groupMenus + createGroupAddToken + groupIdUrlSuffix + groupId,
-                                   getMessage(thisSection, createGroupAddNumbers, optionsKey + "token", user));
+            Group group = groupManager.loadGroup(groupId);
+            String prompt = (group.getGroupTokenCode() != null && Instant.now().isBefore(group.getTokenExpiryDateTime().toInstant())) ?
+                    getMessage(thisSection, createGroupAddNumbers, promptKey + ".done.token", group.getGroupTokenCode(), user) :
+                    getMessage(thisSection, createGroupAddNumbers, promptKey + ".done", user);
+            thisMenu = new USSDMenu(prompt);
             thisMenu.addMenuOption(groupMenus + startMenu + "?interrupted=1",
                                    getMessage(thisSection, createGroupAddNumbers, optionsKey + "home", user));
+            thisMenu.addMenuOption(groupMenus + closeGroupToken + groupIdUrlSuffix + groupId,
+                                   getMessage(thisSection, createGroupAddNumbers, optionsKey + "token", user));
             thisMenu.addMenuOption("exit", getMessage("exit.option", user));
         }
 
@@ -404,8 +400,16 @@ public class USSDGroupController extends USSDController {
         // todo: load and display some brief descriptive text about the group, e.g., name and who created it
         // todo: add a lot of validation logic (user is part of group, has permission to adjust, etc etc).
 
+        Group group = groupManager.loadGroup(groupId);
         User sessionUser = userManager.findByInputNumber(inputNumber, saveGroupMenu(addMemberPrompt, groupId));
-        String promptMessage = getMessage(thisSection, addMemberPrompt, promptKey, sessionUser);
+        String promptMessage;
+
+        if (group.getGroupTokenCode() != null && Instant.now().isBefore(group.getTokenExpiryDateTime().toInstant())) {
+            promptMessage = getMessage(thisSection, addMemberPrompt, promptKey + ".token", group.getGroupTokenCode(), sessionUser);
+        } else {
+            promptMessage = getMessage(thisSection, addMemberPrompt, promptKey, sessionUser);
+        }
+
         return menuBuilder(new USSDMenu(promptMessage, groupMenus + addMemberPrompt + doSuffix + groupIdUrlSuffix + groupId));
 
     }
