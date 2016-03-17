@@ -40,6 +40,7 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
     private ObjectMapper mapper;
     private ObjectWriter ow;
     private ResponseWrapper responseWrapper;
+    private String contentType = "application/json";
 
     @Override
     public boolean preHandle(HttpServletRequest request,
@@ -54,15 +55,14 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
             mapper = new ObjectMapper();
             ow = mapper.writer();
             VerificationTokenCode tokenCode = passwordTokenService.getVerificationCode(phoneNumber);
-            boolean isExpired = passwordTokenService.isExpired(tokenCode);
-            if(tokenCode !=null && isExpired) {
+            if(tokenCode !=null &&  passwordTokenService.isExpired(tokenCode)) {
                 responseWrapper = new ResponseWrapperImpl(HttpStatus.UNAUTHORIZED, RestMessage.TOKEN_EXPIRED,
                         RestStatus.FAILURE);
             }else {
                 responseWrapper = new ResponseWrapperImpl(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_TOKEN,
                         RestStatus.FAILURE);
             }
-            response.setContentType("application/json");
+            response.setContentType(contentType);
             response.getWriter().write(ow.writeValueAsString(responseWrapper));
             response.setStatus(responseWrapper.getCode());
 

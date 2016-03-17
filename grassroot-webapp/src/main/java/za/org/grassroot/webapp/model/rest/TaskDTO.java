@@ -32,6 +32,7 @@ public abstract class TaskDTO {
     public TaskDTO(LogBook logBook, User user){
         this.id = logBook.getId();
         this.appliesToGroup = logBook.getGroupId();
+        this.subject = logBook.getMessage();
         this.name = user.getDisplayName();
         this.rsvpRequired = false;
     }

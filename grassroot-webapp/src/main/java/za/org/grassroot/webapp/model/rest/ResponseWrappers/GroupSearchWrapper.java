@@ -16,9 +16,7 @@ public class GroupSearchWrapper {
     public GroupSearchWrapper(Group group, Event event){
         this.id =group.getUid();
         this.groupName = group.getGroupName();
-        if(event !=null) {
-            this.description = event.getName();
-        }
+        this.description = (event!=null)?event.getName():description;
         this.groupCreator = group.getCreatedByUser().getDisplayName();
         this.count = group.getMemberships().size();
 
