@@ -54,6 +54,7 @@ public class EventBrokerImpl implements EventBroker {
 	}
 
 	@Override
+	@Transactional
 	public Vote createVote(String userUid, String groupUid, String name, Timestamp eventStartDateTime, boolean includeSubGroups,
 						   boolean rsvpRequired, boolean relayable, EventReminderType reminderType, int customReminderMinutes) {
 		Objects.requireNonNull(userUid);
