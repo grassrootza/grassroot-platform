@@ -6,6 +6,9 @@ package za.org.grassroot.webapp.enums;
 public enum TodoStatus {
     PENDING,
     OVERDUE,
-    COMPLETED
+    COMPLETED,
+    AWAITING_REPLY,
+    ABSTAINED,
+    NO_RESPONSE;
 
 }
