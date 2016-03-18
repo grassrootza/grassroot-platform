@@ -36,4 +36,6 @@ public interface GroupBroker {
 
     List<Group> findPublicGroups(String searchTerm);
 
+    void updateGroupRolePermissions(String userUid, String groupUid, String roleName, Set<Permission> newPermissions);
+
 }

@@ -85,7 +85,7 @@ public class GroupController extends BaseController {
                                                                        Permission.GROUP_PERMISSION_READ_UPCOMING_EVENTS,
                                                                        Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY,
                                                                        Permission.GROUP_PERMISSION_CLOSE_OPEN_LOGBOOK,
-                                                                       // Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE,
+                                                                       Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE,
                                                                        // Permission.GROUP_PERMISSION_FORCE_PERMISSION_CHANGE,
                                                                        Permission.GROUP_PERMISSION_CREATE_SUBGROUP,
                                                                        // Permission.GROUP_PERMISSION_AUTHORIZE_SUBGROUP,
@@ -817,15 +817,31 @@ public class GroupController extends BaseController {
     }
 
     @RequestMapping(value = "roles/permissions", method = RequestMethod.POST)
-    public String changeGroupRole(Model model, @RequestParam Long groupId, @RequestParam Long userId,
-                                  @RequestParam("roleName") String roleName, HttpServletRequest request) {
+    public String changeGroupRole(Model model, @RequestParam String groupUid, HttpServletRequest request) {
 
-        User userToModify = userManagementService.loadUser(userId);
-        Group group = groupManagementService.loadGroup(groupId);
-        groupBroker.updateMembershipRole(getUserProfile().getUid(), group.getUid(), userToModify.getUid(), roleName);
+        // todo: there must be a more efficient way to do this, possibly via a permission wrapper?
+
+        Set<Permission> ordinaryPermissions = new HashSet<>();
+        Set<Permission> committeePermissions = new HashSet<>();
+        Set<Permission> organizerPermissions = new HashSet<>();
+
+        for (Permission permission : permissionsImplemented) {
+            String ordinary = request.getParameter("ordinary_" + permission.getName());
+            String committee = request.getParameter("committee_" + permission.getName());
+            String organizer = request.getParameter("organizer_" + permission.getName());
+
+            if (ordinary != null && ordinary.equals("on")) ordinaryPermissions.add(permission);
+            if (committee != null && committee.equals("on")) committeePermissions.add(permission);
+            if (organizer != null && organizer.equals("on")) organizerPermissions.add(permission);
+        }
+
+        // todo: make this atomic instead, plus also need to make sure don't overwrite the non implemented stuff
+        groupBroker.updateGroupRolePermissions(getUserProfile().getUid(), groupUid, BaseRoles.ROLE_ORDINARY_MEMBER, ordinaryPermissions);
+        groupBroker.updateGroupRolePermissions(getUserProfile().getUid(), groupUid, BaseRoles.ROLE_COMMITTEE_MEMBER, committeePermissions);
+        groupBroker.updateGroupRolePermissions(getUserProfile().getUid(), groupUid, BaseRoles.ROLE_GROUP_ORGANIZER, organizerPermissions);
 
         addMessage(model, MessageType.INFO, "group.role.done", request);
-        return viewMemberRoles(model, group.getUid());
+        return viewRolePermissions(model, groupUid);
     }
 
 }

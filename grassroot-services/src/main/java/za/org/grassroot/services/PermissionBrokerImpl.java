@@ -1,8 +1,10 @@
 package za.org.grassroot.services;
 
 import edu.emory.mathcs.backport.java.util.Collections;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
@@ -124,44 +126,5 @@ public class PermissionBrokerImpl implements PermissionBroker {
     public Set<Permission> getPermissions(Group group, String roleName) {
         return group.getRole(roleName).getPermissions();
     }
-
-    // NOTE: parking some old code here, may reuse in future if we create similar methods
-
-    /*    private Role fixAndReturnGroupRole(String roleName, Group group, GroupPermissionTemplate template) {
-        group.setGroupRoles(roleManagementService.createGroupRoles(group.getUid()));
-        groupRepository.saveAndFlush(group);
-        return fetchGroupRole(roleName, group.getUid());
-    }
-
-    private Role fixPermissionsForRole(Role role, GroupPermissionTemplate template) {
-        log.error("Uh oh, for some reason the role permissions weren't set previously");
-        role.setPermissions(permissionsManagementService.getPermissions(role.getName(), template));
-        return roleRepository.save(role);
-    }
-
-    @Async
-    @Override
-    public void resetGroupToDefaultRolesPermissions(Long groupId, GroupPermissionTemplate template, User callingUser) {
-
-        log.info("Resetting group to creator as organizer, rest as members ... ");
-        Long startTime = System.currentTimeMillis();
-        Group group = groupRepository.findOne(groupId);
-        Long creatingUserId = group.getCreatedByUser().getId();
-
-        List<User> groupMembers = userRepository.findByGroupsPartOfAndIdNot(group, creatingUserId);
-
-        Role ordinaryRole = fetchGroupRole(BaseRoles.ROLE_ORDINARY_MEMBER, group.getUid());
-        if (ordinaryRole == null) { ordinaryRole = fixAndReturnGroupRole(BaseRoles.ROLE_ORDINARY_MEMBER, group, template); }
-
-        if (ordinaryRole.getPermissions() == null || ordinaryRole.getPermissions().isEmpty())
-            ordinaryRole = fixPermissionsForRole(ordinaryRole, template);
-
-        addRoleToGroupAndUser(BaseRoles.ROLE_GROUP_ORGANIZER, group, group.getCreatedByUser(), callingUser);
-        addRoleToGroupAndUsers(BaseRoles.ROLE_ORDINARY_MEMBER, group, groupMembers, callingUser);
-
-        Long endTime = System.currentTimeMillis();
-        log.info(String.format("Added roles to members, total time took %d msecs", endTime - startTime));
-        log.info("Exiting the resetGroupToDefault method ...");
-    }*/
 
 }

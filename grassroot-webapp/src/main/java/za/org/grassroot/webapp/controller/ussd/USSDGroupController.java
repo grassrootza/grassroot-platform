@@ -462,7 +462,7 @@ public class USSDGroupController extends USSDController {
         User sessionUser = userManager.findByInputNumber(inputNumber, null);
         // todo: add error and exception handling, as well as validation and checking (e.g., if user in group, etc)
 
-        groupBroker.removeMembers(sessionUser.getUid(), groupUid, Sets.newHashSet(sessionUser.getUid()));
+        groupBroker.unsubscribeMember(sessionUser.getUid(), groupUid);
         String returnMessage = getMessage(thisSection, unsubscribePrompt + doSuffix, promptKey, sessionUser);
         return menuBuilder(new USSDMenu(returnMessage, optionsHomeExit(sessionUser)));
     }

@@ -376,4 +376,22 @@ public class GroupBrokerImpl implements GroupBroker {
         // Group foundByToken = groupRepository.findByGroupTokenCodeAndTokenExpiryDateTimeAfter(searchTerm, Timestamp.valueOf(LocalDateTime.now()));
         return groupRepository.findByGroupNameContainingIgnoreCaseAndDiscoverable(searchTerm, true);
     }
+
+    @Override
+    @Transactional
+    public void updateGroupRolePermissions(String userUid, String groupUid, String roleName, Set<Permission> newPermissions) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+        Objects.requireNonNull(roleName);
+        Objects.requireNonNull(newPermissions);
+
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+
+        // todo: switch to the "change permissions" permission, once that is actually implemented properly
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+
+        Role role = group.getRole(roleName);
+        role.setPermissions(newPermissions);
+    }
 }

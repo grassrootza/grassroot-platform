@@ -307,7 +307,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
                 andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupBrokerMock, times(1)).removeMembers(testUser.getUid(), testGroup.getUid(), Sets.newHashSet(testUser.getUid()));
+        verify(groupBrokerMock, times(1)).unsubscribeMember(testUser.getUid(), testGroup.getUid());
         verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
