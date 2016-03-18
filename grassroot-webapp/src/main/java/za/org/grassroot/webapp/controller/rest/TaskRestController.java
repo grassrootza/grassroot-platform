@@ -65,14 +65,18 @@ public class TaskRestController {
         for (Event event : eventManagementService.findByAppliesToGroup(group)) {
             EventLog eventLog = eventLogManagementService.getEventLogOfUser(event, user);
             boolean hasResponded = eventLogManagementService.userRsvpForEvent(event, user);
-            tasks.add(new TaskDTO(event, eventLog, user, hasResponded));
+            if(!event.isSendBlocked()) {
+                tasks.add(new TaskDTO(event, eventLog, user, hasResponded));
+            }
         }
         for (LogBook logBook : logBookService.getAllLogBookEntriesForGroup(group.getId())) {
             if (logBook.getCreatedByUserId().equals(user.getId())) {
                 tasks.add(new TaskDTO(logBook, user, user));
             } else {
                 User creatingUser = userManagementService.loadUser(logBook.getCreatedByUserId());
-                tasks.add(new TaskDTO(logBook, user, creatingUser));
+                if(logBook.isRecorded()) {
+                    tasks.add(new TaskDTO(logBook, user, creatingUser));
+                }
             }
         }
         Collections.sort(tasks);
