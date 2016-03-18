@@ -65,7 +65,7 @@ public class TaskRestController {
         for (Event event : eventManagementService.findByAppliesToGroup(group)) {
             EventLog eventLog = eventLogManagementService.getEventLogOfUser(event, user);
             boolean hasResponded = eventLogManagementService.userRsvpForEvent(event, user);
-            if(!event.isSendBlocked()) {
+            if(!event.isSendBlocked() && event.getEventStartDateTime() != null) {
                 tasks.add(new TaskDTO(event, eventLog, user, hasResponded));
             }
         }
