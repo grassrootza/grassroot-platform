@@ -20,7 +20,7 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 /**
- * Created by aakilomar on 9/5/15.
+ * Created by paballo.
  */
 @RestController
 @RequestMapping(value = "/api/group")
@@ -65,8 +65,7 @@ public class GroupRestController {
         membersToAdd.add(creator);
 
         try {
-            addMembersToGroup(phoneNumbers, membersToAdd);
-            Group group = groupBroker.create(user.getUid(), groupName, null, membersToAdd,
+            Group group = groupBroker.create(user.getUid(), groupName, null, addMembersToGroup(phoneNumbers, membersToAdd),
                     GroupPermissionTemplate.DEFAULT_GROUP);
              groupManagementService.changeGroupDescription(group.getUid(),description,user.getUid());
 
@@ -82,20 +81,22 @@ public class GroupRestController {
     @RequestMapping(value = "list/{phoneNumber}/{code}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> getUserGroups(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String token) {
 
-
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         List<Group> groupList = groupManagementService.getActiveGroupsPartOf(user);
+        ResponseWrapper responseWrapper;
         if (!groupList.isEmpty()) {
             List<GroupResponseWrapper> groups = new ArrayList<>();
             for (Group group : groupList) {
                 Role role = group.getMembership(user).getRole();
                 groups.add(createWrapper(group,role));
             }
-            return new ResponseEntity<>(new GenericResponseWrapper(HttpStatus.OK, RestMessage.USER_GROUPS,
-                    RestStatus.SUCCESS, groups), HttpStatus.OK);
+            responseWrapper =  new GenericResponseWrapper(HttpStatus.OK, RestMessage.USER_GROUPS,
+                    RestStatus.SUCCESS, groups);
+            return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
         }
-        return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.NOT_FOUND, RestMessage.USER_HAS_NO_GROUPS,
-                RestStatus.FAILURE), HttpStatus.NOT_FOUND);
+        responseWrapper =  new ResponseWrapperImpl(HttpStatus.NOT_FOUND, RestMessage.USER_HAS_NO_GROUPS,
+                RestStatus.FAILURE);
+        return new ResponseEntity<>(responseWrapper,HttpStatus.valueOf(responseWrapper.getCode()));
 
 
     }
@@ -142,6 +143,8 @@ public class GroupRestController {
 
     }
 
+
+
     private Set<MembershipInfo> addMembersToGroup(List<String> phoneNumbers, Set<MembershipInfo> members) {
         if (phoneNumbers != null) {
             for (String phoneNumber : phoneNumbers)
@@ -169,5 +172,6 @@ public class GroupRestController {
         return responseWrapper;
 
     }
+
 
 }

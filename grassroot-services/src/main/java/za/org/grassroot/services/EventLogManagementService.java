@@ -36,6 +36,8 @@ public interface EventLogManagementService {
 
     void rsvpForEvent(Event event, User user, EventRSVPResponse rsvpResponse);
 
+    EventLog getEventLogOfUser(Event event, User user);
+
     boolean userRsvpNoForEvent(Event event, User user);
 
     boolean userRsvpForEvent(Event event, User user);
