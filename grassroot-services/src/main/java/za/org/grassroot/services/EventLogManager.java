@@ -135,6 +135,11 @@ public class EventLogManager implements EventLogManagementService {
     }
 
     @Override
+    public EventLog getEventLogOfUser(Event event, User user) {
+        return eventLogRepository.findByEventAndUser(event, user);
+    }
+
+    @Override
     public boolean userRsvpNoForEvent(Event event, User user) {
         boolean rsvpNoForEvent = eventLogRepository.rsvpNoForEvent(event, user);
         log.info("userRsvpNoForEvent...returning..." + rsvpNoForEvent + " for event..." + event.getId() + "...user..." + user.getPhoneNumber());

@@ -27,16 +27,13 @@ import java.util.List;
 import java.util.logging.Logger;
 
 /**
- * Created by aakilomar on 9/5/15.
+ * Created by paballo.
  */
 @RestController
 @RequestMapping(value = "/api/user")
 public class UserRestController {
 
     private Logger log = Logger.getLogger(getClass().getCanonicalName());
-
-    @Autowired
-    UserRepository userRepository;
 
     @Autowired
     UserManagementService userManagementService;
@@ -48,11 +45,6 @@ public class UserRestController {
     GroupManagementService groupManagementService;
 
 
-    @RequestMapping(value = "/list", method = RequestMethod.GET)
-    public List<User> list() {
-        return userRepository.findAll();
-    }
-
 
     @RequestMapping(value = "/add/{phoneNumber}/{displayName}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> add(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("displayName") String displayName) {
@@ -61,11 +53,11 @@ public class UserRestController {
         if (!checkIfExists(phoneNumber)) {
             String tokenCode = userManagementService.generateAndroidUserVerifier(phoneNumber, displayName);
             responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.VERIFICATION_TOKEN_SENT, RestStatus.SUCCESS, tokenCode);
-            return new ResponseEntity<>(responseWrapper, HttpStatus.OK);
+            return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
         }
         responseWrapper = new ResponseWrapperImpl(HttpStatus.CONFLICT, RestMessage.USER_ALREADY_EXISTS, RestStatus.FAILURE);
         return new ResponseEntity<>(responseWrapper,
-                HttpStatus.CONFLICT);
+                HttpStatus.valueOf(responseWrapper.getCode()));
 
     }
 
@@ -84,7 +76,7 @@ public class UserRestController {
 
         }
         ResponseWrapper responseWrapper = new ResponseWrapperImpl(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_TOKEN, RestStatus.FAILURE);
-        return new ResponseEntity<>(responseWrapper, HttpStatus.NOT_ACCEPTABLE);
+        return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
 
 
     }
@@ -135,19 +127,6 @@ public class UserRestController {
         }
     }
 
-
-
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET)
-    public UserDTO get(@PathVariable("id") Long id) {
-        return new UserDTO(userRepository.findOne(id));
-
-    }
-
-    @RequestMapping(value = "/setinitiatedsession/{userId}", method = RequestMethod.POST)
-    public UserDTO setInitiatedSession(@PathVariable("userId") Long userId) {
-        return new UserDTO(userManagementService.setInitiatedSession(userManagementService.loadUser(userId)));
-
-    }
 
     private boolean checkIfExists(String phoneNumber) {
         return userManagementService.userExist(PhoneNumberUtil.convertPhoneNumber(phoneNumber));

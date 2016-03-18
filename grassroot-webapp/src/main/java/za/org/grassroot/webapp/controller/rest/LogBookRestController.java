@@ -41,6 +41,9 @@ public class LogBookRestController {
     @Autowired
     LogBookService logBookService;
 
+
+
+
     @RequestMapping(value = "/add/{userid}/{groupid}/{message}", method = RequestMethod.POST)
     public LogBookDTO add(@PathVariable("userid") Long userid,
                           @PathVariable("groupid") Long groupid,

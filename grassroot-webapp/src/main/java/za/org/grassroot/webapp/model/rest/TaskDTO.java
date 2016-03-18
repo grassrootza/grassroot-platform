@@ -1,87 +1,138 @@
 package za.org.grassroot.webapp.model.rest;
 
 import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.webapp.enums.TaskType;
 import za.org.grassroot.webapp.enums.TodoStatus;
 
-import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * Created by paballo on 2016/03/02.
  */
-public abstract class TaskDTO {
+public class TaskDTO implements Comparator<TaskDTO> ,Comparable<TaskDTO>{
 
     private Long id;
-    private Long appliesToGroup;
-    private String subject;
+    private String description;
     private String name;
     private String type;
-    private Timestamp timestamp;
+    private Timestamp deadline;
     private boolean hasResponded;
-    private String status;
-    private String response;
-    private String isOverDue;
+    private boolean canAction;
+    private String reply;
 
 
-    public TaskDTO(Event event){
+
+    public TaskDTO(Event event, EventLog eventLog, User user, boolean hasResponded) {
         this.id = event.getId();
-        this.subject = event.getName();
+        this.description = event.getName();
         this.name = event.getCreatedByUser().getDisplayName();
-        this.hasResponded = event.isRsvpRequired();
-        this.type = event.getEventType().toString();
-        this.timestamp = event.getEventStartDateTime();
+        this.hasResponded = hasResponded;
+        this.type = String.valueOf(event.getEventType());
+        this.deadline = event.getEventStartDateTime();
+        this.reply=(eventLog !=null)?eventLog.getMessage():String.valueOf(TodoStatus.NO_RESPONSE);
+        this.canAction = canAction(event, user, hasResponded);
     }
-    public TaskDTO(LogBook logBook, User user){
+
+    public TaskDTO(LogBook logBook, User user, User creatingUser) {
         this.id = logBook.getId();
-        this.subject = logBook.getMessage();
-        this.name = user.getDisplayName();
+        this.description = logBook.getMessage();
+        this.name = creatingUser.getDisplayName();
         this.hasResponded = false;
+        this.reply = getLogStatus(logBook);
+        this.deadline = logBook.getActionByDate();
+        this.type = String.valueOf(TaskType.LOG);
+        this.canAction = canAction(logBook, user, true);
     }
 
     public Long getId() {
         return id;
     }
-    public Long getAppliesToGroup() {
-        return appliesToGroup;
+
+    public String getDescription() {
+        return description;
     }
-    public String getSubject() {
-        return subject;
-    }
+
     public String getName() {
         return name;
     }
-    public void setName(String name) {
-        this.name = name;
-    }
+
+
     public String getType() {
         return type;
     }
-    public Timestamp getTimestamp() {
-        return timestamp;
-    }
-    public String getStatus() {
-        return status;
-    }
-    public String getResponse() {
-        return response;
+
+    public Timestamp getDeadline() {
+        return deadline;
     }
 
-    private String todoStatus(LogBook logBook){
+    public String getReply() {
+        return reply;
+    }
 
-        if(logBook.isCompleted()){
+    public boolean isHasResponded() {
+        return hasResponded;
+    }
+
+    public boolean isCanAction() {
+        return canAction;
+    }
+
+
+    private String getLogStatus(LogBook logBook) {
+
+        if (logBook.isCompleted()) {
             return String.valueOf(TodoStatus.COMPLETED);
-        }
-        else if(logBook.getActionByDate().before(Timestamp.from(Instant.now()))){
-            return "overdue";
-        }else {
-            return  "pending";
+        } else if (logBook.getActionByDate().before(Timestamp.from(Instant.now()))) {
+            return String.valueOf(TodoStatus.OVERDUE);
+        } else {
+            return String.valueOf(TodoStatus.PENDING);
         }
 
     }
 
 
+    private boolean canAction(Object object, User user, boolean hasResponded) {
 
+        boolean canAction = false;
+        if (object instanceof Event) {
+            Event event = (Event) object;
+            boolean isOpen = event.getEventStartDateTime().after(Timestamp.from(Instant.now()));
+            if (event.getEventType().equals(EventType.Meeting) && isOpen) {
+                canAction = true;
+            } else {
+                if (event.getEventType().equals(EventType.Vote) && isOpen && !hasResponded) {
+                    canAction = true;
+                }
+            }
+        } else {
+            LogBook logBook = (LogBook) object;
+            if (logBook.getAssignedToUserId().equals(user.getId()) || logBook.getCreatedByUserId().equals(user.getId())
+                    || logBook.getAssignedToUserId().equals(null)) {
+                canAction = true;
+            }
+        }
+        return canAction;
+    }
+
+    @Override
+    public int compare(TaskDTO o1, TaskDTO o2) {
+        return o1.getDeadline().compareTo(o2.getDeadline());
+    }
+
+    @Override
+    public int compareTo(TaskDTO o) {
+        return (int)(this.deadline.getTime()-o.deadline.getTime());
+    }
 }
+
+
+
+
+
