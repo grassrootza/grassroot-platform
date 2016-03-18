@@ -42,6 +42,8 @@ public abstract class WebAppAbstractUnitTest {
     @Mock
     protected GroupBroker groupBrokerMock;
     @Mock
+    protected EventBroker eventBrokerMock;
+    @Mock
     protected PermissionBroker permissionBrokerMock;
     @Mock
     protected EventManagementService eventManagementServiceMock;

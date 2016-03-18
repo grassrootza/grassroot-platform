@@ -332,12 +332,8 @@ public class EventNotificationConsumer {
     private void sendManualReminderMessage(User user, EventDTO event) {
         //generate message based on user language if message not captured by the user
         String message = event.getMessage();
-        boolean manual = false;
         if (message == null || message.trim().equals("")) {
             message = meetingNotificationService.createMeetingReminderMessage(user, event);
-
-        } else {
-            manual = true;
         }
         /*
         Do not send vote reminder if the user already voted (userRsvpForEvent)

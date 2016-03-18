@@ -3,6 +3,8 @@ package za.org.grassroot.webapp.controller.rest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.Meeting;
+import za.org.grassroot.core.domain.Vote;
 import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -38,7 +40,7 @@ public class EventRestController {
 
     @RequestMapping(value = "/upcoming/meeting/{groupId}", method = RequestMethod.GET)
     public List<EventDTO> getUpcomingMeetings(@PathVariable("groupId") Long groupId) {
-        List<Event> upcomingList = eventManagementService.getUpcomingMeetings(groupId);
+        List<Meeting> upcomingList = eventManagementService.getUpcomingMeetings(groupId);
         List<EventDTO> list = new ArrayList<>();
         for (Event event : upcomingList) {
             list.add(new EventDTO(event));
@@ -49,7 +51,7 @@ public class EventRestController {
 
     @RequestMapping(value = "/upcoming/vote/{groupId}", method = RequestMethod.GET)
     public List<EventDTO> getUpcomingVotes(@PathVariable("groupId") Long groupId) {
-        List<Event> upcomingList = eventManagementService.getUpcomingVotes(groupId);
+        List<Vote> upcomingList = eventManagementService.getUpcomingVotes(groupId);
         List<EventDTO> list = new ArrayList<>();
         for (Event event : upcomingList) {
             list.add(new EventDTO(event));

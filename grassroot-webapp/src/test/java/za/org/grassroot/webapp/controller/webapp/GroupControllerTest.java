@@ -62,10 +62,10 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 //        Event dummyMeeting = new Event();
 //        Event dummyVote = new Event();
         // todo: new design?
-        Event dummyMeeting = null;
-        Event dummyVote = null;
-        List<Event> dummyMeetings = Collections.singletonList(dummyMeeting);
-        List<Event> dummyVotes = Collections.singletonList(dummyVote);
+        Meeting dummyMeeting = null;
+        Vote dummyVote = null;
+        List<Meeting> dummyMeetings = Collections.singletonList(dummyMeeting);
+        List<Vote> dummyVotes = Collections.singletonList(dummyVote);
 
         when(userManagementServiceMock.getUserById(sessionTestUser.getId())).thenReturn(sessionTestUser);
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(dummyGroup);

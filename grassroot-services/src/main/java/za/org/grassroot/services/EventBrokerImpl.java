@@ -13,6 +13,7 @@ import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 
+import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
@@ -51,6 +52,32 @@ public class EventBrokerImpl implements EventBroker {
 				relayable, reminderType, customReminderMinutes);
 
 		return meeting;
+	}
+
+	@Override
+	@Transactional
+	public void updateMeeting(String userUid, String meetingUid, String name, Timestamp eventStartDateTime,
+								 String eventLocation, boolean includeSubGroups, boolean rsvpRequired,
+								 boolean relayable, EventReminderType reminderType, int customReminderMinutes) {
+
+		Objects.requireNonNull(userUid);
+		Objects.requireNonNull(meetingUid);
+		Objects.requireNonNull(name);
+		Objects.requireNonNull(eventStartDateTime);
+		Objects.requireNonNull(eventLocation);
+		Objects.requireNonNull(reminderType);
+
+		Meeting meeting = (Meeting) eventRepository.findOneByUid(meetingUid);
+		meeting.setName(name);
+		meeting.setEventStartDateTime(eventStartDateTime);
+		meeting.setEventLocation(eventLocation);
+		meeting.setIncludeSubGroups(includeSubGroups);
+		meeting.setRsvpRequired(rsvpRequired);
+		meeting.setRelayable(relayable);
+		meeting.setReminderType(reminderType);
+		meeting.setCustomReminderMinutes(customReminderMinutes);
+
+		meeting.updateScheduledReminderTime();
 	}
 
 	@Override
@@ -136,7 +163,7 @@ public class EventBrokerImpl implements EventBroker {
 	@Transactional
 	public void sendScheduledReminders() {
 		Instant now = Instant.now();
-		List<Event> events = eventRepository.findEventsForReminders(now);
+		List<Event> events = eventRepository.findEventsForReminders(Date.from(now));
 		logger.info("Sending scheduled reminders for {} event(s)", events.size());
 
 		for (Event event : events) {

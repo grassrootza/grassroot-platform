@@ -1,6 +1,7 @@
 package za.org.grassroot.core.domain;
 
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.Column;
 import javax.persistence.DiscriminatorValue;
@@ -31,8 +32,14 @@ public class Meeting extends Event {
 				   boolean rsvpRequired, boolean relayable, EventReminderType reminderType, int customReminderMinutes) {
 		super(startDateTime, user, group, name, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes);
 		this.eventLocation = Objects.requireNonNull(eventLocation);
-		updateScheduledReminderTime();
 		setScheduledReminderActive(true);
+	}
+
+	public static Meeting makeEmpty(User user) {
+		Meeting meeting = new Meeting();
+		meeting.uid = UIDGenerator.generateId();
+		meeting.setCreatedByUser(user);
+		return meeting;
 	}
 
 	@Override

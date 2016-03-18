@@ -8,7 +8,7 @@ import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
 
 @Entity
-@DiscriminatorValue("VOTE")
+@DiscriminatorValue("MEETING")
 public class MeetingRequest extends EventRequest {
 	@Column(name = "location", length = 50)
 	private String eventLocation;

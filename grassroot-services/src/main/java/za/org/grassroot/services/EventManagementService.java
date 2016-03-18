@@ -3,9 +3,7 @@ package za.org.grassroot.services;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
@@ -30,8 +28,6 @@ public interface EventManagementService {
 
     Event createEvent(String name, Long createdByUserId, Long appliesToGroupId, boolean includeSubGroups);
 
-    Event createMeeting(User createdByUser);
-
     Event createMeeting(String inputNumber, Long groupId);
 
     Event createMeeting(User createdByUser, Long groupId);
@@ -55,17 +51,17 @@ public interface EventManagementService {
 
     List<Event> findByAppliesToGroupAndStartingAfter(Group group, Date date);
 
-    List<Event> findUpcomingMeetingsForGroup(Group group, Date date);
+    List<Meeting> findUpcomingMeetingsForGroup(Group group, Date date);
 
-    List<Event> findUpcomingVotesForGroup(Group group, Date date);
+    List<Vote> findUpcomingVotesForGroup(Group group, Date date);
 
-    List<Event> getUpcomingMeetings(Long groupId);
+    List<Meeting> getUpcomingMeetings(Long groupId);
 
-    List<Event> getUpcomingMeetings(Group group);
+    List<Meeting> getUpcomingMeetings(Group group);
 
-    List<Event> getUpcomingVotes(Long groupId);
+    List<Vote> getUpcomingVotes(Long groupId);
 
-    List<Event> getUpcomingVotes(Group group);
+    List<Vote> getUpcomingVotes(Group group);
 
     List<Event> getUpcomingEvents(Group group);
 
@@ -106,8 +102,6 @@ public interface EventManagementService {
      */
 
     public Event setSubject(Long eventId, String subject);
-
-    public Event setGroup(Long eventId, Long groupId);
 
     public Event setLocation(Long eventId, String location);
 

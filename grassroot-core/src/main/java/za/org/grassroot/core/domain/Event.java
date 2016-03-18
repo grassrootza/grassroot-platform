@@ -61,6 +61,7 @@ public abstract class Event extends AbstractEventEntity implements Serializable 
 		super(name, eventStartDateTime, user, group, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes);
 		this.canceled = false;
 		this.noRemindersSent = 0;
+		updateScheduledReminderTime();
 	}
 
 	public Integer getVersion() {
@@ -102,6 +103,10 @@ public abstract class Event extends AbstractEventEntity implements Serializable 
 	public void updateScheduledReminderTime() {
 		if (getReminderType().equals(EventReminderType.CUSTOM)) {
 			this.scheduledReminderTime = getEventStartDateTime().toInstant().minus(getCustomReminderMinutes(), ChronoUnit.MINUTES);
+
+		} else if (getReminderType().equals(EventReminderType.GROUP_CONFIGURED) && getAppliesToGroup().getReminderMinutes() > 0) {
+			this.scheduledReminderTime = getEventStartDateTime().toInstant().minus(getAppliesToGroup().getReminderMinutes(), ChronoUnit.MINUTES);
+
 		} else {
 			this.scheduledReminderTime = null;
 		}

@@ -1,8 +1,6 @@
 package za.org.grassroot.core.dto;
 
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventType;
 
 import java.io.Serializable;
@@ -34,7 +32,7 @@ public class EventDTO  implements Serializable {
     /*
     used to calculate when a reminder must be sent, before the eventStartTime
      */
-    private int reminderMinutes;
+    private int customReminderMinutes;
 
     /*
     Used for meetings, to note if an RSVP is necessary
@@ -61,25 +59,7 @@ public class EventDTO  implements Serializable {
      */
     private String message;
 
-
-    public EventDTO(String eventLocation, Long id, Timestamp createdDateTime, Timestamp eventStartDateTime, User createdByUser, Group appliesToGroup, boolean canceled, EventType eventType, String name, String dateTimeString, boolean includeSubGroups, int reminderMinutes, boolean rsvpRequired, boolean relayable, boolean sendBlocked, Integer version) {
-        this.eventLocation = eventLocation;
-        this.id = id;
-        this.createdDateTime = createdDateTime;
-        this.eventStartDateTime = eventStartDateTime;
-        this.createdByUser = createdByUser;
-        this.appliesToGroup = appliesToGroup;
-        this.canceled = canceled;
-        this.eventType = eventType;
-        this.name = name;
-        this.includeSubGroups = includeSubGroups;
-        this.reminderMinutes = reminderMinutes;
-        this.rsvpRequired = rsvpRequired;
-        this.relayable = relayable;
-        this.sendBlocked = sendBlocked;
-        this.version = version;
-        this.message = "";
-    }
+    private EventReminderType reminderType;
 
     public EventDTO() {
     }
@@ -95,7 +75,8 @@ public class EventDTO  implements Serializable {
         this.eventType = event.getEventType();
         this.name = event.getName();
         this.includeSubGroups = event.isIncludeSubGroups();
-        this.reminderMinutes = event.getCustomReminderMinutes();
+        this.reminderType = event.getReminderType();
+        this.customReminderMinutes = event.getCustomReminderMinutes();
         this.rsvpRequired = event.isRsvpRequired();
         this.relayable = event.isRelayable();
         this.version = event.getVersion();
@@ -105,8 +86,11 @@ public class EventDTO  implements Serializable {
 
 
     public Event getEventObject() {
-//        return new Event(eventLocation, id, createdDateTime, eventStartDateTime, createdByUser, appliesToGroup, canceled, eventType, name, dateTimeString, includeSubGroups, reminderMinutes, rsvpRequired, relayable, sendBlocked, version);
-        return null;
+        if (eventType.equals(EventType.MEETING)) {
+            return new Meeting(name, eventStartDateTime, createdByUser, appliesToGroup, eventLocation, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes);
+        } else {
+            return new Vote(name, eventStartDateTime, createdByUser, appliesToGroup, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes);
+        }
     }
 
     public String getEventLocation() {
@@ -189,12 +173,20 @@ public class EventDTO  implements Serializable {
         this.includeSubGroups = includeSubGroups;
     }
 
-    public int getReminderMinutes() {
-        return reminderMinutes;
+    public int getCustomReminderMinutes() {
+        return customReminderMinutes;
     }
 
-    public void setReminderMinutes(int reminderMinutes) {
-        this.reminderMinutes = reminderMinutes;
+    public void setCustomReminderMinutes(int customReminderMinutes) {
+        this.customReminderMinutes = customReminderMinutes;
+    }
+
+    public EventReminderType getReminderType() {
+        return reminderType;
+    }
+
+    public void setReminderType(EventReminderType reminderType) {
+        this.reminderType = reminderType;
     }
 
     public boolean isRsvpRequired() {
@@ -246,7 +238,8 @@ public class EventDTO  implements Serializable {
                 ", eventType=" + eventType +
                 ", name='" + name + '\'' +
                 ", includeSubGroups=" + includeSubGroups +
-                ", reminderMinutes=" + reminderMinutes +
+                ", reminderType=" + reminderType +
+                ", customReminderMinutes=" + customReminderMinutes +
                 ", rsvpRequired=" + rsvpRequired +
                 ", relayable=" + relayable +
                 ", sendBlocked=" + sendBlocked +

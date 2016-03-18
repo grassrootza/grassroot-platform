@@ -121,13 +121,13 @@ public class AnalyticalManager implements AnalyticalService {
 
     @Override
     public Long countAllEvents(EventType eventType) {
-        return eventRepository.countByEventTypeAndEventStartDateTimeNotNull(eventType);
+        return eventRepository.countByEventTypeAndEventStartDateTimeNotNull(eventType.getEventClass());
     }
 
     @Override
     public int countEventsCreatedInInterval(LocalDateTime start, LocalDateTime end, EventType eventType) {
         return eventRepository.countByEventTypeAndCreatedDateTimeBetweenAndEventStartDateTimeNotNull(
-                eventType, Timestamp.valueOf(start), Timestamp.valueOf(end));
+                eventType.getEventClass(), Timestamp.valueOf(start), Timestamp.valueOf(end));
     }
 
     /**

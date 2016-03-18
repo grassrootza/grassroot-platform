@@ -11,6 +11,10 @@ public interface EventBroker {
 				   boolean includeSubGroups, boolean rsvpRequired, boolean relayable, EventReminderType reminderType,
 				   int customReminderMinutes);
 
+	void updateMeeting(String userUid, String meetingUid, String name, Timestamp eventStartDateTime, String eventLocation,
+					   boolean includeSubGroups, boolean rsvpRequired, boolean relayable, EventReminderType reminderType,
+					   int customReminderMinutes);
+
 	Vote createVote(String userUid, String groupUid, String name, Timestamp eventStartDateTime,
 					   boolean includeSubGroups, boolean rsvpRequired, boolean relayable, EventReminderType reminderType,
 					   int customReminderMinutes);

@@ -37,6 +37,12 @@ public class EventRepositoryTest {
     EventRepository eventRepository;
 
     @Autowired
+    MeetingRepository meetingRepository;
+
+    @Autowired
+    VoteRepository voteRepository;
+
+    @Autowired
     GroupRepository groupRepository;
 
     @Autowired
@@ -211,32 +217,6 @@ public class EventRepositoryTest {
         Event event3 = eventRepository.save(new Meeting("test3", Timestamp.valueOf(LocalDateTime.now().plusDays(2L)), user, group, "someLoc"));
         event3.setCanceled(true);
         event3 = eventRepository.save(event3);
-
-        List<Event> events1 = eventRepository.
-                findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled(user, EventType.MEETING, new Date(), false);
-
-        assertFalse(events1.isEmpty());
-        assertThat(events1.size(), is(1));
-        assertTrue(events1.contains(event1));
-        assertFalse(events1.contains(event2));
-        assertFalse(events1.contains(event3));
-
-        List<Event> events2 = eventRepository.
-                findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeLessThanAndCanceled(user, EventType.VOTE, new Date(), false);
-
-        assertFalse(events2.isEmpty());
-        assertThat(events2.size(), is(1));
-        assertTrue(events2.contains(event2));
-        assertFalse(events2.contains(event1));
-        assertFalse(events2.contains(event3));
-
-        List<Event> events3 = eventRepository.
-                findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled(user, EventType.VOTE, new Date(), false);
-        assertTrue(events3.isEmpty());
-
-        List<Event> events4 = eventRepository.
-                findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeLessThanAndCanceled(user, EventType.MEETING, new Date(), false);
-        assertTrue(events4.isEmpty());
     }
 
     @Test
@@ -263,14 +243,14 @@ public class EventRepositoryTest {
         Timestamp oneMonthBack = Timestamp.valueOf(LocalDateTime.now().minusMonths(1L));
         Timestamp twoMonthsBack = Timestamp.valueOf(LocalDateTime.now().minusMonths(2L));
 
-        List<Event> test1 = eventRepository.
-                findByAppliesToGroupAndEventTypeAndEventStartDateTimeBetween(group1, EventType.MEETING, oneMonthBack, now);
-        List<Event> test2 = eventRepository.
-                findByAppliesToGroupAndEventTypeAndEventStartDateTimeBetween(group1, EventType.MEETING, twoMonthsBack, oneMonthBack);
-        List<Event> test3 = eventRepository.
-                findByAppliesToGroupAndEventTypeAndEventStartDateTimeBetween(group1, EventType.VOTE, oneMonthBack, now);
-        List<Event> test4 = eventRepository.
-                findByAppliesToGroupAndEventTypeAndEventStartDateTimeBetween(group2, EventType.MEETING, oneMonthBack, now);
+        List<Meeting> test1 = meetingRepository.
+                findByAppliesToGroupAndEventStartDateTimeBetween(group1, oneMonthBack, now);
+        List<Meeting> test2 = meetingRepository.
+                findByAppliesToGroupAndEventStartDateTimeBetween(group1, twoMonthsBack, oneMonthBack);
+        List<Vote> test3 = voteRepository.
+                findByAppliesToGroupAndEventStartDateTimeBetween(group1, oneMonthBack, now);
+        List<Meeting> test4 = meetingRepository.
+                findByAppliesToGroupAndEventStartDateTimeBetween(group2, oneMonthBack, now);
         List<Event> test5 = eventRepository.
                 findByAppliesToGroupAndEventStartDateTimeBetween(group1, oneMonthBack, now, new Sort(Sort.Direction.ASC, "EventStartDateTime"));
 

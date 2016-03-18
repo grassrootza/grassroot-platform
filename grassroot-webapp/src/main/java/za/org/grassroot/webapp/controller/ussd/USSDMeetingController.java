@@ -8,10 +8,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.Meeting;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.repository.EventRequestRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.services.EventBroker;
+import za.org.grassroot.services.EventRequestBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -46,6 +47,15 @@ public class USSDMeetingController extends USSDController {
 
     @Autowired
     private USSDEventUtil eventUtil;
+
+    @Autowired
+    private EventBroker eventBroker;
+
+    @Autowired
+    private EventRequestBroker eventRequestBroker;
+
+    @Autowired
+    private EventRequestRepository eventRequestRepository;
 
     private Logger log = LoggerFactory.getLogger(getClass());
     private static final String path = homePath + meetingMenus;
@@ -210,8 +220,12 @@ public class USSDMeetingController extends USSDController {
                               @RequestParam(value = interruptedFlag, required = false) boolean interrupted,
                               @RequestParam(value = "revising", required = false) boolean revising) throws URISyntaxException {
 
-        if (!interrupted && !revising) eventId = eventManager.createMeeting(inputNumber, groupId).getId();
         User sessionUser = userManager.findByInputNumber(inputNumber, saveMeetingMenu(subjectMenu, eventId, revising));
+        if (!interrupted && !revising) {
+            Group group = groupManager.loadGroup(groupId);
+            MeetingRequest meetingRequest = eventRequestBroker.createEmptyMeetingRequest(sessionUser.getUid(), group.getUid());
+            eventId = meetingRequest.getId();
+        }
         String promptMessage = getMessage(thisSection, subjectMenu, promptKey, sessionUser);
         String nextUrl = (!revising) ? nextUrl(subjectMenu, eventId) : confirmUrl(subjectMenu, eventId);
         return menuBuilder(new USSDMenu(promptMessage, nextUrl));
@@ -229,7 +243,9 @@ public class USSDMeetingController extends USSDController {
         // todo: add error and exception handling
 
         User sessionUser = userManager.findByInputNumber(inputNumber, saveMeetingMenu(placeMenu, eventId, revising));
-        if (!interrupted) eventUtil.updateEvent(eventId, passedValueKey, passedValue);
+        EventRequest eventRequest = eventRequestRepository.findOne(eventId);
+        if (!interrupted) eventRequestBroker.updateMeetingLocation(sessionUser.getUid(), eventRequest.getUid(), passedValue);
+
         String promptMessage = getMessage(thisSection, placeMenu, promptKey, sessionUser);
         String nextUrl = (!revising) ? nextUrl(placeMenu, eventId) : confirmUrl(placeMenu, eventId);
         return menuBuilder(new USSDMenu(promptMessage, nextUrl));
@@ -244,7 +260,12 @@ public class USSDMeetingController extends USSDController {
                            @RequestParam(value = "interrupted", required = false) boolean interrupted) throws URISyntaxException {
 
         User sessionUser = userManager.findByInputNumber(inputNumber, saveMeetingMenu(timeMenu, eventId, false));
-        if (!interrupted) eventUtil.updateEvent(eventId, passedValueKey, passedValue);
+        EventRequest eventRequest = eventRequestRepository.findOne(eventId);
+
+        if (!interrupted) {
+            eventUtil.updateEvent(eventId, passedValueKey, passedValue);
+        }
+
         String promptMessage = getMessage(thisSection, timeMenu, promptKey, sessionUser);
         String nextUrl = meetingMenus + nextMenu(timeMenu) + eventIdUrlSuffix + eventId + "&" + previousMenu + "=" + timeMenu;
         return menuBuilder(new USSDMenu(promptMessage, nextUrl));
@@ -324,7 +345,7 @@ public class USSDMeetingController extends USSDController {
         // todo optimize db calls in this, think may be doing an unnecessary call
 
         USSDMenu thisMenu = new USSDMenu();
-        Event meeting = (!interrupted) ? eventUtil.updateEventAndBlockSend(eventId, priorMenuName, passedValue) :
+        Event meeting = (!interrupted) ? eventUtil.updateEvent(eventId, priorMenuName, passedValue) :
                 eventManager.loadEvent(eventId);
 
         // todo: decide whether to keep this here with getter or to move into services logic
@@ -365,7 +386,9 @@ public class USSDMeetingController extends USSDController {
 
         // todo: use responses (from integration or from elsewhere, to display errors if numbers wrong
 
-        eventManager.removeSendBlock(eventId);
+        EventRequest eventRequest = eventRequestRepository.findOne(eventId);
+        eventRequestBroker.finish(sessionUser.getUid(), eventRequest.getUid());
+
         return menuBuilder(new USSDMenu(getMessage(thisSection, send, promptKey, sessionUser), optionsHomeExit(sessionUser)));
     }
 
@@ -380,9 +403,6 @@ public class USSDMeetingController extends USSDController {
                                  @RequestParam(value = eventIdParam) Long eventId) throws URISyntaxException {
 
         User sessionUser = userManager.findByInputNumber(inputNumber);
-        Event meeting = eventManager.loadEvent(eventId);
-
-        log.info("Inside the management menu, for event: " + meeting);
 
         // todo: check user's permissions on this group/event, once permissions structure in place and being used
         String eventSuffix = eventIdUrlSuffix + eventId + "&next_menu=" + changeDateAndTime; // next_menu param only used by date/time
@@ -490,9 +510,9 @@ public class USSDMeetingController extends USSDController {
         // todo: probably want to straighten out / harmonize use of Timestamp / ValueOf
         Timestamp modifyingTimestamp = (!load_string) ? eventManager.loadEvent(eventId).getEventStartDateTime() :
                 Timestamp.valueOf(DateTimeUtil.parsePreformattedString(eventManager.loadEvent(eventId).getEventStartDateTime().toString()));
+
         LocalDateTime newDateTime;
         String otherMenu;
-
         if (action.equals(timeOnly)) {
             String formattedTime = DateTimeUtil.reformatTimeInput(userInput);
             log.info("Modifying time ... Here is what we got back ... " + formattedTime);
@@ -581,20 +601,22 @@ public class USSDMeetingController extends USSDController {
                                      @RequestParam(value = "value", required = false) String confirmedValue) throws URISyntaxException {
 
         User sessionUser = userManager.findByInputNumber(inputNumber, null);
+        Event event = eventManager.loadEvent(eventId);
+
         String menuPrompt = getMessage(thisSection, modifyConfirm, action + ".done", sessionUser);
 
         switch (action) {
             case changeDateAndTime:
-                eventUtil.updateEvent(eventId, changeDateAndTime, confirmedValue);
+                Timestamp eventStartDateTime = Timestamp.valueOf(DateTimeUtil.parsePreformattedString(confirmedValue));
+                eventBroker.updateStartTimestamp(sessionUser.getUid(), event.getUid(), eventStartDateTime);
                 break;
+
             case changeMeetingLocation:
-                eventUtil.updateEvent(eventId, placeMenu, confirmedValue);
+                eventBroker.updateMeetingLocation(sessionUser.getUid(), event.getUid(), confirmedValue);
                 break;
+
             case cancelMeeting:
-                eventManager.cancelEvent(eventId);
-                break;
-            default:
-                eventManager.removeSendBlock(eventId);
+                eventBroker.cancel(sessionUser.getUid(), event.getUid());
                 break;
         }
 

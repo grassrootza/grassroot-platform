@@ -100,11 +100,9 @@ public class EventLogManager implements EventLogManagementService {
     @Override
     public void rsvpForEvent(Event event, User user, EventRSVPResponse rsvpResponse) {
         log.trace("rsvpForEvent...event..." + event.getId() + "...user..." + user.getPhoneNumber() + "...rsvp..." + rsvpResponse.toString());
-        EventLog eventLog = new EventLog();
         // dont allow the user to rsvp/vote twice
-
         if (!userRsvpForEvent(event,user)) {
-            eventLog = createEventLog(EventLogType.EventRSVP, event, user, rsvpResponse.toString());
+            createEventLog(EventLogType.EventRSVP, event, user, rsvpResponse.toString());
             // clear rsvp cache for user
             cacheUtilService.clearRsvpCacheForUser(user, event.getEventType());
 
@@ -119,13 +117,12 @@ public class EventLogManager implements EventLogManagementService {
                 }
             }
 //        } else {
+//            EventLog eventLog = new EventLog();
 //             put values in the fields so that rest method does not NPE
 //            eventLog.setId(0L);
 //            eventLog.setEvent(new Event());
 //            eventLog.setUser(User.makeEmpty());
         }
-
-//        return eventLog;
     }
 
     @Override
