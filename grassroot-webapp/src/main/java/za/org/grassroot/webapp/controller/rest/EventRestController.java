@@ -30,10 +30,6 @@ import java.util.List;
 @RequestMapping("/api/event")
 public class EventRestController {
 
-
-    @Autowired
-    EventRepository eventRepository;
-
     @Autowired
     EventManagementService eventManagementService;
 
@@ -43,17 +39,6 @@ public class EventRestController {
     @Autowired
     EventLogManagementService eventLogManagementService;
 
-
-    @RequestMapping(value = "/upcoming/meeting/{groupId}", method = RequestMethod.GET)
-    public List<EventDTO> getUpcomingMeetings(@PathVariable("groupId") Long groupId) {
-        List<Event> upcomingList = eventManagementService.getUpcomingMeetings(groupId);
-        List<EventDTO> list = new ArrayList<>();
-        for (Event event : upcomingList) {
-            list.add(new EventDTO(event));
-        }
-        return list;
-
-    }
 
     @RequestMapping(value = "/vote/do/{id}/{phoneNumber}/{code}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> castVote(@PathVariable("phoneNumber") String phoneNumber,
@@ -94,83 +79,6 @@ public class EventRestController {
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
     }
 
-
-    @RequestMapping(value = "/upcoming/vote/{groupId}", method = RequestMethod.GET)
-    public List<EventDTO> getUpcomingVotes(@PathVariable("groupId") Long groupId) {
-        List<Event> upcomingList = eventManagementService.getUpcomingVotes(groupId);
-        List<EventDTO> list = new ArrayList<>();
-        for (Event event : upcomingList) {
-            list.add(new EventDTO(event));
-        }
-        return list;
-
-    }
-
-    @RequestMapping(value = "/add/{userId}/{groupId}/{name}", method = RequestMethod.POST)
-    public EventDTO add(@PathVariable("userId") Long userId, @PathVariable("groupId") Long groupId,
-                        @PathVariable("name") String name) {
-        return addAndSetSubGroups(userId, groupId, name, false);
-
-    }
-
-    @RequestMapping(value = "/add/{userId}/{groupId}/{name}/{includeSubGroups}", method = RequestMethod.POST)
-    public EventDTO addAndSetSubGroups(@PathVariable("userId") Long userId, @PathVariable("groupId") Long groupId,
-                                       @PathVariable("name") String name, @PathVariable("includeSubGroups") boolean includeSubGroups) {
-        return new EventDTO(eventManagementService.createEvent(name, userId, groupId, includeSubGroups));
-
-    }
-
-    @RequestMapping(value = "/setlocation/{eventId}/{location}", method = RequestMethod.POST)
-    public EventDTO setLocation(@PathVariable("eventId") Long eventId, @PathVariable("location") String location) {
-        return new EventDTO(eventManagementService.setLocation(eventId, location));
-
-    }
-
-    /* @RequestMapping(value = "/setday/{eventId}/{day}", method = RequestMethod.POST)
-    public EventDTO setDay(@PathVariable("eventId") Long eventId,@PathVariable("day") String day) {
-        return new EventDTO(eventManagementService.setDay(eventId, day));
-    }*/
-
-    @RequestMapping(value = "/settime/{eventId}/{time}", method = RequestMethod.POST)
-    public EventDTO setTime(@PathVariable("eventId") Long eventId, @PathVariable("time") String time) {
-        //TODO this is very inefficient and should be refactored, it is just how Luke implemented it currently for USSD
-        eventManagementService.setEventTimestamp(eventId, Timestamp.valueOf(DateTimeUtil.parseDateTime(time)));
-        return new EventDTO(eventManagementService.setDateTimeString(eventId, time));
-    }
-
-    @RequestMapping(value = "/cancel/{eventId}", method = RequestMethod.POST)
-    public EventDTO cancel(@PathVariable("eventId") Long eventId) {
-        return new EventDTO(eventManagementService.cancelEvent(eventId));
-    }
-
-    @RequestMapping(value = "rsvprequired/{userId}", method = RequestMethod.GET)
-    public List<EventDTO> getRsvpRequired(@PathVariable("userId") Long userId) {
-        List<EventDTO> rsvpRequired = new ArrayList<EventDTO>();
-        List<Event> events = eventManagementService.getOutstandingRSVPForUser(userId);
-        if (events != null) {
-            for (Event event : events) {
-                rsvpRequired.add(new EventDTO(event));
-            }
-        }
-
-        return rsvpRequired;
-
-    }
-
-    @RequestMapping(value = "voterequired/{userId}", method = RequestMethod.GET)
-    public List<EventDTO> getVoteRequired(@PathVariable("userId") Long userId) {
-        List<EventDTO> rsvpRequired = new ArrayList<EventDTO>();
-        List<Event> events = eventManagementService.getOutstandingVotesForUser(userId);
-        if (events != null) {
-            for (Event event : events) {
-                rsvpRequired.add(new EventDTO(event));
-            }
-        }
-
-        return rsvpRequired;
-
-
-    }
 
     private boolean isOpen(Event event) {
         return event.getEventStartDateTime().after(Timestamp.from(Instant.now()));
