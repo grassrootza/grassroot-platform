@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
@@ -63,7 +64,8 @@ public class TaskRestController {
     private List<TaskDTO> getTasks(User user, Group group) {
         List<TaskDTO> tasks = new ArrayList<>();
         for (Event event : eventManagementService.findByAppliesToGroup(group)) {
-            EventLog eventLog = eventLogManagementService.getEventLogOfUser(event, user);
+
+            EventLog eventLog = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.EventRSVP);
             boolean hasResponded = eventLogManagementService.userRsvpForEvent(event, user);
             if(!event.isSendBlocked() && event.getEventStartDateTime() != null) {
                 tasks.add(new TaskDTO(event, eventLog, user, hasResponded));
