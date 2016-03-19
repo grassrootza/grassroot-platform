@@ -87,7 +87,7 @@ public class USSDGroupController extends USSDController {
                              @RequestParam(value= groupIdParam, required=true) Long groupId) throws URISyntaxException {
 
         return (groupId == 0) ? createPrompt(inputNumber) :
-                menuBuilder(ussdGroupUtil.existingGroupMenu(userManager.findByInputNumber(inputNumber), groupId));
+                menuBuilder(ussdGroupUtil.existingGroupMenu(userManager.findByInputNumber(inputNumber), groupId, false));
     }
 
     /*

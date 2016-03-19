@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static za.org.grassroot.webapp.enums.USSDSection.GROUP_MANAGER;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 
 /**
@@ -117,14 +118,14 @@ public class USSDGroupUtil extends USSDUtil {
     public USSDMenu askForGroupNoInlineNew(User user, USSDSection section, String menuIfExisting) throws URISyntaxException {
         final String promptIfExisting = getMessage(section, groupKeyForMessages, promptKey, user);
         final String promptIfEmpty = getMessage(section, groupKeyForMessages, promptKey + ".empty", user);
-        final String urlIfEmpty = USSDSection.GROUP_MANAGER.toPath() + "create";
+        final String urlIfEmpty = GROUP_MANAGER.toPath() + "create";
         return askForGroupNoInlineNew(user, section, promptIfExisting, promptIfEmpty, menuIfExisting, urlIfEmpty, "", false);
     }
 
     // similar helper method
     public USSDMenu askForGroupNoInlineNew(User user, USSDSection section, String menuIfExisting, String promptIfNotEmpty) throws URISyntaxException {
         final String promptIfEmpty = getMessage(section, groupKeyForMessages, promptKey + ".empty", user);
-        final String urlIfEmpty = USSDSection.GROUP_MANAGER.toPath() + "create";
+        final String urlIfEmpty = GROUP_MANAGER.toPath() + "create";
         return askForGroupNoInlineNew(user, section, promptIfNotEmpty, promptIfEmpty, menuIfExisting, urlIfEmpty, "", false);
     }
 
@@ -286,7 +287,7 @@ public class USSDGroupUtil extends USSDUtil {
                 menu = new USSDMenu(getMessage(section, subjectMenu, promptKey, user), nextUrl);
                 break;
             case GROUP_MANAGER:
-                menu = existingGroupMenu(sessionUser, groupId);
+                menu = existingGroupMenu(sessionUser, groupId, true);
                 break;
             default:
                 break;
@@ -295,23 +296,32 @@ public class USSDGroupUtil extends USSDUtil {
         return menu;
     }
 
-    public USSDMenu existingGroupMenu(User sessionUser, Long groupId) {
+    public USSDMenu existingGroupMenu(User sessionUser, Long groupId, boolean skippedSelection) {
 
-        USSDSection thisSection = USSDSection.GROUP_MANAGER;
+        USSDSection thisSection = GROUP_MANAGER;
         Group group = groupManager.loadGroup(groupId);
         String menuKey = thisSection.toKey() + existingGroupMenu + "." + optionsKey;
 
-        String prompt, tokenKey;
-        if (group.getGroupTokenCode() != null && Instant.now().isBefore(group.getTokenExpiryDateTime().toInstant())) {
-            String dial = "*134*1994*" + group.getGroupTokenCode() + "#";
-            prompt = getMessage(thisSection, existingGroupMenu, promptKey + ".token", dial, sessionUser);
-            tokenKey = menuKey + groupTokenMenu + ".exists";
+        boolean openToken = group.getGroupTokenCode() != null && Instant.now().isBefore(group.getTokenExpiryDateTime().toInstant());
+
+        String tokenKey = openToken ? menuKey + groupTokenMenu + ".exists" : menuKey + groupTokenMenu + ".create";
+        String prompt;
+
+        if (skippedSelection) {
+            prompt = getMessage(thisSection, existingGroupMenu, promptKey + ".single", group.getName(""), sessionUser);
         } else {
-            prompt = getMessage(thisSection, existingGroupMenu, promptKey, sessionUser);
-            tokenKey = menuKey + groupTokenMenu + ".create";
+            if (openToken) {
+                String dial = "*134*1994*" + group.getGroupTokenCode() + "#";
+                prompt = getMessage(thisSection, existingGroupMenu, promptKey + ".token", dial, sessionUser);
+            } else {
+                prompt = getMessage(thisSection, existingGroupMenu, promptKey, sessionUser);
+            }
         }
 
         USSDMenu listMenu = new USSDMenu(prompt);
+
+        if (skippedSelection)
+            listMenu.addMenuOption(GROUP_MANAGER.toPath() + "create", getMessage(GROUP_MANAGER.toKey() + "create.option", sessionUser));
 
         if (permissionBroker.isGroupPermissionAvailable(sessionUser, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER))
             listMenu.addMenuOption(groupMenuWithId(addMemberPrompt, groupId), getMessage(menuKey + addMemberPrompt, sessionUser));
