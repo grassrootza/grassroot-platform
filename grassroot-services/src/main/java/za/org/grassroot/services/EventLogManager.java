@@ -135,8 +135,8 @@ public class EventLogManager implements EventLogManagementService {
     }
 
     @Override
-    public EventLog getEventLogOfUser(Event event, User user) {
-        return eventLogRepository.findByEventAndUser(event, user);
+    public EventLog getEventLogOfUser(Event event, User user, EventLogType eventLogType) {
+        return eventLogRepository.findByEventAndUserAndEventLogType(event, user,eventLogType);
     }
 
     @Override
