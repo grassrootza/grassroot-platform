@@ -92,11 +92,44 @@
           </div>
         </div>
       </div>
-      <div class="col-md-6 col-md-offset-3 text-center">
-        <a th:href="@{/group/view(groupId=${group.id})}" role="button" class="btn btn-default">
-          Back to group</a>
-        <a th:href="@{permissions(groupUid=${group.Uid})}" role="button" class="btn btn-default">
-          Change permissions for roles</a>
+    </div>
+
+    <!-- todo: make collapsible -->
+    <div class="row">
+      <div class="col-md-6 col-md-offset-3">
+        <div class="row">
+          <h4 class="col-md-4">Role permissions</h4>
+          <div th:if="${canChangePermissions}" class="form-group pull-right">
+            <a th:href="@{permissions(groupUid=${group.Uid})}" role="button" class="btn btn-default">
+              Change permissions</a>
+          </div>
+        </div>
+        <div class="row">
+          <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>Permission</th>
+              <th><span th:text="#{web.group.role.ROLE_ORDINARY_MEMBER}">Ordinary member</span></th>
+              <th><span th:text="#{web.group.role.ROLE_COMMITTEE_MEMBER}">Committee member</span></th>
+              <th><span th:text="#{web.group.role.ROLE_GROUP_ORGANIZER}">Group organizer</span></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="permission, iterStat: ${permissionsImplemented}">
+              <td><span th:text="#{web.permission.__${permission.getName()}__}">Permission</span></td>
+              <td class="text-center">
+                <small th:if="${#lists.contains(ordinaryPermissions, permission)}">Y</small>
+              </td>
+              <td class="text-center">
+                <small th:if="${#lists.contains(committeePermissions, permission)}">Y</small>
+              </td>
+              <td class="text-center">
+                <small th:if="${#lists.contains(organizerPermissions, permission)}">Y</small>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 

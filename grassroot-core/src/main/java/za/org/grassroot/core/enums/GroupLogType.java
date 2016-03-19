@@ -10,7 +10,8 @@ public enum GroupLogType {
     GROUP_MEMBER_ADDED("group member added"),
     GROUP_MEMBER_REMOVED("group member removed"),
     SUBGROUP_ADDED("sub-group added"),
-    SUBGROUP_REMOVED("sub-group removed");
+    SUBGROUP_REMOVED("sub-group removed"),
+    PERMISSIONS_CHANGED("permissions changed");
 
     private final String text;
 

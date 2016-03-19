@@ -7,6 +7,7 @@ import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public interface GroupBroker {
@@ -36,6 +37,6 @@ public interface GroupBroker {
 
     List<Group> findPublicGroups(String searchTerm);
 
-    void updateGroupRolePermissions(String userUid, String groupUid, String roleName, Set<Permission> newPermissions);
+    void updateGroupPermissions(String userUid, String groupUid, Map<String, Set<Permission>> newPermissions);
 
 }
