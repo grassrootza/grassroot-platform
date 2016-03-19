@@ -19,12 +19,11 @@ public class Vote extends Event {
 	}
 
 	public Vote(String name, Timestamp startDateTime, User user, Group group, boolean includeSubGroups) {
-		this(name, startDateTime, user, group, includeSubGroups, false, false, EventReminderType.DISABLED, 0);
+		this(name, startDateTime, user, group, includeSubGroups, false);
 	}
 
-	public Vote(String name, Timestamp startDateTime, User user, Group group, boolean includeSubGroups,
-				boolean rsvpRequired, boolean relayable, EventReminderType reminderType, int customReminderMinutes) {
-		super(startDateTime, user, group, name, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes);
+	public Vote(String name, Timestamp startDateTime, User user, Group group, boolean includeSubGroups, boolean relayable) {
+		super(startDateTime, user, group, name, includeSubGroups, true, relayable, EventReminderType.DISABLED, 0);
 	}
 
 	@Override

@@ -16,8 +16,7 @@ public interface EventBroker {
 					   int customReminderMinutes);
 
 	Vote createVote(String userUid, String groupUid, String name, Timestamp eventStartDateTime,
-					   boolean includeSubGroups, boolean rsvpRequired, boolean relayable, EventReminderType reminderType,
-					   int customReminderMinutes);
+					   boolean includeSubGroups, boolean relayable);
 
 	void cancel(String userUid, String eventUid);
 
@@ -30,4 +29,6 @@ public interface EventBroker {
 	void sendScheduledReminders();
 
 	void sendManualReminder(String userUid, String eventUid, String message);
+
+	void sendVoteResults();
 }

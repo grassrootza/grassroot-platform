@@ -886,8 +886,9 @@ public class EventManager implements EventManagementService {
             // let's send out a change notification if something changed in minimum required values
             if (!savedEvent.equals(beforeEvent)) {
                 boolean startTimeChanged = false;
-                if (!beforeEvent.getEventStartDateTime().equals(savedEvent.getEventStartDateTime()))
+                if (!beforeEvent.getEventStartDateTime().equals(savedEvent.getEventStartDateTime())) {
                     startTimeChanged = true;
+                }
                 jmsTemplateProducerService.sendWithNoReply("event-changed", new EventChanged(new EventDTO(savedEvent), startTimeChanged));
                 log.info("queued to event-changed event..." + savedEvent.getId() + "...version..." + savedEvent.getVersion());
             } else {

@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.Vote;
 
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -59,9 +60,6 @@ where e.canceled = FALSE
 
 	@Query(value = "select v from Vote v where v.eventStartDateTime > ?1 and v.canceled = false")
 	List<Event> findAllVotesAfterTimeStamp(Date date);
-
-	@Query(value = "SELECT * FROM event e WHERE start_date_time  between  (current_timestamp - INTERVAL '1 hour') and current_timestamp AND e.type = 'VOTE' AND e.canceled = FALSE AND (SELECT count(*) FROM event_log el WHERE el.event_log_type = 7 AND e.id = el.event_id) = 0", nativeQuery = true)
-	List<Event> findUnsentVoteResults();
 
 	@Query(value = "SELECT count(*) from Event e where e.start_date_time > current_timestamp and e.applies_to_group in (select group_id from group_user_membership where user_id = ?1)", nativeQuery = true)
 	int countFutureEvents(Long userId);

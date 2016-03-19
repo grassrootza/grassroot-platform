@@ -12,10 +12,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.services.EventLogManagementService;
-import za.org.grassroot.services.EventManagementService;
-import za.org.grassroot.services.GroupManagementService;
-import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
@@ -31,6 +28,9 @@ public class VoteController extends BaseController {
     Logger log = LoggerFactory.getLogger(VoteController.class);
 
     @Autowired
+    private EventBroker eventBroker;
+
+    @Autowired
     EventManagementService eventManagementService;
 
     @Autowired
@@ -44,7 +44,6 @@ public class VoteController extends BaseController {
 
         boolean groupSpecified = (groupId != null);
         User user = getUserProfile();
-        // Event vote = eventManagementService.createVote(user);
 
         if (groupSpecified) {
             Group group = groupManagementService.loadGroup(groupId);
@@ -62,8 +61,6 @@ public class VoteController extends BaseController {
         model.addAttribute("vote", voteRequest);
         model.addAttribute("groupSpecified", groupSpecified);
 
-        // log.info("Vote that we are passing: " + vote);
-
         return "vote/create";
     }
 
@@ -74,18 +71,14 @@ public class VoteController extends BaseController {
 
         log.info("Vote passed back to us: " + vote);
         Group group = groupManagementService.loadGroup(selectedGroupId);
-        if (!groupManagementService.isUserInGroup(group, getUserProfile()))
-            throw new AccessDeniedException("");
+        User user = getUserProfile();
 
-        // choosing to set some default fields here instead of a lot of hidden fields in Thymeleaf
-        vote.setCreatedByUser(getUserProfile());
-        vote.setRsvpRequired(true);
-        vote.setAppliesToGroup(group);
+        if (!groupManagementService.isUserInGroup(group, user))
+            throw new AccessDeniedException("");
 
         log.info("Fleshed out vote: " + vote);
 
-        // todo: implement using new design!!!
-//        vote = eventManagementService.createVote(vote);
+        eventBroker.createVote(user.getUid(), group.getUid(), vote.getName(), vote.getEventStartDateTime(), vote.isIncludeSubGroups(), vote.isRelayable());
         log.info("Stored vote, at end of creation: " + vote.toString());
 
         addMessage(model, MessageType.SUCCESS, "vote.creation.success", request);

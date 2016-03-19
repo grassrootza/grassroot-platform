@@ -89,7 +89,7 @@ public class EventDTO  implements Serializable {
         if (eventType.equals(EventType.MEETING)) {
             return new Meeting(name, eventStartDateTime, createdByUser, appliesToGroup, eventLocation, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes);
         } else {
-            return new Vote(name, eventStartDateTime, createdByUser, appliesToGroup, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes);
+            return new Vote(name, eventStartDateTime, createdByUser, appliesToGroup, includeSubGroups, relayable);
         }
     }
 
