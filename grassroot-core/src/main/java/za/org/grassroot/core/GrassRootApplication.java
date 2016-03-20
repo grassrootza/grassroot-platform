@@ -34,6 +34,7 @@ public class GrassRootApplication extends SpringApplication {
         if (environment.acceptsProfiles(GrassRootApplicationProfiles.INMEMORY)) numberActive++;
         if (environment.acceptsProfiles(GrassRootApplicationProfiles.CLOUDHEROKU)) numberActive++;
         if (environment.acceptsProfiles(GrassRootApplicationProfiles.LOCAL_PG)) numberActive++;
+        if (environment.acceptsProfiles(GrassRootApplicationProfiles.STAGING)) numberActive++;
         if (environment.acceptsProfiles(GrassRootApplicationProfiles.PRODUCTION)) numberActive++;
 
         if (numberActive > 1) {

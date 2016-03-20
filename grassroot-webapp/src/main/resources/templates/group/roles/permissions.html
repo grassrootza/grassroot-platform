@@ -57,10 +57,21 @@
               </tr>
               </tbody>
             </table>
+            <input th:each="permission, iterStat: ${permissionsHidden}"
+                   th:name="ordinary_+${permission.getName()}"
+                   th:if="${#lists.contains(ordinaryPermissions, permission)}" value="on" type="hidden" />
+            <input th:each="permission, iterStat: ${permissionsHidden}"
+                   th:name="committee_+${permission.getName()}"
+                   th:if="${#lists.contains(committeePermissions, permission)}" value="on" type="hidden" />
+            <input th:each="permission, iterStat: ${permissionsHidden}"
+                   th:name="organizer_+${permission.getName()}"
+                   th:if="${#lists.contains(organizerPermissions, permission)}" value="on" type="hidden" />
             <div class="form-group">
               <div class="pull-right">
-                <button type="submit" class="btn btn-default">Back</button>
-                <button type="reset" class="btn btn-warning">Reset</button>
+                <a th:href="@{/group/view(groupId=${group.id})}" role="button" class="btn btn-default">Back to group</a>
+                <a th:href="@{members(groupUid=${group.Uid})}" role="button" class="btn btn-default">Back to roles</a>
+                <!-- todo: do a modal button with the templates, and allow resetting to them -->
+                <!-- <button type="reset" class="btn btn-warning">Reset</button> -->
                 <button type="submit" class="btn btn-primary">Submit</button>
               </div>
             </div>

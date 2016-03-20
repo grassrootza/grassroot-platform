@@ -381,19 +381,32 @@ public class GroupBrokerImpl implements GroupBroker {
 
     @Override
     @Transactional
-    public void updateGroupRolePermissions(String userUid, String groupUid, String roleName, Set<Permission> newPermissions) {
+    public void updateGroupPermissions(String userUid, String groupUid, Map<String, Set<Permission>> newPermissions) {
+
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
-        Objects.requireNonNull(roleName);
         Objects.requireNonNull(newPermissions);
 
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
-        // todo: switch to the "change permissions" permission, once that is actually implemented properly
-        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE);
 
-        Role role = group.getRole(roleName);
-        role.setPermissions(newPermissions);
+        // note: the UI also needs to enforce protection of organizer permissions, but since this is delicate and
+        // potentially irreversible, also enforcing it here
+
+        for (Role role : group.getGroupRoles()) {
+            Objects.requireNonNull(newPermissions.get(role.getName()));
+            Set<Permission> adjustedRolePermissions = newPermissions.get(role.getName());
+            if (role.getName().equals(BaseRoles.ROLE_GROUP_ORGANIZER)) {
+                adjustedRolePermissions.addAll(permissionBroker.getProtectedOrganizerPermissions());
+            }
+            role.setPermissions(adjustedRolePermissions);
+        }
+
+        // todo: consider more fine grained logging (which permission changed)
+        logGroupEventsAfterCommit(Collections.singleton(new GroupLog(group.getId(), user.getId(), GroupLogType.PERMISSIONS_CHANGED, 0L,
+                                               "Changed permissions assigned to group roles")));
+
     }
 }

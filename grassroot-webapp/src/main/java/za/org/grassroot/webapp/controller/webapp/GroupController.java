@@ -85,7 +85,6 @@ public class GroupController extends BaseController {
                                                                        Permission.GROUP_PERMISSION_READ_UPCOMING_EVENTS,
                                                                        Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY,
                                                                        Permission.GROUP_PERMISSION_CLOSE_OPEN_LOGBOOK,
-                                                                       Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE,
                                                                        // Permission.GROUP_PERMISSION_FORCE_PERMISSION_CHANGE,
                                                                        Permission.GROUP_PERMISSION_CREATE_SUBGROUP,
                                                                        // Permission.GROUP_PERMISSION_AUTHORIZE_SUBGROUP,
@@ -94,7 +93,8 @@ public class GroupController extends BaseController {
                                                                        Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER,
                                                                        // Permission.GROUP_PERMISSION_FORCE_ADD_MEMBER,
                                                                        Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER,
-                                                                       Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+                                                                       Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS,
+                                                                       Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE);
                                                                        // Permission.GROUP_PERMISSION_FORCE_DELETE_MEMBER);
 
 
@@ -214,6 +214,7 @@ public class GroupController extends BaseController {
 
         model.addAttribute("canAddMembers", permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER));
         model.addAttribute("canDeleteMembers", permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER));
+        model.addAttribute("canChangePermissions", permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE));
 
         return "group/view";
     }
@@ -782,9 +783,13 @@ public class GroupController extends BaseController {
         model.addAttribute("listOfMembers", members);
         model.addAttribute("roles", roleDescriptions);
 
+        model.addAttribute("permissionsImplemented", permissionsImplemented);
         model.addAttribute("ordinaryPermissions", permissionBroker.getPermissions(group, BaseRoles.ROLE_ORDINARY_MEMBER));
         model.addAttribute("committeePermissions", permissionBroker.getPermissions(group, BaseRoles.ROLE_COMMITTEE_MEMBER));
-        model.addAttribute("organizerPermissions", permissionBroker.getPermissions(group, BaseRoles.ROLE_COMMITTEE_MEMBER));
+        model.addAttribute("organizerPermissions", permissionBroker.getPermissions(group, BaseRoles.ROLE_GROUP_ORGANIZER));
+
+        model.addAttribute("canChangePermissions", permissionBroker.isGroupPermissionAvailable(getUserProfile(), group,
+                                                                                               Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE));
 
         return "group/roles/view";
     }
@@ -805,6 +810,10 @@ public class GroupController extends BaseController {
         Group group = groupManagementService.loadGroupByUid(groupUid);
         if (!isUserPartOfGroup(getUserProfile(), group)) throw new AccessDeniedException("Sorry, you are not a member of this group");
 
+        // need to do this else
+        List<Permission> permissionsHidden = new ArrayList<>(Arrays.asList(Permission.values()));
+        permissionsHidden.removeAll(permissionsImplemented);
+
         model.addAttribute("group", group);
         model.addAttribute("ordinaryPermissions", permissionBroker.getPermissions(group, BaseRoles.ROLE_ORDINARY_MEMBER));
         model.addAttribute("committeePermissions", permissionBroker.getPermissions(group, BaseRoles.ROLE_COMMITTEE_MEMBER));
@@ -812,6 +821,7 @@ public class GroupController extends BaseController {
 
         model.addAttribute("roles", roleDescriptions);
         model.addAttribute("permissionsImplemented", permissionsImplemented);
+        model.addAttribute("permissionsHidden", permissionsHidden);
 
         return "group/roles/permissions";
     }
@@ -824,6 +834,7 @@ public class GroupController extends BaseController {
         Set<Permission> ordinaryPermissions = new HashSet<>();
         Set<Permission> committeePermissions = new HashSet<>();
         Set<Permission> organizerPermissions = new HashSet<>();
+        Map<String, Set<Permission>> newPermissionMap = new HashMap<>();
 
         for (Permission permission : permissionsImplemented) {
             String ordinary = request.getParameter("ordinary_" + permission.getName());
@@ -836,11 +847,13 @@ public class GroupController extends BaseController {
         }
 
         // todo: make this atomic instead, plus also need to make sure don't overwrite the non implemented stuff
-        groupBroker.updateGroupRolePermissions(getUserProfile().getUid(), groupUid, BaseRoles.ROLE_ORDINARY_MEMBER, ordinaryPermissions);
-        groupBroker.updateGroupRolePermissions(getUserProfile().getUid(), groupUid, BaseRoles.ROLE_COMMITTEE_MEMBER, committeePermissions);
-        groupBroker.updateGroupRolePermissions(getUserProfile().getUid(), groupUid, BaseRoles.ROLE_GROUP_ORGANIZER, organizerPermissions);
+        newPermissionMap.put(BaseRoles.ROLE_ORDINARY_MEMBER, ordinaryPermissions);
+        newPermissionMap.put(BaseRoles.ROLE_COMMITTEE_MEMBER, committeePermissions);
+        newPermissionMap.put(BaseRoles.ROLE_GROUP_ORGANIZER, organizerPermissions);
 
-        addMessage(model, MessageType.INFO, "group.role.done", request);
+        groupBroker.updateGroupPermissions(getUserProfile().getUid(), groupUid, newPermissionMap);
+
+        addMessage(model, MessageType.SUCCESS, "group.role.done", request);
         return viewRolePermissions(model, groupUid);
     }
 

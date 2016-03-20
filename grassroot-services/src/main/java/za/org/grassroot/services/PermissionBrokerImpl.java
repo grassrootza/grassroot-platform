@@ -42,7 +42,9 @@ public class PermissionBrokerImpl implements PermissionBroker {
                                    Permission.GROUP_PERMISSION_FORCE_ADD_MEMBER,
                                    Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS,
                                    Permission.GROUP_PERMISSION_DELINK_SUBGROUP,
-                                   Permission.GROUP_PERMISSION_FORCE_DELETE_MEMBER);
+                                   Permission.GROUP_PERMISSION_FORCE_DELETE_MEMBER,
+                                   Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE,
+                                   Permission.GROUP_PERMISSION_FORCE_PERMISSION_CHANGE);
 
     // closed group structure ... again, externalize
     private static final Set<Permission> closedOrdinaryMemberPermissions =
@@ -69,7 +71,16 @@ public class PermissionBrokerImpl implements PermissionBroker {
                                    Permission.GROUP_PERMISSION_FORCE_ADD_MEMBER,
                                    Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS,
                                    Permission.GROUP_PERMISSION_DELINK_SUBGROUP,
-                                   Permission.GROUP_PERMISSION_FORCE_DELETE_MEMBER);
+                                   Permission.GROUP_PERMISSION_FORCE_DELETE_MEMBER,
+                                   Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE,
+                                   Permission.GROUP_PERMISSION_FORCE_PERMISSION_CHANGE);
+
+    // a couple of permissions that we don't let users remove from organizers (since then no one can change them)
+    private static final Set<Permission> protectedOrganizerPermissions =
+            constructPermissionSet(Collections.emptySet(),
+                                   Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS,
+                                   Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE,
+                                   Permission.GROUP_PERMISSION_FORCE_PERMISSION_CHANGE);
 
 
     private static final Set<Permission> constructPermissionSet(Set<Permission> baseSet, Permission... permissions) {
@@ -125,6 +136,11 @@ public class PermissionBrokerImpl implements PermissionBroker {
     @Override
     public Set<Permission> getPermissions(Group group, String roleName) {
         return group.getRole(roleName).getPermissions();
+    }
+
+    @Override
+    public Set<Permission> getProtectedOrganizerPermissions() {
+        return protectedOrganizerPermissions;
     }
 
 }

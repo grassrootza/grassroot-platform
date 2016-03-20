@@ -115,7 +115,9 @@
           <ul class="dropdown-menu">
             <li><a th:href="@{/group/history(groupId=${group.id})}">View group history</a></li>
             <li><a th:href="@{/group/change_multiple(groupUid=${group.Uid})}">Add, remove multiple members</a></li>
-            <li><a th:href="@{/group/roles/members(groupUid=${group.Uid})}">Change member roles</a></li>
+            <li><a th:href="@{/group/roles/members(groupUid=${group.Uid})}">Change members' roles</a></li>
+            <li><a th:if="${canChangePermissions}" th:href="@{/group/roles/permissions(groupUid=${group.Uid})}">
+              Change roles' permissions</a></li>
             <li><a href="javascript:void(0)" data-toggle="modal" data-target="#renameModal">Rename group</a></li>
             <li><a href="javascript:void(0)" data-toggle="modal" data-target="#languageModal">Set default language</a></li>
             <li class="divider"></li>
