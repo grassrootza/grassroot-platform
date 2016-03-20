@@ -35,7 +35,7 @@ public final class GrassRootApplicationProfiles {
      */
     public  final static String LOCAL_PG = "localpg";
 
-
+    public final static String STAGING = "staging";
 
     public  final static String PRODUCTION = "production";
 }
