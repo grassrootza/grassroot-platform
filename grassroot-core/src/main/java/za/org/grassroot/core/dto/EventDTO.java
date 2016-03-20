@@ -1,5 +1,7 @@
 package za.org.grassroot.core.dto;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventType;
 
@@ -10,6 +12,9 @@ import java.sql.Timestamp;
  * Created by aakilomar on 10/11/15.
  */
 public class EventDTO  implements Serializable {
+
+    private static final Logger log = LoggerFactory.getLogger(EventDTO.class);
+
     private String eventLocation;
     private Long id;
     private Timestamp createdDateTime;
@@ -65,7 +70,6 @@ public class EventDTO  implements Serializable {
     }
 
     public EventDTO(Event event) {
-//        this.eventLocation = event.getEventLocation();
         this.id = event.getId();
         this.createdDateTime = event.getCreatedDateTime();
         this.eventStartDateTime = event.getEventStartDateTime();
@@ -83,7 +87,11 @@ public class EventDTO  implements Serializable {
         this.message = "";
     }
 
-
+    public EventDTO(Meeting meeting) {
+        this ((Event) meeting);
+        log.info("Inside the meeting specific constructor ... ");
+        this.eventLocation = meeting.getEventLocation();
+    }
 
     public Event getEventObject() {
         if (eventType.equals(EventType.MEETING)) {

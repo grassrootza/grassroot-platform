@@ -12,7 +12,10 @@ import java.util.Set;
 
 public interface GroupBroker {
 
-    Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos, GroupPermissionTemplate groupPermissionTemplate);
+    Group load(String groupUid);
+
+    Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos,
+                 GroupPermissionTemplate groupPermissionTemplate);
 
     void deactivate(String userUid, String groupUid, boolean checkIfWithinTimeWindow);
 
@@ -38,5 +41,7 @@ public interface GroupBroker {
     List<Group> findPublicGroups(String searchTerm);
 
     void updateGroupPermissions(String userUid, String groupUid, Map<String, Set<Permission>> newPermissions);
+
+    void updateGroupDefaultReminderSetting(String userUid, String groupUid, int reminderMinutes);
 
 }

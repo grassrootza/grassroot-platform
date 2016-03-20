@@ -18,6 +18,8 @@ import za.org.grassroot.webapp.controller.BaseController;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
 
+import static za.org.grassroot.core.domain.Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE;
+
 /**
  * Created by luke on 2015/10/30.
  */
@@ -31,6 +33,12 @@ public class VoteController extends BaseController {
     private EventBroker eventBroker;
 
     @Autowired
+    private PermissionBroker permissionBroker;
+
+    @Autowired
+    private GroupBroker groupBroker;
+
+    @Autowired
     EventManagementService eventManagementService;
 
     @Autowired
@@ -40,19 +48,19 @@ public class VoteController extends BaseController {
     EventLogManagementService eventLogManagementService;
 
     @RequestMapping("/vote/create")
-    public String createVote(Model model, @RequestParam(value="groupId", required = false) Long groupId) {
+    public String createVote(Model model, @RequestParam(value="groupUid", required = false) String groupUid) {
 
-        boolean groupSpecified = (groupId != null);
+        boolean groupSpecified = (groupUid != null);
         User user = getUserProfile();
 
         if (groupSpecified) {
-            Group group = groupManagementService.loadGroup(groupId);
-            if (!groupManagementService.isUserInGroup(group, getUserProfile()))
-                throw new AccessDeniedException("Sorry, you do not have permission to call a vote on this group");
+            Group group = groupBroker.load(groupUid);
+            // note: though service layer checks this, and prior UX, want to catch it here too in case of URL hacking
+            permissionBroker.validateGroupPermission(getUserProfile(), group, GROUP_PERMISSION_CREATE_GROUP_VOTE);
             model.addAttribute("group", group);
         } else {
             // todo: filter for permissions
-            model.addAttribute("possibleGroups", groupManagementService.getActiveGroupsPartOf(user));
+            model.addAttribute("possibleGroups", permissionBroker.getActiveGroupsWithPermission(getUserProfile(), GROUP_PERMISSION_CREATE_GROUP_VOTE));
         }
 
         VoteRequest voteRequest = VoteRequest.makeEmpty(user, null);
@@ -87,9 +95,9 @@ public class VoteController extends BaseController {
     }
 
     @RequestMapping("/vote/view")
-    public String viewVote(Model model, @RequestParam Long eventId) {
+    public String viewVote(Model model, @RequestParam String eventUid) {
 
-        Event vote = eventManagementService.loadEvent(eventId);
+        Event vote = eventBroker.load(eventUid);
 
         Map<String, Integer> voteResults = eventManagementService.getVoteResults(vote);
 

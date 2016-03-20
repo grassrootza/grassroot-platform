@@ -43,6 +43,12 @@ public class EventBrokerImpl implements EventBroker {
 	private GenericJmsTemplateProducerService jmsTemplateProducerService;
 
 	@Override
+	public Event load(String eventUid) {
+		Objects.requireNonNull(eventUid);
+		return eventRepository.findOneByUid(eventUid);
+	}
+
+	@Override
 	@Transactional
 	public Meeting createMeeting(String userUid, String groupUid, String name, Timestamp eventStartDateTime, String eventLocation,
 								 boolean includeSubGroups, boolean rsvpRequired, boolean relayable, EventReminderType reminderType, int customReminderMinutes) {

@@ -250,7 +250,7 @@
     <div class="row top-buffer">
       <div class="btn-group col-md-12 text-center">
         <a href="" th:href="@{/group/create(parent=${group.id})}"><button class="btn btn-default">Create a sub-group</button></a>
-        <a href="" th:href="@{/meeting/create(groupId=${group.id})}"><button class="btn btn-default">Call a meeting</button></a>
+        <a href="" th:href="@{/meeting/create(groupUid=${group.Uid})}"><button class="btn btn-default">Call a meeting</button></a>
         <a href="" th:href="@{/vote/create(groupId=${group.id})}"><button class="btn btn-default">Take a vote</button></a>
         <a href="" th:href="@{/log/view(groupId=${group.id})}"><button class="btn btn-default">Manage to-dos</button></a>
       </div>

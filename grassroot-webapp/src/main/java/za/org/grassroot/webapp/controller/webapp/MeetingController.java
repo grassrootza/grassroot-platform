@@ -9,15 +9,9 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Meeting;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.services.EventBroker;
-import za.org.grassroot.services.EventLogManagementService;
-import za.org.grassroot.services.EventManagementService;
-import za.org.grassroot.services.GroupManagementService;
+import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
@@ -40,7 +34,13 @@ public class MeetingController extends BaseController {
     private GroupManagementService groupManagementService;
 
     @Autowired
+    private GroupBroker groupBroker;
+
+    @Autowired
     private EventBroker eventBroker;
+
+    @Autowired
+    private PermissionBroker permissionBroker;
 
     @Autowired
     private EventManagementService eventManagementService;
@@ -78,22 +78,21 @@ public class MeetingController extends BaseController {
      */
 
     @RequestMapping("/meeting/create")
-    public String createMeetingIndex(Model model, @RequestParam(value="groupId", required=false) Long groupId) {
+    public String createMeetingIndex(Model model, @RequestParam(value="groupUid", required=false) String groupUid) {
 
         boolean groupSpecified;
         User sessionUser = getUserProfile();
         Meeting meeting = Meeting.makeEmpty(sessionUser);
+        meeting.setRsvpRequired(true); // since this is default (and Thymeleaf doesn't handle setting it in template well)
 
-        if (groupId != null) {
-            log.info("Came here from a group");
-            Group group = groupManagementService.loadGroup(groupId);
+        if (groupUid != null) {
+            Group group = groupBroker.load(groupUid);
             model.addAttribute("group", group);
             meeting.setAppliesToGroup(group);
             groupSpecified = true;
         } else {
-            // todo: filter by permissions
-            log.info("No group selected, pass the list of possible");
-            model.addAttribute("userGroups", groupManagementService.getActiveGroupsPartOf(sessionUser));
+            // todo: filter by permissions, and include number of members (for confirm modal)
+            model.addAttribute("userGroups", permissionBroker.getActiveGroupsWithPermission(sessionUser, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING));
             groupSpecified = false;
         }
 
@@ -109,7 +108,7 @@ public class MeetingController extends BaseController {
 
     @RequestMapping(value = "/meeting/create", method = RequestMethod.POST)
     public String createMeeting(Model model, @ModelAttribute("meeting") Meeting meeting, BindingResult bindingResult,
-                                @RequestParam(value="selectedGroupId", required=false) Long selectedGroupId,
+                                @RequestParam(value="selectedGroupUid", required=false) String selectedGroupUid,
                                 HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
         // todo: add error handling and validation
@@ -117,22 +116,11 @@ public class MeetingController extends BaseController {
         // todo: put this data transformation else where:Maybe Wrapper?
 
         log.info("The event passed back to us: " + meeting.toString());
-      /*  if (!groupManagementService.canUserCallMeeting(groupId, getUserProfile()))
-            throw new AccessDeniedException("You do not have permission to call a meeting of this group");*/
+        log.info("Event location set as: " + meeting.getEventLocation());
 
-        // todo: dunno if this comment is important?
-        /*
-        This is a bit clunky. Unfortunately, Thymeleaf isn't handling the mapping of group IDs from selection box back
-          to the event.groupAppliesTo field, nor does it do it as a Group (just passes the toString() output around), hence ...
-         */
+        String groupUid = (selectedGroupUid == null) ? meeting.getAppliesToGroup().getUid() : selectedGroupUid;
 
-        if (selectedGroupId != null) { // now we need to load a group and then pass it to meeting
-            log.info("Okay, we were passed a group Id, so we need to set it to this groupId: " + selectedGroupId);
-            Group group = groupManagementService.loadGroup(selectedGroupId);
-            meeting.setAppliesToGroup(group);
-        }
-
-        eventBroker.createMeeting(getUserProfile().getUid(), meeting.getAppliesToGroup().getUid(), meeting.getName(),
+        eventBroker.createMeeting(getUserProfile().getUid(), groupUid, meeting.getName(),
                 meeting.getEventStartDateTime(), meeting.getEventLocation(), meeting.isIncludeSubGroups(),
                 meeting.isRsvpRequired(), meeting.isRelayable(), meeting.getReminderType(), meeting.getCustomReminderMinutes());
 
@@ -347,12 +335,10 @@ public class MeetingController extends BaseController {
         String[] oneDay = new String[]{"" + 24 * 60, "One day ahead"};
         String[] halfDay = new String[]{"" + 6 * 60, "Half a day ahead"};
         String[] oneHour = new String[]{"60", "An hour before"};
-        String[] noReminder = new String[]{"-1", "No reminder"};
 
         minuteOptions.add(oneDay);
         minuteOptions.add(halfDay);
         minuteOptions.add(oneHour);
-        minuteOptions.add(noReminder);
 
         return minuteOptions;
 

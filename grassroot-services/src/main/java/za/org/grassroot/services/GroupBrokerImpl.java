@@ -39,6 +39,12 @@ public class GroupBrokerImpl implements GroupBroker {
     private AsyncGroupEventLogger asyncGroupEventLogger;
 
     @Override
+    @Transactional(readOnly = true)
+    public Group load(String groupUid) {
+        return groupRepository.findOneByUid(groupUid);
+    }
+
+    @Override
     @Transactional
     public Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos, GroupPermissionTemplate groupPermissionTemplate) {
 
@@ -408,5 +414,23 @@ public class GroupBrokerImpl implements GroupBroker {
         logGroupEventsAfterCommit(Collections.singleton(new GroupLog(group.getId(), user.getId(), GroupLogType.PERMISSIONS_CHANGED, 0L,
                                                "Changed permissions assigned to group roles")));
 
+    }
+
+    @Override
+    @Transactional
+    public void updateGroupDefaultReminderSetting(String userUid, String groupUid, int reminderMinutes) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+        Objects.requireNonNull(reminderMinutes);
+
+        Group group = load(groupUid);
+        User user = userRepository.findOneByUid(userUid);
+
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+
+        group.setReminderMinutes(reminderMinutes);
+        String logMessage = String.format("Changed reminder default to %d minutes", reminderMinutes);
+        logGroupEventsAfterCommit(Collections.singleton(new GroupLog(group.getId(), user.getId(),
+                                                                     GroupLogType.REMINDER_DEFAULT_CHANGED, 0L, logMessage)));
     }
 }

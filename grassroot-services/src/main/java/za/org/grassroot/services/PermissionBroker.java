@@ -15,6 +15,8 @@ public interface PermissionBroker {
 
     boolean isGroupPermissionAvailable(User user, Group group, Permission requiredPermission);
 
+    Set<Group> getActiveGroupsWithPermission(User user, Permission requiredPermission);
+
     Set<Permission> getPermissions(Group group, String roleName);
 
     Set<Permission> getProtectedOrganizerPermissions();

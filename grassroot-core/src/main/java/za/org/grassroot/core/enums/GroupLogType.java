@@ -11,7 +11,8 @@ public enum GroupLogType {
     GROUP_MEMBER_REMOVED("group member removed"),
     SUBGROUP_ADDED("sub-group added"),
     SUBGROUP_REMOVED("sub-group removed"),
-    PERMISSIONS_CHANGED("permissions changed");
+    PERMISSIONS_CHANGED("permissions changed"),
+    REMINDER_DEFAULT_CHANGED("reminder default changed");
 
     private final String text;
 

@@ -6,13 +6,19 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class PermissionBrokerImpl implements PermissionBroker {
+
+    @Autowired
+    GroupRepository groupRepository;
 
     // major todo: externalize these permissions
 
@@ -131,6 +137,14 @@ public class PermissionBrokerImpl implements PermissionBroker {
             }
         }
         return false;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Set<Group> getActiveGroupsWithPermission(User user, Permission requiredPermission) {
+        List<Group> allActiveGroups = groupRepository.findByMembershipsUserAndActive(user, true);
+        return allActiveGroups.stream().filter(g -> isGroupPermissionAvailable(user, g, requiredPermission)).
+                collect(Collectors.toSet());
     }
 
     @Override

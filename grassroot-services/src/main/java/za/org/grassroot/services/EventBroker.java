@@ -1,5 +1,6 @@
 package za.org.grassroot.services;
 
+import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.EventReminderType;
 import za.org.grassroot.core.domain.Meeting;
 import za.org.grassroot.core.domain.Vote;
@@ -7,6 +8,9 @@ import za.org.grassroot.core.domain.Vote;
 import java.sql.Timestamp;
 
 public interface EventBroker {
+
+	Event load(String eventUid);
+
 	Meeting createMeeting(String userUid, String groupUid, String name, Timestamp eventStartDateTime, String eventLocation,
 				   boolean includeSubGroups, boolean rsvpRequired, boolean relayable, EventReminderType reminderType,
 				   int customReminderMinutes);
@@ -31,4 +35,5 @@ public interface EventBroker {
 	void sendManualReminder(String userUid, String eventUid, String message);
 
 	void sendVoteResults();
+
 }
