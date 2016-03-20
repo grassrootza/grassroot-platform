@@ -58,7 +58,7 @@ public class USSDVoteController extends USSDController {
     public Request votingStart(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
-        int hasVotesToView = eventManager.userHasEventsToView(user, EventType.Vote);
+        int hasVotesToView = eventManager.userHasEventsToView(user, EventType.VOTE);
         log.info("Checked for votes to view ... got integer: " + hasVotesToView);
         USSDMenu menu;
 

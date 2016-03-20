@@ -41,7 +41,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
      @Test
     public void shouldShowMeetingDetails() throws Exception {
 
-         Event dummyMeeting = new Event();
+         Event dummyMeeting = null;
 
          Group dummyGroup = new Group("Dummy Group3", new User("234345345"));
         dummyMeeting.setId(dummyId);
@@ -77,7 +77,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void testCreateMeetingWorks() throws Exception {
-        Event dummyMeeting = new Event();
+        Event dummyMeeting = null;
         dummyMeeting.setId(1L);
 
         Group dummyGroup = new Group("Dummy Group3", new User("234345345"));
@@ -85,15 +85,12 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
       //  when(groupManagementServiceMock.canUserCallMeeting(dummyId, sessionTestUser)).thenReturn(true);
         when(eventManagementServiceMock.updateEvent(dummyMeeting)).thenReturn(
                 dummyMeeting);
-        when(eventManagementServiceMock.setGroup(dummyMeeting.getId(),
-                dummyId)).thenReturn(dummyMeeting);
         mockMvc.perform(post("/meeting/create").sessionAttr("meeting", dummyMeeting)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED).param("selectedGroupId",
                         String.valueOf(dummyId))).andExpect(status().is3xxRedirection())
                 .andExpect(view().name("redirect:/home"))
                 .andExpect(redirectedUrl("/home"));
         verify(eventManagementServiceMock, times(1)).updateEvent(dummyMeeting);
-        verify(eventManagementServiceMock, times(1)).setGroup(dummyId, dummyId);
       //  verify(groupManagementServiceMock, times(1)).canUserCallMeeting(dummyId, sessionTestUser);
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyNoMoreInteractions(eventManagementServiceMock);
@@ -143,14 +140,14 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     public void createMeetingIndexWorksWithGroupSpecified() throws Exception {
         Group testGroup = new Group("", sessionTestUser);
         testGroup.setId(dummyId);
-        Event dummyMeeting = new Event();
+//        Event dummyMeeting = new Event();
+        Event dummyMeeting = null; // todo: new design?
         dummyMeeting.setId(dummyId);
         List<String[]> minuteOptions = new ArrayList<>();
         String[] oneDay = new String[]{"" + 24 * 60, "One day ahead"};
         minuteOptions.add(oneDay);
-        when(eventManagementServiceMock.createMeeting(sessionTestUser)).thenReturn(dummyMeeting);
+//        when(eventManagementServiceMock.createMeeting(sessionTestUser)).thenReturn(dummyMeeting);
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
-        when(eventManagementServiceMock.setGroup(dummyMeeting.getId(), dummyId)).thenReturn(dummyMeeting);
         when(eventManagementServiceMock.setEventNoReminder(dummyMeeting.getId())).thenReturn(dummyMeeting);
         mockMvc.perform(get("/meeting/create").param("groupId", String.valueOf(dummyId)))
                 .andExpect((view().name("meeting/create"))).andExpect(status().isOk())
@@ -158,9 +155,8 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(model().attribute("meeting",
                         hasProperty("id", is(dummyId)))).andExpect(model().attribute("groupSpecified", is(true)))
                 .andExpect(model().attribute("reminderOptions", hasItem(oneDay)));
-        verify(eventManagementServiceMock, times(1)).createMeeting(sessionTestUser);
+//        verify(eventManagementServiceMock, times(1)).createMeeting(sessionTestUser);
         verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
-        verify(eventManagementServiceMock, times(1)).setGroup(dummyMeeting.getId(), dummyId);
         verify(eventManagementServiceMock, times(1)).setEventNoReminder(dummyMeeting.getId());
         verifyNoMoreInteractions(eventManagementServiceMock);
         verifyNoMoreInteractions(groupManagementServiceMock);
@@ -172,13 +168,13 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         Group dummyGroup = new Group("", sessionTestUser);
         dummyGroup.setId(dummyId);
         dummyGroups.add(dummyGroup);
-        Event dummyMeeting = new Event();
+        Event dummyMeeting = null;
         dummyMeeting.setId(dummyId);
         List<String[]> minuteOptions = new ArrayList<>();
         String[] oneDay = new String[]{"" + 24 * 60, "One day ahead"};
         minuteOptions.add(oneDay);
         when(userManagementServiceMock.fetchUserByUsername(testUserPhone)).thenReturn(sessionTestUser);
-        when(eventManagementServiceMock.createMeeting(sessionTestUser)).thenReturn(dummyMeeting);
+//        when(eventManagementServiceMock.createMeeting(sessionTestUser)).thenReturn(dummyMeeting);
         when(eventManagementServiceMock.setEventNoReminder(dummyMeeting.getId())).thenReturn(dummyMeeting);
         when(groupManagementServiceMock.getActiveGroupsPartOf(sessionTestUser)).thenReturn(dummyGroups);
         mockMvc.perform(get("/meeting/create")).andExpect(status().isOk())
@@ -186,7 +182,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(model().attribute("groupSpecified", is(false)))
                 .andExpect(model().attribute("userGroups", hasItem(dummyGroup)));
 
-        verify(eventManagementServiceMock, times(1)).createMeeting(sessionTestUser);
+//        verify(eventManagementServiceMock, times(1)).createMeeting(sessionTestUser);
         verify(eventManagementServiceMock, times(1)).setEventNoReminder(dummyMeeting.getId());
         verify(groupManagementServiceMock, times(1)).getActiveGroupsPartOf(sessionTestUser);
 
@@ -199,7 +195,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     public void sendFreeMsgWorks() throws Exception {
         Group dummyGroup = new Group("Dummy Group3", new User("234345345"));
         dummyGroup.setId(dummyId);
-        Event testEvent = new Event();
+        Event testEvent = null;
         testEvent.setId(dummyId);
         boolean includeSubGroups = true;
         String message = "message";
@@ -223,7 +219,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void initiateMeetingModificationWorks() throws Exception {
-        Event dummyMeeting = new Event();
+        Event dummyMeeting = null;
         dummyMeeting.setId(dummyId);
         Group testGroup = new Group("tg1", sessionTestUser);
         testGroup.setId(dummyId);
@@ -248,13 +244,16 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void rsvpNoShouldWork() throws Exception {
-        Event dummyMeeting = new Event();
+        Event dummyMeeting = null;
         dummyMeeting.setId(dummyId);
         EventLog dummyEventLog = new EventLog();
         when(eventManagementServiceMock.loadEvent(dummyId)).thenReturn(dummyMeeting);
         when(userManagementServiceMock.fetchUserByUsername(testUserPhone)).thenReturn(sessionTestUser);
+        // todo: new design?
+/*
         when(eventLogManagementServiceMock.rsvpForEvent(dummyMeeting, sessionTestUser, EventRSVPResponse.NO))
                 .thenReturn(dummyEventLog);
+*/
         mockMvc.perform(post("/meeting/rsvp").param("eventId", String.valueOf(dummyId)).param("answer", "no"))
                 .andExpect(view().name("redirect:/home"))
                 .andExpect(redirectedUrl("/home"));
@@ -268,7 +267,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void rsvpYesShouldWork() throws Exception {
-        Event dummyMeeting = new Event();
+        Event dummyMeeting = null;
         dummyMeeting.setId(dummyId);
         EventLog dummyEventLog = new EventLog();
         List<User> listOfDummyYesResponses = new ArrayList<>();
@@ -277,8 +276,11 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         when(eventManagementServiceMock.getListOfUsersThatRSVPYesForEvent(dummyMeeting))
                 .thenReturn(listOfDummyYesResponses);
         when(eventManagementServiceMock.loadEvent(dummyId)).thenReturn(dummyMeeting);
+        // todo: new design?
+/*
         when(eventLogManagementServiceMock.rsvpForEvent(dummyMeeting, sessionTestUser, EventRSVPResponse.YES))
                 .thenReturn(dummyEventLog);
+*/
         when(eventManagementServiceMock.getRSVPResponses(dummyMeeting)).thenReturn(dummyResponsesMap);
         mockMvc.perform(post("/meeting/rsvp").param("eventId", String.valueOf(dummyId)).param("answer", "yes"))
                 .andExpect(view().name("meeting/view"))
@@ -297,7 +299,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void sendReminderWorks() throws Exception {
-        Event dummyMeeting = new Event();
+        Event dummyMeeting = null;
         dummyMeeting.setId(dummyId);
         when(eventManagementServiceMock.loadEvent(dummyId)).thenReturn(dummyMeeting);
         when(eventManagementServiceMock.sendManualReminder(dummyMeeting, "")).thenReturn(true);

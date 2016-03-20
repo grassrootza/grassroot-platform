@@ -39,7 +39,7 @@ public class USSDEventUtil extends USSDUtil {
     private static final int pageSize = 3;
 
     private static final Map<USSDSection, EventType> mapSectionType =
-            ImmutableMap.of(USSDSection.MEETINGS, EventType.Meeting, USSDSection.VOTES, EventType.Vote);
+            ImmutableMap.of(USSDSection.MEETINGS, EventType.MEETING, USSDSection.VOTES, EventType.VOTE);
 
     /*
     note: the next method will bring up events in groups that the user has unsubscribed from, since it doesn't go via the
@@ -112,37 +112,34 @@ public class USSDEventUtil extends USSDUtil {
     }
 
     public Event updateEvent(Long eventId, String lastMenuKey, String passedValue) {
-
-        Event eventToReturn;
-
         switch(lastMenuKey) {
             case subjectMenu:
-                eventToReturn = eventManager.setSubject(eventId, passedValue);
-                break;
+                return eventManager.setSubject(eventId, passedValue);
+
             case placeMenu:
-                eventToReturn = eventManager.setLocation(eventId, passedValue);
-                break;
+                return eventManager.setLocation(eventId, passedValue);
+
             case timeMenu:
-                eventToReturn = eventManager.setEventTimestamp(eventId, Timestamp.valueOf(DateTimeUtil.parseDateTime(passedValue)));
-                break;
+                return eventManager.setEventTimestamp(eventId, Timestamp.valueOf(DateTimeUtil.parseDateTime(passedValue)));
+
             case timeOnly:
                 String formattedTime = DateTimeUtil.reformatTimeInput(passedValue);
                 log.info("This is what we got back ... " + formattedTime);
-                eventToReturn = eventManager.changeMeetingTime(eventId, formattedTime);
-                break;
+                return eventManager.changeMeetingTime(eventId, formattedTime);
+
             case dateOnly:
                 String formattedDate = DateTimeUtil.reformatDateInput(passedValue);
                 log.info("This is what we got back ... " + formattedDate);
-                eventToReturn = eventManager.changeMeetingDate(eventId, formattedDate);
-                break;
+                return eventManager.changeMeetingDate(eventId, formattedDate);
+
             case changeDateTime:
-                eventToReturn = eventManager.setEventTimestampToStoredString(eventId);
-                break;
+                // todo: implement using new design!!!
+//                eventToReturn = eventManager.setEventTimestampToStoredString(eventId);
+                return null;
+
             default:
-                eventToReturn = eventManager.loadEvent(eventId);
-                break;
+                return eventManager.loadEvent(eventId);
         }
-        return eventToReturn;
     }
 
     // helper method to set a send block before updating (todo: consolidate/minimize DB calls)

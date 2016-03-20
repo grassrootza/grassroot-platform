@@ -1,15 +1,9 @@
 package za.org.grassroot.services;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.dto.MaskedEventDTO;
-import za.org.grassroot.core.dto.MaskedGroupDTO;
 import za.org.grassroot.core.dto.MaskedUserDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.EventRepository;
@@ -28,8 +22,6 @@ import java.util.List;
 @Service
 @Transactional
 public class AnalyticalManager implements AnalyticalService {
-
-    private static final Logger log = LoggerFactory.getLogger(AnalyticalManager.class);
 
     @Autowired
     private UserRepository userRepository;
@@ -51,30 +43,6 @@ public class AnalyticalManager implements AnalyticalService {
         for (User user : users)
             maskedUsers.add(new MaskedUserDTO(user));
         return maskedUsers;
-    }
-
-    private List<MaskedGroupDTO> maskListGroups(List<Group> groups) {
-        List<MaskedGroupDTO> maskedGroups = new ArrayList<>();
-        for (Group group : groups)
-            maskedGroups.add(new MaskedGroupDTO(group));
-        return maskedGroups;
-    }
-
-    private List<MaskedEventDTO> maskEventDTOs(List<Event> events) {
-        List<MaskedEventDTO> maskedEventDTOs = new ArrayList<>();
-        for (Event event : events)
-            maskedEventDTOs.add(new MaskedEventDTO(event));
-        return maskedEventDTOs;
-    }
-
-    @Override
-    public MaskedUserDTO loadMaskedUser(Long userId) {
-        return new MaskedUserDTO(userRepository.findOne(userId));
-    }
-
-    @Override
-    public List<MaskedUserDTO> loadAllUsersMasked() {
-        return maskListUsers(userRepository.findAll());
     }
 
     @Override
@@ -142,19 +110,8 @@ public class AnalyticalManager implements AnalyticalService {
      * */
 
     @Override
-    public MaskedGroupDTO loadMaskedGroup(Long groupId) {
-        return new MaskedGroupDTO(groupRepository.findOne(groupId));
-    }
-
-    @Override
     public Long countActiveGroups() {
         return groupRepository.countByActive(true);
-    }
-
-    @Override
-    public List<MaskedGroupDTO> loadGroupsCreatedInInterval(LocalDateTime start, LocalDateTime end) {
-        return maskListGroups(groupRepository.
-                findByCreatedDateTimeBetweenAndActive(Timestamp.valueOf(start), Timestamp.valueOf(end), true));
     }
 
     @Override
@@ -163,26 +120,14 @@ public class AnalyticalManager implements AnalyticalService {
     }
 
     @Override
-    public MaskedEventDTO loadMaskedEvent(Long eventId) {
-        return new MaskedEventDTO(eventRepository.findOne(eventId));
-    }
-
-    @Override
     public Long countAllEvents(EventType eventType) {
-        return eventRepository.countByEventTypeAndEventStartDateTimeNotNullAndSendBlockedFalse(eventType);
-    }
-
-    @Override
-    public List<MaskedEventDTO> loadEventsCreatedInInterval(LocalDateTime start, LocalDateTime end, EventType eventType) {
-        return maskEventDTOs(eventRepository.
-                findByEventTypeAndCreatedDateTimeBetweenAndSendBlockedAndEventStartDateTimeNotNull(eventType, Timestamp.valueOf(start),
-                                                                                                   Timestamp.valueOf(end), false));
+        return eventRepository.countByEventTypeAndEventStartDateTimeNotNull(eventType.getEventClass());
     }
 
     @Override
     public int countEventsCreatedInInterval(LocalDateTime start, LocalDateTime end, EventType eventType) {
-        return eventRepository.countByEventTypeAndCreatedDateTimeBetweenAndSendBlockedFalseAndEventStartDateTimeNotNull(
-                eventType, Timestamp.valueOf(start), Timestamp.valueOf(end));
+        return eventRepository.countByEventTypeAndCreatedDateTimeBetweenAndEventStartDateTimeNotNull(
+                eventType.getEventClass(), Timestamp.valueOf(start), Timestamp.valueOf(end));
     }
 
     /**

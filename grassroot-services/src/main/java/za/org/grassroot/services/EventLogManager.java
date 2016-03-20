@@ -83,37 +83,30 @@ public class EventLogManager implements EventLogManagementService {
     }
 
     @Override
-    public List<EventLog> getMinutesForEvent(Event event) {
-        return eventLogRepository.findByEventLogTypeAndEventOrderByIdAsc(EventLogType.EventMinutes, event);
+    public void rsvpForEvent(Long eventId, Long userId, String strRsvpResponse) {
+        rsvpForEvent(eventId, userId, EventRSVPResponse.fromString(strRsvpResponse));
     }
 
     @Override
-    public EventLog rsvpForEvent(Long eventId, Long userId, String strRsvpResponse) {
-        return rsvpForEvent(eventId, userId, EventRSVPResponse.fromString(strRsvpResponse));
+    public void rsvpForEvent(Long eventId, Long userId, EventRSVPResponse rsvpResponse) {
+        rsvpForEvent(eventRepository.findOne(eventId), userRepository.findOne(userId), rsvpResponse);
     }
 
     @Override
-    public EventLog rsvpForEvent(Long eventId, Long userId, EventRSVPResponse rsvpResponse) {
-        return rsvpForEvent(eventRepository.findOne(eventId), userRepository.findOne(userId), rsvpResponse);
+    public void rsvpForEvent(Long eventId, String phoneNumber, EventRSVPResponse rsvpResponse) {
+        rsvpForEvent(eventRepository.findOne(eventId), userRepository.findByPhoneNumber(phoneNumber), rsvpResponse);
     }
 
     @Override
-    public EventLog rsvpForEvent(Long eventId, String phoneNumber, EventRSVPResponse rsvpResponse) {
-        return rsvpForEvent(eventRepository.findOne(eventId), userRepository.findByPhoneNumber(phoneNumber), rsvpResponse);
-    }
-
-    @Override
-    public EventLog rsvpForEvent(Event event, User user, EventRSVPResponse rsvpResponse) {
+    public void rsvpForEvent(Event event, User user, EventRSVPResponse rsvpResponse) {
         log.trace("rsvpForEvent...event..." + event.getId() + "...user..." + user.getPhoneNumber() + "...rsvp..." + rsvpResponse.toString());
-        EventLog eventLog = new EventLog();
         // dont allow the user to rsvp/vote twice
-
         if (!userRsvpForEvent(event,user)) {
-            eventLog = createEventLog(EventLogType.EventRSVP, event, user, rsvpResponse.toString());
+            createEventLog(EventLogType.EventRSVP, event, user, rsvpResponse.toString());
             // clear rsvp cache for user
             cacheUtilService.clearRsvpCacheForUser(user, event.getEventType());
 
-            if (event.getEventType() == EventType.Vote) {
+            if (event.getEventType() == EventType.VOTE) {
                 // see if everyone voted, if they did expire the vote so that the results are sent out
                 RSVPTotalsDTO rsvpTotalsDTO = getVoteResultsForEvent(event);
                 log.trace("rsvpForEvent...after..." + rsvpTotalsDTO.toString());
@@ -123,15 +116,13 @@ public class EventLogManager implements EventLogManagementService {
                     eventRepository.save(event);
                 }
             }
-        } else {
-            // put values in the fields so that rest method does not NPE
-            eventLog.setId(0L);
-            eventLog.setEvent(new Event());
-            eventLog.setUser(User.makeEmpty());
-
+//        } else {
+//            EventLog eventLog = new EventLog();
+//             put values in the fields so that rest method does not NPE
+//            eventLog.setId(0L);
+//            eventLog.setEvent(new Event());
+//            eventLog.setUser(User.makeEmpty());
         }
-
-        return eventLog;
     }
 
     @Override

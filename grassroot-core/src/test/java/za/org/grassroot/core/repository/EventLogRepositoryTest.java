@@ -8,18 +8,16 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.EventLog;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 
 import javax.transaction.Transactional;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.List;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -48,8 +46,7 @@ public class EventLogRepositoryTest {
         Group group = groupRepository.save(new Group("test eventlog", user));
         User user2 = userRepository.save(new User("00111112"));
         group.addMember(user2);
-        Event event = eventRepository.save(new Event("drinking again", user, group));
-        EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.EventNotification, "you are hereby invited to the drinking again meeting"));
+        Event event = eventRepository.save(new Meeting("drinking again",Timestamp.from(Instant.now()),  user, group, "someLoc"));
         List<EventLog> list = eventLogRepository.findByEventLogTypeAndEventAndUser(EventLogType.EventNotification, event, user);
         assertEquals(1, list.size());
         EventLog dbEventLog = list.get(0);
@@ -66,8 +63,7 @@ public class EventLogRepositoryTest {
         Group group = groupRepository.save(new Group("test eventlog 2", user));
         User user2 = userRepository.save(new User("00111114"));
         group.addMember(user2);
-        Event event = eventRepository.save(new Event("drinking again 2", user, group));
-        EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.EventNotification, "you are hereby invited to the drinking again meeting"));
+        Event event = eventRepository.save(new Meeting("drinking again 2", Timestamp.from(Instant.now()), user, group, "someLoc"));
         List<EventLog> list = eventLogRepository.findByEventLogTypeAndEventAndUser(EventLogType.EventReminder,event,user);
         assertEquals(0, list.size());
 
@@ -80,8 +76,7 @@ public class EventLogRepositoryTest {
         Group group = groupRepository.save(new Group("test eventlog 3", user));
         User user2 = userRepository.save(new User("00111116"));
         group.addMember(user2);
-        Event event = eventRepository.save(new Event("drinking again 3", user, group));
-        EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.EventNotification, "you are hereby invited to the drinking again meeting"));
+        Event event = eventRepository.save(new Meeting("drinking again 3", Timestamp.from(Instant.now()), user, group, "someLoc"));
         assertEquals(true, Boolean.parseBoolean(eventLogRepository.notificationSent(event, user).toString()));
 
 
@@ -93,7 +88,7 @@ public class EventLogRepositoryTest {
         Group group = groupRepository.save(new Group("test eventlog 3", user));
         User user2 = userRepository.save(new User("00111116"));
         group.addMember(user2);
-        Event event = eventRepository.save(new Event("drinking again 3", user, group));
+        Event event = eventRepository.save(new Meeting("drinking again 3", Timestamp.from(Instant.now()), user, group, "someLoc"));
         assertEquals(false, Boolean.parseBoolean(eventLogRepository.notificationSent(event, user).toString()));
 
 
@@ -106,8 +101,7 @@ public class EventLogRepositoryTest {
         Group group = groupRepository.save(new Group("test eventlog 4", user));
         User user2 = userRepository.save(new User("00111118"));
         group.addMember(user2);
-        Event event = eventRepository.save(new Event("drinking again 4", user, group));
-        EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.EventReminder, "you are hereby reminded about the drinking again meeting"));
+        Event event = eventRepository.save(new Meeting("drinking again 4", Timestamp.from(Instant.now()), user, group, "someLoc"));
         assertEquals(true, Boolean.parseBoolean(eventLogRepository.reminderSent(event, user).toString()));
 
 
@@ -119,7 +113,7 @@ public class EventLogRepositoryTest {
         Group group = groupRepository.save(new Group("test eventlog 4", user));
         User user2 = userRepository.save(new User("00111110"));
         group.addMember(user2);
-        Event event = eventRepository.save(new Event("drinking again 4", user, group));
+        Event event = eventRepository.save(new Meeting("drinking again 4", Timestamp.from(Instant.now()), user, group, "someLoc"));
         assertEquals(false, Boolean.parseBoolean(eventLogRepository.reminderSent(event, user).toString()));
 
 
@@ -131,22 +125,17 @@ public class EventLogRepositoryTest {
         Group group = groupRepository.save(new Group("test minutes 1", user));
         User user2 = userRepository.save(new User("001111121"));
         group.addMember(user2);
-        Event event = eventRepository.save(new Event("drinking again 5", user, group));
+        Event event = eventRepository.save(new Meeting("drinking again 5", Timestamp.from(Instant.now()), user, group, "someLoc"));
         EventLog elog1 = eventLogRepository.save(new EventLog(user,event,EventLogType.EventMinutes,"item 1"));
         EventLog elog2 = eventLogRepository.save(new EventLog(user,event,EventLogType.EventMinutes,"item 2"));
         EventLog enot = eventLogRepository.save(new EventLog(user,event,EventLogType.EventNotification,"notification message"));
-        List<EventLog> list = eventLogRepository.findByEventLogTypeAndEventOrderByIdAsc(EventLogType.EventMinutes, event);
-        assertEquals(2, list.size());
-        assertEquals("item 1",list.get(0).getMessage());
-
     }
 
     @Test
     public void shouldReturnThatUserRSVPNo() {
         User user = userRepository.save(new User("0121234567"));
         Group group = groupRepository.save(new Group("RSVP group",user));
-        Event event = eventRepository.save(new Event("répondez s'il vous plaît",user,group));
-        EventLog eventLog = eventLogRepository.save(new EventLog(user,event,EventLogType.EventRSVP, EventRSVPResponse.NO.toString()));
+        Event event = eventRepository.save(new Meeting("répondez s'il vous plaît", Timestamp.from(Instant.now()), user, group, "someLoc"));
         assertEquals(true,eventLogRepository.rsvpNoForEvent(event,user));
 
     }
@@ -154,10 +143,7 @@ public class EventLogRepositoryTest {
     public void shouldReturnFalseForRSVPNo() {
         User user = userRepository.save(new User("0121234577"));
         Group group = groupRepository.save(new Group("RSVP group 2",user));
-        Event event = eventRepository.save(new Event("répondez s'il vous plaît duo",user,group));
-        EventLog eventLog = eventLogRepository.save(new EventLog(user,event,EventLogType.EventRSVP, "#$*&^#& off"));
+        Event event = eventRepository.save(new Meeting("répondez s'il vous plaît duo", Timestamp.from(Instant.now()), user,group, "someLoc"));
         assertEquals(false,eventLogRepository.rsvpNoForEvent(event,user));
-
     }
-
 }

@@ -2,6 +2,7 @@ package za.org.grassroot.webapp.model.rest;
 
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.EventLog;
+import za.org.grassroot.core.domain.Meeting;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 
@@ -22,7 +23,7 @@ public class EventDTO {
     public EventDTO(Event event) {
         this.id = event.getId();
         this.name = event.getName();
-        this.location = event.getEventLocation();
+        this.location = event instanceof Meeting ? ((Meeting) event).getEventLocation() : null;
         this.date = event.getEventStartDateTime();
         this.cancelled = event.isCanceled();
     }
@@ -30,7 +31,7 @@ public class EventDTO {
     public EventDTO(EventLog eventLog) {
         this.id = eventLog.getEvent().getId();
         this.name = eventLog.getEvent().getName();
-        this.location = eventLog.getEvent().getEventLocation();
+        this.location = eventLog.getEvent() instanceof Meeting ? ((Meeting) eventLog.getEvent()).getEventLocation() : null;
         this.date = eventLog.getEvent().getEventStartDateTime();
         this.cancelled = eventLog.getEvent().isCanceled();
         if (eventLog.getEventLogType() == EventLogType.EventRSVP) {

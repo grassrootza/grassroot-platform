@@ -6,6 +6,7 @@ import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -103,6 +104,7 @@ public class User implements UserDetails {
         this.username = phoneNumber;
         this.displayName = displayName;
         this.languageCode = "en";
+        this.createdDateTime = Timestamp.from(Instant.now());
     }
 
     /**

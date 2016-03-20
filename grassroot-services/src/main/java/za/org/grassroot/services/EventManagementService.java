@@ -3,9 +3,7 @@ package za.org.grassroot.services;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
@@ -26,19 +24,13 @@ public interface EventManagementService {
     Methods to create events, in various different forms
      */
 
-    Event createEvent(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups, boolean rsvpRequired);
-
     Event createEvent(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups);
-
-    public Event createEvent(String name, User createdByUser, Group group);
 
     Event createEvent(String name, Long createdByUserId, Long appliesToGroupId, boolean includeSubGroups);
 
-    public Event createMeeting(User createdByUser);
+    Event createMeeting(String inputNumber, Long groupId);
 
-    public Event createMeeting(String inputNumber, Long groupId);
-
-    public Event createMeeting(User createdByUser, Long groupId);
+    Event createMeeting(User createdByUser, Long groupId);
 
     Event createVote(String issue, User createdByUser);
 
@@ -59,17 +51,17 @@ public interface EventManagementService {
 
     List<Event> findByAppliesToGroupAndStartingAfter(Group group, Date date);
 
-    List<Event> findUpcomingMeetingsForGroup(Group group, Date date);
+    List<Meeting> findUpcomingMeetingsForGroup(Group group, Date date);
 
-    List<Event> findUpcomingVotesForGroup(Group group, Date date);
+    List<Vote> findUpcomingVotesForGroup(Group group, Date date);
 
-    List<Event> getUpcomingMeetings(Long groupId);
+    List<Meeting> getUpcomingMeetings(Long groupId);
 
-    List<Event> getUpcomingMeetings(Group group);
+    List<Meeting> getUpcomingMeetings(Group group);
 
-    List<Event> getUpcomingVotes(Long groupId);
+    List<Vote> getUpcomingVotes(Long groupId);
 
-    List<Event> getUpcomingVotes(Group group);
+    List<Vote> getUpcomingVotes(Group group);
 
     List<Event> getUpcomingEvents(Group group);
 
@@ -111,19 +103,9 @@ public interface EventManagementService {
 
     public Event setSubject(Long eventId, String subject);
 
-    public Event setGroup(Long eventId, Long groupId);
-
     public Event setLocation(Long eventId, String location);
 
-    public Event setDateTimeString(Long eventId, String dateTimeString);
-
-    public Event storeDateTimeString(Long eventId, String dateTimeString);
-
     public Event setEventTimestamp(Long eventId, Timestamp eventDateTime);
-
-    public Event setEventTimestampToStoredString(Long eventId);
-
-    public Event setEventReminderMinutes(Long eventId, Integer minutes);
 
     public Event setEventNoReminder(Long eventId);
 
@@ -167,8 +149,6 @@ public interface EventManagementService {
     int getNumberInvitees(Event event);
 
     String getGroupName(Event event);
-
-    LocalDateTime getDateTimeFromString(Long eventId);
 
     /*
     Methods to retrieve information about votes

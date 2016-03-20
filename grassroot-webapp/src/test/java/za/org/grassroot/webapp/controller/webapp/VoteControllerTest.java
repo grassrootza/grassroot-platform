@@ -51,7 +51,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
         testGroup.setId(dummyId);
         List<Group> testPossibleGroups = new ArrayList<>();
         testPossibleGroups.add(testGroup);
-        Event testVote = new Event();
+        Event testVote = null;
         testVote.setId(dummyId);
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
         when(groupManagementServiceMock.isUserInGroup(testGroup, sessionTestUser)).thenReturn(true);
@@ -76,7 +76,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
         testGroup.setId(dummyId);
         List<Group> testPossibleGroups = new ArrayList<>();
         testPossibleGroups.add(testGroup);
-        Event testVote = new Event();
+        Event testVote = null;
         testVote.setId(dummyId);
         when(groupManagementServiceMock.getActiveGroupsPartOf(sessionTestUser)).thenReturn(testPossibleGroups);
         mockMvc.perform(get("/vote/create")).andExpect(status().isOk())
@@ -91,7 +91,8 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void voteCreateDoWorks() throws Exception {
 
-        Event testVote = new Event(sessionTestUser, EventType.Vote, true);
+//        Event testVote = new Event(sessionTestUser, EventType.VOTE, true);
+        Event testVote = null; // todo: new design?
         testVote.setId(dummyId);
         Group testGroup = new Group("Dummy Group3", new User("234345345"));
 
@@ -116,7 +117,8 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void viewVoteWorks() throws Exception {
 
-        Event testVote = new Event(sessionTestUser, EventType.Vote, true);
+//        Event testVote = new Event(sessionTestUser, EventType.Vote, true);
+        Event testVote = null; // todo: new design?
         testVote.setId(dummyId);
         when(eventManagementServiceMock.loadEvent(dummyId)).thenReturn(testVote);
         Map<String, Integer> testVoteResults = new HashMap<>();
@@ -142,11 +144,15 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void answerVoteWorks() throws Exception {
 
-        Event testVote = new Event(sessionTestUser, EventType.Vote, true);
+//        Event testVote = new Event(sessionTestUser, EventType.VOTE, true);
+        Event testVote = null; // todo: new design?
         testVote.setId(dummyId);
         when(eventManagementServiceMock.loadEvent(dummyId)).thenReturn(testVote);
+        // todo: new design?
+/*
         when(eventLogManagementServiceMock.rsvpForEvent(testVote, sessionTestUser, EventRSVPResponse.fromString("yes")))
                 .thenReturn(new EventLog());
+*/
         mockMvc.perform(post("/vote/answer").param("eventId", String.valueOf(dummyId)).param("answer", "yes"))
                 .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/home"))
                 .andExpect(view().name("redirect:/home")).andExpect(flash()

@@ -45,7 +45,7 @@ public class MeetingNotificationManager implements MeetingNotificationService {
         //TODO fix the locale resolver in config
         Locale locale = getUserLocale(user);
         String messageKey = "";
-        if (event.getEventType() == EventType.Vote) {
+        if (event.getEventType() == EventType.VOTE) {
             messageKey = "sms.vote.send.new";
         } else {
             messageKey = event.isRsvpRequired() ? "sms.mtg.send.new.rsvp" : "sms.mtg.send.new";
@@ -76,7 +76,7 @@ public class MeetingNotificationManager implements MeetingNotificationService {
         // TODO think if there's a simple way to work out which variable has changed and only send that
         Locale locale = getUserLocale(user);
         String messageKey = "sms.mtg.send.change";
-        if (event.getEventType() == EventType.Vote) messageKey = "sms.vote.send.change";
+        if (event.getEventType() == EventType.VOTE) messageKey = "sms.vote.send.change";
         return messageSourceAccessor.getMessage(messageKey, populateFields(user, event), locale);
     }
 
@@ -84,7 +84,7 @@ public class MeetingNotificationManager implements MeetingNotificationService {
     public String createCancelMeetingNotificationMessage(User user, EventDTO event) {
         Locale locale = getUserLocale(user);
         String messageKey = "sms.mtg.send.cancel";
-        if (event.getEventType() == EventType.Vote) messageKey = "sms.vote.send.cancel";
+        if (event.getEventType() == EventType.VOTE) messageKey = "sms.vote.send.cancel";
         return messageSourceAccessor.getMessage(messageKey, populateFields(user, event), locale);
     }
 
@@ -92,7 +92,7 @@ public class MeetingNotificationManager implements MeetingNotificationService {
     public String createMeetingReminderMessage(User user, EventDTO event) {
         Locale locale = getUserLocale(user);
         String messageKey = "sms.mtg.send.reminder";
-        if (event.getEventType() == EventType.Vote) messageKey = "sms.vote.send.reminder";
+        if (event.getEventType() == EventType.VOTE) messageKey = "sms.vote.send.reminder";
         return messageSourceAccessor.getMessage(messageKey, populateFields(user, event), locale);
     }
 

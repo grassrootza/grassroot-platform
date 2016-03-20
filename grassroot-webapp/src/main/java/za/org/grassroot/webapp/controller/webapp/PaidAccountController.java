@@ -104,8 +104,8 @@ public class PaidAccountController extends BaseController {
         PaidGroup paidGroupRecord = accountManagementService.loadPaidGroupEntity(paidGroupId);
         Group underlyingGroup = paidGroupRecord.getGroup();
 
-        addRecordsToModel("meetingsInPeriod", model, underlyingGroup, EventType.Meeting, beginDate, endDate);
-        addRecordsToModel("votesInPeriod", model, underlyingGroup, EventType.Vote, beginDate, endDate);
+        addRecordsToModel("meetingsInPeriod", model, underlyingGroup, EventType.MEETING, beginDate, endDate);
+        addRecordsToModel("votesInPeriod", model, underlyingGroup, EventType.VOTE, beginDate, endDate);
 
         final Long timeEnd = System.currentTimeMillis();
 

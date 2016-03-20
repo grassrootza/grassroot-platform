@@ -1,11 +1,8 @@
 package za.org.grassroot.services;
 
-import za.org.grassroot.core.dto.MaskedEventDTO;
-import za.org.grassroot.core.dto.MaskedGroupDTO;
 import za.org.grassroot.core.dto.MaskedUserDTO;
 import za.org.grassroot.core.enums.EventType;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -17,10 +14,6 @@ public interface AnalyticalService {
      /*
     Methods to return masked user entities for system analysis
      */
-
-    MaskedUserDTO loadMaskedUser(Long userId);
-
-    List<MaskedUserDTO> loadAllUsersMasked();
 
     Long countAllUsers();
 
@@ -54,15 +47,11 @@ public interface AnalyticalService {
     Methods to return groups
      */
 
-    MaskedGroupDTO loadMaskedGroup(Long groupId);
-
     Long countActiveGroups();
 
     // List<MaskedGroupDTO> loadAllGroupsMasked();
 
      //List<MaskedGroupDTO> loadSubsetGroupsMasked(List<Long> ids);
-
-    List<MaskedGroupDTO> loadGroupsCreatedInInterval(LocalDateTime start, LocalDateTime end);
 
     int countGroupsCreatedInInterval(LocalDateTime start, LocalDateTime end);
 
@@ -82,15 +71,11 @@ public interface AnalyticalService {
     Methods to analyze patterns in events, including RSVP totals
      */
 
-    MaskedEventDTO loadMaskedEvent(Long eventId);
-
     Long countAllEvents(EventType eventType);
 
     // List<MaskedEventDTO> loadAllEventsMasked();
 
     // List<MaskedEventDTO> loadSubsetEventsMasked(List<Long> ids);
-
-    List<MaskedEventDTO> loadEventsCreatedInInterval(LocalDateTime start, LocalDateTime end, EventType eventType);
 
     int countEventsCreatedInInterval(LocalDateTime start, LocalDateTime end, EventType eventType);
 

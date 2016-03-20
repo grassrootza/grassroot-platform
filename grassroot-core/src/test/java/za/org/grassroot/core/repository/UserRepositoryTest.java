@@ -16,16 +16,18 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 
-/**
- * @author Lesetse Kimwaga
- */
 import javax.transaction.Transactional;
-
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
+
+/**
+ * @author Lesetse Kimwaga
+ */
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = TestContextConfiguration.class)
@@ -124,7 +126,7 @@ public class UserRepositoryTest {
         Group group = groupRepository.save(new Group("rsvp yes",u1));
         group.addMember(u2);
         group = groupRepository.save(group);
-        Event event = eventRepository.save(new Event("rsvp event",u1,group,true));
+        Event event = eventRepository.save(new Meeting("rsvp event", Timestamp.from(Instant.now()), u1, group, "someLocation", true));
         EventLog eventLog = eventLogRepository.save(new EventLog(u1,event, EventLogType.EventRSVP, EventRSVPResponse.YES.toString()));
         List<User> list = userRepository.findUsersThatRSVPYesForEvent(event);
         log.info("list.size..." + list.size() + "...first user..." + list.get(0).getPhoneNumber());
@@ -138,8 +140,8 @@ public class UserRepositoryTest {
         Group group = groupRepository.save(new Group("rsvp yes",u1));
         group.addMember(u2);
         group = groupRepository.save(group);
-        Event event = eventRepository.save(new Event("rsvp event",u1,group,true));
-        EventLog eventLog = eventLogRepository.save(new EventLog(u1,event, EventLogType.EventRSVP, EventRSVPResponse.YES.toString()));
+		Event event = eventRepository.save(new Meeting("rsvp event", Timestamp.from(Instant.now()), u1, group, "someLocation", true));
+		EventLog eventLog = eventLogRepository.save(new EventLog(u1,event, EventLogType.EventRSVP, EventRSVPResponse.YES.toString()));
         EventLog eventLog2 = eventLogRepository.save(new EventLog(u2,event, EventLogType.EventRSVP, EventRSVPResponse.NO.toString()));
 
         List<User> list = userRepository.findUsersThatRSVPNoForEvent(event);

@@ -67,9 +67,10 @@ public class TaskRestController {
 
             EventLog eventLog = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.EventRSVP);
             boolean hasResponded = eventLogManagementService.userRsvpForEvent(event, user);
-            if(!event.isSendBlocked() && event.getEventStartDateTime() != null) {
-                tasks.add(new TaskDTO(event, eventLog, user, hasResponded));
-            }
+            // todo: adjust to new design with EventRequest?
+//            if(!event.isSendBlocked()) {
+//                tasks.add(new TaskDTO(event, eventLog, user, hasResponded));
+//            }
         }
         for (LogBook logBook : logBookService.getAllLogBookEntriesForGroup(group.getId())) {
             if (logBook.getCreatedByUserId().equals(user.getId())) {
