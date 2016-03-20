@@ -39,6 +39,12 @@ public class GroupBrokerImpl implements GroupBroker {
     private AsyncGroupEventLogger asyncGroupEventLogger;
 
     @Override
+    @Transactional(readOnly = true)
+    public Group load(String groupUid) {
+        return groupRepository.findOneByUid(groupUid);
+    }
+
+    @Override
     @Transactional
     public Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos, GroupPermissionTemplate groupPermissionTemplate) {
 
@@ -313,7 +319,7 @@ public class GroupBrokerImpl implements GroupBroker {
         }
 
         // might not be necessary, but adding just in case, given extent of changes ...
-        groupRepository.save(savedGroup);
+        // groupRepository.save(savedGroup);
 
     }
 

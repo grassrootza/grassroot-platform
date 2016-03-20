@@ -187,7 +187,7 @@
         <div class="col-md-12">
           <ul class="list-group">
             <li th:each="group,iterStat : ${userGroups}" class="list-group-item">
-              <a th:href="@{/group/view(groupId=${group.getId()})}">
+              <a th:href="@{/group/view(groupUid=${group.Uid})}">
                 <span th:text="${group.getDisplayName('')}"></span></a>
               <span class="badge">
                 <span th:text="${group.getGroupSize()}"></span> Members

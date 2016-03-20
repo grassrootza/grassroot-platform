@@ -1,5 +1,6 @@
 package za.org.grassroot.services;
 
+import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.PhoneNumberUtil;
@@ -12,7 +13,7 @@ import java.util.Set;
  * Represents all info needed to add new member.
  * Only phone number is required.
  */
-public class MembershipInfo {
+public class MembershipInfo implements Comparable<MembershipInfo> {
 
     // note: removing 'final' so Thymeleaf can populate this (can find a better way if needed)
     private String phoneNumber;
@@ -101,5 +102,30 @@ public class MembershipInfo {
         sb.append(", displayName='").append(displayName).append('\'');
         sb.append('}');
         return sb.toString();
+    }
+
+    /* Logic here:
+    If the role names are the same, they are equal
+    If they are not, and this one is ordinary member, then it is always "less than" the other
+    If it is not ordinary member, and they are not equal, the only case where it is "less than" is when it is committee
+    member and the other is organizer
+     */
+    @Override
+    public int compareTo(MembershipInfo m) {
+        String otherRole = m.getRoleName();
+        if (roleName.equals(otherRole)) {
+            String otherName = m.getDisplayName();
+            if (displayName == null ^ otherName == null)
+                return (displayName == null) ? -1 : 1;
+            if (displayName == null && otherName == null)
+                return phoneNumber.compareTo(m.getPhoneNumber()); // todo: check how this works ...
+            return displayName.compareToIgnoreCase(otherName);
+        } else if (roleName.equals(BaseRoles.ROLE_ORDINARY_MEMBER)) {
+            return -1;
+        } else if (roleName.equals(BaseRoles.ROLE_COMMITTEE_MEMBER) && otherRole.equals(BaseRoles.ROLE_GROUP_ORGANIZER)) {
+            return -1;
+        } else {
+            return 1;
+        }
     }
 }

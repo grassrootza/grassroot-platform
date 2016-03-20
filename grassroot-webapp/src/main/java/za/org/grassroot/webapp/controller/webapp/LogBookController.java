@@ -111,9 +111,9 @@ public class LogBookController extends BaseController {
 
         logBookService.create(logBookEntry, subGroups);
         addMessage(redirectAttributes, MessageType.SUCCESS, "log.creation.success", request);
-        redirectAttributes.addAttribute("groupId", logBookEntry.getGroupId()); // todo: rather to logbook description
+        redirectAttributes.addAttribute("logBookId", logBookEntry.getId()); // todo: rather to logbook description
 
-        return "redirect:/group/view";
+        return "redirect:/log/details";
     }
 
     /**

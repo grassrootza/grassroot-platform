@@ -12,7 +12,10 @@ import java.util.Set;
 
 public interface GroupBroker {
 
-    Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos, GroupPermissionTemplate groupPermissionTemplate);
+    Group load(String groupUid);
+
+    Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos,
+                 GroupPermissionTemplate groupPermissionTemplate);
 
     void deactivate(String userUid, String groupUid, boolean checkIfWithinTimeWindow);
 

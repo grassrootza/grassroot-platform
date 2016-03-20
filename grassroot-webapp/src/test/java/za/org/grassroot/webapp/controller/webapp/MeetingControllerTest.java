@@ -9,10 +9,7 @@ import org.springframework.http.MediaType;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.*;
@@ -168,7 +165,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void createMeetingIndexWorksWithGroupNotSpecified() throws Exception {
-        ArrayList<Group> dummyGroups = new ArrayList<>();
+        Set<Group> dummyGroups = new HashSet<>();
         Group dummyGroup = new Group("", sessionTestUser);
         dummyGroup.setId(dummyId);
         dummyGroups.add(dummyGroup);
@@ -180,7 +177,9 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         when(userManagementServiceMock.fetchUserByUsername(testUserPhone)).thenReturn(sessionTestUser);
         when(eventManagementServiceMock.createMeeting(sessionTestUser)).thenReturn(dummyMeeting);
         when(eventManagementServiceMock.setEventNoReminder(dummyMeeting.getId())).thenReturn(dummyMeeting);
-        when(groupManagementServiceMock.getActiveGroupsPartOf(sessionTestUser)).thenReturn(dummyGroups);
+        when(permissionBrokerMock.getActiveGroupsWithPermission(sessionTestUser,
+                                                                Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING)).thenReturn(dummyGroups);
+
         mockMvc.perform(get("/meeting/create")).andExpect(status().isOk())
                 .andExpect((view().name("meeting/create")))
                 .andExpect(model().attribute("groupSpecified", is(false)))
@@ -188,8 +187,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
         verify(eventManagementServiceMock, times(1)).createMeeting(sessionTestUser);
         verify(eventManagementServiceMock, times(1)).setEventNoReminder(dummyMeeting.getId());
-        verify(groupManagementServiceMock, times(1)).getActiveGroupsPartOf(sessionTestUser);
-
+        verify(permissionBrokerMock, times(1)).getActiveGroupsWithPermission(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyNoMoreInteractions(eventManagementServiceMock);
@@ -209,9 +207,9 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         mockMvc.perform(post("/meeting/free").param("confirmed", "").param("entityId", String.valueOf(dummyId))
                 .param("message", message).param("includeSubGroups", String.valueOf(includeSubGroups)))
                 .andExpect(view().name("redirect:/group/view"))
-                .andExpect(model().attribute("groupId", String.valueOf(dummyId)))
+                .andExpect(model().attribute("groupUid", dummyGroup.getUid()))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/group/view?groupId=1"));//Not happy with this solution
+                .andExpect(redirectedUrl("/group/view?groupUid=" + dummyGroup.getUid()));//Not happy with this solution
         verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
         verify(eventManagementServiceMock, times(1)).createEvent("", sessionTestUser, dummyGroup, includeSubGroups);
         verify(eventManagementServiceMock, times(1)).sendManualReminder(testEvent, message);

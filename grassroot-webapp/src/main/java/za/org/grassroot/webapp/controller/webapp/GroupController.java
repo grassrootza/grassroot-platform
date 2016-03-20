@@ -154,14 +154,14 @@ public class GroupController extends BaseController {
         // note: join request service will do the permission checking etc and throw an error
         groupJoinRequestService.approve(getUserProfile().getUid(), requestUid);
         addMessage(model, MessageType.INFO, "group.join.request.approved", request);
-        return viewGroupIndex(model, groupJoinRequestService.loadRequest(requestUid).getGroup().getId());
+        return viewGroupIndex(model, groupJoinRequestService.loadRequest(requestUid).getGroup().getUid());
     }
 
     @RequestMapping(value = "join/decline")
     public String declineJoinRequest(Model model, @RequestParam String requestUid, HttpServletRequest request) {
         groupJoinRequestService.decline(getUserProfile().getUid(), requestUid);
         addMessage(model, MessageType.INFO, "group.join.request.declined", request);
-        return viewGroupIndex(model, groupJoinRequestService.loadRequest(requestUid).getGroup().getId());
+        return viewGroupIndex(model, groupJoinRequestService.loadRequest(requestUid).getGroup().getUid());
     }
 
     @RequestMapping(value = "join/token", method = RequestMethod.POST)
@@ -169,26 +169,24 @@ public class GroupController extends BaseController {
         // todo: add in group join requests, etc
         groupBroker.addMemberViaJoinCode(getUserProfile().getUid(), groupUid, token);
         addMessage(model, MessageType.SUCCESS, "group.join.success", request);
-        return viewGroupIndex(model, groupManagementService.loadGroupByUid(groupUid).getId()); // replace when refactor all to Uid
+        return viewGroupIndex(model, groupUid);
     }
 
     /*
     Next methods are to view a group, core part of interface
      */
 
-
-    // @PreAuthorize("hasPermission(#groupId, ' za.org.grassroot.core.domain.Group', 'GROUP_PERMISSION_UPDATE_GROUP_DETAILS')")
     @RequestMapping("view")
-    public String viewGroupIndex(Model model, @RequestParam("groupId") Long groupId) {
+    public String viewGroupIndex(Model model, @RequestParam String groupUid) {
 
         User user = userManagementService.getUserById(getUserProfile().getId()); // todo: remove this once caching etc working
 
         Long startTime = System.currentTimeMillis();
-        // todo: switch to Uid, load permissions with it, do member check in services
-        Group group = groupManagementService.loadGroup(groupId);
-        if (!isUserPartOfGroup(getUserProfile(), group)) throw new AccessDeniedException("");
+        // note: the "get permissions" call will throw the error if not in group
+        Group group = groupBroker.load(groupUid);
+        Set<Permission> userPermissions = permissionBroker.getPermissions(user, group);
         Long endTime = System.currentTimeMillis();
-        log.info(String.format("Checking group membership took ... %d msec", endTime - startTime));
+        log.info(String.format("Checking group membership & loading permissions took ... %d msec", endTime - startTime));
 
         model.addAttribute("group", group);
         model.addAttribute("roles", roleDescriptions);
@@ -199,22 +197,25 @@ public class GroupController extends BaseController {
         model.addAttribute("subGroups", groupManagementService.getSubGroups(group));
         model.addAttribute("openToken", groupManagementService.groupHasValidToken(group));
 
-        if (permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
-            model.addAttribute("groupMembers", MembershipInfo.createFromMembers(group.getMemberships()));
+        if (userPermissions.contains(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
+            List<MembershipInfo> members = new ArrayList<>(MembershipInfo.createFromMembers(group.getMemberships()));
+            Collections.sort(members, Collections.reverseOrder());
+            model.addAttribute("groupMembers", members);
         }
 
-        startTime = System.currentTimeMillis();
-        boolean hasUpdatePermission = permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-        endTime = System.currentTimeMillis();
-        log.info(String.format("Checking if update permission took ... %d msec", endTime - startTime));
+        boolean hasUpdatePermission = userPermissions.contains(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
+        // note: we could just pass the set and check in Thymeleaf, but then need to explicitly Permissions... so, rather doing here
         model.addAttribute("canAlter", hasUpdatePermission);
         model.addAttribute("canDeleteGroup", hasUpdatePermission && groupBroker.isDeactivationAvailable(user, group, true));
         model.addAttribute("canMergeWithOthers", hasUpdatePermission); // replace with specific permission later
+        model.addAttribute("canAddMembers", userPermissions.contains(Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER));
+        model.addAttribute("canDeleteMembers", userPermissions.contains(Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER));
+        model.addAttribute("canChangePermissions", userPermissions.contains(Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE));
 
-        model.addAttribute("canAddMembers", permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER));
-        model.addAttribute("canDeleteMembers", permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER));
-        model.addAttribute("canChangePermissions", permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE));
+        model.addAttribute("canCallMeeting", userPermissions.contains(Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING));
+        model.addAttribute("canCallVote", userPermissions.contains(Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE));
+        model.addAttribute("canCreateSubGroup", userPermissions.contains(Permission.GROUP_PERMISSION_CREATE_SUBGROUP));
 
         return "group/view";
     }
@@ -273,7 +274,7 @@ public class GroupController extends BaseController {
         log.info(String.format("User load & group creation: %d msecs", timeEnd - timeStart));
 
         addMessage(redirectAttributes, MessageType.SUCCESS, "group.creation.success", new Object[]{groupCreated.getGroupName()}, request);
-        redirectAttributes.addAttribute("groupId", groupCreated.getId());
+        redirectAttributes.addAttribute("groupUid", groupCreated.getUid());
         return "redirect:view";
 
     }
@@ -314,18 +315,16 @@ public class GroupController extends BaseController {
     public String removeMember(Model model, @RequestParam String groupUid, @RequestParam String msisdn) {
         log.info(String.format("Alright, removing user with number " + msisdn + "from group with UID " + groupUid));
         Long startTime = System.currentTimeMillis();
-        Group group = groupManagementService.loadGroupByUid(groupUid); // todo: remove once passing Uids everywhere
         Set<String> memberToRemove = Sets.newHashSet(userManagementService.findByInputNumber(msisdn).getUid());
         groupBroker.removeMembers(getUserProfile().getUid(), groupUid, memberToRemove);
         log.info(String.format("Removing user from group took ... %d msecs", System.currentTimeMillis() - startTime));
-        return viewGroupIndex(model, group.getId());
+        return viewGroupIndex(model, groupUid);
     }
 
     @RequestMapping(value = "addmember", method = RequestMethod.POST)
     public String addMember(Model model, @RequestParam String groupUid, @RequestParam String phoneNumber,
                             @RequestParam String displayName, @RequestParam String roleName, HttpServletRequest request) {
 
-        Group group = groupManagementService.loadGroupByUid(groupUid);
         if (PhoneNumberUtil.testInputNumber(phoneNumber)) { //todo: do this client side
             log.info("tested phone number and it is valid ... " + phoneNumber);
             MembershipInfo newMember = new MembershipInfo(phoneNumber, roleName, displayName);
@@ -335,23 +334,22 @@ public class GroupController extends BaseController {
             addMessage(model, MessageType.ERROR, "user.enter.error.phoneNumber.invalid", request);
         }
 
-        return viewGroupIndex(model, group.getId());
+        return viewGroupIndex(model, groupUid);
     }
 
     @RequestMapping(value = "rename")
     public String renameGroup(Model model, @RequestParam String groupUid, @RequestParam String groupName,
                               HttpServletRequest request) {
-        Group group = groupManagementService.loadGroupByUid(groupUid);
         // todo: some validation & checking of group name
         groupBroker.updateName(getUserProfile().getUid(), groupUid, groupName);
         addMessage(model, MessageType.SUCCESS, "group.rename.success", request);
-        return viewGroupIndex(model, group.getId());
+        return viewGroupIndex(model, groupUid);
     }
 
     @RequestMapping(value = "token", method = RequestMethod.POST)
     public String manageToken(Model model, @RequestParam String groupUid, HttpServletRequest request) {
         // todo: make sure services layer checks permissions
-        Group group = groupManagementService.loadGroupByUid(groupUid);
+        Group group = groupBroker.load(groupUid);
         if (!groupManagementService.groupHasValidToken(group)) {
             groupManagementService.generateGroupToken(groupUid, getUserProfile().getUid());
             addMessage(model, MessageType.SUCCESS, "group.token.created", request);
@@ -359,7 +357,7 @@ public class GroupController extends BaseController {
             groupManagementService.closeGroupToken(groupUid, getUserProfile().getUid());
             addMessage(model, MessageType.SUCCESS, "group.token.closed", request);
         }
-        return viewGroupIndex(model, group.getId());
+        return viewGroupIndex(model, groupUid);
     }
 
     @RequestMapping(value = "discoverable")
@@ -367,7 +365,6 @@ public class GroupController extends BaseController {
                                               @RequestParam(value="approverPhoneNumber", required = false) String approverPhoneNumber,
                                               HttpServletRequest request) {
 
-        // Group group = loadAuthorizedGroup(groupId, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         Group group = groupManagementService.loadGroupByUid(groupUid);
 
         if (group.isDiscoverable()) {
@@ -378,7 +375,7 @@ public class GroupController extends BaseController {
             addMessage(model, MessageType.SUCCESS, "group.visible.success", request);
         }
 
-        return viewGroupIndex(model, group.getId());
+        return viewGroupIndex(model, groupUid);
     }
 
 
@@ -391,7 +388,7 @@ public class GroupController extends BaseController {
     public String modifyGroup(Model model, @RequestParam String groupUid) {
 
         // todo: check permissions
-        Group group = groupManagementService.loadGroupByUid(groupUid);
+        Group group = groupBroker.load(groupUid);
         User user = userManagementService.loadUserByUid(getUserProfile().getUid());
         if (!isUserPartOfGroup(getUserProfile(), group)) throw new AccessDeniedException("");
 
@@ -447,9 +444,9 @@ public class GroupController extends BaseController {
         String groupUid = groupModifier.getGroup().getUid();
         groupBroker.updateMembers(getUserProfile().getUid(), groupUid, groupModifier.getAddedMembers());
 
-        Group updatedGroup = groupManagementService.loadGroupByUid(groupUid);
+        Group updatedGroup = groupBroker.load(groupUid);
         addMessage(attributes, MessageType.SUCCESS, "group.update.success", new Object[]{updatedGroup.getGroupName()}, request);
-        attributes.addAttribute("groupId", updatedGroup.getId());
+        attributes.addAttribute("groupUid", updatedGroup.getUid());
         return "redirect:view";
     }
 
@@ -502,7 +499,7 @@ public class GroupController extends BaseController {
 
         if (mapOfNumbers.get("error").isEmpty()) {
             addMessage(model, MessageType.SUCCESS, "group.bulk.success", new Integer[] { numbersToBeAdded.size() }, request);
-            return viewGroupIndex(model, group.getId());
+            return viewGroupIndex(model, groupUid);
         } else {
             model.addAttribute("errors", true);
             model.addAttribute("group", group);
@@ -526,7 +523,7 @@ public class GroupController extends BaseController {
 
         // todo: there is probably a more efficient way to do this than the redirect
         addMessage(model, MessageType.SUCCESS, "group.language.success", request);
-        return viewGroupIndex(model, group.getId());
+        return viewGroupIndex(model, groupUid);
     }
 
 
@@ -547,7 +544,7 @@ public class GroupController extends BaseController {
             return "redirect:/home";
         } else {
             addMessage(model, MessageType.ERROR, "group.delete.error", request);
-            return viewGroupIndex(model, group.getId());
+            return viewGroupIndex(model, groupUid);
         }
     }
 
@@ -565,7 +562,7 @@ public class GroupController extends BaseController {
             return "redirect:/home";
         } else {
             addMessage(model, MessageType.ERROR, "group.unsubscribe.error", request);
-            return viewGroupIndex(model, group.getId());
+            return viewGroupIndex(model, group.getUid());
         }
     }
 
@@ -625,7 +622,7 @@ public class GroupController extends BaseController {
 
         // addMessage(model, MessageType.SUCCESS, "group.parent.success", request);
         addMessage(redirectAttributes, MessageType.SUCCESS, "group.parent.success", request);
-        redirectAttributes.addAttribute("groupId", groupId);
+        redirectAttributes.addAttribute("groupUid", group.getUid());
         return "redirect:view";
 
     }
