@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.EventLogManagementService;
@@ -49,7 +50,7 @@ public class EventRestController {
         String trimmedResponse = response.toLowerCase().trim();
         boolean hasVoted = eventLogManagementService.userRsvpForEvent(event, user);
         ResponseWrapper responseWrapper;
-        if (!hasVoted && isOpen(event)) {
+        if (event.getEventType().equals(EventType.Vote) && (!hasVoted && isOpen(event))) {
             eventLogManagementService.rsvpForEvent(event, user, EventRSVPResponse.fromString(trimmedResponse));
             responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.VOTE_SENT, RestStatus.SUCCESS);
         } else if (hasVoted) {
@@ -69,7 +70,7 @@ public class EventRestController {
         Event event = eventManagementService.loadEvent(Long.parseLong(eventId));
         String trimmedResponse = response.toLowerCase().trim();
         ResponseWrapper responseWrapper;
-        if (isOpen(event)) {
+        if (event.getEventType().equals(EventType.Meeting) && isOpen(event)) {
             eventLogManagementService.rsvpForEvent(event, user, EventRSVPResponse.fromString(trimmedResponse));
             responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.RSVP_SENT, RestStatus.SUCCESS);
         } else {

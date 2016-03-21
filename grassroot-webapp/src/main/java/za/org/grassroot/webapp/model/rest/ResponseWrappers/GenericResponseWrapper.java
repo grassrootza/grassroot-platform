@@ -8,7 +8,7 @@ import za.org.grassroot.webapp.enums.RestStatus;
  * Created by paballo on 2016/03/12.
  */
 public class GenericResponseWrapper extends ResponseWrapperImpl {
-    Object data;
+   private Object data;
 
     public GenericResponseWrapper(HttpStatus code, RestMessage message, RestStatus status, Object data) {
         super(code,message,status);

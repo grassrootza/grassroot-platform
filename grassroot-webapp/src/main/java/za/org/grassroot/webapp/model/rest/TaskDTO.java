@@ -107,7 +107,7 @@ public class TaskDTO implements Comparator<TaskDTO> ,Comparable<TaskDTO>{
             if (event.getEventType().equals(EventType.Meeting) && isOpen) {
                 canAction = true;
             } else {
-                if (event.getEventType().equals(EventType.Vote) && isOpen && !hasResponded) {
+                if (event.getEventType().equals(EventType.Vote) &&(isOpen && !hasResponded)) {
                     canAction = true;
                 }
             }
