@@ -26,6 +26,11 @@ public class EventDTO  implements Serializable {
     private EventType eventType;
 
     /*
+    calling it this instead of just Uid because the new objects created in getEventObject will have own Uid
+     */
+    private String eventUid;
+
+    /*
     could also have been called description but as group has a name, kept it the same
      */
     private String name;
@@ -71,6 +76,7 @@ public class EventDTO  implements Serializable {
 
     public EventDTO(Event event) {
         this.id = event.getId();
+        this.eventUid = event.getUid();
         this.createdDateTime = event.getCreatedDateTime();
         this.eventStartDateTime = event.getEventStartDateTime();
         this.createdByUser = event.getCreatedByUser();
@@ -113,9 +119,7 @@ public class EventDTO  implements Serializable {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public String getEventUid() { return this.eventUid; }
 
     public Timestamp getCreatedDateTime() {
         return createdDateTime;

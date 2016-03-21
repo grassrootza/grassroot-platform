@@ -12,6 +12,7 @@ import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.dto.EventWithTotals;
 import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
@@ -47,7 +48,9 @@ public class EventBrokerImpl implements EventBroker {
     @Autowired
     private AsyncEventMessageSender asyncEventMessageSender;
 
-	@Override
+
+
+    @Override
 	public Event load(String eventUid) {
 		Objects.requireNonNull(eventUid);
 		return eventRepository.findOneByUid(eventUid);
@@ -160,8 +163,8 @@ public class EventBrokerImpl implements EventBroker {
 		event.setCanceled(true);
 		event.setScheduledReminderActive(false);
 
-		jmsTemplateProducerService.sendWithNoReply("event-cancelled", new EventDTO(event));
-		logger.info("queued to event-cancelled");
+		AfterTxCommitTask afterTxCommitTask = () -> asyncEventMessageSender.sendCancelMeetingNotifications(eventUid);
+        applicationEventPublisher.publishEvent(afterTxCommitTask);
 	}
 
 	@Override
@@ -216,9 +219,11 @@ public class EventBrokerImpl implements EventBroker {
 		if (meeting.isCanceled()) {
 			throw new IllegalStateException("Meeting is canceled: " + meeting);
 		}
+        meeting.setEventLocation(eventLocation);
 
-		meeting.setEventLocation(eventLocation);
-		notifyEventChange(meeting, false);
+        AfterTxCommitTask afterTxCommitTask = () ->
+                asyncEventMessageSender.sendChangedEventNotification(meeting.getUid(), EventType.MEETING, false);
+        applicationEventPublisher.publishEvent(afterTxCommitTask);
 	}
 
 	@Override

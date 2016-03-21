@@ -92,12 +92,13 @@ public class EventNotificationConsumer {
             //generate message based on user language
             log.info("sendChangedEventNotifications...user..." + user.getPhoneNumber() + "...event..." + eventChanged.getEvent().getId() + "...version..." + eventChanged.getEvent().getVersion() + "...start time changed..." + eventChanged.isStartTimeChanged() + "...starttime..." + eventChanged.getEvent().getEventStartDateTime());
             String message = meetingNotificationService.createChangeMeetingNotificationMessage(user, eventChanged.getEvent());
-            if (!eventLogManagementService.changeNotificationSentToUser(eventChanged.getEvent().getEventObject(), user, message)
-                    && (!eventLogManagementService.userRsvpNoForEvent(eventChanged.getEvent().getEventObject(), user)
+            if (!eventLogManagementService.changeNotificationSentToUser(eventChanged.getEvent().getEventUid(), user.getUid(), message)
+                    && (!eventLogManagementService.userRsvpNoForEvent(eventChanged.getEvent().getEventUid(), user.getUid())
                     || eventChanged.isStartTimeChanged())) {
                 log.info("sendChangedEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
                 messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
-                eventLogManagementService.createEventLog(EventLogType.EventChange, eventChanged.getEvent().getEventObject(), user, message);
+                eventLogManagementService.createEventLog(EventLogType.EventChange, eventChanged.getEvent().getEventUid(),
+                                                         user.getUid(), message);
             }
         }
 
@@ -110,11 +111,11 @@ public class EventNotificationConsumer {
         for (User user : getAllUsersForGroup(event.getEventObject())) {
             //generate message based on user language
             String message = meetingNotificationService.createCancelMeetingNotificationMessage(user, event);
-            if (!eventLogManagementService.cancelNotificationSentToUser(event.getEventObject(), user)
-                    && !eventLogManagementService.userRsvpNoForEvent(event.getEventObject(), user)) {
+            if (!eventLogManagementService.cancelNotificationSentToUser(event.getEventUid(), user.getUid())
+                    && !eventLogManagementService.userRsvpNoForEvent(event.getEventUid(), user.getUid())) {
                 log.info("sendCancelledEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
                 messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
-                eventLogManagementService.createEventLog(EventLogType.EventCancelled, event.getEventObject(), user, message);
+                eventLogManagementService.createEventLog(EventLogType.EventCancelled, event.getEventUid(), user.getUid(), message);
             }
         }
 
@@ -281,7 +282,7 @@ public class EventNotificationConsumer {
         if (!eventLogManagementService.voteResultSentToUser(event.getEventObject(), user)) {
             log.info("sendVoteResultsToUser...send message..." + message + "...to..." + user.getPhoneNumber());
             messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
-            eventLogManagementService.createEventLog(EventLogType.EventResult, event.getEventObject(), user, message);
+            eventLogManagementService.createEventLog(EventLogType.EventResult, event.getEventUid(), user.getUid(), message);
         }
 
     }
@@ -301,7 +302,8 @@ public class EventNotificationConsumer {
         if (!eventLogManagementService.notificationSentToUser(meeting,user)) {
             log.info("sendNewEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
             messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
-            eventLogManagementService.createEventLog(EventLogType.EventNotification, event.getEventObject(), user, message);
+            eventLogManagementService.createEventLog(EventLogType.EventNotification, event.getEventObject().getUid(),
+                                                     user.getUid(), message);
         }
 
     }
@@ -324,7 +326,7 @@ public class EventNotificationConsumer {
          */
 
             if (!eventLogManagementService.reminderSentToUser(event.getEventObject(), target)
-                    && !eventLogManagementService.userRsvpNoForEvent(event.getEventObject(), target)) {
+                    && !eventLogManagementService.userRsvpNoForEvent(event.getEventUid(), target.getUid())) {
                 sendMeetingReminderMessageAction(target,event,message);
             }
         }
@@ -349,7 +351,7 @@ public class EventNotificationConsumer {
         Do not send meeting reminder if the user already rsvp'ed "no"
          */
 
-            if (!eventLogManagementService.userRsvpNoForEvent(event.getEventObject(), user)) {
+            if (!eventLogManagementService.userRsvpNoForEvent(event.getEventUid(), user.getUid())) {
                 sendManualMessageAction(user,event,message);
             }
 
@@ -360,14 +362,14 @@ public class EventNotificationConsumer {
     private void sendMeetingReminderMessageAction(User user, EventDTO event, String message) {
         log.info("sendMeetingReminderMessage...send message..." + message + "...to..." + user.getPhoneNumber());
         messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
-        eventLogManagementService.createEventLog(EventLogType.EventReminder, event.getEventObject(), user, message);
+        eventLogManagementService.createEventLog(EventLogType.EventReminder, event.getEventUid(), user.getUid(), message);
 
     }
 
     private void sendManualMessageAction(User user, EventDTO event, String message) {
         log.info("sendManualMessageAction...send message..." + message + "...to..." + user.getPhoneNumber());
         messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
-        eventLogManagementService.createEventLog(EventLogType.EventManualReminder, event.getEventObject(), user, message);
+        eventLogManagementService.createEventLog(EventLogType.EventManualReminder, event.getEventUid(), user.getUid(), message);
 
     }
 

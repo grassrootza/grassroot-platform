@@ -16,15 +16,15 @@ import java.util.List;
  */
 public interface EventLogManagementService {
 
-    EventLog createEventLog(EventLogType eventLogType, Event event, User user, String message);
+    EventLog createEventLog(EventLogType eventLogType, String eventUid, String userUid, String message);
 
     boolean notificationSentToUser(Event event, User user);
 
     boolean voteResultSentToUser(Event event, User user);
 
-    boolean changeNotificationSentToUser(Event event, User user, String message);
+    boolean changeNotificationSentToUser(String eventUid, String userUid, String message);
 
-    boolean cancelNotificationSentToUser(Event event, User user);
+    boolean cancelNotificationSentToUser(String eventUid, String userUid);
 
     boolean reminderSentToUser(Event event, User user);
 
@@ -38,7 +38,7 @@ public interface EventLogManagementService {
 
     EventLog getEventLogOfUser(Event event, User user,EventLogType eventLogType);
 
-    boolean userRsvpNoForEvent(Event event, User user);
+    boolean userRsvpNoForEvent(String eventUid, String userUid);
 
     boolean userRsvpForEvent(Event event, User user);
 

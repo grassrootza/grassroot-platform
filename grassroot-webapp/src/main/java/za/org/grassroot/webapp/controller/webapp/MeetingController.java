@@ -25,6 +25,7 @@ import java.util.Set;
  * Created by luke on 2015/09/11.
  */
 @Controller
+@RequestMapping("/meeting/")
 @SessionAttributes("meeting")
 public class MeetingController extends BaseController {
 
@@ -48,27 +49,26 @@ public class MeetingController extends BaseController {
     @Autowired
     private EventLogManagementService eventLogManagementService;
 
-    @RequestMapping("/meeting/view")
+    @RequestMapping("view")
     public String viewMeetingDetails(Model model, @RequestParam Long eventId) {
 
         Event meeting = eventManagementService.loadEvent(eventId);
-       /* boolean canViewDetails = groupAccessControlManagementService.hasGroupPermission(
-                BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS, meeting.getAppliesToGroup(), getUserProfile());*/
+        User user = getUserProfile();
         
         int rsvpYesTotal = eventManagementService.getListOfUsersThatRSVPYesForEvent(meeting).size();
+        boolean canViewRsvps = permissionBroker.isGroupPermissionAvailable(
+                user, meeting.getAppliesToGroup(), Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS);
 
         model.addAttribute("meeting", meeting);
         model.addAttribute("rsvpYesTotal", rsvpYesTotal);
-        model.addAttribute("canViewMemberDetails", true); // note: just setting it for now todo: try use Th sec)
+        model.addAttribute("canViewRsvps", canViewRsvps);
+        model.addAttribute("canAlterDetails", meeting.getCreatedByUser().equals(user)); // todo: maybe, or is organizer/committee?
 
-      //  if (canViewDetails) {
-            Set<Map.Entry<User, EventRSVPResponse>> rsvpResponses =
-                    eventManagementService.getRSVPResponses(meeting).entrySet();
+        if (canViewRsvps) {
+            Set<Map.Entry<User, EventRSVPResponse>> rsvpResponses = eventManagementService.getRSVPResponses(meeting).entrySet();
             model.addAttribute("rsvpResponses", rsvpResponses);
             log.info("Size of response map: " + rsvpResponses);
-      //  }
-
-        log.info("Number of yes RSVPd: " + rsvpYesTotal);
+        }
 
         return "meeting/view";
     }
@@ -77,7 +77,7 @@ public class MeetingController extends BaseController {
      * Meeting creation
      */
 
-    @RequestMapping("/meeting/create")
+    @RequestMapping("create")
     public String createMeetingIndex(Model model, @RequestParam(value="groupUid", required=false) String groupUid) {
 
         boolean groupSpecified;
@@ -106,7 +106,7 @@ public class MeetingController extends BaseController {
 
     }
 
-    @RequestMapping(value = "/meeting/create", method = RequestMethod.POST)
+    @RequestMapping(value = "create", method = RequestMethod.POST)
     public String createMeeting(Model model, @ModelAttribute("meeting") Meeting meeting, BindingResult bindingResult,
                                 @RequestParam(value="selectedGroupUid", required=false) String selectedGroupUid,
                                 HttpServletRequest request, RedirectAttributes redirectAttributes) {
@@ -135,32 +135,18 @@ public class MeetingController extends BaseController {
      * Meeting modification
      */
 
-    @RequestMapping(value = "/meeting/modify", params={"change"})
-    public String initiateMeetingModification(Model model, @ModelAttribute("meeting") Meeting meeting) {
+    @RequestMapping(value = "location", method=RequestMethod.GET)
+    public String changeMeeting(Model model, @RequestParam String eventUid, @RequestParam String location,
+                                HttpServletRequest request) {
 
-        // todo: replace canUserCall with canUserModify
-        meeting = (Meeting) eventManagementService.loadEvent(meeting.getId()); // load all details, as may not have been passed by Th
-      /*  if (!groupManagementService.canUserCallMeeting(meeting.getAppliesToGroup().getId(), getUserProfile()))
-            throw new AccessDeniedException("");*/
-        model.addAttribute("meeting", meeting);
-        model.addAttribute("rsvpYesTotal", eventManagementService.getListOfUsersThatRSVPYesForEvent(meeting).size());
-
-        return "meeting/modify";
-    }
-
-    @RequestMapping(value = "/meeting/modify", method=RequestMethod.POST, params={"modify"})
-    public String changeMeeting(Model model, @ModelAttribute("meeting") Meeting meeting,
-                                BindingResult bindingResult, HttpServletRequest request) {
-
+        Event meeting = eventBroker.load(eventUid);
         log.info("Meeting we are passed: " + meeting);
-     /*   if (!groupManagementService.canUserCallMeeting(meeting.getAppliesToGroup().getId(), getUserProfile()))
-            throw new AccessDeniedException("");*/
-        eventBroker.updateMeeting(getUserProfile().getUid(), meeting.getUid(), meeting.getName(),
-                meeting.getEventStartDateTime(), meeting.getEventLocation(), meeting.isIncludeSubGroups(),
-                meeting.isRsvpRequired(), meeting.isRelayable(), meeting.getReminderType(), meeting.getCustomReminderMinutes());
-        model.addAttribute("meeting", meeting);
+
+        // todo: double check permissions in location update
+        eventBroker.updateMeetingLocation(getUserProfile().getUid(), eventUid, location);
+
         addMessage(model, MessageType.SUCCESS, "meeting.update.success", request);
-        return "meeting/view";
+        return viewMeetingDetails(model, meeting.getId());
 
     }
 
@@ -169,8 +155,6 @@ public class MeetingController extends BaseController {
                                 RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
         log.info("Meeting that is about to be cancelled: " + meeting.toString());
-      /*  if (!groupManagementService.canUserCallMeeting(meeting.getAppliesToGroup().getId(), getUserProfile()))
-            throw new AccessDeniedException("");*/
         eventBroker.cancel(getUserProfile().getUid(), meeting.getUid());
         addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.cancel.success", request);
         return "redirect:/home";
@@ -301,7 +285,7 @@ public class MeetingController extends BaseController {
      * RSVP handling
      */
 
-    @RequestMapping(value = "/meeting/rsvp")
+    @RequestMapping(value = "rsvp")
     public String rsvpYes(Model model, @RequestParam Long eventId, @RequestParam String answer,
                           HttpServletRequest request, RedirectAttributes attributes) {
 
