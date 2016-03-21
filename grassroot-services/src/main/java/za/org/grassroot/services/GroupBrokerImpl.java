@@ -321,7 +321,7 @@ public class GroupBrokerImpl implements GroupBroker {
         }
 
         // might not be necessary, but adding just in case, given extent of changes ...
-        groupRepository.save(savedGroup);
+        // groupRepository.save(savedGroup);
 
     }
 

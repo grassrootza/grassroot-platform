@@ -29,24 +29,22 @@
 
   <div class="well">
     <div class="row row-centered">
-      <div class="col-md-12 col-centered">
-        <h4>Get started by creating or joining a group</h4>
-        <h4>Enter a group's joining code, search for it by name (if it is public), or create a new group:</h4>
+      <div class="col-md-8 col-md-offset-2">
+        <h4 class="text-center">Get started by creating or joining a group</h4>
+        <h4 class="text-center"><a th:href="@{/group/create}">Create a new group</a>, or search
+          for one by name (if it is public) or joining code:</h4>
       </div>
     </div>
     <div class="row row-centered">
-      <div class="form-group">
+      <div class="col-md-6 col-md-offset-3 ">
         <form th:action="@{/group/search}" method="post">
-          <div class="col-md-4 col-centered">
-            <input name="searchTerm" type="text" class="form-control" id="name" placeholder="Enter join code or name to search" />
-          </div>
-          <div class="col-md-2 col-centered">
-            <button type="submit" class="btn btn-primary">Search by name or code</button>
+          <div class="input-group">
+            <input type="text" name="searchTerm" class="form-control" id="searchTerm" placeholder="Enter join code or name to search" />
+            <span class="input-group-btn">
+              <button type="submit" class="btn btn-primary">Search for groups</button>
+            </span>
           </div>
         </form>
-        <div class="col-md-2 col-centered">
-          <a th:href="@{/group/create}"><button class="btn btn-primary">Create a new group</button></a>
-        </div>
       </div>
     </div>
   </div>

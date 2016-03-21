@@ -12,7 +12,7 @@ import java.util.Set;
  */
 @Entity
 @Table(name = "role")
-public class Role extends BaseEntity implements GrantedAuthority {
+public class Role extends BaseEntity implements GrantedAuthority, Comparable<Role> {
 
     public enum RoleType {
         STANDARD,
@@ -146,5 +146,25 @@ public class Role extends BaseEntity implements GrantedAuthority {
     @Override
     public String getAuthority() {
         return getName();
+    }
+
+    /* Logic here:
+    If the role names are the same, they are equal
+    If they are not, and this one is ordinary member, then it is always "less than" the other
+    If it is not ordinary member, and they are not equal, the only case where it is "less than" is when it is committee
+    member and the other is organizer
+     */
+    @Override
+    public int compareTo(Role r) {
+        String thatName = r.getName();
+        if (name.equals(thatName)) {
+            return 0;
+        } else if (name.equals(BaseRoles.ROLE_ORDINARY_MEMBER)) {
+            return -1;
+        } else if (name.equals(BaseRoles.ROLE_COMMITTEE_MEMBER) && thatName.equals(BaseRoles.ROLE_GROUP_ORGANIZER)) {
+            return -1;
+        } else {
+            return 1;
+        }
     }
 }

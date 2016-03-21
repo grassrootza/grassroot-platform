@@ -117,7 +117,7 @@
   </div>
 
   <div class="well">
-    <a th:href="@{/group/view(groupId=${group.id})}"><button class="btn-warning">Back to group</button></a>
+    <a th:href="@{/group/view(groupUid=${group.Uid})}"><button class="btn-warning">Back to group</button></a>
     <div th:if="${param.monthToView != null}">
       <a th:href="@{/group/history(groupId=${group.id})}">View this month</a>
     </div>

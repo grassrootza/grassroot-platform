@@ -12,7 +12,7 @@
 
 <div layout:fragment="overview">
   <h4 class="text-center">Adjust permissions assigned to roles
-    (<a th:href="@{/group/view(groupId=${group.id})}">back to group</a>)</h4>
+    (<a th:href="@{/group/view(groupUid=${group.Uid})}">back to group</a>)</h4>
 </div>
 
 <div layout:fragment="content">
@@ -68,7 +68,7 @@
                    th:if="${#lists.contains(organizerPermissions, permission)}" value="on" type="hidden" />
             <div class="form-group">
               <div class="pull-right">
-                <a th:href="@{/group/view(groupId=${group.id})}" role="button" class="btn btn-default">Back to group</a>
+                <a th:href="@{/group/view(groupUid=${group.Uid})}" role="button" class="btn btn-default">Back to group</a>
                 <a th:href="@{members(groupUid=${group.Uid})}" role="button" class="btn btn-default">Back to roles</a>
                 <!-- todo: do a modal button with the templates, and allow resetting to them -->
                 <!-- <button type="reset" class="btn btn-warning">Reset</button> -->

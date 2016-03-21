@@ -19,6 +19,8 @@ public interface PermissionBroker {
 
     Set<Permission> getPermissions(Group group, String roleName);
 
+    Set<Permission> getPermissions(User user, Group group);
+
     Set<Permission> getProtectedOrganizerPermissions();
 
 }

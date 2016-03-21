@@ -30,7 +30,8 @@ public enum RestMessage {
     VOTE_SENT,
     RSVP_SENT,
     PAST_DUE,
-    SET_COMPLETED
+    TODO_SET_COMPLETED,
+    TODO_ALREADY_COMPLETED
 
 
 

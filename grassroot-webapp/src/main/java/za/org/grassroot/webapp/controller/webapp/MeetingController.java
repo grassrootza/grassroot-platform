@@ -9,8 +9,16 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.services.EventLogManagementService;
+import za.org.grassroot.services.EventManagementService;
+import za.org.grassroot.services.GroupManagementService;
+import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
 
@@ -19,6 +27,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import static za.org.grassroot.core.domain.Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING;
 
 
 /**
@@ -33,6 +43,9 @@ public class MeetingController extends BaseController {
 
     @Autowired
     private GroupManagementService groupManagementService;
+
+    @Autowired
+    PermissionBroker permissionBroker;
 
     @Autowired
     private GroupBroker groupBroker;
@@ -275,7 +288,7 @@ public class MeetingController extends BaseController {
         log.info("We just sent a free form message with result: " + messageSent);
 */
 
-        redirectAttributes.addAttribute("groupId", groupId);
+        redirectAttributes.addAttribute("groupUid", group.getUid());
         addMessage(redirectAttributes, MessageType.SUCCESS, "sms.message.sent", request);
         return "redirect:/group/view";
 

@@ -153,6 +153,16 @@ public class PermissionBrokerImpl implements PermissionBroker {
     }
 
     @Override
+    public Set<Permission> getPermissions(User user, Group group) {
+        for (Membership membership : user.getMemberships()) {
+            if (membership.getGroup().equals(group)) {
+                return membership.getRole().getPermissions();
+            }
+        }
+        throw new AccessDeniedException("Error! User " + user + " is not a member of group " + group);
+    }
+
+    @Override
     public Set<Permission> getProtectedOrganizerPermissions() {
         return protectedOrganizerPermissions;
     }
