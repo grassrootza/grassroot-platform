@@ -64,25 +64,27 @@ public class TaskRestController {
     private List<TaskDTO> getTasks(User user, Group group) {
         List<TaskDTO> tasks = new ArrayList<>();
         for (Event event : eventManagementService.findByAppliesToGroup(group)) {
-
-            EventLog eventLog = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.EventRSVP);
-            boolean hasResponded = eventLogManagementService.userRsvpForEvent(event, user);
-            if(!event.isSendBlocked() && event.getEventStartDateTime() != null) {
-                tasks.add(new TaskDTO(event, eventLog, user, hasResponded));
-            }
-        }
-        for (LogBook logBook : logBookService.getAllLogBookEntriesForGroup(group.getId())) {
-            if (logBook.getCreatedByUserId().equals(user.getId())) {
-                tasks.add(new TaskDTO(logBook, user, user));
-            } else {
-                User creatingUser = userManagementService.loadUser(logBook.getCreatedByUserId());
-                if(logBook.isRecorded()) {
-                    tasks.add(new TaskDTO(logBook, user, creatingUser));
+            if (event != null) {
+                EventLog eventLog = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.EventRSVP);
+                boolean hasResponded = eventLogManagementService.userRsvpForEvent(event, user);
+                if (!event.isSendBlocked() && event.getEventStartDateTime() != null) {
+                    tasks.add(new TaskDTO(event, eventLog, user, hasResponded));
                 }
             }
+            for (LogBook logBook : logBookService.getAllLogBookEntriesForGroup(group.getId())) {
+                if (logBook != null) {
+                    if (logBook.getCreatedByUserId().equals(user.getId())) {
+                        tasks.add(new TaskDTO(logBook, user, user));
+                    } else {
+                        User creatingUser = userManagementService.loadUser(logBook.getCreatedByUserId());
+                        if (logBook.isRecorded()) {
+                            tasks.add(new TaskDTO(logBook, user, creatingUser));
+                        }}
+                    }
+                }
+            }
+            Collections.sort(tasks);
+            return tasks;
         }
-        Collections.sort(tasks);
-        return tasks;
-    }
 
-}
+    }

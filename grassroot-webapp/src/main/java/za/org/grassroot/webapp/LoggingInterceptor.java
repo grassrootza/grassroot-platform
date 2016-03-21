@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.validation;
+package za.org.grassroot.webapp;
 
 import org.apache.log4j.Logger;
 import org.springframework.web.servlet.ModelAndView;
