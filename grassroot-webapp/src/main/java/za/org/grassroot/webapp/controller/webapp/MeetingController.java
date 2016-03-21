@@ -45,9 +45,6 @@ public class MeetingController extends BaseController {
     private GroupManagementService groupManagementService;
 
     @Autowired
-    PermissionBroker permissionBroker;
-
-    @Autowired
     private GroupBroker groupBroker;
 
     @Autowired

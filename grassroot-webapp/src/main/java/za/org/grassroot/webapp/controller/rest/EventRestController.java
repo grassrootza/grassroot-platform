@@ -50,7 +50,7 @@ public class EventRestController {
         String trimmedResponse = response.toLowerCase().trim();
         boolean hasVoted = eventLogManagementService.userRsvpForEvent(event, user);
         ResponseWrapper responseWrapper;
-        if (event.getEventType().equals(EventType.Vote) && (!hasVoted && isOpen(event))) {
+        if (event.getEventType().equals(EventType.VOTE) && (!hasVoted && isOpen(event))) {
             eventLogManagementService.rsvpForEvent(event, user, EventRSVPResponse.fromString(trimmedResponse));
             responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.VOTE_SENT, RestStatus.SUCCESS);
         } else if (hasVoted) {
@@ -70,7 +70,7 @@ public class EventRestController {
         Event event = eventManagementService.loadEvent(Long.parseLong(eventId));
         String trimmedResponse = response.toLowerCase().trim();
         ResponseWrapper responseWrapper;
-        if (event.getEventType().equals(EventType.Meeting) && isOpen(event)) {
+        if (event.getEventType().equals(EventType.MEETING) && isOpen(event)) {
             eventLogManagementService.rsvpForEvent(event, user, EventRSVPResponse.fromString(trimmedResponse));
             responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.RSVP_SENT, RestStatus.SUCCESS);
         } else {
