@@ -3,6 +3,7 @@ package za.org.grassroot.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
@@ -41,6 +42,10 @@ public class EventBrokerImpl implements EventBroker {
 	private PermissionBroker permissionBroker;
 	@Autowired
 	private GenericJmsTemplateProducerService jmsTemplateProducerService;
+	@Autowired
+    private ApplicationEventPublisher applicationEventPublisher;
+    @Autowired
+    private AsyncEventMessageSender asyncEventMessageSender;
 
 	@Override
 	public Event load(String eventUid) {
@@ -69,8 +74,8 @@ public class EventBrokerImpl implements EventBroker {
 
 		eventLogManagementService.rsvpForEvent(meeting, meeting.getCreatedByUser(), EventRSVPResponse.YES);
 
-		jmsTemplateProducerService.sendWithNoReply("event-added", new EventDTO(meeting));
-		logger.info("Queued to event-added..." + meeting.getId() + "...version..." + meeting.getVersion());
+        AfterTxCommitTask afterTxCommitTask = () -> asyncEventMessageSender.sendNewMeetingNotifications(meeting.getUid());
+        applicationEventPublisher.publishEvent(afterTxCommitTask);
 
 		return meeting;
 	}

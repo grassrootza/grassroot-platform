@@ -297,7 +297,8 @@ public class EventNotificationConsumer {
     private void sendNewMeetingMessage(User user, EventDTO event) {
         //generate message based on user language
         String message = meetingNotificationService.createMeetingNotificationMessage(user, event);
-        if (!eventLogManagementService.notificationSentToUser(event.getEventObject(),user)) {
+        Event meeting = eventManagementService.loadEvent(event.getId()); // todo: switch to use Uids, soon
+        if (!eventLogManagementService.notificationSentToUser(meeting,user)) {
             log.info("sendNewEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
             messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
             eventLogManagementService.createEventLog(EventLogType.EventNotification, event.getEventObject(), user, message);
