@@ -12,15 +12,15 @@ public interface EventBroker {
 	Event load(String eventUid);
 
 	Meeting createMeeting(String userUid, String groupUid, String name, Timestamp eventStartDateTime, String eventLocation,
-				   boolean includeSubGroups, boolean rsvpRequired, boolean relayable, EventReminderType reminderType,
-				   int customReminderMinutes);
+						  boolean includeSubGroups, boolean rsvpRequired, boolean relayable, EventReminderType reminderType,
+						  int customReminderMinutes, String description);
 
 	void updateMeeting(String userUid, String meetingUid, String name, Timestamp eventStartDateTime, String eventLocation,
 					   boolean includeSubGroups, boolean rsvpRequired, boolean relayable, EventReminderType reminderType,
-					   int customReminderMinutes);
+					   int customReminderMinutes, String description);
 
 	Vote createVote(String userUid, String groupUid, String name, Timestamp eventStartDateTime,
-					   boolean includeSubGroups, boolean relayable);
+					boolean includeSubGroups, boolean relayable, String description);
 
 	void cancel(String userUid, String eventUid);
 

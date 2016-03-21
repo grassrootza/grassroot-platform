@@ -68,5 +68,6 @@
     <include file="change_62.xml" relativeToChangelogFile="true" />
     <include file="change_63.xml" relativeToChangelogFile="true" />
     <include file="change_64.xml" relativeToChangelogFile="true" />
+    <include file="change_65.xml" relativeToChangelogFile="true" />
 
 </databaseChangeLog>

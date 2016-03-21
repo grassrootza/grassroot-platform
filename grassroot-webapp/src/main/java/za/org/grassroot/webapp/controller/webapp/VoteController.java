@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
 
@@ -86,7 +85,7 @@ public class VoteController extends BaseController {
 
         log.info("Fleshed out vote: " + vote);
 
-        eventBroker.createVote(user.getUid(), group.getUid(), vote.getName(), vote.getEventStartDateTime(), vote.isIncludeSubGroups(), vote.isRelayable());
+        eventBroker.createVote(user.getUid(), group.getUid(), vote.getName(), vote.getEventStartDateTime(), vote.isIncludeSubGroups(), vote.isRelayable(), null);
         log.info("Stored vote, at end of creation: " + vote.toString());
 
         addMessage(model, MessageType.SUCCESS, "vote.creation.success", request);

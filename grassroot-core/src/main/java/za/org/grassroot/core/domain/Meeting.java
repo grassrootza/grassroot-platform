@@ -25,12 +25,12 @@ public class Meeting extends Event {
 	}
 
 	public Meeting(String name, Timestamp startDateTime, User user, Group group, String eventLocation, boolean includeSubGroups) {
-		this(name, startDateTime, user, group, eventLocation, includeSubGroups, false, false, EventReminderType.DISABLED, 0);
+		this(name, startDateTime, user, group, eventLocation, includeSubGroups, false, false, EventReminderType.DISABLED, 0, null);
 	}
 
 	public Meeting(String name, Timestamp startDateTime, User user, Group group, String eventLocation, boolean includeSubGroups,
-				   boolean rsvpRequired, boolean relayable, EventReminderType reminderType, int customReminderMinutes) {
-		super(startDateTime, user, group, name, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes);
+				   boolean rsvpRequired, boolean relayable, EventReminderType reminderType, int customReminderMinutes, String description) {
+		super(startDateTime, user, group, name, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes, description);
 		this.eventLocation = Objects.requireNonNull(eventLocation);
 		setScheduledReminderActive(true);
 	}

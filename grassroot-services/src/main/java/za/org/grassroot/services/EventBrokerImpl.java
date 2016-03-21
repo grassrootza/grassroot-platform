@@ -59,7 +59,7 @@ public class EventBrokerImpl implements EventBroker {
 	@Override
 	@Transactional
 	public Meeting createMeeting(String userUid, String groupUid, String name, Timestamp eventStartDateTime, String eventLocation,
-								 boolean includeSubGroups, boolean rsvpRequired, boolean relayable, EventReminderType reminderType, int customReminderMinutes) {
+								 boolean includeSubGroups, boolean rsvpRequired, boolean relayable, EventReminderType reminderType, int customReminderMinutes, String description) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(groupUid);
 
@@ -71,7 +71,7 @@ public class EventBrokerImpl implements EventBroker {
 		permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
 
 		Meeting meeting = new Meeting(name, eventStartDateTime, user, group, eventLocation, includeSubGroups, rsvpRequired,
-				relayable, reminderType, customReminderMinutes);
+				relayable, reminderType, customReminderMinutes, description);
 
 		meetingRepository.save(meeting);
 
@@ -87,7 +87,7 @@ public class EventBrokerImpl implements EventBroker {
 	@Transactional
 	public void updateMeeting(String userUid, String meetingUid, String name, Timestamp eventStartDateTime,
 							  String eventLocation, boolean includeSubGroups, boolean rsvpRequired,
-							  boolean relayable, EventReminderType reminderType, int customReminderMinutes) {
+							  boolean relayable, EventReminderType reminderType, int customReminderMinutes, String description) {
 
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(meetingUid);
@@ -101,6 +101,7 @@ public class EventBrokerImpl implements EventBroker {
 		if (meeting.isCanceled()) {
 			throw new IllegalStateException("Meeting is canceled: " + meeting);
 		}
+		validateEventStartTime(eventStartDateTime);
 		boolean startTimeChanged = !eventStartDateTime.equals(meeting.getEventStartDateTime());
 
 		meeting.setName(name);
@@ -120,7 +121,7 @@ public class EventBrokerImpl implements EventBroker {
 	@Override
 	@Transactional
 	public Vote createVote(String userUid, String groupUid, String name, Timestamp eventStartDateTime,
-						   boolean includeSubGroups, boolean relayable) {
+						   boolean includeSubGroups, boolean relayable, String description) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(groupUid);
 
@@ -131,7 +132,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
 
-		Vote vote = new Vote(name, eventStartDateTime, user, group, includeSubGroups, relayable);
+		Vote vote = new Vote(name, eventStartDateTime, user, group, includeSubGroups, relayable, description);
 		voteRepository.save(vote);
 
 		jmsTemplateProducerService.sendWithNoReply("event-added", new EventDTO(vote));

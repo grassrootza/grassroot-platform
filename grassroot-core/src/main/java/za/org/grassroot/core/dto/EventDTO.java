@@ -34,6 +34,7 @@ public class EventDTO  implements Serializable {
     could also have been called description but as group has a name, kept it the same
      */
     private String name;
+    private String description;
     /*
     used to determine if notifications should be sent only to the group linked to the event, or any subgroups as well
      */
@@ -84,6 +85,7 @@ public class EventDTO  implements Serializable {
         this.canceled = event.isCanceled();
         this.eventType = event.getEventType();
         this.name = event.getName();
+        this.description = event.getDescription();
         this.includeSubGroups = event.isIncludeSubGroups();
         this.reminderType = event.getReminderType();
         this.customReminderMinutes = event.getCustomReminderMinutes();
@@ -101,9 +103,9 @@ public class EventDTO  implements Serializable {
 
     public Event getEventObject() {
         if (eventType.equals(EventType.MEETING)) {
-            return new Meeting(name, eventStartDateTime, createdByUser, appliesToGroup, eventLocation, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes);
+            return new Meeting(name, eventStartDateTime, createdByUser, appliesToGroup, eventLocation, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes, description);
         } else {
-            return new Vote(name, eventStartDateTime, createdByUser, appliesToGroup, includeSubGroups, relayable);
+            return new Vote(name, eventStartDateTime, createdByUser, appliesToGroup, includeSubGroups, relayable, description);
         }
     }
 
@@ -191,6 +193,14 @@ public class EventDTO  implements Serializable {
 
     public void setCustomReminderMinutes(int customReminderMinutes) {
         this.customReminderMinutes = customReminderMinutes;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public EventReminderType getReminderType() {

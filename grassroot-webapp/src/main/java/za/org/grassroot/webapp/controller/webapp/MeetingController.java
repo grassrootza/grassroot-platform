@@ -122,7 +122,7 @@ public class MeetingController extends BaseController {
 
         eventBroker.createMeeting(getUserProfile().getUid(), groupUid, meeting.getName(),
                 meeting.getEventStartDateTime(), meeting.getEventLocation(), meeting.isIncludeSubGroups(),
-                meeting.isRsvpRequired(), meeting.isRelayable(), meeting.getReminderType(), meeting.getCustomReminderMinutes());
+                meeting.isRsvpRequired(), meeting.isRelayable(), meeting.getReminderType(), meeting.getCustomReminderMinutes(), null);
 
         log.info("Stored meeting, at end of creation method: " + meeting.toString());
 

@@ -98,11 +98,11 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
 			MeetingRequest meetingRequest = (MeetingRequest) request;
 			eventBroker.createMeeting(userUid, meetingRequest.getAppliesToGroup().getUid(), meetingRequest.getName(),
 					meetingRequest.getEventStartDateTime(), meetingRequest.getEventLocation(), meetingRequest.isIncludeSubGroups(),
-					meetingRequest.isRsvpRequired(), meetingRequest.isRelayable(), meetingRequest.getReminderType(), meetingRequest.getCustomReminderMinutes());
+					meetingRequest.isRsvpRequired(), meetingRequest.isRelayable(), meetingRequest.getReminderType(), meetingRequest.getCustomReminderMinutes(), null);
 		} else {
 			VoteRequest voteRequest = (VoteRequest) request;
 			eventBroker.createVote(userUid, voteRequest.getAppliesToGroup().getUid(), voteRequest.getName(),
-					voteRequest.getEventStartDateTime(), voteRequest.isIncludeSubGroups(), voteRequest.isRelayable());
+					voteRequest.getEventStartDateTime(), voteRequest.isIncludeSubGroups(), voteRequest.isRelayable(), null);
 		}
 
 		eventRequestRepository.delete(request);

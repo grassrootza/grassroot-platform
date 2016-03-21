@@ -20,11 +20,11 @@ public class AbstractEventEntity {
 	@Column(name = "created_date_time", insertable = true, updatable = false)
 	protected Timestamp createdDateTime;
 
-	/*
-	could also have been called description but as group has a name, kept it the same
-	 */
-	@Column(name = "name")
+	@Column(name = "name", length = 40)
 	protected String name;
+
+	@Column(name = "description", length = 512)
+	protected String description;
 
 	/*
 	For meetings this the meeting start time
@@ -73,11 +73,12 @@ public class AbstractEventEntity {
 
 	protected AbstractEventEntity(String name, Timestamp eventStartDateTime, User createdByUser, Group appliesToGroup,
 								  boolean includeSubGroups, boolean rsvpRequired, boolean relayable,
-								  EventReminderType reminderType, int customReminderMinutes) {
+								  EventReminderType reminderType, int customReminderMinutes, String description) {
 		this.uid = UIDGenerator.generateId();
 		this.createdDateTime = Timestamp.from(Instant.now());
 
 		this.name = Objects.requireNonNull(name);
+		this.description = Objects.requireNonNull(description);
 		this.eventStartDateTime = Objects.requireNonNull(eventStartDateTime);
 		this.createdByUser = Objects.requireNonNull(createdByUser);
 		this.appliesToGroup = Objects.requireNonNull(appliesToGroup);
@@ -178,6 +179,14 @@ public class AbstractEventEntity {
 
 	public void setCustomReminderMinutes(int customReminderMinutes) {
 		this.customReminderMinutes = customReminderMinutes;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
 	}
 
 	@Override

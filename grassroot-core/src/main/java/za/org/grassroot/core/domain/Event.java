@@ -57,8 +57,8 @@ public abstract class Event extends AbstractEventEntity implements Serializable 
 	}
 
 	protected Event(Timestamp eventStartDateTime, User user, Group group, String name, boolean includeSubGroups,
-					boolean rsvpRequired, boolean relayable, EventReminderType reminderType, int customReminderMinutes) {
-		super(name, eventStartDateTime, user, group, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes);
+					boolean rsvpRequired, boolean relayable, EventReminderType reminderType, int customReminderMinutes, String description) {
+		super(name, eventStartDateTime, user, group, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes, description);
 		this.canceled = false;
 		this.noRemindersSent = 0;
 		updateScheduledReminderTime();
