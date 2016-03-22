@@ -56,6 +56,7 @@ public class USSDController {
             startMenu = "start",
             groupIdUrlSuffix = USSDUrlUtil.groupIdUrlSuffix,
             eventIdUrlSuffix = USSDUrlUtil.eventIdUrlSuffix,
+            entityUidUrlSuffix = USSDUrlUtil.entityUidUrlSuffix,
             doSuffix = "-do";
     // Constants used in i18n and message handling
     protected static final String
