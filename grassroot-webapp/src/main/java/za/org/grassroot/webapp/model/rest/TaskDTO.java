@@ -1,5 +1,7 @@
 package za.org.grassroot.webapp.model.rest;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.ComparisonChain;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.domain.LogBook;
@@ -10,8 +12,9 @@ import za.org.grassroot.webapp.enums.TodoStatus;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
-import java.util.List;
 
 /**
  * Created by paballo on 2016/03/02.
@@ -19,13 +22,16 @@ import java.util.List;
 public class TaskDTO implements Comparator<TaskDTO> ,Comparable<TaskDTO>{
 
     private Long id;
+    private String title;
     private String description;
     private String name;
     private String type;
-    private Timestamp deadline;
+    private String deadline;
     private boolean hasResponded;
     private boolean canAction;
     private String reply;
+    @JsonIgnore
+    private Timestamp timestamp;
 
 
 
@@ -33,23 +39,25 @@ public class TaskDTO implements Comparator<TaskDTO> ,Comparable<TaskDTO>{
 
     public TaskDTO(Event event, EventLog eventLog, User user, boolean hasResponded) {
         this.id = event.getId();
-        this.description = event.getName();
+        this.title = event.getName();
         this.name = event.getCreatedByUser().getDisplayName();
         this.hasResponded = hasResponded;
         this.type = String.valueOf(event.getEventType());
-        this.deadline = event.getEventStartDateTime();
+        this.timestamp = event.getEventStartDateTime();
+        this.deadline =getLocalDateTime(timestamp);
         this.reply=(eventLog !=null)?eventLog.getMessage():String.valueOf(TodoStatus.NO_RESPONSE);
         this.canAction = canAction(event, user, hasResponded);
     }
 
     public TaskDTO(LogBook logBook, User user, User creatingUser) {
         this.id = logBook.getId();
-        this.description = logBook.getMessage();
+        this.title = logBook.getMessage();
         this.name = creatingUser.getDisplayName();
         this.hasResponded = false;
-        this.reply = getLogStatus(logBook);
-        this.deadline = logBook.getActionByDate();
-        this.type = String.valueOf(TaskType.LOG);
+        this.reply = getTodoStatus(logBook);
+        this.timestamp = logBook.getActionByDate();
+        this.type = String.valueOf(TaskType.TODO);
+        this.deadline = getLocalDateTime(timestamp);
         this.canAction = canAction(logBook, user, true);
     }
 
@@ -70,7 +78,7 @@ public class TaskDTO implements Comparator<TaskDTO> ,Comparable<TaskDTO>{
         return type;
     }
 
-    public Timestamp getDeadline() {
+    public String getDeadline() {
         return deadline;
     }
 
@@ -87,7 +95,7 @@ public class TaskDTO implements Comparator<TaskDTO> ,Comparable<TaskDTO>{
     }
 
 
-    private String getLogStatus(LogBook logBook) {
+    private String getTodoStatus(LogBook logBook) {
 
         if (logBook.isCompleted()) {
             return String.valueOf(TodoStatus.COMPLETED);
@@ -98,7 +106,6 @@ public class TaskDTO implements Comparator<TaskDTO> ,Comparable<TaskDTO>{
         }
 
     }
-
 
     private boolean canAction(Object object, User user, boolean hasResponded) {
 
@@ -115,23 +122,72 @@ public class TaskDTO implements Comparator<TaskDTO> ,Comparable<TaskDTO>{
             }
         } else {
             LogBook logBook = (LogBook) object;
-            if (logBook.getAssignedToUserId().equals(user.getId()) || logBook.getCreatedByUserId().equals(user.getId())
-                    || logBook.getAssignedToUserId().equals(null)) {
+            if (!logBook.isCompleted() && (logBook.getAssignedToUserId().equals(user.getId()) || logBook.getCreatedByUserId().equals(user.getId())
+                    || logBook.getAssignedToUserId().equals(null))) {
                 canAction = true;
             }
         }
         return canAction;
     }
 
+    public String getTitle() {
+        return title;
+    }
+
+    private String getLocalDateTime(Timestamp timestamp) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
+        return timestamp.toLocalDateTime().atZone(ZoneId.of("Africa/Johannesburg")).format(formatter);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TaskDTO taskDTO = (TaskDTO) o;
+        if (hasResponded != taskDTO.hasResponded) return false;
+        if (canAction != taskDTO.canAction) return false;
+        if (!id.equals(taskDTO.id)) return false;
+        if (!title.equals(taskDTO.title)) return false;
+        if (description != null ? !description.equals(taskDTO.description) : taskDTO.description != null) return false;
+        if (!name.equals(taskDTO.name)) return false;
+        if (!type.equals(taskDTO.type)) return false;
+        if (!deadline.equals(taskDTO.deadline)) return false;
+        if (!reply.equals(taskDTO.reply)) return false;
+        return timestamp.equals(taskDTO.timestamp);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = id.hashCode();
+        result = 31 * result + title.hashCode();
+        result = 31 * result + (description != null ? description.hashCode() : 0);
+        result = 31 * result + name.hashCode();
+        result = 31 * result + type.hashCode();
+        result = 31 * result + deadline.hashCode();
+        result = 31 * result + (hasResponded ? 1 : 0);
+        result = 31 * result + (canAction ? 1 : 0);
+        result = 31 * result + reply.hashCode();
+        result = 31 * result + timestamp.hashCode();
+        return result;
+    }
+
+
     @Override
     public int compare(TaskDTO o1, TaskDTO o2) {
-        return o1.getDeadline().compareTo(o2.getDeadline());
+        return ComparisonChain.start().compareTrueFirst(o1.hasResponded,o2.hasResponded)
+                .compareFalseFirst(o1.canAction,o2.canAction)
+                .compare(o2.getDeadline(),o1.getDeadline())
+                .result();
     }
 
     @Override
     public int compareTo(TaskDTO o) {
-        return (int)(this.deadline.getTime()-o.deadline.getTime());
+        return 0;
     }
+
+
+
 }
 
 

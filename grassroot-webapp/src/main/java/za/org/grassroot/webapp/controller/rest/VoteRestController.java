@@ -22,6 +22,7 @@ import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.Map;
 
 /**
  * Created by aakilomar on 10/24/15.
@@ -64,7 +65,8 @@ public class VoteRestController {
         Event event = eventManagementService.loadEvent(Long.parseLong(id));
         EventLog eventLog = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.EventRSVP);
         boolean hasResponded = eventLogManagementService.userRsvpForEvent(event, user);
-        EventDTO eventDTO =new EventDTO(event,eventLog,user,hasResponded);
+        Map<String,Integer> totals = eventManagementService.getVoteResults(event);
+        EventDTO eventDTO =new EventDTO(event,eventLog,user,hasResponded,totals);
         ResponseWrapper responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.VOTE_DETAILS,RestStatus.SUCCESS,eventDTO);
 
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));

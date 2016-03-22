@@ -9,15 +9,24 @@ import za.org.grassroot.webapp.enums.RestStatus;
  */
 public class AuthenticationResponseWrapper extends GenericResponseWrapper {
 
+
+    private String displayName;
     private boolean hasGroups;
 
-    public AuthenticationResponseWrapper(HttpStatus code, RestMessage message, RestStatus status, Object data, boolean hasGroups){
+
+    public AuthenticationResponseWrapper(HttpStatus code, RestMessage message, RestStatus status, Object data,String displayName, boolean hasGroups){
         super(code,message,status, data);
         this.hasGroups = hasGroups;
+        this.displayName =displayName;
 
     }
 
     public boolean isHasGroups(){
         return hasGroups;
     }
+
+    public String getDisplayName(){
+        return displayName;
+    }
+
 }

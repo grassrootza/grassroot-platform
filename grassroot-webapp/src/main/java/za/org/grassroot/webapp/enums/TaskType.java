@@ -6,5 +6,5 @@ package za.org.grassroot.webapp.enums;
 public enum TaskType {
     MEETING,
     VOTE,
-    LOG
+    TODO
 }

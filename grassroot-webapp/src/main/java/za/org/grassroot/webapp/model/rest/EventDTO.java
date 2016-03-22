@@ -1,72 +1,43 @@
 package za.org.grassroot.webapp.model.rest;
 
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.EventLog;
-import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.User;
-import za.org.grassroot.webapp.util.RestUtil;
+import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.EventType;
 
-import java.util.Set;
+import java.util.Map;
 
 /**
- * Created by aakilomar on 9/6/15.
+ * Created by paballo.
  */
 public class EventDTO extends TaskDTO {
 
-    private String long_description;
     private boolean isCancelled;
-    private boolean notify;
-    private Integer reminder;
-    private Set<Permission> permissions;
-    private static final String filterString = "CREATE";
+    private boolean canEdit;
+    private Map<String,Integer> totals;
 
-    public EventDTO(Event event, EventLog eventLog, User user, boolean hasResponded) {
+    public EventDTO(Event event, EventLog eventLog, User user, boolean hasResponded, Map<String,Integer> totals) {
         super(event, eventLog, user, hasResponded);
         this.isCancelled = event.isCanceled();
-        this.notify = event.isRelayable();
-        this.reminder = event.getReminderMinutes();
-        this.permissions = RestUtil.filterPermissions(event.getAppliesToGroup().
-                getMembership(user).getRole().getPermissions(), filterString);
-    }
-
-
-    public String getLong_description() {
-        return long_description;
-    }
-
-    public void setLong_description(String long_description) {
-        this.long_description = long_description;
+        this.canEdit = getCanEdit(event,user);
+        this.totals = totals;
     }
 
     public boolean isCancelled() {
         return isCancelled;
     }
 
-    public void setCancelled(boolean cancelled) {
-        isCancelled = cancelled;
+    public boolean isCanEdit() {
+        return canEdit;
     }
 
-    public boolean isNotify() {
-        return notify;
+    private boolean getCanEdit(Event event, User user) {
+        Role role = event.getAppliesToGroup().getMembership(user).getRole();
+        if (event.getEventType().equals(EventType.Meeting)) {
+            return role.getPermissions().contains(Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
+        }
+        return role.getPermissions().contains(Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
     }
 
-    public void setNotify(boolean notify) {
-        this.notify = notify;
-    }
-
-    public Integer getReminder() {
-        return reminder;
-    }
-
-    public void setReminder(Integer reminder) {
-        this.reminder = reminder;
-    }
-
-    public Set<Permission> getPermissions() {
-        return permissions;
-    }
-
-    public void setPermissions(Set<Permission> permissions) {
-        this.permissions = permissions;
+    public Map<String, Integer> getTotals() {
+        return totals;
     }
 }
