@@ -35,15 +35,16 @@ public class LogBookRestController {
 
 
 
-    @RequestMapping(value ="/complete/do/{id}/{phoneNumber/{code}", method =  RequestMethod.GET)
+
+    @RequestMapping(value ="/complete/do/{id}/{phoneNumber}/{code}", method =  RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> setComplete(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code")
     String code, @PathVariable("id") String id){
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         LogBook logBook = logBookService.load(Long.parseLong(id));
         ResponseWrapper responseWrapper;
         if(!logBook.isCompleted()){
-            logBook.setCompletedByUserId(user.getId());
-            responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.TODO_SET_COMPLETED, RestStatus.SUCCESS);
+            logBookService.setCompleted(logBook.getId(),user.getId());
+                    responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.TODO_SET_COMPLETED, RestStatus.SUCCESS);
             return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
         }
         responseWrapper = new ResponseWrapperImpl(HttpStatus.CONFLICT, RestMessage.TODO_ALREADY_COMPLETED, RestStatus.FAILURE);
