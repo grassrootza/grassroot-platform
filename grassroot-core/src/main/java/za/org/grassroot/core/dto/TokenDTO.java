@@ -2,7 +2,6 @@ package za.org.grassroot.core.dto;
 
 import za.org.grassroot.core.domain.VerificationTokenCode;
 
-import javax.persistence.Column;
 import java.sql.Timestamp;
 
 /**
@@ -17,6 +16,7 @@ public class TokenDTO {
         this.code = tokenCode.getCode();
         this.createdDateTime = tokenCode.getCreatedDateTime();
         this.expiryDateTime =tokenCode.getExpiryDateTime();
+
     }
 
     public String getCode() {
