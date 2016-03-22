@@ -29,6 +29,8 @@ public class TaskDTO implements Comparator<TaskDTO> ,Comparable<TaskDTO>{
 
 
 
+    public TaskDTO(){}
+
     public TaskDTO(Event event, EventLog eventLog, User user, boolean hasResponded) {
         this.id = event.getId();
         this.description = event.getName();

@@ -1,6 +1,7 @@
 package za.org.grassroot.webapp.model.rest.ResponseWrappers;
 
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.webapp.util.RestUtil;
 
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -43,7 +44,7 @@ public class GroupResponseWrapper {
         this.groupCreator = group.getCreatedByUser().getDisplayName();
         this.role = (role!=null)?role.getName():null;
         this.groupMemberCount = group.getMemberships().size();
-        this.permissions = filterPermissions(role.getPermissions());
+        this.permissions = RestUtil.filterPermissions(role.getPermissions(),filterString);
 
     }
 
@@ -56,7 +57,7 @@ public class GroupResponseWrapper {
         this.groupCreator = group.getCreatedByUser().getDisplayName();
         this.role = (role!=null)?role.getName():null;
         this.groupMemberCount = group.getMemberships().size();
-        this.permissions = filterPermissions(role.getPermissions());
+        this.permissions = RestUtil.filterPermissions(role.getPermissions(),filterString);
 
 
     }
@@ -68,7 +69,7 @@ public class GroupResponseWrapper {
         this.groupCreator = group.getCreatedByUser().getDisplayName();
         this.role = (role!=null)?role.getName():null;
         this.groupMemberCount = group.getMemberships().size();
-        this.permissions = filterPermissions(role.getPermissions());
+        this.permissions = RestUtil.filterPermissions(role.getPermissions(), filterString);
 
     }
 
@@ -101,9 +102,6 @@ public class GroupResponseWrapper {
     public Timestamp getDateTime(){return dateTime;}
 
 
-    private Set<Permission> filterPermissions(Set<Permission> permissions){
-        return permissions.stream().filter(p -> p.toString().contains(filterString)).collect(Collectors.toSet());
 
-    }
 
 }

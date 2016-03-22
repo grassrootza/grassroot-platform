@@ -2,91 +2,71 @@ package za.org.grassroot.webapp.model.rest;
 
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.EventLog;
-import za.org.grassroot.core.enums.EventLogType;
-import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.webapp.util.RestUtil;
 
-import java.util.Date;
+import java.util.Set;
 
 /**
  * Created by aakilomar on 9/6/15.
  */
-public class EventDTO {
+public class EventDTO extends TaskDTO {
 
-    private Long id;
-    private String name;
-    private String location;
-    private Date date;
-    private boolean cancelled;
-    private String rsvp;
+    private String long_description;
+    private boolean isCancelled;
+    private boolean notify;
+    private Integer reminder;
+    private Set<Permission> permissions;
+    private static final String filterString = "CREATE";
 
-    public EventDTO(Event event) {
-        this.id = event.getId();
-        this.name = event.getName();
-        this.location = event.getEventLocation();
-        this.date = event.getEventStartDateTime();
-        this.cancelled = event.isCanceled();
+    public EventDTO(Event event, EventLog eventLog, User user, boolean hasResponded) {
+        super(event, eventLog, user, hasResponded);
+        this.isCancelled = event.isCanceled();
+        this.notify = event.isRelayable();
+        this.reminder = event.getReminderMinutes();
+        this.permissions = RestUtil.filterPermissions(event.getAppliesToGroup().
+                getMembership(user).getRole().getPermissions(), filterString);
     }
 
-    public EventDTO(EventLog eventLog) {
-        this.id = eventLog.getEvent().getId();
-        this.name = eventLog.getEvent().getName();
-        this.location = eventLog.getEvent().getEventLocation();
-        this.date = eventLog.getEvent().getEventStartDateTime();
-        this.cancelled = eventLog.getEvent().isCanceled();
-        if (eventLog.getEventLogType() == EventLogType.EventRSVP) {
-            this.rsvp = eventLog.getMessage();
-        } else {
-            this.rsvp = EventRSVPResponse.NO_RESPONSE.toString();
-        }
-    }
-    public Long getId() {
-        return id;
+
+    public String getLong_description() {
+        return long_description;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public void setLocation(String location) {
-        this.location = location;
-    }
-
-    public Date getDate() {
-        return date;
-    }
-
-    public void setDate(Date date) {
-        this.date = date;
+    public void setLong_description(String long_description) {
+        this.long_description = long_description;
     }
 
     public boolean isCancelled() {
-        return cancelled;
+        return isCancelled;
     }
 
     public void setCancelled(boolean cancelled) {
-        this.cancelled = cancelled;
+        isCancelled = cancelled;
     }
 
-    @Override
-    public String toString() {
-        return "EventDTO{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", location='" + location + '\'' +
-                ", date=" + date +
-                ", cancelled=" + cancelled +
-                '}';
+    public boolean isNotify() {
+        return notify;
+    }
+
+    public void setNotify(boolean notify) {
+        this.notify = notify;
+    }
+
+    public Integer getReminder() {
+        return reminder;
+    }
+
+    public void setReminder(Integer reminder) {
+        this.reminder = reminder;
+    }
+
+    public Set<Permission> getPermissions() {
+        return permissions;
+    }
+
+    public void setPermissions(Set<Permission> permissions) {
+        this.permissions = permissions;
     }
 }

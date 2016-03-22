@@ -38,9 +38,6 @@ public class GroupRestController {
     RoleManagementService roleManagementService;
 
     @Autowired
-    PasswordTokenService passwordTokenService;
-
-    @Autowired
     UserManagementService userManagementService;
 
     @Autowired

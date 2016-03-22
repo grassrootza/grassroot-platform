@@ -19,7 +19,9 @@ import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
 import za.org.grassroot.webapp.model.rest.TaskDTO;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by paballo on 2016/03/17.
@@ -62,27 +64,28 @@ public class TaskRestController {
     }
 
     private List<TaskDTO> getTasks(User user, Group group) {
-        List<TaskDTO> tasks = new ArrayList<>();
+        Set<TaskDTO> taskSet = new HashSet<>();
         for (Event event : eventManagementService.findByAppliesToGroup(group)) {
             if (event != null) {
                 EventLog eventLog = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.EventRSVP);
                 boolean hasResponded = eventLogManagementService.userRsvpForEvent(event, user);
                 if (!event.isSendBlocked() && event.getEventStartDateTime() != null) {
-                    tasks.add(new TaskDTO(event, eventLog, user, hasResponded));
+                    taskSet.add(new TaskDTO(event, eventLog, user, hasResponded));
                 }
             }
             for (LogBook logBook : logBookService.getAllLogBookEntriesForGroup(group.getId())) {
                 if (logBook != null) {
                     if (logBook.getCreatedByUserId().equals(user.getId())) {
-                        tasks.add(new TaskDTO(logBook, user, user));
+                        taskSet.add(new TaskDTO(logBook, user, user));
                     } else {
                         User creatingUser = userManagementService.loadUser(logBook.getCreatedByUserId());
                         if (logBook.isRecorded()) {
-                            tasks.add(new TaskDTO(logBook, user, creatingUser));
+                            taskSet.add(new TaskDTO(logBook, user, creatingUser));
                         }}
                     }
                 }
             }
+            List<TaskDTO>  tasks = new ArrayList<>(taskSet);
             Collections.sort(tasks);
             return tasks;
         }

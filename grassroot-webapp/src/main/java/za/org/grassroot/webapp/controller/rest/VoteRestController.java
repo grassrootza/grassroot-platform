@@ -1,19 +1,27 @@
 package za.org.grassroot.webapp.controller.rest;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.dto.EventDTO;
-import za.org.grassroot.core.repository.EventRepository;
+import za.org.grassroot.core.domain.EventLog;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.EventLogType;
+import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.services.EventManagementService;
+import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.webapp.enums.RestMessage;
+import za.org.grassroot.webapp.enums.RestStatus;
+import za.org.grassroot.webapp.model.rest.EventDTO;
+import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrapper;
+import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
+import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.logging.Logger;
+import java.sql.Timestamp;
+import java.time.Instant;
 
 /**
  * Created by aakilomar on 10/24/15.
@@ -22,37 +30,72 @@ import java.util.logging.Logger;
 @RequestMapping("/api/vote")
 public class VoteRestController {
 
-    private Logger log = Logger.getLogger(getClass().getCanonicalName());
 
     @Autowired
     EventManagementService eventManagementService;
 
     @Autowired
-    EventRepository eventRepository;
+    UserManagementService userManagementService;
 
-    @RequestMapping(value = "/listallfuture", method = RequestMethod.GET)
-    public List<EventDTO> listAllFuture() {
-        List<EventDTO> list = new ArrayList<>();
-        List<Event> eventList = eventRepository.findAllVotesAfterTimeStamp(new Date());
-        for (Event event : eventList) {
-            list.add(new EventDTO(event));
+    @Autowired
+    EventLogManagementService eventLogManagementService;
+
+
+
+
+    @RequestMapping(value = "vote/create/{id}/{phoneNumber}/{code}" ,method=RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> createVote(@PathVariable("phoneNumber") String phoneNumber,@PathVariable("code") String code,
+                                                      @PathVariable("id") String groupId, @RequestParam("issue") String issue,
+                                                      @RequestParam(value = "description", required = false) String description, @RequestParam("alert_time") String alert,
+                                                      @RequestParam("notify") boolean notify) {
+
+
+
+
+
+        return null;
+
+    }
+
+    @RequestMapping(value ="/view/{id}/{phoneNumber}/{code}", method = RequestMethod.GET)
+        public ResponseEntity<ResponseWrapper> viewVote(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
+                                                        @PathVariable("id") String id){
+        User user = userManagementService.loadOrSaveUser(phoneNumber);
+        Event event = eventManagementService.loadEvent(Long.parseLong(id));
+        EventLog eventLog = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.EventRSVP);
+        boolean hasResponded = eventLogManagementService.userRsvpForEvent(event, user);
+        EventDTO eventDTO =new EventDTO(event,eventLog,user,hasResponded);
+        ResponseWrapper responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.VOTE_DETAILS,RestStatus.SUCCESS,eventDTO);
+
+        return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
+
+
+    }
+
+    @RequestMapping(value = "do/{id}/{phoneNumber}/{code}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> castVote(@PathVariable("phoneNumber") String phoneNumber,
+                                                    @PathVariable("code") String code, @PathVariable("id") String eventId,
+                                                    @RequestParam(value = "response", required = true) String response) {
+        User user = userManagementService.loadOrSaveUser(phoneNumber);
+        Event event = eventManagementService.loadEvent(Long.parseLong(eventId));
+        String trimmedResponse = response.toLowerCase().trim();
+        boolean hasVoted = eventLogManagementService.userRsvpForEvent(event, user);
+        ResponseWrapper responseWrapper;
+        if (event.getEventType().equals(EventType.Vote) && (!hasVoted && isOpen(event))) {
+            eventLogManagementService.rsvpForEvent(event, user, EventRSVPResponse.fromString(trimmedResponse));
+            responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.VOTE_SENT, RestStatus.SUCCESS);
+        } else if (hasVoted) {
+            responseWrapper = new ResponseWrapperImpl(HttpStatus.CONFLICT, RestMessage.USER_HAS_ALREADY_VOTED, RestStatus.FAILURE);
+        } else {
+            responseWrapper = new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.VOTE_CLOSED, RestStatus.FAILURE);
         }
-        return list;
+
+        return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
     }
 
-    @RequestMapping(value = "/add/{userId}/{groupId}/{issue}", method = RequestMethod.POST)
-    public za.org.grassroot.webapp.model.rest.EventDTO add
-            (@PathVariable("userId") Long userId, @PathVariable("groupId") Long groupId,
-             @PathVariable("issue") String issue) {
-        return addAndSetSubGroups(userId, groupId, issue, false);
 
+
+    private boolean isOpen(Event event) {
+        return event.getEventStartDateTime().after(Timestamp.from(Instant.now()));
     }
-
-    @RequestMapping(value = "/add/{userId}/{groupId}/{issue}/{includeSubGroups}", method = RequestMethod.POST)
-    public za.org.grassroot.webapp.model.rest.EventDTO addAndSetSubGroups(@PathVariable("userId") Long userId,@PathVariable("groupId") Long groupId,
-                                                                          @PathVariable("issue") String issue, @PathVariable("includeSubGroups") boolean includeSubGroups) {
-        return new za.org.grassroot.webapp.model.rest.EventDTO(eventManagementService.createVote(issue, userId, groupId, includeSubGroups));
-
-    }
-
 }
