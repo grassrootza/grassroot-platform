@@ -1,11 +1,14 @@
 package za.org.grassroot.services;
 
+import za.org.grassroot.core.domain.EventRequest;
 import za.org.grassroot.core.domain.MeetingRequest;
 import za.org.grassroot.core.domain.VoteRequest;
 
 import java.sql.Timestamp;
 
 public interface EventRequestBroker {
+	EventRequest load(String eventRequestUid);
+
 	MeetingRequest createEmptyMeetingRequest(String userUid, String groupUid);
 
 	VoteRequest createEmptyVoteRequest(String userUid, String groupUid);
@@ -16,5 +19,5 @@ public interface EventRequestBroker {
 
 	void updateMeetingLocation(String userUid, String meetingRequestUid, String location);
 
-	void finish(String userUid, String eventRequestUid);
+	void finish(String userUid, String eventRequestUid, boolean rsvpRequired);
 }

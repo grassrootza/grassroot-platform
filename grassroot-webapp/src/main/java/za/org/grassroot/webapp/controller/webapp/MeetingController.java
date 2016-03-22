@@ -28,8 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static za.org.grassroot.core.domain.Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING;
-
 
 /**
  * Created by luke on 2015/09/11.
@@ -124,6 +122,7 @@ public class MeetingController extends BaseController {
         // todo: add error handling and validation
         // todo: check that we have all the needed information and/or add a confirmation screen
         // todo: put this data transformation else where:Maybe Wrapper?
+        // todo: wire up description on form
 
         log.info("The event passed back to us: " + meeting.toString());
         log.info("Event location set as: " + meeting.getEventLocation());
@@ -132,7 +131,7 @@ public class MeetingController extends BaseController {
 
         eventBroker.createMeeting(getUserProfile().getUid(), groupUid, meeting.getName(),
                 meeting.getEventStartDateTime(), meeting.getEventLocation(), meeting.isIncludeSubGroups(),
-                meeting.isRsvpRequired(), meeting.isRelayable(), meeting.getReminderType(), meeting.getCustomReminderMinutes(), null);
+                meeting.isRsvpRequired(), meeting.isRelayable(), meeting.getReminderType(), meeting.getCustomReminderMinutes(), "");
 
         log.info("Stored meeting, at end of creation method: " + meeting.toString());
 
@@ -153,7 +152,7 @@ public class MeetingController extends BaseController {
         log.info("Meeting we are passed: " + meeting);
 
         // todo: double check permissions in location update
-        eventBroker.updateMeetingLocation(getUserProfile().getUid(), eventUid, location);
+        eventBroker.updateMeetingLocation(getUserProfile().getUid(), eventUid, location, true);
 
         addMessage(model, MessageType.SUCCESS, "meeting.update.success", request);
         return viewMeetingDetails(model, meeting.getId());

@@ -526,8 +526,9 @@ public class EventManager implements EventManagementService {
 
     @Override
     public List<Event> getPaginatedEventsCreatedByUser(User sessionUser, int pageNumber, int pageSize) {
-        Page<Event> pageOfEvents =
-                eventRepository.findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(sessionUser, new Date(), false, new PageRequest(pageNumber, pageSize));
+        Page<Event> pageOfEvents = eventRepository.
+                findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(sessionUser, Timestamp.valueOf(LocalDateTime.now()),
+                                                                               false, new PageRequest(pageNumber, pageSize));
         return pageOfEvents.getContent();
     }
 

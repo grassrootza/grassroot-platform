@@ -24,6 +24,11 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
 	private EventBroker eventBroker;
 
 	@Override
+	public EventRequest load(String eventRequestUid) {
+		return eventRequestRepository.findOneByUid(eventRequestUid);
+	}
+
+	@Override
 	@Transactional
 	public MeetingRequest createEmptyMeetingRequest(String userUid, String groupUid) {
 		Objects.requireNonNull(userUid);
@@ -85,7 +90,7 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
 	}
 
 	@Override
-	public void finish(String userUid, String eventRequestUid) {
+	public void finish(String userUid, String eventRequestUid, boolean rsvpRequired) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(eventRequestUid);
 
@@ -94,11 +99,13 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
 			throw new EventRequestNotFilledException("Request is not filled yet: " + request);
 		}
 
+		if (request.getDescription() == null) request.setDescription(""); // since we don't ask for description in USSD
+
 		if (request instanceof MeetingRequest) {
 			MeetingRequest meetingRequest = (MeetingRequest) request;
 			eventBroker.createMeeting(userUid, meetingRequest.getAppliesToGroup().getUid(), meetingRequest.getName(),
 					meetingRequest.getEventStartDateTime(), meetingRequest.getEventLocation(), meetingRequest.isIncludeSubGroups(),
-					meetingRequest.isRsvpRequired(), meetingRequest.isRelayable(), meetingRequest.getReminderType(), meetingRequest.getCustomReminderMinutes(), meetingRequest.getDescription());
+					rsvpRequired, meetingRequest.isRelayable(), meetingRequest.getReminderType(), meetingRequest.getCustomReminderMinutes(), meetingRequest.getDescription());
 		} else {
 			VoteRequest voteRequest = (VoteRequest) request;
 			eventBroker.createVote(userUid, voteRequest.getAppliesToGroup().getUid(), voteRequest.getName(),

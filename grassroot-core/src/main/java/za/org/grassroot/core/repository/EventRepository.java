@@ -5,14 +5,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.Vote;
+import za.org.grassroot.core.enums.EventType;
 
 import java.sql.Timestamp;
-import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 
@@ -29,7 +27,9 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
 	List<Event> findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(User user, Date startTime, boolean cancelled);
 
-	Page<Event> findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(User user, Date startTime, boolean cancelled, Pageable page);
+	Page<Event> findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(User user, Timestamp startTime, boolean cancelled, Pageable page);
+
+	Page<Event> findByCreatedByUserAndEventStartDateTimeGreaterThanAndEventTypeAndCanceledFalse(User user, Timestamp startTime, EventType eventType, Pageable page);
 
 	/*
 	Some methods for analytical services, to count, find events, etc

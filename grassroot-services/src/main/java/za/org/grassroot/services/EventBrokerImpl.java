@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
@@ -20,6 +22,7 @@ import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -48,12 +51,24 @@ public class EventBrokerImpl implements EventBroker {
     @Autowired
     private AsyncEventMessageSender asyncEventMessageSender;
 
-
-
     @Override
 	public Event load(String eventUid) {
 		Objects.requireNonNull(eventUid);
 		return eventRepository.findOneByUid(eventUid);
+	}
+
+	@Override
+	public Meeting loadMeeting(String meetingUid) {
+		return meetingRepository.findOneByUid(meetingUid);
+	}
+
+	@Override
+	public List<Event> loadEventsUserCanManage(String userUid, EventType eventType, int pageNumber, int pageSize) {
+		User user = userRepository.findOneByUid(userUid);
+		Page<Event> pageOfEvents = eventRepository.
+			findByCreatedByUserAndEventStartDateTimeGreaterThanAndEventTypeAndCanceledFalse(user, Timestamp.valueOf(LocalDateTime.now()), EventType.MEETING,
+																							new PageRequest(pageNumber, pageSize));
+		return pageOfEvents.getContent();
 	}
 
 	@Override
@@ -115,7 +130,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		meeting.updateScheduledReminderTime();
 
-		notifyEventChange(meeting, startTimeChanged);
+		sendChangeNotifications(meeting.getUid(), startTimeChanged);
 	}
 
 	@Override
@@ -170,7 +185,7 @@ public class EventBrokerImpl implements EventBroker {
 
 	@Override
 	@Transactional
-	public void updateName(String userUid, String eventUid, String name) {
+	public void updateName(String userUid, String eventUid, String name, boolean sendNotifications) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(eventUid);
 		Objects.requireNonNull(name);
@@ -182,12 +197,12 @@ public class EventBrokerImpl implements EventBroker {
 		}
 
 		event.setName(name);
-		notifyEventChange(event, false);
+		sendChangeNotifications(event.getUid(), false);
 	}
 
 	@Override
 	@Transactional
-	public void updateStartTimestamp(String userUid, String eventUid, Timestamp eventStartDateTime) {
+	public void updateStartTimestamp(String userUid, String eventUid, Timestamp eventStartDateTime, boolean sendNotifications) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(eventUid);
 
@@ -201,17 +216,12 @@ public class EventBrokerImpl implements EventBroker {
 		event.setEventStartDateTime(eventStartDateTime);
 		event.updateScheduledReminderTime();
 
-		notifyEventChange(event, true);
-	}
-
-	private void notifyEventChange(Event event, boolean startTimeChanged) {
-		jmsTemplateProducerService.sendWithNoReply("event-changed", new EventChanged(new EventDTO(event), startTimeChanged));
-		logger.info("Queued to event-changed event..." + event.getId() + "...version..." + event.getVersion());
+		if (sendNotifications) sendChangeNotifications(event.getUid(), true);
 	}
 
 	@Override
 	@Transactional
-	public void updateMeetingLocation(String userUid, String meetingUid, String eventLocation) {
+	public void updateMeetingLocation(String userUid, String meetingUid, String eventLocation, boolean sendNotifications) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(meetingUid);
 
@@ -222,9 +232,14 @@ public class EventBrokerImpl implements EventBroker {
 		}
         meeting.setEventLocation(eventLocation);
 
-        AfterTxCommitTask afterTxCommitTask = () ->
-                asyncEventMessageSender.sendChangedEventNotification(meeting.getUid(), EventType.MEETING, false);
-        applicationEventPublisher.publishEvent(afterTxCommitTask);
+		if (sendNotifications) sendChangeNotifications(meeting.getUid(), true);
+	}
+
+	@Override
+	public void sendChangeNotifications(String eventUid, boolean startTimeChanged) {
+		Event event = eventRepository.findOneByUid(eventUid);
+		jmsTemplateProducerService.sendWithNoReply("event-changed", new EventChanged(new EventDTO(event), startTimeChanged));
+		logger.info("Queued to event-changed event..." + event.getId() + "...version..." + event.getVersion());
 	}
 
 	@Override
