@@ -136,12 +136,12 @@ public class AnalyticalManager implements AnalyticalService {
 
     @Override
     public Long countAllLogBooks() {
-        return logBookRepository.countByRecordedTrue();
+        return logBookRepository.count();
     }
 
     @Override
     public Long countLogBooksRecordedInInterval(LocalDateTime start, LocalDateTime end) {
-        return logBookRepository.countByCreatedDateTimeBetweenAndRecordedTrue(Timestamp.valueOf(start), Timestamp.valueOf(end));
+        return logBookRepository.countByCreatedDateTimeBetween(Timestamp.valueOf(start), Timestamp.valueOf(end));
     }
 
 

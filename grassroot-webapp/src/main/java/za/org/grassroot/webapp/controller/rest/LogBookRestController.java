@@ -42,7 +42,7 @@ public class LogBookRestController {
         LogBook logBook = logBookService.load(Long.parseLong(id));
         ResponseWrapper responseWrapper;
         if(!logBook.isCompleted()){
-            logBook.setCompletedByUserId(user.getId());
+            logBook.setCompletedByUser(user);
             responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.TODO_SET_COMPLETED, RestStatus.SUCCESS);
             return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
         }

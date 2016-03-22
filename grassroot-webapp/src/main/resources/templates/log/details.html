@@ -51,10 +51,10 @@
     <div th:unless="${isComplete}"> <!-- redundancy here but putting unless clase in <a> or <button> not working -->
       <a th:href="@{complete(logBookId=${entry.id})}"><button class="btn-primary">Mark as complete</button></a>
       <a th:href="@{modify(logBookId=${entry.id})}"><button class="btn-info">Modify to-do</button></a>
-      <a th:href="@{view(groupId=${entry.groupId})}"><button class="btn-info">Back to group logbook</button></a>
+      <a th:href="@{view(groupId=${entry.group.id})}"><button class="btn-info">Back to group logbook</button></a>
     </div>
     <div th:if="${isComplete}">
-      <a th:href="@{view(groupId=${entry.groupId})}"><button class="btn-info">Back to group logbook</button></a>
+      <a th:href="@{view(groupId=${entry.group.id})}"><button class="btn-info">Back to group logbook</button></a>
     </div>
   </div>
 

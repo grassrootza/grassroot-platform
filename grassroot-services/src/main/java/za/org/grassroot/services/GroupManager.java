@@ -137,7 +137,7 @@ public class GroupManager implements GroupManagementService {
         // seems like doing it this way more efficient than running lots of group fetch queries, but need to test/verify
         log.info("Got a list of logbooks ... look like this: " + logBooks);
         List<Long> ids = new ArrayList<>();
-        for (LogBook entry : logBooks) { ids.add(entry.getGroupId()); }
+        for (LogBook entry : logBooks) { ids.add(entry.getGroup().getId()); }
         log.info("And now we have this list of Ids ... " + ids);
         return groupRepository.findAllByIdIn(ids);
     }

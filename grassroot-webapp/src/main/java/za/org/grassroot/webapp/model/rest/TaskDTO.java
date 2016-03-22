@@ -113,8 +113,8 @@ public class TaskDTO implements Comparator<TaskDTO> ,Comparable<TaskDTO>{
             }
         } else {
             LogBook logBook = (LogBook) object;
-            if (logBook.getAssignedToUserId().equals(user.getId()) || logBook.getCreatedByUserId().equals(user.getId())
-                    || logBook.getAssignedToUserId().equals(null)) {
+            if (logBook.getAssignedToUser().equals(user) || logBook.getCreatedByUser().equals(user)
+                    || logBook.getAssignedToUser()== null) {
                 canAction = true;
             }
         }

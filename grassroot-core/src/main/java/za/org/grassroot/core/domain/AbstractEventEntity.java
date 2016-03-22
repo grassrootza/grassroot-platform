@@ -7,6 +7,9 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Objects;
 
+/**
+ * This class should contain all fields common to both Event and EventRequest entity
+ */
 @MappedSuperclass
 public class AbstractEventEntity {
 	@Id

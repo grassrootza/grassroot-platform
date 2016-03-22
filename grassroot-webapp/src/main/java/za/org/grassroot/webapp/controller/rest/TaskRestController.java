@@ -73,13 +73,14 @@ public class TaskRestController {
 //            }
         }
         for (LogBook logBook : logBookService.getAllLogBookEntriesForGroup(group.getId())) {
-            if (logBook.getCreatedByUserId().equals(user.getId())) {
+            if (logBook.getCreatedByUser().equals(user)) {
                 tasks.add(new TaskDTO(logBook, user, user));
             } else {
-                User creatingUser = userManagementService.loadUser(logBook.getCreatedByUserId());
-                if(logBook.isRecorded()) {
-                    tasks.add(new TaskDTO(logBook, user, creatingUser));
-                }
+                User creatingUser = logBook.getCreatedByUser();
+                // todo: adjust to new design with LogGroupRequest?
+//                if(logBook.isRecorded()) {
+//                    tasks.add(new TaskDTO(logBook, user, creatingUser));
+//                }
             }
         }
         Collections.sort(tasks);
