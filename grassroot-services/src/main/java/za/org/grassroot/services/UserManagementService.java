@@ -91,6 +91,8 @@ public interface UserManagementService {
 
     List<User> getGroupMembersWithout(Group group, Long excludedUserId);
 
+    Page<User> getGroupMembers(Group group, int pageNumber, int pageSize);
+
 
     /*
     Methods to set and retrieve varfious properties about a user

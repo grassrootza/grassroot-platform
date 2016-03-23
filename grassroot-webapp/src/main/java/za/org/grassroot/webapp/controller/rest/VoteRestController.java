@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.rest;
 
+import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,14 +19,15 @@ import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
-import za.org.grassroot.webapp.model.rest.EventDTO;
+import za.org.grassroot.webapp.model.rest.ResponseWrappers.EventWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
 
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Created by aakilomar on 10/24/15.
@@ -52,14 +54,18 @@ public class VoteRestController {
     public ResponseEntity<ResponseWrapper> createVote(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
                                                       @PathVariable("id") String groupUid, @RequestParam("title") String title, @RequestParam(value = "closingTime") String time,
                                                       @RequestParam(value = "description", required = false) String description, @RequestParam("reminderMins") int reminderMinutes,
-                                                      @RequestParam(value = "notifyGroup", required = false) boolean relayable, @RequestParam("includeSubgroups") boolean includeSubGroup) {
+                                                      @RequestParam(value = "notifyGroup", required = false) boolean relayable, @RequestParam("includeSubgroups") boolean includeSubGroup,@RequestParam(value = "members",required = false) List<String> members ){
+
 
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
-        eventBroker.createVote(user.getUid(), groupUid, title, Timestamp.valueOf(DateTimeUtil.parseDateTime(time)), includeSubGroup,
-                relayable, description, Collections.emptySet());
-
-        ResponseWrapper responseWrapper = new ResponseWrapperImpl(HttpStatus.CREATED, RestMessage.VOTE_CREATED,RestStatus.SUCCESS);
+        Set<String> membersUid = Sets.newHashSet();
+        if(members !=null){
+            membersUid.addAll(members);
+        }
+        eventBroker.createVote(user.getUid(), groupUid, title, Timestamp.valueOf(DateTimeUtil.parseDateTime(time)),
+                includeSubGroup, relayable, description,membersUid);
+        ResponseWrapper responseWrapper = new ResponseWrapperImpl(HttpStatus.CREATED, RestMessage.VOTE_CREATED, RestStatus.SUCCESS);
 
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
 
@@ -73,14 +79,15 @@ public class VoteRestController {
         EventLog eventLog = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.EventRSVP);
         boolean hasResponded = eventLogManagementService.userRsvpForEvent(event, user);
         RSVPTotalsDTO totals = eventLogManagementService.getVoteResultsForEvent(event);
-        EventDTO eventDTO = new EventDTO(event, eventLog, user, hasResponded, totals);
-        ResponseWrapper responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.VOTE_DETAILS, RestStatus.SUCCESS, eventDTO);
+        EventWrapper eventWrapper = new EventWrapper(event, eventLog, user, hasResponded, totals);
+        ResponseWrapper responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.VOTE_DETAILS, RestStatus.SUCCESS, eventWrapper);
 
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
 
+
     }
 
-    @RequestMapping(value = "do/{id}/{phoneNumber}/{code}", method = RequestMethod.GET)
+    @RequestMapping(value = "/do/{id}/{phoneNumber}/{code}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> castVote(@PathVariable("phoneNumber") String phoneNumber,
                                                     @PathVariable("code") String code, @PathVariable("id") String voteUid,
                                                     @RequestParam(value = "response", required = true) String response) {
@@ -101,23 +108,29 @@ public class VoteRestController {
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
     }
 
-    @RequestMapping(value ="/update/{id}/{phoneNumber}/{code}", method = RequestMethod.POST)
+    @RequestMapping(value = "/update/{id}/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> updateVote(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
-                                                      @PathVariable("id") String voteUid, @RequestParam("title") String title, @RequestParam(value = "closingTime") String time,
-                                                      @RequestParam(value = "description", required = false) String description
-                                                    ) {
+                                                      @PathVariable("id") String voteUid, @RequestParam("title") String title,
+                                                      @RequestParam(value = "closingTime") String time,
+                                                      @RequestParam(value = "description", required = false) String description) {
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
-        eventBroker.updateVote(user.getUid(),voteUid,Timestamp.valueOf(DateTimeUtil.parseDateTime(time)), description);
-        ResponseWrapper responseWrapper = new ResponseWrapperImpl(HttpStatus.OK,RestMessage.VOTE_DETAILS_UPDATED,RestStatus.SUCCESS);
+        ResponseWrapper responseWrapper;
+        try {
+            eventBroker.updateVote(user.getUid(), voteUid, Timestamp.valueOf(DateTimeUtil.parseDateTime(time)), description);
+            responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.VOTE_DETAILS_UPDATED, RestStatus.SUCCESS);
+        } catch (java.lang.IllegalStateException e) {
+            responseWrapper = new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.VOTE_CANCELLED, RestStatus.FAILURE);
 
-        return  new ResponseEntity<>(responseWrapper,HttpStatus.valueOf(responseWrapper.getCode()));
+        }
+
+        return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
 
 
     }
 
 
-        private boolean isOpen(Event event) {
+    private boolean isOpen(Event event) {
         return event.getEventStartDateTime().after(Timestamp.from(Instant.now()));
     }
 }

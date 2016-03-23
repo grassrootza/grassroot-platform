@@ -45,7 +45,7 @@ public class UserRestController {
     public ResponseEntity<ResponseWrapper> add(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("displayName") String displayName) {
 
         ResponseWrapper responseWrapper;
-        if (!checkIfExists(phoneNumber)) {
+        if (!ifExists(phoneNumber)) {
             String tokenCode = userManagementService.generateAndroidUserVerifier(phoneNumber, displayName);
             responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.VERIFICATION_TOKEN_SENT, RestStatus.SUCCESS, tokenCode);
             return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
@@ -80,7 +80,7 @@ public class UserRestController {
     public ResponseEntity<ResponseWrapper> logon(@PathVariable("phoneNumber") String phoneNumber) {
 
         ResponseWrapper responseWrapper;
-        if (checkIfExists(phoneNumber)) {
+        if (ifExists(phoneNumber)) {
             String token = userManagementService.generateAndroidUserVerifier(phoneNumber, null);
             responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.VERIFICATION_TOKEN_SENT, RestStatus.SUCCESS,token);
             return new ResponseEntity<>(responseWrapper, HttpStatus.OK);
@@ -97,7 +97,7 @@ public class UserRestController {
         if (passwordTokenService.isVerificationCodeValid(phoneNumber, token)) {
             User user = userManagementService.loadOrSaveUser(phoneNumber);
             VerificationTokenCode longLivedToken = passwordTokenService.generateLongLivedCode(user);
-            boolean hasGroups =  groupManagementService.getActiveGroupsPartOf(user).size() >0;
+            boolean hasGroups =  !groupManagementService.getActiveGroupsPartOf(user).isEmpty();
             return new ResponseEntity<>(new AuthenticationResponseWrapper(HttpStatus.OK, RestMessage.LOGIN_SUCCESS,
                     RestStatus.SUCCESS, new TokenDTO(longLivedToken),user.getDisplayName(), hasGroups), HttpStatus.OK);
         }
@@ -123,7 +123,7 @@ public class UserRestController {
         }
     }
 
-    private boolean checkIfExists(String phoneNumber) {
+    private boolean ifExists(String phoneNumber) {
         return userManagementService.userExist(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
     }
 

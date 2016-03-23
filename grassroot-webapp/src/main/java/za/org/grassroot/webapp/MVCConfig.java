@@ -94,6 +94,9 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
         registry.addInterceptor(tokenValidationInterceptor())
                 .addPathPatterns("/api/group/**")
                 .addPathPatterns("/api/user/profile/**")
+                .addPathPatterns("/api/task/**")
+                .addPathPatterns("/api/vote/**")
+                .addPathPatterns("/api/meeting/**")
                 .excludePathPatterns("/api/group/search");
     }
 

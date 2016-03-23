@@ -1,5 +1,7 @@
 package za.org.grassroot.core.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -37,6 +39,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
             "inner join m.group g " +
             "where g = :group order by u.id asc")
     List<User> findByGroupsPartOfOrderByIdAsc(@Param("group") Group group);
+
+    @Query("select u from Membership m " +
+            "inner join m.user u " +
+            "inner join m.group g " +
+            "where g = :group order by u.id asc")
+    Page<User> findByGroupsPartOf(@Param("group") Group group, Pageable page);
 
     @Query("select u from Membership m " +
             "inner join m.user u " +
