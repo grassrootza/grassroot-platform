@@ -6,9 +6,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
+import za.org.grassroot.core.domain.LogBookRequest;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.repository.LogBookRequestRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.services.LogBookRequestBroker;
 import za.org.grassroot.services.LogBookService;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -47,7 +51,11 @@ public class USSDLogBookController extends USSDController {
     private static final int hour =13;
     private static final int minute =00;
     @Autowired
-    LogBookService logBookService;
+    private LogBookService logBookService;
+    @Autowired
+    private LogBookRequestRepository logBookRequestRepository;
+    @Autowired
+    private LogBookRequestBroker logBookRequestBroker;
 
     private String menuPrompt(String menu, User user) {
         return getMessage(thisSection, menu, promptKey, user);
@@ -97,8 +105,10 @@ public class USSDLogBookController extends USSDController {
                                  @RequestParam(value = interruptedFlag, required=false) boolean interrupted) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
 
-
-        if (logBookId == null) logBookId = logBookService.create(user.getId(), groupId, false).getId();
+        if (logBookId == null) {
+            Group group = groupManager.loadGroup(groupId);
+            logBookId = logBookRequestBroker.create(user.getUid(), group.getUid()).getId();
+        }
         userManager.setLastUssdMenu(user, saveLogMenu(subjectMenu, logBookId));
         USSDMenu menu = new USSDMenu(getMessage(thisSection, subjectMenu, promptKey, user),
                                      nextOrConfirmUrl(subjectMenu, dueDateMenu, logBookId, revising));
@@ -162,7 +172,7 @@ public class USSDLogBookController extends USSDController {
 
         userInput = interrupted ? priorInput : userInput;
         User user = userManager.findByInputNumber(inputNumber, saveLogMenu(pickUserMenu, logBookId, userInput));
-        Long groupId = logBookService.load(logBookId).getGroupId();
+        Long groupId = logBookService.load(logBookId).getGroup().getId();
         List<User> possibleUsers = userManager.searchByGroupAndNameNumber(groupId, userInput);
 
         USSDMenu menu;
@@ -208,9 +218,9 @@ public class USSDLogBookController extends USSDController {
         // todo: trim the message and other things (for char limit)
         LogBook logBook = logBookService.load(logBookId);
         String formattedDueDate = dateFormat.format(logBook.getActionByDate().toLocalDateTime());
-        String assignedUser = (assignToUser) ? userManager.getDisplayName(logBook.getAssignedToUserId()) : "";
+        String assignedUser = (assignToUser) ? userManager.getDisplayName(logBook.getAssignedToUser().getId()) : "";
 
-        String[] promptFields = new String[]{logBook.getMessage(), groupManager.loadGroup(logBook.getGroupId()).getName(""),
+        String[] promptFields = new String[]{logBook.getMessage(), logBook.getGroup().getName(""),
                 formattedDueDate, assignedUser};
 
         String assignedKey = (assignToUser) ? ".assigned" : ".unassigned";
@@ -229,7 +239,8 @@ public class USSDLogBookController extends USSDController {
                                       @RequestParam(value = logBookParam) Long logBookId) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber, null);
-        logBookService.setRecorded(logBookId, true);
+        LogBookRequest request = logBookRequestRepository.findOne(logBookId);
+        logBookRequestBroker.finish(request.getUid());
         return menuBuilder(new USSDMenu(menuPrompt(send, user), optionsHomeExit(user)));
     }
 
@@ -309,7 +320,7 @@ public class USSDLogBookController extends USSDController {
             menu.addMenuOption(returnUrl(viewAssignment, logBookId),
                     getMessage(thisSection, viewEntryMenu, optionsKey + "viewcomplete", user));
         } else {
-            if (logBook.getAssignedToUserId() != null && logBook.getAssignedToUserId() != 0)
+            if (logBook.getAssignedToUser() != null)
                 menu.addMenuOption(returnUrl(viewAssignment, logBookId), getMessage(thisSection, viewEntryMenu, optionsKey + "assigned", user));
             menu.addMenuOption(returnUrl(setCompleteMenu, logBookId), getMessage(thisSection.toKey() + optionsKey + setCompleteMenu, user));
         }
@@ -331,8 +342,7 @@ public class USSDLogBookController extends USSDController {
         USSDMenu menu;
         if (logBook.isCompleted()) {
             String completedDate = dateFormat.format(logBook.getCompletedDate().toLocalDateTime());
-            String userCompleted = (logBook.getCompletedByUserId() == null || logBook.getCompletedByUserId() == 0L) ? "" :
-                    "by " + userManager.loadUser(logBook.getCompletedByUserId()).nameToDisplay();
+            String userCompleted = logBook.getCompletedByUser() == null ? "" : "by " + logBook.getCompletedByUser().nameToDisplay();
             String[] fields = new String[]{createdDate, dueDate, completedDate, userCompleted};
             menu = new USSDMenu(getMessage(thisSection, viewEntryDates, promptKey + ".complete", fields, user));
         } else {
@@ -355,9 +365,9 @@ public class USSDLogBookController extends USSDController {
 
         USSDMenu menu;
 
-        String assignedFragment = (logBook.getAssignedToUserId() == null || logBook.getAssignedToUserId() == 0) ?
+        String assignedFragment = (logBook.getAssignedToUser() == null) ?
                 getMessage(thisSection, viewAssignment, "group", user) :
-                userManager.loadUser(logBook.getAssignedToUserId()).nameToDisplay();
+                logBook.getAssignedToUser().nameToDisplay();
         String completedFragment = logBook.isCompleted() ?
                 getMessage(thisSection, viewAssignment, "complete", dateFormat.format(logBook.getCompletedDate().toLocalDateTime()), user) :
                 getMessage(thisSection, viewAssignment, "incomplete", dateFormat.format(logBook.getActionByDate().toLocalDateTime()), user);
@@ -381,9 +391,9 @@ public class USSDLogBookController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber, saveLogMenu(setCompleteMenu, logBookId));
         LogBook logBook = logBookService.load(logBookId);
 
-        USSDMenu menu = (logBook.getAssignedToUserId() != null && logBook.getAssignedToUserId() != 0) ?
+        USSDMenu menu = (logBook.getAssignedToUser() != null) ?
                 new USSDMenu(getMessage(thisSection, setCompleteMenu, promptKey + ".assigned",
-                        userManager.loadUser(logBook.getAssignedToUserId()).nameToDisplay(), user)) :
+                        logBook.getAssignedToUser().nameToDisplay(), user)) :
                 new USSDMenu(getMessage(thisSection, setCompleteMenu, promptKey + ".unassigned", user));
 
         String urlEnd = logBookUrlSuffix + logBookId;
@@ -480,7 +490,7 @@ public class USSDLogBookController extends USSDController {
     private USSDMenu pickUserFromGroup(Long logBookId, String userInput, String nextMenu, String backMenu, User user) {
 
         USSDMenu menu;
-        List<User> possibleUsers = userManager.searchByGroupAndNameNumber(logBookService.load(logBookId).getGroupId(), userInput);
+        List<User> possibleUsers = userManager.searchByGroupAndNameNumber(logBookService.load(logBookId).getGroup().getId(), userInput);
 
         if (!possibleUsers.isEmpty()) {
             menu = new USSDMenu(getMessage(thisSection, pickUserMenu, promptKey, user));

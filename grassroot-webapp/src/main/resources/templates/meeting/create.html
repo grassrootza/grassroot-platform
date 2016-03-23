@@ -28,9 +28,9 @@
           <input th:field="*{id}" type="hidden" />
           <div class="form-group">
             <label for="group" class="control-label">Who is meeting? Group:</label>
-            <select th:unless="${groupSpecified}" name="selectedGroupId" id="selectedgroup" class="form-control">
+            <select th:unless="${groupSpecified}" name="selectedGroupUid" id="selectedgroup" class="form-control">
               <option th:each="group: ${userGroups}"
-                      th:value="${group.id}"
+                      th:value="${group.Uid}"
                       th:text="${group.groupName}">Groupname</option>
             </select>
             <input th:if="${groupSpecified}" class="form-control" readonly="true" th:placeholder="${group.groupName}" id="group" />
@@ -57,25 +57,19 @@
           </div>
 
           <div class="form-group">
-            <label class="control-label">Reminder timing:</label>
-            <div class="radio">
+            <label class="control-label">Reminder:</label>
+            <select th:field="*{reminderType}" class="form-control" id="reminderType">
+              <option value="DISABLED">None</option>
+              <option value="GROUP_CONFIGURED">Group default</option>
+              <option value="CUSTOM">Set custom</option>
+            </select>
+            <div class="radio" id="customReminder">
                 <label class="radio-inline" th:each="option, iterStat : ${reminderOptions}">
-                  <input type="radio" th:field="*{reminderMinutes}" th:value="${option[0]}" />
+                  <input type="radio" th:field="*{customReminderMinutes}" th:value="${option[0]}" />
                   <span th:text="${option[1]}" >No reminder</span>
                 </label>
             </div>
           </div>
-
-          <!--
-           <div class="form-group">
-                <label class="checkbox-inline">
-                  <input type="checkbox" name="remember-me" id="remember-me" />Remember me
-                </label>
-                <label class="checkbox-inline pull-right">
-                  <a th:href="@{/accounts/recovery}" href="" class="text-center">Forgot password?</a>
-                </label>
-            </div>
-            -->
 
           <div class="form-group">
             <label class="checkbox-inline">
@@ -108,6 +102,8 @@
 
     $(document).ready(function() {
 
+      $("#customReminder").hide();
+
       $('#datepicker').datetimepicker({
         format: 'DD/MM/YYYY h:mm A',
         widgetPositioning: {
@@ -116,6 +112,18 @@
         sideBySide:true,
         minDate: new Date()
       });
+
+      $('#reminderType').change(function() {
+        var selected = $("#reminderType option:selected").val();
+        console.log("Selected option: " + selected);
+        if (selected == "CUSTOM") {
+          $("#customReminder").show();
+        } else {
+          $("#customReminder").hide();
+        }
+      });
+
+
 
     });
   </script>

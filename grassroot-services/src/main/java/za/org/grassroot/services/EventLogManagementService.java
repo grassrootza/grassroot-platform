@@ -16,31 +16,29 @@ import java.util.List;
  */
 public interface EventLogManagementService {
 
-    public EventLog createEventLog(EventLogType eventLogType, Event event, User user, String message);
+    EventLog createEventLog(EventLogType eventLogType, String eventUid, String userUid, String message);
 
-    public boolean notificationSentToUser(Event event, User user);
+    boolean notificationSentToUser(Event event, User user);
 
     boolean voteResultSentToUser(Event event, User user);
 
-    public boolean changeNotificationSentToUser(Event event, User user, String message);
+    boolean changeNotificationSentToUser(String eventUid, String userUid, String message);
 
-    public boolean cancelNotificationSentToUser(Event event, User user);
+    boolean cancelNotificationSentToUser(String eventUid, String userUid);
 
-    public boolean reminderSentToUser(Event event, User user);
+    boolean reminderSentToUser(Event event, User user);
 
-    public List<EventLog> getMinutesForEvent(Event event);
+    void rsvpForEvent(Long eventId, Long userId, String strRsvpResponse);
 
-    EventLog rsvpForEvent(Long eventId, Long userId, String strRsvpResponse);
+    void rsvpForEvent(Long eventId, Long userId, EventRSVPResponse rsvpResponse);
 
-    EventLog rsvpForEvent(Long eventId, Long userId, EventRSVPResponse rsvpResponse);
+    void rsvpForEvent(Long eventId, String phoneNumber, EventRSVPResponse rsvpResponse);
 
-    EventLog rsvpForEvent(Long eventId, String phoneNumber, EventRSVPResponse rsvpResponse);
-
-    EventLog rsvpForEvent(Event event, User user, EventRSVPResponse rsvpResponse);
+    void rsvpForEvent(Event event, User user, EventRSVPResponse rsvpResponse);
 
     EventLog getEventLogOfUser(Event event, User user,EventLogType eventLogType);
 
-    boolean userRsvpNoForEvent(Event event, User user);
+    boolean userRsvpNoForEvent(String eventUid, String userUid);
 
     boolean userRsvpForEvent(Event event, User user);
 

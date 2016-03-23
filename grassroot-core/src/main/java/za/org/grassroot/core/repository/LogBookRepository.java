@@ -15,32 +15,29 @@ import java.util.List;
  */
 public interface LogBookRepository extends JpaRepository<LogBook, Long> {
 
+    LogBook findOneByUid(String uid);
+
     List<LogBook> findAllByGroupId(Long groupId);
-    List<LogBook> findAllByGroupIdAndRecorded(Long groupId, boolean recorded);
-    List<LogBook> findAllByGroupIdAndRecordedAndCreatedDateTimeBetween(Long groupId, boolean recorded, Timestamp start, Timestamp end, Sort sort);
+    List<LogBook> findAllByGroupIdAndCreatedDateTimeBetween(Long groupId, Timestamp start, Timestamp end, Sort sort);
     List<LogBook> findByGroupIdAndMessageAndCreatedDateTime(Long groupId, String message, Timestamp createdDateTime);
 
-    // note: no way a non-recorded action gets to completion (manager throws an exception), so adding that would be redundant
-    List<LogBook> findAllByGroupIdAndCompletedAndRecorded(Long groupId, boolean completed, boolean recorded);
-    List<LogBook> findAllByGroupIdAndCompletedAndRecordedAndActionByDateGreaterThan(Long groupId, boolean completed, boolean recorded, Timestamp dueDate);
-    Page<LogBook> findAllByGroupIdAndCompletedAndRecordedAndActionByDateGreaterThan(Long groupId, Pageable pageable, boolean completed, boolean recorded, Timestamp dueDate);
+    List<LogBook> findAllByGroupIdAndCompletedAndActionByDateGreaterThan(Long groupId, boolean completed, Timestamp dueDate);
+    Page<LogBook> findAllByGroupIdAndCompletedAndActionByDateGreaterThan(Long groupId, Pageable pageable, boolean completed, Timestamp dueDate);
 
     Page<LogBook> findAll(Pageable pageable);
 
-    List<LogBook> findAllByAssignedToUserIdAndRecorded(Long assignToUserId, boolean recorded);
-    List<LogBook> findAllByAssignedToUserIdAndRecordedAndCompleted(Long assignToUserId, boolean recorded, boolean completed);
+    List<LogBook> findAllByAssignedToUserId(Long assignToUserId);
+    List<LogBook> findAllByAssignedToUserIdAndCompleted(Long assignToUserId, boolean completed);
 
-    // similarly to above: replicate group function only possible via web app, hence always recorded as true
     List<LogBook> findAllByReplicatedGroupId(Long replicatedGroupId);
     List<LogBook> findAllByReplicatedGroupIdAndCompleted(Long replicatedGroupId, boolean completed);
     List<LogBook> findAllByReplicatedGroupIdAndMessage(Long replicatedGroupId, String message);
     List<LogBook> findAllByReplicatedGroupIdAndMessageAndCreatedDateTimeOrderByGroupIdAsc(Long replicatedGroupId, String message, Timestamp createdDateTime);
 
     // methods for analyzing logbooks (for admin)
-    Long countByRecordedTrue();
-    Long countByCreatedDateTimeBetweenAndRecordedTrue(Timestamp start, Timestamp end);
+    Long countByCreatedDateTimeBetween(Timestamp start, Timestamp end);
 
-    @Query(value = "select * from log_book l where l.action_by_date is not null and l.completed = false and l.recorded = true and l.number_of_reminders_left_to_send > 0 and (l.action_by_date + l.reminder_minutes * INTERVAL '1 minute') < current_timestamp", nativeQuery = true)
+    @Query(value = "select * from log_book l where l.action_by_date is not null and l.completed = false and l.number_of_reminders_left_to_send > 0 and (l.action_by_date + l.reminder_minutes * INTERVAL '1 minute') < current_timestamp", nativeQuery = true)
     List<LogBook> findLogBookReminders();
 
     @Query(value = "select count(*) from log_book l where l.replicated_group_id=?1 and l.message=?2 and l.created_date_time=?3", nativeQuery = true)

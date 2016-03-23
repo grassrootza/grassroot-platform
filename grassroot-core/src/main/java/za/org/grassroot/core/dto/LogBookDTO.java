@@ -32,14 +32,14 @@ public class LogBookDTO implements Serializable {
         this.id =  logBook.getId();
         this.actionByDate = logBook.getActionByDate();
         this.completed = logBook.isCompleted();
-        this.completedByUserId = logBook.getCompletedByUserId();
+        this.completedByUserId = logBook.getCompletedByUser() == null ? null : logBook.getCompletedByUser().getId();
         this.message = logBook.getMessage();
-        this.assignedToUserId = logBook.getAssignedToUserId();
-        this.replicatedGroupId = logBook.getReplicatedGroupId();
+        this.assignedToUserId = logBook.getAssignedToUser() == null ? null : logBook.getAssignedToUser().getId();
+        this.replicatedGroupId = logBook.getReplicatedGroup() == null ? null : logBook.getReplicatedGroup().getId();
         this.completedDate = logBook.getCompletedDate();
         this.reminderMinutes = logBook.getReminderMinutes();
         this.numberOfRemindersLeftToSend = logBook.getNumberOfRemindersLeftToSend();
-        this.groupId = logBook.getGroupId();
+        this.groupId = logBook.getGroup().getId();
     }
 
     public Long getId() {

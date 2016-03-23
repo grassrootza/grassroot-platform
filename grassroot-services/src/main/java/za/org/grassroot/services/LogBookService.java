@@ -37,19 +37,7 @@ public interface LogBookService {
 
     boolean hasParentLogBookEntry(LogBook logBook);
 
-
-
     LogBook getParentLogBookEntry(LogBook logBook);
-
-    LogBook create(Long createdByUserId, Long groupId, String message);
-
-    LogBook create(Long createdByUserId, Long groupId, boolean recorded);
-
-    LogBook create(Long createdByUserId, Long groupId, String message, Timestamp actionByDate);
-
-    LogBook create(Long createdByUserId, Long groupId, String message, Timestamp actionByDate, Long assignToUserId);
-
-    LogBook create(Long createdByUserId, Long groupId, String message, boolean replicateToSubGroups);
 
     LogBook create(LogBook logBookToSave, boolean replicateToSubGroups);
 
@@ -66,8 +54,6 @@ public interface LogBookService {
     boolean isAssignedToUser(LogBook logBook);
 
     LogBook setMessage(Long logBookId, String message);
-
-    LogBook setRecorded(Long logBookId, boolean recorded);
 
     LogBook save(LogBook logBook);
 

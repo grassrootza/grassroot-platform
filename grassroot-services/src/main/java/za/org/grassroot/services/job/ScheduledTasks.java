@@ -5,12 +5,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.LogBook;
+import za.org.grassroot.core.domain.Vote;
 import za.org.grassroot.core.dto.*;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.LogBookRepository;
+import za.org.grassroot.core.repository.VoteRepository;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
+import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.EventLogManagementService;
 
 import javax.jms.Message;
@@ -26,68 +28,23 @@ public class ScheduledTasks {
 
     private Logger log = LoggerFactory.getLogger(getClass().getCanonicalName());
 
-    //@Value("${reminderminutes}")
-    //private int reminderminutes;
-
-    //private static final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
+    @Autowired
+    private EventBroker eventBroker;
 
     @Autowired
-    EventRepository eventRepository;
+    private GenericJmsTemplateProducerService jmsTemplateProducerService;
 
     @Autowired
-    EventLogManagementService eventLogManagementService;
-
-    @Autowired
-    GenericJmsTemplateProducerService jmsTemplateProducerService;
-
-    @Autowired
-    LogBookRepository logBookRepository;
+    private LogBookRepository logBookRepository;
 
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendReminders() {
-        log.info("sendReminders...starting");
-        try {
-            List<Event> eventList = eventRepository.findEventsForReminders();
-            if (eventList != null) {
-                for (Event event : eventList) {
-                    log.info("sendReminders...event..." + event.getId());
-                    // queue reminder request
-                    jmsTemplateProducerService.sendWithNoReply("event-reminder", new EventDTO(event));
-                    // update event with noreminderssent = noremindersent + 1 so we dont send it again
-                    event.setNoRemindersSent(event.getNoRemindersSent() + 1);
-                    event = eventRepository.save(event);
-
-                }
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        log.info("sendReminders...done");
-
+        eventBroker.sendScheduledReminders();
     }
 
     @Scheduled(fixedRate = 60000) //runs every 1 minutes
     public void sendVoteResults() {
-        log.info("sendVoteResults...starting");
-        try {
-            List<Event> eventList = eventRepository.findUnsentVoteResults();
-            if (eventList != null) {
-                for (Event event : eventList) {
-                    log.info("sendVoteResults...vote..." + event.getId());
-                    // get the totals
-                    RSVPTotalsDTO rsvpTotalsDTO = eventLogManagementService.getVoteResultsForEvent(event);
-
-                    // queue vote results request
-                    jmsTemplateProducerService.sendWithNoReply("vote-results", new EventWithTotals(new EventDTO(event),rsvpTotalsDTO));
-                }
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        log.info("sendVoteResults...done");
-
+        eventBroker.sendVoteResults();
     }
 
     @Scheduled(fixedRate = 300000) //runs every 5 minutes

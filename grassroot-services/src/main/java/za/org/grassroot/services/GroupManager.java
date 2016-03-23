@@ -97,7 +97,6 @@ public class GroupManager implements GroupManagementService {
     SECTION: Loading groups, finding properties, etc
      */
 
-
     @Override
     public Group loadGroup(Long groupId) {
         return groupRepository.findOne(groupId);
@@ -138,7 +137,7 @@ public class GroupManager implements GroupManagementService {
         // seems like doing it this way more efficient than running lots of group fetch queries, but need to test/verify
         log.info("Got a list of logbooks ... look like this: " + logBooks);
         List<Long> ids = new ArrayList<>();
-        for (LogBook entry : logBooks) { ids.add(entry.getGroupId()); }
+        for (LogBook entry : logBooks) { ids.add(entry.getGroup().getId()); }
         log.info("And now we have this list of Ids ... " + ids);
         return groupRepository.findAllByIdIn(ids);
     }
@@ -327,12 +326,6 @@ public class GroupManager implements GroupManagementService {
     /**
      * Section of methods to add and remove a range of group properties
      */
-
-    @Override
-    public Group setGroupDefaultReminderMinutes(Group group, Integer minutes) {
-        group.setReminderMinutes(minutes);
-        return saveGroup(group,true,String.format("Set reminder minutes to %d",minutes),dontKnowTheUser);
-    }
 
     @Override
     public Group setGroupDefaultLanguage(Group group, String locale, boolean setSubGroups) {

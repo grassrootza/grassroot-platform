@@ -51,6 +51,8 @@ public class USSDGroupUtil extends USSDUtil {
 
     @Autowired
     private LogBookService logBookService;
+    @Autowired
+    private LogBookRequestBroker logBookRequestBroker;
 
     @Autowired
     PermissionBroker permissionBroker;
@@ -281,7 +283,8 @@ public class USSDGroupUtil extends USSDUtil {
                 break;
             case LOGBOOK:
                 User user = userManager.findByInputNumber(sessionUser.getPhoneNumber());
-                Long logBookId = logBookService.create(user.getId(), groupId, false).getId();
+                Group group = groupManager.loadGroup(groupId);
+                Long logBookId = logBookRequestBroker.create(user.getUid(), group.getUid()).getId();
                 userManager.setLastUssdMenu(user, saveLogMenu(subjectMenu, logBookId));
                 nextUrl = "log/due_date" + USSDUrlUtil.logbookIdUrlSuffix + logBookId;
                 menu = new USSDMenu(getMessage(section, subjectMenu, promptKey, user), nextUrl);

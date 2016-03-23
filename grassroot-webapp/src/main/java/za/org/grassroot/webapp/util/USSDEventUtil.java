@@ -7,16 +7,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.EventRequest;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.EventManagementService;
+import za.org.grassroot.services.EventRequestBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 
 import java.sql.Timestamp;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+
+import static za.org.grassroot.core.util.DateTimeUtil.*;
 
 /**
  * Created by luke on 2015/12/05.
@@ -29,17 +35,31 @@ public class USSDEventUtil extends USSDUtil {
     @Autowired
     private EventManagementService eventManager;
 
+    @Autowired
+    private EventRequestBroker eventRequestBroker;
+
+    @Autowired
+    private EventBroker eventBroker;
 
     private static final String eventIdParameter = "eventId";
+    private static final String entityUidParameter =  "entityUid";
     private static final String eventIdFirstParam = "?" + eventIdParameter + "=";
     private static final String eventIdLaterParam = "&" + eventIdParameter + "=";
+    private static final String entityUidFirstParam = "?" + entityUidParameter + "=";
 
-    private static final String subjectMenu = "subject", placeMenu = "place", timeMenu = "time",
-            timeOnly = "time_only", dateOnly = "date_only", changeDateTime = "changeDateTime";
+    private static final String subjectMenu = "subject",
+            placeMenu = "place",
+            dateTimeMenu = "time",
+            timeOnly = "time_only",
+            dateOnly = "date_only",
+            newTime = "new_time",
+            newDate = "new_date";
     private static final int pageSize = 3;
 
     private static final Map<USSDSection, EventType> mapSectionType =
-            ImmutableMap.of(USSDSection.MEETINGS, EventType.Meeting, USSDSection.VOTES, EventType.Vote);
+            ImmutableMap.of(USSDSection.MEETINGS, EventType.MEETING, USSDSection.VOTES, EventType.VOTE);
+
+    private static final DateTimeFormatter mtgFormat = DateTimeFormatter.ofPattern("d MMM H:mm");
 
     /*
     note: the next method will bring up events in groups that the user has unsubscribed from, since it doesn't go via the
@@ -54,24 +74,20 @@ public class USSDEventUtil extends USSDUtil {
         final String meetingMenus = mtgSection.toPath();
 
         USSDMenu askMenu = new USSDMenu(getMessage(mtgSection, callingMenu, promptKey + ".new-old", sessionUser));
-        String newMeetingOption = getMessage(mtgSection, callingMenu, optionsKey + "new", sessionUser);
+        final String newMeetingOption = getMessage(mtgSection, callingMenu, optionsKey + "new", sessionUser);
 
-        Integer enumLength = "X. ".length();
-        Integer lastOptionBuffer = enumLength + newMeetingOption.length();
+        final Integer enumLength = "X. ".length();
+        final Integer lastOptionBuffer = enumLength + newMeetingOption.length();
 
         List<Event> upcomingEvents = eventManager.getPaginatedEventsCreatedByUser(sessionUser, 0, 3);
+        log.info("Returned " + upcomingEvents.size() + " events as upcoming ...");
 
         for (Event event : upcomingEvents) {
-
-            // todo: need to reduce the number of DB calls here, a lot, including possibly superfluous calls to minimumDataAvailable
-            Map<String, String> eventDescription = eventManager.getEventDescription(event);
-            if (eventDescription.get("minimumData").equals("true")) {
-                String menuLine = eventDescription.get("groupName") + ": " + eventDescription.get("dateTimeString");
-                if (askMenu.getMenuCharLength() + enumLength + menuLine.length() + lastOptionBuffer < 160) {
-                   if(eventDescription.get("event_type").equals("Meeting")){
-                    askMenu.addMenuOption(meetingMenus + existingUrl + eventIdFirstParam + event.getId(), menuLine);
-                }}
-            }
+            String menuLine = event.getAppliesToGroup().getName("") + ": "
+                    + mtgFormat.format(event.getEventStartDateTime().toLocalDateTime());
+            log.info("Here is the description ..." + menuLine);
+            if (askMenu.getMenuCharLength() + enumLength + menuLine.length() + lastOptionBuffer < 160)
+                askMenu.addMenuOption(meetingMenus + existingUrl + entityUidFirstParam + event.getUid(), menuLine);
         }
         askMenu.addMenuOption(meetingMenus + newUrl, newMeetingOption);
         return askMenu;
@@ -111,47 +127,63 @@ public class USSDEventUtil extends USSDUtil {
         return menu;
     }
 
-    public Event updateEvent(Long eventId, String lastMenuKey, String passedValue) {
-
-        Event eventToReturn;
-
-        switch(lastMenuKey) {
+    public void updateEventRequest(String userUid, String eventUid, String priorMenu, String userInput) {
+        switch(priorMenu) {
             case subjectMenu:
-                eventToReturn = eventManager.setSubject(eventId, passedValue);
+                eventRequestBroker.updateName(userUid, eventUid, userInput);
                 break;
             case placeMenu:
-                eventToReturn = eventManager.setLocation(eventId, passedValue);
+                eventRequestBroker.updateMeetingLocation(userUid, eventUid, userInput);
                 break;
-            case timeMenu:
-                eventToReturn = eventManager.setEventTimestamp(eventId, Timestamp.valueOf(DateTimeUtil.parseDateTime(passedValue)));
+            case dateTimeMenu:
+                // todo: handle errors in processing better (i.e., call parseDateTime in menus, pass here already-processed)
+                eventRequestBroker.updateStartTimestamp(userUid, eventUid, Timestamp.valueOf(parseDateTime(userInput)));
                 break;
             case timeOnly:
-                String formattedTime = DateTimeUtil.reformatTimeInput(passedValue);
-                log.info("This is what we got back ... " + formattedTime);
-                eventToReturn = eventManager.changeMeetingTime(eventId, formattedTime);
+                EventRequest eventReq = eventRequestBroker.load(eventUid);
+                Timestamp newTimestamp = changeTimestampTimes(eventReq.getEventStartDateTime(), userInput);
+                log.info("This is what we got back ... " + preferredDateTimeFormat.format(newTimestamp.toLocalDateTime()));
+                eventRequestBroker.updateStartTimestamp(userUid, eventUid, newTimestamp);
                 break;
             case dateOnly:
-                String formattedDate = DateTimeUtil.reformatDateInput(passedValue);
-                log.info("This is what we got back ... " + formattedDate);
-                eventToReturn = eventManager.changeMeetingDate(eventId, formattedDate);
-                break;
-            case changeDateTime:
-                eventToReturn = eventManager.setEventTimestampToStoredString(eventId);
-                break;
+                eventReq = eventRequestBroker.load(eventUid);
+                String reformattedDate = DateTimeUtil.reformatDateInput(userInput);
+                newTimestamp = changeTimestampDates(eventReq.getEventStartDateTime(), reformattedDate);
+                log.info("This is what we got back ... " + preferredDateTimeFormat.format(newTimestamp.toLocalDateTime()));
+                eventRequestBroker.updateStartTimestamp(userUid, eventUid, newTimestamp);
             default:
-                eventToReturn = eventManager.loadEvent(eventId);
                 break;
         }
-        return eventToReturn;
     }
 
-    // helper method to set a send block before updating (todo: consolidate/minimize DB calls)
+    public void updateExistingEvent(String userUid, String eventUid, String fieldChanged, String newValue) {
+        Event existingEvent;
+        Timestamp newTimestamp;
+        switch (fieldChanged) {
+            case subjectMenu:
+                eventBroker.updateName(userUid, eventUid, newValue, false);
+                break;
+            case placeMenu:
+                eventBroker.updateMeetingLocation(userUid, eventUid, newValue, false);
+                break;
+            case newTime:
+                existingEvent = eventBroker.load(eventUid);
+                String reformattedTime = DateTimeUtil.reformatTimeInput(newValue);
+                newTimestamp = changeTimestampTimes(existingEvent.getEventStartDateTime(), reformattedTime);
+                eventBroker.updateStartTimestamp(userUid, eventUid, newTimestamp, false);
+                break;
+            case newDate:
+                existingEvent = eventBroker.load(eventUid);
+                String reformattedDate = DateTimeUtil.reformatDateInput(newValue);
+                newTimestamp = changeTimestampDates(existingEvent.getEventStartDateTime(), reformattedDate);
+                eventBroker.updateStartTimestamp(userUid, eventUid, newTimestamp, false);
+                break;
+        }
+    }
+
     public Event updateEventAndBlockSend(Long eventId, String lastMenuKey, String passedValue) {
         eventManager.setSendBlock(eventId);
-        return updateEvent(eventId, lastMenuKey, passedValue);
+        return eventManager.loadEvent(eventId);
     }
-
-
-
 
 }

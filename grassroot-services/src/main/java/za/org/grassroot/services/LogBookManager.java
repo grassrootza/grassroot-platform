@@ -7,11 +7,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.LogBookDTO;
 import za.org.grassroot.core.repository.LogBookRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
-import za.org.grassroot.services.exception.LogBookUnrecordedException;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;
@@ -41,6 +41,9 @@ public class LogBookManager implements LogBookService {
     private GroupManagementService groupManagementService;
 
     @Autowired
+    private UserManagementService userManagementService;
+
+    @Autowired
     private GenericJmsTemplateProducerService jmsTemplateProducerService;
 
     @Override
@@ -50,13 +53,13 @@ public class LogBookManager implements LogBookService {
 
     @Override
     public List<LogBook> getAllLogBookEntriesForGroup(Long groupId) {
-        return logBookRepository.findAllByGroupIdAndRecorded(groupId, true);
+        return logBookRepository.findAllByGroupId(groupId);
     }
 
     @Override
     public List<LogBook> getLogBookEntriesInPeriod(Long groupId, LocalDateTime periodStart, LocalDateTime periodEnd) {
         Sort sort = new Sort(Sort.Direction.ASC, "CreatedDateTime");
-        return logBookRepository.findAllByGroupIdAndRecordedAndCreatedDateTimeBetween(groupId, true, Timestamp.valueOf(periodStart),
+        return logBookRepository.findAllByGroupIdAndCreatedDateTimeBetween(groupId, Timestamp.valueOf(periodStart),
                                                                                       Timestamp.valueOf(periodEnd), sort);
     }
 
@@ -64,14 +67,14 @@ public class LogBookManager implements LogBookService {
     public List<LogBook> getAllLogBookEntriesForGroup(Long groupId, boolean completed) {
         // use an old timestamp both so we prune the really old entries, and to get around half-formed ("null due date") entries
         log.info("Getting all logBook entries for groupId ... " + groupId + " ... and completed state: " + completed);
-        return logBookRepository.findAllByGroupIdAndCompletedAndRecordedAndActionByDateGreaterThan(
-                groupId, completed, true, Timestamp.valueOf(LocalDateTime.now().minusYears(1L)));
+        return logBookRepository.findAllByGroupIdAndCompletedAndActionByDateGreaterThan(
+                groupId, completed, Timestamp.valueOf(LocalDateTime.now().minusYears(1L)));
     }
 
     @Override
     public Page<LogBook> getAllLogBookEntriesForGroup(Long groupId, int pageNumber, int pageSize, boolean completed) {
-        return logBookRepository.findAllByGroupIdAndCompletedAndRecordedAndActionByDateGreaterThan(groupId,
-                new PageRequest(pageNumber,pageSize),completed, true,
+        return logBookRepository.findAllByGroupIdAndCompletedAndActionByDateGreaterThan(groupId,
+                new PageRequest(pageNumber,pageSize),completed,
                 Timestamp.valueOf(LocalDateTime.now().minusYears(1L)));
     }
 
@@ -93,58 +96,29 @@ public class LogBookManager implements LogBookService {
 
     @Override
     public boolean hasReplicatedEntries(LogBook logBook) {
-        return logBookRepository.countReplicatedEntries(logBook.getGroupId(), logBook.getMessage(), logBook.getCreatedDateTime()) != 0;
+        return logBookRepository.countReplicatedEntries(logBook.getGroup().getId(), logBook.getMessage(), logBook.getCreatedDateTime()) != 0;
     }
 
     @Override
     public List<LogBook> getAllReplicatedEntriesFromParentLogBook(LogBook logBook) {
-        return logBookRepository.findAllByReplicatedGroupIdAndMessageAndCreatedDateTimeOrderByGroupIdAsc(logBook.getGroupId(), logBook.getMessage(),
+        return logBookRepository.findAllByReplicatedGroupIdAndMessageAndCreatedDateTimeOrderByGroupIdAsc(logBook.getGroup().getId(), logBook.getMessage(),
                                                                                                          logBook.getCreatedDateTime());
     }
 
     @Override
     public boolean hasParentLogBookEntry(LogBook logBook) {
-        return (logBook.getReplicatedGroupId() != null && logBook.getReplicatedGroupId() != 0);
+        return logBook.getReplicatedGroup() != null;
     }
 
     @Override
     public LogBook getParentLogBookEntry(LogBook logBook) {
         // todo error handling just in case something went wrong on insert and the repository call comes back empty
-        Long parentLogBookGroupId = logBook.getReplicatedGroupId();
-        if (parentLogBookGroupId == null || parentLogBookGroupId == 0) return null;
-        else return logBookRepository.findByGroupIdAndMessageAndCreatedDateTime(parentLogBookGroupId, logBook.getMessage(),
-                                                                                logBook.getCreatedDateTime()).get(0);
-    }
-
-    @Override
-    public LogBook create(Long createdByUserId, Long groupId, String message) {
-        return createLogBookEntry(createdByUserId, groupId, message, null, 0L, 0L, 0, 0, true);
-    }
-
-    @Override
-    public LogBook create(Long createdByUserId, Long groupId, boolean recorded) {
-        // we only call this from USSD
-        return createLogBookEntry(createdByUserId, groupId, null, null, 0L, 0L, 0, 0, false);
-    }
-
-    @Override
-    public LogBook create(Long createdByUserId, Long groupId, String message, Timestamp actionByDate) {
-        return createLogBookEntry(createdByUserId, groupId, message, actionByDate, 0L, 0L, 0, 0, true);
-    }
-
-    @Override
-    public LogBook create(Long createdByUserId, Long groupId, String message, Timestamp actionByDate, Long assignToUserId) {
-        return createLogBookEntry(createdByUserId, groupId, message, actionByDate, assignToUserId, 0L, 0, 0, true);
-    }
-
-    @Override
-    public LogBook create(Long createdByUserId, Long groupId, String message, boolean replicateToSubGroups) {
-        if (replicateToSubGroups) {
-            return createLogBookEntryReplicate(createdByUserId, groupId, message, null, 0L, 0, 0);
-        } else {
-            return createLogBookEntry(createdByUserId, groupId, message, null, 0L, 0L, 0, 0, true);
-
+        Group parentLogBookGroupId = logBook.getReplicatedGroup();
+        if (parentLogBookGroupId == null) {
+            return null;
         }
+        else return logBookRepository.findByGroupIdAndMessageAndCreatedDateTime(parentLogBookGroupId.getId(), logBook.getMessage(),
+                                                                                logBook.getCreatedDateTime()).get(0);
     }
 
     // method called from front end to save a (mostly) fully formed entry
@@ -167,7 +141,8 @@ public class LogBookManager implements LogBookService {
     @Override
     public LogBook setAssignedToUser(Long logBookId, Long assignedToUserId) {
         LogBook logBook = load(logBookId);
-        logBook.setAssignedToUserId(assignedToUserId);
+        User user = userManagementService.loadUser(assignedToUserId);
+        logBook.setAssignedToUser(user);
         return logBookRepository.save(logBook);
     }
 
@@ -178,21 +153,13 @@ public class LogBookManager implements LogBookService {
 
     @Override
     public boolean isAssignedToUser(LogBook logBook) {
-        return (logBook.getAssignedToUserId() != null && logBook.getAssignedToUserId() != 0L);
+        return logBook.getAssignedToUser() != null;
     }
 
     @Override
     public LogBook setMessage(Long logBookId, String message) {
         LogBook logBook = load(logBookId);
         logBook.setMessage(message);
-        return logBookRepository.save(logBook);
-    }
-
-    @Override
-    public LogBook setRecorded(Long logBookId, boolean recorded) {
-        // todo save and check changes akin to message sending for events
-        LogBook logBook = load(logBookId);
-        logBook.setRecorded(recorded);
         return logBookRepository.save(logBook);
     }
 
@@ -238,30 +205,30 @@ public class LogBookManager implements LogBookService {
 
     private LogBook setCompleted(LogBook logBook, Long completedByUserId, Timestamp completedDate) {
         // todo: checks to make sure not already completed, possibly also do a check for permissions here
-        if (!logBook.isRecorded()) { throw new LogBookUnrecordedException(); }
         logBook.setCompleted(true);
-        logBook.setCompletedByUserId(completedByUserId);
+        // todo: redesign to newer LogBookbroker, or change this somehow
+//        logBook.setCompletedByUserId(completedByUserId);
         logBook.setCompletedDate(completedDate);
         return logBookRepository.save(logBook);
     }
 
-    private LogBook createLogBookEntryReplicate(Long createdByUserId, Long groupId, String message, Timestamp actionByDate,
-                                                Long assignedToUserId, int reminderMinutes,
+    private LogBook createLogBookEntryReplicate(User createdByUser, Group group, String message, Timestamp actionByDate,
+                                                User assignedToUser, int reminderMinutes,
                                                 int numberOfRemindersLeftToSend) {
 
-        log.info("createLogBookEntryReplicate...parentGroup..." + groupId);
+        log.info("createLogBookEntryReplicate...parentGroup..." + group);
 
         // note: when we search on replicatedGroupId we want only the replicated entries, i.e., not
-        LogBook parentLogBook = createLogBookEntry(createdByUserId, groupId, message, actionByDate, assignedToUserId,
-                                                   null, reminderMinutes, numberOfRemindersLeftToSend, true);
+        LogBook parentLogBook = createLogBookEntry(createdByUser, group, message, actionByDate, assignedToUser,
+                                                   null, reminderMinutes, numberOfRemindersLeftToSend);
         Timestamp commonCreatedDateTime = parentLogBook.getCreatedDateTime(); // so nanoseconds don't throw later queries
 
         // note: getGroupAndSubGroups is a much faster method (a recursive query) than getSubGroups, hence use it and just skip parent
-        for (Group group : groupManagementService.findGroupAndSubGroupsById(groupId)) {
-            log.info("createLogBookEntryReplicate...groupid..." + group.getId() + "...parentGroup..." + groupId);
-            if (group.getId() != groupId) {
-                LogBook lb = createReplicatedLogBookEntry(createdByUserId, commonCreatedDateTime, group.getId(), groupId, message,
-                                                          actionByDate, assignedToUserId, reminderMinutes, numberOfRemindersLeftToSend);
+        for (Group subgroup : groupManagementService.findGroupAndSubGroupsById(group.getId())) {
+            log.info("createLogBookEntryReplicate...groupid..." + subgroup.getId() + "...parentGroup..." + group);
+            if (!subgroup.equals(group)) {
+                LogBook lb = createReplicatedLogBookEntry(createdByUser, commonCreatedDateTime, subgroup, group, message,
+                                                          actionByDate, assignedToUser, reminderMinutes, numberOfRemindersLeftToSend);
             }
         }
 
@@ -270,64 +237,43 @@ public class LogBookManager implements LogBookService {
 
     // helper methods for signature simplification
     private LogBook createLogBookEntryReplicate(LogBook logBook) {
-        return createLogBookEntryReplicate(logBook.getCreatedByUserId(), logBook.getGroupId(), logBook.getMessage(),
-                                           logBook.getActionByDate(), logBook.getAssignedToUserId(), logBook.getReminderMinutes(),
+        return createLogBookEntryReplicate(logBook.getCreatedByUser(), logBook.getGroup(), logBook.getMessage(),
+                                           logBook.getActionByDate(), logBook.getAssignedToUser(), logBook.getReminderMinutes(),
                                            logBook.getNumberOfRemindersLeftToSend());
     }
 
     private LogBook createLogBookEntry(LogBook logBook) {
-        return createLogBookEntry(logBook.getCreatedByUserId(), logBook.getGroupId(), logBook.getMessage(), logBook.getActionByDate(),
-                                  logBook.getAssignedToUserId(), logBook.getReplicatedGroupId(), logBook.getReminderMinutes(),
-                                  logBook.getNumberOfRemindersLeftToSend(), logBook.isRecorded());
+        return createLogBookEntry(logBook.getCreatedByUser(), logBook.getGroup(), logBook.getMessage(), logBook.getActionByDate(),
+                                  logBook.getAssignedToUser(), logBook.getReplicatedGroup(), logBook.getReminderMinutes(),
+                                  logBook.getNumberOfRemindersLeftToSend());
     }
 
     /*
     If no reminders are to be sent then set the numberOfRemindersLeftToSend field to a negative value.
     If it is 0 it will be defaulted to 3
      */
-    private LogBook createLogBookEntry(Long createdByUserId, Long groupId, String message, Timestamp actionByDate,
-                                       Long assignedToUserId, Long replicatedGroupId, int reminderMinutes,
-                                       int numberOfRemindersLeftToSend, boolean recorded) {
-        LogBook logBook = new LogBook();
-        if (assignedToUserId == null) {
-            assignedToUserId = 0L; // else run into errors with event consumer
-        }
+    private LogBook createLogBookEntry(User createdByUser, Group group, String message, Timestamp actionByDate,
+                                       User assignedToUser, Group replicatedGroup, int reminderMinutes,
+                                       int numberOfRemindersLeftToSend) {
+        LogBook logBook = new LogBook(createdByUser, group, replicatedGroup, message, actionByDate, assignedToUser, reminderMinutes);
         if (numberOfRemindersLeftToSend == 0) {
             numberOfRemindersLeftToSend = 3; // todo: replace with a logic based on group paid / not paid
         }
-        if (reminderMinutes == 0) {
-            reminderMinutes = defaultReminderMinutes;
-        }
-
-        logBook.setAssignedToUserId(assignedToUserId);
-        logBook.setMessage(message);
-        logBook.setActionByDate(actionByDate);
-        logBook.setCreatedByUserId(createdByUserId);
-        logBook.setGroupId(groupId);
         logBook.setNumberOfRemindersLeftToSend(numberOfRemindersLeftToSend);
-        logBook.setReminderMinutes(reminderMinutes);
-        logBook.setReplicatedGroupId(replicatedGroupId);
-        logBook.setRecorded(recorded);
 
         LogBook savedLogbook = logBookRepository.save(logBook);
         jmsTemplateProducerService.sendWithNoReply("new-logbook",new LogBookDTO(savedLogbook));
         return  savedLogbook;
     }
 
-    private LogBook createReplicatedLogBookEntry(Long createdByUserId, Timestamp commonCreatedDateTime, Long groupId,
-                                                 Long replicatedGroupId, String message, Timestamp actionByDate, Long assignedToUserId,
+    private LogBook createReplicatedLogBookEntry(User createdByUser, Timestamp commonCreatedDateTime, Group group,
+                                                 Group replicatedGroup, String message, Timestamp actionByDate, User assignedToUser,
                                                  int reminderMinutes, int numberOfRemindersLeftToSend) {
-        LogBook logBook = new LogBook(createdByUserId, commonCreatedDateTime, groupId, replicatedGroupId, message, actionByDate);
-        logBook.setAssignedToUserId(assignedToUserId);
+        LogBook logBook = new LogBook(createdByUser, group, replicatedGroup, message, actionByDate, assignedToUser, reminderMinutes);
         if (numberOfRemindersLeftToSend == 0) {
             numberOfRemindersLeftToSend = 3;
         }
-        if (reminderMinutes == 0) {
-            reminderMinutes = defaultReminderMinutes;
-        }
         logBook.setNumberOfRemindersLeftToSend(numberOfRemindersLeftToSend);
-        logBook.setReminderMinutes(reminderMinutes);
-        logBook.setAssignedToUserId(0L); // cannot cascade this, can adjust later -- leaving null throws errors in consumers
         LogBook savedLogbook = logBookRepository.save(logBook);
         jmsTemplateProducerService.sendWithNoReply("new-logbook",new LogBookDTO(savedLogbook));
         return  savedLogbook;

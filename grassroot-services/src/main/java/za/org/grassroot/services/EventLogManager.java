@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.domain.Group;
@@ -48,11 +49,20 @@ public class EventLogManager implements EventLogManagementService {
     CacheUtilService cacheUtilService;
 
 
-    @Override
+    /* @Override
     public EventLog createEventLog(EventLogType eventLogType, Event event, User user, String message) {
         EventLog eventLog = eventLogRepository.save(new EventLog(user, event, eventLogType, message));
         eventLogRepository.flush();
         return eventLog;
+    }*/
+
+    @Override
+    @Transactional
+    public EventLog createEventLog(EventLogType eventLogType, String eventUid, String userUid, String message) {
+        Event event = eventRepository.findOneByUid(eventUid);
+        User user = userRepository.findOneByUid(userUid);
+        EventLog eventLog = new EventLog(user, event, eventLogType, message);
+        return eventLogRepository.save(eventLog);
     }
 
     @Override
@@ -66,14 +76,18 @@ public class EventLogManager implements EventLogManagementService {
     }
 
     @Override
-    public boolean changeNotificationSentToUser(Event event, User user, String message) {
+    public boolean changeNotificationSentToUser(String eventUid, String userUid, String message) {
+        Event event = eventRepository.findOneByUid(eventUid);
+        User user = userRepository.findOneByUid(userUid);
         boolean messageSent = eventLogRepository.changeNotificationSent(event, user, message);
         log.info("changeNotificationSentToUser...user..." + user.getPhoneNumber() + "...event..." + event.getId() + "...version..." + event.getVersion() + "...message..." + message + "...returning..." + messageSent);
         return messageSent;
     }
 
     @Override
-    public boolean cancelNotificationSentToUser(Event event, User user) {
+    public boolean cancelNotificationSentToUser(String eventUid, String userUid) {
+        Event event = eventRepository.findOneByUid(eventUid);
+        User user = userRepository.findOneByUid(userUid);
         return eventLogRepository.cancelNotificationSent(event, user);
     }
 
@@ -83,37 +97,30 @@ public class EventLogManager implements EventLogManagementService {
     }
 
     @Override
-    public List<EventLog> getMinutesForEvent(Event event) {
-        return eventLogRepository.findByEventLogTypeAndEventOrderByIdAsc(EventLogType.EventMinutes, event);
+    public void rsvpForEvent(Long eventId, Long userId, String strRsvpResponse) {
+        rsvpForEvent(eventId, userId, EventRSVPResponse.fromString(strRsvpResponse));
     }
 
     @Override
-    public EventLog rsvpForEvent(Long eventId, Long userId, String strRsvpResponse) {
-        return rsvpForEvent(eventId, userId, EventRSVPResponse.fromString(strRsvpResponse));
+    public void rsvpForEvent(Long eventId, Long userId, EventRSVPResponse rsvpResponse) {
+        rsvpForEvent(eventRepository.findOne(eventId), userRepository.findOne(userId), rsvpResponse);
     }
 
     @Override
-    public EventLog rsvpForEvent(Long eventId, Long userId, EventRSVPResponse rsvpResponse) {
-        return rsvpForEvent(eventRepository.findOne(eventId), userRepository.findOne(userId), rsvpResponse);
+    public void rsvpForEvent(Long eventId, String phoneNumber, EventRSVPResponse rsvpResponse) {
+        rsvpForEvent(eventRepository.findOne(eventId), userRepository.findByPhoneNumber(phoneNumber), rsvpResponse);
     }
 
     @Override
-    public EventLog rsvpForEvent(Long eventId, String phoneNumber, EventRSVPResponse rsvpResponse) {
-        return rsvpForEvent(eventRepository.findOne(eventId), userRepository.findByPhoneNumber(phoneNumber), rsvpResponse);
-    }
-
-    @Override
-    public EventLog rsvpForEvent(Event event, User user, EventRSVPResponse rsvpResponse) {
+    public void rsvpForEvent(Event event, User user, EventRSVPResponse rsvpResponse) {
         log.trace("rsvpForEvent...event..." + event.getId() + "...user..." + user.getPhoneNumber() + "...rsvp..." + rsvpResponse.toString());
-        EventLog eventLog = new EventLog();
         // dont allow the user to rsvp/vote twice
-
         if (!userRsvpForEvent(event,user)) {
-            eventLog = createEventLog(EventLogType.EventRSVP, event, user, rsvpResponse.toString());
+            createEventLog(EventLogType.EventRSVP, event.getUid(), user.getUid(), rsvpResponse.toString());
             // clear rsvp cache for user
             cacheUtilService.clearRsvpCacheForUser(user, event.getEventType());
 
-            if (event.getEventType() == EventType.Vote) {
+            if (event.getEventType() == EventType.VOTE) {
                 // see if everyone voted, if they did expire the vote so that the results are sent out
                 RSVPTotalsDTO rsvpTotalsDTO = getVoteResultsForEvent(event);
                 log.trace("rsvpForEvent...after..." + rsvpTotalsDTO.toString());
@@ -123,15 +130,13 @@ public class EventLogManager implements EventLogManagementService {
                     eventRepository.save(event);
                 }
             }
-        } else {
-            // put values in the fields so that rest method does not NPE
-            eventLog.setId(0L);
-            eventLog.setEvent(new Event());
-            eventLog.setUser(User.makeEmpty());
-
+//        } else {
+//            EventLog eventLog = new EventLog();
+//             put values in the fields so that rest method does not NPE
+//            eventLog.setId(0L);
+//            eventLog.setEvent(new Event());
+//            eventLog.setUser(User.makeEmpty());
         }
-
-        return eventLog;
     }
 
     @Override
@@ -140,7 +145,10 @@ public class EventLogManager implements EventLogManagementService {
     }
 
     @Override
-    public boolean userRsvpNoForEvent(Event event, User user) {
+    @Transactional(readOnly = true)
+    public boolean userRsvpNoForEvent(String eventUid, String userUid) {
+        Event event = eventRepository.findOneByUid(eventUid);
+        User user = userRepository.findOneByUid(userUid);
         boolean rsvpNoForEvent = eventLogRepository.rsvpNoForEvent(event, user);
         log.info("userRsvpNoForEvent...returning..." + rsvpNoForEvent + " for event..." + event.getId() + "...user..." + user.getPhoneNumber());
         return rsvpNoForEvent;

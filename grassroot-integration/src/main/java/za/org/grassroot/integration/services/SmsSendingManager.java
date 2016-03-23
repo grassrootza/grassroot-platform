@@ -10,12 +10,16 @@ import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.EventLog;
+import za.org.grassroot.core.domain.Meeting;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.UserRepository;
+
+import java.sql.Timestamp;
+import java.time.Instant;
 
 /**
  * Created by luke on 2015/09/09.
@@ -72,12 +76,15 @@ public class SmsSendingManager implements SmsSendingService {
             User testMessageUser = (userRepository.existsByPhoneNumber(testMessagePhone)) ?
                     userRepository.findByPhoneNumber(testMessagePhone) :
                     userRepository.save(new User(testMessagePhone));
-            Event messageEvent = eventRepository.save(new Event(testMessageUser, EventType.DummyEvent));
-            EventLog messageRecord = new EventLog(testMessageUser, messageEvent, EventLogType.EventTest, message);
-            log.info("Saving a dummy EventLog ... " + messageRecord);
-            messageRecord = eventLogRepository.save(messageRecord);
-            log.info("EventLog saved with message: " + messageRecord.getMessage());
-            return messageRecord.toString();
+
+//            Event messageEvent = eventRepository.save(new Meeting("smsDummy", Timestamp.from(Instant.now()), testMessageUser,  EventType.MEETING, "someLoc"));
+
+//            EventLog messageRecord = new EventLog(testMessageUser, messageEvent, EventLogType.EventTest, message);
+//            log.info("Saving a dummy EventLog ... " + messageRecord);
+//            messageRecord = eventLogRepository.save(messageRecord);
+//            log.info("EventLog saved with message: " + messageRecord.getMessage());
+//            return messageRecord.toString();
+            return null;
         }
     }
 

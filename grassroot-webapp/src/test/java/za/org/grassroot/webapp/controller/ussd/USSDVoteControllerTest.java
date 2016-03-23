@@ -8,9 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -18,6 +16,7 @@ import za.org.grassroot.webapp.util.USSDEventUtil;
 
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -81,7 +80,7 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
         Page<Group> pageTestGroups = new PageImpl<Group>(testGroups);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(eventManagementServiceMock.userHasEventsToView(testUser, EventType.Vote)).thenReturn(-9);
+        when(eventManagementServiceMock.userHasEventsToView(testUser, EventType.VOTE)).thenReturn(-9);
         when(groupManagementServiceMock.hasActiveGroupsPartOf(testUser)).thenReturn(true);
         when(groupManagementServiceMock.getPageOfActiveGroups(testUser, 0, 3)).thenReturn(pageTestGroups);
 
@@ -91,20 +90,20 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
         verify(groupManagementServiceMock, times(1)).hasActiveGroupsPartOf(testUser);
         verify(groupManagementServiceMock, times(1)).getPageOfActiveGroups(any(User.class), anyInt(), anyInt());
         verifyNoMoreInteractions(groupManagementServiceMock);
-        verify(eventManagementServiceMock, times(1)).userHasEventsToView(testUser, EventType.Vote);
+        verify(eventManagementServiceMock, times(1)).userHasEventsToView(testUser, EventType.VOTE);
         verifyNoMoreInteractions(eventManagementServiceMock);
     }
 
     @Test
     public void voteStartIfNoGroupsShouldDisplay() throws Exception {
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(eventManagementServiceMock.userHasEventsToView(testUser, EventType.Vote)).thenReturn(-9);
+        when(eventManagementServiceMock.userHasEventsToView(testUser, EventType.VOTE)).thenReturn(-9);
         when(groupManagementServiceMock.hasActiveGroupsPartOf(testUser)).thenReturn(false);
 
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(eventManagementServiceMock, times(1)).userHasEventsToView(testUser, EventType.Vote);
+        verify(eventManagementServiceMock, times(1)).userHasEventsToView(testUser, EventType.VOTE);
         verifyNoMoreInteractions(eventManagementServiceMock);
         verify(groupManagementServiceMock, times(1)).hasActiveGroupsPartOf(testUser);
         verifyNoMoreInteractions(groupManagementServiceMock);
@@ -139,7 +138,7 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
 
         Group testGroup = new Group("tg", testUser);
         testGroup.setId(1L);
-        Event testVote = new Event(testUser, EventType.Vote, true);
+        Event testVote = new Vote("someVote", Timestamp.from(Instant.now()), testUser, testGroup, true);
         testVote.setId(1L);
         String interruptedUrl = saveVoteMenu("issue", 1L);
         String revisingUrl = backVoteUrl("issue", 1L);
@@ -167,7 +166,7 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
     @Test
     public void askForStandardTimeShouldWork() throws Exception {
 
-        Event testVote = new Event(testUser, EventType.Vote, true);
+        Event testVote = new Vote("somevote", Timestamp.from(Instant.now()), testUser, new Group("somegroup", testUser));
         testVote.setId(1L);
         String interruptedUrl = saveVoteMenu("time", 1L);
         String revisingUrl = backVoteUrl("time", 1L);
@@ -196,7 +195,7 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
     @Test
     public void askForCustomTimeShouldWork() throws Exception {
 
-        Event testVote = new Event(testUser, EventType.Vote, true);
+        Event testVote = new Vote("somevote", Timestamp.from(Instant.now()), testUser, new Group("somegroup", testUser));
         testVote.setId(1L);
         String interruptedUrl = saveVoteMenu("time_custom", 1L);
 
@@ -219,9 +218,8 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
     @Test
     public void confirmationMenuShouldWork() throws Exception {
 
-        Event testVote = new Event(testUser, EventType.Vote, true);
+        Event testVote = new Vote("somevote", Timestamp.valueOf(LocalDateTime.now().plusDays(7)), testUser, new Group("somegroup", testUser));
         testVote.setName("test vote");
-        testVote.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.now().plusDays(7)));
         testVote.setId(1L);
         String interruptedUrl = saveVoteMenu("confirm", 1L);
         LocalDateTime tomorrow5pm = LocalDateTime.of(LocalDate.now().plusDays(1), LocalTime.of(17, 0));
@@ -256,15 +254,13 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
 
     @Test
     public void sendMenuShouldWork() throws Exception {
+        Date testClosingTime = DateTimeUtil.addMinutesAndTrimSeconds(new Date(), 7);
+        Timestamp testTimestamp = new Timestamp(testClosingTime.getTime());
 
-        Event testVote = new Event(testUser, EventType.Vote, true);
+        Event testVote = new Meeting("someMeeting", testTimestamp, testUser, new Group("somegroup", testUser), "someLoc");
         testVote.setName("test vote");
         testVote.setId(1L);
 
-        Date testClosingTime = DateTimeUtil.addMinutesAndTrimSeconds(new Date(), 7);
-
-        Timestamp testTimestamp = new Timestamp(testClosingTime.getTime());
-        testVote.setEventStartDateTime(testTimestamp);
         String testParamTime = (new SimpleDateFormat("yyyy-MM-dd HH:mm")).format(testTimestamp);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);

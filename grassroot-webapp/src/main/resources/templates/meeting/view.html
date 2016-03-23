@@ -2,92 +2,187 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorator="layout">
 <head>
-  <title>GrassRoot - View Meeting</title>
+  <title>Grassroot - View Meeting</title>
 </head>
 <body>
 
 <div layout:fragment="header">
-  <h2>Meeting: <span  th:text="${meeting.name}">Meeting</span></h2>
+  <h2 class="text-center">Meeting: <span  th:text="${meeting.name}">Meeting</span></h2>
 </div>
-<div layout:fragment="overview">View meeting details and RSVP status</div>
+<div layout:fragment="overview">
+  <h4 class="text-center">Meeting of "<span th:text="${meeting.appliesToGroup.getName('')}">group</span>"
+    on <span th:text="${#calendars.format(meeting.getEventStartDateTime(),'dd MMM, HH:mm')}">date and time</span>
+    at <span th:text="${meeting.eventLocation}">place</span></h4>
+</div>
 
 <div layout:fragment="content">
   <div layout:fragment="messages"></div>
 
   <div class="well">
     <div class="row">
-      Meeting scheduled for <span th:text="${meeting.dateTimeString}">date and time</span>.
-      So far, <span th:text="${meeting.appliesToGroup.members.size()}">X</span> members have been invited.
-      <div th:if="${meeting.rsvpRequired}">Members have been asked to respond if they will be attending, and so far
-        <span th:text="${rsvpYesTotal}">X</span> people have said 'yes'.</div>
+      <div class="col-md-6 col-md-offset-3">
+        <p class="text-center"><span th:text="${meeting.appliesToGroup.members.size()}">3</span> people invited.
+        <span th:if="${meeting.rsvpRequired}"><span th:text="${rsvpYesTotal}">X</span> confirmed as attending</span></p>
+      </div>
     </div>
-    <div class="row">
-      Meeting details:
+
+    <div th:if="${canAlterDetails}" class="row">
+      <div class="col-md-6 col-md-offset-3">
+        <div class="button-group text-center">
+          <button type="button" class="btn btn-default" data-toggle="modal" data-target="#dateTimeChange">Change date and time</button>
+          <button type="button" class="btn btn-default" data-toggle="modal" data-target="#locationChange">Change location</button>
+          <button type="button" class="btn btn-default" data-toggle="modal" data-target="#changeReminder">Send a reminder</button>
+          <button type="button" class="btn btn-default" data-toggle="modal" data-target="#cancelMeeting">Cancel meeting</button>
+        </div>
+      </div>
     </div>
-    <div class="row">
-      <form th:action="@{/meeting/modify}" th:object="${meeting}" method="post">
-        <input type="hidden" th:field="*{id}" th:value="${meeting.id}" />
-        <div class="row form-group">
-          <label for="meetingName" class="col-lg-2 control-label">Subject:</label>
-          <div class="col-lg-6">
-            <input type="text" id="meetingName" th:value="${meeting.name}" readonly="readonly"/>
-          </div>
+
+    <div th:if="${meeting.rsvpRequired and canViewRsvps}">
+      <div class="row">
+        <div class="col-md-6 col-md-offset-3">
+          <table class="table table-striped">
+            <thead>
+            <th>Member name</th>
+            <th>Phone number</th>
+            <th>Response</th>
+            </thead>
+            <tbody>
+            <tr th:each="status : ${rsvpResponses}">
+              <td><span th:text="${status.key.nameToDisplay()}">Member name</span></td>
+              <td><span th:text="${status.key.phoneNumber}">Phone number</span></td>
+              <td><span th:text="${status.value}">Response</span></td>
+            </tr>
+            </tbody>
+          </table>
         </div>
-        <div class="row form-group">
-          <label for="location" class="col-lg-2 control-label">Location:</label>
-          <div class="col-lg-6">
-            <input type="text" id="location" th:value="${meeting.eventLocation}" readonly="readonly"/>
-          </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div th:if="${canAlterDetails}" class="modal fade" id="dateTimeChange" tabindex="-1" role="dialog" aria-labelledby="changeDateTimeLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="changeDateTimeLabel">Change meeting date and time</h4>
         </div>
-        <div class="row form-group">
-          <label for="datepicker" class="col-lg-2 control-label">Date and time:</label>
-          <div class="col-lg-6">
-            <div class="input-group date" id="datepicker">
-              <input th:name="modifyDateTime" th:value="${meeting.eventStartDateTime}" type="text" class="form-control" readonly="readonly"/>
-                    <span class="input-group-addon">
-                        <span class="glyphicon glyphicon-calendar"></span>
-                    </span>
+        <form th:action="@{/meeting/datetime}" th:object="${meeting}" method="post">
+          <input type="hidden" name="eventUid" th:value="${meeting.getUid()}" />
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="new-group-name" class="control-label">New date and time:</label>
+                <div class="input-group date" id="datepicker">
+                  <input th:field="*{eventStartDateTime}" type="text" class="form-control" />
+                  <span class="input-group-addon">
+                  <span class="glyphicon glyphicon-calendar"></span>
+                  </span>
+                </div>
             </div>
           </div>
-        </div>
-        <div class="row form-group">
-          <!-- todo: add a confirmation screen for cancellation and update -->
-          <div class="col-lg-4">
-            <button type="submit" name="change" class="btn btn-primary">Change this meeting</button>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Change</button>
           </div>
-          <div class="col-lg-4">
-            <button type="submit" name="reminder" class="btn btn-warning">Send a reminder</button>
-          </div>
-          <!-- <div class="col-lg-4">
-            <button type="submit" name="cancel" class="btn btn-danger">Cancel this meeting</button>
-          </div>-->
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   </div>
 
-  <div th:if="${meeting.rsvpRequired and canViewMemberDetails}" class="well">
-    <div class="row list-group">
-      <h2>RSVP responses so far:</h2>
-    </div>
-    <div class="row list-group-item">
-      <table class="table table-striped">
-        <thead>
-        <th>Member name</th>
-        <th>Phone number</th>
-        <th>Response</th>
-        </thead>
-        <tbody>
-        <tr th:each="status : ${rsvpResponses}">
-          <td><span th:text="${status.key.nameToDisplay()}">Member name</span></td>
-          <td><span th:text="${status.key.phoneNumber}">Phone number</span></td>
-          <td><span th:text="${status.value}">Response</span></td>
-        </tr>
-        </tbody>
-      </table>
+  <div th:if="${canAlterDetails}" class="modal fade" id="locationChange" tabindex="-1" role="dialog" aria-labelledby="changeLocationLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="changeLocationLabel">Change meeting location</h4>
+        </div>
+        <form th:action="@{/meeting/location}" method="get">
+          <input type="hidden" name="eventUid" th:value="${meeting.getUid()}" />
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="new-group-name" class="control-label">New location:</label>
+              <input type="text" class="form-control" id="new-group-name"
+                     name="location" th:value="${meeting.getEventLocation()}"/>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Change</button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
+  <!-- todo: link this up to number of reminders / number reminders left -->
+  <div th:if="${canAlterDetails}" class="modal fade" id="changeReminder" tabindex="-1" role="dialog" aria-labelledby="changeReminderLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="changeReminderLabel">Send or schedule a reminder</h4>
+        </div>
+        <form th:action="@{/meeting/reminder}" method="post">
+          <input type="hidden" name="eventUid" th:value="${meeting.getUid()}" />
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="new-group-name" class="control-label">Change meeting behaviour</label>
+              <!-- insert radios & button or so-on -->
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Update</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div th:if="${canAlterDetails}" class="modal fade" id="cancelMeeting" tabindex="-1" role="dialog" aria-labelledby="cancelLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="cancelLabel">Cancel meeting</h4>
+        </div>
+        <form th:action="@{/meeting/cancel}" method="post">
+          <input type="hidden" name="eventUid" th:value="${meeting.getUid()}" />
+          <div class="modal-body">
+            <div class="form-group">
+              <label class="control-label">Are you sure? Cancelling a meeting cannot be undone.</label>
+              <p class="small">This will send a cancellation message to
+                <span th:text="${meeting.getAppliesToGroup().getMemberships().size()}">X</span> members</p>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-danger">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="header-container" layout:fragment="script-container">
+  <script>
+
+    $(document).ready(function() {
+
+      $('#datepicker').datetimepicker({
+        format: 'DD/MM/YYYY h:mm A',
+        defaultDate: "${meeting.eventStartDateTime}"
+        widgetPositioning: {
+          horizontal: 'right'
+        },
+        sideBySide:true,
+        minDate: new Date()
+      });
+
+    });
+  </script>
 
 </div>
 

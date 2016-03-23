@@ -42,4 +42,6 @@ public interface GroupBroker {
 
     void updateGroupPermissions(String userUid, String groupUid, Map<String, Set<Permission>> newPermissions);
 
+    void updateGroupDefaultReminderSetting(String userUid, String groupUid, int reminderMinutes);
+
 }

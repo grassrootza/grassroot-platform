@@ -92,12 +92,13 @@ public class EventNotificationConsumer {
             //generate message based on user language
             log.info("sendChangedEventNotifications...user..." + user.getPhoneNumber() + "...event..." + eventChanged.getEvent().getId() + "...version..." + eventChanged.getEvent().getVersion() + "...start time changed..." + eventChanged.isStartTimeChanged() + "...starttime..." + eventChanged.getEvent().getEventStartDateTime());
             String message = meetingNotificationService.createChangeMeetingNotificationMessage(user, eventChanged.getEvent());
-            if (!eventLogManagementService.changeNotificationSentToUser(eventChanged.getEvent().getEventObject(), user, message)
-                    && (!eventLogManagementService.userRsvpNoForEvent(eventChanged.getEvent().getEventObject(), user)
+            if (!eventLogManagementService.changeNotificationSentToUser(eventChanged.getEvent().getEventUid(), user.getUid(), message)
+                    && (!eventLogManagementService.userRsvpNoForEvent(eventChanged.getEvent().getEventUid(), user.getUid())
                     || eventChanged.isStartTimeChanged())) {
                 log.info("sendChangedEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
                 messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
-                eventLogManagementService.createEventLog(EventLogType.EventChange, eventChanged.getEvent().getEventObject(), user, message);
+                eventLogManagementService.createEventLog(EventLogType.EventChange, eventChanged.getEvent().getEventUid(),
+                                                         user.getUid(), message);
             }
         }
 
@@ -110,11 +111,11 @@ public class EventNotificationConsumer {
         for (User user : getAllUsersForGroup(event.getEventObject())) {
             //generate message based on user language
             String message = meetingNotificationService.createCancelMeetingNotificationMessage(user, event);
-            if (!eventLogManagementService.cancelNotificationSentToUser(event.getEventObject(), user)
-                    && !eventLogManagementService.userRsvpNoForEvent(event.getEventObject(), user)) {
+            if (!eventLogManagementService.cancelNotificationSentToUser(event.getEventUid(), user.getUid())
+                    && !eventLogManagementService.userRsvpNoForEvent(event.getEventUid(), user.getUid())) {
                 log.info("sendCancelledEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
                 messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
-                eventLogManagementService.createEventLog(EventLogType.EventCancelled, event.getEventObject(), user, message);
+                eventLogManagementService.createEventLog(EventLogType.EventCancelled, event.getEventUid(), user.getUid(), message);
             }
         }
 
@@ -281,7 +282,7 @@ public class EventNotificationConsumer {
         if (!eventLogManagementService.voteResultSentToUser(event.getEventObject(), user)) {
             log.info("sendVoteResultsToUser...send message..." + message + "...to..." + user.getPhoneNumber());
             messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
-            eventLogManagementService.createEventLog(EventLogType.EventResult, event.getEventObject(), user, message);
+            eventLogManagementService.createEventLog(EventLogType.EventResult, event.getEventUid(), user.getUid(), message);
         }
 
     }
@@ -297,53 +298,50 @@ public class EventNotificationConsumer {
     private void sendNewMeetingMessage(User user, EventDTO event) {
         //generate message based on user language
         String message = meetingNotificationService.createMeetingNotificationMessage(user, event);
-        if (!eventLogManagementService.notificationSentToUser(event.getEventObject(),user)) {
+        Event meeting = eventManagementService.loadEvent(event.getId()); // todo: switch to use Uids, soon
+        if (!eventLogManagementService.notificationSentToUser(meeting,user)) {
             log.info("sendNewEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
             messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
-            eventLogManagementService.createEventLog(EventLogType.EventNotification, event.getEventObject(), user, message);
+            eventLogManagementService.createEventLog(EventLogType.EventNotification, event.getEventObject().getUid(),
+                                                     user.getUid(), message);
         }
 
     }
 
-    private void sendMeetingReminderMessage(User user, EventDTO event) {
-        //generate message based on user language
-        String message = meetingNotificationService.createMeetingReminderMessage(user, event);
+    private void sendMeetingReminderMessage(User target, EventDTO event) {
+        //generate message based on target language
+        String message = meetingNotificationService.createMeetingReminderMessage(target, event);
         /*
-        Do not send vote reminder if the user already voted (userRsvpForEvent)
+        Do not send vote reminder if the target already voted (userRsvpForEvent)
          */
-        if (event.getEventType() == EventType.Vote) {
-            if (!eventLogManagementService.reminderSentToUser(event.getEventObject(), user)
-                    && !eventLogManagementService.userRsvpForEvent(event.getEventObject(), user)) {
-                sendMeetingReminderMessageAction(user,event,message);
+        if (event.getEventType() == EventType.VOTE) {
+            if (!eventLogManagementService.reminderSentToUser(event.getEventObject(), target)
+                    && !eventLogManagementService.userRsvpForEvent(event.getEventObject(), target)) {
+                sendMeetingReminderMessageAction(target,event,message);
             }
 
         } else {
         /*
-        Do not send meeting reminder if the user already rsvp'ed "no"
+        Do not send meeting reminder if the target already rsvp'ed "no"
          */
 
-            if (!eventLogManagementService.reminderSentToUser(event.getEventObject(), user)
-                    && !eventLogManagementService.userRsvpNoForEvent(event.getEventObject(), user)) {
-                sendMeetingReminderMessageAction(user,event,message);
+            if (!eventLogManagementService.reminderSentToUser(event.getEventObject(), target)
+                    && !eventLogManagementService.userRsvpNoForEvent(event.getEventUid(), target.getUid())) {
+                sendMeetingReminderMessageAction(target,event,message);
             }
-
         }
-
     }
+
     private void sendManualReminderMessage(User user, EventDTO event) {
         //generate message based on user language if message not captured by the user
         String message = event.getMessage();
-        boolean manual = false;
         if (message == null || message.trim().equals("")) {
             message = meetingNotificationService.createMeetingReminderMessage(user, event);
-
-        } else {
-            manual = true;
         }
         /*
         Do not send vote reminder if the user already voted (userRsvpForEvent)
          */
-        if (event.getEventType() == EventType.Vote) {
+        if (event.getEventType() == EventType.VOTE) {
             if (!eventLogManagementService.userRsvpForEvent(event.getEventObject(), user)) {
                 sendManualMessageAction(user,event,message);
             }
@@ -353,7 +351,7 @@ public class EventNotificationConsumer {
         Do not send meeting reminder if the user already rsvp'ed "no"
          */
 
-            if (!eventLogManagementService.userRsvpNoForEvent(event.getEventObject(), user)) {
+            if (!eventLogManagementService.userRsvpNoForEvent(event.getEventUid(), user.getUid())) {
                 sendManualMessageAction(user,event,message);
             }
 
@@ -364,14 +362,14 @@ public class EventNotificationConsumer {
     private void sendMeetingReminderMessageAction(User user, EventDTO event, String message) {
         log.info("sendMeetingReminderMessage...send message..." + message + "...to..." + user.getPhoneNumber());
         messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
-        eventLogManagementService.createEventLog(EventLogType.EventReminder, event.getEventObject(), user, message);
+        eventLogManagementService.createEventLog(EventLogType.EventReminder, event.getEventUid(), user.getUid(), message);
 
     }
 
     private void sendManualMessageAction(User user, EventDTO event, String message) {
         log.info("sendManualMessageAction...send message..." + message + "...to..." + user.getPhoneNumber());
         messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
-        eventLogManagementService.createEventLog(EventLogType.EventManualReminder, event.getEventObject(), user, message);
+        eventLogManagementService.createEventLog(EventLogType.EventManualReminder, event.getEventUid(), user.getUid(), message);
 
     }
 

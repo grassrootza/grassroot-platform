@@ -94,9 +94,11 @@ public class GroupBrokerImpl implements GroupBroker {
 
 
     private void logGroupEventsAfterCommit(Set<GroupLog> groupLogs) {
-        // we want to log group events after transaction has committed
-        AfterTxCommitTask afterTxCommitTask = () -> asyncGroupEventLogger.logGroupEvents(groupLogs);
-        applicationEventPublisher.publishEvent(afterTxCommitTask);
+        if (!groupLogs.isEmpty()) {
+            // we want to log group events after transaction has committed
+            AfterTxCommitTask afterTxCommitTask = () -> asyncGroupEventLogger.logGroupEvents(groupLogs);
+            applicationEventPublisher.publishEvent(afterTxCommitTask);
+        }
     }
 
     @Override
@@ -412,5 +414,23 @@ public class GroupBrokerImpl implements GroupBroker {
         logGroupEventsAfterCommit(Collections.singleton(new GroupLog(group.getId(), user.getId(), GroupLogType.PERMISSIONS_CHANGED, 0L,
                                                "Changed permissions assigned to group roles")));
 
+    }
+
+    @Override
+    @Transactional
+    public void updateGroupDefaultReminderSetting(String userUid, String groupUid, int reminderMinutes) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+        Objects.requireNonNull(reminderMinutes);
+
+        Group group = load(groupUid);
+        User user = userRepository.findOneByUid(userUid);
+
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+
+        group.setReminderMinutes(reminderMinutes);
+        String logMessage = String.format("Changed reminder default to %d minutes", reminderMinutes);
+        logGroupEventsAfterCommit(Collections.singleton(new GroupLog(group.getId(), user.getId(),
+                                                                     GroupLogType.REMINDER_DEFAULT_CHANGED, 0L, logMessage)));
     }
 }

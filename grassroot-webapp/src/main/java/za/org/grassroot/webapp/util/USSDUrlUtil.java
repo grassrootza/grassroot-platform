@@ -25,6 +25,7 @@ public class USSDUrlUtil {
             groupIdParam = "groupId",
             eventIdParam = "eventId",
             logbookIDParam = "logbookid",
+            entityUidParam = "entityUid",
             previousMenu = "prior_menu",
             yesOrNoParam = "confirmed",
             interruptedFlag = "interrupted",
@@ -35,6 +36,7 @@ public class USSDUrlUtil {
             groupIdUrlSuffix = ("?" + groupIdParam + "="),
             eventIdUrlSuffix = ("?" + eventIdParam + "="),
             logbookIdUrlSuffix = ("?" + logbookIDParam + "="),
+            entityUidUrlSuffix = ("?" + entityUidParam + "="),
             setInterruptedFlag = "&" + interruptedFlag + "=1",
             setRevisingFlag = "&" + revisingFlag + "=1",
             addInterruptedInput = "&" + interruptedInput + "=";
@@ -81,6 +83,11 @@ public class USSDUrlUtil {
         String divisor = (entityId == null || entityId.equals("")) ? "?" : entityId; // if we are passed groupId=1, or similar, it comes with the "?" character
         String inputToSave = (input == null) ? "" : encodeParameter(input);
         return section.toPath() + menu + divisor + setInterruptedFlag + "&" + interruptedInput + "=" + inputToSave;
+    }
+
+    public static String saveMeetingMenu(String menu, String entityUid, boolean revising) {
+        String revisingFlag = (revising) ? "&revising=1" : "";
+        return USSDSection.MEETINGS.toPath() + menu + "?entityUid=" + entityUid + setInterruptedFlag + revisingFlag;
     }
 
     public static String saveMeetingMenu(String menu, Long eventId, boolean revising) {
@@ -135,8 +142,12 @@ public class USSDUrlUtil {
 
     }
 
-    public static String mtgMenu(String menu, Long eventId) {
-        return USSDSection.MEETINGS.toPath() + menu + "?eventId=" + eventId;
+    public static String mtgMenu(String menu, String entityUid) {
+        return USSDSection.MEETINGS.toPath() + menu + "?entityUid=" + entityUid;
+    }
+
+    public static String mtgMenuWithAction(String menu, String eventUid, String action) {
+        return USSDSection.MEETINGS.toPath() + menu + "?entityUid=" + eventUid + "&action=" + action;
     }
 
     public static String mtgMenuWithAction(String menu, Long eventId, String action) {

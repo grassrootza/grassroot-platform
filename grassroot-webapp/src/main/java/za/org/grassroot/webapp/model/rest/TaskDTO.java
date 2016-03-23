@@ -113,17 +113,17 @@ public class TaskDTO implements Comparator<TaskDTO> ,Comparable<TaskDTO>{
         if (object instanceof Event) {
             Event event = (Event) object;
             boolean isOpen = event.getEventStartDateTime().after(Timestamp.from(Instant.now()));
-            if (event.getEventType().equals(EventType.Meeting) && isOpen) {
+            if (event.getEventType().equals(EventType.MEETING) && isOpen) {
                 canAction = true;
             } else {
-                if (event.getEventType().equals(EventType.Vote) &&(isOpen && !hasResponded)) {
+                if (event.getEventType().equals(EventType.VOTE) && isOpen && !hasResponded) {
                     canAction = true;
                 }
             }
         } else {
             LogBook logBook = (LogBook) object;
-            if (!logBook.isCompleted() && (logBook.getAssignedToUserId().equals(user.getId()) || logBook.getCreatedByUserId().equals(user.getId())
-                    || logBook.getAssignedToUserId().equals(null))) {
+            if (!logBook.isCompleted() && logBook.getAssignedToUser().equals(user) || logBook.getCreatedByUser().equals(user)
+                    || logBook.getAssignedToUser()== null) {
                 canAction = true;
             }
         }

@@ -106,9 +106,11 @@ public class Group implements Serializable {
         this.uid = UIDGenerator.generateId();
         this.groupName = Objects.requireNonNull(groupName);
         this.createdByUser = Objects.requireNonNull(createdByUser);
+        this.createdDateTime = Timestamp.from(Instant.now());
         this.active = true;
         this.discoverable = false;
         this.parent = parent;
+        this.reminderMinutes = 24 * 60; // defaults to a day
         this.description = ""; // at some point may want to add to the constructor
 
         // automatically add 3 default roles

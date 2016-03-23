@@ -103,7 +103,7 @@
                     <h4>
                       <p class="list-group-item-heading">Group: <span th:text="${event.appliesToGroup.getName('')}">group name</span></p>
                       <p class="list-group-item-heading">Issue: <span th:text="${event.name}">Meeting subject</span><br/></p>
-                      <p class="list-group-item-heading">Closing date: <span th:text="${event.dateTimeString}">date and time</span></p>
+                      <p class="list-group-item-heading">Closing date: <span th:text="${event.eventStartDateTime}">date and time</span></p>
                     </h4>
                     <div class="least-content">
                       Vote called by <span th:text="${event.createdByUser.nameToDisplay()}">meeting caller</span>.

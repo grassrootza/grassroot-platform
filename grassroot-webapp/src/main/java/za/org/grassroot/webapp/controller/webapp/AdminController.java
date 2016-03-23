@@ -89,13 +89,13 @@ public class AdminController extends BaseController {
         model.addAttribute("groupsLastMonth", analyticalService.countGroupsCreatedInInterval(month, now));
         model.addAttribute("groupsTotal", analyticalService.countActiveGroups());
 
-        model.addAttribute("meetingsLastWeek", analyticalService.countEventsCreatedInInterval(week, now, EventType.Meeting));
-        model.addAttribute("meetingsLastMonth", analyticalService.countEventsCreatedInInterval(month, now, EventType.Meeting));
-        model.addAttribute("meetingsTotal", analyticalService.countAllEvents(EventType.Meeting));
+        model.addAttribute("meetingsLastWeek", analyticalService.countEventsCreatedInInterval(week, now, EventType.MEETING));
+        model.addAttribute("meetingsLastMonth", analyticalService.countEventsCreatedInInterval(month, now, EventType.MEETING));
+        model.addAttribute("meetingsTotal", analyticalService.countAllEvents(EventType.MEETING));
 
-        model.addAttribute("votesLastWeek", analyticalService.countEventsCreatedInInterval(week, now, EventType.Vote));
-        model.addAttribute("votesLastMonth", analyticalService.countEventsCreatedInInterval(month, now, EventType.Vote));
-        model.addAttribute("votesTotal", analyticalService.countAllEvents(EventType.Vote));
+        model.addAttribute("votesLastWeek", analyticalService.countEventsCreatedInInterval(week, now, EventType.VOTE));
+        model.addAttribute("votesLastMonth", analyticalService.countEventsCreatedInInterval(month, now, EventType.VOTE));
+        model.addAttribute("votesTotal", analyticalService.countAllEvents(EventType.VOTE));
 
         model.addAttribute("todosLastWeek", analyticalService.countLogBooksRecordedInInterval(week, now));
         model.addAttribute("todosLastMonth", analyticalService.countLogBooksRecordedInInterval(month, now));

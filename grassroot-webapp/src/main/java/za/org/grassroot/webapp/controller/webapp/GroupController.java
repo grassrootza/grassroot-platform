@@ -759,7 +759,7 @@ public class GroupController extends BaseController {
     public String redirectToEvent(Model model, @RequestParam Long eventId, @RequestParam EventType eventType,
                                   RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
-        String path = (eventType == EventType.Meeting) ? "/meeting/" : "/vote/";
+        String path = (eventType == EventType.MEETING) ? "/meeting/" : "/vote/";
         redirectAttributes.addAttribute("eventId", eventId);
         return "redirect:" + path + "view";
 

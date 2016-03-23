@@ -160,12 +160,6 @@ public class EventManagementServiceTest {
         User userl2 = userRepository.save(new User("0825555521"));
         grouplevel2.addMember(userl2);
         grouplevel2 = groupRepository.save(grouplevel2);
-        Event event = eventRepository.save(new Event("test rsvp required",user,grouplevel1,true,true));
-        //event either no date or in the past
-        //Calendar calendar = Calendar.getInstance();
-        //calendar.add(Calendar.MINUTE,60);
-        //event.setEventStartDateTime(new Timestamp(calendar.getTime().getTime()));
-        //event = eventRepository.save(event);
         List<Event> outstanding =  eventManagementService.getOutstandingRSVPForUser(userl2);
         assertNotNull(outstanding);
         assertEquals(0,outstanding.size());
@@ -176,7 +170,7 @@ public class EventManagementServiceTest {
         User user = userRepository.save(new User("0831111111"));
         Event event = eventManagementService.createVote("Jacob is a nice guy to his friends",user);
         assertNotSame(0,event.getId());
-        assertEquals(EventType.Vote,event.getEventType());
+        assertEquals(EventType.VOTE,event.getEventType());
 
     }
     //todo aakil test more scenarios , ie single level, multiple events etc

@@ -13,11 +13,13 @@ import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
@@ -26,51 +28,55 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static za.org.grassroot.core.domain.Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING;
-
 
 /**
  * Created by luke on 2015/09/11.
  */
 @Controller
+@RequestMapping("/meeting/")
 @SessionAttributes("meeting")
 public class MeetingController extends BaseController {
 
     Logger log = LoggerFactory.getLogger(MeetingController.class);
 
     @Autowired
-    GroupManagementService groupManagementService;
+    private GroupManagementService groupManagementService;
 
     @Autowired
-    PermissionBroker permissionBroker;
+    private GroupBroker groupBroker;
 
     @Autowired
-    EventManagementService eventManagementService;
+    private EventBroker eventBroker;
 
     @Autowired
-    EventLogManagementService eventLogManagementService;
+    private PermissionBroker permissionBroker;
 
-    @RequestMapping("/meeting/view")
+    @Autowired
+    private EventManagementService eventManagementService;
+
+    @Autowired
+    private EventLogManagementService eventLogManagementService;
+
+    @RequestMapping("view")
     public String viewMeetingDetails(Model model, @RequestParam Long eventId) {
 
         Event meeting = eventManagementService.loadEvent(eventId);
-       /* boolean canViewDetails = groupAccessControlManagementService.hasGroupPermission(
-                BasePermissions.GROUP_PERMISSION_SEE_MEMBER_DETAILS, meeting.getAppliesToGroup(), getUserProfile());*/
+        User user = getUserProfile();
         
         int rsvpYesTotal = eventManagementService.getListOfUsersThatRSVPYesForEvent(meeting).size();
+        boolean canViewRsvps = permissionBroker.isGroupPermissionAvailable(
+                user, meeting.getAppliesToGroup(), Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS);
 
         model.addAttribute("meeting", meeting);
         model.addAttribute("rsvpYesTotal", rsvpYesTotal);
-        model.addAttribute("canViewMemberDetails", true); // note: just setting it for now todo: try use Th sec)
+        model.addAttribute("canViewRsvps", canViewRsvps);
+        model.addAttribute("canAlterDetails", meeting.getCreatedByUser().equals(user)); // todo: maybe, or is organizer/committee?
 
-      //  if (canViewDetails) {
-            Set<Map.Entry<User, EventRSVPResponse>> rsvpResponses =
-                    eventManagementService.getRSVPResponses(meeting).entrySet();
+        if (canViewRsvps) {
+            Set<Map.Entry<User, EventRSVPResponse>> rsvpResponses = eventManagementService.getRSVPResponses(meeting).entrySet();
             model.addAttribute("rsvpResponses", rsvpResponses);
             log.info("Size of response map: " + rsvpResponses);
-      //  }
-
-        log.info("Number of yes RSVPd: " + rsvpYesTotal);
+        }
 
         return "meeting/view";
     }
@@ -79,29 +85,25 @@ public class MeetingController extends BaseController {
      * Meeting creation
      */
 
-    @RequestMapping("/meeting/create")
-    public String createMeetingIndex(Model model, @RequestParam(value="groupId", required=false) Long groupId) {
+    @RequestMapping("create")
+    public String createMeetingIndex(Model model, @RequestParam(value="groupUid", required=false) String groupUid) {
 
         boolean groupSpecified;
         User sessionUser = getUserProfile();
-        Event meeting = eventManagementService.createMeeting(sessionUser);
+        Meeting meeting = Meeting.makeEmpty(sessionUser);
+        meeting.setRsvpRequired(true); // since this is default (and Thymeleaf doesn't handle setting it in template well)
 
-        if (groupId != null) {
-            log.info("Came here from a group");
-            model.addAttribute("group", groupManagementService.loadGroup(groupId));
-            meeting = eventManagementService.setGroup(meeting.getId(), groupId);
+        if (groupUid != null) {
+            Group group = groupBroker.load(groupUid);
+            model.addAttribute("group", group);
+            meeting.setAppliesToGroup(group);
             groupSpecified = true;
         } else {
-            // todo: filter by permissions
-            log.info("No group selected, pass the list of possible");
-            model.addAttribute("userGroups",
-                               permissionBroker.getActiveGroupsWithPermission(sessionUser, GROUP_PERMISSION_CREATE_GROUP_MEETING));
+            // todo: filter by permissions, and include number of members (for confirm modal)
+            model.addAttribute("userGroups", permissionBroker.getActiveGroupsWithPermission(sessionUser, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING));
             groupSpecified = false;
         }
 
-
-        // defaulting to this until we are comfortable that reminders are robust and use cases are sorted out
-        meeting = eventManagementService.setEventNoReminder(meeting.getId());
 
         model.addAttribute("meeting", meeting);
         model.addAttribute("groupSpecified", groupSpecified); // slightly redundant, but use it to tell Thymeleaf what to do
@@ -112,31 +114,24 @@ public class MeetingController extends BaseController {
 
     }
 
-    @RequestMapping(value = "/meeting/create", method = RequestMethod.POST)
-    public String createMeeting(Model model, @ModelAttribute("meeting") Event meeting, BindingResult bindingResult,
-                                @RequestParam(value="selectedGroupId", required=false) Long selectedGroupId,
+    @RequestMapping(value = "create", method = RequestMethod.POST)
+    public String createMeeting(Model model, @ModelAttribute("meeting") Meeting meeting, BindingResult bindingResult,
+                                @RequestParam(value="selectedGroupUid", required=false) String selectedGroupUid,
                                 HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
         // todo: add error handling and validation
         // todo: check that we have all the needed information and/or add a confirmation screen
         // todo: put this data transformation else where:Maybe Wrapper?
+        // todo: wire up description on form
 
         log.info("The event passed back to us: " + meeting.toString());
-        Long groupId = (meeting.getAppliesToGroup() == null) ? selectedGroupId : meeting.getAppliesToGroup().getId();
-      /*  if (!groupManagementService.canUserCallMeeting(groupId, getUserProfile()))
-            throw new AccessDeniedException("You do not have permission to call a meeting of this group");*/
+        log.info("Event location set as: " + meeting.getEventLocation());
 
-        /*
-        This is a bit clunky. Unfortunately, Thymeleaf isn't handling the mapping of group IDs from selection box back
-          to the event.groupAppliesTo field, nor does it do it as a Group (just passes the toString() output around), hence ...
-         */
+        String groupUid = (selectedGroupUid == null) ? meeting.getAppliesToGroup().getUid() : selectedGroupUid;
 
-        meeting = eventManagementService.updateEvent(meeting);
-
-        if (selectedGroupId != null) { // now we need to load a group and then pass it to meeting
-            log.info("Okay, we were passed a group Id, so we need to set it to this groupId: " + selectedGroupId);
-            meeting = eventManagementService.setGroup(meeting.getId(), selectedGroupId);
-        }
+        eventBroker.createMeeting(getUserProfile().getUid(), groupUid, meeting.getName(),
+                meeting.getEventStartDateTime(), meeting.getEventLocation(), meeting.isIncludeSubGroups(),
+                meeting.isRsvpRequired(), meeting.isRelayable(), meeting.getReminderType(), meeting.getCustomReminderMinutes(), "");
 
         log.info("Stored meeting, at end of creation method: " + meeting.toString());
 
@@ -149,51 +144,37 @@ public class MeetingController extends BaseController {
      * Meeting modification
      */
 
-    @RequestMapping(value = "/meeting/modify", params={"change"})
-    public String initiateMeetingModification(Model model, @ModelAttribute("meeting") Event meeting) {
+    @RequestMapping(value = "location", method=RequestMethod.GET)
+    public String changeMeeting(Model model, @RequestParam String eventUid, @RequestParam String location,
+                                HttpServletRequest request) {
 
-        // todo: replace canUserCall with canUserModify
-        meeting = eventManagementService.loadEvent(meeting.getId()); // load all details, as may not have been passed by Th
-      /*  if (!groupManagementService.canUserCallMeeting(meeting.getAppliesToGroup().getId(), getUserProfile()))
-            throw new AccessDeniedException("");*/
-        model.addAttribute("meeting", meeting);
-        model.addAttribute("rsvpYesTotal", eventManagementService.getListOfUsersThatRSVPYesForEvent(meeting).size());
-
-        return "meeting/modify";
-    }
-
-    @RequestMapping(value = "/meeting/modify", method=RequestMethod.POST, params={"modify"})
-    public String changeMeeting(Model model, @ModelAttribute("meeting") Event meeting,
-                                BindingResult bindingResult, HttpServletRequest request) {
-
+        Event meeting = eventBroker.load(eventUid);
         log.info("Meeting we are passed: " + meeting);
-     /*   if (!groupManagementService.canUserCallMeeting(meeting.getAppliesToGroup().getId(), getUserProfile()))
-            throw new AccessDeniedException("");*/
-        meeting = eventManagementService.updateEvent(meeting);
-        model.addAttribute("meeting", meeting);
+
+        // todo: double check permissions in location update
+        eventBroker.updateMeetingLocation(getUserProfile().getUid(), eventUid, location, true);
+
         addMessage(model, MessageType.SUCCESS, "meeting.update.success", request);
-        return "meeting/view";
+        return viewMeetingDetails(model, meeting.getId());
 
     }
 
     @RequestMapping(value = "/meeting/modify", method=RequestMethod.POST, params={"cancel"})
-    public String cancelMeeting(Model model, @ModelAttribute("meeting") Event meeting, BindingResult bindingResult,
+    public String cancelMeeting(Model model, @ModelAttribute("meeting") Meeting meeting, BindingResult bindingResult,
                                 RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
         log.info("Meeting that is about to be cancelled: " + meeting.toString());
-      /*  if (!groupManagementService.canUserCallMeeting(meeting.getAppliesToGroup().getId(), getUserProfile()))
-            throw new AccessDeniedException("");*/
-        eventManagementService.cancelEvent(meeting.getId());
+        eventBroker.cancel(getUserProfile().getUid(), meeting.getUid());
         addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.cancel.success", request);
         return "redirect:/home";
 
     }
 
     @RequestMapping(value = "/meeting/modify", method=RequestMethod.POST, params={"reminder"})
-    public String confirmReminder(Model model, @ModelAttribute("meeting") Event meeting, RedirectAttributes redirectAttributes,
+    public String confirmReminder(Model model, @ModelAttribute("meeting") Meeting meeting, RedirectAttributes redirectAttributes,
                                HttpServletRequest request) {
 
-        meeting = eventManagementService.loadEvent(meeting.getId());
+        meeting = (Meeting) eventManagementService.loadEvent(meeting.getId());
 
         // todo: make sure this is a paid group before allowing it (not just that user is admin)
         if (request.isUserInRole("ROLE_SYSTEM_ADMIN") || request.isUserInRole("ROLE_ACCOUNT_ADMIN")) {
@@ -224,11 +205,12 @@ public class MeetingController extends BaseController {
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/meeting/remind", method=RequestMethod.POST)
-    public String sendReminder(Model model, @RequestParam("entityId") Long eventId, RedirectAttributes redirectAttributes,
+    public String sendReminder(Model model, @RequestParam("entityId") Long meetingId, RedirectAttributes redirectAttributes,
                                HttpServletRequest request) {
 
         // todo: check for paid group & for feature enabled
-        eventManagementService.sendManualReminder(eventManagementService.loadEvent(eventId), "");
+        Meeting meeting = (Meeting) eventManagementService.loadEvent(meetingId);
+        eventBroker.sendManualReminder( getUserProfile().getUid(), meeting.getUid(), "");
         addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.reminder.success", request);
         return "redirect:/home";
 
@@ -291,11 +273,16 @@ public class MeetingController extends BaseController {
         log.info("Sending free form message ... includeSubGroups set to ... " + includeSubgroups);
 
         Group group = groupManagementService.loadGroup(groupId);
+
+        // todo: this should be properly redesigned into directly calling "messaging service", bypassing whole fake event entity thing
+        if (true) {
+            throw new UnsupportedOperationException("This is not supported after event refactoring!!!");
+        }
+/*
         Event dummyEvent = eventManagementService.createEvent("", getUserProfile(), group, includeSubgroups);
         boolean messageSent = eventManagementService.sendManualReminder(dummyEvent, message);
-
         log.info("We just sent a free form message with result: " + messageSent);
-
+*/
 
         redirectAttributes.addAttribute("groupUid", group.getUid());
         addMessage(redirectAttributes, MessageType.SUCCESS, "sms.message.sent", request);
@@ -307,7 +294,7 @@ public class MeetingController extends BaseController {
      * RSVP handling
      */
 
-    @RequestMapping(value = "/meeting/rsvp")
+    @RequestMapping(value = "rsvp")
     public String rsvpYes(Model model, @RequestParam Long eventId, @RequestParam String answer,
                           HttpServletRequest request, RedirectAttributes attributes) {
 
@@ -341,19 +328,12 @@ public class MeetingController extends BaseController {
         String[] oneDay = new String[]{"" + 24 * 60, "One day ahead"};
         String[] halfDay = new String[]{"" + 6 * 60, "Half a day ahead"};
         String[] oneHour = new String[]{"60", "An hour before"};
-        String[] noReminder = new String[]{"-1", "No reminder"};
 
         minuteOptions.add(oneDay);
         minuteOptions.add(halfDay);
         minuteOptions.add(oneHour);
-        minuteOptions.add(noReminder);
 
         return minuteOptions;
 
     }
-
-    
-  
-    
-
 }

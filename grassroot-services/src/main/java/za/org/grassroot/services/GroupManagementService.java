@@ -103,8 +103,6 @@ public interface GroupManagementService {
     Methods to set and retrieve some basic group properties
      */
 
-    public Group setGroupDefaultReminderMinutes(Group group, Integer minutes);
-
     public Group setGroupDefaultLanguage(Group group, String locale, boolean setSubGroups);
 
     public Integer getGroupSize(Long groupId, boolean includeSubGroups);

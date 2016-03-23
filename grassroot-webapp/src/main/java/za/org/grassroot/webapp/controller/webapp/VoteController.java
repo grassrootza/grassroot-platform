@@ -9,19 +9,15 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.services.EventLogManagementService;
-import za.org.grassroot.services.EventManagementService;
-import za.org.grassroot.services.GroupManagementService;
-import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
+
+import static za.org.grassroot.core.domain.Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE;
 
 /**
  * Created by luke on 2015/10/30.
@@ -33,6 +29,15 @@ public class VoteController extends BaseController {
     Logger log = LoggerFactory.getLogger(VoteController.class);
 
     @Autowired
+    private EventBroker eventBroker;
+
+    @Autowired
+    private PermissionBroker permissionBroker;
+
+    @Autowired
+    private GroupBroker groupBroker;
+
+    @Autowired
     EventManagementService eventManagementService;
 
     @Autowired
@@ -42,49 +47,45 @@ public class VoteController extends BaseController {
     EventLogManagementService eventLogManagementService;
 
     @RequestMapping("/vote/create")
-    public String createVote(Model model, @RequestParam(value="groupId", required = false) Long groupId) {
+    public String createVote(Model model, @RequestParam(value="groupUid", required = false) String groupUid) {
 
-        boolean groupSpecified = (groupId != null);
+        boolean groupSpecified = (groupUid != null);
         User user = getUserProfile();
-        // Event vote = eventManagementService.createVote(user);
 
         if (groupSpecified) {
-            Group group = groupManagementService.loadGroup(groupId);
-            if (!groupManagementService.isUserInGroup(group, getUserProfile()))
-                throw new AccessDeniedException("Sorry, you do not have permission to call a vote on this group");
+            Group group = groupBroker.load(groupUid);
+            // note: though service layer checks this, and prior UX, want to catch it here too in case of URL hacking
+            permissionBroker.validateGroupPermission(getUserProfile(), group, GROUP_PERMISSION_CREATE_GROUP_VOTE);
             model.addAttribute("group", group);
         } else {
             // todo: filter for permissions
-            model.addAttribute("possibleGroups", groupManagementService.getActiveGroupsPartOf(user));
+            model.addAttribute("possibleGroups", permissionBroker.getActiveGroupsWithPermission(getUserProfile(), GROUP_PERMISSION_CREATE_GROUP_VOTE));
         }
 
-        model.addAttribute("vote", new Event(user, EventType.Vote, true));
-        model.addAttribute("groupSpecified", groupSpecified);
+        VoteRequest voteRequest = VoteRequest.makeEmpty(user, null);
+        voteRequest.setRsvpRequired(true);
 
-        // log.info("Vote that we are passing: " + vote);
+        model.addAttribute("vote", voteRequest);
+        model.addAttribute("groupSpecified", groupSpecified);
 
         return "vote/create";
     }
 
     @RequestMapping(value = "/vote/create", method = RequestMethod.POST)
-    public String createVoteDo(Model model, @ModelAttribute("vote") Event vote, BindingResult bindingResult,
+    public String createVoteDo(Model model, @ModelAttribute("vote") VoteRequest vote, BindingResult bindingResult,
                                @RequestParam("selectedGroupId") Long selectedGroupId,
                                HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
         log.info("Vote passed back to us: " + vote);
         Group group = groupManagementService.loadGroup(selectedGroupId);
-        if (!groupManagementService.isUserInGroup(group, getUserProfile()))
-            throw new AccessDeniedException("");
+        User user = getUserProfile();
 
-        // choosing to set some default fields here instead of a lot of hidden fields in Thymeleaf
-        vote.setEventType(EventType.Vote);
-        vote.setCreatedByUser(getUserProfile());
-        vote.setRsvpRequired(true);
-        vote.setAppliesToGroup(group);
+        if (!groupManagementService.isUserInGroup(group, user))
+            throw new AccessDeniedException("");
 
         log.info("Fleshed out vote: " + vote);
 
-        vote = eventManagementService.createVote(vote);
+        eventBroker.createVote(user.getUid(), group.getUid(), vote.getName(), vote.getEventStartDateTime(), vote.isIncludeSubGroups(), vote.isRelayable(), null);
         log.info("Stored vote, at end of creation: " + vote.toString());
 
         addMessage(model, MessageType.SUCCESS, "vote.creation.success", request);
@@ -93,9 +94,9 @@ public class VoteController extends BaseController {
     }
 
     @RequestMapping("/vote/view")
-    public String viewVote(Model model, @RequestParam Long eventId) {
+    public String viewVote(Model model, @RequestParam String eventUid) {
 
-        Event vote = eventManagementService.loadEvent(eventId);
+        Event vote = eventBroker.load(eventUid);
 
         Map<String, Integer> voteResults = eventManagementService.getVoteResults(vote);
 
