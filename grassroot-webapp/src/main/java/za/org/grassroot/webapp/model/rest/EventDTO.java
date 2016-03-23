@@ -13,9 +13,9 @@ public class EventDTO extends TaskDTO {
 
     private boolean isCancelled;
     private boolean canEdit;
-    private Map<String,Integer> totals;
+    private RSVPTotalsDTO totals;
 
-    public EventDTO(Event event, EventLog eventLog, User user, boolean hasResponded, Map<String,Integer> totals) {
+    public EventDTO(Event event, EventLog eventLog, User user, boolean hasResponded, RSVPTotalsDTO totals) {
         super(event, eventLog, user, hasResponded);
         this.isCancelled = event.isCanceled();
         this.canEdit = getCanEdit(event,user);
@@ -38,7 +38,7 @@ public class EventDTO extends TaskDTO {
         return role.getPermissions().contains(Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
     }
 
-    public Map<String, Integer> getTotals() {
+    public RSVPTotalsDTO getTotals() {
         return totals;
     }
 }

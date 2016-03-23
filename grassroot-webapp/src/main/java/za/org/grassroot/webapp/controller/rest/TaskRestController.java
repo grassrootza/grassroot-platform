@@ -70,6 +70,8 @@ public class TaskRestController {
         for (Event event : eventManagementService.findByAppliesToGroup(group)) {
             EventLog eventLog = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.EventRSVP);
             boolean hasResponded = eventLogManagementService.userRsvpForEvent(event, user);
+            taskSet.add(new TaskDTO(event, eventLog, user, hasResponded));
+
         }
 
         for (LogBook logBook : logBookService.getAllLogBookEntriesForGroup(group.getId())) {
@@ -110,5 +112,4 @@ public class TaskRestController {
             return tasks;*/
 
 
-
-    }
+}
