@@ -8,12 +8,13 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.LogBookDTO;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.LogBookRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 
 import java.sql.Timestamp;
-import java.time.Instant;
 import java.util.Objects;
 
 @Service
@@ -26,11 +27,12 @@ public class LogBookBrokerImpl implements LogBookBroker {
 	private GroupRepository groupRepository;
 	@Autowired
 	private LogBookRepository logBookRepository;
+	@Autowired
+	private GenericJmsTemplateProducerService jmsTemplateProducerService;
 
 	@Override
 	@Transactional
-	public LogBook create(String userUid, String groupUid, boolean replicateToSubgroups, String message, Timestamp actionByDate,
-						  String assignedToUserUid, int reminderMinutes) {
+	public LogBook create(String userUid, String groupUid, String message, Timestamp actionByDate, int reminderMinutes, String assignedToUserUid, boolean replicateToSubgroups) {
 
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(groupUid);
@@ -40,24 +42,38 @@ public class LogBookBrokerImpl implements LogBookBroker {
 		User user = userRepository.findOneByUid(userUid);
 		Group group = groupRepository.findOneByUid(groupUid);
 
+		logger.info("Creating new log book: userUid={}, groupUid={}, message={}, actionByDate={}, reminderMinutes={}, assignedToUserUid={}, replicateToSubgroups={}",
+				userUid, groupUid, message, actionByDate, reminderMinutes, assignedToUserUid, replicateToSubgroups);
+
 		User assignedToUser = null;
 		if (assignedToUserUid != null) {
 			assignedToUser = userRepository.findOneByUid(assignedToUserUid);
 		}
 
-		LogBook logBook = new LogBook(user, group, null, message, actionByDate, assignedToUser, reminderMinutes);
-		logBook = logBookRepository.save(logBook);
+		LogBook logBook = createNewLogBook(user, group, message, actionByDate, reminderMinutes, assignedToUser, null);
 
 		// note: getGroupAndSubGroups is a much faster method (a recursive query) than getSubGroups, hence use it and just skip parent
 		if (replicateToSubgroups) {
 			for (Group subGroup : groupRepository.findGroupAndSubGroupsById(group.getId())) {
 				if (!group.equals(subGroup)) {
-					LogBook subGroupLogBook = new LogBook(user, subGroup, group, message, actionByDate, assignedToUser, reminderMinutes);
-					logBookRepository.save(subGroupLogBook);
+					createNewLogBook(user, subGroup, message, actionByDate, reminderMinutes, assignedToUser, group);
 				}
 			}
 		}
 
+		return logBook;
+	}
+
+	private LogBook createNewLogBook(User user, Group group, String message, Timestamp actionByDate, int reminderMinutes,
+									 User assignedToUser, Group replicatedGroup) {
+		int numberOfRemindersLeftToSend = 0;
+		if (numberOfRemindersLeftToSend == 0) {
+			numberOfRemindersLeftToSend = 3; // todo: replace with a logic based on group paid / not paid
+		}
+
+		LogBook logBook = new LogBook(user, group, message, actionByDate, reminderMinutes, assignedToUser, replicatedGroup, numberOfRemindersLeftToSend);
+		logBook = logBookRepository.save(logBook);
+		jmsTemplateProducerService.sendWithNoReply("new-logbook", new LogBookDTO(logBook));
 		return logBook;
 	}
 
@@ -69,6 +85,8 @@ public class LogBookBrokerImpl implements LogBookBroker {
 		User completedByUser = completedByUserUid == null ? null : userRepository.findOneByUid(completedByUserUid);
 
 		LogBook logBook = logBookRepository.findOneByUid(logBookUid);
+
+		logger.info("Completing logbook: " + logBook);
 
 		if (logBook.isCompleted()) {
 			throw new IllegalStateException("Logbook already completed: " + logBook);

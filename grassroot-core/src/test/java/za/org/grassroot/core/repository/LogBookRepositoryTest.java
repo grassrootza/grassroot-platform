@@ -80,7 +80,7 @@ public class LogBookRepositoryTest {
 
         User user = userRepository.save(new User("001111144"));
         Group group = groupRepository.save(new Group("test logbook", user));
-        LogBook lb1 = logBookRepository.save(new LogBook(user, group, null, "just do it", DateTimeUtil.addHoursFromNow(2), user, 60));
+        LogBook lb1 = logBookRepository.save(new LogBook(user, group, "just do it", DateTimeUtil.addHoursFromNow(2), 60, user, null, 3));
         LogBook lb2 = logBookRepository.save(new LogBook(user, group, "not assigned", DateTimeUtil.addHoursFromNow(2)));
         List<LogBook> list = logBookRepository.findAllByAssignedToUserId(user.getId());
         assertEquals(1,list.size());
@@ -95,8 +95,8 @@ public class LogBookRepositoryTest {
 
         User user = userRepository.save(new User("001111145"));
         Group group = groupRepository.save(new Group("test logbook", user));
-        LogBook lb1 = logBookRepository.save(new LogBook(user, group, null, "just do it", DateTimeUtil.addHoursFromNow(2), user, 60));
-        LogBook lb2 = logBookRepository.save(new LogBook(user, group, null, "not assigned", DateTimeUtil.addHoursFromNow(2), user, 60));
+        LogBook lb1 = logBookRepository.save(new LogBook(user, group, "just do it", DateTimeUtil.addHoursFromNow(2), 60, user, null, 3));
+        LogBook lb2 = logBookRepository.save(new LogBook(user, group, "not assigned", DateTimeUtil.addHoursFromNow(2), 60, user, null, 3));
         List<LogBook> list = logBookRepository.findAllByAssignedToUserIdAndCompleted(user.getId(), true);
         assertEquals(0, list.size());
         lb2.setCompleted(true);
@@ -125,14 +125,14 @@ public class LogBookRepositoryTest {
         LogBook lb1 = logBookRepository.save(new LogBook(user, group1, message, Timestamp.valueOf(LocalDateTime.now().plusHours(2))));
         List<LogBook> replicatedEntries = new ArrayList<>();
         for (Group group : subGroups)
-            replicatedEntries.add(logBookRepository.save(new LogBook(user, group, group1, message,
-                                                         Timestamp.valueOf(LocalDateTime.now().plusHours(2L)), null, 60)));
+            replicatedEntries.add(logBookRepository.save(new LogBook(user, group, message, Timestamp.valueOf(LocalDateTime.now().plusHours(2L)), 60, null, group1,
+                    3)));
 
         List<LogBook> replicatedEntries2 = new ArrayList<>();
         LogBook lb2 = logBookRepository.save(new LogBook(user, group1, message, Timestamp.valueOf(LocalDateTime.now().plusMonths(2L))));
         for (Group group : subGroups)
-            replicatedEntries2.add(logBookRepository.save(new LogBook(user, group, group1, message,
-                    Timestamp.valueOf(LocalDateTime.now().plusMonths(2L)), null, 60)));
+            replicatedEntries2.add(logBookRepository.save(new LogBook(user, group, message, Timestamp.valueOf(LocalDateTime.now().plusMonths(2L)), 60, null, group1,
+                    3)));
 
         List<LogBook> entriesFromDb = logBookRepository.
                 findAllByReplicatedGroupIdAndMessageAndCreatedDateTimeOrderByGroupIdAsc(group1.getId(), message, lb1.getCreatedDateTime());

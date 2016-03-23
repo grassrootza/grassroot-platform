@@ -40,13 +40,14 @@ public class LogBook extends AbstractLogBookEntity {
     }
 
     public LogBook(User createdByUser, Group group, String message, Timestamp actionByDate) {
-        this(createdByUser, group, null, message, actionByDate, null, 60);
+        this(createdByUser, group, message, actionByDate, 60, null, null, 3);
     }
 
-    public LogBook(User createdByUser, Group group, Group replicatedGroup, String message, Timestamp actionByDate,
-                   User assignedToUser, int reminderMinutes) {
-        super(createdByUser, group, replicatedGroup, message, actionByDate, assignedToUser, reminderMinutes);
+    public LogBook(User createdByUser, Group group, String message, Timestamp actionByDate, int reminderMinutes,
+                   User assignedToUser, Group replicatedGroup, int numberOfRemindersLeftToSend) {
+        super(createdByUser, group, message, actionByDate, reminderMinutes, assignedToUser);
         this.replicatedGroup = replicatedGroup;
+        this.numberOfRemindersLeftToSend = numberOfRemindersLeftToSend;
     }
 
     public static LogBook makeEmpty() {

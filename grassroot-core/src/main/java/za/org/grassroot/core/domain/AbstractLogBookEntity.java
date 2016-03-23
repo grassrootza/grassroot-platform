@@ -54,12 +54,12 @@ public abstract class AbstractLogBookEntity {
 		// for JPA
 	}
 
-	protected AbstractLogBookEntity(User createdByUser, Group group, Group replicatedGroup, String message, Timestamp actionByDate, User assignedToUser, int reminderMinutes) {
+	protected AbstractLogBookEntity(User createdByUser, Group group, String message, Timestamp actionByDate, int reminderMinutes, User assignedToUser) {
 		this.createdByUser = Objects.requireNonNull(createdByUser);
 		this.group = Objects.requireNonNull(group);
 		this.message = Objects.requireNonNull(message);
 		this.actionByDate = Objects.requireNonNull(actionByDate);
-		this.reminderMinutes = reminderMinutes == 0? DEFAULT_REMINDER_MINUTES : reminderMinutes;
+		this.reminderMinutes = reminderMinutes == 0 ? DEFAULT_REMINDER_MINUTES : reminderMinutes;
 
 		this.uid = UIDGenerator.generateId();
 		this.createdDateTime = Timestamp.from(Instant.now());

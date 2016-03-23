@@ -43,8 +43,8 @@ public class EventLogRestController {
                          @PathVariable("yesNo") String yesNo) {
         eventLogManagementService.rsvpForEvent(eventId, userId, yesNo);
         Event event = eventRepository.findOne(eventId);
-        return new EventDTO(event);
-
+//        return new EventDTO(event);
+        return null;
     }
 
     @RequestMapping(value = "/rsvp/totals/{eventId}", method = RequestMethod.POST)

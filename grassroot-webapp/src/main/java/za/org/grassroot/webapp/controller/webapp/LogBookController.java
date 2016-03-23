@@ -117,8 +117,8 @@ public class LogBookController extends BaseController {
             assignedToUserUid = null; // todo: in future version allow assignment per subgroup
         }
 
-        logBookBroker.create(user.getUid(), logBookEntry.getGroup().getUid(), subGroups, logBookEntry.getMessage(),
-                logBookEntry.getActionByDate(), assignedToUserUid, logBookEntry.getReminderMinutes());
+        logBookBroker.create(user.getUid(), logBookEntry.getGroup().getUid(), logBookEntry.getMessage(), logBookEntry.getActionByDate(), logBookEntry.getReminderMinutes(), assignedToUserUid, subGroups
+        );
 
         addMessage(redirectAttributes, MessageType.SUCCESS, "log.creation.success", request);
         redirectAttributes.addAttribute("logBookId", logBookEntry.getId()); // todo: rather to logbook description

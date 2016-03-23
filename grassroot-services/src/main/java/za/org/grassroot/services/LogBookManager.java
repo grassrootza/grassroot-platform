@@ -255,7 +255,7 @@ public class LogBookManager implements LogBookService {
     private LogBook createLogBookEntry(User createdByUser, Group group, String message, Timestamp actionByDate,
                                        User assignedToUser, Group replicatedGroup, int reminderMinutes,
                                        int numberOfRemindersLeftToSend) {
-        LogBook logBook = new LogBook(createdByUser, group, replicatedGroup, message, actionByDate, assignedToUser, reminderMinutes);
+        LogBook logBook = new LogBook(createdByUser, group, message, actionByDate, reminderMinutes, assignedToUser, replicatedGroup, 3);
         if (numberOfRemindersLeftToSend == 0) {
             numberOfRemindersLeftToSend = 3; // todo: replace with a logic based on group paid / not paid
         }
@@ -269,7 +269,7 @@ public class LogBookManager implements LogBookService {
     private LogBook createReplicatedLogBookEntry(User createdByUser, Timestamp commonCreatedDateTime, Group group,
                                                  Group replicatedGroup, String message, Timestamp actionByDate, User assignedToUser,
                                                  int reminderMinutes, int numberOfRemindersLeftToSend) {
-        LogBook logBook = new LogBook(createdByUser, group, replicatedGroup, message, actionByDate, assignedToUser, reminderMinutes);
+        LogBook logBook = new LogBook(createdByUser, group, message, actionByDate, reminderMinutes, assignedToUser, replicatedGroup, 3);
         if (numberOfRemindersLeftToSend == 0) {
             numberOfRemindersLeftToSend = 3;
         }

@@ -51,8 +51,8 @@ public class LogBookRequestBrokerImpl implements LogBookRequestBroker {
 		LogBookRequest logBookRequest = logBookRequestRepository.findOneByUid(logBookUid);
 
 		String assignedToUserUid = logBookRequest.getAssignedToUser() == null ? null : logBookRequest.getAssignedToUser().getUid();
-		logBookBroker.create(logBookRequest.getCreatedByUser().getUid(), logBookRequest.getGroup().getUid(), logBookRequest.isReplicateToSubgroups(),
-				logBookRequest.getMessage(), logBookRequest.getActionByDate(), assignedToUserUid, logBookRequest.getReminderMinutes());
+		logBookBroker.create(logBookRequest.getCreatedByUser().getUid(), logBookRequest.getGroup().getUid(), logBookRequest.getMessage(),
+				logBookRequest.getActionByDate(), logBookRequest.getReminderMinutes(), assignedToUserUid, logBookRequest.isReplicateToSubgroups());
 
 		logBookRequestRepository.delete(logBookRequest);
 	}
