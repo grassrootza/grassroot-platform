@@ -1,10 +1,7 @@
 package za.org.grassroot.webapp.model.rest;
 
-import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.Role;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.EventLog;
-import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.enums.EventType;
 
 import java.util.Map;
@@ -25,7 +22,9 @@ public class EventDTO extends TaskDTO {
         this.totals = totals;
     }
 
-    public boolean isCancelled() { return isCancelled; }
+    public boolean isCancelled() {
+        return isCancelled;
+    }
 
     public boolean isCanEdit() {
         return canEdit;
