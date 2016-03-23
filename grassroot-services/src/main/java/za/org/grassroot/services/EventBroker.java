@@ -35,15 +35,9 @@ public interface EventBroker {
     // votes cannot change topic or scope (groups included or not) after creation, just closing time & description field
     Vote updateVote(String userUid, String voteUid, Timestamp eventStartDateTime, String description);
 
+	void updateReminderSettings(String userUid, String eventUid, EventReminderType reminderType, int customReminderMinutes);
+
 	void cancel(String userUid, String eventUid);
-
-	void updateName(String userUid, String eventUid, String name, boolean sendNotifications);
-
-	void updateStartTimestamp(String userUid, String eventUid, Timestamp eventStartDateTime, boolean sendNotifications);
-
-	void updateMeetingLocation(String userUid, String meetingUid, String eventLocation, boolean sendNotifications);
-
-	void sendChangeNotifications(String eventUid, boolean startDateTimeChanged);
 
 	void sendScheduledReminders();
 
