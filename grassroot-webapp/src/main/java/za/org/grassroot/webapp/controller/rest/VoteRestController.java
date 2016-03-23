@@ -83,7 +83,7 @@ public class VoteRestController {
         String trimmedResponse = response.toLowerCase().trim();
         boolean hasVoted = eventLogManagementService.userRsvpForEvent(event, user);
         ResponseWrapper responseWrapper;
-        if (event.getEventType().equals(EventType.Vote) && (!hasVoted && isOpen(event))) {
+        if (event.getEventType().equals(EventType.VOTE) && (!hasVoted && isOpen(event))) {
             eventLogManagementService.rsvpForEvent(event, user, EventRSVPResponse.fromString(trimmedResponse));
             responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.VOTE_SENT, RestStatus.SUCCESS);
         } else if (hasVoted) {

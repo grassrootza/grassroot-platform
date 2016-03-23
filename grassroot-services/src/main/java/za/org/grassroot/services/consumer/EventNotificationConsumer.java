@@ -156,7 +156,7 @@ public class EventNotificationConsumer {
         log.info("sendLogBookReminder...logBook..." + logBookDTO);
 
         Group  group = groupManagementService.loadGroup(logBookDTO.getGroupId());
-        if (logBookDTO.getAssignedToUserId() != 0) {
+        if (logBookDTO.getAssignedToUserId() != null) {
             sendLogBookReminderMessage(userRepository.findOne(logBookDTO.getAssignedToUserId()), group, logBookDTO);
 
         } else {
@@ -230,7 +230,7 @@ public class EventNotificationConsumer {
         if (account != null && account.isLogbookExtraMessages()) {
             //send messages to paid for groups using the same logic as the reminders - sendLogBookReminder method
             //so if you make changes here also make the changes there
-            if (logBookDTO.getAssignedToUserId() != 0) {
+            if (logBookDTO.getAssignedToUserId() != null) {
                 sendNewLogbookNotificationMessage(userRepository.findOne(logBookDTO.getAssignedToUserId()), group, logBookDTO);
 
             } else {

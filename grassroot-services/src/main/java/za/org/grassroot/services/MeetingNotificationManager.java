@@ -63,7 +63,7 @@ public class MeetingNotificationManager implements MeetingNotificationService {
     @Override
     public String createNewLogBookNotificationMessage(User user, Group group, LogBookDTO logBookDTO) {
         Locale locale = getUserLocale(user);
-        if (logBookDTO.getAssignedToUserId() != 0) {
+        if (logBookDTO.getAssignedToUserId() != null) {
             return messageSourceAccessor.getMessage("sms.logbook.new.assigned", populateLogBookFields(user, group, logBookDTO), locale);
 
         } else {
