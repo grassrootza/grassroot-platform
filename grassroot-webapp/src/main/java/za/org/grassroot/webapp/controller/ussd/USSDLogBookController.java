@@ -12,6 +12,7 @@ import za.org.grassroot.core.domain.LogBookRequest;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.LogBookRequestRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.services.LogBookBroker;
 import za.org.grassroot.services.LogBookRequestBroker;
 import za.org.grassroot.services.LogBookService;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
@@ -52,6 +53,8 @@ public class USSDLogBookController extends USSDController {
     private static final int minute =00;
     @Autowired
     private LogBookService logBookService;
+    @Autowired
+    private LogBookBroker logBookBroker;
     @Autowired
     private LogBookRequestRepository logBookRequestRepository;
     @Autowired
@@ -465,8 +468,13 @@ public class USSDLogBookController extends USSDController {
                                        @RequestParam(value = "completed_date", required = false) String completedDate) throws URISyntaxException {
         // todo: check permissions
         User user = userManager.findByInputNumber(inputNumber, null);
-        if (completedByUserId == null) completedByUserId = 0L;
-        logBookService.setCompleted(logBookId, completedByUserId, DateTimeUtil.reformatDateInput(completedDate));
+        String completedByUserUid = null;
+        if (completedByUserId != null) {
+            completedByUserUid = userManager.loadUser(completedByUserId).getUid();
+        }
+        LogBook logBook = logBookService.load(logBookId);
+        String reformatDateInput = DateTimeUtil.reformatDateInput(completedDate); // todo: fix this for new design!!!
+        logBookBroker.complete(logBook.getUid(), null, completedByUserUid);
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, setCompleteMenu, promptKey, user));
         // todo: consider adding option to go back to either section start or group logbook start
