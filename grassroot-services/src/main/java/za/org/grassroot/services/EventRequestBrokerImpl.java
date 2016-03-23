@@ -1,5 +1,7 @@
 package za.org.grassroot.services;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +16,9 @@ import java.util.Objects;
 
 @Service
 public class EventRequestBrokerImpl implements EventRequestBroker {
+
+    private static final Logger log = LoggerFactory.getLogger(EventRequestBrokerImpl.class);
+
 	@Autowired
 	private GroupRepository groupRepository;
 	@Autowired
@@ -85,8 +90,9 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
 		Objects.requireNonNull(meetingRequestUid);
 		Objects.requireNonNull(location);
 
-		MeetingRequest request = (MeetingRequest) eventRequestRepository.findOneByUid(meetingRequestUid);
-		request.setEventLocation(location);
+        MeetingRequest request = (MeetingRequest) eventRequestRepository.findOneByUid(meetingRequestUid);
+        log.info("Setting location to " + location + " ... on request ... " + request);
+        request.setEventLocation(location);
 	}
 
 	@Override
@@ -114,4 +120,39 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
 
 		eventRequestRepository.delete(request);
 	}
+
+	@Override
+    @Transactional
+	public MeetingRequest createChangeRequest(String userUid, String meetingUid) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(meetingUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Meeting meeting = eventBroker.loadMeeting(meetingUid);
+
+        // todo: check for permissions (once worked out what to check)
+        MeetingRequest changeRequest = MeetingRequest.makeCopy(meeting);
+		return eventRequestRepository.save(changeRequest);
+	}
+
+    @Override
+    public void finishEdit(String userUid, String eventUid, String changeRequestUid) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(changeRequestUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Event event = eventBroker.load(eventUid);
+        EventRequest request = eventRequestRepository.findOneByUid(changeRequestUid);
+
+        if (request instanceof MeetingRequest) {
+            MeetingRequest meetingChangeRequest = (MeetingRequest) request;
+            eventBroker.updateMeeting(userUid, eventUid, meetingChangeRequest.getName(), meetingChangeRequest.getEventStartDateTime(),
+                                      meetingChangeRequest.getEventLocation());
+        } else {
+            VoteRequest voteRequest = (VoteRequest) request;
+            eventBroker.updateVote(userUid, eventUid, voteRequest.getEventStartDateTime(), voteRequest.getDescription());
+        }
+
+        eventRequestRepository.delete(request);
+    }
 }

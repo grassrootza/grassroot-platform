@@ -146,12 +146,9 @@ public class USSDUrlUtil {
         return USSDSection.MEETINGS.toPath() + menu + "?entityUid=" + entityUid;
     }
 
-    public static String mtgMenuWithAction(String menu, String eventUid, String action) {
-        return USSDSection.MEETINGS.toPath() + menu + "?entityUid=" + eventUid + "&action=" + action;
-    }
-
-    public static String mtgMenuWithAction(String menu, Long eventId, String action) {
-        return USSDSection.MEETINGS.toPath() + menu + "?eventId=" + eventId + "&action=" + action;
+    public static String editingMtgMenuUrl(String menu, String eventUid, String requestUid, String action) {
+        return USSDSection.MEETINGS.toPath() + menu + "?entityUid=" + eventUid + "&requestUid=" + requestUid
+                + "&action=" + action;
     }
 
     public static String groupMenuWithId(String menu, Long groupId) {

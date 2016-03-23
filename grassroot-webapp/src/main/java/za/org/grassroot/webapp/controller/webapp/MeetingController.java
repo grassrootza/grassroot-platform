@@ -122,7 +122,6 @@ public class MeetingController extends BaseController {
         // todo: add error handling and validation
         // todo: check that we have all the needed information and/or add a confirmation screen
         // todo: put this data transformation else where:Maybe Wrapper?
-        // todo: wire up description on form
 
         log.info("The event passed back to us: " + meeting.toString());
         log.info("Event location set as: " + meeting.getEventLocation());

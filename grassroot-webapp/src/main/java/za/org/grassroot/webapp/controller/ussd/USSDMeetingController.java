@@ -9,11 +9,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.repository.EventRequestRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.EventRequestBroker;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
+import za.org.grassroot.services.util.CacheUtilManager;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -22,8 +22,6 @@ import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
 import java.util.*;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
@@ -44,6 +42,9 @@ public class USSDMeetingController extends USSDController {
      */
 
     @Autowired
+    private CacheUtilManager cacheManager;
+
+    @Autowired
     private USSDEventUtil eventUtil;
 
     @Autowired
@@ -51,9 +52,6 @@ public class USSDMeetingController extends USSDController {
 
     @Autowired
     private EventRequestBroker eventRequestBroker;
-
-    @Autowired
-    private EventRequestRepository eventRequestRepository;
 
     private Logger log = LoggerFactory.getLogger(getClass());
     private static final String path = homePath + meetingMenus;
@@ -79,6 +77,8 @@ public class USSDMeetingController extends USSDController {
             newTime = "new_time",
             newDate = "new_date",
             modifyConfirm = "modify";
+
+    private static final String requestUidParam = "requestUid";
 
     private static final List<String> menuSequence =
             Arrays.asList(startMenu, subjectMenu, placeMenu, timeMenu, confirmMenu, send);
@@ -419,62 +419,46 @@ public class USSDMeetingController extends USSDController {
 
     @RequestMapping(value = path + changeMeetingLocation)
     public Request changeLocation(@RequestParam(value = phoneNumber) String inputNumber,
-                                  @RequestParam(value = entityUidParam) String eventUid) throws URISyntaxException {
-
-        User sessionUser = userManager.findByInputNumber(inputNumber, meetingMenus + changeMeetingLocation + entityUidUrlSuffix + eventUid);
-
-        Event event = eventBroker.load(eventUid);
-        String eventLocation = event instanceof Meeting ? ((Meeting) event).getEventLocation() : null;
-        String prompt = getMessage(thisSection, changeMeetingLocation, promptKey, eventLocation, sessionUser);
-
-        USSDMenu promptMenu = new USSDMenu(prompt);
-        promptMenu.setFreeText(true);
-        promptMenu.setNextURI(meetingMenus + modifyConfirm + entityUidUrlSuffix + eventUid + "&action=" + changeMeetingLocation);
-
-        return menuBuilder(promptMenu);
-
-    }
-
-    @RequestMapping(value = path + cancelMeeting)
-    public Request meetingCancel(@RequestParam(value = phoneNumber) String inputNumber,
-                                 @RequestParam(value = entityUidParam) String eventUid) throws URISyntaxException {
-
-        // todo: make clear how many people will be notified, how many have said yes, etc etc
-
-        User sessionUser = userManager.findByInputNumber(inputNumber); // not saving URL on this one
-
-        USSDMenu promptMenu = new USSDMenu(getMessage(thisSection, cancelMeeting, promptKey, sessionUser));
-        promptMenu.addMenuOption(meetingMenus + modifyConfirm + doSuffix + entityUidUrlSuffix + eventUid + "&action=" + cancelMeeting,
-                getMessage(optionsKey + "yes", sessionUser));
-        promptMenu.addMenuOption(meetingMenus + manageMeetingMenu + entityUidUrlSuffix + eventUid,
-                getMessage(optionsKey + "no", sessionUser));
-
-        return menuBuilder(promptMenu);
-
+                                  @RequestParam(value = entityUidParam) String eventUid,
+                                  @RequestParam(value = requestUidParam, required = false) String requestUid) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber);
+        MeetingRequest changeRequest = (requestUid == null) ? eventRequestBroker.createChangeRequest(user.getUid(), eventUid) :
+                (MeetingRequest) eventRequestBroker.load(requestUid);
+        cacheManager.putUssdMenuForUser(inputNumber, editingMtgMenuUrl(changeMeetingLocation, eventUid, requestUid, null));
+        USSDMenu menu = new USSDMenu(getMessage(thisSection, changeMeetingLocation, promptKey, changeRequest.getEventLocation(), user));
+        menu.setFreeText(true);
+        menu.setNextURI(editingMtgMenuUrl(modifyConfirm, eventUid, changeRequest.getUid(), changeMeetingLocation));
+        return menuBuilder(menu);
     }
 
     @RequestMapping(path + newTime)
     public Request newMeetingTime(@RequestParam(value = phoneNumber) String inputNumber,
-                                  @RequestParam(value = entityUidParam) String eventUid) throws URISyntaxException {
+                                  @RequestParam(value = entityUidParam) String eventUid,
+                                  @RequestParam(value = requestUidParam, required = false) String requestUid) throws URISyntaxException {
 
-        User user = userManager.findByInputNumber(inputNumber, saveMeetingMenu(newTime, eventUid, false));
-        Event meeting = eventBroker.load(eventUid);
-        String existingTime = meeting.getEventStartDateTime().toLocalDateTime().format(DateTimeUtil.preferredTimeFormat);
+        User user = userManager.findByInputNumber(inputNumber);
+        MeetingRequest changeRequest = (requestUid == null) ? eventRequestBroker.createChangeRequest(user.getUid(), eventUid) :
+                (MeetingRequest) eventRequestBroker.load(requestUid);
+        cacheManager.putUssdMenuForUser(inputNumber, editingMtgMenuUrl(newTime, eventUid, requestUid, null));
+        String existingTime = changeRequest.getEventStartDateTime().toLocalDateTime().format(DateTimeUtil.preferredTimeFormat);
         USSDMenu menu = new USSDMenu(getMessage(thisSection, "change", "time." + promptKey, existingTime, user));
         menu.setFreeText(true);
-        menu.setNextURI(meetingMenus + modifyConfirm + entityUidUrlSuffix + eventUid + "&action=" + newTime);
+        menu.setNextURI(editingMtgMenuUrl(modifyConfirm, eventUid, changeRequest.getUid(), newTime));
         return menuBuilder(menu);
     }
 
     @RequestMapping(path + newDate)
     public Request newMeetingDate(@RequestParam(value = phoneNumber) String inputNumber,
-                                  @RequestParam(value = entityUidParam) String eventUid) throws URISyntaxException {
-        User user = userManager.findByInputNumber(inputNumber, saveMeetingMenu(newDate, eventUid, false));
-        Event meeting = eventBroker.load(eventUid);
-        String existingDate = meeting.getEventStartDateTime().toLocalDateTime().format(DateTimeUtil.preferredDateFormat);
+                                  @RequestParam(value = entityUidParam) String eventUid,
+                                  @RequestParam(value = requestUidParam, required = false) String requestUid) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber);
+        MeetingRequest changeRequest = (requestUid == null) ? eventRequestBroker.createChangeRequest(user.getUid(), eventUid) :
+                (MeetingRequest) eventRequestBroker.load(requestUid);
+        cacheManager.putUssdMenuForUser(inputNumber, editingMtgMenuUrl(newDate, eventUid, requestUid, null));
+        String existingDate = changeRequest.getEventStartDateTime().toLocalDateTime().format(DateTimeUtil.preferredDateFormat);
         USSDMenu menu = new USSDMenu(getMessage(thisSection, "change", "date." + promptKey, existingDate, user));
         menu.setFreeText(true);
-        menu.setNextURI(meetingMenus + modifyConfirm + entityUidUrlSuffix + eventUid + "&action=" + newDate);
+        menu.setNextURI(editingMtgMenuUrl(modifyConfirm, eventUid, changeRequest.getUid(), newDate));
         return menuBuilder(menu);
     }
 
@@ -482,46 +466,41 @@ public class USSDMeetingController extends USSDController {
     @RequestMapping(value = path + modifyConfirm)
     public Request modifyMeeting(@RequestParam(value = phoneNumber) String inputNumber,
                                  @RequestParam(value = entityUidParam) String eventUid,
+                                 @RequestParam(value = requestUidParam) String requestUid,
                                  @RequestParam("action") String action,
                                  @RequestParam(userInputParam) String userInput,
                                  @RequestParam(value = "prior_input", required = false) String priorInput) throws URISyntaxException {
 
         userInput = (priorInput == null) ? userInput : priorInput;
 
-        User user = userManager.findByInputNumber(inputNumber, meetingMenus + modifyConfirm + entityUidUrlSuffix + eventUid
-                + "&action=" + action + "&prior_input=" + USSDUrlUtil.encodeParameter(userInput));
+        User user = userManager.findByInputNumber(inputNumber);
+        cacheManager.putUssdMenuForUser(inputNumber, editingMtgMenuUrl(modifyConfirm, eventUid, requestUid, action)
+                + "&prior_input=" + USSDUrlUtil.encodeParameter(userInput));
 
         USSDMenu menu;
-        String sendUrl;
-        String backUrl = meetingMenus + action + entityUidUrlSuffix + eventUid + "&next_menu=" + modifyConfirm;
-
+        String backUrl = meetingMenus + action + entityUidUrlSuffix + eventUid + "&" + requestUidParam + "=" + requestUid;
         log.info("Updating a meeting via USSD ... action parameter is " + action + " and user input is: " + userInput);
 
-        if (action.equals(cancelMeeting)) {
-            menu = new USSDMenu(getMessage(thisSection, cancelMeeting, "prompt", user));
-            sendUrl = mtgMenuWithAction(modifyConfirm + doSuffix, eventUid, "cancel");
-            menu.addMenuOption(sendUrl, getMessage(optionsKey + "yes", user));
-            menu.addMenuOption(backUrl, getMessage(optionsKey + "no", user));
-        } else {
-            try {
-                eventUtil.updateExistingEvent(user.getUid(), eventUid, action, userInput);
-                Meeting event = eventBroker.loadMeeting(eventUid);
-
-                String[] updatedFields = new String[]{event.getEventLocation(),
-                        event.getEventStartDateTime().toLocalDateTime().format(dateTimeFormat)};
-                String menuPrompt = getMessage(thisSection, modifyConfirm, "confirm." + promptKey, updatedFields, user);
-                menu = new USSDMenu(menuPrompt);
-                menu.addMenuOption(mtgMenuWithAction(modifyConfirm + doSuffix, eventUid, "change"), getMessage(optionsKey + "yes", user));
-            } catch (EventStartTimeNotInFutureException e) {
-                menu = new USSDMenu(getMessage(thisSection, modifyConfirm, "error." + promptKey, user));
-            }
-            menu.addMenuOption(backUrl, getMessage(thisSection, modifyConfirm, optionsKey + "back", user));
-            List<String> modifyOptions = new ArrayList<>(Arrays.asList(newTime, newDate, changeMeetingLocation));
-            modifyOptions.remove(action);
-            for (String otherMenu : modifyOptions)
-                menu.addMenuOption(meetingMenus + otherMenu + entityUidUrlSuffix + eventUid,
-                                   getMessage(thisSection, modifyConfirm, optionsKey + otherMenu, user));
+        try {
+            eventUtil.updateExistingEvent(user.getUid(), requestUid, action, userInput);
+            MeetingRequest changeMeetingRequest = (MeetingRequest) eventRequestBroker.load(requestUid);
+            String[] updatedFields = new String[]{changeMeetingRequest.getEventLocation(),
+                    changeMeetingRequest.getEventStartDateTime().toLocalDateTime().format(dateTimeFormat)};
+            String menuPrompt = getMessage(thisSection, modifyConfirm, "confirm." + promptKey, updatedFields, user);
+            menu = new USSDMenu(menuPrompt);
+            menu.addMenuOption(editingMtgMenuUrl(modifyConfirm + doSuffix, eventUid, requestUid, null),
+                               getMessage(optionsKey + "yes", user));
+        } catch (EventStartTimeNotInFutureException e) {
+            // todo: explain what went wrong with the date
+            menu = new USSDMenu(getMessage(thisSection, modifyConfirm, "error." + promptKey, user));
         }
+
+        menu.addMenuOption(backUrl, getMessage(thisSection, modifyConfirm, optionsKey + "back", user));
+        List<String> modifyOptions = new ArrayList<>(Arrays.asList(newTime, newDate, changeMeetingLocation));
+        modifyOptions.remove(action);
+        for (String otherMenu : modifyOptions)
+            menu.addMenuOption(editingMtgMenuUrl(otherMenu, eventUid, requestUid, null),
+                               getMessage(thisSection, modifyConfirm, optionsKey + otherMenu, user));
 
         return menuBuilder(menu);
 
@@ -530,20 +509,35 @@ public class USSDMeetingController extends USSDController {
     @RequestMapping(value = path + modifyConfirm + doSuffix)
     public Request modifyMeetingSend(@RequestParam(value = phoneNumber) String inputNumber,
                                      @RequestParam(value = entityUidParam) String eventUid,
-                                     @RequestParam(value = "action") String action) throws URISyntaxException {
-
+                                     @RequestParam(value = requestUidParam) String requestUid) throws URISyntaxException {
         User sessionUser = userManager.findByInputNumber(inputNumber, null);
-        String menuPrompt = getMessage(thisSection, modifyConfirm, action + ".done", sessionUser);
-
-        if (action.equals(cancelMeeting)) {
-            eventBroker.cancel(sessionUser.getUid(), eventUid);
-        } else {
-            eventBroker.sendChangeNotifications(eventUid, true); // todo: use eventRequest to do this instead
-        }
-
+        String menuPrompt = getMessage(thisSection, modifyConfirm, promptKey + ".done", sessionUser);
+        eventRequestBroker.finishEdit(sessionUser.getUid(), eventUid, requestUid);
         return menuBuilder(new USSDMenu(menuPrompt, optionsHomeExit(sessionUser)));
     }
 
+    @RequestMapping(value = path + cancelMeeting)
+    public Request meetingCancel(@RequestParam(value = phoneNumber) String inputNumber,
+                                 @RequestParam(value = entityUidParam) String eventUid) throws URISyntaxException {
+        // todo: make clear how many people will be notified, how many have said yes, etc etc
+        User sessionUser = userManager.findByInputNumber(inputNumber); // not saving URL on this one
+        USSDMenu promptMenu = new USSDMenu(getMessage(thisSection, cancelMeeting, promptKey, sessionUser));
+        promptMenu.addMenuOption(meetingMenus + cancelMeeting + doSuffix + entityUidUrlSuffix + eventUid,
+                                 getMessage(optionsKey + "yes", sessionUser));
+        promptMenu.addMenuOption(meetingMenus + manageMeetingMenu + entityUidUrlSuffix + eventUid,
+                                 getMessage(optionsKey + "no", sessionUser));
+
+        return menuBuilder(promptMenu);
+    }
+
+    @RequestMapping(value = path + cancelMeeting + doSuffix)
+    public Request meetingCancelConfirmed(@RequestParam(value = phoneNumber) String inputNumber,
+                                          @RequestParam(value = entityUidParam) String eventUid) throws URISyntaxException {
+        User sessionUser = userManager.findByInputNumber(inputNumber, null);
+        String menuPrompt = getMessage(thisSection, modifyConfirm, "cancel.done", sessionUser);
+        eventBroker.cancel(sessionUser.getUid(), eventUid);
+        return menuBuilder(new USSDMenu(menuPrompt, optionsHomeExit(sessionUser)));
+    }
 
     /*
     A couple of helper methods that are quite specific to flow & structure of this controller

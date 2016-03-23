@@ -99,6 +99,32 @@ public class EventBrokerImpl implements EventBroker {
 	}
 
 	@Override
+	public void updateMeeting(String userUid, String meetingUid, String name, Timestamp eventStartDateTime, String eventLocation) {
+		Objects.requireNonNull(userUid);
+        Objects.requireNonNull(meetingUid);
+        Objects.requireNonNull(name);
+        Objects.requireNonNull(eventStartDateTime);
+        Objects.requireNonNull(eventLocation);
+
+        Meeting meeting = (Meeting) eventRepository.findOneByUid(meetingUid);
+
+        if (meeting.isCanceled()) {
+            throw new IllegalStateException("Meeting is canceled: " + meeting);
+        }
+
+        boolean startTimeChanged = !eventStartDateTime.equals(meeting.getEventStartDateTime());
+        if (startTimeChanged) {
+            validateEventStartTime(eventStartDateTime);
+            meeting.setEventStartDateTime(eventStartDateTime);
+        }
+
+        meeting.setName(name);
+        meeting.setEventLocation(eventLocation);
+
+        sendChangeNotifications(meeting.getUid(), startTimeChanged);
+    }
+
+	@Override
 	@Transactional
 	public void updateMeeting(String userUid, String meetingUid, String name, Timestamp eventStartDateTime,
 							  String eventLocation, boolean includeSubGroups, boolean rsvpRequired,
@@ -154,6 +180,11 @@ public class EventBrokerImpl implements EventBroker {
 		logger.info("Queued to event-added..." + vote.getId() + "...version..." + vote.getVersion());
 
 		return vote;
+	}
+
+	@Override
+	public Vote updateVote(String userUid, String voteUid, Timestamp eventStartDateTime, String description) {
+		return null;
 	}
 
 	private void validateEventStartTime(Timestamp eventStartDateTime) {
@@ -237,7 +268,14 @@ public class EventBrokerImpl implements EventBroker {
 
 	@Override
 	public void sendChangeNotifications(String eventUid, boolean startTimeChanged) {
-		Event event = eventRepository.findOneByUid(eventUid);
+		// todo: replace with just passing the UID around
+        EventChanged eventChanged;
+        Event event = eventRepository.findOneByUid(eventUid);
+        if (event instanceof Meeting) {
+            eventChanged = new EventChanged(new EventDTO((Meeting) event), startTimeChanged);
+        } else {
+            eventChanged = new EventChanged(new EventDTO(event), startTimeChanged);
+        }
 		jmsTemplateProducerService.sendWithNoReply("event-changed", new EventChanged(new EventDTO(event), startTimeChanged));
 		logger.info("Queued to event-changed event..." + event.getId() + "...version..." + event.getVersion());
 	}

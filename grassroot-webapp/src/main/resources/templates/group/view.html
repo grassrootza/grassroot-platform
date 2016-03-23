@@ -251,7 +251,7 @@
       <div class="btn-group col-md-12 text-center">
         <a th:if="${canCreateSubGroup}" href="" th:href="@{/group/create(parent=${group.id})}">
           <button class="btn btn-default">Create a sub-group</button></a>
-        <a th:if="${canCallMeeting}" href="" th:href="@{/meeting/create(groupId=${group.id})}">
+        <a th:if="${canCallMeeting}" href="" th:href="@{/meeting/create(groupUid=${group.uid})}">
           <button class="btn btn-default">Call a meeting</button></a>
         <a th:if="${canCallVote}" href="" th:href="@{/vote/create(groupId=${group.id})}">
           <button class="btn btn-default">Take a vote</button></a>

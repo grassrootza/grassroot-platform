@@ -43,6 +43,20 @@ public class MeetingRequest extends EventRequest {
 		return request;
 	}
 
+	public static MeetingRequest makeCopy(Meeting meeting) {
+		MeetingRequest request = new MeetingRequest();
+		request.uid = UIDGenerator.generateId(); // be careful not confuse with original meeting's Uid
+		request.name = meeting.getName();
+        request.appliesToGroup = meeting.getAppliesToGroup();
+        request.createdByUser = meeting.getCreatedByUser();
+        request.eventStartDateTime = meeting.getEventStartDateTime();
+        request.eventLocation = meeting.getEventLocation();
+        request.reminderType = meeting.getReminderType();
+        request.customReminderMinutes = meeting.getCustomReminderMinutes();
+        request.description = meeting.getDescription();
+        return request;
+	}
+
 	public String getEventLocation() {
 		return eventLocation;
 	}

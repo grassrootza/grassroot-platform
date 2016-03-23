@@ -53,7 +53,8 @@ public class USSDEventUtil extends USSDUtil {
             timeOnly = "time_only",
             dateOnly = "date_only",
             newTime = "new_time",
-            newDate = "new_date";
+            newDate = "new_date",
+            changeMeetingLocation = "changeLocation";
     private static final int pageSize = 3;
 
     private static final Map<USSDSection, EventType> mapSectionType =
@@ -156,27 +157,27 @@ public class USSDEventUtil extends USSDUtil {
         }
     }
 
-    public void updateExistingEvent(String userUid, String eventUid, String fieldChanged, String newValue) {
-        Event existingEvent;
-        Timestamp newTimestamp;
+    public void updateExistingEvent(String userUid, String requestUid, String fieldChanged, String newValue) {
+        log.info(String.format("Updating the changeRequest on a meeting ... changing %s to %s", fieldChanged, newValue));
+        Timestamp oldTimestamp, newTimestamp;
         switch (fieldChanged) {
-            case subjectMenu:
-                eventBroker.updateName(userUid, eventUid, newValue, false);
-                break;
-            case placeMenu:
-                eventBroker.updateMeetingLocation(userUid, eventUid, newValue, false);
+            /*case subjectMenu:
+                eventRequestBroker.updateName(userUid, requestUid, newValue);
+                break;*/
+            case changeMeetingLocation:
+                eventRequestBroker.updateMeetingLocation(userUid, requestUid, newValue);
                 break;
             case newTime:
-                existingEvent = eventBroker.load(eventUid);
+                oldTimestamp = eventRequestBroker.load(requestUid).getEventStartDateTime();
                 String reformattedTime = DateTimeUtil.reformatTimeInput(newValue);
-                newTimestamp = changeTimestampTimes(existingEvent.getEventStartDateTime(), reformattedTime);
-                eventBroker.updateStartTimestamp(userUid, eventUid, newTimestamp, false);
+                newTimestamp = changeTimestampTimes(oldTimestamp, reformattedTime);
+                eventRequestBroker.updateStartTimestamp(userUid, requestUid, newTimestamp);
                 break;
             case newDate:
-                existingEvent = eventBroker.load(eventUid);
+                oldTimestamp = eventRequestBroker.load(requestUid).getEventStartDateTime();
                 String reformattedDate = DateTimeUtil.reformatDateInput(newValue);
-                newTimestamp = changeTimestampDates(existingEvent.getEventStartDateTime(), reformattedDate);
-                eventBroker.updateStartTimestamp(userUid, eventUid, newTimestamp, false);
+                newTimestamp = changeTimestampDates(oldTimestamp, reformattedDate);
+                eventRequestBroker.updateStartTimestamp(userUid, requestUid, newTimestamp);
                 break;
         }
     }

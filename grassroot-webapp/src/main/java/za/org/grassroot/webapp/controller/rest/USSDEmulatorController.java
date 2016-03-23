@@ -44,18 +44,22 @@ public class USSDEmulatorController extends BaseController {
         //todo: fix this
         link = link.replace("http://localhost:8080", "https://localhost:8443");
         URI targetUrl = getURI(link, inputString);
-        Request request = getRequestObject(targetUrl);
 
-        boolean display = (request.options.get(0).display == null) ? true : request.options.get(0).display;
-        model.addAttribute("display", display);
-        model.addAttribute("request", request);
         try {
             model.addAttribute("url", targetUrl.toURL());
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
 
-        return "emulator/view";
+        try {
+            Request request = getRequestObject(targetUrl);
+            boolean display = (request.options.get(0).display == null) ? true : request.options.get(0).display;
+            model.addAttribute("display", display);
+            model.addAttribute("request", request);
+            return "emulator/view";
+        } catch (Exception e) {
+            return "emulator/error";
+        }
     }
 
 
@@ -65,7 +69,7 @@ public class USSDEmulatorController extends BaseController {
         MySimpleClientHttpRequestFactory requestFactory = new MySimpleClientHttpRequestFactory(verifier);
         RestTemplate template = new RestTemplate();
         template.setRequestFactory(requestFactory);
-        
+
 
         return template.getForObject(url, Request.class);
 

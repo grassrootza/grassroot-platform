@@ -13,6 +13,7 @@
                 <input type="hidden" name="link" th:value="${request.options[0].callback}"/>
                 <input type="text" name="request"/>
                 <input type="submit" value="Submit"/>
+                <p>Next url: <span th:text="${request.options[0].callback}"></span></p>
             </form>
         </div>
         <div th:case="true">
@@ -28,7 +29,7 @@
 
     </div>
 
-    <p th:text="${url}"></p>
+    <p>This url: <span th:text="${url}"></span></p>
 
 </div>
 <div><form>
