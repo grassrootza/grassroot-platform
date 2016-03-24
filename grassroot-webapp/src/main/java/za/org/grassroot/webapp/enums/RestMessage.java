@@ -5,7 +5,7 @@ package za.org.grassroot.webapp.enums;
  */
 public enum RestMessage {
 
-    VERIFICATION_TOKEN_SENT(),
+    VERIFICATION_TOKEN_SENT,
     INVALID_TOKEN,
     USER_REGISTRATION_SUCCESSFUL,
     TOKEN_EXPIRED,
@@ -34,9 +34,11 @@ public enum RestMessage {
     TODO_ALREADY_COMPLETED,
     MEETING_CANCELLED,
     VOTE_DETAILS,
-    MEETING_DETAILS
-
-
+    VOTE_CREATED,
+    VOTE_DETAILS_UPDATED,
+    MEETING_CREATED,
+    MEETING_DETAILS,
+    MEETING_DETAILS_UPDATED
 
 
 }

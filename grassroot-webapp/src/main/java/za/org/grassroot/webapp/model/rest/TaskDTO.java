@@ -19,9 +19,9 @@ import java.util.Comparator;
 /**
  * Created by paballo on 2016/03/02.
  */
-public class TaskDTO implements Comparator<TaskDTO> ,Comparable<TaskDTO>{
+public class TaskDTO implements Comparable<TaskDTO>{
 
-    private Long id;
+    private String id;
     private String title;
     private String description;
     private String name;
@@ -38,8 +38,9 @@ public class TaskDTO implements Comparator<TaskDTO> ,Comparable<TaskDTO>{
     public TaskDTO(){}
 
     public TaskDTO(Event event, EventLog eventLog, User user, boolean hasResponded) {
-        this.id = event.getId();
+        this.id = event.getUid();
         this.title = event.getName();
+        this.description =event.getDescription();
         this.name = event.getCreatedByUser().getDisplayName();
         this.hasResponded = hasResponded;
         this.type = String.valueOf(event.getEventType());
@@ -50,10 +51,10 @@ public class TaskDTO implements Comparator<TaskDTO> ,Comparable<TaskDTO>{
     }
 
     public TaskDTO(LogBook logBook, User user, User creatingUser) {
-        this.id = logBook.getId();
+        this.id = logBook.getUid();
         this.title = logBook.getMessage();
         this.name = creatingUser.getDisplayName();
-        this.hasResponded = false;
+        this.hasResponded = (logBook.isCompleted())?true:false;
         this.reply = getTodoStatus(logBook);
         this.timestamp = logBook.getActionByDate();
         this.type = String.valueOf(TaskType.TODO);
@@ -61,10 +62,9 @@ public class TaskDTO implements Comparator<TaskDTO> ,Comparable<TaskDTO>{
         this.canAction = canAction(logBook, user, true);
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
-
     public String getDescription() {
         return description;
     }
@@ -178,16 +178,11 @@ public class TaskDTO implements Comparator<TaskDTO> ,Comparable<TaskDTO>{
 
 
     @Override
-    public int compare(TaskDTO o1, TaskDTO o2) {
-        return ComparisonChain.start().compareTrueFirst(o1.hasResponded,o2.hasResponded)
-                .compareFalseFirst(o1.canAction,o2.canAction)
-                .compare(o2.getDeadline(),o1.getDeadline())
-                .result();
-    }
-
-    @Override
     public int compareTo(TaskDTO o) {
-        return 0;
+        return ComparisonChain.start().compareFalseFirst(hasResponded,o.hasResponded)
+                .compareTrueFirst(canAction,o.canAction)
+                .compare(deadline,o.deadline)
+                .result();
     }
 
 

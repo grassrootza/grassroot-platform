@@ -16,6 +16,7 @@ import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupManagementService;
@@ -24,10 +25,10 @@ import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 
 /**
@@ -57,30 +58,6 @@ public class MeetingController extends BaseController {
 
     @Autowired
     private EventLogManagementService eventLogManagementService;
-
-    @RequestMapping("view")
-    public String viewMeetingDetails(Model model, @RequestParam Long eventId) {
-
-        Event meeting = eventManagementService.loadEvent(eventId);
-        User user = getUserProfile();
-        
-        int rsvpYesTotal = eventManagementService.getListOfUsersThatRSVPYesForEvent(meeting).size();
-        boolean canViewRsvps = permissionBroker.isGroupPermissionAvailable(
-                user, meeting.getAppliesToGroup(), Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS);
-
-        model.addAttribute("meeting", meeting);
-        model.addAttribute("rsvpYesTotal", rsvpYesTotal);
-        model.addAttribute("canViewRsvps", canViewRsvps);
-        model.addAttribute("canAlterDetails", meeting.getCreatedByUser().equals(user)); // todo: maybe, or is organizer/committee?
-
-        if (canViewRsvps) {
-            Set<Map.Entry<User, EventRSVPResponse>> rsvpResponses = eventManagementService.getRSVPResponses(meeting).entrySet();
-            model.addAttribute("rsvpResponses", rsvpResponses);
-            log.info("Size of response map: " + rsvpResponses);
-        }
-
-        return "meeting/view";
-    }
 
     /**
      * Meeting creation
@@ -142,25 +119,54 @@ public class MeetingController extends BaseController {
     }
 
     /**
-     * Meeting modification
+     * Meeting view and modification
      */
 
-    @RequestMapping(value = "location", method=RequestMethod.GET)
-    public String changeMeeting(Model model, @RequestParam String eventUid, @RequestParam String location,
-                                HttpServletRequest request) {
+    @RequestMapping("view")
+    public String viewMeetingDetails(Model model, @RequestParam String eventUid) {
 
-        Event meeting = eventBroker.load(eventUid);
-        log.info("Meeting we are passed: " + meeting);
+        Meeting meeting = eventBroker.loadMeeting(eventUid);
+        User user = getUserProfile();
+
+        int rsvpYesTotal = eventManagementService.getListOfUsersThatRSVPYesForEvent(meeting).size();
+        boolean canViewRsvps = permissionBroker.isGroupPermissionAvailable(
+                user, meeting.getAppliesToGroup(), Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS);
+        boolean canAlterDetails = meeting.getCreatedByUser().equals(user);
+
+        model.addAttribute("meeting", meeting);
+        model.addAttribute("rsvpYesTotal", rsvpYesTotal);
+        model.addAttribute("canViewRsvps", canViewRsvps);
+
+        model.addAttribute("canAlterDetails", canAlterDetails); // todo: maybe, or is organizer/committee?
+
+        if (canViewRsvps) {
+            Set<Map.Entry<User, EventRSVPResponse>> rsvpResponses = eventManagementService.getRSVPResponses(meeting).entrySet();
+            model.addAttribute("rsvpResponses", rsvpResponses);
+            log.info("Size of response map: " + rsvpResponses);
+        }
+
+        if (canAlterDetails) {
+            model.addAttribute("reminderOptions", EventReminderType.values());
+            model.addAttribute("customReminderOptions", reminderMinuteOptions());
+        }
+
+        return "meeting/view";
+    }
+
+
+    @RequestMapping(value = "modify", method=RequestMethod.POST)
+    public String changeMeeting(Model model, @ModelAttribute("meeting") Meeting changedMeeting, HttpServletRequest request) {
 
         // todo: double check permissions in location update
-        eventBroker.updateMeetingLocation(getUserProfile().getUid(), eventUid, location, true);
-
+        log.info("Okay, here is the meeting passed back ... " + changedMeeting);
+        eventBroker.updateMeeting(getUserProfile().getUid(), changedMeeting.getUid(), changedMeeting.getName(),
+                                  changedMeeting.getEventStartDateTime(), changedMeeting.getEventLocation());
         addMessage(model, MessageType.SUCCESS, "meeting.update.success", request);
-        return viewMeetingDetails(model, meeting.getId());
+        return viewMeetingDetails(model, changedMeeting.getUid());
 
     }
 
-    @RequestMapping(value = "/meeting/modify", method=RequestMethod.POST, params={"cancel"})
+    @RequestMapping(value = "cancel", method=RequestMethod.POST)
     public String cancelMeeting(Model model, @ModelAttribute("meeting") Meeting meeting, BindingResult bindingResult,
                                 RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
@@ -171,7 +177,25 @@ public class MeetingController extends BaseController {
 
     }
 
-    @RequestMapping(value = "/meeting/modify", method=RequestMethod.POST, params={"reminder"})
+    @RequestMapping(value = "reminder", method=RequestMethod.POST)
+    public String changeReminderSettings(Model model, @RequestParam String eventUid, @RequestParam EventReminderType reminderType,
+                                         @RequestParam(value = "custom_minutes", required = false) Integer customMinutes, HttpServletRequest request) {
+
+        int minutes = (customMinutes != null && reminderType.equals(EventReminderType.CUSTOM)) ? customMinutes : 0;
+        eventBroker.updateReminderSettings(getUserProfile().getUid(), eventUid, reminderType, minutes);
+        Instant newScheduledTime = eventBroker.load(eventUid).getScheduledReminderTime();
+        if (newScheduledTime != null) {
+            // todo: make sure this actually works properly with zones, on AWS in Ireland, etc ...
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("h:mm a' on 'E, d MMMM").withZone(ZoneId.systemDefault());
+            String reminderTime = formatter.format(newScheduledTime);
+            addMessage(model, MessageType.SUCCESS, "meeting.reminder.changed", new String[] {reminderTime}, request);
+        } else {
+            addMessage(model, MessageType.SUCCESS, "meeting.reminder.changed.none", request);
+        }
+        return viewMeetingDetails(model, eventUid);
+    }
+
+    /*@RequestMapping(value = "reminder", method=RequestMethod.POST)
     public String confirmReminder(Model model, @ModelAttribute("meeting") Meeting meeting, RedirectAttributes redirectAttributes,
                                HttpServletRequest request) {
 
@@ -196,13 +220,12 @@ public class MeetingController extends BaseController {
             return "meeting/remind_confirm";
 
         } else {
-
             // todo: go back to the meeting instead
             addMessage(redirectAttributes, MessageType.ERROR, "permission.denied.error", request);
             return "redirect:/home";
 
         }
-    }
+    }*/
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/meeting/remind", method=RequestMethod.POST)
@@ -306,7 +329,7 @@ public class MeetingController extends BaseController {
             case "yes":
                 eventLogManagementService.rsvpForEvent(meeting, user, EventRSVPResponse.YES);
                 addMessage(model, MessageType.SUCCESS, "meeting.rsvp.yes", request);
-                return viewMeetingDetails(model, eventId);
+                return viewMeetingDetails(model, meeting.getUid());
             case "no":
                 eventLogManagementService.rsvpForEvent(meeting, user, EventRSVPResponse.NO);
                 addMessage(attributes, MessageType.ERROR, "meeting.rsvp.no", request);

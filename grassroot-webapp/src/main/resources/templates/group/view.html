@@ -272,7 +272,7 @@
         <ul class="list-group">
           <li class="list-group-item" th:each="event, iterStat : ${groupMeetings}">
               <!-- todo: redirect this based on the event type -->
-                <a href="" th:href="@{/meeting/view(eventId=${event.id})}"><span th:text="${event.name}"></span></a>
+                <a href="" th:href="@{/meeting/view(eventUid=${event.uid})}"><span th:text="${event.name}"></span></a>
                 <span class="badge" th:text="${#calendars.format(event.getEventStartDateTime(),'dd MMMM yyyy')}">11 September 2015</span>
           </li>
         </ul>

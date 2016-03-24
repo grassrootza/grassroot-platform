@@ -103,6 +103,7 @@ public class EventBrokerImpl implements EventBroker {
 	}
 
 	@Override
+    @Transactional
 	public void updateMeeting(String userUid, String meetingUid, String name, Timestamp eventStartDateTime, String eventLocation) {
 		Objects.requireNonNull(userUid);
         Objects.requireNonNull(meetingUid);
@@ -125,7 +126,7 @@ public class EventBrokerImpl implements EventBroker {
         meeting.setName(name);
         meeting.setEventLocation(eventLocation);
 
-        sendChangeNotifications(meeting.getUid(), startTimeChanged);
+        sendChangeNotifications(meeting.getUid(), EventType.MEETING, startTimeChanged);
     }
 
 	@Override
@@ -160,7 +161,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		meeting.updateScheduledReminderTime();
 
-		sendChangeNotifications(meeting.getUid(), startTimeChanged);
+		sendChangeNotifications(meeting.getUid(), EventType.MEETING, startTimeChanged);
 	}
 
 	@Override
@@ -193,7 +194,21 @@ public class EventBrokerImpl implements EventBroker {
 		return null;
 	}
 
-	private void validateEventStartTime(Timestamp eventStartDateTime) {
+    @Override
+    @Transactional
+    public void updateReminderSettings(String userUid, String eventUid, EventReminderType reminderType, int customReminderMinutes) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(eventUid);
+        Objects.requireNonNull(reminderType);
+
+        // todo: permission checking
+        Event event = eventRepository.findOneByUid(eventUid);
+        event.setReminderType(reminderType);
+        event.setCustomReminderMinutes(customReminderMinutes);
+        event.updateScheduledReminderTime();
+    }
+
+    private void validateEventStartTime(Timestamp eventStartDateTime) {
 		Instant now = Instant.now();
 		if (!eventStartDateTime.toInstant().isAfter(now)) {
 			throw new EventStartTimeNotInFutureException("Event start time " + eventStartDateTime + " is not in the future");
@@ -220,94 +235,10 @@ public class EventBrokerImpl implements EventBroker {
         applicationEventPublisher.publishEvent(afterTxCommitTask);
 	}
 
-	@Override
-	@Transactional
-	public void updateName(String userUid, String eventUid, String name, boolean sendNotifications) {
-		Objects.requireNonNull(userUid);
-		Objects.requireNonNull(eventUid);
-		Objects.requireNonNull(name);
-
-		User user = userRepository.findOneByUid(userUid);
-		Event event = eventRepository.findOneByUid(eventUid);
-		if (event.isCanceled()) {
-			throw new IllegalStateException("Event is canceled: " + event);
-		}
-
-		event.setName(name);
-		sendChangeNotifications(event.getUid(), false);
-	}
-
-	@Override
-	@Transactional
-	public void updateStartTimestamp(String userUid, String eventUid, Timestamp eventStartDateTime, boolean sendNotifications) {
-		Objects.requireNonNull(userUid);
-		Objects.requireNonNull(eventUid);
-
-		validateEventStartTime(eventStartDateTime);
-
-		User user = userRepository.findOneByUid(userUid);
-		Event event = eventRepository.findOneByUid(eventUid);
-		if (event.isCanceled()) {
-			throw new IllegalStateException("Event is canceled: " + event);
-		}
-		event.setEventStartDateTime(eventStartDateTime);
-		event.updateScheduledReminderTime();
-
-		if (sendNotifications) sendChangeNotifications(event.getUid(), true);
-	}
-
-	@Override
-	@Transactional
-	public void assignMembers(String userUid, String eventUid, Set<String> assignMemberUids) {
-		Objects.requireNonNull(userUid);
-		Objects.requireNonNull(eventUid);
-
-		User user = userRepository.findOneByUid(userUid);
-		Event event = eventRepository.findOneByUid(eventUid);
-
-		event.assignMembers(assignMemberUids);
-	}
-
-	@Override
-	@Transactional
-	public void removeAssignedMembers(String userUid, String eventUid, Set<String> memberUids) {
-		Objects.requireNonNull(userUid);
-		Objects.requireNonNull(eventUid);
-
-		User user = userRepository.findOneByUid(userUid);
-		Event event = eventRepository.findOneByUid(eventUid);
-
-		event.removeAssignedMembers(memberUids);
-	}
-
-	@Override
-	@Transactional
-	public void updateMeetingLocation(String userUid, String meetingUid, String eventLocation, boolean sendNotifications) {
-		Objects.requireNonNull(userUid);
-		Objects.requireNonNull(meetingUid);
-
-		User user = userRepository.findOneByUid(userUid);
-		Meeting meeting = (Meeting) eventRepository.findOneByUid(meetingUid);
-		if (meeting.isCanceled()) {
-			throw new IllegalStateException("Meeting is canceled: " + meeting);
-		}
-        meeting.setEventLocation(eventLocation);
-
-		if (sendNotifications) sendChangeNotifications(meeting.getUid(), true);
-	}
-
-	@Override
-	public void sendChangeNotifications(String eventUid, boolean startTimeChanged) {
+	private void sendChangeNotifications(String eventUid, EventType eventType, boolean startTimeChanged) {
 		// todo: replace with just passing the UID around
-        EventChanged eventChanged;
-        Event event = eventRepository.findOneByUid(eventUid);
-        if (event instanceof Meeting) {
-            eventChanged = new EventChanged(new EventDTO((Meeting) event), startTimeChanged);
-        } else {
-            eventChanged = new EventChanged(new EventDTO(event), startTimeChanged);
-        }
-		jmsTemplateProducerService.sendWithNoReply("event-changed", new EventChanged(new EventDTO(event), startTimeChanged));
-		logger.info("Queued to event-changed event..." + event.getId() + "...version..." + event.getVersion());
+        AfterTxCommitTask afterTxCommitTask = () -> asyncEventMessageSender.sendChangedEventNotification(eventUid, eventType, startTimeChanged);
+        applicationEventPublisher.publishEvent(afterTxCommitTask);
 	}
 
 	@Override
@@ -375,5 +306,29 @@ public class EventBrokerImpl implements EventBroker {
 				logger.error("Error while sending vote results for vote: " + vote);
 			}
 		}
+	}
+
+	@Override
+	@Transactional
+	public void assignMembers(String userUid, String eventUid, Set<String> assignMemberUids) {
+		Objects.requireNonNull(userUid);
+		Objects.requireNonNull(eventUid);
+
+		User user = userRepository.findOneByUid(userUid);
+		Event event = eventRepository.findOneByUid(eventUid);
+
+		event.assignMembers(assignMemberUids);
+	}
+
+	@Override
+	@Transactional
+	public void removeAssignedMembers(String userUid, String eventUid, Set<String> memberUids) {
+		Objects.requireNonNull(userUid);
+		Objects.requireNonNull(eventUid);
+
+		User user = userRepository.findOneByUid(userUid);
+		Event event = eventRepository.findOneByUid(eventUid);
+
+		event.removeAssignedMembers(memberUids);
 	}
 }

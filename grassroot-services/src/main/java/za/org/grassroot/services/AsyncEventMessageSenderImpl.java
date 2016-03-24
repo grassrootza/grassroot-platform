@@ -56,4 +56,5 @@ public class AsyncEventMessageSenderImpl implements AsyncEventMessageSender {
         jmsTemplateProducerService.sendWithNoReply("event-changed", eventChanged);
         logger.info("Queued to event-changed event..." + eventUid + "...startTimeChanged..." + startTimeChanged);
     }
+
 }

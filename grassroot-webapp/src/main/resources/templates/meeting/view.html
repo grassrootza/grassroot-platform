@@ -29,9 +29,9 @@
     <div th:if="${canAlterDetails}" class="row">
       <div class="col-md-6 col-md-offset-3">
         <div class="button-group text-center">
-          <button type="button" class="btn btn-default" data-toggle="modal" data-target="#dateTimeChange">Change date and time</button>
-          <button type="button" class="btn btn-default" data-toggle="modal" data-target="#locationChange">Change location</button>
-          <button type="button" class="btn btn-default" data-toggle="modal" data-target="#changeReminder">Send a reminder</button>
+          <button type="button" class="btn btn-default" data-toggle="modal" data-target="#dateTimeChange">Change date, time or location</button>
+          <!-- <button type="button" class="btn btn-default" data-toggle="modal" data-target="#locationChange">Change location</button>-->
+          <button type="button" class="btn btn-default" data-toggle="modal" data-target="#changeReminder">Change reminder time</button>
           <button type="button" class="btn btn-default" data-toggle="modal" data-target="#cancelMeeting">Cancel meeting</button>
         </div>
       </div>
@@ -67,11 +67,16 @@
           <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
           <h4 class="modal-title" id="changeDateTimeLabel">Change meeting date and time</h4>
         </div>
-        <form th:action="@{/meeting/datetime}" th:object="${meeting}" method="post">
+        <form th:action="@{/meeting/modify}" th:object="${meeting}" method="post">
           <input type="hidden" name="eventUid" th:value="${meeting.getUid()}" />
           <div class="modal-body">
             <div class="form-group">
-              <label for="new-group-name" class="control-label">New date and time:</label>
+              <label for="meeting-location" class="control-label">Location:</label>
+              <input type="text" class="form-control" id="meeting-location"
+                     name="location" th:field="*{eventLocation}"/>
+            </div>
+            <div class="form-group">
+              <label for="datepicker" class="control-label">New date and time:</label>
                 <div class="input-group date" id="datepicker">
                   <input th:field="*{eventStartDateTime}" type="text" class="form-control" />
                   <span class="input-group-addon">
@@ -81,53 +86,43 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-primary">Change</button>
+            <p class="mark" id="confirm-footer-text">Are you sure? Clicking 'yes' will send a message to
+            <span th:text="*{appliesToGroup.members.size()}">X</span> members.</p>
+            <button type="button" class="btn btn-default" data-dismiss="modal" id="cancel-change">Cancel</button>
+            <button type="button" class="btn btn-primary" id="change-meeting">Change</button>
+            <button type="submit" class="btn btn-primary" id="confirm-change">Confirm</button>
           </div>
         </form>
       </div>
     </div>
   </div>
 
-  <div th:if="${canAlterDetails}" class="modal fade" id="locationChange" tabindex="-1" role="dialog" aria-labelledby="changeLocationLabel">
-    <div class="modal-dialog" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-          <h4 class="modal-title" id="changeLocationLabel">Change meeting location</h4>
-        </div>
-        <form th:action="@{/meeting/location}" method="get">
-          <input type="hidden" name="eventUid" th:value="${meeting.getUid()}" />
-          <div class="modal-body">
-            <div class="form-group">
-              <label for="new-group-name" class="control-label">New location:</label>
-              <input type="text" class="form-control" id="new-group-name"
-                     name="location" th:value="${meeting.getEventLocation()}"/>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-primary">Change</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- todo: link this up to number of reminders / number reminders left -->
+  <!-- todo: link this up to number of reminders / number reminders left, so it doesn't appear if exhausted -->
   <div th:if="${canAlterDetails}" class="modal fade" id="changeReminder" tabindex="-1" role="dialog" aria-labelledby="changeReminderLabel">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
           <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-          <h4 class="modal-title" id="changeReminderLabel">Send or schedule a reminder</h4>
+          <h4 class="modal-title" id="changeReminderLabel">Changed scheduled reminder</h4>
         </div>
         <form th:action="@{/meeting/reminder}" method="post">
           <input type="hidden" name="eventUid" th:value="${meeting.getUid()}" />
           <div class="modal-body">
             <div class="form-group">
-              <label for="new-group-name" class="control-label">Change meeting behaviour</label>
-              <!-- insert radios & button or so-on -->
+              <label class="control-label">Change reminder</label>
+              <select name="reminderType" class="form-control" id="reminderType">
+                <option th:each="type: ${reminderOptions}"
+                        th:value="${type.toString()}"
+                        th:text="#{web.meeting.reminder.__${type.toString()}__}"
+                        th:selected="${meeting.getReminderType() == type}">Option</option>
+              </select>
+              <div class="radio pull-right" id="customReminder">
+                <label class="radio-inline" th:each="option, iterStat : ${customReminderOptions}">
+                  <input type="radio" name="custom_minutes" th:value="${option[0]}"
+                         th:checked="${#strings.equals(meeting.customReminderMinutes.toString(), option[0])}"/>
+                  <span th:text="${option[1]}" >No reminder</span>
+                </label>
+              </div>
             </div>
           </div>
           <div class="modal-footer">
@@ -156,8 +151,8 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-danger">Cancel</button>
+            <button type="button" class="btn btn-default" data-dismiss="modal">No, don't cancel</button>
+            <button type="submit" class="btn btn-danger">Yes, confirm cancel</button>
           </div>
         </form>
       </div>
@@ -167,18 +162,45 @@
 </div>
 
 <div class="header-container" layout:fragment="script-container">
-  <script>
+  <script th:inline="javascript">
 
     $(document).ready(function() {
 
+      $('#dateTimeChange').on('show.bs.modal', function (event) {
+        $('#confirm-change').hide();
+        $('#confirm-footer-text').hide();
+
+        $('#change-meeting').click(function() {
+          $(this).hide();
+          $('#confirm-footer-text').show();
+          $('#confirm-change').show();
+        });
+
+        $('#cancel-change').click(function() {
+          $('#change-meeting').show();
+          $('#confirm-footer-text').hide();
+          $('#confirm-change').hide();
+        });
+      })
+
       $('#datepicker').datetimepicker({
         format: 'DD/MM/YYYY h:mm A',
-        defaultDate: "${meeting.eventStartDateTime}"
+        defaultDate: /*[[${#dates.formatISO(meeting.getEventStartDateTime())}]]*/,
         widgetPositioning: {
           horizontal: 'right'
         },
-        sideBySide:true,
-        minDate: new Date()
+        sideBySide:true
+      });
+
+      $('#changeReminder').on('show.bs.modal', function (event) {
+        var selected = $("#reminderType option:selected").val();
+        $("#customReminder").toggle(selected == "CUSTOM");
+
+        $('#reminderType').change(function() {
+          var selected = $("#reminderType option:selected").val();
+          $("#customReminder").toggle(selected == "CUSTOM");
+        });
+
       });
 
     });
