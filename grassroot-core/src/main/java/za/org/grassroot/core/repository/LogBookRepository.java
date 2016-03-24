@@ -26,8 +26,8 @@ public interface LogBookRepository extends JpaRepository<LogBook, Long> {
 
     Page<LogBook> findAll(Pageable pageable);
 
-    List<LogBook> findAllByAssignedToUserId(Long assignToUserId);
-    List<LogBook> findAllByAssignedToUserIdAndCompleted(Long assignToUserId, boolean completed);
+    List<LogBook> findAllByAssignedMembersId(Long assignToUserId);
+    List<LogBook> findAllByAssignedMembersIdAndCompleted(Long assignToUserId, boolean completed);
 
     List<LogBook> findAllByReplicatedGroupId(Long replicatedGroupId);
     List<LogBook> findAllByReplicatedGroupIdAndCompleted(Long replicatedGroupId, boolean completed);

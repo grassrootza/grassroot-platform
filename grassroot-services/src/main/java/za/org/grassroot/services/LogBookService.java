@@ -39,8 +39,6 @@ public interface LogBookService {
 
     LogBook getParentLogBookEntry(LogBook logBook);
 
-    LogBook create(LogBook logBookToSave, boolean replicateToSubGroups);
-
     /*
     Methods for setting properties
      */
@@ -48,10 +46,6 @@ public interface LogBookService {
     LogBook setDueDate(Long logBookId, LocalDateTime actionByDateTime);
 
     LogBook setAssignedToUser(Long logBookId, Long assignedToUserId);
-
-    boolean isAssignedToUser(Long logBookId);
-
-    boolean isAssignedToUser(LogBook logBook);
 
     LogBook setMessage(Long logBookId, String message);
 

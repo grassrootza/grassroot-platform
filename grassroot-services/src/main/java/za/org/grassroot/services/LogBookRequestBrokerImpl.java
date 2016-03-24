@@ -13,6 +13,8 @@ import za.org.grassroot.core.repository.LogBookRequestRepository;
 import za.org.grassroot.core.repository.UserRepository;
 
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class LogBookRequestBrokerImpl implements LogBookRequestBroker {
@@ -50,9 +52,10 @@ public class LogBookRequestBrokerImpl implements LogBookRequestBroker {
 
 		LogBookRequest logBookRequest = logBookRequestRepository.findOneByUid(logBookUid);
 
-		String assignedToUserUid = logBookRequest.getAssignedToUser() == null ? null : logBookRequest.getAssignedToUser().getUid();
+		Set<String> assignedMemberUids = logBookRequest.getAssignedMembers().stream().map(User::getUid).collect(Collectors.toSet());
+
 		logBookBroker.create(logBookRequest.getCreatedByUser().getUid(), logBookRequest.getGroup().getUid(), logBookRequest.getMessage(),
-				logBookRequest.getActionByDate(), logBookRequest.getReminderMinutes(), assignedToUserUid, logBookRequest.isReplicateToSubgroups());
+				logBookRequest.getActionByDate(), logBookRequest.getReminderMinutes(), logBookRequest.isReplicateToSubgroups(), assignedMemberUids);
 
 		logBookRequestRepository.delete(logBookRequest);
 	}

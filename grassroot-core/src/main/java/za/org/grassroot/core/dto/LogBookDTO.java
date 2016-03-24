@@ -18,7 +18,6 @@ public class LogBookDTO implements Serializable {
     private Long completedByUserId;
     private Timestamp completedDate;
     private String message;
-    private Long assignedToUserId;
     private Long replicatedGroupId;
     private Timestamp actionByDate;
     private int reminderMinutes;
@@ -34,7 +33,6 @@ public class LogBookDTO implements Serializable {
         this.completed = logBook.isCompleted();
         this.completedByUserId = logBook.getCompletedByUser() == null ? null : logBook.getCompletedByUser().getId();
         this.message = logBook.getMessage();
-        this.assignedToUserId = logBook.getAssignedToUser() == null ? null : logBook.getAssignedToUser().getId();
         this.replicatedGroupId = logBook.getReplicatedGroup() == null ? null : logBook.getReplicatedGroup().getId();
         this.completedDate = logBook.getCompletedDate();
         this.reminderMinutes = logBook.getReminderMinutes();
@@ -90,14 +88,6 @@ public class LogBookDTO implements Serializable {
         this.message = message;
     }
 
-    public Long getAssignedToUserId() {
-        return assignedToUserId;
-    }
-
-    public void setAssignedToUserId(Long assignedToUserId) {
-        this.assignedToUserId = assignedToUserId;
-    }
-
     public Long getReplicatedGroupId() {
         return replicatedGroupId;
     }
@@ -139,7 +129,6 @@ public class LogBookDTO implements Serializable {
                 ", completedByUserId=" + completedByUserId +
                 ", completedDate=" + completedDate +
                 ", message='" + message + '\'' +
-                ", assignedToUserId=" + assignedToUserId +
                 ", replicatedGroupId=" + replicatedGroupId +
                 ", actionByDate=" + actionByDate +
                 ", reminderMinutes=" + reminderMinutes +

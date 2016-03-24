@@ -1,9 +1,12 @@
 package za.org.grassroot.core.domain;
 
+import edu.emory.mathcs.backport.java.util.Collections;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Created by aakilomar on 12/3/15.
@@ -13,10 +16,9 @@ import java.sql.Timestamp;
         indexes = {@Index(name = "idx_log_book_group_id",  columnList="group_id", unique = false),
         @Index(name = "idx_log_book_completed", columnList="completed",  unique = false),
         @Index(name = "idx_log_book_retries_left", columnList = "number_of_reminders_left_to_send",unique = false),
-                @Index(name = "idx_log_book_assigned_to", columnList = "assigned_to_user_id",unique = false),
                 @Index(name = "idx_log_book_replicated_group_id", columnList = "replicated_group_id",unique = false)})
 
-public class LogBook extends AbstractLogBookEntity {
+public class LogBook extends AbstractLogBookEntity implements AssignedMembersContainer {
 
     @Column(name = "completed")
     private boolean completed;
@@ -33,19 +35,26 @@ public class LogBook extends AbstractLogBookEntity {
 
     @ManyToOne(cascade = CascadeType.ALL)
    	@JoinColumn(name = "replicated_group_id")
-   	protected Group replicatedGroup;
+   	private Group replicatedGroup;
+
+    @ManyToMany(cascade = CascadeType.ALL)
+    @JoinTable(name = "log_book_assigned_members",
+            joinColumns = @JoinColumn(name = "log_book_id", nullable = false),
+            inverseJoinColumns = @JoinColumn(name = "user_id", nullable = false)
+    )
+    private Set<User> assignedMembers = new HashSet<>();
 
     private LogBook() {
         // for JPA
     }
 
     public LogBook(User createdByUser, Group group, String message, Timestamp actionByDate) {
-        this(createdByUser, group, message, actionByDate, 60, null, null, 3);
+        this(createdByUser, group, message, actionByDate, 60, null, 3);
     }
 
     public LogBook(User createdByUser, Group group, String message, Timestamp actionByDate, int reminderMinutes,
-                   User assignedToUser, Group replicatedGroup, int numberOfRemindersLeftToSend) {
-        super(createdByUser, group, message, actionByDate, reminderMinutes, assignedToUser);
+                   Group replicatedGroup, int numberOfRemindersLeftToSend) {
+        super(createdByUser, group, message, actionByDate, reminderMinutes);
         this.replicatedGroup = replicatedGroup;
         this.numberOfRemindersLeftToSend = numberOfRemindersLeftToSend;
     }
@@ -97,26 +106,18 @@ public class LogBook extends AbstractLogBookEntity {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        LogBook logBook = (LogBook) o;
-
-        if (uid != null ? !uid.equals(logBook.uid) : logBook.uid != null) {
-            return false;
-        }
-
-        return true;
+    public JpaEntityType getJpaEntityType() {
+        return JpaEntityType.LOGBOOK;
     }
 
     @Override
-    public int hashCode() {
-        return uid != null ? uid.hashCode() : 0;
+    public Set<User> fetchAssignedMembersCollection() {
+        return assignedMembers;
+    }
+
+    @Override
+    public void putAssignedMembersCollection(Set<User> assignedMembersCollection) {
+        this.assignedMembers = assignedMembersCollection;
     }
 
     @Override

@@ -2,6 +2,7 @@ package za.org.grassroot.services;
 
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.dto.LogBookDTO;
@@ -16,9 +17,9 @@ public interface MeetingNotificationService {
 
     public String createMeetingNotificationMessage(User user, EventDTO event);
 
-    String createLogBookReminderMessage(User user, Group group, LogBookDTO logBookDTO);
+    String createLogBookReminderMessage(User user, Group group, LogBook logBook);
 
-    String createNewLogBookNotificationMessage(User user, Group group, LogBookDTO logBookDTO);
+    String createNewLogBookNotificationMessage(User user, Group group, LogBook logBook, boolean assigned);
 
     public String createChangeMeetingNotificationMessage(User user, EventDTO event);
 

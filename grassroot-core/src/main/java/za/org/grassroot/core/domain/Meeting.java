@@ -47,6 +47,11 @@ public class Meeting extends Event {
 		return EventType.MEETING;
 	}
 
+	@Override
+	public JpaEntityType getJpaEntityType() {
+		return JpaEntityType.MEETING;
+	}
+
 	public String getEventLocation() {
 		return eventLocation;
 	}

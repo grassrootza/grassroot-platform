@@ -30,4 +30,9 @@ public class Vote extends Event {
 	public EventType getEventType() {
 		return EventType.VOTE;
 	}
+
+	@Override
+	public JpaEntityType getJpaEntityType() {
+		return JpaEntityType.VOTE;
+	}
 }

@@ -44,17 +44,13 @@ public abstract class AbstractLogBookEntity {
 	@Column(name = "reminder_minutes")
 	protected int reminderMinutes;
 
-	@ManyToOne(cascade = CascadeType.ALL)
-	@JoinColumn(name = "assigned_to_user_id")
-	protected User assignedToUser;
-
 	private static final int DEFAULT_REMINDER_MINUTES = -1440;
 
 	protected AbstractLogBookEntity() {
 		// for JPA
 	}
 
-	protected AbstractLogBookEntity(User createdByUser, Group group, String message, Timestamp actionByDate, int reminderMinutes, User assignedToUser) {
+	protected AbstractLogBookEntity(User createdByUser, Group group, String message, Timestamp actionByDate, int reminderMinutes) {
 		this.createdByUser = Objects.requireNonNull(createdByUser);
 		this.group = Objects.requireNonNull(group);
 		this.message = Objects.requireNonNull(message);
@@ -63,7 +59,6 @@ public abstract class AbstractLogBookEntity {
 
 		this.uid = UIDGenerator.generateId();
 		this.createdDateTime = Timestamp.from(Instant.now());
-		this.assignedToUser = assignedToUser;
 	}
 
 	public Long getId() {
@@ -114,11 +109,27 @@ public abstract class AbstractLogBookEntity {
 		this.reminderMinutes = reminderMinutes;
 	}
 
-	public User getAssignedToUser() {
-		return assignedToUser;
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+
+		LogBook logBook = (LogBook) o;
+
+		if (uid != null ? !uid.equals(logBook.uid) : logBook.uid != null) {
+			return false;
+		}
+
+		return true;
 	}
 
-	public void setAssignedToUser(User assignedToUser) {
-		this.assignedToUser = assignedToUser;
+	@Override
+	public int hashCode() {
+		return uid != null ? uid.hashCode() : 0;
 	}
+
 }

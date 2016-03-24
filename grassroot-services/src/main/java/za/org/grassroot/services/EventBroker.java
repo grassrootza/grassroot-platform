@@ -8,6 +8,7 @@ import za.org.grassroot.core.enums.EventType;
 
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Set;
 
 public interface EventBroker {
 
@@ -19,7 +20,7 @@ public interface EventBroker {
 
 	Meeting createMeeting(String userUid, String groupUid, String name, Timestamp eventStartDateTime, String eventLocation,
 						  boolean includeSubGroups, boolean rsvpRequired, boolean relayable, EventReminderType reminderType,
-						  int customReminderMinutes, String description);
+						  int customReminderMinutes, String description, Set<String> assignMemberUids);
 
 	// for commonly updated fields (in particular, the only fields that can be changed via USSD)
 	void updateMeeting(String userUid, String meetingUid, String name, Timestamp eventStartDateTime, String eventLocation);
@@ -30,7 +31,7 @@ public interface EventBroker {
 					   int customReminderMinutes, String description);
 
 	Vote createVote(String userUid, String groupUid, String name, Timestamp eventStartDateTime,
-					boolean includeSubGroups, boolean relayable, String description);
+					boolean includeSubGroups, boolean relayable, String description, Set<String> assignMemberUids);
 
     // votes cannot change topic or scope (groups included or not) after creation, just closing time & description field
     Vote updateVote(String userUid, String voteUid, Timestamp eventStartDateTime, String description);
@@ -40,6 +41,10 @@ public interface EventBroker {
 	void updateName(String userUid, String eventUid, String name, boolean sendNotifications);
 
 	void updateStartTimestamp(String userUid, String eventUid, Timestamp eventStartDateTime, boolean sendNotifications);
+
+	void assignMembers(String userUid, String eventUid, Set<String> assignMemberUids);
+
+	void removeAssignedMembers(String userUid, String eventUid, Set<String> memberUids);
 
 	void updateMeetingLocation(String userUid, String meetingUid, String eventLocation, boolean sendNotifications);
 

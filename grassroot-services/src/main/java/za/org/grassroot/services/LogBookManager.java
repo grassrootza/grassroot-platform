@@ -1,5 +1,6 @@
 package za.org.grassroot.services;
 
+import org.hibernate.jpa.criteria.expression.UnaryOperatorExpression;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -8,7 +9,6 @@ import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.dto.LogBookDTO;
 import za.org.grassroot.core.repository.LogBookRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
@@ -121,16 +121,6 @@ public class LogBookManager implements LogBookService {
                                                                                 logBook.getCreatedDateTime()).get(0);
     }
 
-    // method called from front end to save a (mostly) fully formed entry
-    @Override
-    public LogBook create(LogBook logBookToSave, boolean replicateToSubGroups) {
-        // todo: proper checks and validation
-        if (!replicateToSubGroups)
-            return createLogBookEntry(logBookToSave);
-        else
-            return createLogBookEntryReplicate(logBookToSave);
-    }
-
     @Override
     public LogBook setDueDate(Long logBookId, LocalDateTime actionByDateTime) {
         LogBook logBook = load(logBookId);
@@ -142,18 +132,8 @@ public class LogBookManager implements LogBookService {
     public LogBook setAssignedToUser(Long logBookId, Long assignedToUserId) {
         LogBook logBook = load(logBookId);
         User user = userManagementService.loadUser(assignedToUserId);
-        logBook.setAssignedToUser(user);
-        return logBookRepository.save(logBook);
-    }
-
-    @Override
-    public boolean isAssignedToUser(Long logBookId) {
-        return isAssignedToUser(load(logBookId));
-    }
-
-    @Override
-    public boolean isAssignedToUser(LogBook logBook) {
-        return logBook.getAssignedToUser() != null;
+        // todo: implement this using new LogBookBroker or whatever ...
+        throw new UnsupportedOperationException("implement this using new LogBookBroker or whatever");
     }
 
     @Override
@@ -211,72 +191,4 @@ public class LogBookManager implements LogBookService {
         logBook.setCompletedDate(completedDate);
         return logBookRepository.save(logBook);
     }
-
-    private LogBook createLogBookEntryReplicate(User createdByUser, Group group, String message, Timestamp actionByDate,
-                                                User assignedToUser, int reminderMinutes,
-                                                int numberOfRemindersLeftToSend) {
-
-        log.info("createLogBookEntryReplicate...parentGroup..." + group);
-
-        // note: when we search on replicatedGroupId we want only the replicated entries, i.e., not
-        LogBook parentLogBook = createLogBookEntry(createdByUser, group, message, actionByDate, assignedToUser,
-                                                   null, reminderMinutes, numberOfRemindersLeftToSend);
-        Timestamp commonCreatedDateTime = parentLogBook.getCreatedDateTime(); // so nanoseconds don't throw later queries
-
-        // note: getGroupAndSubGroups is a much faster method (a recursive query) than getSubGroups, hence use it and just skip parent
-        for (Group subgroup : groupManagementService.findGroupAndSubGroupsById(group.getId())) {
-            log.info("createLogBookEntryReplicate...groupid..." + subgroup.getId() + "...parentGroup..." + group);
-            if (!subgroup.equals(group)) {
-                LogBook lb = createReplicatedLogBookEntry(createdByUser, commonCreatedDateTime, subgroup, group, message,
-                                                          actionByDate, assignedToUser, reminderMinutes, numberOfRemindersLeftToSend);
-            }
-        }
-
-        return parentLogBook;
-    }
-
-    // helper methods for signature simplification
-    private LogBook createLogBookEntryReplicate(LogBook logBook) {
-        return createLogBookEntryReplicate(logBook.getCreatedByUser(), logBook.getGroup(), logBook.getMessage(),
-                                           logBook.getActionByDate(), logBook.getAssignedToUser(), logBook.getReminderMinutes(),
-                                           logBook.getNumberOfRemindersLeftToSend());
-    }
-
-    private LogBook createLogBookEntry(LogBook logBook) {
-        return createLogBookEntry(logBook.getCreatedByUser(), logBook.getGroup(), logBook.getMessage(), logBook.getActionByDate(),
-                                  logBook.getAssignedToUser(), logBook.getReplicatedGroup(), logBook.getReminderMinutes(),
-                                  logBook.getNumberOfRemindersLeftToSend());
-    }
-
-    /*
-    If no reminders are to be sent then set the numberOfRemindersLeftToSend field to a negative value.
-    If it is 0 it will be defaulted to 3
-     */
-    private LogBook createLogBookEntry(User createdByUser, Group group, String message, Timestamp actionByDate,
-                                       User assignedToUser, Group replicatedGroup, int reminderMinutes,
-                                       int numberOfRemindersLeftToSend) {
-        LogBook logBook = new LogBook(createdByUser, group, message, actionByDate, reminderMinutes, assignedToUser, replicatedGroup, 3);
-        if (numberOfRemindersLeftToSend == 0) {
-            numberOfRemindersLeftToSend = 3; // todo: replace with a logic based on group paid / not paid
-        }
-        logBook.setNumberOfRemindersLeftToSend(numberOfRemindersLeftToSend);
-
-        LogBook savedLogbook = logBookRepository.save(logBook);
-        jmsTemplateProducerService.sendWithNoReply("new-logbook",new LogBookDTO(savedLogbook));
-        return  savedLogbook;
-    }
-
-    private LogBook createReplicatedLogBookEntry(User createdByUser, Timestamp commonCreatedDateTime, Group group,
-                                                 Group replicatedGroup, String message, Timestamp actionByDate, User assignedToUser,
-                                                 int reminderMinutes, int numberOfRemindersLeftToSend) {
-        LogBook logBook = new LogBook(createdByUser, group, message, actionByDate, reminderMinutes, assignedToUser, replicatedGroup, 3);
-        if (numberOfRemindersLeftToSend == 0) {
-            numberOfRemindersLeftToSend = 3;
-        }
-        logBook.setNumberOfRemindersLeftToSend(numberOfRemindersLeftToSend);
-        LogBook savedLogbook = logBookRepository.save(logBook);
-        jmsTemplateProducerService.sendWithNoReply("new-logbook",new LogBookDTO(savedLogbook));
-        return  savedLogbook;
-    }
-
 }
