@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.Vote;
 import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
@@ -26,7 +25,6 @@ import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
 
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.Map;
 
 /**
  * Created by aakilomar on 10/24/15.
@@ -77,7 +75,6 @@ public class VoteRestController {
         ResponseWrapper responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.VOTE_DETAILS, RestStatus.SUCCESS, eventDTO);
 
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
-
 
     }
 
