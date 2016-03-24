@@ -25,6 +25,7 @@ import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.Collections;
 
 /**
  * Created by aakilomar on 10/24/15.
@@ -55,7 +56,8 @@ public class VoteRestController {
 
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
-        eventBroker.createVote(user.getUid(), groupUid, title, Timestamp.valueOf(DateTimeUtil.parseDateTime(time)), includeSubGroup, relayable, description);
+        eventBroker.createVote(user.getUid(), groupUid, title, Timestamp.valueOf(DateTimeUtil.parseDateTime(time)), includeSubGroup,
+                relayable, description, Collections.emptySet());
 
         ResponseWrapper responseWrapper = new ResponseWrapperImpl(HttpStatus.CREATED, RestMessage.VOTE_CREATED,RestStatus.SUCCESS);
 

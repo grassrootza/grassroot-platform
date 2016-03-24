@@ -11,10 +11,7 @@ import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Logger;
 
 import static org.mockito.Mockito.verify;
@@ -43,10 +40,10 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
     public void creatingAVoteShouldWork() throws Exception {
 
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
-        when(eventBrokerMock.createVote(sessionTestUser.getUid(), voteEvent.getUid(), voteEvent.getName(), testTimestamp, true, true, testEventDescription)).thenReturn(voteEvent);
+        when(eventBrokerMock.createVote(sessionTestUser.getUid(), voteEvent.getUid(), voteEvent.getName(), testTimestamp, true, true, testEventDescription, Collections.emptySet())).thenReturn(voteEvent);
         mockMvc.perform(post(path + "/create/{id}/{phoneNumber}/{code}", voteEvent.getUid(), testUserPhone, testUserCode).param("title", "Test_Vote").param("closingTime", String.valueOf(testTimestamp)).param("description", testEventDescription).param("reminderMins", String.valueOf(10)).param("notifyGroup", String.valueOf(true)).param("includeSubgroups", String.valueOf(true))).andExpect(status().isCreated()).andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
-        verify(eventBrokerMock).createVote(sessionTestUser.getUid(), voteEvent.getUid(), voteEvent.getName(), testTimestamp, true, true, testEventDescription);
+        verify(eventBrokerMock).createVote(sessionTestUser.getUid(), voteEvent.getUid(), voteEvent.getName(), testTimestamp, true, true, testEventDescription, Collections.emptySet());
     }
 
     @Test
