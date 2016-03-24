@@ -4,14 +4,19 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.repository.EventRepository;
+import za.org.grassroot.core.repository.LogBookRepository;
+import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.repository.VerificationTokenCodeRepository;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.*;
+
+import java.sql.Timestamp;
 
 /**
  * Created by paballo on 2016/02/18.
@@ -23,21 +28,43 @@ import za.org.grassroot.services.*;
 public class RestAbstractUnitTest
 {
     protected final static String testUserPhone = "27815550000";
+    protected final static String testUserCode = "2394";
+    protected final static String testGroupName = "test_group";
+    protected final static String testSearchTerm = "group";
+    protected final static String testAccountName = "test_account";
+    protected final static String testEventDescription = "A feedback on code reviews.";
+    protected final static Timestamp testTimestamp = Timestamp.valueOf(DateTimeUtil.parseDateTime("1320"));
     protected final static User sessionTestUser = new User("testUser", testUserPhone);
-
+    protected final static Group group = new Group("Test_Group", sessionTestUser);
+    protected final static Vote voteEvent = new Vote("Test_Vote", testTimestamp, sessionTestUser, group, true, true, testEventDescription);
+    protected final static Meeting meetingEvent = new Meeting("Test_Meeting", testTimestamp, sessionTestUser, group, "The Jozi-Hub", true, true, true, EventReminderType.DISABLED, 15, testEventDescription);
+    protected static LogBook testLogBook = new LogBook(sessionTestUser, group, "A test log book", testTimestamp);
     protected MockMvc mockMvc;
+
+    @Mock
+    protected AccountManagementService accountManagementServiceMock;
     @Mock
     protected EventLogManagementService eventLogManagementServiceMock;
-
+    @Mock
+    protected LogBookService logBookServiceMock;
     @Mock
     protected UserManagementService userManagementServiceMock;
     @Mock
     protected EventManagementService eventManagementServiceMock;
     @Mock
     protected PasswordTokenService passwordTokenServiceMock;
-
+    @Mock
+    protected GroupManagementService groupManagementServiceMock;
+    @Mock
+    protected GroupJoinRequestService groupJoinRequestServiceMock;
     @Mock
     protected VerificationTokenCodeRepository verificationTokenCodeRepositoryMock;
+    @Mock
+    protected EventRepository eventRepositoryMock;
+    @Mock
+    protected UserRepository userRepositoryMock;
+    @Mock
+    protected EventBroker eventBrokerMock;
 
     protected MessageSource messageSource() {
 
@@ -47,8 +74,6 @@ public class RestAbstractUnitTest
 
         return messageSource;
     }
-
-
 
     @Test
     public void dummyTest() throws Exception{

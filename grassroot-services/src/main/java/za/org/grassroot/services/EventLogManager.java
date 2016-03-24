@@ -181,7 +181,8 @@ public class EventLogManager implements EventLogManagementService {
     @Override
     public RSVPTotalsDTO getVoteResultsForEvent(Event event) {
         if (!event.isIncludeSubGroups()) {
-            return new RSVPTotalsDTO(eventLogRepository.voteTotalsForEventAndGroup(event.getId(), event.getAppliesToGroup().getId()));
+            final RSVPTotalsDTO rsvpTotalsDTO = new RSVPTotalsDTO(eventLogRepository.voteTotalsForEventAndGroup(event.getId(), event.getAppliesToGroup().getId()));
+            return rsvpTotalsDTO;
         }
         RSVPTotalsDTO totals = new RSVPTotalsDTO();
         for (Group group : groupRepository.findGroupAndSubGroupsById(event.getAppliesToGroup().getId())) {
