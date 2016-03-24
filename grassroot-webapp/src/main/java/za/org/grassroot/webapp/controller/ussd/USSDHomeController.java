@@ -9,10 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.services.MembershipInfo;
@@ -274,10 +271,11 @@ public class USSDHomeController extends USSDController {
     private USSDMenu assembleVoteMenu(User sessionUser) {
         log.info("Asking for a vote ... from user " + sessionUser);
         Long voteId = eventManager.getNextOutstandingVote(sessionUser);
+        Vote vote = (Vote) eventManager.loadEvent(voteId);
 
-        final Map<String, String> voteDetails = eventManager.getEventDescription(voteId);
-        final String[] promptFields = new String[]{ voteDetails.get("groupName"), voteDetails.get("creatingUser"),
-                voteDetails.get("eventSubject")};
+        final String[] promptFields = new String[]{ vote.getAppliesToGroup().getName(""),
+                vote.getCreatedByUser().nameToDisplay(),
+                vote.getName()};
 
         final String voteUri = "vote" + eventIdUrlSuffix + voteId + "&response=";
         final String optionMsgKey = voteKey + "." + optionsKey;
@@ -294,7 +292,11 @@ public class USSDHomeController extends USSDController {
     private USSDMenu assembleRsvpMenu(User sessionUser) {
         log.info("Asking for rsvp!");
         Event meeting = eventManager.getOutstandingRSVPForUser(sessionUser).get(0);
-        String[] meetingDetails = eventManager.populateNotificationFields(meeting);
+
+        String[] meetingDetails = new String[] { meeting.getAppliesToGroup().getName(""),
+                meeting.getCreatedByUser().nameToDisplay(),
+                meeting.getName(),
+                meeting.getEventStartDateTime().toLocalDateTime().format(dateTimeFormat) };
 
         // if the composed message is longer than 120 characters, we are going to go over, so return a shortened message
         String defaultPrompt = getMessage(thisSection, USSDController.startMenu, promptKey + "-" + rsvpMenu, meetingDetails, sessionUser);

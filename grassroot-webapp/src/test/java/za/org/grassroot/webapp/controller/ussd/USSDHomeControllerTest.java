@@ -182,8 +182,6 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         voteDetails.put("creatingUser", testUser.getDisplayName());
         voteDetails.put("eventSubject", "Are unit tests working?");
 
-        when(eventManagementServiceMock.getEventDescription(1L)).thenReturn(voteDetails);
-
         List<User> votingUsers = new ArrayList<>(languageUsers);
         votingUsers.add(testUser);
 
@@ -234,11 +232,6 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
             when(userManagementServiceMock.needsToVoteOrRSVP(user)).thenReturn(true);
             when(userManagementServiceMock.needsToRSVP(user)).thenReturn(true);
             when(eventManagementServiceMock.getOutstandingRSVPForUser(user)).thenReturn(Collections.singletonList(meeting));
-
-            String[] mockMeetingFields = new String[] { testGroup.getGroupName(), testUser.getDisplayName(), meeting.getName(),
-                                                        "Tomorrow 10am", "Braam" };
-
-            when(eventManagementServiceMock.populateNotificationFields(meeting)).thenReturn(mockMeetingFields);
 
             mockMvc.perform(get(openingMenu).param(phoneParameter, user.getPhoneNumber())).andExpect(status().isOk());
             verify(userManagementServiceMock, times(1)).needsToVoteOrRSVP(user);

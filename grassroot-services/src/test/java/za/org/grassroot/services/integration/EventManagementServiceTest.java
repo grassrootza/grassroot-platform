@@ -165,14 +165,6 @@ public class EventManagementServiceTest {
         assertEquals(0,outstanding.size());
     }
 
-    @Test
-    public void shouldCreateVote() {
-        User user = userRepository.save(new User("0831111111"));
-        Event event = eventManagementService.createVote("Jacob is a nice guy to his friends",user);
-        assertNotSame(0,event.getId());
-        assertEquals(EventType.VOTE,event.getEventType());
-
-    }
     //todo aakil test more scenarios , ie single level, multiple events etc
 
     @Test

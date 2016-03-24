@@ -71,53 +71,14 @@ public class EventManager implements EventManagementService {
 
     private final static double SMS_COST = 0.2; // might move to message services
 
-    /*
-    Variety of createEvent methods with different signatures caters to USSD menus in particular, so can create event
-    with varying degrees of information. Am defaulting to a meeting requires an RSVP, since that will be most cases.
-     */
-
-    @Override
-    public Event createEvent(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups) {
-        return createNewEvent(createdByUser, EventType.MEETING, true, name, appliesToGroup, includeSubGroups, 0);
-    }
-
-    @Override
-    public Event createEvent(String name, Long createdByUserId, Long appliesToGroupId, boolean includeSubGroups) {
-        return createEvent(name, userManagementService.getUserById(createdByUserId),
-                groupManager.loadGroup(appliesToGroupId), includeSubGroups);
-    }
-
-    @Override
-    public Event createMeeting(String inputNumber, Long groupId) {
-        return createMeeting(userManagementService.findByInputNumber(inputNumber), groupId);
-    }
-
-    @Override
-    public Event createMeeting(User createdByUser, Long groupId) {
-        // note: this method is only called from USSD, so, for now, setting reminder minutes to zero
-        return createNewEvent(createdByUser, EventType.MEETING, true, "", groupManager.loadGroup(groupId), false, -1);
-    }
-
-    @Override
-    public Event createVote(String issue, User createdByUser) {
-        return createNewEvent(createdByUser, EventType.VOTE, true, issue, null, false, 0);
-    }
-
     @Override
     public Event createVote(User createdByUser, Long groupId) {
         return createNewEvent(createdByUser, EventType.VOTE, true, "", groupManager.loadGroup(groupId), false, -1);
     }
 
-
     @Override
     public Event createVote(String issue, Long userId, Long groupId, boolean includeSubGroups) {
         return createNewEvent(userManagementService.getUserById(userId), EventType.VOTE, true, issue, groupManager.loadGroup(groupId), false, 0);
-    }
-
-    @Override
-    public Event createVote(Event vote) {
-        // todo: handle the exception (or just save the partial entity)
-        return saveandCheckChanges(new EventDTO(), vote);
     }
 
     private Event createNewEvent(User createdByUser, EventType eventType, boolean rsvpRequired
@@ -313,21 +274,9 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
-    public List<Meeting> getUpcomingMeetings(Long groupId) {
-        Group group = groupManager.loadGroup(groupId);
-        return getUpcomingMeetings(group);
-    }
-
-    @Override
     public List<Meeting> getUpcomingMeetings(Group group) {
 
         return findUpcomingMeetingsForGroup(group, new Date());
-    }
-
-    @Override
-    public List<Vote> getUpcomingVotes(Long groupId) {
-
-        return getUpcomingVotes(groupManager.loadGroup(groupId));
     }
 
     @Override
@@ -376,19 +325,8 @@ public class EventManager implements EventManagementService {
 
 
     @Override
-    public List<Event> getOutstandingVotesForUser(Long userId) {
-        return getOutstandingVotesForUser(userRepository.findOne(userId));
-    }
-
-    @Override
     public List<Event> getOutstandingVotesForUser(User user) {
         return getOutstandingResponseForUser(user, EventType.VOTE);
-    }
-
-
-    @Override
-    public List<Event> getOutstandingRSVPForUser(Long userId) {
-        return getOutstandingRSVPForUser(userRepository.findOne(userId));
     }
 
     /*
@@ -618,54 +556,6 @@ public class EventManager implements EventManagementService {
                         user, false, new PageRequest(pageNumber, pageSize));
             }
         }
-    }
-
-    @Override
-    public boolean hasUpcomingEvents(Long userId) {
-        // likewise, if we start using this at outset of meetings menu, need to make it fast, possibly a query
-        return eventRepository.countFutureEvents(userId) > 0;
-    }
-
-    @Override
-    public String[] populateNotificationFields(Event event) {
-        Map<String, String> description = getEventDescription(event);
-
-        return new String[]{
-                description.get("groupName"),
-                description.get("creatingUser"),
-                description.get("eventSubject"),
-                description.get("dateTimeString"),
-                description.get("location")
-        };
-    }
-
-    @Override
-    public Map<String, String> getEventDescription(Event event) {
-        Map<String, String> eventDescription = new HashMap<>();
-
-        if (minimumDataAvailable(event)) {
-
-            SimpleDateFormat sdf = new SimpleDateFormat("EEE d MMM, h:mm a");
-
-            eventDescription.put("minimumData", "true");
-            eventDescription.put("groupName", event.getAppliesToGroup().getName(""));
-            eventDescription.put("creatingUser", event.getCreatedByUser().nameToDisplay());
-            eventDescription.put("eventSubject", event.getName());
-//            eventDescription.put("location", event.getEventLocation());
-            eventDescription.put("location", "someLocationForEvent");
-            eventDescription.put("createdDateTime", event.getCreatedDateTime().toString());
-            eventDescription.put("event_type", event.getEventType().name());
-//            eventDescription.put("dateTimeString", dateTimeString);
-        } else {
-            eventDescription.put("minimumData", "false");
-        }
-
-        return eventDescription;
-    }
-
-    @Override
-    public Map<String, String> getEventDescription(Long eventId) {
-        return getEventDescription(loadEvent(eventId));
     }
 
     @Override

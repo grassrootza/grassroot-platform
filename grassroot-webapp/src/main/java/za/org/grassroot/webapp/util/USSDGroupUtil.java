@@ -267,16 +267,9 @@ public class USSDGroupUtil extends USSDUtil {
         USSDMenu menu = null;
         String nextUrl;
         switch (section) {
-            case MEETINGS:
-                Long eventId = eventManager.createMeeting(sessionUser.getPhoneNumber(), groupId).getId();
-                sessionUser = userManager.findByInputNumber(sessionUser.getPhoneNumber(), saveMeetingMenu(subjectMenu, eventId, false));
-                String promptMessage = getMessage(section, subjectMenu, promptKey, sessionUser);
-                nextUrl = "mtg/" + "place" + USSDUrlUtil.eventIdUrlSuffix + eventId + "&prior_menu=subject";
-                menu = new USSDMenu(promptMessage, nextUrl);
-                break;
             case VOTES:
                 sessionUser = userManager.findByInputNumber(sessionUser.getPhoneNumber());
-                eventId = eventManager.createVote(sessionUser, groupId).getId();
+                Long eventId = eventManager.createVote(sessionUser, groupId).getId();
                 userManager.setLastUssdMenu(sessionUser, saveVoteMenu("issue", eventId));
                 nextUrl = "vote/" + "time" + USSDUrlUtil.eventIdUrlSuffix + eventId;
                 menu = new USSDMenu(getMessage(section, "issue", promptKey, sessionUser), nextUrl);

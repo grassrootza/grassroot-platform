@@ -30,6 +30,8 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
 	private EventRequestRepository eventRequestRepository;
 	@Autowired
 	private EventBroker eventBroker;
+	@Autowired
+	private PermissionBroker permissionBroker;
 
 	@Override
 	public EventRequest load(String eventRequestUid) {
@@ -45,6 +47,7 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
 		User user = userRepository.findOneByUid(userUid);
 		Group group = groupRepository.findOneByUid(groupUid);
 
+		permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
 		MeetingRequest request = MeetingRequest.makeEmpty(user, group);
 
 		return eventRequestRepository.save(request);
@@ -59,6 +62,7 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
 		User user = userRepository.findOneByUid(userUid);
 		Group group = groupRepository.findOneByUid(groupUid);
 
+		permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
 		VoteRequest request = VoteRequest.makeEmpty(user, group);
 
 		return eventRequestRepository.save(request);
@@ -99,7 +103,7 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
 	}
 
 	@Override
-	public void finish(String userUid, String eventRequestUid, boolean rsvpRequired) {
+	public String finish(String userUid, String eventRequestUid, boolean rsvpRequired) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(eventRequestUid);
 
@@ -112,20 +116,22 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
 
 		Set<String> assignedMemberUids = request.getAssignedMembers().stream().map(User::getUid).collect(Collectors.toSet());
 
+		String createdEntityUid;
 		if (request instanceof MeetingRequest) {
 			MeetingRequest meetingRequest = (MeetingRequest) request;
-			eventBroker.createMeeting(userUid, meetingRequest.getAppliesToGroup().getUid(), meetingRequest.getName(),
+			createdEntityUid = eventBroker.createMeeting(userUid, meetingRequest.getAppliesToGroup().getUid(), meetingRequest.getName(),
 					meetingRequest.getEventStartDateTime(), meetingRequest.getEventLocation(), meetingRequest.isIncludeSubGroups(),
 					rsvpRequired, meetingRequest.isRelayable(), meetingRequest.getReminderType(), meetingRequest.getCustomReminderMinutes(),
-					meetingRequest.getDescription(), assignedMemberUids);
+					meetingRequest.getDescription(), assignedMemberUids).getUid();
 		} else {
 			VoteRequest voteRequest = (VoteRequest) request;
-			eventBroker.createVote(userUid, voteRequest.getAppliesToGroup().getUid(), voteRequest.getName(),
+			createdEntityUid = eventBroker.createVote(userUid, voteRequest.getAppliesToGroup().getUid(), voteRequest.getName(),
 					voteRequest.getEventStartDateTime(), voteRequest.isIncludeSubGroups(), voteRequest.isRelayable(),
-					voteRequest.getDescription(), assignedMemberUids);
+					voteRequest.getDescription(), assignedMemberUids).getUid();
 		}
 
 		eventRequestRepository.delete(request);
+		return createdEntityUid;
 	}
 
 	@Override

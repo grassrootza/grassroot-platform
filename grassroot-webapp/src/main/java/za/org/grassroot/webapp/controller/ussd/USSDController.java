@@ -9,6 +9,7 @@ import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.services.util.CacheUtilManager;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -70,6 +71,7 @@ public class USSDController {
             promptKey = "prompt",
             errorPromptKey = "prompt.error",
             optionsKey = "options.";
+
     protected static final DateTimeFormatter dateTimeFormat = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
     protected static final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("EEE d MMM");
     protected static final DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("h:mm a");
@@ -86,6 +88,8 @@ public class USSDController {
     protected GroupBroker groupBroker;
     @Autowired
     protected EventManagementService eventManager;
+    @Autowired
+    protected CacheUtilManager cacheManager;
     @Autowired
     @Qualifier("messageSource")
     MessageSource messageSource;

@@ -198,7 +198,6 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         boolean includeSubGroups = true;
         String message = "message";
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(dummyGroup);
-        when(eventManagementServiceMock.createEvent("", sessionTestUser, dummyGroup, includeSubGroups)).thenReturn(testEvent);
         when(eventManagementServiceMock.sendManualReminder(testEvent, message)).thenReturn(true);
         mockMvc.perform(post("/meeting/free").param("confirmed", "").param("entityId", String.valueOf(dummyId))
                 .param("message", message).param("includeSubGroups", String.valueOf(includeSubGroups)))
@@ -207,7 +206,6 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/group/view?groupUid=" + dummyGroup.getUid()));//Not happy with this solution
         verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
-        verify(eventManagementServiceMock, times(1)).createEvent("", sessionTestUser, dummyGroup, includeSubGroups);
         verify(eventManagementServiceMock, times(1)).sendManualReminder(testEvent, message);
         verifyZeroInteractions(eventLogManagementServiceMock);
         verifyNoMoreInteractions(userManagementServiceMock);

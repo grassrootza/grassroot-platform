@@ -24,23 +24,9 @@ public interface EventManagementService {
     Methods to create events, in various different forms
      */
 
-    Event createEvent(String name, User createdByUser, Group appliesToGroup, boolean includeSubGroups);
-
-    Event createEvent(String name, Long createdByUserId, Long appliesToGroupId, boolean includeSubGroups);
-
-    Event createMeeting(String inputNumber, Long groupId);
-
-    Event createMeeting(User createdByUser, Long groupId);
-
-    Event createVote(String issue, User createdByUser);
-
     Event createVote(User createdByUser, Long groupId);
 
     Event createVote(String issue, Long userId, Long groupId, boolean includeSubGroups);
-
-    // method to call we have a fully formed vote entity
-    Event createVote(Event vote);
-
     /*
     Methods to find and load events, first by group
      */
@@ -55,11 +41,7 @@ public interface EventManagementService {
 
     List<Vote> findUpcomingVotesForGroup(Group group, Date date);
 
-    List<Meeting> getUpcomingMeetings(Long groupId);
-
     List<Meeting> getUpcomingMeetings(Group group);
-
-    List<Vote> getUpcomingVotes(Long groupId);
 
     List<Vote> getUpcomingVotes(Group group);
 
@@ -68,10 +50,6 @@ public interface EventManagementService {
     /*
     Methods to get upcoming or prior events which user can view or manage
      */
-
-    List<Event> getOutstandingRSVPForUser(Long userId);
-
-    List<Event> getOutstandingVotesForUser(Long userId);
 
     List<Event> getOutstandingVotesForUser(User user);
 
@@ -138,14 +116,6 @@ public interface EventManagementService {
 
     int countUpcomingEvents(Long userId);
 
-    boolean hasUpcomingEvents(Long userId);
-
-    String[] populateNotificationFields(Event event);
-
-    Map<String, String> getEventDescription(Event event);
-
-    Map<String, String> getEventDescription(Long eventId);
-
     int getNumberInvitees(Event event);
 
     String getGroupName(Event event);
@@ -173,8 +143,6 @@ public interface EventManagementService {
     Methods to retrive information used for account pages
     todo: handle sub-groups
      */
-
-
 
     List<Event> getGroupEventsInPeriod(Group group, LocalDateTime periodStart, LocalDateTime periodEnd);
 

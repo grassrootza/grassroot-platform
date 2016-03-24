@@ -5,19 +5,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.EventLog;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.dto.RSVPTotalsPerGroupDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.repository.EventLogRepository;
-import za.org.grassroot.core.repository.EventRepository;
-import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.util.CacheUtilService;
 
 import java.sql.Timestamp;
@@ -38,6 +32,9 @@ public class EventLogManager implements EventLogManagementService {
 
     @Autowired
     EventRepository eventRepository;
+
+    @Autowired
+    VoteRepository voteRepository;
 
     @Autowired
     UserRepository userRepository;
@@ -71,8 +68,10 @@ public class EventLogManager implements EventLogManagementService {
     }
 
     @Override
-    public boolean voteResultSentToUser(Event event, User user) {
-        return eventLogRepository.voteResultSent(event, user);
+    public boolean voteResultSentToUser(String voteUid, String userUid) {
+        Vote vote = voteRepository.findOneByUid(voteUid);
+        User user = userRepository.findOneByUid(userUid);
+        return eventLogRepository.voteResultSent(vote, user);
     }
 
     @Override

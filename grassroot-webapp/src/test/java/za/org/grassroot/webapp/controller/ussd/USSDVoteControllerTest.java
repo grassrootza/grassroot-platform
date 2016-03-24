@@ -141,7 +141,7 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
         Event testVote = new Vote("someVote", Timestamp.from(Instant.now()), testUser, testGroup, true);
         testVote.setId(1L);
         String interruptedUrl = saveVoteMenu("issue", 1L);
-        String revisingUrl = backVoteUrl("issue", 1L);
+        String revisingUrl = backVoteUrl("issue", testVote.getUid());
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, interruptedUrl)).thenReturn(testUser);
@@ -169,7 +169,7 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
         Event testVote = new Vote("somevote", Timestamp.from(Instant.now()), testUser, new Group("somegroup", testUser));
         testVote.setId(1L);
         String interruptedUrl = saveVoteMenu("time", 1L);
-        String revisingUrl = backVoteUrl("time", 1L);
+        String revisingUrl = backVoteUrl("time", testVote.getUid());
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, interruptedUrl)).thenReturn(testUser);
 

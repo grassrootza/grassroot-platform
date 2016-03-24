@@ -32,16 +32,21 @@ public interface AssignedMembersContainer extends UidIdentifiableEntity {
 		return new HashSet<>(fetchAssignedMembersCollection());
 	}
 
+	/**
+	 * Method that returns whether all group members are assigned to the entity or only a subset
+	 * @return true if all group members are assigned
+     */
 	default boolean isAllGroupMembersAssigned() {
 		return getAssignedMembers().isEmpty();
 	}
 
 	/**
-	 * Assigns new members to thsic container. Returns set of users that were added to the container
+	 * Assigns new members to this container. Returns set of users that were added to the container
 	 * (some maybe have already been added).
 	 *
 	 * @param memberUids set of member UIDs; these have to exist in belonging group
 	 * @return set of newly assigned members
+	 * @throws IllegalArgumentException if passed members which are not in the belonging group
 	 */
 	default Set<User> assignMembers(Set<String> memberUids) {
 		Objects.requireNonNull(memberUids);

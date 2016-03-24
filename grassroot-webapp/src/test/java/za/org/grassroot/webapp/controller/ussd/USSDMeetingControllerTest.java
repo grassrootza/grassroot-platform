@@ -319,7 +319,6 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         String urlToCheck = saveMeetingMenu("subject", 1L, false);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToCheck)).thenReturn(testUser);
-        when(eventManagementServiceMock.createMeeting(testUserPhone, testGroup.getId())).thenReturn(testMeeting);
 
         mockMvc.perform(get(path + "subject").param(phoneParam, testUserPhone).param("eventId", "1").
                 param("groupId", "" + testGroup.getId()).param("prior_menu", "group")).andExpect(status().isOk());
@@ -328,7 +327,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToCheck);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(eventManagementServiceMock, times(1)).createMeeting(testUserPhone, testGroup.getId());
+        // verify(eventManagementServiceMock, times(1)).createMeeting(testUserPhone, testGroup.getId());
         verifyNoMoreInteractions(eventManagementServiceMock);
         verifyZeroInteractions(groupManagementServiceMock);
     }
@@ -567,7 +566,6 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(eventManagementServiceMock.loadEvent(testMeeting.getId())).thenReturn(testMeeting);
-        when(eventManagementServiceMock.getEventDescription(testMeeting)).thenReturn(meetingDetails);
         when(eventManagementServiceMock.getMeetingRsvpTotals(testMeeting)).thenReturn(meetingResults);
         when(eventManagementServiceMock.getNumberInvitees(testMeeting)).thenReturn(546 + 115 + 54);
 
@@ -577,7 +575,6 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(1)).findByInputNumber(anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventManagementServiceMock, times(1)).loadEvent(anyLong());
-        verify(eventManagementServiceMock, times(1)).getEventDescription(any(Event.class));
         verify(eventManagementServiceMock, times(1)).getMeetingRsvpTotals(any(Event.class));
         verify(eventManagementServiceMock, times(1)).getMeetingRsvpTotals(any(Event.class));
         verify(eventManagementServiceMock, times(1)).getNumberInvitees(any(Event.class));

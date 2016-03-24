@@ -20,7 +20,7 @@ public interface EventLogManagementService {
 
     boolean notificationSentToUser(Event event, User user);
 
-    boolean voteResultSentToUser(Event event, User user);
+    boolean voteResultSentToUser(String voteUid, String userUid);
 
     boolean changeNotificationSentToUser(String eventUid, String userUid, String message);
 

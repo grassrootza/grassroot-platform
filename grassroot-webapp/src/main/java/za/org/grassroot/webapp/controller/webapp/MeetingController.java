@@ -114,8 +114,8 @@ public class MeetingController extends BaseController {
         log.info("Stored meeting, at end of creation method: " + meeting.toString());
 
         addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.creation.success", request);
-        return "redirect:/home";
-
+        redirectAttributes.addAttribute("groupUid", groupUid);
+        return "redirect:/group/view";
     }
 
     /**
@@ -340,24 +340,4 @@ public class MeetingController extends BaseController {
         }
     }
 
-     /*
-    Helper functions for reminders -- may make this call group, if there is group, for defaults, and so on ... for now, just assembles the list
-    Would have done this as a list of array strings but Java has seriously terrible array/list handling for this sort of thing
-     */
-
-    private List<String[]> reminderMinuteOptions() {
-
-        List<String[]> minuteOptions = new ArrayList<>();
-
-        String[] oneDay = new String[]{"" + 24 * 60, "One day ahead"};
-        String[] halfDay = new String[]{"" + 6 * 60, "Half a day ahead"};
-        String[] oneHour = new String[]{"60", "An hour before"};
-
-        minuteOptions.add(oneDay);
-        minuteOptions.add(halfDay);
-        minuteOptions.add(oneHour);
-
-        return minuteOptions;
-
-    }
 }

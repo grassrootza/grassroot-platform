@@ -42,9 +42,6 @@ public class USSDMeetingController extends USSDController {
      */
 
     @Autowired
-    private CacheUtilManager cacheManager;
-
-    @Autowired
     private USSDEventUtil eventUtil;
 
     @Autowired
@@ -185,14 +182,11 @@ public class USSDMeetingController extends USSDController {
                 thisMenu.setPromptMessage(getMessage(thisSection, groupHandlingMenu, promptKey + ".no-group", user));
                 thisMenu.setNextURI(meetingMenus + groupHandlingMenu);
             } else {
-                Long eventIdToPass = eventId;
-                if (eventId == null) {
-                    eventIdToPass = eventManager.createMeeting(inputNumber, groupId).getId();
-                    userManager.setLastUssdMenu(user, USSDUrlUtil.saveMenuUrlWithInput(thisSection, groupHandlingMenu,
-                            includeGroup + "&eventId=" + eventIdToPass, userInput));
-                }
+                Group group = groupManager.loadGroup(groupId);
+                MeetingRequest meetingRequest = eventRequestBroker.createEmptyMeetingRequest(user.getUid(), group.getUid());
+                String mtgRequestUid = meetingRequest.getUid();
                 thisMenu.setPromptMessage(getMessage(thisSection, nextMenu(startMenu), promptKey, user));
-                thisMenu.setNextURI(meetingMenus + nextMenu(nextMenu(startMenu)) + eventIdUrlSuffix + eventIdToPass
+                thisMenu.setNextURI(meetingMenus + nextMenu(nextMenu(startMenu)) + entityUidUrlSuffix + mtgRequestUid
                         + "&" + previousMenu + "=" + nextMenu(startMenu));
             }
         }

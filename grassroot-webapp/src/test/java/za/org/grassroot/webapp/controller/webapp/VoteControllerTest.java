@@ -100,7 +100,6 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
         // when(groupManagementServiceMock.canUserCallVote(dummyId, sessionTestUser)).thenReturn(true);
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
         when(groupManagementServiceMock.isUserInGroup(testGroup, sessionTestUser)).thenReturn(true);
-        when(eventManagementServiceMock.createVote(testVote)).thenReturn(testVote);
         mockMvc.perform(post("/vote/create").param("selectedGroupId", String.valueOf(dummyId))
                 .sessionAttr("vote", testVote))
                 .andExpect(model().attribute("eventId", is(dummyId)))
@@ -109,7 +108,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
         verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
         // verify(groupManagementServiceMock, times(1)).canUserCallVote(dummyId, sessionTestUser);
         verify(groupManagementServiceMock, times(1)).isUserInGroup(testGroup, sessionTestUser);
-        verify(eventManagementServiceMock, times(1)).createVote(testVote);
+        // verify(eventManagementServiceMock, times(1)).createVote(testVote);
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyNoMoreInteractions(eventManagementServiceMock);
     }

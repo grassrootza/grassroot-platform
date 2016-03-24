@@ -81,24 +81,20 @@ public class BaseController {
         throw new AuthenticationServiceException("Invalid logged in user profile");
     }
 
-    /* protected User getUserProfile() {
+    /* Helper method used in all the meeting/vote/logbook fields */
+    protected List<String[]> reminderMinuteOptions() {
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return userManagementService.fetchUserByUsername(authentication.getGroupName());
-    }*/
+        List<String[]> minuteOptions = new ArrayList<>();
 
-    public Group loadAuthorizedGroup(Long groupId, Permission permission) {
-        Group group = groupManagementService.loadGroup(groupId);
-        if (group == null) {
-            throw new IllegalArgumentException("Group '" + groupId + "' does not exist.");
-        }
+        String[] oneDay = new String[]{"" + 24 * 60, "One day ahead"};
+        String[] halfDay = new String[]{"" + 6 * 60, "Half a day ahead"};
+        String[] oneHour = new String[]{"60", "An hour before"};
 
-        User user = getUserProfile();
-        if (!permissionBroker.isGroupPermissionAvailable(user, group, permission)) {
-            throw new AccessDeniedException("Unauthorised access '" + permission.getAuthority() + "' for Group '" + group.getGroupName() + "'");
-        }
-        return group;
-//        return  groupAccessControlManagementService.loadAuthorizedGroup(groupId,permission);
+        minuteOptions.add(oneDay);
+        minuteOptions.add(halfDay);
+        minuteOptions.add(oneHour);
+
+        return minuteOptions;
     }
 
     public String getMessage(String id) {

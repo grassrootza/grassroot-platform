@@ -53,45 +53,44 @@ public class VoteController extends BaseController {
         boolean groupSpecified = (groupUid != null);
         User user = getUserProfile();
 
+        VoteRequest voteRequest = VoteRequest.makeEmpty(user, null);
+        voteRequest.setRsvpRequired(true);
+
         if (groupSpecified) {
             Group group = groupBroker.load(groupUid);
             // note: though service layer checks this, and prior UX, want to catch it here too in case of URL hacking
-            permissionBroker.validateGroupPermission(getUserProfile(), group, GROUP_PERMISSION_CREATE_GROUP_VOTE);
+            permissionBroker.validateGroupPermission(user, group, GROUP_PERMISSION_CREATE_GROUP_VOTE);
             model.addAttribute("group", group);
+            voteRequest.setAppliesToGroup(group);
         } else {
             // todo: filter for permissions
             model.addAttribute("possibleGroups", permissionBroker.getActiveGroupsWithPermission(getUserProfile(), GROUP_PERMISSION_CREATE_GROUP_VOTE));
         }
 
-        VoteRequest voteRequest = VoteRequest.makeEmpty(user, null);
-        voteRequest.setRsvpRequired(true);
-
         model.addAttribute("vote", voteRequest);
         model.addAttribute("groupSpecified", groupSpecified);
+        model.addAttribute("reminderOptions", reminderMinuteOptions());
 
         return "vote/create";
     }
 
     @RequestMapping(value = "/vote/create", method = RequestMethod.POST)
     public String createVoteDo(Model model, @ModelAttribute("vote") VoteRequest vote, BindingResult bindingResult,
-                               @RequestParam("selectedGroupId") Long selectedGroupId,
+                               @RequestParam(value = "selectedGroupUid", required = false) String selectedGroupUid,
                                HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
         log.info("Vote passed back to us: " + vote);
-        Group group = groupManagementService.loadGroup(selectedGroupId);
-        User user = getUserProfile();
+        String groupUid = (selectedGroupUid == null) ? vote.getAppliesToGroup().getUid() : selectedGroupUid;
 
-        if (!groupManagementService.isUserInGroup(group, user))
-            throw new AccessDeniedException("");
+        eventBroker.createVote(getUserProfile().getUid(), groupUid, vote.getName(), vote.getEventStartDateTime(),
+                               vote.isIncludeSubGroups(), vote.isRelayable(), vote.getDescription(), Collections.emptySet());
 
-        log.info("Fleshed out vote: " + vote);
-
-        eventBroker.createVote(user.getUid(), group.getUid(), vote.getName(), vote.getEventStartDateTime(), vote.isIncludeSubGroups(), vote.isRelayable(), null, Collections.emptySet());
         log.info("Stored vote, at end of creation: " + vote.toString());
 
-        addMessage(model, MessageType.SUCCESS, "vote.creation.success", request);
-        model.addAttribute("eventId", vote.getId());
-        return "vote/view";
+        // todo : ask person who called vote for vote (and, in general, add that to group view)
+        addMessage(redirectAttributes, MessageType.SUCCESS, "vote.creation.success", request);
+        redirectAttributes.addAttribute("groupUid", groupUid);
+        return "redirect:/group/view";
     }
 
     @RequestMapping("/vote/view")

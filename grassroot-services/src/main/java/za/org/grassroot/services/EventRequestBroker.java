@@ -19,7 +19,7 @@ public interface EventRequestBroker {
 
 	void updateMeetingLocation(String userUid, String meetingRequestUid, String location);
 
-	void finish(String userUid, String eventRequestUid, boolean rsvpRequired);
+	String finish(String userUid, String eventRequestUid, boolean rsvpRequired);
 
 	MeetingRequest createChangeRequest(String userUid, String meetingUid);
 

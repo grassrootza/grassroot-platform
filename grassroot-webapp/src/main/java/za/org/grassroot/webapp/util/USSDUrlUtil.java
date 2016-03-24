@@ -123,8 +123,12 @@ public class USSDUrlUtil {
         return USSDSection.VOTES.toPath() + menu + "?eventId=" + eventId + setInterruptedFlag; // include the +1
     }
 
-    public static String backVoteUrl(String menu, Long eventId) {
-        return USSDSection.VOTES.toPath() + menu + "?eventId=" + eventId + setRevisingFlag;
+    public static String saveVoteMenu(String menu, String requestUid) {
+        return USSDSection.VOTES.toPath() + menu + "?eventUid=" + requestUid + setInterruptedFlag;
+    }
+
+    public static String backVoteUrl(String menu, String requestUid) {
+        return USSDSection.VOTES.toPath() + menu + "?requestUid=" + requestUid + setRevisingFlag;
     }
 
     public static String saveLogMenu(String menu, Long logBookId) {
