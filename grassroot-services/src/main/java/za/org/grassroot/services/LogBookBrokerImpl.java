@@ -16,6 +16,7 @@ import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 
 import java.sql.Timestamp;
 import java.util.Objects;
+import java.util.Set;
 
 @Service
 public class LogBookBrokerImpl implements LogBookBroker {
@@ -32,31 +33,29 @@ public class LogBookBrokerImpl implements LogBookBroker {
 
 	@Override
 	@Transactional
-	public LogBook create(String userUid, String groupUid, String message, Timestamp actionByDate, int reminderMinutes, String assignedToUserUid, boolean replicateToSubgroups) {
+	public LogBook create(String userUid, String groupUid, String message, Timestamp actionByDate, int reminderMinutes,
+						  boolean replicateToSubgroups, Set<String> assignedMemberUids) {
 
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(groupUid);
 		Objects.requireNonNull(message);
 		Objects.requireNonNull(actionByDate);
+		Objects.requireNonNull(assignedMemberUids);
 
 		User user = userRepository.findOneByUid(userUid);
 		Group group = groupRepository.findOneByUid(groupUid);
 
-		logger.info("Creating new log book: userUid={}, groupUid={}, message={}, actionByDate={}, reminderMinutes={}, assignedToUserUid={}, replicateToSubgroups={}",
-				userUid, groupUid, message, actionByDate, reminderMinutes, assignedToUserUid, replicateToSubgroups);
+		logger.info("Creating new log book: userUid={}, groupUid={}, message={}, actionByDate={}, reminderMinutes={}, assignedMemberUids={}, replicateToSubgroups={}",
+				userUid, groupUid, message, actionByDate, reminderMinutes, assignedMemberUids, replicateToSubgroups);
 
-		User assignedToUser = null;
-		if (assignedToUserUid != null) {
-			assignedToUser = userRepository.findOneByUid(assignedToUserUid);
-		}
-
-		LogBook logBook = createNewLogBook(user, group, message, actionByDate, reminderMinutes, assignedToUser, null);
+		LogBook logBook = createNewLogBook(user, group, message, actionByDate, reminderMinutes, null);
+		logBook.assignMembers(assignedMemberUids);
 
 		// note: getGroupAndSubGroups is a much faster method (a recursive query) than getSubGroups, hence use it and just skip parent
 		if (replicateToSubgroups) {
 			for (Group subGroup : groupRepository.findGroupAndSubGroupsById(group.getId())) {
 				if (!group.equals(subGroup)) {
-					createNewLogBook(user, subGroup, message, actionByDate, reminderMinutes, assignedToUser, group);
+					createNewLogBook(user, subGroup, message, actionByDate, reminderMinutes, group);
 				}
 			}
 		}
@@ -64,14 +63,36 @@ public class LogBookBrokerImpl implements LogBookBroker {
 		return logBook;
 	}
 
+	@Override
+	@Transactional
+	public void assignMembers(String userUid, String logBookUid, Set<String> assignMemberUids) {
+		Objects.requireNonNull(logBookUid);
+
+		User user = userRepository.findOneByUid(userUid);
+		LogBook logBook = logBookRepository.findOneByUid(logBookUid);
+
+		logBook.assignMembers(assignMemberUids);
+	}
+
+	@Override
+	@Transactional
+	public void removeAssignedMembers(String userUid, String logBookUid, Set<String> memberUids) {
+		Objects.requireNonNull(logBookUid);
+
+		User user = userRepository.findOneByUid(userUid);
+		LogBook logBook = logBookRepository.findOneByUid(logBookUid);
+
+		logBook.removeAssignedMembers(memberUids);
+	}
+
 	private LogBook createNewLogBook(User user, Group group, String message, Timestamp actionByDate, int reminderMinutes,
-									 User assignedToUser, Group replicatedGroup) {
+									 Group replicatedGroup) {
 		int numberOfRemindersLeftToSend = 0;
 		if (numberOfRemindersLeftToSend == 0) {
 			numberOfRemindersLeftToSend = 3; // todo: replace with a logic based on group paid / not paid
 		}
 
-		LogBook logBook = new LogBook(user, group, message, actionByDate, reminderMinutes, assignedToUser, replicatedGroup, numberOfRemindersLeftToSend);
+		LogBook logBook = new LogBook(user, group, message, actionByDate, reminderMinutes, replicatedGroup, numberOfRemindersLeftToSend);
 		logBook = logBookRepository.save(logBook);
 		jmsTemplateProducerService.sendWithNoReply("new-logbook", new LogBookDTO(logBook));
 		return logBook;

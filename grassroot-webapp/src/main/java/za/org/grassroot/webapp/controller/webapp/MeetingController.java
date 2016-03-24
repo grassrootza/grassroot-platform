@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.webapp;
 
+import edu.emory.mathcs.backport.java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -107,7 +108,8 @@ public class MeetingController extends BaseController {
 
         eventBroker.createMeeting(getUserProfile().getUid(), groupUid, meeting.getName(),
                 meeting.getEventStartDateTime(), meeting.getEventLocation(), meeting.isIncludeSubGroups(),
-                meeting.isRsvpRequired(), meeting.isRelayable(), meeting.getReminderType(), meeting.getCustomReminderMinutes(), "");
+                meeting.isRsvpRequired(), meeting.isRelayable(), meeting.getReminderType(), meeting.getCustomReminderMinutes(),
+                "", Collections.emptySet());
 
         log.info("Stored meeting, at end of creation method: " + meeting.toString());
 

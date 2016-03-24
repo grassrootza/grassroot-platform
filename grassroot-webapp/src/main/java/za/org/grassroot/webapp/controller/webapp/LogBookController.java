@@ -112,13 +112,15 @@ public class LogBookController extends BaseController {
 
         User user = getUserProfile();
 
+        // todo: implement this using new design
+/*
         String assignedToUserUid = logBookEntry.getAssignedToUser() == null? null: logBookEntry.getAssignedToUser().getUid();
         if (!assignToUser || subGroups) {
             assignedToUserUid = null; // todo: in future version allow assignment per subgroup
         }
 
-        logBookBroker.create(user.getUid(), logBookEntry.getGroup().getUid(), logBookEntry.getMessage(), logBookEntry.getActionByDate(), logBookEntry.getReminderMinutes(), assignedToUserUid, subGroups
-        );
+        logBookBroker.create(user.getUid(), logBookEntry.getGroup().getUid(), logBookEntry.getMessage(), logBookEntry.getActionByDate(), logBookEntry.getReminderMinutes(), assignedToUserUid, subGroups);
+*/
 
         addMessage(redirectAttributes, MessageType.SUCCESS, "log.creation.success", request);
         redirectAttributes.addAttribute("logBookId", logBookEntry.getId()); // todo: rather to logbook description
@@ -161,8 +163,11 @@ public class LogBookController extends BaseController {
         model.addAttribute("creatingUser", logBookEntry.getCreatedByUser());
         model.addAttribute("isComplete", logBookEntry.isCompleted());
 
+        // todo: implement this using new design
+/*
         if(logBookEntry.getAssignedToUser() != null)
             model.addAttribute("assignedToUser", logBookEntry.getAssignedToUser());
+*/
         if(logBookEntry.isCompleted() && logBookEntry.getCompletedByUser() != null) {
             log.info("Entry is marked as completed, by user: " + logBookEntry.getCreatedByUser());
             model.addAttribute("completedByUser", logBookEntry.getCompletedByUser());
@@ -193,12 +198,15 @@ public class LogBookController extends BaseController {
     public String completeLogBookForm(Model model, @RequestParam(value="logBookId", required=true) Long logBookId) {
 
         LogBook logBookEntry = logBookService.load(logBookId);
+        // todo: implement this using new design
+/*
         boolean assignedEntry = logBookEntry.getAssignedToUser() != null;
-        model.addAttribute("entry", logBookEntry);
-        model.addAttribute("groupMembers", groupManagementService.getUsersInGroupNotSubGroups(logBookEntry.getGroup().getId()));
         model.addAttribute("hasAssignedUser", assignedEntry);
         if (assignedEntry)
             model.addAttribute("assignedUser", logBookEntry.getAssignedToUser());
+*/
+        model.addAttribute("entry", logBookEntry);
+        model.addAttribute("groupMembers", groupManagementService.getUsersInGroupNotSubGroups(logBookEntry.getGroup().getId()));
 
         return "log/complete";
     }
@@ -254,8 +262,11 @@ public class LogBookController extends BaseController {
         model.addAttribute("reminderTime", reminderTimeDescriptions().get(logBook.getReminderMinutes()));
         model.addAttribute("reminderTimeOptions", reminderTimeDescriptions());
 
+        // todo: implement this using new design
+/*
         if (logBook.getAssignedToUser() != null)
             model.addAttribute("assignedUser", logBook.getAssignedToUser());
+*/
 
         return "log/modify";
     }
@@ -279,10 +290,13 @@ public class LogBookController extends BaseController {
             savedLogBook.setReminderMinutes(logBook.getReminderMinutes());
 
         log.info("Are we going to assigned this to a user? ... " + assignToUser);
+        // todo: implement this using new design
+/*
         if (!assignToUser)
             savedLogBook.setAssignedToUser(null);
         else
             savedLogBook.setAssignedToUser(logBook.getAssignedToUser());
+*/
 
         savedLogBook = logBookService.save(savedLogBook);
 

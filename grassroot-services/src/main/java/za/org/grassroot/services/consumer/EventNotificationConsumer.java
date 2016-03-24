@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.*;
 import za.org.grassroot.core.enums.EventLogType;
@@ -152,30 +153,32 @@ public class EventNotificationConsumer {
      */
     @JmsListener(destination = "logbook-reminders", containerFactory = "messagingJmsContainerFactory",
             concurrency = "3")
+    @Transactional
     public void sendLogBookReminder(LogBookDTO logBookDTO) {
         log.info("sendLogBookReminder...logBook..." + logBookDTO);
 
         Group  group = groupManagementService.loadGroup(logBookDTO.getGroupId());
-        if (logBookDTO.getAssignedToUserId() != null) {
-            sendLogBookReminderMessage(userRepository.findOne(logBookDTO.getAssignedToUserId()), group, logBookDTO);
+        LogBook logBook = logBookRepository.findOne(logBookDTO.getGroupId());
+
+        if (logBook.isAllGroupMembersAssigned()) {
+            for (User user : groupManagementService.getUsersInGroupNotSubGroups(group.getId())) {
+                sendLogBookReminderMessage(user, group, logBook);
+            }
 
         } else {
-            for (User user : groupManagementService.getUsersInGroupNotSubGroups(group.getId())) {
-                sendLogBookReminderMessage(user, group, logBookDTO);
+            for (User user : logBook.getAssignedMembers()) {
+                sendLogBookReminderMessage(user, group, logBook);
             }
         }
         // reduce number of reminders to send and calculate new reminder minutes
-        LogBook logBook = logBookRepository.findOne(logBookDTO.getId());
         logBook.setNumberOfRemindersLeftToSend(logBook.getNumberOfRemindersLeftToSend() - 1);
         if (logBook.getReminderMinutes() < 0) {
             logBook.setReminderMinutes(DateTimeUtil.numberOfMinutesForDays(7));
         } else {
             logBook.setReminderMinutes(logBook.getReminderMinutes() + DateTimeUtil.numberOfMinutesForDays(7));
         }
-        logBook = logBookRepository.save(logBook);
-
-
     }
+
     @JmsListener(destination = "manual-reminder", containerFactory = "messagingJmsContainerFactory",
             concurrency = "1")
     public void sendManualEventReminder(EventDTO event) {
@@ -220,25 +223,28 @@ public class EventNotificationConsumer {
 
     @JmsListener(destination = "new-logbook", containerFactory = "messagingJmsContainerFactory",
             concurrency = "1")
+    @Transactional
     public void sendNewLogbookNotification(LogBookDTO logBookDTO) {
         log.info("sendNewLogbookNotification...id..." + logBookDTO.getId());
         Group  group = groupManagementService.loadGroup(logBookDTO.getGroupId());
         Account account = accountManagementService.findAccountForGroup(group);
+        LogBook logBook = logBookRepository.findOne(logBookDTO.getId());
 
         log.info("Found this account for the group ..." + (account == null ? " none" : account.getAccountName()));
 
         if (account != null && account.isLogbookExtraMessages()) {
             //send messages to paid for groups using the same logic as the reminders - sendLogBookReminder method
             //so if you make changes here also make the changes there
-            if (logBookDTO.getAssignedToUserId() != null) {
-                sendNewLogbookNotificationMessage(userRepository.findOne(logBookDTO.getAssignedToUserId()), group, logBookDTO);
+            if (logBook.isAllGroupMembersAssigned()) {
+                for (User user : group.getMembers()) {
+                    sendNewLogbookNotificationMessage(user, group, logBook, false);
+                }
 
             } else {
-                for (User user : group.getMembers()) {
-                    sendNewLogbookNotificationMessage(user, group, logBookDTO);
+                for (User user : logBook.getAssignedMembers()) {
+                    sendNewLogbookNotificationMessage(user, group, logBook, true);
                 }
             }
-
 
         } else {
             log.info("sendNewLogbookNotification...id..." + logBookDTO.getId() + "...NOT a paid for group..." + group.getId());
@@ -373,18 +379,18 @@ public class EventNotificationConsumer {
 
     }
 
-    private void sendLogBookReminderMessage(User user,Group group, LogBookDTO logBookDTO) {
-        log.info("sendLogBookReminderMessage...user..." + user.getPhoneNumber() + "...logbook..." + logBookDTO.getMessage());
-        String message = meetingNotificationService.createLogBookReminderMessage(user,group,logBookDTO);
+    private void sendLogBookReminderMessage(User user,Group group, LogBook logBook) {
+        log.info("sendLogBookReminderMessage...user..." + user.getPhoneNumber() + "...logbook..." + logBook.getMessage());
+        String message = meetingNotificationService.createLogBookReminderMessage(user,group,logBook);
         messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
-        logBookLogRepository.save(new LogBookLog(logBookDTO.getId(),message,user.getId(),group.getId(),user.getPhoneNumber()));
+        logBookLogRepository.save(new LogBookLog(logBook.getId(),message,user.getId(),group.getId(),user.getPhoneNumber()));
 
     }
-    private void sendNewLogbookNotificationMessage(User user,Group group, LogBookDTO logBookDTO) {
-        log.info("sendNewLogbookNotificationMessage...user..." + user.getPhoneNumber() + "...logbook..." + logBookDTO.getMessage());
-        String message = meetingNotificationService.createNewLogBookNotificationMessage(user,group,logBookDTO);
+    private void sendNewLogbookNotificationMessage(User user,Group group, LogBook logBook, boolean assigned) {
+        log.info("sendNewLogbookNotificationMessage...user..." + user.getPhoneNumber() + "...logbook..." + logBook.getMessage());
+        String message = meetingNotificationService.createNewLogBookNotificationMessage(user,group,logBook, assigned);
         messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
-        logBookLogRepository.save(new LogBookLog(logBookDTO.getId(),message,user.getId(),group.getId(),user.getPhoneNumber()));
+        logBookLogRepository.save(new LogBookLog(logBook.getId(),message,user.getId(),group.getId(),user.getPhoneNumber()));
 
     }
 

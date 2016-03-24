@@ -1,5 +1,6 @@
 package za.org.grassroot.services;
 
+import edu.emory.mathcs.backport.java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,8 @@ import za.org.grassroot.services.exception.EventRequestNotFilledException;
 
 import java.sql.Timestamp;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class EventRequestBrokerImpl implements EventRequestBroker {
@@ -107,15 +110,19 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
 
 		if (request.getDescription() == null) request.setDescription(""); // since we don't ask for description in USSD
 
+		Set<String> assignedMemberUids = request.getAssignedMembers().stream().map(User::getUid).collect(Collectors.toSet());
+
 		if (request instanceof MeetingRequest) {
 			MeetingRequest meetingRequest = (MeetingRequest) request;
 			eventBroker.createMeeting(userUid, meetingRequest.getAppliesToGroup().getUid(), meetingRequest.getName(),
 					meetingRequest.getEventStartDateTime(), meetingRequest.getEventLocation(), meetingRequest.isIncludeSubGroups(),
-					rsvpRequired, meetingRequest.isRelayable(), meetingRequest.getReminderType(), meetingRequest.getCustomReminderMinutes(), meetingRequest.getDescription());
+					rsvpRequired, meetingRequest.isRelayable(), meetingRequest.getReminderType(), meetingRequest.getCustomReminderMinutes(),
+					meetingRequest.getDescription(), assignedMemberUids);
 		} else {
 			VoteRequest voteRequest = (VoteRequest) request;
 			eventBroker.createVote(userUid, voteRequest.getAppliesToGroup().getUid(), voteRequest.getName(),
-					voteRequest.getEventStartDateTime(), voteRequest.isIncludeSubGroups(), voteRequest.isRelayable(), voteRequest.getDescription());
+					voteRequest.getEventStartDateTime(), voteRequest.isIncludeSubGroups(), voteRequest.isRelayable(),
+					voteRequest.getDescription(), assignedMemberUids);
 		}
 
 		eventRequestRepository.delete(request);

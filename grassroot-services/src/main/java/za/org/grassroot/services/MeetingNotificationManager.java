@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.ui.velocity.VelocityEngineUtils;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.dto.LogBookDTO;
@@ -55,19 +56,18 @@ public class MeetingNotificationManager implements MeetingNotificationService {
     }
 
     @Override
-    public String createLogBookReminderMessage(User user, Group group, LogBookDTO logBookDTO) {
+    public String createLogBookReminderMessage(User user, Group group, LogBook logBook) {
         Locale locale = getUserLocale(user);
-        return messageSourceAccessor.getMessage("sms.logbook.reminder", populateLogBookFields(user, group, logBookDTO), locale);
+        return messageSourceAccessor.getMessage("sms.logbook.reminder", populateLogBookFields(user, group, logBook), locale);
     }
 
     @Override
-    public String createNewLogBookNotificationMessage(User user, Group group, LogBookDTO logBookDTO) {
+    public String createNewLogBookNotificationMessage(User user, Group group, LogBook logBook, boolean assigned) {
         Locale locale = getUserLocale(user);
-        if (logBookDTO.getAssignedToUserId() != null) {
-            return messageSourceAccessor.getMessage("sms.logbook.new.assigned", populateLogBookFields(user, group, logBookDTO), locale);
-
+        if (assigned) {
+            return messageSourceAccessor.getMessage("sms.logbook.new.assigned", populateLogBookFields(user, group, logBook), locale);
         } else {
-            return messageSourceAccessor.getMessage("sms.logbook.new.notassigned", populateLogBookFields(user, group, logBookDTO), locale);
+            return messageSourceAccessor.getMessage("sms.logbook.new.notassigned", populateLogBookFields(user, group, logBook), locale);
         }
     }
 
@@ -163,16 +163,16 @@ public class MeetingNotificationManager implements MeetingNotificationService {
 
     }
 
-    private String[] populateLogBookFields(User user, Group group, LogBookDTO logBookDTO) {
+    private String[] populateLogBookFields(User user, Group group, LogBook logBook) {
         String salutation = (group.hasName()) ? group.getGroupName() : "GrassRoot";
         SimpleDateFormat sdf = new SimpleDateFormat("EEE d MMM, h:mm a");
         String dateString = "no date specified";
-        if (logBookDTO.getActionByDate() != null) {
-            dateString = sdf.format(logBookDTO.getActionByDate());
+        if (logBook.getActionByDate() != null) {
+            dateString = sdf.format(logBook.getActionByDate());
         }
         String[] variables = new String[]{
                 salutation,
-                logBookDTO.getMessage(),
+                logBook.getMessage(),
                 dateString,
                 user.getDisplayName()
         };

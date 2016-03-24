@@ -122,10 +122,14 @@ public class TaskDTO implements Comparable<TaskDTO>{
             }
         } else {
             LogBook logBook = (LogBook) object;
+            // todo: implement via new design?
+            throw new UnsupportedOperationException("Implement via new design?");
+/*
             if (!logBook.isCompleted() && logBook.getAssignedToUser().equals(user) || logBook.getCreatedByUser().equals(user)
                     || logBook.getAssignedToUser()== null) {
                 canAction = true;
             }
+*/
         }
         return canAction;
     }

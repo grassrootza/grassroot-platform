@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.ussd;
 
+import edu.emory.mathcs.backport.java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
@@ -242,7 +243,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         dummyLogBook.setGroup(testGroup);
         dummyLogBook.setMessage(dummyUserInput);
         dummyLogBook.setActionByDate(Timestamp.from(Instant.now()));
-        dummyLogBook.setAssignedToUser(testUser);
+        dummyLogBook.assignMembers(Collections.singleton(testUser));
 
         String urlToSave = USSDUrlUtil.saveLogMenu(confirmMenu, dummyId, "1", testUser.getId());
 
@@ -395,9 +396,9 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         dummyLogBook.setCompletedDate(Timestamp.from(Instant.now()));
         dummyLogBook.setActionByDate(Timestamp.valueOf(LocalDateTime.of(2016, Month.JANUARY, 20, 12, 0)));
         dummyLogBook.setCompletedByUser(testUser);
-        dummyLogBook.setAssignedToUser(testUser);
+        dummyLogBook.assignMembers(Collections.singleton(testUser));
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
-        when(dummyLogBook.getAssignedToUser()).thenReturn(testUser);
+//        when(dummyLogBook.getAssignedToUser()).thenReturn(testUser);
         when(logBookServiceMock.load(dummyId)).thenReturn(dummyLogBook);
         mockMvc.perform(get(path + viewAssignment).param(phoneParam, testUserPhone)
                 .param(logBookIdParam, String.valueOf(dummyLogBook.getId()))).andExpect(status().isOk());
@@ -416,9 +417,9 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         dummyLogBook.setCompletedDate(Timestamp.from(Instant.now()));
         dummyLogBook.setActionByDate(Timestamp.valueOf(LocalDateTime.of(2016, Month.JANUARY, 20, 12, 0)));
         dummyLogBook.setCompletedByUser(testUser);
-        dummyLogBook.setAssignedToUser(testUser);
+        dummyLogBook.assignMembers(Collections.singleton(testUser));
         when(userManagementServiceMock.findByInputNumber(testUserPhone, saveLogMenu(setCompleteMenu, dummyLogBook.getId()))).thenReturn(testUser);
-        when(dummyLogBook.getAssignedToUser()).thenReturn(testUser);
+//        when(dummyLogBook.getAssignedToUser()).thenReturn(testUser);
         when(logBookServiceMock.load(dummyId)).thenReturn(dummyLogBook);
         mockMvc.perform(get(path + setCompleteMenu).param(phoneParam, testUserPhone)
                 .param(logBookIdParam, String.valueOf(dummyLogBook.getId()))).andExpect(status().isOk());

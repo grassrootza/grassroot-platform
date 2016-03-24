@@ -221,7 +221,10 @@ public class USSDLogBookController extends USSDController {
         // todo: trim the message and other things (for char limit)
         LogBook logBook = logBookService.load(logBookId);
         String formattedDueDate = dateFormat.format(logBook.getActionByDate().toLocalDateTime());
-        String assignedUser = (assignToUser) ? userManager.getDisplayName(logBook.getAssignedToUser().getId()) : "";
+
+        // todo: Implement this using new design
+        String assignedUser = "IMPLEMENT WITH NEW DESIGN!!";
+//        String assignedUser = (assignToUser) ? userManager.getDisplayName(logBook.getAssignedToUser().getId()) : "";
 
         String[] promptFields = new String[]{logBook.getMessage(), logBook.getGroup().getName(""),
                 formattedDueDate, assignedUser};
@@ -323,9 +326,14 @@ public class USSDLogBookController extends USSDController {
             menu.addMenuOption(returnUrl(viewAssignment, logBookId),
                     getMessage(thisSection, viewEntryMenu, optionsKey + "viewcomplete", user));
         } else {
+            // todo: Implement this using new design
+            throw new UnsupportedOperationException("Implement this using new design");
+
+/*
             if (logBook.getAssignedToUser() != null)
                 menu.addMenuOption(returnUrl(viewAssignment, logBookId), getMessage(thisSection, viewEntryMenu, optionsKey + "assigned", user));
             menu.addMenuOption(returnUrl(setCompleteMenu, logBookId), getMessage(thisSection.toKey() + optionsKey + setCompleteMenu, user));
+*/
         }
 
         menu.addMenuOption("exit", "Exit");
@@ -368,6 +376,9 @@ public class USSDLogBookController extends USSDController {
 
         USSDMenu menu;
 
+        // todo: Implement this using new design
+        throw new UnsupportedOperationException("Implement this using new design");
+/*
         String assignedFragment = (logBook.getAssignedToUser() == null) ?
                 getMessage(thisSection, viewAssignment, "group", user) :
                 logBook.getAssignedToUser().nameToDisplay();
@@ -383,6 +394,7 @@ public class USSDLogBookController extends USSDController {
                 getMessage(thisSection.toKey() + optionsKey + setCompleteMenu, user)); // todo: check permissions
         menu.addMenuOptions(optionsHomeExit(user));
         return menuBuilder(menu);
+        */
     }
 
     @RequestMapping(path + setCompleteMenu)
@@ -394,6 +406,9 @@ public class USSDLogBookController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber, saveLogMenu(setCompleteMenu, logBookId));
         LogBook logBook = logBookService.load(logBookId);
 
+        // todo: implement this using new multiple assigned user design
+        throw new UnsupportedOperationException("implement this using new multiple assigned user design");
+/*
         USSDMenu menu = (logBook.getAssignedToUser() != null) ?
                 new USSDMenu(getMessage(thisSection, setCompleteMenu, promptKey + ".assigned",
                         logBook.getAssignedToUser().nameToDisplay(), user)) :
@@ -409,6 +424,7 @@ public class USSDLogBookController extends USSDController {
         menu.addMenuOption(logMenus + viewEntryMenu + urlEnd, getMessage(optionsKey + "back", user));
 
         return menuBuilder(menu);
+*/
     }
 
     @RequestMapping(path + completingUser)

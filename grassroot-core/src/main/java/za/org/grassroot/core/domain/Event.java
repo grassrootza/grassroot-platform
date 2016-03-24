@@ -15,12 +15,14 @@ import java.io.Serializable;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "event")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "type", discriminatorType = DiscriminatorType.STRING)
-public abstract class Event extends AbstractEventEntity implements Serializable {
+public abstract class Event extends AbstractEventEntity implements AssignedMembersContainer, Serializable {
 
 	@Column(name = "canceled")
 	private boolean canceled;
@@ -49,6 +51,13 @@ public abstract class Event extends AbstractEventEntity implements Serializable 
 
 	@Column(name = "scheduled_reminder_active")
 	private boolean scheduledReminderActive = false;
+
+	@ManyToMany(cascade = CascadeType.ALL)
+	@JoinTable(name = "event_assigned_members",
+			joinColumns = @JoinColumn(name = "event_id", nullable = false),
+			inverseJoinColumns = @JoinColumn(name = "user_id", nullable = false)
+	)
+	private Set<User> assignedMembers = new HashSet<>();
 
 	public abstract EventType getEventType();
 
@@ -110,6 +119,21 @@ public abstract class Event extends AbstractEventEntity implements Serializable 
 		} else {
 			this.scheduledReminderTime = null;
 		}
+	}
+
+	@Override
+	public Set<User> fetchAssignedMembersCollection() {
+		return assignedMembers;
+	}
+
+	@Override
+	public void putAssignedMembersCollection(Set<User> assignedMembersCollection) {
+		this.assignedMembers = assignedMembersCollection;
+	}
+
+	@Override
+	public Group getGroup() {
+		return appliesToGroup;
 	}
 
 	@Override
