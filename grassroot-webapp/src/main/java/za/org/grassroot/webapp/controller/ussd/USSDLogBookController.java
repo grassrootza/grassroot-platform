@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.LogBookRequest;
 import za.org.grassroot.core.domain.User;
@@ -173,14 +174,9 @@ public class USSDLogBookController extends USSDController {
 
         userInput = interrupted ? priorInput : userInput;
         User user = userManager.findByInputNumber(inputNumber, saveLogMenu(pickUserMenu, logBookId, userInput));
-<<<<<<< HEAD
         LogBook logBook = logBookService.load(logBookId);
-        Long groupId = ((Group) logBook.getParent()).getId();
-        List<User> possibleUsers = userManager.searchByGroupAndNameNumber(groupId, userInput);
-=======
-        String groupUid = logBookService.load(logBookId).getGroup().getUid();
+        String groupUid = ((Group) logBook.getParent()).getUid();
         List<User> possibleUsers = userManager.searchByGroupAndNameNumber(groupUid, userInput);
->>>>>>> master
 
         USSDMenu menu;
         if (possibleUsers.isEmpty()) {
@@ -519,14 +515,9 @@ public class USSDLogBookController extends USSDController {
     private USSDMenu pickUserFromGroup(Long logBookId, String userInput, String nextMenu, String backMenu, User user) {
 
         USSDMenu menu;
-<<<<<<< HEAD
         LogBook logBook = logBookService.load(logBookId);
         Group parent = (Group) logBook.getParent();
-        List<User> possibleUsers = userManager.searchByGroupAndNameNumber(parent.getId(), userInput);
-=======
-        List<User> possibleUsers = userManager.searchByGroupAndNameNumber(
-                logBookService.load(logBookId).getGroup().getUid(), userInput);
->>>>>>> master
+        List<User> possibleUsers = userManager.searchByGroupAndNameNumber(parent.getUid(), userInput);
 
         if (!possibleUsers.isEmpty()) {
             menu = new USSDMenu(getMessage(thisSection, pickUserMenu, promptKey, user));
