@@ -1,6 +1,5 @@
 package za.org.grassroot.core.domain;
 
-import edu.emory.mathcs.backport.java.util.Collections;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
@@ -13,12 +12,12 @@ import java.util.Set;
  */
 @Entity
 @Table(name = "log_book",
-        indexes = {@Index(name = "idx_log_book_group_id",  columnList="group_id", unique = false),
-        @Index(name = "idx_log_book_completed", columnList="completed",  unique = false),
-        @Index(name = "idx_log_book_retries_left", columnList = "number_of_reminders_left_to_send",unique = false),
-                @Index(name = "idx_log_book_replicated_group_id", columnList = "replicated_group_id",unique = false)})
-
-public class LogBook extends AbstractLogBookEntity implements AssignedMembersContainer {
+        indexes = {
+                @Index(name = "idx_log_book_group_id", columnList = "group_id"),
+                @Index(name = "idx_log_book_completed", columnList = "completed"),
+                @Index(name = "idx_log_book_retries_left", columnList = "number_of_reminders_left_to_send"),
+                @Index(name = "idx_log_book_replicated_group_id", columnList = "replicated_group_id")})
+public class LogBook extends AbstractLogBookEntity implements AssignedMembersContainer, VoteContainer, MeetingContainer {
 
     @Column(name = "completed")
     private boolean completed;
@@ -48,13 +47,13 @@ public class LogBook extends AbstractLogBookEntity implements AssignedMembersCon
         // for JPA
     }
 
-    public LogBook(User createdByUser, Group group, String message, Timestamp actionByDate) {
-        this(createdByUser, group, message, actionByDate, 60, null, 3);
+    public LogBook(User createdByUser, LogBookContainer parent, String message, Timestamp actionByDate) {
+        this(createdByUser, parent, message, actionByDate, 60, null, 3);
     }
 
-    public LogBook(User createdByUser, Group group, String message, Timestamp actionByDate, int reminderMinutes,
+    public LogBook(User createdByUser, LogBookContainer parent, String message, Timestamp actionByDate, int reminderMinutes,
                    Group replicatedGroup, int numberOfRemindersLeftToSend) {
-        super(createdByUser, group, message, actionByDate, reminderMinutes);
+        super(createdByUser, parent, message, actionByDate, reminderMinutes);
         this.replicatedGroup = replicatedGroup;
         this.numberOfRemindersLeftToSend = numberOfRemindersLeftToSend;
     }

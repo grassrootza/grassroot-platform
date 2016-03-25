@@ -6,9 +6,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public interface AssignedMembersContainer extends UidIdentifiableEntity {
-	Group getGroup();
-
+public interface AssignedMembersContainer extends UidIdentifiable {
 	/**
 	 * This is just a way to get handle of internal JPA/Hibernate assigned member collection.
 	 * It should not be of public visibility, but unfortunately, java interfaces cannot specify
@@ -51,7 +49,7 @@ public interface AssignedMembersContainer extends UidIdentifiableEntity {
 	default Set<User> assignMembers(Set<String> memberUids) {
 		Objects.requireNonNull(memberUids);
 
-		Group group = getGroup();
+		Group group = resolveGroup();
 
 		Map<String, User> membersByUid = group.getMembers().stream()
 				.collect(Collectors.toMap(User::getUid, member -> member));

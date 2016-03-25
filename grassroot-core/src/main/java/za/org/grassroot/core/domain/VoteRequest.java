@@ -5,10 +5,16 @@ import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 
 @Entity
 @DiscriminatorValue("VOTE")
 public class VoteRequest extends EventRequest {
+
+	@ManyToOne
+	@JoinColumn(name = "meeting_id")
+	protected Meeting meeting;
 
 	@Override
 	public EventType getEventType() {

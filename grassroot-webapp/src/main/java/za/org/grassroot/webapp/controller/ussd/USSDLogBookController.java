@@ -173,8 +173,14 @@ public class USSDLogBookController extends USSDController {
 
         userInput = interrupted ? priorInput : userInput;
         User user = userManager.findByInputNumber(inputNumber, saveLogMenu(pickUserMenu, logBookId, userInput));
+<<<<<<< HEAD
+        LogBook logBook = logBookService.load(logBookId);
+        Long groupId = ((Group) logBook.getParent()).getId();
+        List<User> possibleUsers = userManager.searchByGroupAndNameNumber(groupId, userInput);
+=======
         String groupUid = logBookService.load(logBookId).getGroup().getUid();
         List<User> possibleUsers = userManager.searchByGroupAndNameNumber(groupUid, userInput);
+>>>>>>> master
 
         USSDMenu menu;
         if (possibleUsers.isEmpty()) {
@@ -224,7 +230,8 @@ public class USSDLogBookController extends USSDController {
         String assignedUser = "IMPLEMENT WITH NEW DESIGN!!";
 //        String assignedUser = (assignToUser) ? userManager.getDisplayName(logBook.getAssignedToUser().getId()) : "";
 
-        String[] promptFields = new String[]{logBook.getMessage(), logBook.getGroup().getName(""),
+        Group group = (Group) logBook.getParent();
+        String[] promptFields = new String[]{logBook.getMessage(), group.getName(""),
                 formattedDueDate, assignedUser};
 
         String assignedKey = (assignToUser) ? ".assigned" : ".unassigned";
@@ -512,8 +519,14 @@ public class USSDLogBookController extends USSDController {
     private USSDMenu pickUserFromGroup(Long logBookId, String userInput, String nextMenu, String backMenu, User user) {
 
         USSDMenu menu;
+<<<<<<< HEAD
+        LogBook logBook = logBookService.load(logBookId);
+        Group parent = (Group) logBook.getParent();
+        List<User> possibleUsers = userManager.searchByGroupAndNameNumber(parent.getId(), userInput);
+=======
         List<User> possibleUsers = userManager.searchByGroupAndNameNumber(
                 logBookService.load(logBookId).getGroup().getUid(), userInput);
+>>>>>>> master
 
         if (!possibleUsers.isEmpty()) {
             menu = new USSDMenu(getMessage(thisSection, pickUserMenu, promptKey, user));

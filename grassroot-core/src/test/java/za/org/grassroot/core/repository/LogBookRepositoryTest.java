@@ -140,7 +140,7 @@ public class LogBookRepositoryTest {
 
         List<Group> subGroupsFromEntries = new ArrayList<>();
         for (LogBook lb : entriesFromDb)
-            subGroupsFromEntries.add(groupRepository.findOne(lb.getGroup().getId()));
+            subGroupsFromEntries.add(groupRepository.findOne(((Group)lb.getParent()).getId()));
 
         assertFalse(subGroupsFromEntries.contains(group1));
         assertTrue(subGroupsFromEntries.contains(group2));

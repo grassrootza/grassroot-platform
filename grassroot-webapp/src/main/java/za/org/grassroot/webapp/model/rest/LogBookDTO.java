@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.model.rest;
 
+import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.LogBook;
 
 import java.io.Serializable;
@@ -12,7 +13,8 @@ public class LogBookDTO implements Serializable {
 
     private Long id;
     private Long createdByUserId;
-    private Long groupId;
+    private JpaEntityType parentType;
+    private String parentUid;
     private String message;
     private Long replicatedGroupId;
     private Date actionByDate;
@@ -26,7 +28,8 @@ public class LogBookDTO implements Serializable {
     public LogBookDTO(LogBook logBook) {
         this.id = logBook.getId();
         this.createdByUserId = logBook.getCreatedByUser().getId();
-        this.groupId = logBook.getGroup().getId();
+        this.parentType = logBook.getJpaEntityType();
+        this.parentUid = logBook.getUid();
         this.message = logBook.getMessage();
         this.replicatedGroupId = logBook.getReplicatedGroup().getId();
         this.actionByDate = logBook.getActionByDate();
@@ -52,12 +55,20 @@ public class LogBookDTO implements Serializable {
         this.createdByUserId = createdByUserId;
     }
 
-    public Long getGroupId() {
-        return groupId;
+    public JpaEntityType getParentType() {
+        return parentType;
     }
 
-    public void setGroupId(Long groupId) {
-        this.groupId = groupId;
+    public void setParentType(JpaEntityType parentType) {
+        this.parentType = parentType;
+    }
+
+    public String getParentUid() {
+        return parentUid;
+    }
+
+    public void setParentUid(String parentUid) {
+        this.parentUid = parentUid;
     }
 
     public String getMessage() {
@@ -105,7 +116,8 @@ public class LogBookDTO implements Serializable {
         return "LogBookDTO{" +
                 "id=" + id +
                 ", createdByUserId=" + createdByUserId +
-                ", groupId=" + groupId +
+                ", parentType=" + parentType +
+                ", parentUid=" + parentUid +
                 ", message='" + message + '\'' +
                 ", replicatedGroupId=" + replicatedGroupId +
                 ", actionByDate=" + actionByDate +

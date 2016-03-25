@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
+import za.org.grassroot.core.domain.LogBookContainer;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.GroupManagementService;
@@ -72,7 +73,7 @@ public class LogBookController extends BaseController {
             // todo: another permission check
             Group group = groupBroker.load(groupUid);
             model.addAttribute("group", group);
-            logBookToFill.setGroup(group);
+            logBookToFill.setParent(group);
         }
 
         model.addAttribute("entry", logBookToFill);
@@ -86,7 +87,7 @@ public class LogBookController extends BaseController {
         log.info("The potential logBookEntry passed back to us ... " + logBookEntry);
         log.info("Value of subGroups passed ... " + subGroups);
 
-        Group groupSelected = logBookEntry.getGroup();
+        Group groupSelected = (Group) logBookEntry.getParent();
         model.addAttribute("group", groupSelected);
         model.addAttribute("subGroups", subGroups);
 
@@ -164,7 +165,7 @@ public class LogBookController extends BaseController {
         log.info("Retrieved logBook entry with these details ... " + logBookEntry);
 
         model.addAttribute("entry", logBookEntry);
-        model.addAttribute("group", logBookEntry.getGroup());
+        model.addAttribute("group", (Group) logBookEntry.getParent());
         model.addAttribute("creatingUser", logBookEntry.getCreatedByUser());
         model.addAttribute("isComplete", logBookEntry.isCompleted());
 
@@ -211,7 +212,8 @@ public class LogBookController extends BaseController {
             model.addAttribute("assignedUser", logBookEntry.getAssignedToUser());
 */
         model.addAttribute("entry", logBookEntry);
-        model.addAttribute("groupMembers", groupManagementService.getUsersInGroupNotSubGroups(logBookEntry.getGroup().getId()));
+        Group group = (Group) logBookEntry.getParent();
+        model.addAttribute("groupMembers", groupManagementService.getUsersInGroupNotSubGroups(group.getId()));
 
         return "log/complete";
     }
@@ -251,14 +253,15 @@ public class LogBookController extends BaseController {
         }
 
         addMessage(model, MessageType.SUCCESS, "log.completed.done", request);
-        return viewGroupLogBook(model, logBook.getGroup().getUid());
+        Group group = (Group) logBook.getParent();
+        return viewGroupLogBook(model, group.getUid());
     }
 
     // todo : more permissions than just the below!
     @RequestMapping("/log/modify")
-    public String modifyLogBookEntry(Model model, @RequestParam(value="logBookId", required = true) Long logBookId) {
+    public String modifyLogBookEntry(Model model, @RequestParam(value="logBookId") Long logBookId) {
         LogBook logBook = logBookService.load(logBookId);
-        Group group = logBook.getGroup();
+        Group group = (Group) logBook.getParent();
         if (!group.getMembers().contains(getUserProfile())) throw new AccessDeniedException("");
 
         model.addAttribute("logBook", logBook);

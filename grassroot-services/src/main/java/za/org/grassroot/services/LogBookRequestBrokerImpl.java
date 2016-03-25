@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.LogBookContainer;
 import za.org.grassroot.core.domain.LogBookRequest;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GroupRepository;
@@ -53,9 +54,11 @@ public class LogBookRequestBrokerImpl implements LogBookRequestBroker {
 		LogBookRequest logBookRequest = logBookRequestRepository.findOneByUid(logBookUid);
 
 		Set<String> assignedMemberUids = logBookRequest.getAssignedMembers().stream().map(User::getUid).collect(Collectors.toSet());
+		LogBookContainer parent = logBookRequest.getParent();
 
-		logBookBroker.create(logBookRequest.getCreatedByUser().getUid(), logBookRequest.getGroup().getUid(), logBookRequest.getMessage(),
-				logBookRequest.getActionByDate(), logBookRequest.getReminderMinutes(), logBookRequest.isReplicateToSubgroups(), assignedMemberUids);
+		logBookBroker.create(logBookRequest.getCreatedByUser().getUid(), parent.getJpaEntityType(), parent.getUid(),
+				logBookRequest.getMessage(), logBookRequest.getActionByDate(), logBookRequest.getReminderMinutes(),
+				logBookRequest.isReplicateToSubgroups(), assignedMemberUids);
 
 		logBookRequestRepository.delete(logBookRequest);
 	}

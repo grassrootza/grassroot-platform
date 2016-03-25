@@ -96,12 +96,12 @@ public class LogBookManager implements LogBookService {
 
     @Override
     public boolean hasReplicatedEntries(LogBook logBook) {
-        return logBookRepository.countReplicatedEntries(logBook.getGroup().getId(), logBook.getMessage(), logBook.getCreatedDateTime()) != 0;
+        return logBookRepository.countReplicatedEntries(logBook.resolveGroup().getId(), logBook.getMessage(), logBook.getCreatedDateTime()) != 0;
     }
 
     @Override
     public List<LogBook> getAllReplicatedEntriesFromParentLogBook(LogBook logBook) {
-        return logBookRepository.findAllByReplicatedGroupIdAndMessageAndCreatedDateTimeOrderByGroupIdAsc(logBook.getGroup().getId(), logBook.getMessage(),
+        return logBookRepository.findAllByReplicatedGroupIdAndMessageAndCreatedDateTimeOrderByGroupIdAsc(logBook.resolveGroup().getId(), logBook.getMessage(),
                                                                                                          logBook.getCreatedDateTime());
     }
 

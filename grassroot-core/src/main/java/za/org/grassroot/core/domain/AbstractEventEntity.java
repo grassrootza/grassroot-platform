@@ -44,6 +44,10 @@ public class AbstractEventEntity {
 	@JoinColumn(name = "applies_to_group")
 	protected Group appliesToGroup;
 
+	@ManyToOne
+	@JoinColumn(name = "log_book_id")
+	protected LogBook logBook;
+
 	/*
 	used to determine if notifications should be sent only to the group linked to the event, or any subgroups as well
 	 */

@@ -22,7 +22,7 @@ import java.util.Set;
 @Table(name = "event")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "type", discriminatorType = DiscriminatorType.STRING)
-public abstract class Event extends AbstractEventEntity implements AssignedMembersContainer, Serializable {
+public abstract class Event extends AbstractEventEntity implements LogBookContainer, AssignedMembersContainer, Serializable {
 
 	@Column(name = "canceled")
 	private boolean canceled;
@@ -129,11 +129,6 @@ public abstract class Event extends AbstractEventEntity implements AssignedMembe
 	@Override
 	public void putAssignedMembersCollection(Set<User> assignedMembersCollection) {
 		this.assignedMembers = assignedMembersCollection;
-	}
-
-	@Override
-	public Group getGroup() {
-		return appliesToGroup;
 	}
 
 	@Override

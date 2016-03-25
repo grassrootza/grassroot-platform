@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "group_profile") // quoting table name in case "group" is a reserved keyword
-public class Group implements Serializable {
+public class Group implements LogBookContainer, VoteContainer, MeetingContainer, Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
@@ -401,6 +401,11 @@ public class Group implements Serializable {
         } else {
             return unnamedPrefix;
         }
+    }
+
+    @Override
+    public JpaEntityType getJpaEntityType() {
+        return JpaEntityType.GROUP;
     }
 
     @Override

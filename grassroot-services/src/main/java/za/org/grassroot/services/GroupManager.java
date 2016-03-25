@@ -6,10 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.GroupLog;
-import za.org.grassroot.core.domain.LogBook;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.enums.GroupLogType;
@@ -86,12 +83,10 @@ public class GroupManager implements GroupManagementService {
 
     @Override
     public List<Group> getListGroupsFromLogbooks(List<LogBook> logBooks) {
-        // seems like doing it this way more efficient than running lots of group fetch queries, but need to test/verify
-        log.info("Got a list of logbooks ... look like this: " + logBooks);
-        List<Long> ids = new ArrayList<>();
-        for (LogBook entry : logBooks) { ids.add(entry.getGroup().getId()); }
-        log.info("And now we have this list of Ids ... " + ids);
-        return groupRepository.findAllByIdIn(ids);
+        return logBooks.stream()
+                .filter(logBook -> logBook.getParent().getJpaEntityType().equals(JpaEntityType.GROUP))
+                .map(logBook -> (Group) logBook.getParent())
+                .collect(Collectors.toList());
     }
 
     /*

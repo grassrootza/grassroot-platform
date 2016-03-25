@@ -1,6 +1,8 @@
 package za.org.grassroot.core.dto;
 
+import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.LogBook;
+import za.org.grassroot.core.domain.LogBookContainer;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
@@ -13,8 +15,8 @@ public class LogBookDTO implements Serializable {
 
 
     private Long id;
-    private Long groupId;
-    private String groupUid;
+    private JpaEntityType parentType;
+    private String parentUid;
     private boolean completed;
     private Long completedByUserId;
     private Timestamp completedDate;
@@ -38,8 +40,9 @@ public class LogBookDTO implements Serializable {
         this.completedDate = logBook.getCompletedDate();
         this.reminderMinutes = logBook.getReminderMinutes();
         this.numberOfRemindersLeftToSend = logBook.getNumberOfRemindersLeftToSend();
-        this.groupId = logBook.getGroup().getId();
-        this.groupUid = logBook.getGroup().getUid();
+        LogBookContainer parent = logBook.getParent();
+        this.parentType = parent.getJpaEntityType();
+        this.parentUid = parent.getUid();
     }
 
     public Long getId() {
@@ -50,15 +53,13 @@ public class LogBookDTO implements Serializable {
         this.id = id;
     }
 
-    public Long getGroupId() {
-        return groupId;
+    public JpaEntityType getParentType() {
+        return parentType;
     }
 
-    public void setGroupId(Long groupId) {
-        this.groupId = groupId;
+    public String getParentUid() {
+        return parentUid;
     }
-
-    public String getGroupUid() { return groupUid; }
 
     public boolean isCompleted() {
         return completed;
@@ -128,7 +129,8 @@ public class LogBookDTO implements Serializable {
     public String toString() {
         return "LogBookDTO{" +
                 "id=" + id +
-                ", groupId=" + groupId +
+                ", parentType=" + parentType +
+                ", parentUid=" + parentUid +
                 ", completed=" + completed +
                 ", completedByUserId=" + completedByUserId +
                 ", completedDate=" + completedDate +
