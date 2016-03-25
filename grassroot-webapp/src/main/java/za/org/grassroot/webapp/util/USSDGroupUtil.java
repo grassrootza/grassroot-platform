@@ -5,13 +5,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
-import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
+import za.org.grassroot.services.util.CacheUtilManager;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 
@@ -44,22 +42,22 @@ public class USSDGroupUtil extends USSDUtil {
     private GroupBroker groupBroker;
 
     @Autowired
-    private UserManagementService userManager;
+    private EventRequestBroker eventRequestBroker;
 
-    @Autowired
-    private EventManagementService eventManager;
-
-    @Autowired
-    private LogBookService logBookService;
     @Autowired
     private LogBookRequestBroker logBookRequestBroker;
 
     @Autowired
     PermissionBroker permissionBroker;
 
+    @Autowired
+    CacheUtilManager cacheManager;
+
     private static final String groupKeyForMessages = "group";
-    private static final String groupIdParameter = "groupId";
-    private static final String groupIdUrlEnding = "?" + groupIdParameter + "=";
+
+    private static final String groupUidParameter = "groupUid";
+    private static final String groupUidUrlEnding = "?" + groupUidParameter + "=";
+
     private static final String validNumbers = "valid";
     private static final String invalidNumbers = "error";
     private static final String subjectMenu = "subject",
@@ -144,7 +142,7 @@ public class USSDGroupUtil extends USSDUtil {
 
         Page<Group> groupsPartOf = groupManager.getPageOfActiveGroups(user, pageNumber, PAGE_LENGTH);
         if (groupsPartOf.getTotalElements() == 1 && section != USSDSection.MEETINGS) { // exclude meetings since can create new in it
-            menu = skipGroupSelection(user, section,urlForNewGroup, groupsPartOf.iterator().next().getId());
+            menu = skipGroupSelection(user, section, groupsPartOf.iterator().next());
         } else {
             menu = addListOfGroupsToMenu(menu,section, urlForExistingGroups, groupsPartOf.getContent(), user, checkPermissions);
             if (groupsPartOf.hasNext())
@@ -161,13 +159,12 @@ public class USSDGroupUtil extends USSDUtil {
 
     public USSDMenu addListOfGroupsToMenu(USSDMenu menu, String nextMenuUrl, List<Group> groups, User user) {
         final String formedUrl = (!nextMenuUrl.contains("?")) ?
-                (nextMenuUrl + groupIdUrlEnding) :
-                (nextMenuUrl + "&" + groupIdParameter + "=");
+                (nextMenuUrl + groupUidUrlEnding) :
+                (nextMenuUrl + "&" + groupUidParameter + "=");
         for (Group group : groups) {
-
             String name = (group.hasName()) ? group.getGroupName() :
                     getMessage(groupKeyForMessages, "unnamed", "label", unnamedGroupDate.format(group.getCreatedDateTime()), user);
-                menu.addMenuOption(formedUrl + group.getId(), name);
+                menu.addMenuOption(formedUrl + group.getUid(), name);
         }
         return menu;
     }
@@ -176,8 +173,8 @@ public class USSDGroupUtil extends USSDUtil {
                                           User user, boolean checkPerm ) {
 
         final String formedUrl = (!nextMenuUrl.contains("?")) ?
-                (nextMenuUrl + groupIdUrlEnding) :
-                (nextMenuUrl + "&" + groupIdParameter + "=");
+                (nextMenuUrl + groupUidUrlEnding) :
+                (nextMenuUrl + "&" + groupUidParameter + "=");
 
         for (Group group : groups) {
 
@@ -185,7 +182,6 @@ public class USSDGroupUtil extends USSDUtil {
                     getMessage(groupKeyForMessages, "unnamed", "label", unnamedGroupDate.format(group.getCreatedDateTime()), user);
 
             menu.addMenuOption(formedUrl + group.getId(), name);
-
             if (checkPerm) {
                 if (hasPermission(section, group, user)) {
                     menu.addMenuOption(formedUrl + group.getId(), name);
@@ -210,29 +206,26 @@ public class USSDGroupUtil extends USSDUtil {
         return thisMenu;
     }
 
-    public Long addNumbersToNewGroup(User user, USSDSection section, USSDMenu menu, String userInput, String returnUrl) throws URISyntaxException {
-        Long groupId;
+    public String addNumbersToNewGroup(User user, USSDSection section, USSDMenu menu, String userInput, String returnUrl) throws URISyntaxException {
+        String groupUid;
         final Map<String, List<String>> enteredNumbers = PhoneNumberUtil.splitPhoneNumbers(userInput);
         log.info("addNumbersToNewGroup ... with user input ... " + userInput);
 
         if (enteredNumbers.get(validNumbers).isEmpty()) {
-
             menu.setPromptMessage(getMessage(section, groupKeyForMessages, promptKey + ".error",
                     String.join(", ", enteredNumbers.get(invalidNumbers)), user));
             menu.setNextURI(section.toPath() + returnUrl);
-            groupId = 0L;
-
+            groupUid = "";
         } else {
 
             Set<MembershipInfo> members = turnNumbersIntoMembers(enteredNumbers.get(validNumbers));
             members.add(new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName()));
             log.info("ZOGG : In GroupUtil ... Calling create with members ... " + members);
-            Group createdGroup = groupBroker.create(user.getUid(), "", null, members, GroupPermissionTemplate.DEFAULT_GROUP);
-            checkForErrorsAndSetPrompt(user, section, menu, createdGroup.getId(), enteredNumbers.get(invalidNumbers), returnUrl, true);
-            groupId = createdGroup.getId();
-
+            Group createdGroup = groupBroker.create(user.getUid(), "", null, members, GroupPermissionTemplate.DEFAULT_GROUP, null);
+            checkForErrorsAndSetPrompt(user, section, menu, createdGroup.getUid(), enteredNumbers.get(invalidNumbers), returnUrl, true);
+            groupUid = createdGroup.getUid();
         }
-        return groupId;
+        return groupUid;
     }
 
     private Set<MembershipInfo> turnNumbersIntoMembers(List<String> validNumbers) {
@@ -247,43 +240,40 @@ public class USSDGroupUtil extends USSDUtil {
 
         Map<String, List<String>> enteredNumbers = PhoneNumberUtil.splitPhoneNumbers(userInput);
         groupBroker.addMembers(user.getUid(), groupUid, turnNumbersIntoMembers(enteredNumbers.get(validNumbers)));
-        Long groupId = groupManager.loadGroupByUid(groupUid).getId(); // temp, until transitioned all to Uid
-        return checkForErrorsAndSetPrompt(user, section, new USSDMenu(true), groupId, enteredNumbers.get(invalidNumbers), returnUrl, false);
+        return checkForErrorsAndSetPrompt(user, section, new USSDMenu(true), groupUid, enteredNumbers.get(invalidNumbers), returnUrl, false);
     }
 
-    private USSDMenu checkForErrorsAndSetPrompt(User user, USSDSection section, USSDMenu menu, Long groupId, List<String> invalidNumbers,
+    private USSDMenu checkForErrorsAndSetPrompt(User user, USSDSection section, USSDMenu menu, String groupUid, List<String> invalidNumbers,
                                                 String returnUrl, boolean newGroup) {
         log.info("Inside checkForErrorsAndSetPrompt ... with invalid numbers ... " + invalidNumbers.toString());
         String addedOrCreated = newGroup ? ".created" : ".added";
         String prompt = invalidNumbers.isEmpty() ? getMessage(section, groupKeyForMessages, promptKey + addedOrCreated, user) :
                 getMessage(section, groupKeyForMessages, promptKey + ".error", String.join(", ", invalidNumbers), user);
         menu.setPromptMessage(prompt);
-        String groupIdWithParams = (returnUrl.contains("?")) ? ("&" + groupIdParameter + "=") : groupIdUrlEnding;
-        menu.setNextURI(section.toPath() + returnUrl + groupIdWithParams + groupId);
+        String groupIdWithParams = (returnUrl.contains("?")) ? ("&" + groupUidParameter + "=") : groupUidUrlEnding;
+        menu.setNextURI(section.toPath() + returnUrl + groupIdWithParams + groupUid);
         return menu;
     }
 
-    public USSDMenu skipGroupSelection(User sessionUser, USSDSection section, String urlForNewGroup, Long groupId) {
+    private USSDMenu skipGroupSelection(User user, USSDSection section, Group group) {
         USSDMenu menu = null;
         String nextUrl;
         switch (section) {
             case VOTES:
-                sessionUser = userManager.findByInputNumber(sessionUser.getPhoneNumber());
-                Long eventId = eventManager.createVote(sessionUser, groupId).getId();
-                userManager.setLastUssdMenu(sessionUser, saveVoteMenu("issue", eventId));
-                nextUrl = "vote/" + "time" + USSDUrlUtil.eventIdUrlSuffix + eventId;
-                menu = new USSDMenu(getMessage(section, "issue", promptKey, sessionUser), nextUrl);
+                VoteRequest voteRequest = eventRequestBroker.createEmptyVoteRequest(user.getUid(), group.getUid());
+                String requestUid = voteRequest.getUid();
+                cacheManager.putUssdMenuForUser(user.getPhoneNumber(), saveVoteMenu("issue", requestUid));
+                nextUrl = "vote/time" + USSDUrlUtil.entityUidUrlSuffix + requestUid;
+                menu = new USSDMenu(getMessage(section, "issue", promptKey, user), nextUrl);
                 break;
             case LOGBOOK:
-                User user = userManager.findByInputNumber(sessionUser.getPhoneNumber());
-                Group group = groupManager.loadGroup(groupId);
                 Long logBookId = logBookRequestBroker.create(user.getUid(), group.getUid()).getId();
-                userManager.setLastUssdMenu(user, saveLogMenu(subjectMenu, logBookId));
+                cacheManager.putUssdMenuForUser(user.getPhoneNumber(), saveLogMenu(subjectMenu, logBookId));
                 nextUrl = "log/due_date" + USSDUrlUtil.logbookIdUrlSuffix + logBookId;
-                menu = new USSDMenu(getMessage(section, subjectMenu, promptKey, user), nextUrl);
+                menu = new USSDMenu(getMessage(section, subjectMenu, promptKey + ".skipped", group.getName(""), user), nextUrl);
                 break;
             case GROUP_MANAGER:
-                menu = existingGroupMenu(sessionUser, groupId, true);
+                menu = existingGroupMenu(user, group.getUid(), true);
                 break;
             default:
                 break;
@@ -292,10 +282,10 @@ public class USSDGroupUtil extends USSDUtil {
         return menu;
     }
 
-    public USSDMenu existingGroupMenu(User sessionUser, Long groupId, boolean skippedSelection) {
+    public USSDMenu existingGroupMenu(User sessionUser, String groupUid, boolean skippedSelection) {
 
         USSDSection thisSection = GROUP_MANAGER;
-        Group group = groupManager.loadGroup(groupId);
+        Group group = groupBroker.load(groupUid);
         String menuKey = thisSection.toKey() + existingGroupMenu + "." + optionsKey;
 
         boolean openToken = group.getGroupTokenCode() != null && Instant.now().isBefore(group.getTokenExpiryDateTime().toInstant());
@@ -320,22 +310,22 @@ public class USSDGroupUtil extends USSDUtil {
             listMenu.addMenuOption(GROUP_MANAGER.toPath() + "create", getMessage(GROUP_MANAGER.toKey() + "create.option", sessionUser));
 
         if (permissionBroker.isGroupPermissionAvailable(sessionUser, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER))
-            listMenu.addMenuOption(groupMenuWithId(addMemberPrompt, groupId), getMessage(menuKey + addMemberPrompt, sessionUser));
+            listMenu.addMenuOption(groupMenuWithId(addMemberPrompt, groupUid), getMessage(menuKey + addMemberPrompt, sessionUser));
 
         if (permissionBroker.isGroupPermissionAvailable(sessionUser, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS))
-            listMenu.addMenuOption(groupMenuWithId(groupTokenMenu, groupId), getMessage(tokenKey, sessionUser));
+            listMenu.addMenuOption(groupMenuWithId(groupTokenMenu, groupUid), getMessage(tokenKey, sessionUser));
 
-        listMenu.addMenuOption(groupMenuWithId(unsubscribePrompt, groupId), getMessage(menuKey + unsubscribePrompt, sessionUser));
+        listMenu.addMenuOption(groupMenuWithId(unsubscribePrompt, groupUid), getMessage(menuKey + unsubscribePrompt, sessionUser));
 
         if (permissionBroker.isGroupPermissionAvailable(sessionUser, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS))
-            listMenu.addMenuOption(groupMenuWithId(renameGroupPrompt, groupId), getMessage(menuKey + renameGroupPrompt, sessionUser));
+            listMenu.addMenuOption(groupMenuWithId(renameGroupPrompt, groupUid), getMessage(menuKey + renameGroupPrompt, sessionUser));
 
         // removing this for now until have 'advanced sub-menu', or the like
         // if (group.getCreatedByUser().equals(sessionUser))
         //    listMenu.addMenuOption(groupMenuWithId(mergeGroupMenu, groupId), getMessage(menuKey + mergeGroupMenu, sessionUser));
 
         if (groupBroker.isDeactivationAvailable(sessionUser, group, true))
-            listMenu.addMenuOption(groupMenuWithId(inactiveMenu, groupId), getMessage(menuKey + inactiveMenu, sessionUser));
+            listMenu.addMenuOption(groupMenuWithId(inactiveMenu, groupUid), getMessage(menuKey + inactiveMenu, sessionUser));
 
         return listMenu;
 

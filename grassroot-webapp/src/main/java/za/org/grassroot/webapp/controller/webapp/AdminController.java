@@ -223,9 +223,9 @@ public class AdminController extends BaseController {
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/admin/groups/view")
-    public String adminViewGroup(Model model, @RequestParam("groupId") Long groupId) {
+    public String adminViewGroup(Model model, @RequestParam String groupUid) {
 
-        Group group = groupManagementService.loadGroup(groupId);
+        Group group = groupBroker.load(groupUid);
 
         List<String[]> groupRoles = Arrays.asList(new String[]{"NULL", "Not set"},
                                                   new String[]{BaseRoles.ROLE_ORDINARY_MEMBER, "Ordinary member"},
@@ -251,12 +251,12 @@ public class AdminController extends BaseController {
      */
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping(value = "/admin/groups/roles/change")
-    public String changeGroupRole(Model model, @RequestParam("groupId") Long groupId, @RequestParam("userId") Long userId,
+    public String changeGroupRole(Model model, @RequestParam String groupUid, @RequestParam("userId") Long userId,
                                   @RequestParam("roleName") String roleName, HttpServletRequest request) {
 
         User userToModify = userManagementService.loadUser(userId);
         log.info("Found this user ... " + userToModify);
-        Group group = groupManagementService.loadGroup(groupId);
+        Group group = groupBroker.load(groupUid);
 
         log.info("Role name retrieved: " + roleName);
         log.info("About to do role assignment etc ... Role: " + roleName + " ... to user ... " + userToModify.nameToDisplay() +
@@ -265,7 +265,7 @@ public class AdminController extends BaseController {
         groupBroker.updateMembershipRole(getUserProfile().getUid(), group.getUid(), userToModify.getUid(), roleName);
 
         addMessage(model, MessageType.INFO, "admin.done", request);
-        return adminViewGroup(model, groupId);
+        return adminViewGroup(model, groupUid);
     }
 
     // NOTE: should be redundant as dealt with via the Liquibase SQL script (if need for user to do, then implement in

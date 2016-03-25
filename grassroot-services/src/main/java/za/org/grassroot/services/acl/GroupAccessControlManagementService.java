@@ -46,5 +46,5 @@ public interface GroupAccessControlManagementService {
      * @param permission
      * @return
      */
-    Group loadGroup(Long groupId, Permission permission);
+    // Group loadGroup(Long groupId, Permission permission);
 }

@@ -49,8 +49,6 @@ public abstract class WebAppAbstractUnitTest {
     protected EventManagementService eventManagementServiceMock;
     @Mock
     protected GroupLogService groupLogServiceMock;
-    @Mock
-    protected AsyncGroupService asyncGroupService;
 
     protected void setUp(BaseController baseController) {
         mockAuthentication();

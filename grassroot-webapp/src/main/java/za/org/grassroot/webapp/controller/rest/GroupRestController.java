@@ -62,9 +62,8 @@ public class GroupRestController {
         membersToAdd.add(creator);
 
         try {
-            Group group = groupBroker.create(user.getUid(), groupName, null, addMembersToGroup(phoneNumbers, membersToAdd),
-                    GroupPermissionTemplate.DEFAULT_GROUP);
-             groupManagementService.changeGroupDescription(group.getUid(),description,user.getUid());
+            groupBroker.create(user.getUid(), groupName, null, addMembersToGroup(phoneNumbers, membersToAdd),
+                               GroupPermissionTemplate.DEFAULT_GROUP, description);
 
         } catch (RuntimeException e) {
             return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, e.getMessage(), RestStatus.FAILURE),

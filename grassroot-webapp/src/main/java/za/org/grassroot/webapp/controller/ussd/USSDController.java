@@ -47,6 +47,7 @@ public class USSDController {
             phoneNumber = USSDUrlUtil.phoneNumber,
             userInputParam = USSDUrlUtil.userInputParam,
             groupIdParam = USSDUrlUtil.groupIdParam,
+            groupUidParam = USSDUrlUtil.groupUidParam,
             eventIdParam = USSDUrlUtil.eventIdParam,
             previousMenu = USSDUrlUtil.previousMenu,
             yesOrNoParam = USSDUrlUtil.yesOrNoParam,
@@ -56,6 +57,7 @@ public class USSDController {
     protected static final String
             startMenu = "start",
             groupIdUrlSuffix = USSDUrlUtil.groupIdUrlSuffix,
+            groupUidUrlSuffix = USSDUrlUtil.groupUidUrlSuffix,
             eventIdUrlSuffix = USSDUrlUtil.eventIdUrlSuffix,
             entityUidUrlSuffix = USSDUrlUtil.entityUidUrlSuffix,
             doSuffix = "-do";

@@ -182,9 +182,4 @@ public class USSDEventUtil extends USSDUtil {
         }
     }
 
-    public Event updateEventAndBlockSend(Long eventId, String lastMenuKey, String passedValue) {
-        eventManager.setSendBlock(eventId);
-        return eventManager.loadEvent(eventId);
-    }
-
 }

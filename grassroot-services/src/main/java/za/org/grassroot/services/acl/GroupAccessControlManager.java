@@ -185,10 +185,10 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
      * @return Group if the permission is granted
      * @throws AccessDeniedException if the permission is NOT granted
      */
-    @Override
+    /*@Override
     public Group loadGroup(Long groupId, Permission permission) {
 
-        Group group = groupManagementService.loadGroup(groupId);
+        /Group group = groupManagementService.loadGroup(groupId);
 
         if (group == null) {
             throw new IllegalArgumentException("Group '" + groupId + "' does not exist.");
@@ -198,7 +198,7 @@ public class GroupAccessControlManager implements GroupAccessControlManagementSe
             throw new AccessDeniedException("Unauthorised access '" + permission.getAuthority() + "' for Group '" + group.getGroupName() + "'");
         }
         return group;
-    }
+    }*/
 
     /**
      * @param objectIdentity

@@ -5,14 +5,14 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.EventLog;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.webapp.controller.BaseController;
 
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -53,7 +53,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
         testPossibleGroups.add(testGroup);
         Event testVote = null;
         testVote.setId(dummyId);
-        when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
+        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         when(groupManagementServiceMock.isUserInGroup(testGroup, sessionTestUser)).thenReturn(true);
         // when(groupManagementServiceMock.canUserCallVote(dummyId, sessionTestUser)).thenReturn(true);
         when(groupManagementServiceMock.getActiveGroupsPartOf(sessionTestUser)).thenReturn(testPossibleGroups);
@@ -61,7 +61,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(view().name("vote/create"))
                 .andExpect(model().attribute("group",
                         hasProperty("id", is(1L))));
-        verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
+        verify(groupBrokerMock, times(1)).load(testGroup.getUid());
         // verify(groupManagementServiceMock, times(1)).canUserCallVote(dummyId, sessionTestUser);
         verify(groupManagementServiceMock, times(1)).isUserInGroup(testGroup, sessionTestUser);
         verifyNoMoreInteractions(groupManagementServiceMock);
@@ -98,14 +98,14 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
 
         testGroup.setId(dummyId);
         // when(groupManagementServiceMock.canUserCallVote(dummyId, sessionTestUser)).thenReturn(true);
-        when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
+        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         when(groupManagementServiceMock.isUserInGroup(testGroup, sessionTestUser)).thenReturn(true);
         mockMvc.perform(post("/vote/create").param("selectedGroupId", String.valueOf(dummyId))
                 .sessionAttr("vote", testVote))
                 .andExpect(model().attribute("eventId", is(dummyId)))
                 .andExpect(model().attributeExists(BaseController.MessageType.SUCCESS.getMessageKey()))
                 .andExpect(view().name("vote/view"));
-        verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
+        verify(groupBrokerMock, times(1)).load(testGroup.getUid());
         // verify(groupManagementServiceMock, times(1)).canUserCallVote(dummyId, sessionTestUser);
         verify(groupManagementServiceMock, times(1)).isUserInGroup(testGroup, sessionTestUser);
         // verify(eventManagementServiceMock, times(1)).createVote(testVote);
@@ -116,25 +116,23 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void viewVoteWorks() throws Exception {
 
-//        Event testVote = new Event(sessionTestUser, EventType.Vote, true);
-        Event testVote = null; // todo: new design?
-        testVote.setId(dummyId);
-        when(eventManagementServiceMock.loadEvent(dummyId)).thenReturn(testVote);
-        Map<String, Integer> testVoteResults = new HashMap<>();
-        testVoteResults.put("yes", 3);
-        testVoteResults.put("no", 7);
-        testVoteResults.put("abstained", 3);
-        testVoteResults.put("possible", 2);
-        when(eventManagementServiceMock.getVoteResults(testVote)).thenReturn(testVoteResults);
+        Event testVote = new Vote("test", Timestamp.from(Instant.now()), sessionTestUser, new Group("tg1", sessionTestUser));
+        when(eventBrokerMock.load(testVote.getUid())).thenReturn(testVote);
+        RSVPTotalsDTO testVoteResults = new RSVPTotalsDTO();
+        testVoteResults.setYes(3);
+        testVoteResults.setNo(7);
+        testVoteResults.setMaybe(3);
+        testVoteResults.setNumberOfUsers(15);
+        when(eventManagementServiceMock.getVoteResultsDTO(testVote)).thenReturn(testVoteResults);
         mockMvc.perform(get("/vote/view").param("eventId", String.valueOf(dummyId)))
                 .andExpect(status().isOk()).andExpect(view().name("vote/view"))
-                .andExpect(model().attribute("yes", is(testVoteResults.get("yes"))))
-                .andExpect(model().attribute("no", is(testVoteResults.get("no"))))
-                .andExpect(model().attribute("abstained", is(testVoteResults.get("abstained"))))
-                .andExpect(model().attribute("possible", is(testVoteResults.get("possible"))))
+                .andExpect(model().attribute("yes", is(testVoteResults.getYes())))
+                .andExpect(model().attribute("no", is(testVoteResults.getNo())))
+                .andExpect(model().attribute("abstained", is(testVoteResults.getMaybe())))
+                .andExpect(model().attribute("possible", is(testVoteResults.getNumberOfUsers())))
                 .andExpect(model().attribute("vote", hasProperty("id", is(dummyId))));
-        verify(eventManagementServiceMock, times(1)).loadEvent(dummyId);
-        verify(eventManagementServiceMock, times(1)).getVoteResults(testVote);
+        verify(eventBrokerMock, times(1)).load(testVote.getUid());
+        verify(eventManagementServiceMock, times(1)).getVoteResultsDTO(testVote);
         verifyNoMoreInteractions(eventManagementServiceMock);
 
 

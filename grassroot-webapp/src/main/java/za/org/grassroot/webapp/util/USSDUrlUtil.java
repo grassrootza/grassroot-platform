@@ -22,6 +22,7 @@ public class USSDUrlUtil {
     public static final String
             phoneNumber = "msisdn",
             userInputParam = "request",
+            groupUidParam = "groupUid",
             groupIdParam = "groupId",
             eventIdParam = "eventId",
             logbookIDParam = "logbookid",
@@ -34,6 +35,7 @@ public class USSDUrlUtil {
 
     public static final String
             groupIdUrlSuffix = ("?" + groupIdParam + "="),
+            groupUidUrlSuffix = ("?" + groupUidParam + "="),
             eventIdUrlSuffix = ("?" + eventIdParam + "="),
             logbookIdUrlSuffix = ("?" + logbookIDParam + "="),
             entityUidUrlSuffix = ("?" + entityUidParam + "="),
@@ -99,24 +101,16 @@ public class USSDUrlUtil {
         return USSDSection.MEETINGS.toPath() + menu + "?eventId=" + eventId + "&action=" + action + setInterruptedFlag;
     }
 
-    public static String saveGroupMenu(String menu, Long groupId) {
-        return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupId=" + groupId + setInterruptedFlag;
-    }
-
     public static String saveGroupMenu(String menu, String groupUid) {
-        return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupId=" + groupUid + setInterruptedFlag;
+        return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupUid=" + groupUid + setInterruptedFlag;
     }
 
-    public static String saveGroupMenuWithParams(String menu, Long groupId, String params) {
-        return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupId=" + groupId + setInterruptedFlag + params;
-    }
-
-    public static String saveGroupMenuWithInput(String menu, Long groupId, String input) {
-        return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupId=" + groupId + addInterruptedInput + encodeParameter(input);
+    public static String saveGroupMenuWithParams(String menu, String groupUid, String params) {
+        return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupUid=" + groupUid + setInterruptedFlag + params;
     }
 
     public static String saveGroupMenuWithInput(String menu, String groupUid, String input) {
-        return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupId=" + groupUid + addInterruptedInput + encodeParameter(input);
+        return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupUid=" + groupUid + addInterruptedInput + encodeParameter(input);
     }
 
     public static String saveVoteMenu(String menu, Long eventId) {
@@ -140,7 +134,6 @@ public class USSDUrlUtil {
         return saveLogMenu(menu, logBookId) + addInterruptedInput + encodeParameter(priorInput);
     }
 
-
     public static String saveLogMenu(String menu, Long logBookId, String priorInput, Long assignUserId) {
         return saveLogMenu(menu, logBookId, priorInput) + (assignUserId != null ? "&assignUserId=" + assignUserId : "");
 
@@ -155,12 +148,8 @@ public class USSDUrlUtil {
                 + "&action=" + action;
     }
 
-    public static String groupMenuWithId(String menu, Long groupId) {
-        return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupId=" + groupId;
-    }
-
     public static String groupMenuWithId(String menu, String groupUid) {
-        return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupId=" + groupUid;
+        return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupUid=" + groupUid;
     }
 
     public static String logViewExistingUrl(String menu, Long groupId, Boolean done, Integer pageNumber) {

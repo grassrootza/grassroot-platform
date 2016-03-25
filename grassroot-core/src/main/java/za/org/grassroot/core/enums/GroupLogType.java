@@ -12,7 +12,11 @@ public enum GroupLogType {
     SUBGROUP_ADDED("sub-group added"),
     SUBGROUP_REMOVED("sub-group removed"),
     PERMISSIONS_CHANGED("permissions changed"),
-    REMINDER_DEFAULT_CHANGED("reminder default changed");
+    REMINDER_DEFAULT_CHANGED("reminder default changed"),
+    DESCRIPTION_CHANGED("description changed"),
+    TOKEN_CHANGED("join code changed"),
+    DISCOVERABLE_CHANGED("discoverable setting changed"),
+    LANGUAGE_CHANGED("changed group default language");
 
     private final String text;
 

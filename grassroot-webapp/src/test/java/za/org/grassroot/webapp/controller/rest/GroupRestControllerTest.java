@@ -45,10 +45,12 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
 
         settingUpDummyData(group, groups, membershipInfo, membersToAdd);
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
-        when(groupManagementServiceMock.changeGroupDescription(group.getUid(), "This is a test group", sessionTestUser.getUid())).thenReturn(group);
+        // todo: change the below
+        // when(groupBrokerMock.create(sessionTestUser.getUid(), testGroupName, ...);
         mockMvc.perform(post(path + "create/{phoneNumber}/{code}", testUserPhone, testUserCode).param("groupName", testGroupName).param("description", "This is a required group")).andExpect(status().isCreated());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
-        verify(groupManagementServiceMock).changeGroupDescription(group.getUid(), "This is a test a group", sessionTestUser.getUid());
+        // todo: switch to groupBroker call
+        // verify(groupManagementServiceMock).changeGroupDescription(group.getUid(), "This is a test a group", sessionTestUser.getUid());
     }
     @Test
     public void getUserGroupsShouldWork() throws Exception {

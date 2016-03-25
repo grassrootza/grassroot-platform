@@ -50,6 +50,12 @@ public abstract class USSDAbstractUnitTest {
     @Mock
     protected PermissionBroker permissionBroker;
 
+    @Mock
+    protected EventBroker eventBrokerMock;
+
+    @Mock
+    protected EventRequestBroker eventRequestBrokerMock;
+
     @InjectMocks
     protected USSDGroupUtil ussdGroupUtil;
 

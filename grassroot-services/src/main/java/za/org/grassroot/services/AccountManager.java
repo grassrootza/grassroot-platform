@@ -127,6 +127,7 @@ public class AccountManager implements AccountManagementService {
     }
 
     @Override
+    @Transactional
     public Group addGroupToAccount(Account account, Group group, User addingUser) throws GroupAlreadyPaidForException {
         // todo: check it isn't already added, didn't exist before, etc
 
@@ -137,7 +138,8 @@ public class AccountManager implements AccountManagementService {
         account.addPaidGroup(paidGroup);
         account = accountRepository.save(account);
         group.setPaidFor(true);
-        return groupManagementService.saveGroup(group, true, "Set paid for", addingUser.getId());
+        return group;
+        // return groupManagementService.saveGroup(group, true, "Set paid for", addingUser.getId());
     }
 
     @Override
@@ -149,6 +151,7 @@ public class AccountManager implements AccountManagementService {
     }
 
     @Override
+    @Transactional
     public Account removeGroupFromAccount(Account account, PaidGroup paidGroupRecord, User removingUser) {
         Group group = paidGroupRecord.getGroup();
 
@@ -160,7 +163,7 @@ public class AccountManager implements AccountManagementService {
 
         paidGroupRepository.save(paidGroupRecord);
         log.info("PaidGroup entity now ... " + paidGroupRecord);
-        groupManagementService.saveGroup(group, true,"Remove paid for",removingUser.getId());
+        // groupManagementService.saveGroup(group, true,"Remove paid for",removingUser.getId());
         return accountRepository.save(account);
     }
 

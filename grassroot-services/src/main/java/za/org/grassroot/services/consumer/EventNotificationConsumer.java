@@ -33,6 +33,9 @@ public class EventNotificationConsumer {
     GroupManagementService groupManagementService;
 
     @Autowired
+    GroupBroker groupBroker;
+
+    @Autowired
     MeetingNotificationService meetingNotificationService;
 
     @Autowired
@@ -226,7 +229,6 @@ public class EventNotificationConsumer {
     @Transactional
     public void sendNewLogbookNotification(LogBookDTO logBookDTO) {
         log.info("sendNewLogbookNotification...id..." + logBookDTO.getId());
-
         LogBook logBook = logBookRepository.findOne(logBookDTO.getId());
         Group  group = logBook.resolveGroup();
         Account account = accountManagementService.findAccountForGroup(group);

@@ -17,7 +17,6 @@ public class LogBookDTO implements Serializable {
     private Long id;
     private JpaEntityType parentType;
     private String parentUid;
-
     private boolean completed;
     private Long completedByUserId;
     private Timestamp completedDate;
