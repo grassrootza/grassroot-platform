@@ -181,6 +181,7 @@ public class MeetingController extends BaseController {
     public String changeReminderSettings(Model model, @RequestParam String eventUid, @RequestParam EventReminderType reminderType,
                                          @RequestParam(value = "custom_minutes", required = false) Integer customMinutes, HttpServletRequest request) {
 
+        // todo: maybe move this into a common place ... since call it from all controllers ...
         int minutes = (customMinutes != null && reminderType.equals(EventReminderType.CUSTOM)) ? customMinutes : 0;
         eventBroker.updateReminderSettings(getUserProfile().getUid(), eventUid, reminderType, minutes);
         Instant newScheduledTime = eventBroker.load(eventUid).getScheduledReminderTime();

@@ -28,12 +28,6 @@ public interface EventManagementService {
 
     List<Event> findByAppliesToGroup(Group appliesToGroup);
 
-    List<Event> findByAppliesToGroupAndStartingAfter(Group group, Date date);
-
-    List<Meeting> findUpcomingMeetingsForGroup(Group group, Date date);
-
-    List<Vote> findUpcomingVotesForGroup(Group group, Date date);
-
     List<Meeting> getUpcomingMeetings(Group group);
 
     List<Vote> getUpcomingVotes(Group group);
@@ -70,7 +64,6 @@ public interface EventManagementService {
 
     public Event getMostRecentEvent(Group group);
 
-
     /*
     Methods to get important details about events, including users by RSVP response, and a descriptive hashmap of strings
      */
@@ -94,8 +87,6 @@ public interface EventManagementService {
      */
 
     Long getNextOutstandingVote(User sessionUser);
-
-    Map<String, Integer> getVoteResults(Event vote);
 
     RSVPTotalsDTO getVoteResultsDTO(Event vote);
 

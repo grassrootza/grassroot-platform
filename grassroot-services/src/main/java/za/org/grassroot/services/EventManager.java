@@ -103,36 +103,18 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
-    public List<Event> findByAppliesToGroupAndStartingAfter(Group group, Date date) {
-        return eventRepository.findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(group, date, false);
-    }
-
-    @Override
-    public List<Meeting> findUpcomingMeetingsForGroup(Group group, Date date) {
-        return meetingRepository.findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(group, date, false);
-    }
-
-    @Override
-    public List<Vote> findUpcomingVotesForGroup(Group group, Date date) {
-        return voteRepository.findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(group, date, false);
-    }
-
-    @Override
     public List<Meeting> getUpcomingMeetings(Group group) {
-
-        return findUpcomingMeetingsForGroup(group, new Date());
+        return meetingRepository.findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(group, new Date(), false);
     }
 
     @Override
     public List<Vote> getUpcomingVotes(Group group) {
-
-        return findUpcomingVotesForGroup(group, new Date());
+        return voteRepository.findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(group, new Date(), false);
     }
 
     @Override
     public List<Event> getUpcomingEvents(Group group) {
-
-        return findByAppliesToGroupAndStartingAfter(group, new Date());
+        return eventRepository.findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(group, new Date(), false);
     }
 
     @Override
@@ -403,24 +385,6 @@ public class EventManager implements EventManagementService {
     public Long getNextOutstandingVote(User sessionUser) {
         // todo: rapid check that this will not return null (current use cases are safe, future might not be)
         return getOutstandingVotesForUser(sessionUser).get(0).getId();
-    }
-
-    @Override
-    public Map<String, Integer> getVoteResults(Event vote) {
-
-        // todo: check this works ...
-
-        Map<String, Integer> results = new HashMap<>();
-        int totalAsked = groupManager.getGroupSize(vote.getAppliesToGroup().getId(), vote.isIncludeSubGroups());
-        RSVPTotalsDTO totalsDTO = eventLogManagementService.getVoteResultsForEvent(vote);
-
-        results.put("yes", totalsDTO.getYes());
-        results.put("no", totalsDTO.getNo());
-        results.put("abstained", totalsDTO.getNumberOfUsers() - totalsDTO.getYes() - totalsDTO.getNo());
-        results.put("no_reply", totalAsked - totalsDTO.getNumberOfUsers());
-        results.put("possible", totalsDTO.getNumberOfUsers());
-
-        return results;
     }
 
     @Override

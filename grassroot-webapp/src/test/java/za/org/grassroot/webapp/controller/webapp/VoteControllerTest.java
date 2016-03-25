@@ -5,14 +5,14 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.EventLog;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.webapp.controller.BaseController;
 
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -116,25 +116,23 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void viewVoteWorks() throws Exception {
 
-//        Event testVote = new Event(sessionTestUser, EventType.Vote, true);
-        Event testVote = null; // todo: new design?
-        testVote.setId(dummyId);
-        when(eventManagementServiceMock.loadEvent(dummyId)).thenReturn(testVote);
-        Map<String, Integer> testVoteResults = new HashMap<>();
-        testVoteResults.put("yes", 3);
-        testVoteResults.put("no", 7);
-        testVoteResults.put("abstained", 3);
-        testVoteResults.put("possible", 2);
-        when(eventManagementServiceMock.getVoteResults(testVote)).thenReturn(testVoteResults);
+        Event testVote = new Vote("test", Timestamp.from(Instant.now()), sessionTestUser, new Group("tg1", sessionTestUser));
+        when(eventBrokerMock.load(testVote.getUid())).thenReturn(testVote);
+        RSVPTotalsDTO testVoteResults = new RSVPTotalsDTO();
+        testVoteResults.setYes(3);
+        testVoteResults.setNo(7);
+        testVoteResults.setMaybe(3);
+        testVoteResults.setNumberOfUsers(15);
+        when(eventManagementServiceMock.getVoteResultsDTO(testVote)).thenReturn(testVoteResults);
         mockMvc.perform(get("/vote/view").param("eventId", String.valueOf(dummyId)))
                 .andExpect(status().isOk()).andExpect(view().name("vote/view"))
-                .andExpect(model().attribute("yes", is(testVoteResults.get("yes"))))
-                .andExpect(model().attribute("no", is(testVoteResults.get("no"))))
-                .andExpect(model().attribute("abstained", is(testVoteResults.get("abstained"))))
-                .andExpect(model().attribute("possible", is(testVoteResults.get("possible"))))
+                .andExpect(model().attribute("yes", is(testVoteResults.getYes())))
+                .andExpect(model().attribute("no", is(testVoteResults.getNo())))
+                .andExpect(model().attribute("abstained", is(testVoteResults.getMaybe())))
+                .andExpect(model().attribute("possible", is(testVoteResults.getNumberOfUsers())))
                 .andExpect(model().attribute("vote", hasProperty("id", is(dummyId))));
-        verify(eventManagementServiceMock, times(1)).loadEvent(dummyId);
-        verify(eventManagementServiceMock, times(1)).getVoteResults(testVote);
+        verify(eventBrokerMock, times(1)).load(testVote.getUid());
+        verify(eventManagementServiceMock, times(1)).getVoteResultsDTO(testVote);
         verifyNoMoreInteractions(eventManagementServiceMock);
 
 

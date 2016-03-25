@@ -121,6 +121,7 @@ public class EventBrokerImpl implements EventBroker {
         if (startTimeChanged) {
             validateEventStartTime(eventStartDateTime);
             meeting.setEventStartDateTime(eventStartDateTime);
+			meeting.updateScheduledReminderTime();
         }
 
         meeting.setName(name);
@@ -190,8 +191,29 @@ public class EventBrokerImpl implements EventBroker {
 	}
 
 	@Override
+	@Transactional
 	public Vote updateVote(String userUid, String voteUid, Timestamp eventStartDateTime, String description) {
-		return null;
+		Objects.requireNonNull(userUid);
+		Objects.requireNonNull(voteUid);
+
+		User user = userRepository.findOneByUid(userUid); // todo: permission checking, once worked out proper logic
+		Vote vote = voteRepository.findOneByUid(voteUid);
+
+		if (vote.isCanceled()) {
+			throw new IllegalStateException("Vote is canceled: " + vote);
+		}
+
+		if (!vote.getEventStartDateTime().equals(eventStartDateTime)) {
+			validateEventStartTime(eventStartDateTime);
+			vote.setEventStartDateTime(eventStartDateTime);
+			vote.updateScheduledReminderTime();
+		}
+
+		vote.setDescription(description);
+
+		// note: as of now, we don't need to send anything, hence just do an explicit call to repo and return the Vote
+
+		return voteRepository.save(vote);
 	}
 
     @Override

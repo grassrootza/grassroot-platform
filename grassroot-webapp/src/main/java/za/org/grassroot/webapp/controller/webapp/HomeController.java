@@ -81,9 +81,6 @@ public class HomeController extends BaseController {
     }
 
     public ModelAndView generateHomePage(Model model) {
-
-
-
         /*
          Recursive construction in the view node will turn each of these into a tree with a root node as the top level
          group. There may be a more efficient way to do this than the groupManagement call (and/or optimizing within it
@@ -214,18 +211,6 @@ public class HomeController extends BaseController {
         }
         return parentNode;
 
-    }
-
-    private List<Event> getConsolidatedGroupEvents(List<Group> groups) {
-        List<Event> groupEvents = new ArrayList<>();
-        for (Group group : groups) {
-
-            List<Event> events = eventManagementService.findByAppliesToGroup(group);
-            if (!events.isEmpty()) {
-                groupEvents.addAll(events);
-            }
-        }
-        return groupEvents;
     }
 
 }
