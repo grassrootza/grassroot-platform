@@ -1,6 +1,7 @@
 package za.org.grassroot.services;
 
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
 
@@ -8,7 +9,7 @@ import java.sql.Timestamp;
 import java.util.Set;
 
 public interface LogBookBroker {
-	LogBook create(String userUid, String groupUid, String message, Timestamp actionByDate, int reminderMinutes,
+	LogBook create(String userUid, JpaEntityType parentType, String parentUid, String message, Timestamp actionByDate, int reminderMinutes,
 				   boolean replicateToSubgroups, Set<String> assignedMemberUids);
 
 	void assignMembers(String userUid, String logBookUid, Set<String> assignMemberUids);

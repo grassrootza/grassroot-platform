@@ -3,15 +3,13 @@ package za.org.grassroot.core.domain;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.UIDGenerator;
 
-import javax.persistence.Column;
-import javax.persistence.DiscriminatorValue;
-import javax.persistence.Entity;
+import javax.persistence.*;
 import java.sql.Timestamp;
 import java.util.Objects;
 
 @Entity
 @DiscriminatorValue("MEETING")
-public class Meeting extends Event {
+public class Meeting extends Event implements VoteContainer {
 
 	@Column(name = "location", length = 50)
 	private String eventLocation;
@@ -58,5 +56,25 @@ public class Meeting extends Event {
 
 	public void setEventLocation(String eventLocation) {
 		this.eventLocation = eventLocation;
+	}
+
+	public MeetingContainer getParent() {
+		if (appliesToGroup != null) {
+			return appliesToGroup;
+		} else if (logBook != null) {
+			return logBook;
+		} else {
+			throw new IllegalStateException("There is no " + MeetingContainer.class.getSimpleName() + " parent defined for " + this);
+		}
+	}
+
+	public void setParent(MeetingContainer parent) {
+		if (parent instanceof Group) {
+			this.appliesToGroup = (Group) parent;
+		} else if (parent instanceof LogBook) {
+			this.logBook = (LogBook) parent;
+		} else {
+			throw new UnsupportedOperationException("Unsupported parent: " + parent);
+		}
 	}
 }

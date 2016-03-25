@@ -157,8 +157,8 @@ public class EventNotificationConsumer {
     public void sendLogBookReminder(LogBookDTO logBookDTO) {
         log.info("sendLogBookReminder...logBook..." + logBookDTO);
 
-        Group  group = groupManagementService.loadGroup(logBookDTO.getGroupId());
-        LogBook logBook = logBookRepository.findOne(logBookDTO.getGroupId());
+        LogBook logBook = logBookRepository.findOne(logBookDTO.getId());
+        Group group = logBook.resolveGroup();
 
         if (logBook.isAllGroupMembersAssigned()) {
             for (User user : groupManagementService.getUsersInGroupNotSubGroups(group.getId())) {
@@ -226,9 +226,10 @@ public class EventNotificationConsumer {
     @Transactional
     public void sendNewLogbookNotification(LogBookDTO logBookDTO) {
         log.info("sendNewLogbookNotification...id..." + logBookDTO.getId());
-        Group  group = groupManagementService.loadGroup(logBookDTO.getGroupId());
-        Account account = accountManagementService.findAccountForGroup(group);
+
         LogBook logBook = logBookRepository.findOne(logBookDTO.getId());
+        Group  group = logBook.resolveGroup();
+        Account account = accountManagementService.findAccountForGroup(group);
 
         log.info("Found this account for the group ..." + (account == null ? " none" : account.getAccountName()));
 

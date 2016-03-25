@@ -27,9 +27,20 @@ public abstract class AbstractLogBookEntity {
 	@JoinColumn(name = "created_by_user_id", nullable = false)
 	protected User createdByUser;
 
-	@ManyToOne(cascade = CascadeType.ALL, optional = false)
-	@JoinColumn(name = "group_id", nullable = false)
-	protected Group group;
+	// -------------------------------------------------------------
+	// THESE SHOULD BE OF PRIVATE VISIBILITY; BECAUSE EVERYONE ELSE
+	// SHOULD READ/WRITE THEM VIA getParent()/setParent() !!!
+	// -------------------------------------------------------------
+
+	@ManyToOne(cascade = CascadeType.ALL)
+	@JoinColumn(name = "group_id")
+	private Group group;
+
+	@ManyToOne(cascade = CascadeType.ALL)
+	@JoinColumn(name = "event_id")
+	private Event event;
+
+	// --------------------------------------------------------------
 
 	@Column(name = "action_by_date")
 	protected Timestamp actionByDate;
@@ -50,9 +61,9 @@ public abstract class AbstractLogBookEntity {
 		// for JPA
 	}
 
-	protected AbstractLogBookEntity(User createdByUser, Group group, String message, Timestamp actionByDate, int reminderMinutes) {
+	protected AbstractLogBookEntity(User createdByUser, LogBookContainer parent, String message, Timestamp actionByDate, int reminderMinutes) {
 		this.createdByUser = Objects.requireNonNull(createdByUser);
-		this.group = Objects.requireNonNull(group);
+		setParent(parent);
 		this.message = Objects.requireNonNull(message);
 		this.actionByDate = Objects.requireNonNull(actionByDate);
 		this.reminderMinutes = reminderMinutes == 0 ? DEFAULT_REMINDER_MINUTES : reminderMinutes;
@@ -77,14 +88,6 @@ public abstract class AbstractLogBookEntity {
 		return createdByUser;
 	}
 
-	public Group getGroup() {
-		return group;
-	}
-
-	public void setGroup(Group group) {
-		this.group = group;
-	}
-
 	public Timestamp getActionByDate() {
 		return actionByDate;
 	}
@@ -107,6 +110,27 @@ public abstract class AbstractLogBookEntity {
 
 	public void setReminderMinutes(int reminderMinutes) {
 		this.reminderMinutes = reminderMinutes;
+	}
+
+	public LogBookContainer getParent() {
+		if (group != null) {
+			return group;
+		} else if (event != null) {
+			return event;
+		} else {
+			throw new IllegalStateException("There is no " + LogBookContainer.class.getSimpleName() + " parent defined for " + this);
+		}
+	}
+
+	public void setParent(LogBookContainer parent) {
+		Objects.requireNonNull(parent);
+		if (parent instanceof Group) {
+			this.group = (Group) parent;
+		} else if (parent instanceof Event) {
+			this.event = (Event) parent;
+		} else {
+			throw new UnsupportedOperationException("Unsupported parent: " + parent);
+		}
 	}
 
 	@Override

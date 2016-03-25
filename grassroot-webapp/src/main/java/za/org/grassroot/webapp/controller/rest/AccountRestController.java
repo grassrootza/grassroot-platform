@@ -11,7 +11,6 @@ import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.AccountManagementService;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.LogBookService;
-import za.org.grassroot.webapp.model.rest.LogBookDTO;
 
 import java.util.logging.Logger;
 

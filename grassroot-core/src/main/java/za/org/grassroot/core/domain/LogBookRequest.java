@@ -23,11 +23,11 @@ public class LogBookRequest extends AbstractLogBookEntity {
 		// for JPA
 	}
 
-	public static LogBookRequest makeEmpty(User createdByUser, Group group) {
+	public static LogBookRequest makeEmpty(User createdByUser, LogBookContainer parent) {
 		LogBookRequest request = new LogBookRequest();
 		request.uid = UIDGenerator.generateId();
 		request.createdByUser = createdByUser;
-		request.group = group;
+		request.setParent(parent);
 
 		return request;
 	}

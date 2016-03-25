@@ -5,16 +5,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.LogBook;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.LogBookDTO;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.LogBookRepository;
+import za.org.grassroot.core.repository.UidIdentifiableRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 
 import java.sql.Timestamp;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -25,6 +25,8 @@ public class LogBookBrokerImpl implements LogBookBroker {
 	@Autowired
 	private UserRepository userRepository;
 	@Autowired
+	private UidIdentifiableRepository uidIdentifiableRepository;
+	@Autowired
 	private GroupRepository groupRepository;
 	@Autowired
 	private LogBookRepository logBookRepository;
@@ -33,27 +35,31 @@ public class LogBookBrokerImpl implements LogBookBroker {
 
 	@Override
 	@Transactional
-	public LogBook create(String userUid, String groupUid, String message, Timestamp actionByDate, int reminderMinutes,
+	public LogBook create(String userUid, JpaEntityType parentType, String parentUid, String message, Timestamp actionByDate, int reminderMinutes,
 						  boolean replicateToSubgroups, Set<String> assignedMemberUids) {
 
 		Objects.requireNonNull(userUid);
-		Objects.requireNonNull(groupUid);
+		Objects.requireNonNull(parentType);
+		Objects.requireNonNull(parentUid);
 		Objects.requireNonNull(message);
 		Objects.requireNonNull(actionByDate);
 		Objects.requireNonNull(assignedMemberUids);
 
 		User user = userRepository.findOneByUid(userUid);
-		Group group = groupRepository.findOneByUid(groupUid);
 
-		logger.info("Creating new log book: userUid={}, groupUid={}, message={}, actionByDate={}, reminderMinutes={}, assignedMemberUids={}, replicateToSubgroups={}",
-				userUid, groupUid, message, actionByDate, reminderMinutes, assignedMemberUids, replicateToSubgroups);
+		LogBookContainer parent = uidIdentifiableRepository.findOneByUid(LogBookContainer.class, parentType, parentUid);
 
-		LogBook logBook = createNewLogBook(user, group, message, actionByDate, reminderMinutes, null);
+		logger.info("Creating new log book: userUid={}, parentType={}, parentUid={}, message={}, actionByDate={}, reminderMinutes={}, assignedMemberUids={}, replicateToSubgroups={}",
+				userUid, parentType, parentUid, message, actionByDate, reminderMinutes, assignedMemberUids, replicateToSubgroups);
+
+		LogBook logBook = createNewLogBook(user, parent, message, actionByDate, reminderMinutes, null);
 		logBook.assignMembers(assignedMemberUids);
 
-		// note: getGroupAndSubGroups is a much faster method (a recursive query) than getSubGroups, hence use it and just skip parent
-		if (replicateToSubgroups) {
-			for (Group subGroup : groupRepository.findGroupAndSubGroupsById(group.getId())) {
+		if (replicateToSubgroups && parent.getJpaEntityType().equals(JpaEntityType.GROUP)) {
+			Group group = logBook.resolveGroup();
+			// note: getGroupAndSubGroups is a much faster method (a recursive query) than getSubGroups, hence use it and just skip parent
+			List<Group> groupAndSubGroups = groupRepository.findGroupAndSubGroupsById(group.getId());
+			for (Group subGroup : groupAndSubGroups) {
 				if (!group.equals(subGroup)) {
 					createNewLogBook(user, subGroup, message, actionByDate, reminderMinutes, group);
 				}
@@ -85,14 +91,14 @@ public class LogBookBrokerImpl implements LogBookBroker {
 		logBook.removeAssignedMembers(memberUids);
 	}
 
-	private LogBook createNewLogBook(User user, Group group, String message, Timestamp actionByDate, int reminderMinutes,
+	private LogBook createNewLogBook(User user, LogBookContainer parent, String message, Timestamp actionByDate, int reminderMinutes,
 									 Group replicatedGroup) {
 		int numberOfRemindersLeftToSend = 0;
 		if (numberOfRemindersLeftToSend == 0) {
 			numberOfRemindersLeftToSend = 3; // todo: replace with a logic based on group paid / not paid
 		}
 
-		LogBook logBook = new LogBook(user, group, message, actionByDate, reminderMinutes, replicatedGroup, numberOfRemindersLeftToSend);
+		LogBook logBook = new LogBook(user, parent, message, actionByDate, reminderMinutes, replicatedGroup, numberOfRemindersLeftToSend);
 		logBook = logBookRepository.save(logBook);
 		jmsTemplateProducerService.sendWithNoReply("new-logbook", new LogBookDTO(logBook));
 		return logBook;
