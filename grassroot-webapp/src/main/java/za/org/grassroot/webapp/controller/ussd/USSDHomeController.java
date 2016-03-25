@@ -400,9 +400,7 @@ public class USSDHomeController extends USSDController {
             welcomeMessage = getMessage(thisSection, startMenu, promptKey, sessionUser);
         } else {
             Group groupToRename = groupManager.loadGroup(groupId);
-            String oldName = groupToRename.getGroupName();
-            groupToRename.setGroupName(groupName);
-            groupManager.saveGroup(groupToRename,true,String.format("Group renamed from %s to %s", oldName, groupName),sessionUser.getId());
+            groupBroker.updateName(sessionUser.getUid(), groupToRename.getUid(), groupName);
             welcomeMessage = getMessage(thisSection, startMenu, promptKey + "-group-do", sessionUser.nameToDisplay(), sessionUser);
         }
 

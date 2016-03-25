@@ -28,9 +28,6 @@ public class RoleManager implements RoleManagementService {
     @Autowired
     private UserManagementService userManagementService;
 
-    @Autowired
-    private GroupManagementService groupManagementService;
-
     /*
     NB: only to be used in tests, to populate in-memory DB
      */

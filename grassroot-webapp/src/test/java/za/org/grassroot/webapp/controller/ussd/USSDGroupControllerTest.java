@@ -1,6 +1,5 @@
 package za.org.grassroot.webapp.controller.ussd;
 
-import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
@@ -9,10 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.core.util.UIDGenerator;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
@@ -126,12 +123,11 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
         resetTestGroup();
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
-        when(groupManagementServiceMock.renameGroup(testGroup.getUid(), "a renamed test group", testUserUid)).thenReturn(testGroup);
         mockMvc.perform(get(path + "rename-do").param(phoneParam, testUserPhone).param(groupParam, testGroup.getUid()).
                 param("request", "a renamed test group")).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupManagementServiceMock, times(1)).renameGroup(testGroup.getUid(), "a renamed test group", testUser.getUid());
+        verify(groupBrokerMock, times(1)).updateName(testGroup.getUid(), testUser.getUid(), "a renamed test group");
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
@@ -161,18 +157,21 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
     @Test
     public void setTokenExpiryShouldWork() throws Exception {
+
+        // note: the handling of the timestamps is going to be a bit tricky
         resetTestGroup();
         testGroup.setGroupTokenCode("123");
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
         when(groupManagementServiceMock.loadGroup(testGroup.getId())).thenReturn(testGroup);
-        when(groupManagementServiceMock.generateExpiringGroupToken(testGroup.getUid(), testUser.getUid(), 3)).thenReturn(testGroup);
+        when(groupBrokerMock.openJoinToken(testUserUid, testGroup.getUid(), true, LocalDateTime.now().plusDays(3))).
+                thenReturn("abc");
 
         mockMvc.perform(get(path + "token-do").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString).
                 param("days", "3")).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
         verify(groupManagementServiceMock, times(1)).loadGroup(testGroup.getId());
-        verify(groupManagementServiceMock, times(1)).generateExpiringGroupToken(testGroup.getUid(), testUser.getUid(), 3);
+        verify(groupBrokerMock, times(1)).openJoinToken(testUser.getUid(), testGroup.getUid(), true, any(LocalDateTime.class));
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
@@ -203,7 +202,6 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone, saveGroupMenu("token-extend", testGroup.getId()))).thenReturn(testUser);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
         when(groupManagementServiceMock.loadGroup(testGroup.getId())).thenReturn(testGroup);
-        when(groupManagementServiceMock.extendGroupToken(testGroup, 3, testUser)).thenReturn(testGroup);
         mockMvc.perform(get(path + "token-extend").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
                 andExpect(status().isOk());
         testGroup.setTokenExpiryDateTime(new Timestamp(DateTimeUtil.addHoursToDate(new Date(), 72).getTime()));
@@ -213,7 +211,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupManagementServiceMock, times(2)).loadGroup(testGroup.getId());
-        verify(groupManagementServiceMock, times(1)).extendGroupToken(testGroup, 3, testUser);
+        // verify(groupManagementServiceMock, times(1)).extendGroupToken(testGroup, 3, testUser);
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
@@ -241,7 +239,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, null);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupManagementServiceMock, times(1)).loadGroup(testGroup.getId());
-        verify(groupManagementServiceMock, times(1)).closeGroupToken(testGroup.getUid(), testUser.getUid());
+        verify(groupBrokerMock, times(1)).closeJoinToken(testUser.getUid(), testGroup.getUid());
 
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
@@ -271,7 +269,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         resetTestGroup();
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
         when(groupManagementServiceMock.loadGroup(testGroup.getId())).thenReturn(testGroup);
-        when(groupManagementServiceMock.loadGroupByUid(testGroup.getUid())).thenReturn(testGroup);
+        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         mockMvc.perform(get(path + "addnumber-do").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString).
                 param("request", "0801110001")).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
@@ -279,7 +277,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         verify(groupBrokerMock, times(1)).addMembers(testUser.getUid(), testGroup.getUid(), ordinaryMember("0801110001"));
         verifyNoMoreInteractions(groupBrokerMock);
         verify(groupManagementServiceMock, times(1)).loadGroup(testGroup.getId());
-        verify(groupManagementServiceMock, times(1)).loadGroupByUid(testGroup.getUid());
+        verify(groupBrokerMock, times(1)).load(testGroup.getUid());
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
@@ -453,16 +451,16 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         String urlToSave = saveGroupMenuWithInput("create-do", testGroup.getId(), nameToPass);
         String testGroupUid = "unique-group-id";
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(groupBrokerMock.create(testUser.getUid(), nameToPass, null, organizer(testUser), template)).thenReturn(testGroup);
+        when(groupBrokerMock.create(testUser.getUid(), nameToPass, null, organizer(testUser), template, null)).thenReturn(testGroup);
 
         mockMvc.perform(get(path + "create-do").param(phoneParam, testUserPhone).param("request", nameToPass)).
                 andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verify(userManagementServiceMock, times(1)).setLastUssdMenu(testUser, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupBrokerMock, times(1)).create(testUser.getUid(), nameToPass, null, testMembers, template);
+        verify(groupBrokerMock, times(1)).create(testUser.getUid(), nameToPass, null, testMembers, template, null);
         verifyNoMoreInteractions(groupBrokerMock);
-        verify(groupManagementServiceMock, times(1)).generateGroupToken(testGroup.getUid(), testUser.getUid());
+        verify(groupBrokerMock, times(1)).openJoinToken(testUser.getUid(), testGroup.getUid(), false, null);
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
@@ -477,14 +475,14 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(groupManagementServiceMock.loadGroup(testGroup.getId())).thenReturn(testGroup);
-        when(groupManagementServiceMock.loadGroupByUid(testGroup.getUid())).thenReturn(testGroup);
+        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         mockMvc.perform(get(path + "add-numbers-do").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString).
                 param("request", newNumbersToPass)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupManagementServiceMock, times(1)).loadGroup(testGroup.getId());
-        verify(groupManagementServiceMock, times(1)).loadGroupByUid(testGroup.getUid());
+        verify(groupBrokerMock, times(1)).load(testGroup.getUid());
         verifyNoMoreInteractions(groupManagementServiceMock);
         verify(groupBrokerMock, times(1)).addMembers(testUser.getUid(), testGroup.getUid(), member);
         verifyNoMoreInteractions(groupBrokerMock);

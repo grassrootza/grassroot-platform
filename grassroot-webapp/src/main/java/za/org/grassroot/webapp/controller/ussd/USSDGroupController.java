@@ -1,6 +1,5 @@
 package za.org.grassroot.webapp.controller.ussd;
 
-import com.google.common.collect.Sets;
 import edu.emory.mathcs.backport.java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +11,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
@@ -23,11 +21,11 @@ import za.org.grassroot.services.exception.GroupDeactivationNotAvailableExceptio
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
-import za.org.grassroot.webapp.util.USSDGroupUtil;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -122,8 +120,8 @@ public class USSDGroupController extends USSDController {
             Long startTime = System.currentTimeMillis();
             MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
             createdGroup = groupBroker.create(user.getUid(), groupName, null, Collections.singleton(creator),
-                                                    GroupPermissionTemplate.DEFAULT_GROUP);
-            groupManager.generateGroupToken(createdGroup.getUid(), user.getUid());
+                                              GroupPermissionTemplate.DEFAULT_GROUP, null);
+            groupBroker.openJoinToken(user.getUid(), createdGroup.getUid(), false, null);
             Long endTime = System.currentTimeMillis();
             log.info(String.format("Group has been created ... time taken ... %d msecs", endTime - startTime));
         }
@@ -157,7 +155,7 @@ public class USSDGroupController extends USSDController {
         /*  the only case of coming here and the group has a code is after interruption or after 'add numbers' via create
             hence there is no need to check if the code expiry date has passed (by definition, the code is valid) */
 
-        groupManager.closeGroupToken(group.getUid(), user.getUid());
+        groupBroker.closeJoinToken(user.getUid(), group.getUid());
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, closeGroupToken, promptKey, user));
 
@@ -246,7 +244,7 @@ public class USSDGroupController extends USSDController {
                                @RequestParam(value= interruptedFlag, required = false) boolean interrupted) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber, null);
-        if (!interrupted) groupManager.renameGroup(groupUid, newName, user.getUid());
+        if (!interrupted) groupBroker.updateName(user.getUid(), groupUid, newName);
         USSDMenu thisMenu = new USSDMenu(getMessage(thisSection, renameGroupPrompt + doSuffix, promptKey, newName, user),
                                 optionsHomeExit(user));
 
@@ -295,12 +293,12 @@ public class USSDGroupController extends USSDController {
                                @RequestParam(value="days", required=true) Integer daysValid) throws URISyntaxException {
 
         /* Generate a token, but also set the interruption switch back to null -- group creation is finished, if group was created */
-        User sessionUser = userManager.findByInputNumber(inputNumber, null);
+        User user = userManager.findByInputNumber(inputNumber, null);
         String groupUid = groupManager.loadGroup(groupId).getUid(); // todo: remove once switched to Uids
-        Group group = (daysValid == 0) ? groupManager.generateGroupToken(groupUid, sessionUser.getUid()) :
-                groupManager.generateExpiringGroupToken(groupUid, sessionUser.getUid(), daysValid);
-        return menuBuilder(new USSDMenu(getMessage(thisSection, groupTokenMenu, "created", group.getGroupTokenCode(), sessionUser),
-                                              optionsHomeExit(sessionUser)));
+        String token = (daysValid == 0) ? groupBroker.openJoinToken(user.getUid(), groupUid, false, null) :
+                groupBroker.openJoinToken(user.getUid(), groupUid, true, LocalDateTime.now().plusDays(daysValid));
+        return menuBuilder(new USSDMenu(getMessage(thisSection, groupTokenMenu, "created", token, user),
+                                              optionsHomeExit(user)));
     }
 
     @RequestMapping(value = groupPath + groupTokenMenu + "-extend")
@@ -324,8 +322,9 @@ public class USSDGroupController extends USSDController {
                 promptMenu.addMenuOption(groupMenuWithId(groupTokenMenu + "-extend", groupId)+ "&days=" + i, i + daySuffix);
         } else {
             // we have been passed a number of days to extend
-            sessionGroup = groupManager.extendGroupToken(sessionGroup, daysValid, sessionUser);
-            String date = sessionGroup.getTokenExpiryDateTime().toLocalDateTime().format(dateFormat);
+            LocalDateTime newExpiry = LocalDateTime.now().plusDays(daysValid);
+            groupBroker.openJoinToken(sessionUser.getUid(), sessionGroup.getUid(), true, newExpiry);
+            String date = newExpiry.format(dateFormat);
             promptMenu = new USSDMenu(getMessage(thisSection, groupTokenMenu, promptKey + ".extend.done", date, sessionUser),
                                         optionsHomeExit(sessionUser));
         }
@@ -340,23 +339,23 @@ public class USSDGroupController extends USSDController {
                                @RequestParam(value= yesOrNoParam, required=false) String confirmed) throws URISyntaxException {
 
         // todo: check the token and group match, and that the user has token admin rights
-        User sessionUser;
+        User user;
         USSDMenu thisMenu;
 
         if (confirmed == null) {
-            sessionUser = userManager.findByInputNumber(inputNumber, saveGroupMenu(groupTokenMenu + "-close", groupId));
+            user = userManager.findByInputNumber(inputNumber, saveGroupMenu(groupTokenMenu + "-close", groupId));
             String beginUri = groupMenus + groupTokenMenu, endUri = groupIdUrlSuffix + groupId;
-            thisMenu = new USSDMenu(getMessage(thisSection, groupTokenMenu, promptKey + ".close", sessionUser),
-                                    optionsYesNo(sessionUser, beginUri + "-close" + endUri));
+            thisMenu = new USSDMenu(getMessage(thisSection, groupTokenMenu, promptKey + ".close", user),
+                                    optionsYesNo(user, beginUri + "-close" + endUri));
         } else if ("yes".equals(confirmed)) {
-            sessionUser = userManager.findByInputNumber(inputNumber, null);
+            user = userManager.findByInputNumber(inputNumber, null);
             // todo: error handling here (bad token, etc., also, security)
-            groupManager.closeGroupToken(groupManager.loadGroup(groupId).getUid(), sessionUser.getUid());
-            thisMenu = new USSDMenu(getMessage(thisSection, groupTokenMenu, promptKey + ".close-done", sessionUser),
-                                    optionsHomeExit(sessionUser));
+            groupBroker.closeJoinToken(user.getUid(), groupManager.loadGroup(groupId).getUid());
+            thisMenu = new USSDMenu(getMessage(thisSection, groupTokenMenu, promptKey + ".close-done", user),
+                                    optionsHomeExit(user));
         } else {
-            sessionUser = userManager.findByInputNumber(inputNumber, null);
-            thisMenu = new USSDMenu("Okay, cancelled", optionsHomeExit(sessionUser));
+            user = userManager.findByInputNumber(inputNumber, null);
+            thisMenu = new USSDMenu("Okay, cancelled", optionsHomeExit(user));
         }
 
         return menuBuilder(thisMenu);

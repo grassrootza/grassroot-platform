@@ -269,7 +269,7 @@ public class GroupController extends BaseController {
         User userCreator = getUserProfile();
         String parentUid = (groupCreator.getHasParent()) ? groupCreator.getParent().getUid() : null;
         Group groupCreated = groupBroker.create(userCreator.getUid(), groupCreator.getGroupName(),
-                                             parentUid, new HashSet<>(groupCreator.getAddedMembers()), template);
+                                                parentUid, new HashSet<>(groupCreator.getAddedMembers()), template, null);
         timeEnd = System.currentTimeMillis();
         log.info(String.format("User load & group creation: %d msecs", timeEnd - timeStart));
 
@@ -351,10 +351,10 @@ public class GroupController extends BaseController {
         // todo: make sure services layer checks permissions
         Group group = groupBroker.load(groupUid);
         if (!groupManagementService.groupHasValidToken(group)) {
-            groupManagementService.generateGroupToken(groupUid, getUserProfile().getUid());
+            groupBroker.openJoinToken(getUserProfile().getUid(), groupUid, false, null);
             addMessage(model, MessageType.SUCCESS, "group.token.created", request);
         } else {
-            groupManagementService.closeGroupToken(groupUid, getUserProfile().getUid());
+            groupBroker.closeJoinToken(getUserProfile().getUid(), groupUid);
             addMessage(model, MessageType.SUCCESS, "group.token.closed", request);
         }
         return viewGroupIndex(model, groupUid);
@@ -365,13 +365,13 @@ public class GroupController extends BaseController {
                                               @RequestParam(value="approverPhoneNumber", required = false) String approverPhoneNumber,
                                               HttpServletRequest request) {
 
-        Group group = groupManagementService.loadGroupByUid(groupUid);
+        Group group = groupBroker.load(groupUid);
 
         if (group.isDiscoverable()) {
-            groupManagementService.setGroupDiscoverable(group, false, getUserProfile().getId(), "");
+            groupBroker.updateDiscoverable(getUserProfile().getUid(), groupUid, false, null);
             addMessage(model, MessageType.SUCCESS, "group.invisible.success", request);
         } else {
-            groupManagementService.setGroupDiscoverable(group, true, getUserProfile().getId(), approverPhoneNumber);
+            groupBroker.updateDiscoverable(getUserProfile().getUid(), groupUid, true, approverPhoneNumber);
             addMessage(model, MessageType.SUCCESS, "group.visible.success", request);
         }
 
@@ -453,7 +453,7 @@ public class GroupController extends BaseController {
     @RequestMapping(value = "add_bulk")
     public String addMembersBulk(Model model, @RequestParam String groupUid, HttpServletRequest request) {
 
-        Group group = groupManagementService.loadGroupByUid(groupUid);
+        Group group = groupBroker.load(groupUid);
         model.addAttribute("group", group);
 
         Set<Permission> ordinaryPermissions = permissionBroker.getPermissions(group, BaseRoles.ROLE_ORDINARY_MEMBER);
@@ -482,7 +482,7 @@ public class GroupController extends BaseController {
     public String addMembersBulkDo(Model model, @RequestParam String groupUid, @RequestParam String list,
                                    HttpServletRequest request) {
 
-        Group group = groupManagementService.loadGroupByUid(groupUid);
+        Group group = groupBroker.load(groupUid);
         Map<String, List<String>> mapOfNumbers = BulkUserImportUtil.splitPhoneNumbers(list);
 
         List<String> numbersToBeAdded = mapOfNumbers.get("valid");
@@ -518,8 +518,8 @@ public class GroupController extends BaseController {
 
         log.info("Okay, setting the language to: " + locale);
 
-        Group group = groupManagementService.loadGroupByUid(groupUid);
-        groupManagementService.setGroupDefaultLanguage(group, locale, includeSubGroups);
+        Group group = groupBroker.load(groupUid);
+        groupBroker.updateGroupDefaultLanguage(getUserProfile().getUid(), group.getUid(), locale, includeSubGroups);
 
         // todo: there is probably a more efficient way to do this than the redirect
         addMessage(model, MessageType.SUCCESS, "group.language.success", request);
@@ -536,7 +536,7 @@ public class GroupController extends BaseController {
     public String deleteGroup(Model model, @RequestParam String groupUid, @RequestParam("confirm_field") String confirmText,
                               HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
-        Group group = groupManagementService.loadGroupByUid(groupUid);
+        Group group = groupBroker.load(groupUid);
 
         if (confirmText.toLowerCase().equals("delete")) {
             groupBroker.deactivate(getUserProfile().getUid(), group.getUid(), true);
@@ -772,7 +772,7 @@ public class GroupController extends BaseController {
     @RequestMapping(value = "roles/members")
     public String viewMemberRoles(Model model, @RequestParam String groupUid) {
         // service layer will take care of checking permissions, but at least here make sure user is in group
-        Group group = groupManagementService.loadGroupByUid(groupUid);
+        Group group = groupBroker.load(groupUid);
         if (!isUserPartOfGroup(getUserProfile(), group)) throw new AccessDeniedException("Sorry, you are not a member of this group");
         List<MembershipInfo> members = new ArrayList<>(MembershipInfo.createFromMembers(group.getMemberships())); // todo: remember to sort members, by role etc
 
@@ -804,7 +804,7 @@ public class GroupController extends BaseController {
     @RequestMapping(value = "roles/permissions")
     public String viewRolePermissions(Model model, @RequestParam String groupUid) {
 
-        Group group = groupManagementService.loadGroupByUid(groupUid);
+        Group group = groupBroker.load(groupUid);
         if (!isUserPartOfGroup(getUserProfile(), group)) throw new AccessDeniedException("Sorry, you are not a member of this group");
 
         // need to do this else

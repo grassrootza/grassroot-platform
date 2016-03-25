@@ -46,12 +46,15 @@ public class TaskRestController {
     @Autowired
     GroupManagementService groupManagementService;
 
+    @Autowired
+    GroupBroker groupBroker;
+
 
     @RequestMapping(value = "/list/{id}/{phoneNumber}/{code}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> getTasks(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
                                                     @PathVariable("id") String uid) {
         User user = userManagementService.loadOrSaveUser(phoneNumber);
-        Group group = groupManagementService.loadGroupByUid(uid);
+        Group group = groupBroker.load(uid);
         List<TaskDTO> tasks = getTasks(user, group);
         ResponseWrapper responseWrapper;
         if (tasks.isEmpty()) {

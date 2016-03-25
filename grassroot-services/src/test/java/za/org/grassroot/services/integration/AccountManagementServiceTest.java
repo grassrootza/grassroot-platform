@@ -16,7 +16,6 @@ import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.*;
-import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.GroupAlreadyPaidForException;
 
 import java.util.HashSet;
@@ -61,7 +60,7 @@ public class AccountManagementServiceTest {
     public void setUp() {
         log.info("Number of standard roles at set up: " + roleManagementService.getNumberStandardRoles());
         testUser = userManagementService.loadOrSaveUser(userNumber);
-        testGroup = groupBroker.create(testUser.getUid(), groupName, null, new HashSet<>(), DEFAULT_GROUP);
+        testGroup = groupBroker.create(testUser.getUid(), groupName, null, new HashSet<>(), DEFAULT_GROUP, null);
         roleManagementService.createStandardRole(accountAdminRole);
     }
 

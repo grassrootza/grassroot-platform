@@ -24,21 +24,13 @@ public interface GroupManagementService {
     Methods to create, save and name groups
      */
 
-    public Group saveGroup(Group groupToSave, boolean createGroupLog, String description, Long changedByUserId);
-
-    public Group renameGroup(String groupUid, String newName, String changingUserUid);
-
-    public Group changeGroupDescription(String groupUid, String description, String changingUserUid);
-
-    public Group groupToRename(User sessionUser);
+    Group groupToRename(User sessionUser);
 
     /*
     Methods to load and find groups
     */
 
-    public Group loadGroup(Long groupId);
-
-    public Group loadGroupByUid(String uid);
+    Group loadGroup(Long groupId);
 
     public List<Group> getCreatedGroups(User creatingUser);
 
@@ -62,19 +54,9 @@ public interface GroupManagementService {
     Methods to work with group joining tokens and group discovery
      */
 
-    public Group generateGroupToken(String groupUid, String generatingUserUid);
-
-    public Group generateExpiringGroupToken(String groupUid, String userUid, Integer daysValid);
-
-    public Group extendGroupToken(Group group, Integer daysExtension, User user);
-
-    public Group closeGroupToken(String groupUid, String closingUserUid);
-
     public boolean groupHasValidToken(Group group);
 
     public Group findGroupByToken(String groupToken);
-
-    public Group setGroupDiscoverable(Group group, boolean discoverable, Long userId, String authorizingUserPhoneNumber);
 
     /*
     Methods do deal with sub groups and parent groups
@@ -103,8 +85,6 @@ public interface GroupManagementService {
     Methods to set and retrieve some basic group properties
      */
 
-    public Group setGroupDefaultLanguage(Group group, String locale, boolean setSubGroups);
-
     public Integer getGroupSize(Long groupId, boolean includeSubGroups);
 
     public LocalDateTime getLastTimeGroupActive(Group group);
@@ -116,16 +96,6 @@ public interface GroupManagementService {
      */
 
     public List<Group> getMergeCandidates(User mergingUser, Long firstGroupSelected);
-
-    /*
-    Methods to get group properties if paid or not
-     */
-
-    public boolean isGroupPaid(Group group);
-
-    public boolean canGroupDoFreeForm(Group group);
-
-    public boolean canGroupRelayMessage(Group group);
 
     /*
     Methods for system and account admin

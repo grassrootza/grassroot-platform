@@ -31,17 +31,20 @@ public class DateTimeUtil {
     public static final DateTimeFormatter preferredDateFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy");
     public static final DateTimeFormatter preferredTimeFormat = DateTimeFormatter.ofPattern("HH:mm");
     public static final DateTimeFormatter preferredDateTimeFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
+
     private static final String possibleTimeDelims = "[-,:hH]+";
     private static final Joiner timeJoiner = Joiner.on(":").skipNulls();
     private static final Pattern timeWithDelims = Pattern.compile("\\d{1,2}" + possibleTimeDelims + "\\d\\d");
     private static final Pattern timeWithoutDelims = Pattern.compile("\\d{3,4}");
     private static final Pattern timeHourOnly = Pattern.compile("\\d{1,2}[am|pm]?");
     private static final Pattern neededOutput = Pattern.compile("\\d{2}:\\d{2}");
-    private static final LocalDateTime veryLongTimeAway = LocalDateTime.of(2099, 12, 31, 23, 59);
     private static final String possibleDateDelims = "[- /.]";
+
     // todo: make this a bit better in terms of requiring matches
     private static final Pattern dateVariationWithYear = Pattern.compile("\\d{1,2}[- /.]\\d{1,2}[- /.]\\d{4}$");
     private static final Pattern getDateVariationWithOutYear = Pattern.compile("\\d{1,2}[- /.]\\d{1,2}");
+
+    private static final LocalDateTime veryLongTimeAway = LocalDateTime.of(2099, 12, 31, 23, 59);
 
     /*
     Inserting method to parse date time user input and, if it can be parsed, set the timestamp accordingly.

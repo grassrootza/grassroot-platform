@@ -23,7 +23,6 @@ import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.UserManagementService;
-import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
 import java.util.List;
 import java.util.Set;
@@ -102,7 +101,7 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         User user = userManagementService.loadOrSaveUser("0810001111");
         Set<MembershipInfo> organizer = Sets.newHashSet(
                 new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, null));
-        Group group = groupBroker.create(user.getUid(), "testGroup", null, organizer, DEFAULT_GROUP);
+        Group group = groupBroker.create(user.getUid(), "testGroup", null, organizer, DEFAULT_GROUP, null);
         String ordinaryRole = BaseRoles.ROLE_ORDINARY_MEMBER;
         log.info("ZOG: Group created ..." + group.toString());
         Set<MembershipInfo> members = Sets.newHashSet(new MembershipInfo("0810001111", ordinaryRole, ""),
@@ -146,8 +145,8 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         MembershipInfo member2a = new MembershipInfo(user2.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER,
                                                      user2.getDisplayName());
 
-        Group group1 = groupBroker.create(user1.getUid(), testGroupBase + "1", null, Sets.newHashSet(member1, member2), DEFAULT_GROUP);
-        Group group2 = groupBroker.create(user2.getUid(), testGroupBase + "2", null, Sets.newHashSet(member2a, member1a), DEFAULT_GROUP);
+        Group group1 = groupBroker.create(user1.getUid(), testGroupBase + "1", null, Sets.newHashSet(member1, member2), DEFAULT_GROUP, null);
+        Group group2 = groupBroker.create(user2.getUid(), testGroupBase + "2", null, Sets.newHashSet(member2a, member1a), DEFAULT_GROUP, null);
 
         groupBroker.addMembers(user2.getUid(), group2.getUid(), Sets.newHashSet(member1));
         assertTrue(group2.getMembers().contains(user1));

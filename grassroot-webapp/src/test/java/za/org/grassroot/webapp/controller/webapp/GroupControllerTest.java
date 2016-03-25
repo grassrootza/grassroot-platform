@@ -8,7 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.web.servlet.MvcResult;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
@@ -136,7 +135,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
         when(groupBrokerMock.create(sessionTestUser.getUid(), dummyGroupCreator.getGroupName(), null,
                                     new HashSet<MembershipInfo>(dummyGroupCreator.getAddedMembers()),
-                                    GroupPermissionTemplate.DEFAULT_GROUP)).thenReturn(dummyGroup);
+                                    GroupPermissionTemplate.DEFAULT_GROUP, null)).thenReturn(dummyGroup);
 
         when(userManagementServiceMock.getUserById(sessionTestUser.getId())).thenReturn(sessionTestUser);
         when((userManagementServiceMock.loadOrSaveUser(sessionTestUser.getPhoneNumber()))).thenReturn(sessionTestUser);
@@ -282,7 +281,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(view().name("group/view"))
                 .andExpect(model().attribute("group", hasProperty("id", is(dummyId))));
 
-        verify(groupManagementServiceMock, times(1)).generateGroupToken(testGroup.getUid(), sessionTestUser.getUid());
+        verify(groupBrokerMock, times(1)).openJoinToken(sessionTestUser.getUid(), testGroup.getUid(), false, null);
     }
 
     @Test
@@ -301,7 +300,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(model().attribute("group", hasProperty("id", is(dummyId))));
 
         // note: since the model returns to group view, testing all verifications would be tedious and somewhat pointless
-        verify(groupManagementServiceMock, times(1)).closeGroupToken(group.getUid(), sessionTestUser.getUid());
+        verify(groupBrokerMock, times(1)).closeJoinToken(sessionTestUser.getUid(), group.getUid());
 
     }
 
@@ -456,14 +455,14 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     public void deleteGroupWorksWithConfirmFieldValueValid() throws Exception {
         Group group = new Group("someGroupname", new User("234345345"));
 
-        when(groupManagementServiceMock.loadGroupByUid(group.getUid())).thenReturn(group);
+        when(groupBrokerMock.load(group.getUid())).thenReturn(group);
         when(groupBrokerMock.isDeactivationAvailable(sessionTestUser, group, true)).thenReturn(true);
 //        when(groupBrokerMock.deactivate(sessionTestUser.getUid(), group.getUid())).thenReturn(group);
         mockMvc.perform(post("/group/inactive").param("groupUid", group.getUid()).param("confirm_field", "delete"))
                 .andExpect(status().is3xxRedirection()).andExpect(view().name("redirect:/home"))
                 .andExpect(redirectedUrl("/home")).andExpect(flash()
                 .attributeExists(BaseController.MessageType.SUCCESS.getMessageKey()));
-        verify(groupManagementServiceMock, times(1)).loadGroupByUid(group.getUid());
+        verify(groupBrokerMock, times(1)).load(group.getUid());
         verify(groupBrokerMock, times(1)).deactivate(sessionTestUser.getUid(), group.getUid(), true);
         verifyNoMoreInteractions(groupManagementServiceMock);
     }
@@ -626,11 +625,11 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
                 new MembershipInfo("27799814669", BaseRoles.ROLE_ORDINARY_MEMBER, null));
 
         Group testGroup = new Group("someGroupName", new User("27616780989"));
-        when(groupManagementServiceMock.loadGroupByUid(testGroup.getUid())).thenReturn(testGroup);
+        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
 
         mockMvc.perform(post("/group/add_bulk").param("groupUid", String.valueOf(testGroup.getUid())).param("list",testNumbers))
                 .andExpect(status().isOk()).andExpect(view().name("group/add_bulk_error"));
-        verify(groupManagementServiceMock,times(1)).loadGroupByUid(testGroup.getUid());
+        verify(groupBrokerMock,times(1)).load(testGroup.getUid());
         verifyNoMoreInteractions(groupManagementServiceMock);
         verify(groupBrokerMock, times(1)).addMembers(sessionTestUser.getUid(), testGroup.getUid(), testMembers);
       //  verifyNoMoreInteractions(userManagementServiceMock);

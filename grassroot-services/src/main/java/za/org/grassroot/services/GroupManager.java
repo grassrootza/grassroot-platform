@@ -50,48 +50,10 @@ public class GroupManager implements GroupManagementService {
     private GroupRepository groupRepository;
 
     @Autowired
-    private PaidGroupRepository paidGroupRepository;
-
-    @Autowired
     private UserManagementService userManager;
 
     @Autowired
-    private TokenGeneratorService tokenGeneratorService;
-
-    @Autowired
     private GroupLogRepository groupLogRepository;
-
-    @Autowired
-    private AsyncGroupService asyncGroupService;
-
-    @Override
-    public Group saveGroup(Group groupToSave, boolean createGroupLog, String description, Long changedByuserId) {
-        Group group = groupRepository.save(groupToSave);
-        if (createGroupLog)
-            asyncGroupService.recordGroupLog(groupToSave.getId(),changedByuserId, GroupLogType.GROUP_UPDATED,0L,description);
-        return group;
-    }
-
-    @Override
-    public Group renameGroup(String groupUid, String newName, String changingUserUid) {
-        Group group = groupRepository.findOneByUid(groupUid);
-        if (!group.getGroupName().equals(newName)) {
-            String oldName = group.getGroupName();
-            group.setGroupName(newName);
-            return saveGroup(group,true,String.format("Old name: %s, New name: %s",oldName,newName),dontKnowTheUser);
-        } else {
-            return group;
-        }
-    }
-
-    @Override
-    public Group changeGroupDescription(String uid, String description, String changinUserUid){
-        Group group = groupRepository.findOneByUid(uid);
-        String oldDescription = group.getDescription();
-        group.setDescription(description);
-        return saveGroup(group,true,String.format("Old name: %s, New name: %s",oldDescription,description),dontKnowTheUser);
-    }
-
 
     /*
     SECTION: Loading groups, finding properties, etc
@@ -100,11 +62,6 @@ public class GroupManager implements GroupManagementService {
     @Override
     public Group loadGroup(Long groupId) {
         return groupRepository.findOne(groupId);
-    }
-
-    @Override
-    public Group loadGroupByUid(String uid) {
-        return groupRepository.findOneByUid(uid);
     }
 
     @Override
@@ -185,62 +142,6 @@ public class GroupManager implements GroupManagementService {
         return groupToReturn;
     }
 
-    private String generateTokenString() {
-        return String.valueOf(tokenGeneratorService.getNextToken());
-    }
-
-    @Override
-    public Group generateGroupToken(String groupUid, String generatingUserUid) {
-        log.info("Generating a token code that is indefinitely open, within postgresql range ... We will have to adjust this before the next century");
-        Group group = groupRepository.findOneByUid(groupUid);
-        User generatingUser = userManager.loadUserByUid(generatingUserUid); // todo: leave out once groupLogs restructured to Uid
-        final Timestamp endOfCentury = Timestamp.valueOf(LocalDateTime.of(2099, 12, 31, 23, 59));
-        group.setGroupTokenCode(generateTokenString());
-        group.setTokenExpiryDateTime(endOfCentury);
-        return saveGroup(group, true, String.format("Set Group Token: %s",group.getGroupTokenCode()), generatingUser.getId());
-    }
-
-    @Override
-    public Group generateExpiringGroupToken(String groupUid, String userUid, Integer daysValid) {
-        Group group = groupRepository.findOneByUid(groupUid);
-        log.info("Generating a new group token, for group: " + group.getId());
-        Group groupToReturn;
-        if (daysValid == 0) {
-            groupToReturn = generateGroupToken(groupUid, userUid);
-        } else {
-            Integer daysMillis = 24 * 60 * 60 * 1000;
-            Timestamp expiryDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis() + daysValid * daysMillis);
-
-            group.setGroupTokenCode(generateTokenString());
-            group.setTokenExpiryDateTime(expiryDateTime);
-
-            log.info("Group code generated: " + group.getGroupTokenCode());
-
-            // todo: pass User UID to the log call
-            groupToReturn = saveGroup(group,true,String.format("Set Group Token: %s",group.getGroupTokenCode()),dontKnowTheUser);
-
-            log.info("Group code after save: " + group.getGroupTokenCode());
-        }
-
-        return groupToReturn;
-    }
-
-    @Override
-    public Group extendGroupToken(Group group, Integer daysExtension, User user) {
-        Integer daysMillis = 24 * 60 * 60 * 1000; // need to put this somewhere else so not copying & pasting
-        Timestamp newExpiryDateTime = new Timestamp(group.getTokenExpiryDateTime().getTime() + daysExtension * daysMillis);
-        group.setTokenExpiryDateTime(newExpiryDateTime);
-        return saveGroup(group,true,String.format("Extend group token %s to %s",group.getGroupTokenCode(),newExpiryDateTime.toString()),user.getId());
-    }
-
-    @Override
-    public Group closeGroupToken(String groupUid, String closingUserUid) {
-        Group group = groupRepository.findOneByUid(groupUid);
-        group.setTokenExpiryDateTime(new Timestamp(Calendar.getInstance().getTimeInMillis()));
-        group.setGroupTokenCode(null); // alternately, set it to "" // todo: switch below to Uid
-        return saveGroup(group,true,"Invalidate Group Token",dontKnowTheUser);
-    }
-
     @Override
     public boolean groupHasValidToken(Group group) {
 
@@ -250,20 +151,6 @@ public class GroupManager implements GroupManagementService {
 
         return codeExists && codeValid;
 
-    }
-
-    @Override
-    public Group setGroupDiscoverable(Group group, boolean discoverable, Long userId, String authorizingUserPhoneNumber) {
-        // todo: create a dedicated permission for this, and uncomment, when we have permission setting working on group create
-        // todo: once we have implemented 'request to join', will need to wire that up here
-        if (group.isDiscoverable() == discoverable) return group;
-        String logEntry = discoverable ? "Set group publicly discoverable" : "Set group hidden from public";
-        group.setDiscoverable(discoverable);
-        if (discoverable)
-            group.setJoinApprover(userManager.findByInputNumber(authorizingUserPhoneNumber));
-        else
-            group.setJoinApprover(null);
-        return saveGroup(group, true, logEntry, userId);
     }
 
     /**
@@ -309,7 +196,7 @@ public class GroupManager implements GroupManagementService {
          */
         String description = String.format("Linked group: %s to %s",child.getGroupName().trim().equals("") ? child.getId() : child.getGroupName(),
                 parent.getGroupName().trim().equals("") ? parent.getId() : parent.getGroupName());
-        asyncGroupService.recordGroupLog(parent.getId(),dontKnowTheUser,GroupLogType.SUBGROUP_ADDED,child.getId(),description);
+        groupLogRepository.save(new GroupLog(parent.getId(),dontKnowTheUser,GroupLogType.SUBGROUP_ADDED,child.getId(),description));
         return savedChild;
     }
 
@@ -326,38 +213,6 @@ public class GroupManager implements GroupManagementService {
     /**
      * Section of methods to add and remove a range of group properties
      */
-
-    @Override
-    public Group setGroupDefaultLanguage(Group group, String locale, boolean setSubGroups) {
-
-        /*
-         todo: the copying of the list is probably an expensive way to do this, but better ways to avoid
-         concurrent modification error are above my pay grade.
-          */
-
-        log.info("Okay, we are inside the group language setting function ...");
-        Set<User> userList = group.getMembers();
-
-        for (User user : userList) {
-            if (!user.isHasInitiatedSession()) {
-                log.info("User hasn't set their own language, so adjusting it to: " + locale + " for this user: " + user.nameToDisplay());
-                user.setLanguageCode(locale);
-                userManager.save(user);
-            }
-        }
-        group.setDefaultLanguage(locale);
-
-        if (setSubGroups) {
-            List<Group> subGroups = getSubGroups(group);
-            if (subGroups != null && !subGroups.isEmpty()) {
-                for (Group subGroup : subGroups)
-                    setGroupDefaultLanguage(subGroup, locale, true);
-            }
-        }
-
-        return saveGroup(group,true,String.format("Set default language to %s", locale),dontKnowTheUser);
-
-    }
 
     @Override
     public Integer getGroupSize(Long groupId, boolean includeSubGroups) {
@@ -401,21 +256,6 @@ public class GroupManager implements GroupManagementService {
         List<Group> createdGroups = getCreatedGroups(mergingUser);
         createdGroups.remove(loadGroup(firstGroupSelected));
         return createdGroups;
-    }
-
-    @Override
-    public boolean isGroupPaid(Group group) {
-        return false;
-    }
-
-    @Override
-    public boolean canGroupDoFreeForm(Group group) {
-        return false;
-    }
-
-    @Override
-    public boolean canGroupRelayMessage(Group group) {
-        return false;
     }
 
     @Override
