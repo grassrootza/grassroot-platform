@@ -147,7 +147,7 @@ public class USSDMeetingController extends USSDController {
     @RequestMapping(value = path + groupHandlingMenu)
     @ResponseBody
     public Request createGroup(@RequestParam(value = phoneNumber, required = true) String inputNumber,
-                               @RequestParam(value = groupIdParam, required = false) Long groupId,
+                               @RequestParam(value = groupUidParam, required = false) String groupUid,
                                @RequestParam(value = eventIdParam, required = false) Long eventId,
                                @RequestParam(value = userInputParam, required = false) String userResponse,
                                @RequestParam(value = interruptedFlag, required = false) boolean interrupted,
@@ -157,7 +157,7 @@ public class USSDMeetingController extends USSDController {
 
         // if priorInput exists, we have been interrupted, so use that as userInput, else use what is passed as 'request'
         String userInput = (priorInput != null) ? USSDUrlUtil.decodeParameter(priorInput) : userResponse;
-        String includeGroup = (groupId != null) ? groupIdUrlSuffix + groupId : ""; // there is no case where eventId is not null but groupId is
+        String includeGroup = (groupUid != null || groupUid.equals("")) ? groupUidUrlSuffix + groupUid : ""; // there is no case where eventId is not null but groupId is
         String includeEvent = (eventId != null) ? ("&" + eventIdParam + "=" + eventId) : "";
 
         String urlToSave = USSDUrlUtil.saveMenuUrlWithInput(thisSection, groupHandlingMenu, includeGroup + includeEvent, userInput);
@@ -167,23 +167,21 @@ public class USSDMeetingController extends USSDController {
 
         if (!userInput.trim().equals("0")) {
             thisMenu = new USSDMenu(true);
-            if (groupId == null) {
-                Long newGroupId = ussdGroupUtil.addNumbersToNewGroup(user, USSDSection.MEETINGS, thisMenu, userInput, groupHandlingMenu);
-                userManager.setLastUssdMenu(user, USSDUrlUtil.
-                        saveMenuUrlWithInput(thisSection, groupHandlingMenu, groupIdUrlSuffix + newGroupId, userInput));
+            if (groupUid == null || groupUid.equals("")) {
+                String newGroupUid = ussdGroupUtil.addNumbersToNewGroup(user, USSDSection.MEETINGS, thisMenu, userInput, groupHandlingMenu);
+                cacheManager.putUssdMenuForUser(phoneNumber, USSDUrlUtil.
+                        saveMenuUrlWithInput(thisSection, groupHandlingMenu, groupUidUrlSuffix + newGroupUid, userInput));
             } else {
-                String groupUid = groupManager.loadGroup(groupId).getUid();
                 thisMenu = ussdGroupUtil.addNumbersToExistingGroup(
                         user, groupUid, USSDSection.MEETINGS, userInput, groupHandlingMenu);
             }
         } else {
             thisMenu = new USSDMenu(true);
-            if (groupId == null) {
+            if (groupUid == null) {
                 thisMenu.setPromptMessage(getMessage(thisSection, groupHandlingMenu, promptKey + ".no-group", user));
                 thisMenu.setNextURI(meetingMenus + groupHandlingMenu);
             } else {
-                Group group = groupManager.loadGroup(groupId);
-                MeetingRequest meetingRequest = eventRequestBroker.createEmptyMeetingRequest(user.getUid(), group.getUid());
+                MeetingRequest meetingRequest = eventRequestBroker.createEmptyMeetingRequest(user.getUid(), groupUid);
                 String mtgRequestUid = meetingRequest.getUid();
                 thisMenu.setPromptMessage(getMessage(thisSection, nextMenu(startMenu), promptKey, user));
                 thisMenu.setNextURI(meetingMenus + nextMenu(nextMenu(startMenu)) + entityUidUrlSuffix + mtgRequestUid
@@ -207,15 +205,14 @@ public class USSDMeetingController extends USSDController {
     @ResponseBody
     public Request getSubject(@RequestParam(value = phoneNumber, required = true) String inputNumber,
                               @RequestParam(value = entityUidParam, required = false) String mtgRequestUid,
-                              @RequestParam(value = groupIdParam, required = false) Long groupId,
+                              @RequestParam(value = groupUidParam, required = false) String groupUid,
                               @RequestParam(value = interruptedFlag, required = false) boolean interrupted,
                               @RequestParam(value = "revising", required = false) boolean revising) throws URISyntaxException {
 
         User sessionUser = userManager.findByInputNumber(inputNumber, saveMeetingMenu(subjectMenu, mtgRequestUid, revising));
 
         if (!interrupted && !revising) {
-            Group group = groupManager.loadGroup(groupId);
-            MeetingRequest meetingRequest = eventRequestBroker.createEmptyMeetingRequest(sessionUser.getUid(), group.getUid());
+            MeetingRequest meetingRequest = eventRequestBroker.createEmptyMeetingRequest(sessionUser.getUid(), groupUid);
             mtgRequestUid = meetingRequest.getUid();
         }
 

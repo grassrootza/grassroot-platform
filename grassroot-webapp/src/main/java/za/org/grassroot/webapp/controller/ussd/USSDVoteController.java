@@ -105,7 +105,7 @@ public class USSDVoteController extends USSDController {
     @RequestMapping(value = path + "issue")
     @ResponseBody
     public Request votingIssue(@RequestParam(value = phoneNumber) String inputNumber,
-                               @RequestParam(value = groupIdParam, required = false) Long groupId,
+                               @RequestParam(value = groupUidParam, required = false) String groupUid,
                                @RequestParam(value = entityUidParam, required = false) String requestUid,
                                @RequestParam(value = interruptedFlag, required = false) boolean interrupted,
                                @RequestParam(value = revisingFlag, required = false) boolean revising) throws URISyntaxException {
@@ -113,8 +113,7 @@ public class USSDVoteController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber);
 
         if (requestUid == null) {
-            Group group = groupManager.loadGroup(groupId);
-            VoteRequest voteRequest = eventRequestBroker.createEmptyVoteRequest(user.getUid(), group.getUid());
+            VoteRequest voteRequest = eventRequestBroker.createEmptyVoteRequest(user.getUid(), groupUid);
             requestUid = voteRequest.getUid();
         }
 

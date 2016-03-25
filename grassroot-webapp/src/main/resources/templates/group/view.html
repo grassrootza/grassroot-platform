@@ -226,15 +226,15 @@
             <h4 class="modal-title" id="unsubModalLabel">Are you sure?</h4>
           </div>
           <form th:action="@{/group/unsubscribe}" method="post">
-            <input type="hidden" name="groupId" id="groupId" th:value="${group.id}" />
+            <input type="hidden" name="groupUid" id="groupUid" th:value="${group.uid}" />
             <div class="modal-body">
               <div class="form-group">
-                <label for="confirm_field" class="control-label">
+                <label for="confirm_unsub_field" class="control-label">
                   You are about to unsusbcribe from this group.
                 </label>
                 <p class="small">You will only be able to rejoin if someone adds you back. Are you sure you want to leave? Please type
                   'unsubscribe' below to confirm.</p>
-                <input type="text" class="form-control" id="confirm_field"
+                <input type="text" class="form-control" id="confirm_unsub_field"
                        name="confirm_field" autocomplete="off" />
               </div>
             </div>
@@ -249,7 +249,7 @@
 
     <div class="row top-buffer">
       <div class="btn-group col-md-12 text-center">
-        <a th:if="${canCreateSubGroup}" href="" th:href="@{/group/create(parent=${group.id})}">
+        <a th:if="${canCreateSubGroup}" href="" th:href="@{/group/create(parent=${group.uid})}">
           <button class="btn btn-default">Create a sub-group</button></a>
         <a th:if="${canCallMeeting}" href="" th:href="@{/meeting/create(groupUid=${group.uid})}">
           <button class="btn btn-default">Call a meeting</button></a>

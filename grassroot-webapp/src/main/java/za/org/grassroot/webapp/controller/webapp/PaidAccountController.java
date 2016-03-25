@@ -151,12 +151,12 @@ public class PaidAccountController extends BaseController {
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/group/designate", method = RequestMethod.POST)
-    public String doDesignation(Model model, @RequestParam Long accountId, @RequestParam Long groupId,
+    public String doDesignation(Model model, @RequestParam Long accountId, @RequestParam String groupUid,
                                 HttpServletRequest request) {
         // todo: some form of confirmation screen
         Account account = accountManagementService.loadAccount(accountId);
         if (!sessionUserHasAccountPermission(account, request)) throw new AccessDeniedException("");
-        accountManagementService.addGroupToAccount(account, groupManagementService.loadGroup(groupId), getUserProfile());
+        accountManagementService.addGroupToAccount(account, groupBroker.load(groupUid), getUserProfile());
         addMessage(model, MessageType.SUCCESS, "account.addgroup.success", request);
         return viewPaidAccount(model, accountId, request);
     }

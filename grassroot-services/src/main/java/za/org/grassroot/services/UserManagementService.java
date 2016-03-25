@@ -77,7 +77,7 @@ public interface UserManagementService {
 
     List<User> searchByDisplayName(String displayName);
 
-    List<User> searchByGroupAndNameNumber(Long groupId, String nameOrNumber);
+    List<User> searchByGroupAndNameNumber(String groupUid, String nameOrNumber);
 
     User reformatPhoneNumber(User sessionUser);
 

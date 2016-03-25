@@ -252,8 +252,8 @@ public class USSDHomeController extends USSDController {
             case NAME_GROUP:
                 Group group = groupManager.groupToRename(sessionUser);
                 openingMenu = (groupBroker.isDeactivationAvailable(sessionUser, group, true)) ?
-                        renameGroupAllowInactive(sessionUser, group.getId(), dateFormat.format(group.getCreatedDateTime().toLocalDateTime())) :
-                        renameGroupNoInactiveOption(sessionUser, group.getId(), dateFormat.format(group.getCreatedDateTime().toLocalDateTime()));
+                        renameGroupAllowInactive(sessionUser, group.getUid(), dateFormat.format(group.getCreatedDateTime().toLocalDateTime())) :
+                        renameGroupNoInactiveOption(sessionUser, group.getUid(), dateFormat.format(group.getCreatedDateTime().toLocalDateTime()));
                 break;
             case NONE:
                 openingMenu = defaultStartMenu(sessionUser);
@@ -309,22 +309,22 @@ public class USSDHomeController extends USSDController {
         return openingMenu;
     }
 
-    private USSDMenu renameGroupNoInactiveOption(User user, Long groupId, String dateCreated) {
+    private USSDMenu renameGroupNoInactiveOption(User user, String groupUid, String dateCreated) {
         USSDMenu thisMenu = new USSDMenu(getMessage(thisSection, startMenu, promptKey + "-group-rename", dateCreated, user));
         thisMenu.setFreeText(true);
-        thisMenu.setNextURI(renameGroupAndStart + groupIdUrlSuffix + groupId);
+        thisMenu.setNextURI(renameGroupAndStart + groupUidUrlSuffix + groupUid);
         return thisMenu;
     }
 
-    private USSDMenu renameGroupAllowInactive(User user, Long groupId, String dateCreated) {
+    private USSDMenu renameGroupAllowInactive(User user, String groupUid, String dateCreated) {
         USSDMenu thisMenu = new USSDMenu(getMessage(thisSection, startMenu, promptKey + "-group-options", dateCreated, user));
         thisMenu.setFreeText(false);
 
-        thisMenu.addMenuOption(promptGroupRename + groupIdUrlSuffix + groupId,
+        thisMenu.addMenuOption(promptGroupRename + groupUidUrlSuffix + groupUid,
                                getMessage(thisSection, startMenu, "group.options.rename", user));
-        thisMenu.addMenuOption(promptConfirmGroupInactive + groupIdUrlSuffix + groupId,
+        thisMenu.addMenuOption(promptConfirmGroupInactive + groupUidUrlSuffix + groupUid,
                                getMessage(thisSection, startMenu, "group.options.inactive", user));
-        thisMenu.addMenuOption(groupMenus + "merge" + groupIdUrlSuffix + groupId,
+        thisMenu.addMenuOption(groupMenus + "merge" + groupUidUrlSuffix + groupUid,
                                getMessage(thisSection, startMenu, "group.options.merge", user));
         thisMenu.addMenuOption(startMenu + "_force", getMessage(thisSection, startMenu, "interrupted.start", user));
 
@@ -389,7 +389,7 @@ public class USSDHomeController extends USSDController {
     @RequestMapping(value = path + renameGroupAndStart)
     @ResponseBody
     public Request groupNameAndStart(@RequestParam(value= phoneNumber) String inputNumber,
-                                     @RequestParam(value= groupIdParam) Long groupId,
+                                     @RequestParam(value= groupUidParam) String groupUid,
                                      @RequestParam(value= userInputParam) String groupName) throws URISyntaxException {
 
         // todo: use permission model to check if user can actually do this
@@ -399,8 +399,7 @@ public class USSDHomeController extends USSDController {
         if (groupName.equals("0") || groupName.trim().equals("")) {
             welcomeMessage = getMessage(thisSection, startMenu, promptKey, sessionUser);
         } else {
-            Group groupToRename = groupManager.loadGroup(groupId);
-            groupBroker.updateName(sessionUser.getUid(), groupToRename.getUid(), groupName);
+            groupBroker.updateName(sessionUser.getUid(), groupUid, groupName);
             welcomeMessage = getMessage(thisSection, startMenu, promptKey + "-group-do", sessionUser.nameToDisplay(), sessionUser);
         }
 
@@ -411,25 +410,26 @@ public class USSDHomeController extends USSDController {
     @RequestMapping(value = path + promptGroupRename)
     @ResponseBody
     public Request askForGroupName(@RequestParam(value=phoneNumber) String inputNumber,
-                                   @RequestParam(value=groupIdParam) Long groupId) throws URISyntaxException {
-        Group group = groupManager.loadGroup(groupId);
-        return menuBuilder(renameGroupNoInactiveOption(userManager.findByInputNumber(inputNumber), groupId,
+                                   @RequestParam(value=groupUidParam) String groupUid) throws URISyntaxException {
+        Group group = groupBroker.load(groupUid);
+        return menuBuilder(renameGroupNoInactiveOption(userManager.findByInputNumber(inputNumber), groupUid,
                                                        dateFormat.format(group.getCreatedDateTime().toLocalDateTime())));
     }
 
     @RequestMapping(value = path + promptConfirmGroupInactive)
     @ResponseBody
     public Request confirmGroupInactive(@RequestParam(value=phoneNumber) String inputNumber,
-                                        @RequestParam(value=groupIdParam) Long groupId) throws URISyntaxException {
+                                        @RequestParam(value=groupUidParam) String groupUid) throws URISyntaxException {
         // todo: another round of checks that this should be allowed
         User user = userManager.findByInputNumber(inputNumber);
-        String sizeOfGroup = "" + (groupManager.getGroupSize(groupId, false) - 1); // subtracting the group creator
+        Group group = groupBroker.load(groupUid);
+        String sizeOfGroup = "" + (groupManager.getGroupSize(group.getId(), false) - 1); // subtracting the group creator
         String optionsPrefix = thisSection.toKey() + "group.inactive." + optionsKey;
 
         USSDMenu thisMenu = new USSDMenu(getMessage(thisSection, "group", "inactive." + promptKey, sizeOfGroup, user));
-        thisMenu.addMenuOption(promptConfirmGroupInactive + doSuffix + groupIdUrlSuffix + groupId,
+        thisMenu.addMenuOption(promptConfirmGroupInactive + doSuffix + groupUidUrlSuffix + groupUid,
                                getMessage(optionsPrefix + "confirm", user));
-        thisMenu.addMenuOption(groupMenus + "merge" + groupIdUrlSuffix + groupId,
+        thisMenu.addMenuOption(groupMenus + "merge" + groupUidUrlSuffix + groupUid,
                                getMessage(optionsPrefix + "merge", user));
         thisMenu.addMenuOption(startMenu + "_force", getMessage(optionsPrefix + "cancel", user));
 
@@ -439,12 +439,11 @@ public class USSDHomeController extends USSDController {
     @RequestMapping(value = path + promptConfirmGroupInactive + doSuffix)
     @ResponseBody
     public Request setGroupInactiveAndStart(@RequestParam(value=phoneNumber) String inputNumber,
-                                            @RequestParam(value=groupIdParam) Long groupId) throws URISyntaxException {
+                                            @RequestParam(value=groupUidParam) String groupUid) throws URISyntaxException {
         // todo: permission checks
         User sessionUser = userManager.findByInputNumber(inputNumber);
-        Group group = groupManager.loadGroup(groupId);
-        log.info("At the request of user: " + sessionUser + ", we are setting inactive this group ... " + group);
-        groupBroker.deactivate(sessionUser.getUid(), group.getUid(), true);
+        log.info("At the request of user: " + sessionUser + ", we are setting inactive this group ... " + groupUid);
+        groupBroker.deactivate(sessionUser.getUid(), groupUid, true);
         String welcomeMessage = getMessage(thisSection, "group", "inactive." + promptKey + ".done", sessionUser);
         return menuBuilder(welcomeMenu(welcomeMessage, sessionUser));
     }

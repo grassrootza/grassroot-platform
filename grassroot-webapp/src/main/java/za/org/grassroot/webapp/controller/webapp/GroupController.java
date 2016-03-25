@@ -225,12 +225,12 @@ public class GroupController extends BaseController {
      */
 
     @RequestMapping("create")
-    public String startGroupIndex(Model model, @RequestParam(value = "parent", required = false) Long parentId) {
+    public String startGroupIndex(Model model, @RequestParam(value = "parent", required = false) String parentUid) {
 
         GroupWrapper groupCreator;
 
-        if (parentId != null) {
-            Group parent = groupManagementService.loadGroup(parentId);
+        if (parentUid != null) {
+            Group parent = groupBroker.load(parentUid);
             if (parent != null) {
                 groupCreator = new GroupWrapper(parent);
             } else {
@@ -549,20 +549,18 @@ public class GroupController extends BaseController {
     }
 
     @RequestMapping(value = "unsubscribe", method = RequestMethod.POST)
-    public String unsubGroup(Model model, @RequestParam Long groupId, HttpServletRequest request,
+    public String unsubGroup(Model model, @RequestParam String groupUid, HttpServletRequest request,
                              @RequestParam("confirm_field") String confirmText, RedirectAttributes redirectAttributes) {
 
-        // todo: again, check the user is part of the group and/or do error handling
-        Group group = groupManagementService.loadGroup(groupId);
-        User user = userManagementService.loadUser(getUserProfile().getId()); // else equals in "is user in group" fails
+        // services level will take care of checking that user is in group etc etc
 
         if (confirmText != null && "unsubscribe".equals(confirmText.toLowerCase().trim())) {
-            groupBroker.unsubscribeMember(user.getUid(), group.getUid());
+            groupBroker.unsubscribeMember(getUserProfile().getUid(), groupUid);
             addMessage(redirectAttributes, MessageType.SUCCESS, "group.unsubscribe.success", request);
             return "redirect:/home";
         } else {
             addMessage(model, MessageType.ERROR, "group.unsubscribe.error", request);
-            return viewGroupIndex(model, group.getUid());
+            return viewGroupIndex(model, groupUid);
         }
     }
 
@@ -571,12 +569,12 @@ public class GroupController extends BaseController {
      */
 
     @RequestMapping(value = "parent")
-    public String listPossibleParents(Model model, @RequestParam("groupId") Long groupId,
+    public String listPossibleParents(Model model, @RequestParam String groupUid,
                                       HttpServletRequest request, RedirectAttributes redirectAttributes) {
         // todo: check permissions, handle exceptions (in fact, on view group page), etc.
-        log.info("Looking for possible parents of group with ID: " + groupId);
+        log.info("Looking for possible parents of group with ID: " + groupUid);
 
-        Group groupToMakeChild = groupManagementService.loadGroup(groupId);
+        Group groupToMakeChild = groupBroker.load(groupUid);
 
         List<Group> userGroups = groupManagementService.getActiveGroupsPartOf(getUserProfile());
         userGroups.remove(groupToMakeChild);
@@ -595,7 +593,7 @@ public class GroupController extends BaseController {
         }
 
         if (!possibleParents.isEmpty()) {
-            log.info("The group (with ID " + groupId + ") has some possible parents, in fact this many: " + possibleParents.size());
+            log.info("The group (with ID " + groupUid + ") has some possible parents, in fact this many: " + possibleParents.size());
             model.addAttribute("group", groupToMakeChild);
             model.addAttribute("possibleParents", possibleParents);
             return "group/parent";
@@ -603,20 +601,20 @@ public class GroupController extends BaseController {
             // add an error message
             log.info("The group does not have possible parents");
             addMessage(redirectAttributes, MessageType.ERROR, "group.parents.none", request);
-            redirectAttributes.addAttribute("groupId", groupId);
+            redirectAttributes.addAttribute("groupUid", groupUid);
             return "redirect:view";
         }
     }
 
     @RequestMapping(value = "link", method = RequestMethod.POST)
-    public String linkToParent(Model model, @RequestParam("groupId") Long groupId, @RequestParam("parentId") Long parentId,
+    public String linkToParent(Model model, @RequestParam("groupUid") String groupUid, @RequestParam("parentUid") String parentUid,
                                RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
         // todo: permissions, exceptions, etc.
         // todo: check if need to send a request to parent for permission to bind
 
-        Group group = groupManagementService.loadGroup(groupId);
-        Group parent = groupManagementService.loadGroup(parentId);
+        Group group = groupBroker.load(groupUid);
+        Group parent = groupBroker.load(parentUid);
 
         group = groupManagementService.linkSubGroup(group, parent);
 
@@ -633,18 +631,19 @@ public class GroupController extends BaseController {
      */
 
     @RequestMapping(value = "consolidate/select")
-    public String selectConsolidate(Model model, @RequestParam Long groupId,
+    public String selectConsolidate(Model model, @RequestParam String groupUid,
                                     RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
         User user = getUserProfile();
 
-        List<Group> candidateGroups = groupManagementService.getMergeCandidates(user, groupId);
+        Group group = groupBroker.load(groupUid);
+        List<Group> candidateGroups = groupManagementService.getMergeCandidates(user, group.getId());
         if (candidateGroups == null || candidateGroups.size() == 0) {
             addMessage(redirectAttributes, MessageType.ERROR, "group.merge.no-candidates", request);
-            redirectAttributes.addAttribute("groupId", groupId);
+            redirectAttributes.addAttribute("groupUid", groupUid);
             return "redirect:view";
         } else {
-            model.addAttribute("group1", groupManagementService.loadGroup(groupId));
+            model.addAttribute("group1", group);
             model.addAttribute("candidateGroups", candidateGroups);
             return "group/consolidate_select";
         }
@@ -652,7 +651,8 @@ public class GroupController extends BaseController {
 
 
     @RequestMapping(value = "consolidate/confirm", method = RequestMethod.POST)
-    public String consolidateGroupsConfirm(Model model, @RequestParam Long groupId1, @RequestParam Long groupId2, @RequestParam String order,
+    public String consolidateGroupsConfirm(Model model, @RequestParam String groupUid1, @RequestParam String groupUid2,
+                                           @RequestParam String order,
                                            @RequestParam(value = "leaveActive", required = false) boolean leaveActive) {
 
         Group groupInto;
@@ -660,8 +660,8 @@ public class GroupController extends BaseController {
 
         switch (order) {
             case "small_to_large":
-                Group groupA = groupManagementService.loadGroup(groupId1);
-                Group groupB = groupManagementService.loadGroup(groupId2);
+                Group groupA = groupBroker.load(groupUid1);
+                Group groupB = groupBroker.load(groupUid2);
                 if (groupA.getMemberships().size() >= groupB.getMemberships().size()) {
                     groupInto = groupA;
                     groupFrom = groupB;
@@ -671,16 +671,16 @@ public class GroupController extends BaseController {
                 }
                 break;
             case "2_into_1":
-                groupInto = groupManagementService.loadGroup(groupId1);
-                groupFrom = groupManagementService.loadGroup(groupId2);
+                groupInto = groupBroker.load(groupUid1);
+                groupFrom = groupBroker.load(groupUid2);
                 break;
             case "1_into_2":
-                groupInto = groupManagementService.loadGroup(groupId2);
-                groupFrom = groupManagementService.loadGroup(groupId1);
+                groupInto = groupBroker.load(groupUid2);
+                groupFrom = groupBroker.load(groupUid1);
                 break;
             default:
-                groupInto = groupManagementService.loadGroup(groupId1);
-                groupFrom = groupManagementService.loadGroup(groupId2);
+                groupInto = groupBroker.load(groupUid1);
+                groupFrom = groupBroker.load(groupUid2);
                 break;
         }
 
@@ -693,7 +693,8 @@ public class GroupController extends BaseController {
     }
 
     @RequestMapping(value = "consolidate/do", method = RequestMethod.POST)
-    public String consolidateGroupsDo(Model model, @RequestParam("groupInto") Long groupIdInto, @RequestParam("groupFrom") Long groupIdFrom,
+    public String consolidateGroupsDo(Model model, @RequestParam("groupInto") String groupUidInto,
+                                      @RequestParam("groupFrom") String groupUidFrom,
                                       @RequestParam(value = "leaveActive", required = false) boolean leaveActive,
                                       @RequestParam(value="confirm_field") String confirmField, RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
@@ -702,13 +703,13 @@ public class GroupController extends BaseController {
             addMessage(redirectAttributes, MessageType.ERROR, "group.merge.error", request);
             return "redirect:/home";
         } else {
-            Group groupInto = groupManagementService.loadGroup(groupIdInto);
-            Group groupFrom = groupManagementService.loadGroup(groupIdFrom);
+            Group groupInto = groupBroker.load(groupUidInto);
+            Group groupFrom = groupBroker.load(groupUidFrom);
             Group consolidatedGroup =
-                    groupBroker.merge(getUserProfile().getUid(), groupInto.getUid(), groupFrom.getUid(), leaveActive, true, false, null);
+                    groupBroker.merge(getUserProfile().getUid(), groupUidInto, groupUidFrom, leaveActive, true, false, null);
             Integer[] userCounts = new Integer[]{groupFrom.getMembers().size(),
                     groupManagementService.getGroupSize(consolidatedGroup.getId(), false)};
-            redirectAttributes.addAttribute("groupId", consolidatedGroup.getId());
+            redirectAttributes.addAttribute("groupUid", consolidatedGroup.getUid());
             addMessage(redirectAttributes, MessageType.SUCCESS, "group.merge.success", userCounts, request);
             return "redirect:/group/view";
         }
@@ -720,10 +721,10 @@ public class GroupController extends BaseController {
      */
 
     @RequestMapping(value = "history")
-    public String viewGroupHistory(Model model, @RequestParam Long groupId,
+    public String viewGroupHistory(Model model, @RequestParam String groupUid,
                                    @RequestParam(value = "monthToView", required = false) String monthToView) {
 
-        Group group = groupManagementService.loadGroup(groupId); // todo: use permissions
+        Group group = groupBroker.load(groupUid); // todo: use permissions
         if (!isUserPartOfGroup(getUserProfile(), group)) throw new AccessDeniedException("");
 
         final LocalDateTime startDateTime;
@@ -756,11 +757,11 @@ public class GroupController extends BaseController {
     }
 
     @RequestMapping(value = "view_event")
-    public String redirectToEvent(Model model, @RequestParam Long eventId, @RequestParam EventType eventType,
+    public String redirectToEvent(Model model, @RequestParam String eventUid, @RequestParam EventType eventType,
                                   RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
         String path = (eventType == EventType.MEETING) ? "/meeting/" : "/vote/";
-        redirectAttributes.addAttribute("eventId", eventId);
+        redirectAttributes.addAttribute("eventUid", eventUid);
         return "redirect:" + path + "view";
 
     }

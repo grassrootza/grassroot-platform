@@ -30,8 +30,6 @@ public interface GroupManagementService {
     Methods to load and find groups
     */
 
-    Group loadGroup(Long groupId);
-
     public List<Group> getCreatedGroups(User creatingUser);
 
     public boolean hasActiveGroupsPartOf(User user); // replace in time wth getGroupsByPermission

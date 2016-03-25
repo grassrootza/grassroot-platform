@@ -15,6 +15,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.LogBookBroker;
 import za.org.grassroot.services.LogBookService;
@@ -41,6 +42,9 @@ public class LogBookController extends BaseController {
     private GroupManagementService groupManagementService;
 
     @Autowired
+    private GroupBroker groupBroker;
+
+    @Autowired
     private LogBookService logBookService;
 
     @Autowired
@@ -51,13 +55,13 @@ public class LogBookController extends BaseController {
      */
 
     @RequestMapping("/log/create")
-    public String createLogBook(Model model, @RequestParam(value="groupId", required=false) Long groupId) {
+    public String createLogBook(Model model, @RequestParam(value="groupUid", required=false) String groupUid) {
 
         // Thymeleaf insists on messing everything up if we try to set groupId, or just in general create the entity
         // on the next page instead of here, so we have to do some redundant & silly entity creation
         LogBook logBookToFill = LogBook.makeEmpty();
 
-        if (groupId == null) {
+        if (groupUid == null || groupUid.trim().equals("")) {
             log.info("No group specified, pass a list and let user choose");
             model.addAttribute("groupSpecified", false);
             // todo: make this use permissions logic so only pass groups for which the user has permission to do this
@@ -66,7 +70,7 @@ public class LogBookController extends BaseController {
             log.info("User came here from a group view so set group as specified");
             model.addAttribute("groupSpecified", true);
             // todo: another permission check
-            Group group = groupManagementService.loadGroup(groupId);
+            Group group = groupBroker.load(groupUid);
             model.addAttribute("group", group);
             logBookToFill.setGroup(group);
         }
@@ -133,14 +137,15 @@ public class LogBookController extends BaseController {
      * The standard view just looks at the entry as applied to the group ... There's a click through to check sub-group ones
      */
     @RequestMapping(value = "/log/view")
-    public String viewGroupLogBook(Model model, @RequestParam(value="groupId", required=true) Long groupId) {
+    public String viewGroupLogBook(Model model, @RequestParam String groupUid) {
 
         log.info("Okay, pulling up logbook records ... primarily for the currently assigned group");
 
-        model.addAttribute("group", groupManagementService.loadGroup(groupId));
-        model.addAttribute("incompleteEntries", logBookService.getAllLogBookEntriesForGroup(groupId, false));
+        Group group = groupBroker.load(groupUid);
+        model.addAttribute("group", group);
+        model.addAttribute("incompleteEntries", logBookService.getAllLogBookEntriesForGroup(group.getId(), false));
 
-        List<LogBook> completedEntries = logBookService.getAllLogBookEntriesForGroup(groupId, true);
+        List<LogBook> completedEntries = logBookService.getAllLogBookEntriesForGroup(group.getId(), true);
         model.addAttribute("completedEntries", completedEntries);
         log.info("Got back this many complete entries ... " + completedEntries.size());
 
@@ -246,7 +251,7 @@ public class LogBookController extends BaseController {
         }
 
         addMessage(model, MessageType.SUCCESS, "log.completed.done", request);
-        return viewGroupLogBook(model, logBook.getGroup().getId());
+        return viewGroupLogBook(model, logBook.getGroup().getUid());
     }
 
     // todo : more permissions than just the below!

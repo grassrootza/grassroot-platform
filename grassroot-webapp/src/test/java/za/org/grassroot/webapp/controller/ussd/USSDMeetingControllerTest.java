@@ -175,7 +175,6 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         log.info("ZOGG : About to call broker create with members ..." + members);
         when(groupBrokerMock.create(testUser.getUid(), "", null, members, GroupPermissionTemplate.DEFAULT_GROUP, null)).
                 thenReturn(testGroup);
-        when(groupManagementServiceMock.loadGroup(testGroup.getId())).thenReturn(testGroup);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
 
         mockMvc.perform(get(path + "group").param(phoneParam, testUserPhone).param("request", "0801112345")).
@@ -186,7 +185,6 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, firstUrlToSave);
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, secondUrlToSave);
         verify(userManagementServiceMock, times(1)).setLastUssdMenu(testUser, secondUrlToSave);
-        verify(groupManagementServiceMock, times(1)).loadGroup(testGroup.getId());
         verify(groupBrokerMock, times(1)).load(testGroup.getUid());
         verify(groupBrokerMock, times(1)).create(testUser.getUid(), "", null, members, GroupPermissionTemplate.DEFAULT_GROUP, null);
         verifyNoMoreInteractions(userManagementServiceMock);
@@ -205,7 +203,6 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         log.info("Testing adding numbers to existing group, with this Url to save ..." + urlToSave);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        when(groupManagementServiceMock.loadGroup(testGroup.getId())).thenReturn(testGroup);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
 
         // note: deliberately pass a badly formed number and then check that only the well-formed one is passed to services
@@ -217,7 +214,6 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(anyString(), anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupManagementServiceMock, times(2)).loadGroup(testGroup.getId());
         verify(groupBrokerMock, times(2)).load(testGroup.getUid());
         verifyNoMoreInteractions(groupManagementServiceMock);
         verify(groupBrokerMock, times(2)).addMembers(testUser.getUid(), testGroup.getUid(), ordinaryMember("0801112345"));
@@ -284,7 +280,6 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         testGroup.setId(1L);
 
         when(userManagementServiceMock.findByInputNumber(eq(testUserPhone), anyString())).thenReturn(testUser);
-        when(groupManagementServiceMock.loadGroup(testGroup.getId())).thenReturn(testGroup);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
 
         mockMvc.perform(get(path + "group").param(phoneParam, testUserPhone).param("eventId", "1").
@@ -292,7 +287,6 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(anyString(), anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupManagementServiceMock, times(1)).loadGroup(testGroup.getId());
         verify(groupBrokerMock, times(1)).load(testGroup.getUid());
         verifyNoMoreInteractions(groupManagementServiceMock);
         verify(groupBrokerMock, times(1)).addMembers(testUser.getUid(), testGroup.getUid(), ordinaryMember("0801112345"));

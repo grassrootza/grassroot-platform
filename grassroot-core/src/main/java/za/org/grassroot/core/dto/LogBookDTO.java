@@ -14,6 +14,7 @@ public class LogBookDTO implements Serializable {
 
     private Long id;
     private Long groupId;
+    private String groupUid;
     private boolean completed;
     private Long completedByUserId;
     private Timestamp completedDate;
@@ -38,6 +39,7 @@ public class LogBookDTO implements Serializable {
         this.reminderMinutes = logBook.getReminderMinutes();
         this.numberOfRemindersLeftToSend = logBook.getNumberOfRemindersLeftToSend();
         this.groupId = logBook.getGroup().getId();
+        this.groupUid = logBook.getGroup().getUid();
     }
 
     public Long getId() {
@@ -55,6 +57,8 @@ public class LogBookDTO implements Serializable {
     public void setGroupId(Long groupId) {
         this.groupId = groupId;
     }
+
+    public String getGroupUid() { return groupUid; }
 
     public boolean isCompleted() {
         return completed;

@@ -33,6 +33,9 @@ public class EventNotificationConsumer {
     GroupManagementService groupManagementService;
 
     @Autowired
+    GroupBroker groupBroker;
+
+    @Autowired
     MeetingNotificationService meetingNotificationService;
 
     @Autowired
@@ -157,7 +160,7 @@ public class EventNotificationConsumer {
     public void sendLogBookReminder(LogBookDTO logBookDTO) {
         log.info("sendLogBookReminder...logBook..." + logBookDTO);
 
-        Group  group = groupManagementService.loadGroup(logBookDTO.getGroupId());
+        Group group = groupBroker.load(logBookDTO.getGroupUid());
         LogBook logBook = logBookRepository.findOne(logBookDTO.getGroupId());
 
         if (logBook.isAllGroupMembersAssigned()) {
@@ -226,7 +229,7 @@ public class EventNotificationConsumer {
     @Transactional
     public void sendNewLogbookNotification(LogBookDTO logBookDTO) {
         log.info("sendNewLogbookNotification...id..." + logBookDTO.getId());
-        Group  group = groupManagementService.loadGroup(logBookDTO.getGroupId());
+        Group  group = groupBroker.load(logBookDTO.getGroupUid());
         Account account = accountManagementService.findAccountForGroup(group);
         LogBook logBook = logBookRepository.findOne(logBookDTO.getId());
 

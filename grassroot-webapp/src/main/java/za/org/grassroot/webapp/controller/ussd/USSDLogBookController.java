@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.LogBookRequest;
 import za.org.grassroot.core.domain.User;
@@ -102,15 +101,14 @@ public class USSDLogBookController extends USSDController {
     @RequestMapping(path + subjectMenu)
     @ResponseBody
     public Request askForSubject(@RequestParam(value = phoneNumber) String inputNumber,
-                                 @RequestParam(value = groupIdParam, required = false) Long groupId,
+                                 @RequestParam(value = groupUidParam, required = false) String groupUid,
                                  @RequestParam(value = revisingFlag, required = false) boolean revising,
                                  @RequestParam(value = logBookParam, required = false) Long logBookId,
                                  @RequestParam(value = interruptedFlag, required=false) boolean interrupted) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
 
         if (logBookId == null) {
-            Group group = groupManager.loadGroup(groupId);
-            logBookId = logBookRequestBroker.create(user.getUid(), group.getUid()).getId();
+            logBookId = logBookRequestBroker.create(user.getUid(), groupUid).getId();
         }
         userManager.setLastUssdMenu(user, saveLogMenu(subjectMenu, logBookId));
         USSDMenu menu = new USSDMenu(getMessage(thisSection, subjectMenu, promptKey, user),
@@ -175,8 +173,8 @@ public class USSDLogBookController extends USSDController {
 
         userInput = interrupted ? priorInput : userInput;
         User user = userManager.findByInputNumber(inputNumber, saveLogMenu(pickUserMenu, logBookId, userInput));
-        Long groupId = logBookService.load(logBookId).getGroup().getId();
-        List<User> possibleUsers = userManager.searchByGroupAndNameNumber(groupId, userInput);
+        String groupUid = logBookService.load(logBookId).getGroup().getUid();
+        List<User> possibleUsers = userManager.searchByGroupAndNameNumber(groupUid, userInput);
 
         USSDMenu menu;
         if (possibleUsers.isEmpty()) {
@@ -514,7 +512,8 @@ public class USSDLogBookController extends USSDController {
     private USSDMenu pickUserFromGroup(Long logBookId, String userInput, String nextMenu, String backMenu, User user) {
 
         USSDMenu menu;
-        List<User> possibleUsers = userManager.searchByGroupAndNameNumber(logBookService.load(logBookId).getGroup().getId(), userInput);
+        List<User> possibleUsers = userManager.searchByGroupAndNameNumber(
+                logBookService.load(logBookId).getGroup().getUid(), userInput);
 
         if (!possibleUsers.isEmpty()) {
             menu = new USSDMenu(getMessage(thisSection, pickUserMenu, promptKey, user));

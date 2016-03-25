@@ -60,11 +60,6 @@ public class GroupManager implements GroupManagementService {
      */
 
     @Override
-    public Group loadGroup(Long groupId) {
-        return groupRepository.findOne(groupId);
-    }
-
-    @Override
     public List<Group> getCreatedGroups(User creatingUser) {
         return groupRepository.findByCreatedByUserAndActiveOrderByCreatedDateTimeDesc(creatingUser, true);
     }
@@ -164,12 +159,12 @@ public class GroupManager implements GroupManagementService {
 
     @Override
     public List<User> getUsersInGroupNotSubGroups(Long groupId) {
-        return userManager.getGroupMembersSortedById(loadGroup(groupId));
+        return userManager.getGroupMembersSortedById(groupRepository.findOne(groupId));
     }
 
     @Override
     public List<User> getAllUsersInGroupAndSubGroups(Long groupId) {
-        return getAllUsersInGroupAndSubGroups(loadGroup(groupId));
+        return getAllUsersInGroupAndSubGroups(groupRepository.findOne(groupId));
     }
 
     @Override
@@ -254,7 +249,7 @@ public class GroupManager implements GroupManagementService {
 
         // todo: lots of error handling etc
         List<Group> createdGroups = getCreatedGroups(mergingUser);
-        createdGroups.remove(loadGroup(firstGroupSelected));
+        createdGroups.remove(groupRepository.findOne(firstGroupSelected));
         return createdGroups;
     }
 

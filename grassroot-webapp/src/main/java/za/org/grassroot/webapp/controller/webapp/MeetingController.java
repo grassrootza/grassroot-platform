@@ -10,17 +10,8 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.services.EventLogManagementService;
-import za.org.grassroot.services.EventManagementService;
-import za.org.grassroot.services.GroupManagementService;
-import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
 
@@ -28,7 +19,9 @@ import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -248,13 +241,13 @@ public class MeetingController extends BaseController {
     // Major todo: make this secured against the user's role as 'admin' on an institutional account
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/meeting/free")
-    public String sendFreeForm(Model model, @RequestParam(value="groupId", required=false) Long groupId) {
+    public String sendFreeForm(Model model, @RequestParam(value="groupUid", required=false) String groupUid) {
 
         boolean groupSpecified;
         User sessionUser = getUserProfile();
 
-        if (groupId != null) {
-            model.addAttribute("group", groupManagementService.loadGroup(groupId));
+        if (groupUid != null) {
+            model.addAttribute("group", groupBroker.load(groupUid));
             groupSpecified = true;
         } else {
 
@@ -289,15 +282,13 @@ public class MeetingController extends BaseController {
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/meeting/free", method = RequestMethod.POST, params = {"confirmed"})
-    public String sendFreeMsg(Model model, @RequestParam(value="entityId") Long groupId, @RequestParam(value="message") String message,
+    public String sendFreeMsg(Model model, @RequestParam(value="entityUid") String groupUid, @RequestParam(value="message") String message,
                               @RequestParam(value="includeSubGroups", required=false) boolean includeSubgroups,
                               RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
         // todo: check that this group is paid for (and filter on previous page)
 
         log.info("Sending free form message ... includeSubGroups set to ... " + includeSubgroups);
-
-        Group group = groupManagementService.loadGroup(groupId);
 
         // todo: this should be properly redesigned into directly calling "messaging service", bypassing whole fake event entity thing
         if (true) {
@@ -309,7 +300,7 @@ public class MeetingController extends BaseController {
         log.info("We just sent a free form message with result: " + messageSent);
 */
 
-        redirectAttributes.addAttribute("groupUid", group.getUid());
+        redirectAttributes.addAttribute("groupUid", groupUid);
         addMessage(redirectAttributes, MessageType.SUCCESS, "sms.message.sent", request);
         return "redirect:/group/view";
 

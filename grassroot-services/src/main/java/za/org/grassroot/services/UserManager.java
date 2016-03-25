@@ -57,6 +57,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Autowired
     private GroupManagementService groupManagementService;
     @Autowired
+    private GroupBroker groupBroker;
+    @Autowired
     private PasswordTokenService passwordTokenService;
     @Autowired
     private EventManagementService eventManagementService;
@@ -357,9 +359,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public List<User> searchByGroupAndNameNumber(Long groupId, String nameOrNumber) {
+    public List<User> searchByGroupAndNameNumber(String groupUid, String nameOrNumber) {
         return userRepository.findByGroupsPartOfAndDisplayNameContainingIgnoreCaseOrPhoneNumberLike(
-                groupManagementService.loadGroup(groupId), "%" + nameOrNumber + "%", "%" + nameOrNumber + "%");
+                groupBroker.load(groupUid), "%" + nameOrNumber + "%", "%" + nameOrNumber + "%");
     }
 
 

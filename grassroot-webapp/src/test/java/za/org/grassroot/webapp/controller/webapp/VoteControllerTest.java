@@ -53,7 +53,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
         testPossibleGroups.add(testGroup);
         Event testVote = null;
         testVote.setId(dummyId);
-        when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
+        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         when(groupManagementServiceMock.isUserInGroup(testGroup, sessionTestUser)).thenReturn(true);
         // when(groupManagementServiceMock.canUserCallVote(dummyId, sessionTestUser)).thenReturn(true);
         when(groupManagementServiceMock.getActiveGroupsPartOf(sessionTestUser)).thenReturn(testPossibleGroups);
@@ -61,7 +61,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(view().name("vote/create"))
                 .andExpect(model().attribute("group",
                         hasProperty("id", is(1L))));
-        verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
+        verify(groupBrokerMock, times(1)).load(testGroup.getUid());
         // verify(groupManagementServiceMock, times(1)).canUserCallVote(dummyId, sessionTestUser);
         verify(groupManagementServiceMock, times(1)).isUserInGroup(testGroup, sessionTestUser);
         verifyNoMoreInteractions(groupManagementServiceMock);
@@ -98,14 +98,14 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
 
         testGroup.setId(dummyId);
         // when(groupManagementServiceMock.canUserCallVote(dummyId, sessionTestUser)).thenReturn(true);
-        when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
+        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         when(groupManagementServiceMock.isUserInGroup(testGroup, sessionTestUser)).thenReturn(true);
         mockMvc.perform(post("/vote/create").param("selectedGroupId", String.valueOf(dummyId))
                 .sessionAttr("vote", testVote))
                 .andExpect(model().attribute("eventId", is(dummyId)))
                 .andExpect(model().attributeExists(BaseController.MessageType.SUCCESS.getMessageKey()))
                 .andExpect(view().name("vote/view"));
-        verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
+        verify(groupBrokerMock, times(1)).load(testGroup.getUid());
         // verify(groupManagementServiceMock, times(1)).canUserCallVote(dummyId, sessionTestUser);
         verify(groupManagementServiceMock, times(1)).isUserInGroup(testGroup, sessionTestUser);
         // verify(eventManagementServiceMock, times(1)).createVote(testVote);
