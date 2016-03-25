@@ -21,13 +21,6 @@ import java.util.Map;
 public interface EventManagementService {
 
     /*
-    Methods to create events, in various different forms
-     */
-
-    Event createVote(User createdByUser, Long groupId);
-
-    Event createVote(String issue, Long userId, Long groupId, boolean includeSubGroups);
-    /*
     Methods to find and load events, first by group
      */
 
@@ -74,30 +67,6 @@ public interface EventManagementService {
 
     // third argument: past events = -1 ; future events = 1; both directions = 0;
     Page<Event> getEventsUserCanView(User user, EventType type, int pastPresentOrBoth, int pageNumber, int pageSize);
-
-    /*
-    Methods to set and update events
-     */
-
-    public Event setSubject(Long eventId, String subject);
-
-    public Event setLocation(Long eventId, String location);
-
-    public Event setEventTimestamp(Long eventId, Timestamp eventDateTime);
-
-    public Event setEventNoReminder(Long eventId);
-
-    public Event updateEvent(Event eventToUpdate);
-
-    public Event changeMeetingDate(Long eventId, String newDate);
-
-    public Event changeMeetingTime(Long eventId, String newTime);
-
-    public Event cancelEvent(Long eventId);
-
-    public Event setSendBlock(Long eventId);
-
-    public Event removeSendBlock(Long eventId);
 
     public Event getMostRecentEvent(Group group);
 

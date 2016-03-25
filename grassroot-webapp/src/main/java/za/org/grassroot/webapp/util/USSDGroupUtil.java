@@ -5,13 +5,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
-import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
+import za.org.grassroot.services.util.CacheUtilManager;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 
@@ -47,15 +45,16 @@ public class USSDGroupUtil extends USSDUtil {
     private UserManagementService userManager;
 
     @Autowired
-    private EventManagementService eventManager;
+    private EventRequestBroker eventRequestBroker;
 
-    @Autowired
-    private LogBookService logBookService;
     @Autowired
     private LogBookRequestBroker logBookRequestBroker;
 
     @Autowired
     PermissionBroker permissionBroker;
+
+    @Autowired
+    CacheUtilManager cacheManager;
 
     private static final String groupKeyForMessages = "group";
     private static final String groupIdParameter = "groupId";
@@ -144,7 +143,7 @@ public class USSDGroupUtil extends USSDUtil {
 
         Page<Group> groupsPartOf = groupManager.getPageOfActiveGroups(user, pageNumber, PAGE_LENGTH);
         if (groupsPartOf.getTotalElements() == 1 && section != USSDSection.MEETINGS) { // exclude meetings since can create new in it
-            menu = skipGroupSelection(user, section,urlForNewGroup, groupsPartOf.iterator().next().getId());
+            menu = skipGroupSelection(user, section, groupsPartOf.iterator().next());
         } else {
             menu = addListOfGroupsToMenu(menu,section, urlForExistingGroups, groupsPartOf.getContent(), user, checkPermissions);
             if (groupsPartOf.hasNext())
@@ -263,27 +262,25 @@ public class USSDGroupUtil extends USSDUtil {
         return menu;
     }
 
-    public USSDMenu skipGroupSelection(User sessionUser, USSDSection section, String urlForNewGroup, Long groupId) {
+    private USSDMenu skipGroupSelection(User user, USSDSection section, Group group) {
         USSDMenu menu = null;
         String nextUrl;
         switch (section) {
             case VOTES:
-                sessionUser = userManager.findByInputNumber(sessionUser.getPhoneNumber());
-                Long eventId = eventManager.createVote(sessionUser, groupId).getId();
-                userManager.setLastUssdMenu(sessionUser, saveVoteMenu("issue", eventId));
-                nextUrl = "vote/" + "time" + USSDUrlUtil.eventIdUrlSuffix + eventId;
-                menu = new USSDMenu(getMessage(section, "issue", promptKey, sessionUser), nextUrl);
+                VoteRequest voteRequest = eventRequestBroker.createEmptyVoteRequest(user.getUid(), group.getUid());
+                String requestUid = voteRequest.getUid();
+                cacheManager.putUssdMenuForUser(user.getPhoneNumber(), saveVoteMenu("issue", requestUid));
+                nextUrl = "vote/time" + USSDUrlUtil.entityUidUrlSuffix + requestUid;
+                menu = new USSDMenu(getMessage(section, "issue", promptKey, user), nextUrl);
                 break;
             case LOGBOOK:
-                User user = userManager.findByInputNumber(sessionUser.getPhoneNumber());
-                Group group = groupManager.loadGroup(groupId);
                 Long logBookId = logBookRequestBroker.create(user.getUid(), group.getUid()).getId();
-                userManager.setLastUssdMenu(user, saveLogMenu(subjectMenu, logBookId));
+                cacheManager.putUssdMenuForUser(user.getPhoneNumber(), saveLogMenu(subjectMenu, logBookId));
                 nextUrl = "log/due_date" + USSDUrlUtil.logbookIdUrlSuffix + logBookId;
-                menu = new USSDMenu(getMessage(section, subjectMenu, promptKey, user), nextUrl);
+                menu = new USSDMenu(getMessage(section, subjectMenu, promptKey + ".skipped", group.getName(""), user), nextUrl);
                 break;
             case GROUP_MANAGER:
-                menu = existingGroupMenu(sessionUser, groupId, true);
+                menu = existingGroupMenu(user, group.getId(), true);
                 break;
             default:
                 break;

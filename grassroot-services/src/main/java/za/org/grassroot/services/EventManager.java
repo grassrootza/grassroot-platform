@@ -72,155 +72,8 @@ public class EventManager implements EventManagementService {
     private final static double SMS_COST = 0.2; // might move to message services
 
     @Override
-    public Event createVote(User createdByUser, Long groupId) {
-        return createNewEvent(createdByUser, EventType.VOTE, true, "", groupManager.loadGroup(groupId), false, -1);
-    }
-
-    @Override
-    public Event createVote(String issue, Long userId, Long groupId, boolean includeSubGroups) {
-        return createNewEvent(userManagementService.getUserById(userId), EventType.VOTE, true, issue, groupManager.loadGroup(groupId), false, 0);
-    }
-
-    private Event createNewEvent(User createdByUser, EventType eventType, boolean rsvpRequired
-            , String name, Group appliesToGroup, boolean includeSubGroups, int reminderMinutes) {
-/*
-        Event event = eventType == null || eventType.equals(EventType.MEETING) ? new Meeting() : new Vote();
-        event.setCreatedByUser(createdByUser);
-        if (eventType == null) {
-            event.setEventType(EventType.MEETING); //default
-        } else {
-            event.setEventType(eventType);
-        }
-        event.setRsvpRequired(rsvpRequired);
-        event.setName(name);
-        if (appliesToGroup != null) {
-            event.setAppliesToGroup(appliesToGroup);
-        }
-        event.setIncludeSubGroups(includeSubGroups);
-        //set the event reminder minutes
-        if (reminderMinutes != 0) {
-            event.setReminderMinutes(reminderMinutes);
-        } else {
-            // see if we can set it from the group
-            if (appliesToGroup != null) {
-                if (appliesToGroup.getReminderMinutes() != 0) {
-                    reminderMinutes = appliesToGroup.getReminderMinutes();
-                }
-            }
-            if (reminderMinutes == 0) {
-                // set it to the site default
-                reminderMinutes = SITE_REMINDERMINUTES;
-            }
-            event.setReminderMinutes(reminderMinutes);
-        }
-        event.setNoRemindersSent(0);
-
-        Event createdEvent = eventRepository.save(event);
-        log.fine("createNewEvent...created..." + createdEvent.toString());
-        return createdEvent;
-*/
-        throw new UnsupportedOperationException("Not supported anymore. Please use new refactored Vote/Meeting design.");
-    }
-
-
-    @Override
     public Event loadEvent(Long eventId) {
         return eventRepository.findOne(eventId);
-    }
-
-    @Override
-    public Event setSubject(Long eventId, String subject) {
-        Event eventToUpdate = eventRepository.findOne(eventId);
-        Event beforeEvent = SerializationUtils.clone(eventToUpdate);
-        eventToUpdate.setName(subject);
-        return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
-    }
-
-    @Override
-    public Event setLocation(Long eventId, String location) {
-        log.info("setLocation...");
-        Event eventToUpdate = eventRepository.findOne(eventId);
-        Event beforeEvent = SerializationUtils.clone(eventToUpdate);
-//        eventToUpdate.setEventLocation(location); // todo: ?!?!
-        return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
-    }
-
-    @Override
-    public Event setEventTimestamp(Long eventId, Timestamp eventDateTime) {
-        log.info("Setting event timestamp, passed: " + eventDateTime.toString());
-        Event eventToUpdate = eventRepository.findOne(eventId);
-        Event beforeEvent = SerializationUtils.clone(eventToUpdate);
-        eventToUpdate.setEventStartDateTime(eventDateTime);
-        return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
-    }
-
-    @Override
-    public Event setEventNoReminder(Long eventId) {
-        Event event = loadEvent(eventId);
-        event.setReminderType(EventReminderType.DISABLED);
-        return eventRepository.save(event); // as above, not using saveandCheckChanges for this, at least for now
-    }
-
-    @Override
-    public Event updateEvent(Event eventToUpdate) {
-        // generic update for use from the web, where we get a bunch of changes applied at once
-
-        log.info("Inside updateEvent method, and the event that we are passed: " + eventToUpdate);
-        Event savedEvent = loadEvent(eventToUpdate.getId());
-        EventDTO beforeDTO = new EventDTO(savedEvent);
-        log.info("Inside updateEvent method, event that comes back from server: " + beforeDTO);
-        savedEvent = applyChangesToEntity(eventToUpdate, savedEvent);
-        return saveandCheckChanges(beforeDTO, savedEvent);
-
-    }
-
-    @Override
-    public Event changeMeetingDate(Long eventId, String newDate) {
-        // note: this assumes the newDate string is formatted according to DateTimeUtil.preferredDate, but if that fails
-        // then the utility method will invoke the natural language parser to attempt other tries
-        Event meeting = loadEvent(eventId);
-        EventDTO beforeDTO = new EventDTO(meeting);
-        Timestamp newTimestamp = DateTimeUtil.changeTimestampDates(meeting.getEventStartDateTime(), newDate);
-        meeting.setEventStartDateTime(newTimestamp);
-        return saveandCheckChanges(beforeDTO, meeting);
-    }
-
-    @Override
-    public Event changeMeetingTime(Long eventId, String newTime) {
-        Event meeting = loadEvent(eventId);
-        log.info("Inside changeMeetingTime method ... new time should be ... " + newTime + " ... for event: " + meeting.toString());
-        EventDTO beforeDTO = new EventDTO(meeting);
-        Timestamp newTimestamp = DateTimeUtil.changeTimestampTimes(meeting.getEventStartDateTime(), newTime);
-        meeting.setEventStartDateTime(newTimestamp);
-        log.info("At end of changeMeetingTime method, timestamp set to ... " + meeting.getEventStartDateTime().toString());
-        return saveandCheckChanges(beforeDTO, meeting);
-    }
-
-    @Override
-    public Event cancelEvent(Long eventId) {
-        Event eventToUpdate = eventRepository.findOne(eventId);
-        Event beforeEvent = SerializationUtils.clone(eventToUpdate);
-        eventToUpdate.setCanceled(true);
-        return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
-    }
-
-    // todo: when we build the rsvp required query we need to filter by send blocked, instead of doing it this way
-    @Override
-    public Event setSendBlock(Long eventId) {
-        Event eventToUpdate = eventRepository.findOne(eventId);
-        Event beforeEvent = SerializationUtils.clone(eventToUpdate);
-//        eventToUpdate.setSendBlocked(true);
-        eventToUpdate.setRsvpRequired(false); // otherwise events aborted on confirm screen dirty the 'rsvpRequired' methods
-        return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
-    }
-
-    @Override
-    public Event removeSendBlock(Long eventId) {
-        Event eventToUpdate = eventRepository.findOne(eventId);
-        Event beforeEvent = SerializationUtils.clone(eventToUpdate);
-//        eventToUpdate.setSendBlocked(false);
-        eventToUpdate.setRsvpRequired(true);
-        return saveandCheckChanges(new EventDTO(beforeEvent), eventToUpdate);
     }
 
     @Override
@@ -253,15 +106,6 @@ public class EventManager implements EventManagementService {
     public List<Event> findByAppliesToGroupAndStartingAfter(Group group, Date date) {
         return eventRepository.findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(group, date, false);
     }
-
-    /* as above, old method now deprecated, with no uses, so commenting out to reduce clutter
-    @Override
-    public boolean doesGroupHaveMinimumDataEvents(Group group) {
-        // todo: check / refine this to be more (much more) efficient
-        List<Event> lastEvents = eventRepository.findByAppliesToGroupOrderByEventStartDateTimeDesc(group);
-        if (lastEvents == null || lastEvents.isEmpty()) return false;
-        return minimumDataAvailable(lastEvents.get(0));
-    } */
 
     @Override
     public List<Meeting> findUpcomingMeetingsForGroup(Group group, Date date) {
@@ -328,11 +172,6 @@ public class EventManager implements EventManagementService {
     public List<Event> getOutstandingVotesForUser(User user) {
         return getOutstandingResponseForUser(user, EventType.VOTE);
     }
-
-    /*
-    todo - aakil - figure out why the annotation is not working
-    @Cacheable(value="userRSVP", key="#user.id", cacheManager = "coreCacheManager")
-     */
 
     @Override
     public List<Event> getOutstandingRSVPForUser(User user) {
@@ -437,17 +276,7 @@ public class EventManager implements EventManagementService {
 
     @Override
     public List<Event> getUpcomingEventsUserCreated(User requestingUser) {
-        List<Event> possibleEvents = eventRepository.
-                findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(requestingUser, new Date(), false);
-
-        // take out events that were only partially formed ... todo: think if a way to make this faster than the iteration below
-        List<Event> fullyFormedEvents = new ArrayList<>();
-        for (Event event : possibleEvents) {
-            if (minimumDataAvailable(event))
-                fullyFormedEvents.add(event);
-        }
-
-        return fullyFormedEvents;
+        return eventRepository.findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(requestingUser, new Date(), false);
     }
 
     @Override
@@ -599,33 +428,6 @@ public class EventManager implements EventManagementService {
         return eventLogManagementService.getVoteResultsForEvent(vote);
     }
 
-    /* Better to use the above (getRSVPTotalsDTO ... or get the map of strings, than the below
-
-    @Override
-    public Integer getNumberYesVotes(Event vote) {
-        return getVoteResults(vote).get("yes");
-    }
-
-    @Override
-    public Integer getNumberNoVotes(Event vote) {
-        return getVoteResults(vote).get("no");
-    }
-
-    @Override
-    public Integer getNumberAbstained(Event vote) {
-        return getVoteResults(vote).get("abstained");
-    }
-
-    @Override
-    public Integer getNumberTotalVotes(Event vote) {
-        return getNumberYesVotes(vote) + getNumberNoVotes(vote);
-    }
-
-    @Override
-    public Integer getTotalPossibleVotes(Event vote) {
-        return getVoteResults(vote).get("possible");
-    } */
-
     /*
     If message is blank then the reminder generated by the template will be used
      */
@@ -717,210 +519,6 @@ public class EventManager implements EventManagementService {
     public int notifyUnableToProcessEventReply(User user) {
         jmsTemplateProducerService.sendWithNoReply("processing-failure", user);
         return 0;
-    }
-
-    /**
-     * SECTION: Core methods for saving events and triggering message send
-     */
-
-    private Event saveandCheckChanges(EventDTO beforeEvent, Event changedEvent) {
-
-        log.info("saveandCheckChanges...starting ... with before event .. " + beforeEvent.toString());
-        log.info("saveandCheckChanges...starting ... with changed event ..." + changedEvent.toString());
-        log.info("saveandCheckChanges...changedEvent.id..." + changedEvent.getId());
-
-        // a bit verbose but the logic here is complex and final booleans are cheap so rather explicating
-        final boolean priorEventComplete = minimumDataAvailable(beforeEvent);
-        final boolean priorEventBlocked = beforeEvent.isSendBlocked();
-        final boolean priorEventIncompleteOrBlocked = !priorEventComplete || priorEventBlocked;
-        boolean addedNewEventToQueue = false; // need this else we trigger both send new event and changed event (since minimum equals has to be triggered on flipping send block)
-
-        Event savedEvent = eventRepository.save(changedEvent);
-
-        log.info("saveandCheckChanges...savedEvent..." + savedEvent.toString());
-
-        log.info("saveandCheckChanges ... values of some key paramaters ... priorEventComplete=" + priorEventComplete
-                + "; savedEventComplete=" + minimumDataAvailable(savedEvent) + "; cancelled flages (beforeEvent / savedEvent: "
-                + beforeEvent.isCanceled() + " / " + savedEvent.isCanceled());
-
-//        final boolean savedEventOkayToSend = !savedEvent.isSendBlocked() && !savedEvent.isCanceled() && minimumDataAvailable(savedEvent);
-        // todo: how to implement this on new design
-        final boolean savedEventOkayToSend = true;
-
-        /*
-        Check if we need to send meeting notifications
-        This occurs if _either_ the prior saved event was not complete, or, the prior event was complete but send blocked
-         */
-
-        if (priorEventIncompleteOrBlocked && savedEventOkayToSend) {
-
-            //so that the attendance tally adds up
-            if(savedEvent.getEventType() == EventType.MEETING){
-                eventLogManagementService.rsvpForEvent(savedEvent,savedEvent.getCreatedByUser(),EventRSVPResponse.YES);
-            }
-            jmsTemplateProducerService.sendWithNoReply("event-added", new EventDTO(savedEvent));
-            log.info("queued to event-added..." + savedEvent.getId() + "...version..." + savedEvent.getVersion());
-            //todo do the same for changes???
-            //clear the users cache so that they can pickup the new event
-          //  cacheUtilService.clearRsvpCacheForUser(savedEvent.getCreatedByUser(), savedEvent.getEventType());
-           // jmsTemplateProducerService.sendWithNoReply("clear-groupcache", new EventDTO(savedEvent));
-            addedNewEventToQueue = true;
-        }
-
-        /*
-        Check if we need to send an update notification
-        This occurs if the prior event is complete (even if blocked), and if something changed
-        There may be a more elegant way to make sure it's not confused and both adds and changes than the boolean, but works for now (may need to rework & clarify whole logic in future)
-         */
-
-        if (priorEventComplete && savedEventOkayToSend && !addedNewEventToQueue) {
-            // let's send out a change notification if something changed in minimum required values
-            if (!savedEvent.equals(beforeEvent)) {
-                boolean startTimeChanged = false;
-                if (!beforeEvent.getEventStartDateTime().equals(savedEvent.getEventStartDateTime())) {
-                    startTimeChanged = true;
-                }
-                jmsTemplateProducerService.sendWithNoReply("event-changed", new EventChanged(new EventDTO(savedEvent), startTimeChanged));
-                log.info("queued to event-changed event..." + savedEvent.getId() + "...version..." + savedEvent.getVersion());
-            } else {
-                log.info("NOT queued to event-changed as minimum required values did not change...");
-
-            }
-        }
-        if (priorEventComplete && !beforeEvent.isCanceled() && savedEvent.isCanceled()) {
-            // ok send out cancelation notifications
-            jmsTemplateProducerService.sendWithNoReply("event-cancelled", new EventDTO(savedEvent));
-            log.info("queued to event-cancelled");
-
-        }
-
-        return savedEvent;
-    }
-
-    private boolean minimumDataAvailable(Event event) {
-        boolean minimum = true;
-        log.finest("minimumDataAvailable..." + event.toString());
-        if (event.getName() == null || event.getName().trim().equals("")) minimum = false;
-        if (event.getAppliesToGroup() == null) minimum = false;
-        if (event.getCreatedByUser() == null) minimum = false;
-        if (event.getEventStartDateTime() == null) minimum = false;
-//        if (event.getEventType() != EventType.VOTE) {
-//            if (event.getEventLocation() == null || event.getEventLocation().trim().equals("")) minimum = false;
-//        }
-        // if (event.isSendBlocked()) minimum = false; // this causes issues with things like RSVP, so am moving into its own
-        log.info("minimumDataAvailable...returning..." + minimum);
-
-        return minimum;
-    }
-
-    private boolean minimumDataAvailable(EventDTO event) {
-        boolean minimum = true;
-        log.finest("minimumDataAvailable..." + event.toString());
-        if (event.getName() == null || event.getName().trim().equals("")) minimum = false;
-        if (event.getAppliesToGroup() == null) minimum = false;
-        if (event.getCreatedByUser() == null) minimum = false;
-        if (event.getEventStartDateTime() == null) minimum = false;
-        if (event.getEventType() != EventType.VOTE) {
-            if (event.getEventLocation() == null || event.getEventLocation().trim().equals("")) minimum = false;
-        }
-        // if (event.isSendBlocked()) minimum = false; // as above, causes issues with updating if we do this check here
-
-        log.info("minimumDataAvailable...returning..." + minimum);
-
-        return minimum;
-    }
-
-    /*
-    Method to take a partially filled out event, from the web application, and add in a series of fields at once
-     */
-    private Event fillOutEvent(Event passedEvent, Event savedEvent) {
-
-        // todo throw a proper exception if the two events don't have matching IDs
-
-        if (passedEvent.getId() != savedEvent.getId()) {
-            return null;
-        }
-
-        if (passedEvent.getName() == null && savedEvent.getName() != null) passedEvent.setName(savedEvent.getName());
-
-//        if (passedEvent.getEventLocation() == null && savedEvent.getEventLocation() != null)
-//            passedEvent.setEventLocation(savedEvent.getEventLocation());
-
-        if (passedEvent.getAppliesToGroup() == null && savedEvent.getAppliesToGroup() != null)
-            passedEvent.setAppliesToGroup(savedEvent.getAppliesToGroup());
-
-        if (passedEvent.getCreatedByUser() == null && savedEvent.getCreatedByUser() != null)
-            passedEvent.setCreatedByUser(savedEvent.getCreatedByUser());
-
-//        if (passedEvent.getCreatedDateTime() == null && savedEvent.getCreatedDateTime() != null)
-//            passedEvent.setCreatedDateTime(savedEvent.getCreatedDateTime());
-
-        if (passedEvent.getEventStartDateTime() == null && savedEvent.getEventStartDateTime() != null)
-            passedEvent.setEventStartDateTime(savedEvent.getEventStartDateTime());
-
-//        if (passedEvent.getEventType() == null && savedEvent.getEventType() != null)
-//            passedEvent.setEventType(savedEvent.getEventType());
-
-        if (passedEvent.getReminderType().equals(EventReminderType.GROUP_CONFIGURED) && savedEvent.getCustomReminderMinutes() != 0)
-            passedEvent.setCustomReminderMinutes(savedEvent.getCustomReminderMinutes());
-
-        /*
-        We do not touch the two boolean fields, rsvpRequired and includeSubGroups, since those are set by
-        default in the constructors, and if passedEvent has them set to something different to savedEvent,
-         that means the user changed them, and hence they should be preserved. To test this.
-         */
-
-        return passedEvent;
-
-    }
-
-    /*
-Method to take a partially filled out event, from the web application, and add in a series of fields at once
- */
-    private Event applyChangesToEntity(Event passedEvent, Event savedEvent) {
-
-        // todo throw a proper exception if the two events don't have matching IDs
-
-        log.info("Inside applyChangesToEntity, with passed event: " + passedEvent);
-
-        if (passedEvent.getId() != savedEvent.getId()) {
-            return null;
-        }
-
-        if (passedEvent.getName() != null) savedEvent.setName(passedEvent.getName());
-
-//        if (passedEvent.getEventLocation() != null) savedEvent.setEventLocation(passedEvent.getEventLocation());
-
-        if (passedEvent.getEventStartDateTime() != null)
-            savedEvent.setEventStartDateTime(passedEvent.getEventStartDateTime());
-
-        if (passedEvent.isRsvpRequired() != savedEvent.isRsvpRequired())
-            savedEvent.setRsvpRequired(passedEvent.isRsvpRequired());
-
-        if (passedEvent.isIncludeSubGroups() != savedEvent.isIncludeSubGroups())
-            savedEvent.setIncludeSubGroups(passedEvent.isIncludeSubGroups());
-
-        // have to do a prior check for group default number of minutes, else caught between null pointer exception and always eval true
-
-        int groupReminderMinutes = (savedEvent.getAppliesToGroup() != null) ? savedEvent.getAppliesToGroup().getReminderMinutes() : SITE_REMINDERMINUTES;
-        if (passedEvent.getCustomReminderMinutes() != SITE_REMINDERMINUTES && (passedEvent.getCustomReminderMinutes() != groupReminderMinutes))
-            savedEvent.setCustomReminderMinutes(passedEvent.getCustomReminderMinutes());
-
-        //if (passedEvent.getAppliesToGroup() != null) savedEvent.setAppliesToGroup(passedEvent.getAppliesToGroup());
-        //if (passedEvent.getCreatedByUser() != null) savedEvent.setCreatedByUser(passedEvent.getCreatedByUser());
-        //if (passedEvent.getCreatedDateTime() != null) savedEvent.setCreatedDateTime(passedEvent.getCreatedDateTime());
-        //if (passedEvent.getEventType() != null) savedEvent.setEventType(passedEvent.getEventType());
-
-        /*
-        We do not touch the two boolean fields, rsvpRequired and includeSubGroups, since those are set by
-        default in the constructors, and if passedEvent has them set to something different to savedEvent,
-         that means the user changed them, and hence they should be preserved. To test this.
-         */
-
-        log.info("Exiting applyChangesToEntity, with saved event: " + savedEvent);
-
-        return savedEvent;
-
     }
 
 }

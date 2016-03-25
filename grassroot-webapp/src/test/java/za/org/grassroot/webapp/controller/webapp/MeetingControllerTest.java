@@ -80,15 +80,13 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         Group dummyGroup = new Group("Dummy Group3", new User("234345345"));
         dummyGroup.setId(dummyId);
       //  when(groupManagementServiceMock.canUserCallMeeting(dummyId, sessionTestUser)).thenReturn(true);
-        when(eventManagementServiceMock.updateEvent(dummyMeeting)).thenReturn(
-                dummyMeeting);
         mockMvc.perform(post("/meeting/create").sessionAttr("meeting", dummyMeeting)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED).param("selectedGroupId",
                         String.valueOf(dummyId))).andExpect(status().is3xxRedirection())
                 .andExpect(view().name("redirect:/home"))
                 .andExpect(redirectedUrl("/home"));
-        verify(eventManagementServiceMock, times(1)).updateEvent(dummyMeeting);
-      //  verify(groupManagementServiceMock, times(1)).canUserCallMeeting(dummyId, sessionTestUser);
+        // change below to permission broker
+        // verify(groupManagementServiceMock, times(1)).canUserCallMeeting(dummyId, sessionTestUser);
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyNoMoreInteractions(eventManagementServiceMock);
         verifyZeroInteractions(userManagementServiceMock);
@@ -145,7 +143,6 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         minuteOptions.add(oneDay);
 //        when(eventManagementServiceMock.createMeeting(sessionTestUser)).thenReturn(dummyMeeting);
         when(groupManagementServiceMock.loadGroup(dummyId)).thenReturn(testGroup);
-        when(eventManagementServiceMock.setEventNoReminder(dummyMeeting.getId())).thenReturn(dummyMeeting);
         mockMvc.perform(get("/meeting/create").param("groupId", String.valueOf(dummyId)))
                 .andExpect((view().name("meeting/create"))).andExpect(status().isOk())
                 .andExpect(model().attribute("group", hasProperty("id", is(dummyId))))
@@ -154,7 +151,6 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(model().attribute("reminderOptions", hasItem(oneDay)));
 //        verify(eventManagementServiceMock, times(1)).createMeeting(sessionTestUser);
         verify(groupManagementServiceMock, times(1)).loadGroup(dummyId);
-        verify(eventManagementServiceMock, times(1)).setEventNoReminder(dummyMeeting.getId());
         verifyNoMoreInteractions(eventManagementServiceMock);
         verifyNoMoreInteractions(groupManagementServiceMock);
     }
@@ -172,7 +168,6 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         minuteOptions.add(oneDay);
         when(userManagementServiceMock.fetchUserByUsername(testUserPhone)).thenReturn(sessionTestUser);
 //        when(eventManagementServiceMock.createMeeting(sessionTestUser)).thenReturn(dummyMeeting);
-        when(eventManagementServiceMock.setEventNoReminder(dummyMeeting.getId())).thenReturn(dummyMeeting);
         when(permissionBrokerMock.getActiveGroupsWithPermission(sessionTestUser,
                                                                 Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING)).thenReturn(dummyGroups);
 
@@ -182,7 +177,6 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(model().attribute("userGroups", hasItem(dummyGroup)));
 
 //        verify(eventManagementServiceMock, times(1)).createMeeting(sessionTestUser);
-        verify(eventManagementServiceMock, times(1)).setEventNoReminder(dummyMeeting.getId());
         verify(permissionBrokerMock, times(1)).getActiveGroupsWithPermission(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(groupManagementServiceMock);
