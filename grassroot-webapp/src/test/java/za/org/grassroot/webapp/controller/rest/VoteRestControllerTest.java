@@ -4,15 +4,14 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
-import za.org.grassroot.core.enums.EventRSVPResponse;
 
-import java.util.*;
-import java.util.logging.Logger;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -41,7 +40,7 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
 
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.createVote(sessionTestUser.getUid(), voteEvent.getUid(), voteEvent.getName(), testTimestamp, true, true, testEventDescription, Collections.emptySet())).thenReturn(voteEvent);
-        mockMvc.perform(post(path + "/create/{id}/{phoneNumber}/{code}", voteEvent.getUid(), testUserPhone, testUserCode).param("title", "Test_Vote").param("closingTime", String.valueOf(testTimestamp)).param("description", testEventDescription).param("reminderMins", String.valueOf(10)).param("notifyGroup", String.valueOf(true)).param("includeSubgroups", String.valueOf(true))).andExpect(status().isCreated()).andExpect(status().is2xxSuccessful());
+        mockMvc.perform(post(path + "/create/{id}/{phoneNumber}/{code}", voteEvent.getUid(), testUserPhone, testUserCode).param("title", testEventTitle).param("closingTime", String.valueOf(testTimestamp)).param("description", testEventDescription).param("reminderMins", String.valueOf(10)).param("notifyGroup", String.valueOf(true)).param("includeSubgroups", String.valueOf(true))).andExpect(status().isCreated()).andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
         verify(eventBrokerMock).createVote(sessionTestUser.getUid(), voteEvent.getUid(), voteEvent.getName(), testTimestamp, true, true, testEventDescription, Collections.emptySet());
     }
@@ -54,11 +53,7 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
         List<Object[]> list = new ArrayList<>();
         String[] responses = {"1", "2", "3", "4", "5"};
         list.add(responses);
-        Map<String, Integer> mappedTotals = new HashMap<>();
         RSVPTotalsDTO rsvpTotalsDTO = new RSVPTotalsDTO(list);
-        mappedTotals.put("yes", rsvpTotalsDTO.getYes());
-        mappedTotals.put("no", rsvpTotalsDTO.getNo());
-        mappedTotals.put("maybe", rsvpTotalsDTO.getMaybe());
 
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.load(voteEvent.getUid())).thenReturn(voteEvent);
@@ -72,17 +67,14 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
         verify(eventLogManagementServiceMock).userRsvpForEvent(voteEvent, sessionTestUser);
         verify(eventLogManagementServiceMock).getVoteResultsForEvent(voteEvent);
     }
+
     @Test
     public void castingVotesShouldWork() throws Exception {
-        voteEvent.setId(7385L);
-        voteEvent.setEventStartDateTime(testTimestamp);
-        voteEvent.setDescription(testEventDescription);
+
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.load(voteEvent.getUid())).thenReturn(voteEvent);
         when(eventLogManagementServiceMock.userRsvpForEvent(voteEvent, sessionTestUser)).thenReturn(false);
-        Logger logger = Logger.getLogger(getClass().getCanonicalName());
-        logger.info("The UID of this user is " + voteEvent.getUid());
-        mockMvc.perform(get(path + "/do/{id}/{phoneNumber}/{code}", voteEvent.getUid(), testUserPhone, testUserCode).param("response", "Yes")).andExpect(status().is4xxClientError());
+        mockMvc.perform(get(path + "/do/{id}/{phoneNumber}/{code}", voteEvent.getUid(), testUserPhone, testUserCode).param("response", "Yes")).andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
         verify(eventBrokerMock).load(voteEvent.getUid());
         verify(eventLogManagementServiceMock).userRsvpForEvent(voteEvent, sessionTestUser);

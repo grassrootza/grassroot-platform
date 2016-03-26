@@ -9,10 +9,7 @@ import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.repository.EventRepository;
-import za.org.grassroot.core.repository.LogBookRepository;
-import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.core.repository.VerificationTokenCodeRepository;
+import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.*;
 
@@ -31,16 +28,19 @@ public class RestAbstractUnitTest
     protected final static String testUserCode = "2394";
     protected final static String testGroupName = "test_group";
     protected final static String testSearchTerm = "group";
-    protected final static String testAccountName = "test_account";
+    protected final static String testEventLocation = "Jozi-Hub";
+    protected final static String testEventTitle = "Test_Event";
     protected final static String testEventDescription = "A feedback on code reviews.";
-    protected final static Timestamp testTimestamp = Timestamp.valueOf(DateTimeUtil.parseDateTime("1320"));
+    protected final static Timestamp testTimestamp = Timestamp.valueOf(DateTimeUtil.parseDateTime((DateTimeUtil.addHoursFromNow(5)).toString()));
     protected final static User sessionTestUser = new User("testUser", testUserPhone);
     protected final static Group group = new Group("Test_Group", sessionTestUser);
-    protected final static Vote voteEvent = new Vote("Test_Vote", testTimestamp, sessionTestUser, group, true, true, testEventDescription);
-    protected final static Meeting meetingEvent = new Meeting("Test_Meeting", testTimestamp, sessionTestUser, group, "The Jozi-Hub", true, true, true, EventReminderType.DISABLED, 15, testEventDescription);
+    protected final static Vote voteEvent = new Vote(testEventTitle, testTimestamp, sessionTestUser, group, true, true, testEventDescription);
+    protected final static Meeting meetingEvent = new Meeting(testEventTitle, testTimestamp, sessionTestUser, group, "The Jozi-Hub", true, true, true, EventReminderType.DISABLED, 15, testEventDescription);
     protected static LogBook testLogBook = new LogBook(sessionTestUser, group, "A test log book", testTimestamp);
     protected MockMvc mockMvc;
 
+    @Mock
+    protected MeetingRepository meetingRepositoryMock;
     @Mock
     protected AccountManagementService accountManagementServiceMock;
     @Mock
