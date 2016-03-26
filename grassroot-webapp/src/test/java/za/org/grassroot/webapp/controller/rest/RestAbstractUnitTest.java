@@ -32,15 +32,15 @@ public class RestAbstractUnitTest
     protected final static String testEventTitle = "Test_Event";
     protected final static String testEventDescription = "A feedback on code reviews.";
     protected final static Timestamp testTimestamp = Timestamp.valueOf(DateTimeUtil.parseDateTime((DateTimeUtil.addHoursFromNow(5)).toString()));
-    protected final static User sessionTestUser = new User("testUser", testUserPhone);
-    protected final static Group group = new Group("Test_Group", sessionTestUser);
+    protected final static User sessionTestUser = new User(testUserPhone, "testUser");
+    protected final static Group group = new Group(testGroupName, sessionTestUser);
     protected final static Vote voteEvent = new Vote(testEventTitle, testTimestamp, sessionTestUser, group, true, true, testEventDescription);
-    protected final static Meeting meetingEvent = new Meeting(testEventTitle, testTimestamp, sessionTestUser, group, "The Jozi-Hub", true, true, true, EventReminderType.DISABLED, 15, testEventDescription);
-    protected static LogBook testLogBook = new LogBook(sessionTestUser, group, "A test log book", testTimestamp);
+    protected final static Meeting meetingEvent = new Meeting(testEventTitle, testTimestamp, sessionTestUser, group, testEventLocation, true, true, true, EventReminderType.DISABLED, 15, testEventDescription);
+    protected final static LogBook testLogBook = new LogBook(sessionTestUser, group, "A test log book", testTimestamp);
     protected MockMvc mockMvc;
 
     @Mock
-    protected MeetingRepository meetingRepositoryMock;
+    protected PermissionBroker permissionBrokerMock;
     @Mock
     protected AccountManagementService accountManagementServiceMock;
     @Mock
@@ -58,17 +58,13 @@ public class RestAbstractUnitTest
     @Mock
     protected GroupJoinRequestService groupJoinRequestServiceMock;
     @Mock
+    protected GroupLogService groupLogServiceMock;
+    @Mock
     protected VerificationTokenCodeRepository verificationTokenCodeRepositoryMock;
-    @Mock
-    protected EventRepository eventRepositoryMock;
-    @Mock
-    protected UserRepository userRepositoryMock;
     @Mock
     protected GroupBroker groupBrokerMock;
     @Mock
     protected EventBroker eventBrokerMock;
-    @Mock
-    protected PermissionBroker permissionBrokerMock;
 
     protected MessageSource messageSource() {
 

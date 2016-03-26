@@ -40,15 +40,22 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
     @Test
     public void creatingAMeetingShouldWork() throws Exception {
 
-        Set<String> memberToAdd = new HashSet<>();
+        Set<String> membersToAdd = new HashSet<>();
 
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
-        when(eventBrokerMock.createMeeting(sessionTestUser.getUid(), group.getUid(), testEventTitle, testTimestamp, testEventLocation, true, true, true, EventReminderType.CUSTOM, 5, testEventDescription, memberToAdd)).thenReturn(meetingEvent);
-        mockMvc.perform(post(path + "/meeting/create/{id}/{phoneNumber}/{code}", group.getUid(), testUserPhone, testUserCode).param("title", testEventTitle).param("description", testEventDescription).param("startTime", String.valueOf(testTimestamp)).param("notifyGroup", String.valueOf(true)).param("reminderMins", String.valueOf(5)).param("location", testEventLocation).param("includeSubGroups", String.valueOf(true)).param("rsvpRequired", String.valueOf(true))).andExpect(status().is2xxSuccessful());
+        when(eventBrokerMock.createMeeting(sessionTestUser.getUid(), group.getUid(), testEventTitle, testTimestamp, testEventLocation, true, true, true, EventReminderType.CUSTOM, 5, testEventDescription, membersToAdd)).thenReturn(meetingEvent);
+        mockMvc.perform(post(path + "/create/{id}/{phoneNumber}/{code}", group.getUid(), testUserPhone, testUserCode).param("title", testEventTitle).param("description", testEventDescription).param("startTime", String.valueOf(testTimestamp)).param("notifyGroup", String.valueOf(true)).param("reminderMins", String.valueOf(5)).param("location", testEventLocation).param("includeSubGroups", String.valueOf(true)).param("rsvpRequired", String.valueOf(true))).andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
-        verify(eventBrokerMock).createMeeting(sessionTestUser.getUid(), group.getUid(), testEventTitle, testTimestamp, testEventLocation, true, true, true, EventReminderType.CUSTOM, 5, testEventDescription, memberToAdd);
+        verify(eventBrokerMock).createMeeting(sessionTestUser.getUid(), group.getUid(), testEventTitle, testTimestamp, testEventLocation, true, true, true, EventReminderType.CUSTOM, 5, testEventDescription, membersToAdd);
     }
 
+    @Test
+    public void updatingAMeetingShoulWork() throws Exception {
+
+        when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
+        mockMvc.perform(post(path + "/update/{id}/{phoneNumber}/{code}", meetingEvent.getUid(), testUserPhone, testUserCode).param("title", testEventTitle).param("description", testEventDescription).param("startTime", String.valueOf(testTimestamp)).param("notifyGroup", String.valueOf(true)).param("reminderMins", String.valueOf(5)).param("location", testEventLocation).param("includeSubGroups", String.valueOf(true)).param("rsvpRequired", String.valueOf(true))).andExpect(status().is2xxSuccessful());
+        verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
+    }
     @Test
     public void rsvpingShouldWork() throws Exception {
 
@@ -64,7 +71,6 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
 
         Role role = new Role("ROLE_GROUP_ORGANIZER", meetingEvent.getUid());
         group.addMember(sessionTestUser, role);
-        meetingEvent.getAppliesToGroup().getMembership(sessionTestUser).setRole(role);
 
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.loadMeeting(meetingEvent.getUid())).thenReturn(meetingEvent);

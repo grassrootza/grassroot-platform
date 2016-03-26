@@ -89,6 +89,4 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
         verify(eventBrokerMock).updateVote(sessionTestUser.getUid(), voteEvent.getUid(), testTimestamp, testEventDescription);
     }
-
-
 }
