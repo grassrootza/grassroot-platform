@@ -20,7 +20,7 @@ public interface UidIdentifiable {
 					currentEntity = ((Meeting) currentEntity).getParent();
 					break;
 				case VOTE:
-					currentEntity = ((Meeting) currentEntity).getParent();
+					currentEntity = ((Vote) currentEntity).getParent();
 					break;
 				default:
 					throw new UnsupportedOperationException("Invalid " + JpaEntityType.class.getSimpleName() +
