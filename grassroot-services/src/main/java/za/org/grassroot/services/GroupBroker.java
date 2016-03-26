@@ -54,4 +54,6 @@ public interface GroupBroker {
 
     List<Group> findPublicGroups(String searchTerm);
 
+    Group findGroupFromJoinCode(String joinCode);
+
 }

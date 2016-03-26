@@ -120,29 +120,6 @@ public class GroupManager implements GroupManagementService {
         return groupRepository.countByMembershipsUserAndActiveTrue(user) > 0;
     }
 
-    /*
-    Methods to work with group joining tokens and group discovery
-     */
-
-    @Override
-    public Group findGroupByToken(String groupToken) {
-        Group groupToReturn = groupRepository.findByGroupTokenCode(groupToken);
-        if (groupToReturn == null) return null;
-        if (groupToReturn.getTokenExpiryDateTime().before(Timestamp.valueOf(LocalDateTime.now()))) return null;
-        return groupToReturn;
-    }
-
-    @Override
-    public boolean groupHasValidToken(Group group) {
-
-        boolean codeExists = group.getGroupTokenCode() != null && group.getGroupTokenCode().trim() != "";
-        boolean codeValid = group.getTokenExpiryDateTime() != null &&
-                group.getTokenExpiryDateTime().after(new Timestamp(Calendar.getInstance().getTimeInMillis()));
-
-        return codeExists && codeValid;
-
-    }
-
     /**
      * Methods for working with subgroups
      */

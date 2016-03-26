@@ -140,7 +140,6 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
-        when(groupManagementServiceMock.groupHasValidToken(testGroup)).thenReturn(false);
 
         mockMvc.perform(get(path + "token").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
                 andExpect(status().isOk());
@@ -151,7 +150,6 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupBrokerMock, times(2)).load(testGroup.getUid());
-        verify(groupManagementServiceMock, times(2)).groupHasValidToken(testGroup);
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
@@ -185,13 +183,11 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         testGroup.setTokenExpiryDateTime(Timestamp.valueOf(LocalDateTime.now().plusDays(3)));
         when(userManagementServiceMock.findByInputNumber(testUserPhone, saveGroupMenu("token", testGroup.getUid()))).thenReturn(testUser);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
-        when(groupManagementServiceMock.groupHasValidToken(testGroup)).thenReturn(true);
         mockMvc.perform(get(path + "token").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
                 andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, saveGroupMenu("token", testGroup. getUid()));
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupBrokerMock, times(1)).load(testGroup.getUid());
-        verify(groupManagementServiceMock, times(1)).groupHasValidToken(testGroup);
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }

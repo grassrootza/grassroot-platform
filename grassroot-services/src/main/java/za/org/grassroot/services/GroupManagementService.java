@@ -49,14 +49,6 @@ public interface GroupManagementService {
     public boolean isUserInGroup(Group group, User user);
 
     /*
-    Methods to work with group joining tokens and group discovery
-     */
-
-    public boolean groupHasValidToken(Group group);
-
-    public Group findGroupByToken(String groupToken);
-
-    /*
     Methods do deal with sub groups and parent groups
      */
 

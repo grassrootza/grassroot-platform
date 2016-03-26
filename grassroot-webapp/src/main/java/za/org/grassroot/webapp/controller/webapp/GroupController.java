@@ -127,7 +127,7 @@ public class GroupController extends BaseController {
         String tokenSearch = searchTerm.contains("*134*1994*") ?
                     searchTerm.substring("*134*1994*".length(), searchTerm.length() - 1) : searchTerm;
         log.info("searching for group ... token to use ... " + tokenSearch);
-        Group groupByToken = groupManagementService.findGroupByToken(tokenSearch);
+        Group groupByToken = groupBroker.findGroupFromJoinCode(tokenSearch);
         if (groupByToken != null) {
             model.addAttribute("group", groupByToken);
         } else {
@@ -195,7 +195,7 @@ public class GroupController extends BaseController {
         model.addAttribute("groupMeetings", eventManagementService.getUpcomingMeetings(group));
         model.addAttribute("groupVotes", eventManagementService.getUpcomingVotes(group));
         model.addAttribute("subGroups", groupManagementService.getSubGroups(group));
-        model.addAttribute("openToken", groupManagementService.groupHasValidToken(group));
+        model.addAttribute("openToken", group.hasValidGroupTokenCode());
 
         if (userPermissions.contains(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
             List<MembershipInfo> members = new ArrayList<>(MembershipInfo.createFromMembers(group.getMemberships()));
@@ -350,7 +350,7 @@ public class GroupController extends BaseController {
     public String manageToken(Model model, @RequestParam String groupUid, HttpServletRequest request) {
         // todo: make sure services layer checks permissions
         Group group = groupBroker.load(groupUid);
-        if (!groupManagementService.groupHasValidToken(group)) {
+        if (!group.hasValidGroupTokenCode()) {
             groupBroker.openJoinToken(getUserProfile().getUid(), groupUid, false, null);
             addMessage(model, MessageType.SUCCESS, "group.token.created", request);
         } else {

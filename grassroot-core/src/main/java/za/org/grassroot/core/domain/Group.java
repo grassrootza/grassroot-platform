@@ -315,6 +315,11 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
         this.tokenExpiryDateTime = tokenExpiryDateTime;
     }
 
+    public boolean hasValidGroupTokenCode() {
+        return (groupTokenCode != null && groupTokenCode.trim() != "") &&
+                (tokenExpiryDateTime != null && tokenExpiryDateTime.toInstant().isAfter(Instant.now()));
+    }
+
     public Integer getVersion() {
         return version;
     }

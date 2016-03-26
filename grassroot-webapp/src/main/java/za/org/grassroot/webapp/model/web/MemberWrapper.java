@@ -14,10 +14,12 @@ public class MemberWrapper {
 
     private static final Logger log = LoggerFactory.getLogger(MemberWrapper.class);
 
+    // todo: strip these down to just names & UIDs, those being things only ever used (else getting lots for little)
     private User user;
     private Group group;
     private Role role;
     private String roleName;
+    private boolean selected;
 
     public MemberWrapper(User user, Group group, Role role) {
         // log.info("Constructing member wrapper for user ... " + user.getId() + " ... in group ... " + group.getId());
@@ -30,6 +32,23 @@ public class MemberWrapper {
             roleName = role.getName();
     }
 
+    // todo: replace Group in here with the abstract, member container
+    public MemberWrapper(User user, Group group, boolean selected) {
+        this.user = user;
+        this.group = group;
+        this.role = group.getMembership(user).getRole();
+        roleName = role.getName();
+        this.selected = selected;
+    }
+
+    public MemberWrapper(User user, boolean selected) {
+        this.user = user;
+        this.selected = selected;
+    }
+
+    public MemberWrapper() {
+
+    }
 
     public User getUser() {
         return user;
@@ -47,5 +66,11 @@ public class MemberWrapper {
 
     public void setRoleName() { this.roleName = roleName; }
 
+    public boolean isSelected() {
+        return selected;
+    }
 
+    public void setSelected(boolean selected) {
+        this.selected = selected;
+    }
 }

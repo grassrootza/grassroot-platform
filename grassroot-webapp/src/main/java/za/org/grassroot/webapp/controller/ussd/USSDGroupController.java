@@ -267,7 +267,7 @@ public class USSDGroupController extends USSDController {
         USSDMenu tokenMenu;
         Group sessionGroup = groupBroker.load(groupUid);
 
-        if (groupManager.groupHasValidToken(sessionGroup)) {
+        if (sessionGroup.hasValidGroupTokenCode()) {
             String tokenCode = sessionGroup.getGroupTokenCode();
             boolean indefiniteToken = sessionGroup.getTokenExpiryDateTime().equals(DateTimeUtil.getVeryLongTimestamp());
             tokenMenu = new USSDMenu(getMessage(thisSection, groupTokenMenu, promptKey + ".exists", tokenCode, sessionUser));

@@ -28,7 +28,13 @@ public class LogBookRequest extends AbstractLogBookEntity {
 		request.uid = UIDGenerator.generateId();
 		request.createdByUser = createdByUser;
 		request.setParent(parent);
+		return request;
+	}
 
+	public static LogBookRequest makeEmpty(User createdByUser) {
+		LogBookRequest request = new LogBookRequest();
+		request.uid = UIDGenerator.generateId();
+		request.createdByUser = createdByUser;
 		return request;
 	}
 

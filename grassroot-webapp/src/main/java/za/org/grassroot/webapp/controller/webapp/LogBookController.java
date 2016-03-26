@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.webapp;
 
+import com.google.common.base.Joiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,23 +13,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.LogBook;
-import za.org.grassroot.core.domain.LogBookContainer;
-import za.org.grassroot.core.domain.User;
-import za.org.grassroot.services.GroupBroker;
-import za.org.grassroot.services.GroupManagementService;
-import za.org.grassroot.services.LogBookBroker;
-import za.org.grassroot.services.LogBookService;
+import za.org.grassroot.core.domain.*;
+import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
+import za.org.grassroot.webapp.model.web.LogBookWrapper;
+import za.org.grassroot.webapp.model.web.MemberPicker;
 
 import javax.servlet.http.HttpServletRequest;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by luke on 2016/01/02.
@@ -51,6 +46,9 @@ public class LogBookController extends BaseController {
     @Autowired
     private LogBookBroker logBookBroker;
 
+    @Autowired
+    private LogBookRequestBroker logBookRequestBroker;
+
     /**
      * SECTION: Views and methods for creating logbook entries
      */
@@ -60,75 +58,84 @@ public class LogBookController extends BaseController {
 
         // Thymeleaf insists on messing everything up if we try to set groupId, or just in general create the entity
         // on the next page instead of here, so we have to do some redundant & silly entity creation
-        LogBook logBookToFill = LogBook.makeEmpty();
+        LogBookWrapper entryWrapper;
+        User user = (User) getUserProfile();
 
         if (groupUid == null || groupUid.trim().equals("")) {
-            log.info("No group specified, pass a list and let user choose");
             model.addAttribute("groupSpecified", false);
-            // todo: make this use permissions logic so only pass groups for which the user has permission to do this
-            model.addAttribute("possibleGroups", groupManagementService.getActiveGroupsPartOf(getUserProfile()));
+            model.addAttribute("possibleGroups", permissionBroker.
+                    getActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY));
+            entryWrapper = new LogBookWrapper(JpaEntityType.GROUP);
         } else {
-            log.info("User came here from a group view so set group as specified");
             model.addAttribute("groupSpecified", true);
-            // todo: another permission check
             Group group = groupBroker.load(groupUid);
             model.addAttribute("group", group);
-            logBookToFill.setParent(group);
+            entryWrapper = new LogBookWrapper(JpaEntityType.GROUP, group.getUid(), group.getName(""));
         }
 
-        model.addAttribute("entry", logBookToFill);
+        model.addAttribute("entry", entryWrapper);
         return "log/create";
     }
 
     @RequestMapping(value = "/log/confirm", method = RequestMethod.POST)
-    public String confirmLogBookEntry(Model model, @ModelAttribute("entry") LogBook logBookEntry, BindingResult bindingResult,
+    public String confirmLogBookEntry(Model model, @ModelAttribute("entry") LogBookWrapper logBookEntry,
+                                      @RequestParam(value="selectedGroupUid", required = false) String selectedGroupUid,
                                       @RequestParam(value="subGroups", required=false) boolean subGroups, HttpServletRequest request) {
 
         log.info("The potential logBookEntry passed back to us ... " + logBookEntry);
-        log.info("Value of subGroups passed ... " + subGroups);
 
-        Group groupSelected = (Group) logBookEntry.getParent();
-        model.addAttribute("group", groupSelected);
-        model.addAttribute("subGroups", subGroups);
+        Group group;
+        if (selectedGroupUid != null) {
+            group = groupBroker.load(selectedGroupUid);
+            logBookEntry.setParentEntityType(group.getJpaEntityType());
+            logBookEntry.setParentUid(group.getUid());
+            logBookEntry.setParentName(group.getName(""));
+        } else {
+            group = groupBroker.load(logBookEntry.getParentUid()); // todo: do we even need this?
+        }
+
+        model.addAttribute("group", group);
+        model.addAttribute("replicatingToSubGroups", subGroups);
 
         if (subGroups) {
             // todo: use the tree methods to make this more coherent
             // todo: restrict this to paid groups, and add in message numbers / cost estimates
-            model.addAttribute("numberSubGroups", groupManagementService.getSubGroups(groupSelected).size());
-            model.addAttribute("numberMembers", groupManagementService.getGroupSize(groupSelected.getId(), true));
+            model.addAttribute("numberSubGroups", groupManagementService.getSubGroups(group).size());
+            model.addAttribute("numberMembers", groupManagementService.getGroupSize(group.getId(), true));
         } else {
-            model.addAttribute("groupMembers", groupSelected.getMembers());
+            logBookEntry.setMemberPicker(new MemberPicker(group, false));
         }
 
-        model.addAttribute("reminderTime", reminderTimeDescriptions().get(logBookEntry.getReminderMinutes()));
+        model.addAttribute("reminderTime", logBookEntry.getScheduledReminderTime());
+        model.addAttribute("entry", logBookEntry);
 
         return "log/confirm";
 
     }
 
     @RequestMapping(value = "/log/record", method = RequestMethod.POST)
-    public String recordLogBookEntry(Model model, @ModelAttribute("entry") LogBook logBookEntry, BindingResult bindingResult,
-                                     @RequestParam(value="subGroups", required=false) boolean subGroups,
-                                     @RequestParam(value="assignToUser", required=false) boolean assignToUser,
+    public String recordLogBookEntry(Model model, @ModelAttribute("entry") LogBookWrapper logBookEntry,
                                      HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
-        log.info("The confirmed logBookEntry that we are recording is ... " + logBookEntry);
-        log.info("Whether or not to replicate ... subGroups ..." + subGroups);
+        Set<String> assignedUids;
+        if ("members".equals(logBookEntry.getAssignmentType())) {
+            MemberPicker listOfMembers = logBookEntry.getMemberPicker();
+            log.info("The member picker that we have is ... " + listOfMembers.toString());
+            log.info("The number of selected memberUids : ... " + listOfMembers.getSelectedUids().size());
+            log.info("The memberUids are : ..." + Joiner.on(", ").join(listOfMembers.getSelectedUids()));
+            assignedUids = listOfMembers.getSelectedUids();
+        } else {
+            assignedUids = Collections.emptySet();
+        }
 
         User user = getUserProfile();
 
-        // todo: implement this using new design
-/*
-        String assignedToUserUid = logBookEntry.getAssignedToUser() == null? null: logBookEntry.getAssignedToUser().getUid();
-        if (!assignToUser || subGroups) {
-            assignedToUserUid = null; // todo: in future version allow assignment per subgroup
-        }
-
-        logBookBroker.create(user.getUid(), logBookEntry.getGroup().getUid(), logBookEntry.getMessage(), logBookEntry.getActionByDate(), logBookEntry.getReminderMinutes(), assignedToUserUid, subGroups);
-*/
+        LogBook created = logBookBroker.create(user.getUid(), logBookEntry.getParentEntityType(), logBookEntry.getParentUid(),
+                                               logBookEntry.getMessage(), logBookEntry.getActionByDate(), logBookEntry.getReminderMinutes(),
+                                               logBookEntry.isReplicateToSubGroups(), assignedUids);
 
         addMessage(redirectAttributes, MessageType.SUCCESS, "log.creation.success", request);
-        redirectAttributes.addAttribute("logBookId", logBookEntry.getId()); // todo: rather to logbook description
+        redirectAttributes.addAttribute("logBookUid", created.getUid());
 
         return "redirect:/log/details";
     }

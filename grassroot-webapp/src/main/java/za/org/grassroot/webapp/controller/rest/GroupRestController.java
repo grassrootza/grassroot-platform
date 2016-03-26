@@ -102,7 +102,7 @@ public class GroupRestController {
 
         String tokenSearch = searchTerm.contains("*134*1994*") ?
                 searchTerm.substring("*134*1994*".length(), searchTerm.length() - 1) : searchTerm;
-        Group groupByToken = groupManagementService.findGroupByToken(tokenSearch);
+        Group groupByToken = groupBroker.findGroupFromJoinCode(tokenSearch);
         ResponseWrapper responseWrapper;
         if (groupByToken != null) {
             Event event = eventManagementService.getMostRecentEvent(groupByToken);

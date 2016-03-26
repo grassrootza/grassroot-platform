@@ -141,7 +141,7 @@ public class PaidAccountController extends BaseController {
         model.addAttribute("tokenSearch", tokenSearch);
 
         if (tokenSearch) {
-            model.addAttribute("groupFound", groupManagementService.findGroupByToken(searchTerm));
+            model.addAttribute("groupFound", groupBroker.findGroupFromJoinCode(searchTerm));
         } else {
             model.addAttribute("groupCandidates", groupBroker.findPublicGroups(searchTerm));
         }

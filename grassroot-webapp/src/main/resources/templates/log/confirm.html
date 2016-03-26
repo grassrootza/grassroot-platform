@@ -12,103 +12,117 @@
 <body>
 
 <div layout:fragment="header">
-  <h2>Confirm entry</h2>
+  <h2 class="text-center">Complete entry</h2>
 </div>
-<div layout:fragment="overview">Confirm entry to group logbook</div>
+<div layout:fragment="overview"></div>
 
 <div layout:fragment="content">
   <div layout:fragment="messages"></div>
-  <div class="well">
-    <form th:object="${entry}" th:action="@{/log/record}" method="post" autocomplete="off" class="form-horizontal">
 
-      <div class="form-group">
-        <label for="group" class="col-md-2 control-label">Group: </label>
-        <div class="col-md-4">
-          <input type="hidden" th:field="*{groupId}" th:value="${group.id}" />
-          <span th:text="${group.groupName}" id="group">Group name</span>
+  <div class="container">
+    <form th:object="${entry}" th:action="@{/log/record}" method="post" autocomplete="off" class="form-vertical">
+      <div class="row">
+        <div class="col-md-4 col-md-offset-4">
+          <div class="row form-group">
+            <label class="control-label col-md-3">Group:</label>
+            <p class="col-md-6"><span th:text="*{parentName}">group name</span></p>
+            <input type="hidden" th:field="*{parentUid}" />
+            <input type="hidden" th:field="*{parentEntityType}" />
+          </div>
+          <div class="row form-group">
+            <label class="control-label col-md-3">Summary:</label>
+            <p class="col-md-6"><span th:text="*{message}">Entry</span></p>
+            <input type="hidden" th:field="*{message}" />
+          </div>
+          <div class="row form-group">
+            <label class="control-label col-md-3">Due date:</label>
+            <p class="col-md-6"><span th:text="${#calendars.format(entry.actionByDate, 'EEE d MMM, dd:MM')}"></span></p>
+            <input type="hidden" th:field="*{actionByDate}" />
+          </div>
+          <div class="row form-group">
+            <label class="control-label col-md-3">Reminder:</label>
+            <p class="col-md-6"><span th:text="*{scheduledReminderTime}">Reminder date</span></p>
+          </div>
         </div>
       </div>
 
-      <div class="form-group">
-        <label for="name" class="col-md-2 control-label">Entry to be recorded</label>
-        <div class="col-md-4">
-          <input th:field="*{message}" type="text" class="form-control" id="name" readonly="readonly" />
+      <div class="row">
+        <div class="col-md-6 col-md-offset-3">
+          <div class="form-group">
+            <h4><b>Further details:</b></h4>
+          </div>
+          <div th:unless="*{replicateToSubGroups}" class="form-group">
+            <label class="control-label">Who is assigned to complete the action?</label>
+            <select th:field="*{assignmentType}" class="form-control" id="assignmentOption">
+              <option value="group">The whole group</option>
+              <option value="members">Designate members</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Notes (longer description):</label>
+            <textarea class="form-control" rows="2" maxlength="250"></textarea>
+          </div>
+          <div class="form-group" th:if="*{replicateToSubGroups}">
+            <div class="col-md-2 control-label">Subgroup replication:</div>
+            <div class="col-md-4">
+              <p>This logbook entry will be replicated for <span th:text="${numberSubGroups}">X</span> subgroups, involving
+                <span th:text="${numberMembers}">Y</span> members.</p>
+            </div>
+            <input type="hidden" name="subGroups" value="1" />
+          </div>
+
+          <div class="form-group pull-right">
+            <button class="btn btn-default">Back</button>
+            <button type="submit" class="btn btn-primary">Record action</button>
+          </div>
         </div>
       </div>
 
-      <div class="form-group">
-        <div th:fragment="date-picker">
-          <label for="datepicker" class="col-md-2 control-label">Deadline for action to be completed</label>
-          <div class="col-md-4">
-            <div class="input-group date" id="datepicker">
-              <input th:field="*{actionByDate}" th:value="*{actionByDate}" type="text" class="form-control" readonly="readonly" />
-                    <span class="input-group-addon">
-                        <span class="glyphicon glyphicon-calendar"></span>
-                    </span>
+      <!-- todo : turn this into a Thymeleaf fragment, and use a member wrapper of some form -->
+      <div th:unless="*{replicateToSubGroups}" class="modal fade" id="memberModal" tabindex="-1" role="dialog" aria-labelledby="memberModalLabel">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+              <h4 class="modal-title" id="memberModalLabel">Assign members to action</h4>
+            </div>
+            <div class="modal-body">
+              <div class="list-group checked-list-box">
+                <li class="list-group-item checkbox"
+                    th:each="member, iterStat: *{memberPicker.getListOfMembers()}">
+                  <label>
+                    <input type="checkbox" th:field="*{memberPicker.listOfMembers[__${iterStat.index}__].selected}" class="pull-right"/>
+                    <input type="hidden" th:field="*{memberPicker.listOfMembers[__${iterStat.index}__].userUid}" />
+                    <span th:text="${member.nameToDisplay}">Name</span>
+                  </label>
+                </li>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal">Done</button>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="form-group">
-        <label for="remindertime" class="col-md-2 control-label">Reminder will be sent out:</label>
-        <div class="col-md-4">
-          <input type="hidden" th:field="*{reminderMinutes}" th:value="*{reminderMinutes}" />
-          <input type="text" readonly="readonly" id="remindertime" th:value="${reminderTime}" />
-        </div>
-      </div>
-
-      <!-- note: in future may want a pop a way to do user assignment even when cascading into subgroups -->
-      <div th:switch="${subGroups}">
-
-        <div th:case="false" class="form-group">
-          <label for="assignToUser" class="col-md-2 control-label">Assign to a group member?</label>
-          <div class="col-md-4">
-            <input name="assignToUser" type="checkbox" id="assignToUser" class="form-control" />
-          </div>
-        </div>
-
-        <div id="assignMemberPicker" class="form-group hidden">
-          <label for="assignedUser" class="col-md-2 control-label">Assign to member:</label>
-          <div class="col-md-4">
-            <select th:field="*{assignedToUserId}" id="assignedUser" class="form-control">
-              <option th:each="member: ${groupMembers}"
-                      th:value="${member.id}"
-                      th:text="${member.nameToDisplay()}">Member name</option>
-            </select>
-          </div>
-        </div>
-
-        <div th:case="true" class="form-group">
-          <div class="col-md-2 control-label">Subgroup replication:</div>
-          <div class="col-md-4">
-            <p>This logbook entry will be replicated for <span th:text="${numberSubGroups}">X</span> subgroups, involving
-              <span th:text="${numberMembers}">Y</span> members.</p>
-          </div>
-          <input type="hidden" name="subGroups" value="1" />
-        </div>
-
-      </div>
-
-      <div class="form-group">
-        <div class="col-md-8">
-          <button type="submit" class="btn btn-primary">Record action</button>
-        </div>
-      </div>
     </form>
+
   </div>
 </div>
+
 
 <div class="header-container" layout:fragment="script-container">
   <script>
 
     $(document).ready(function() {
 
-      var defTime = new Date();
-      defTime.setTime(defTime.getTime() + 5*60*1000);
-
-      $('#assignToUser').change(function(){
-        $('#assignMemberPicker').toggleClass('hidden show');
+      $('#assignmentOption').change(function(){
+        var option = $('#assignmentOption').val();
+        if (option == 'members') {
+          $('#memberModal').modal({
+            show: true
+          });
+        }
       });
 
     });

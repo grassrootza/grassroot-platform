@@ -37,7 +37,7 @@
 
           <div class="form-group">
             <label for="group" class="control-label">Group which is voting</label>
-            <select th:unless="${groupSpecified}" name="selectedGroupId" id="selectedgroup" class="form-control">
+            <select th:unless="${groupSpecified}" name="selectedGroupUid" id="selectedgroup" class="form-control">
               <option th:each="group: ${possibleGroups}"
                       th:value="${group.uid}"
                       th:text="${group.groupName}">Groupname</option>

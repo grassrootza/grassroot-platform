@@ -586,4 +586,12 @@ public class GroupBrokerImpl implements GroupBroker {
         return groupRepository.findByGroupNameContainingIgnoreCaseAndDiscoverable(searchTerm, true);
     }
 
+    @Override
+    public Group findGroupFromJoinCode(String joinCode) {
+        Group groupToReturn = groupRepository.findByGroupTokenCode(joinCode);
+        if (groupToReturn == null) return null;
+        if (groupToReturn.getTokenExpiryDateTime().before(Timestamp.valueOf(LocalDateTime.now()))) return null;
+        return groupToReturn;
+    }
+
 }

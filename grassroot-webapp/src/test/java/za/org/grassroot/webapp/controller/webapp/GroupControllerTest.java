@@ -76,7 +76,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(eventManagementServiceMock.getUpcomingMeetings(dummyGroup)).thenReturn(dummyMeetings);
         when(eventManagementServiceMock.getUpcomingVotes(dummyGroup)).thenReturn(dummyVotes);
         when(groupManagementServiceMock.getSubGroups(dummyGroup)).thenReturn(subGroups);
-        when(groupManagementServiceMock.groupHasValidToken(dummyGroup)).thenReturn(false);
         when(groupBrokerMock.isDeactivationAvailable(sessionTestUser, dummyGroup, true)).thenReturn(true);
         when(groupManagementServiceMock.getLastTimeGroupActive(dummyGroup)).thenReturn(LocalDateTime.now());
 
@@ -94,7 +93,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         verify(eventManagementServiceMock, times(1)).getUpcomingMeetings(dummyGroup);
         verify(eventManagementServiceMock, times(1)).getUpcomingVotes(dummyGroup);
         verify(groupManagementServiceMock, times(1)).getSubGroups(dummyGroup);
-        verify(groupManagementServiceMock, times(1)).groupHasValidToken(dummyGroup);
         // verify(groupBrokerMock, times(1)).isDeactivationAvailable(sessionTestUser, dummyGroup, true);
         verifyNoMoreInteractions(eventManagementServiceMock);
     }
@@ -270,7 +268,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         testGroup.addMember(sessionTestUser);
 
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
-        when(groupManagementServiceMock.groupHasValidToken(testGroup)).thenReturn(false);
 
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         when(userManagementServiceMock.getUserById(sessionTestUser.getId())).thenReturn(sessionTestUser);
@@ -289,7 +286,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         Group group = new Group("someGroupname", new User("234345345"));
         group.setId(dummyId);
         when(groupBrokerMock.load(group.getUid())).thenReturn(group);
-        when(groupManagementServiceMock.groupHasValidToken(group)).thenReturn(true);
 
         when(groupBrokerMock.load(group.getUid())).thenReturn(group);
         when(userManagementServiceMock.getUserById(sessionTestUser.getId())).thenReturn(sessionTestUser);

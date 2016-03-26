@@ -202,7 +202,7 @@ public class USSDHomeController extends USSDController {
 
         System.out.println("Processing trailing digits ..." + trailingDigits);
 
-        Group groupToJoin = groupManager.findGroupByToken(trailingDigits);
+        Group groupToJoin = groupBroker.findGroupFromJoinCode(trailingDigits);
         if (groupToJoin != null) {
             log.info("Found a token with these trailing digits ...");
             // todo: remove "findBy" above and consolidate into the service call (which throws the 'cant find error'
