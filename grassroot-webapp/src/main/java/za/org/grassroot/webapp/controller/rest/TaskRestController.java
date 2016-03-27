@@ -14,6 +14,7 @@ import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrapper;
+import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
 import za.org.grassroot.webapp.model.rest.TaskDTO;
@@ -91,28 +92,7 @@ public class TaskRestController {
         return tasks;
     }
 
-        /*            if (event != null) {
-                EventLog eventLog = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.EventRSVP);
-                boolean hasResponded = eventLogManagementService.userRsvpForEvent(event, user);
-                if (!event.isSendBlocked() && event.getEventStartDateTime() != null) {
-                    taskSet.add(new TaskDTO(event, eventLog, user, hasResponded));
-                }
-            }
-            for (LogBook logBook : logBookService.getAllLogBookEntriesForGroup(group.getId())) {
-                if (logBook != null) {
-                    if (logBook.getCreatedByUserId().equals(user.getId())) {
-                        taskSet.add(new TaskDTO(logBook, user, user));
-                    } else {
-                        User creatingUser = userManagementService.loadUser(logBook.getCreatedByUserId());
-                        if (logBook.isRecorded()) {
-                            taskSet.add(new TaskDTO(logBook, user, creatingUser));
-                        }}
-                    }
-                }
-            }
-            List<TaskDTO>  tasks = new ArrayList<>(taskSet);
-            Collections.sort(tasks);
-            return tasks;*/
+
 
 
 }

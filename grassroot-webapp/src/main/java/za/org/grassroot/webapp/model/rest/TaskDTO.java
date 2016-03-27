@@ -94,6 +94,10 @@ public class TaskDTO implements Comparable<TaskDTO>{
         return canAction;
     }
 
+    public String getTitle() {
+        return title;
+    }
+
 
     private String getTodoStatus(LogBook logBook) {
 
@@ -116,27 +120,20 @@ public class TaskDTO implements Comparable<TaskDTO>{
             if (event.getEventType().equals(EventType.MEETING) && isOpen) {
                 canAction = true;
             } else {
-                if (event.getEventType().equals(EventType.VOTE) && isOpen && !hasResponded) {
+                if (event.getEventType().equals(EventType.VOTE) && (isOpen && !hasResponded)) {
                     canAction = true;
                 }
             }
         } else {
             LogBook logBook = (LogBook) object;
-            // todo: implement via new design?
-            throw new UnsupportedOperationException("Implement via new design?");
-/*
-            if (!logBook.isCompleted() && logBook.getAssignedToUser().equals(user) || logBook.getCreatedByUser().equals(user)
-                    || logBook.getAssignedToUser()== null) {
+            if (!logBook.isCompleted() && (logBook.getAssignedMembers().contains(user)
+                    || logBook.getAssignedMembers().isEmpty())) {
                 canAction = true;
             }
-*/
         }
         return canAction;
     }
 
-    public String getTitle() {
-        return title;
-    }
 
     private String getLocalDateTime(Timestamp timestamp) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");

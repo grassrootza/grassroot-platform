@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.model.rest.ResponseWrappers;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.webapp.util.RestUtil;
 
@@ -30,11 +31,6 @@ public class GroupResponseWrapper {
 
     public GroupResponseWrapper(){}
 
-    public GroupResponseWrapper(Group group){
-        this.id =group.getUid();
-        this.groupName = group.getGroupName();
-    }
-
     public GroupResponseWrapper(Group group, Event event, Role role){
 
         this.id = group.getUid();
@@ -52,7 +48,6 @@ public class GroupResponseWrapper {
         this.id = group.getUid();
         this.groupName = group.getGroupName();
         this.description = groupLog.getDescription();
-        Instant instant = Instant.ofEpochMilli(groupLog.getCreatedDateTime().getTime());
         this.dateTime =new Timestamp(groupLog.getCreatedDateTime().getTime());
         this.groupCreator = group.getCreatedByUser().getDisplayName();
         this.role = (role!=null)?role.getName():null;

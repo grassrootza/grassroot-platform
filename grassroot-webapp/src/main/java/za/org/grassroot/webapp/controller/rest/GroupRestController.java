@@ -2,10 +2,12 @@ package za.org.grassroot.webapp.controller.rest;
 
 import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
@@ -26,7 +28,6 @@ import java.util.logging.Logger;
 @RequestMapping(value = "/api/group")
 public class GroupRestController {
 
-    private Logger log = Logger.getLogger(getClass().getCanonicalName());
 
     @Autowired
     GroupManagementService groupManagementService;
@@ -46,12 +47,12 @@ public class GroupRestController {
 
     @Autowired
     GroupBroker groupBroker;
-
+    private Logger log = Logger.getLogger(getClass().getCanonicalName());
     @Autowired
     private GroupJoinRequestService groupJoinRequestService;
 
 
-    @RequestMapping(value = "create/{phoneNumber}/{code}", method = RequestMethod.POST)
+    @RequestMapping(value = "/create/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> createGroup(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
                                                        @RequestParam("groupName") String groupName, @RequestParam(value = "description", required = true) String description,
                                                        @RequestParam(value = "phoneNumbers", required = false) List<String> phoneNumbers) {
@@ -66,7 +67,7 @@ public class GroupRestController {
                                GroupPermissionTemplate.DEFAULT_GROUP, description);
 
         } catch (RuntimeException e) {
-            return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, e.getMessage(), RestStatus.FAILURE),
+            return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.GROUP_NOT_CREATED, RestStatus.FAILURE),
                     HttpStatus.BAD_REQUEST);
         }
         return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.CREATED, RestMessage.GROUP_CREATED, RestStatus.SUCCESS),
@@ -74,7 +75,7 @@ public class GroupRestController {
 
     }
 
-    @RequestMapping(value = "list/{phoneNumber}/{code}", method = RequestMethod.GET)
+    @RequestMapping(value = "/list/{phoneNumber}/{code}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> getUserGroups(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String token) {
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
@@ -97,11 +98,11 @@ public class GroupRestController {
 
     }
 
-    @RequestMapping(value = "search", method = RequestMethod.GET)
+
+    @RequestMapping(value = "/search", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> searchForGroup(@RequestParam("searchTerm") String searchTerm) {
 
-        String tokenSearch = searchTerm.contains("*134*1994*") ?
-                searchTerm.substring("*134*1994*".length(), searchTerm.length() - 1) : searchTerm;
+        String tokenSearch = getSearchToken(searchTerm);
         Group groupByToken = groupBroker.findGroupFromJoinCode(tokenSearch);
         ResponseWrapper responseWrapper;
         if (groupByToken != null) {
@@ -126,7 +127,7 @@ public class GroupRestController {
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
     }
 
-    @RequestMapping(value = "join/request/{phoneNumber}/{code}", method = RequestMethod.POST)
+    @RequestMapping(value = "/join/request/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> requestToJoinGroup(@PathVariable("phoneNumber") String phoneNumber,
                                                               @PathVariable("code") String code, @RequestParam(value = "uid")
                                                               String groupToJoinUid) {
@@ -137,6 +138,25 @@ public class GroupRestController {
 
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
 
+    }
+
+    @RequestMapping(value="/members/{id}/{phoneNumber}/{code}", method=RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> getGroupMember(@PathVariable("phoneNumber") String phoneNumber,
+                                                           @PathVariable("code") String code, @PathVariable("id") String groupUid,
+                                                          @RequestParam("page") Integer page,@RequestParam("size") Integer size){
+        User user = userManagementService.loadOrSaveUser(phoneNumber);
+        Group group = groupBroker.load(groupUid);
+        page = (page.equals(null))?1:page;
+        size=(size.equals(null))?5:size;
+        Page<User> pageable = userManagementService.getGroupMembers(group,page-1,size);
+        ResponseWrapper responseWrapper;
+        if(page >pageable.getTotalPages()){
+            responseWrapper = new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.GROUP_ACTIVITIES,RestStatus.FAILURE);
+        }else {
+            UsersWrapper usersWrapper = new UsersWrapper(pageable);
+            responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.GROUP_MEMBERS, RestStatus.SUCCESS, usersWrapper);
+        }
+        return new ResponseEntity<>(responseWrapper,HttpStatus.valueOf(responseWrapper.getCode()));
     }
 
 
@@ -166,6 +186,12 @@ public class GroupRestController {
             responseWrapper = new GroupResponseWrapper(group, groupLog, role);
         }
         return responseWrapper;
+
+    }
+
+    private String getSearchToken(String searchTerm){
+       return searchTerm.contains("*134*1994*") ?
+                searchTerm.substring("*134*1994*".length(), searchTerm.length() - 1) : searchTerm;
 
     }
 

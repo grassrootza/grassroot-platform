@@ -1,5 +1,6 @@
 package za.org.grassroot.core.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserCreateRequest;
 
@@ -10,12 +11,18 @@ import java.io.Serializable;
  */
 public class UserDTO implements Serializable {
 
+
+    private String id;
+    @JsonIgnore
     private boolean enabled;
+    @JsonIgnore
     private String languageCode;
+    @JsonIgnore
     private String lastName;
+    @JsonIgnore
     private String firstName;
     private String displayName;
-    private String id;
+    @JsonIgnore
     private String phoneNumber;
 
     public UserDTO() {

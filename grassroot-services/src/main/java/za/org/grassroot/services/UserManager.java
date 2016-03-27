@@ -410,6 +410,11 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
+    public Page<User> getGroupMembers(Group group, int pageNumber, int pageSize) {
+        return userRepository.findByGroupsPartOf(group, new PageRequest(pageNumber,pageSize));
+    }
+
+    @Override
     public boolean userExist(String phoneNumber) {
         return userRepository.existsByPhoneNumber(phoneNumber);
     }

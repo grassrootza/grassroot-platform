@@ -41,6 +41,7 @@ public class LogBookRestController {
         ResponseWrapper responseWrapper;
         if(!logBook.isCompleted()){
             logBook.setCompletedByUser(user); // todo: service call to save
+            logBookService.save(logBook);
             responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.TODO_SET_COMPLETED, RestStatus.SUCCESS);
             return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
         }
