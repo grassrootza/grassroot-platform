@@ -5,13 +5,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.core.enums.EventType;
-
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.util.Arrays;
+import za.org.grassroot.core.domain.Event;
 import java.util.Collections;
 import java.util.List;
 
@@ -25,6 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class AATIncomingSMSControllerTest extends RestAbstractUnitTest {
 
     private static final String path = "/sms/";
+    Event meeting;
 
     @InjectMocks
     AATIncomingSMSController aatIncomingSMSController;
@@ -39,30 +34,23 @@ public class AATIncomingSMSControllerTest extends RestAbstractUnitTest {
     public void receiveSMSShouldWorkWithValidInput() throws Exception{
 
         sessionTestUser.setId(1L);
-        Event meeting = new Meeting("test meeeting", Timestamp.valueOf(LocalDateTime.now()), sessionTestUser, new Group("somegroup", sessionTestUser), "JoziHub");
+        meeting = meetingEvent;
+        meeting.setId(2L);
         meeting.setRsvpRequired(true);
         List<Event> meetings = Collections.singletonList(meeting);
-        EventLog log = new EventLog();
+
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
-        when(userManagementServiceMock.needsToRSVP(sessionTestUser)).thenReturn(true);
+        when(eventManagementServiceMock.notifyUnableToProcessEventReply(sessionTestUser)).thenReturn(1);
         when(userManagementServiceMock.needsToVote(sessionTestUser)).thenReturn(false);
+        when(userManagementServiceMock.needsToRSVP(sessionTestUser)).thenReturn(true);
+        when(eventManagementServiceMock.getNextOutstandingVote(sessionTestUser)).thenReturn(sessionTestUser.getId());
         when(eventManagementServiceMock.getOutstandingRSVPForUser(sessionTestUser)).thenReturn(meetings);
-        // todo: new design?
-/*
-        when(eventLogManagementServiceMock.rsvpForEvent(meeting.getId(),sessionTestUser.getId(),
-                EventRSVPResponse.fromString("yes"))).thenReturn(log);
-*/
-        mockMvc.perform(get(path+"incoming").param("fn",testUserPhone).param("ms", "yes"))
+        mockMvc.perform(get(path+"incoming").param("fn", testUserPhone).param("ms", "yes"))
                 .andExpect(status().isOk());
-        verify(userManagementServiceMock,times(1)).loadOrSaveUser(testUserPhone);
-        verify(userManagementServiceMock,times(1)).needsToRSVP(sessionTestUser);
-        verify(userManagementServiceMock,times(1)).needsToVote(sessionTestUser);
-        verify(eventManagementServiceMock,times(1)).getOutstandingRSVPForUser(sessionTestUser);
-        verify(eventLogManagementServiceMock,times(1)).rsvpForEvent(meeting.getId(),sessionTestUser.getId(),
-                EventRSVPResponse.fromString("yes"));
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verifyNoMoreInteractions(eventManagementServiceMock);
-        verifyNoMoreInteractions(eventLogManagementServiceMock);
+        verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
+        verify(userManagementServiceMock).needsToVote(sessionTestUser);
+        verify(userManagementServiceMock).needsToRSVP(sessionTestUser);
+        verify(eventManagementServiceMock).getOutstandingRSVPForUser(sessionTestUser);
 
     }
 
