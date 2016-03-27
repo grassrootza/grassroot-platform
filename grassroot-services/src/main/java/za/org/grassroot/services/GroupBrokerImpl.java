@@ -10,6 +10,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
@@ -583,7 +584,7 @@ public class GroupBrokerImpl implements GroupBroker {
     public List<Group> findPublicGroups(String searchTerm) {
         String modifiedSearchTerm = searchTerm.trim();
         // Group foundByToken = groupRepository.findByGroupTokenCodeAndTokenExpiryDateTimeAfter(searchTerm, Timestamp.valueOf(LocalDateTime.now()));
-        return groupRepository.findByGroupNameContainingIgnoreCaseAndDiscoverable(searchTerm, true);
+        return groupRepository.findByGroupNameContainingIgnoreCaseAndDiscoverable(modifiedSearchTerm, true);
     }
 
     @Override
@@ -592,6 +593,105 @@ public class GroupBrokerImpl implements GroupBroker {
         if (groupToReturn == null) return null;
         if (groupToReturn.getTokenExpiryDateTime().before(Timestamp.valueOf(LocalDateTime.now()))) return null;
         return groupToReturn;
+    }
+
+    @Override
+    public Set<Group> subGroups(String groupUid) {
+        Group group = groupRepository.findOneByUid(groupUid);
+        return new HashSet<>(groupRepository.findByParent(group));
+    }
+
+    @Override
+    public List<Group> parentChain(String groupUid) {
+        Group group = groupRepository.findOneByUid(groupUid);
+        List<Group> parentGroups = new ArrayList<Group>();
+        recursiveParentGroups(group, parentGroups);
+        return parentGroups;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<GroupTreeDTO> groupTree(String userUid) {
+        User user = userRepository.findOneByUid(userUid);
+        List<Object[]> listObjArray = groupRepository.getGroupMemberTree(user.getId());
+        List<GroupTreeDTO> list = new ArrayList<>();
+        for (Object[] objArray : listObjArray) {
+            list.add(new GroupTreeDTO(objArray));
+        }
+        return list;
+    }
+
+    // todo: make sure this isn't too expensive ... the checking function might be
+    @Override
+    @Transactional(readOnly = true)
+    public Set<Group> possibleParents(String userUid, String groupUid) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Group groupToMakeChild = groupRepository.findOneByUid(groupUid);
+
+        Set<Group> groupsWithPermission = permissionBroker.getActiveGroups(user,Permission.GROUP_PERMISSION_CREATE_SUBGROUP);
+        groupsWithPermission.remove(groupToMakeChild);
+
+        return groupsWithPermission.stream().filter(g -> !isGroupAlsoParent(groupToMakeChild, g)).collect(Collectors.toSet());
+    }
+
+    @Override
+    @Transactional
+    public void link(String userUid, String childGroupUid, String parentGroupUid) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(childGroupUid);
+        Objects.requireNonNull(parentGroupUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Group child = groupRepository.findOneByUid(childGroupUid);
+        Group parent = groupRepository.findOneByUid(parentGroupUid);
+
+        permissionBroker.validateGroupPermission(user, parent, Permission.GROUP_PERMISSION_CREATE_SUBGROUP);
+        permissionBroker.validateGroupPermission(user, child, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+
+        child.setParent(parent);
+
+        Set<GroupLog> logs = new HashSet<>();
+        logs.add(new GroupLog(parent.getId(), user.getId(), GroupLogType.SUBGROUP_ADDED, child.getId(),
+                              "Subgroup added"));
+        logs.add(new GroupLog(child.getId(), user.getId(), GroupLogType.PARENT_CHANGED, parent.getId(),
+                              "Parent group added or changed"));
+        logGroupEventsAfterCommit(logs);
+    }
+
+    @Override
+    public Set<Group> mergeCandidates(String userUid, String groupUid) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+
+        // todo: may want to check for both update and add members ...
+        Set<Group> otherGroups = permissionBroker.getActiveGroups(user, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        otherGroups.remove(group);
+        return otherGroups;
+    }
+
+    // if this returns true, then the group being passed as child is already in the parent chain of the desired
+    // parent, which will create an infinite loop, hence prevent it
+    private boolean isGroupAlsoParent(Group possibleChildGroup, Group possibleParentGroup) {
+        for (Group g : parentChain(possibleParentGroup.getUid())) {
+            if (g.getId() == possibleChildGroup.getId()) return true;
+        }
+        return false;
+    }
+
+    // todo: watch & verify this method
+    private void recursiveParentGroups(Group childGroup, List<Group> parentGroups) {
+        parentGroups.add(childGroup);
+        if (childGroup.getParent() != null && childGroup.getParent().getId() != 0) {
+            recursiveParentGroups(childGroup.getParent(),parentGroups);
+        }
     }
 
 }

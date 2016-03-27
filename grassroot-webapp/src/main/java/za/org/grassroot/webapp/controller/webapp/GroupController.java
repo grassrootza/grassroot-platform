@@ -194,7 +194,7 @@ public class GroupController extends BaseController {
         model.addAttribute("hasParent", (group.getParent() != null));
         model.addAttribute("groupMeetings", eventManagementService.getUpcomingMeetings(group));
         model.addAttribute("groupVotes", eventManagementService.getUpcomingVotes(group));
-        model.addAttribute("subGroups", groupManagementService.getSubGroups(group));
+        model.addAttribute("subGroups", groupBroker.subGroups(groupUid));
         model.addAttribute("openToken", group.hasValidGroupTokenCode());
 
         if (userPermissions.contains(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
@@ -575,22 +575,7 @@ public class GroupController extends BaseController {
         log.info("Looking for possible parents of group with ID: " + groupUid);
 
         Group groupToMakeChild = groupBroker.load(groupUid);
-
-        Set<Group> userGroups = permissionBroker.getActiveGroups(getUserProfile(), null);
-        userGroups.remove(groupToMakeChild);
-        List<Group> possibleParents = new ArrayList<>(userGroups);
-
-        for (Group possibleParent : userGroups) {
-            log.info("Checking if this group can be a parent ..." + possibleParent.getGroupName());
-            if (groupManagementService.isGroupAlsoParent(groupToMakeChild, possibleParent)) {
-                log.info("Whoops, this group: " + groupToMakeChild.getGroupName() + " is in the parent tree of the group: " +
-                        possibleParent.getGroupName());
-                possibleParents.remove(possibleParent);
-            } else {
-                log.info("Safe ... this group: " + groupToMakeChild.getGroupName() + " is not in the parent tree of the group: " +
-                        possibleParent.getGroupName());
-            }
-        }
+        Set<Group> possibleParents = groupBroker.possibleParents(getUserProfile().getUid(), groupUid);
 
         if (!possibleParents.isEmpty()) {
             log.info("The group (with ID " + groupUid + ") has some possible parents, in fact this many: " + possibleParents.size());
@@ -616,7 +601,7 @@ public class GroupController extends BaseController {
         Group group = groupBroker.load(groupUid);
         Group parent = groupBroker.load(parentUid);
 
-        group = groupManagementService.linkSubGroup(group, parent);
+        groupBroker.link(getUserProfile().getUid(), group.getUid(), parent.getUid());
 
         // addMessage(model, MessageType.SUCCESS, "group.parent.success", request);
         addMessage(redirectAttributes, MessageType.SUCCESS, "group.parent.success", request);
@@ -637,7 +622,7 @@ public class GroupController extends BaseController {
         User user = getUserProfile();
 
         Group group = groupBroker.load(groupUid);
-        List<Group> candidateGroups = groupManagementService.getMergeCandidates(user, group.getId());
+        Set<Group> candidateGroups = groupBroker.mergeCandidates(user.getUid(), groupUid);
         if (candidateGroups == null || candidateGroups.size() == 0) {
             addMessage(redirectAttributes, MessageType.ERROR, "group.merge.no-candidates", request);
             redirectAttributes.addAttribute("groupUid", groupUid);

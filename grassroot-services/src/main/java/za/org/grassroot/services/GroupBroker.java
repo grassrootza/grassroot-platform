@@ -3,6 +3,7 @@ package za.org.grassroot.services;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
 import java.time.LocalDateTime;
@@ -14,6 +15,8 @@ public interface GroupBroker {
 
     Group load(String groupUid);
 
+    /** METHODS FOR CREATING AND EDITING GROUPS **/
+
     Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos,
                  GroupPermissionTemplate groupPermissionTemplate, String description);
 
@@ -24,6 +27,12 @@ public interface GroupBroker {
     void updateName(String userUid, String groupUid, String name);
 
     void updateDescription(String userUid, String groupUid, String description);
+
+    void updateGroupDefaultReminderSetting(String userUid, String groupUid, int reminderMinutes);
+
+    void updateGroupDefaultLanguage(String userUid, String groupUid, String newLocale, boolean includeSubGroups);
+
+    /** METHODS FOR DEALING WITH MEMBERS AND PERMISSIONS **/
 
     void addMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos);
 
@@ -37,14 +46,9 @@ public interface GroupBroker {
 
     void updateMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos);
 
-    Group merge(String userUid, String firstGroupUid, String secondGroupUid,
-                boolean leaveActive, boolean orderSpecified, boolean createNew, String newGroupName);
-
     void updateGroupPermissions(String userUid, String groupUid, Map<String, Set<Permission>> newPermissions);
 
-    void updateGroupDefaultReminderSetting(String userUid, String groupUid, int reminderMinutes);
-
-    void updateGroupDefaultLanguage(String userUid, String groupUid, String newLocale, boolean includeSubGroups);
+    /** METHODS FOR DEALING WITH JOIN TOKENS, PUBLIC SETTINGS, AND SEARCHING **/
 
     String openJoinToken(String userUid, String groupUid, boolean temporary, LocalDateTime expiryDateTime);
 
@@ -55,5 +59,22 @@ public interface GroupBroker {
     List<Group> findPublicGroups(String searchTerm);
 
     Group findGroupFromJoinCode(String joinCode);
+
+    /** METHODS FOR DEALING WITH SUBGROUPS, LINKING GROUPS, AND MERGING **/
+
+    Set<Group> subGroups(String groupUid);
+
+    List<Group> parentChain(String groupUid);
+
+    List<GroupTreeDTO> groupTree(String userUid);
+
+    Set<Group> possibleParents(String userUid, String groupUid);
+
+    void link(String userUid, String childGroupUid, String parentGroupUid);
+
+    Set<Group> mergeCandidates(String userUid, String groupUid);
+
+    Group merge(String userUid, String firstGroupUid, String secondGroupUid,
+                boolean leaveActive, boolean orderSpecified, boolean createNew, String newGroupName);
 
 }

@@ -19,6 +19,7 @@ import za.org.grassroot.integration.services.MessageSendingService;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.util.CacheUtilService;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -164,7 +165,7 @@ public class EventNotificationConsumer {
         Group group = logBook.resolveGroup();
 
         if (logBook.isAllGroupMembersAssigned()) {
-            for (User user : groupManagementService.getUsersInGroupNotSubGroups(group.getId())) {
+            for (User user : group.getMembers()) {
                 sendLogBookReminderMessage(user, group, logBook);
             }
 
@@ -301,7 +302,7 @@ public class EventNotificationConsumer {
         if (event.isIncludeSubGroups()) {
             return groupManagementService.getAllUsersInGroupAndSubGroups(event.getAppliesToGroup());
         } else {
-            return groupManagementService.getUsersInGroupNotSubGroups(event.getAppliesToGroup().getId());
+            return new ArrayList<>(event.getAppliesToGroup().getMembers());
         }
     }
 

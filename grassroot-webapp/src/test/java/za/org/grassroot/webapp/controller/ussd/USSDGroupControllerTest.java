@@ -312,10 +312,10 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     public void consolidateMenuShoudlWorkIfNoCandidates() throws Exception {
         resetTestGroup();
         String urlToSave = saveGroupMenu("merge", testGroup.getUid());
-        List<Group> emptyList = new ArrayList<>();
+        Set<Group> emptyList = new HashSet<>();
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        when(groupManagementServiceMock.getMergeCandidates(testUser, testGroup.getId())).thenReturn(emptyList);
+        when(groupBrokerMock.mergeCandidates(testUser.getUid(), testGroup.getUid())).thenReturn(emptyList);
 
         mockMvc.perform(get(path + "merge").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
                 andExpect(status().isOk());
@@ -324,7 +324,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupManagementServiceMock, times(2)).getMergeCandidates(testUser, testGroup.getId());
+        verify(groupBrokerMock, times(2)).mergeCandidates(testUser.getUid(), testGroup.getUid());
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
@@ -335,9 +335,9 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         String urlToSave = saveGroupMenu("merge", testGroup.getUid());
         Group unnamedTestGroup = new Group("", testUser);
         unnamedTestGroup.setCreatedDateTime(Timestamp.valueOf(LocalDateTime.now()));
-        List<Group> testList = Arrays.asList(unnamedTestGroup, new Group("tg1", testUser), new Group("tg2", testUser));
+        Set<Group> testList = new HashSet<>(Arrays.asList(unnamedTestGroup, new Group("tg1", testUser), new Group("tg2", testUser)));
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        when(groupManagementServiceMock.getMergeCandidates(testUser, testGroup.getId())).thenReturn(testList);
+        when(groupBrokerMock.mergeCandidates(testUser.getUid(), testGroup.getUid())).thenReturn(testList);
 
         mockMvc.perform(get(path + "merge").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
                 andExpect(status().isOk());
@@ -346,7 +346,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupManagementServiceMock, times(2)).getMergeCandidates(testUser, testGroup.getId());
+        verify(groupBrokerMock, times(2)).mergeCandidates(testUser.getUid(), testGroup.getUid());
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(groupManagementServiceMock);
     }

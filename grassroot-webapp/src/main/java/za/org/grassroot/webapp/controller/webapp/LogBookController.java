@@ -99,7 +99,7 @@ public class LogBookController extends BaseController {
         if (subGroups) {
             // todo: use the tree methods to make this more coherent
             // todo: restrict this to paid groups, and add in message numbers / cost estimates
-            model.addAttribute("numberSubGroups", groupManagementService.getSubGroups(group).size());
+            model.addAttribute("numberSubGroups", groupBroker.subGroups(group.getUid()).size());
             model.addAttribute("numberMembers", groupManagementService.getGroupSize(group.getId(), true));
         } else {
             logBookEntry.setMemberPicker(new MemberPicker(group, false));
@@ -218,7 +218,7 @@ public class LogBookController extends BaseController {
 */
         model.addAttribute("entry", logBookEntry);
         Group group = (Group) logBookEntry.getParent();
-        model.addAttribute("groupMembers", groupManagementService.getUsersInGroupNotSubGroups(group.getId()));
+        model.addAttribute("groupMembers", group.getMembers());
 
         return "log/complete";
     }

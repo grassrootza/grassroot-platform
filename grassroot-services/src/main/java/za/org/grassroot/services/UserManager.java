@@ -1,12 +1,10 @@
 package za.org.grassroot.services;
 
-import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -57,8 +55,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     private UserRepository userRepository;
     @Autowired
     private GroupRepository groupRepository;
-    @Autowired
-    private GroupBroker groupBroker;
     @Autowired
     private PasswordTokenService passwordTokenService;
     @Autowired
@@ -256,11 +252,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     /**
      * Methods to keep track also of where a user is in the ussd menu flow, so can return them to that spot if time out
      */
-    public User loadOrSaveUser(String inputNumber, String currentUssdMenu) {
-        User sessionUser = loadOrSaveUser(inputNumber);
-        saveUssdMenu(sessionUser, currentUssdMenu);
-        return sessionUser;
-    }
 
     private void saveUssdMenu(User user, String menuToSave) {
         log.info("USSD menu passed to services: " + menuToSave);
@@ -274,13 +265,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     Method to load or save a user and store that they have initiated the session. Putting it in services and making it
     distinct from standard loadOrSaveUser because we may want to optimize it aggressively in future.
      */
-
-    @Override
-    public User loadOrSaveUser(String inputNumber, boolean isInitiatingSession) {
-        User sessionUser = loadOrSaveUser(inputNumber);
-        sessionUser.setHasInitiatedSession(isInitiatingSession);
-        return userRepository.save(sessionUser);
-    }
 
     @Override
     public User findByInputNumber(String inputNumber) throws NoSuchUserException {
@@ -301,7 +285,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public List<User> searchByGroupAndNameNumber(String groupUid, String nameOrNumber) {
         return userRepository.findByGroupsPartOfAndDisplayNameContainingIgnoreCaseOrPhoneNumberLike(
-                groupBroker.load(groupUid), "%" + nameOrNumber + "%", "%" + nameOrNumber + "%");
+                groupRepository.findOneByUid(groupUid), "%" + nameOrNumber + "%", "%" + nameOrNumber + "%");
     }
 
     @Override

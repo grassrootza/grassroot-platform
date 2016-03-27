@@ -1,14 +1,9 @@
 package za.org.grassroot.services;
 
 import org.springframework.data.domain.Page;
-import org.springframework.security.access.prepost.PostFilter;
-import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.dto.GroupTreeDTO;
-import za.org.grassroot.core.enums.GroupLogType;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -20,42 +15,13 @@ import java.util.List;
  */
 public interface GroupManagementService {
 
-    /*
-    Methods do deal with sub groups and parent groups
-     */
+    List<User> getAllUsersInGroupAndSubGroups(Group group);
 
-    public List<Group> getSubGroups(Group group);
+    Integer getGroupSize(Long groupId, boolean includeSubGroups);
 
-    public List<User> getUsersInGroupNotSubGroups(Long groupId);
+    LocalDateTime getLastTimeGroupActive(Group group);
 
-    public List<User> getAllUsersInGroupAndSubGroups(Group group);
-
-    public Group linkSubGroup(Group child, Group parent);
-
-    List<Group> getAllParentGroups(Group group);
-
-    /*
-    Pass in the group you want to make a child as the 'possibleChildGroup', and the desired parent
-    as the 'possibleParentGroup', and this will return true if the possible child is already in the parent chain
-     of the possible parent, i.e., if it will create an infinite loop
-     */
-    boolean isGroupAlsoParent(Group possibleChildGroup, Group possibleParentGroup);
-
-    /*
-    Methods to set and retrieve some basic group properties
-     */
-
-    public Integer getGroupSize(Long groupId, boolean includeSubGroups);
-
-    public LocalDateTime getLastTimeGroupActive(Group group);
-
-    public LocalDateTime getLastTimeGroupModified(Group group);
-
-    /*
-    Methods to consolidate groups, and to manage active / inactive
-     */
-
-    public List<Group> getMergeCandidates(User mergingUser, Long firstGroupSelected);
+    LocalDateTime getLastTimeGroupModified(Group group);
 
     /*
     Methods for system and account admin
@@ -70,8 +36,6 @@ public interface GroupManagementService {
     List<GroupTreeDTO> getGroupsMemberOfTree(Long userId);
 
     List<LocalDate> getMonthsGroupActive(Group group);
-
-    //warning: to be used for integration test purposes only
 
     /*
     Recursive query better to use than recursive code calls

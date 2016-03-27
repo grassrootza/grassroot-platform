@@ -54,6 +54,9 @@ public class EventManager implements EventManagementService {
     GroupManagementService groupManager;
 
     @Autowired
+    GroupBroker groupBroker;
+
+    @Autowired
     UserManagementService userManagementService;
 
     @Autowired
@@ -240,7 +243,7 @@ public class EventManager implements EventManagementService {
         }
 
         // climb the tree and check events at each level if subgroups are included
-        List<Group> parentGroups = groupManager.getAllParentGroups(group);
+        List<Group> parentGroups = groupBroker.parentChain(group.getUid());
 
         if (parentGroups != null) {
             for (Group parentGroup : parentGroups) {

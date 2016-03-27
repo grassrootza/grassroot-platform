@@ -6,21 +6,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.dto.GroupDTO;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.GroupLog;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.GroupTreeDTO;
-import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.repository.GroupLogRepository;
 import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.repository.PaidGroupRepository;
-import za.org.grassroot.services.util.TokenGeneratorService;
 
 import javax.transaction.Transactional;
-import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -35,19 +34,8 @@ public class GroupManager implements GroupManagementService {
 
     private final static Logger log = LoggerFactory.getLogger(GroupManager.class);
 
-    /*
-    N.B.
-    When we refactor to pass the user doing actions around so that it can be recorded then replace the
-    dontKnowTheUser whereever it is used with the actual user
-     */
-
-    private final Long dontKnowTheUser = 0L;
-
     @Autowired
     private GroupRepository groupRepository;
-
-    @Autowired
-    private UserManagementService userManager;
 
     @Autowired
     private GroupLogRepository groupLogRepository;
@@ -57,52 +45,12 @@ public class GroupManager implements GroupManagementService {
      */
 
     @Override
-    public List<Group> getSubGroups(Group group) {
-        return groupRepository.findByParent(group);
-    }
-
-    @Override
-    public List<User> getUsersInGroupNotSubGroups(Long groupId) {
-        return userManager.getGroupMembersSortedById(groupRepository.findOne(groupId));
-    }
-
-    @Override
     public List<User> getAllUsersInGroupAndSubGroups(Group group) {
         List<User> userList = new ArrayList<User>();
         recursiveUserAdd(group, userList);
         return userList;
     }
 
-    @Override
-    public List<Group> getAllParentGroups(Group group) {
-        List<Group> parentGroups = new ArrayList<Group>();
-        recursiveParentGroups(group, parentGroups);
-        return parentGroups;
-    }
-
-    @Override
-    public Group linkSubGroup(Group child, Group parent) {
-        // todo: error checking, for one more barrier against infintite loops
-        child.setParent(parent);
-        Group savedChild = groupRepository.save(child);
-        /*
-        Bit of reversed logic therefore not putting it in saveGroup
-         */
-        String description = String.format("Linked group: %s to %s",child.getGroupName().trim().equals("") ? child.getId() : child.getGroupName(),
-                parent.getGroupName().trim().equals("") ? parent.getId() : parent.getGroupName());
-        groupLogRepository.save(new GroupLog(parent.getId(),dontKnowTheUser,GroupLogType.SUBGROUP_ADDED,child.getId(),description));
-        return savedChild;
-    }
-
-    @Override
-    public boolean isGroupAlsoParent(Group possibleChildGroup, Group possibleParentGroup) {
-        for (Group g : getAllParentGroups(possibleParentGroup)) {
-            // if this returns true, then the group being passed as child is already in the parent chain of the desired
-            // parent, which will create an infinite loop, hence prevent it
-            if (g.getId() == possibleChildGroup.getId()) return true;
-        }
-        return false;
-    }
 
     /**
      * Section of methods to add and remove a range of group properties
@@ -141,14 +89,6 @@ public class GroupManager implements GroupManagementService {
         GroupLog latestGroupLog = groupLogRepository.findFirstByGroupIdOrderByCreatedDateTimeDesc(group.getId());
         return (latestGroupLog != null) ? LocalDateTime.ofInstant(latestGroupLog.getCreatedDateTime().toInstant(), ZoneId.systemDefault()) :
                 group.getCreatedDateTime().toLocalDateTime();
-    }
-
-    @Override
-    public List<Group> getMergeCandidates(User mergingUser, Long firstGroupSelected) {
-        // todo: lots of error handling etc, and replace with permission checking
-        List<Group> createdGroups = groupRepository.findByCreatedByUserAndActiveOrderByCreatedDateTimeDesc(mergingUser, true);
-        createdGroups.remove(groupRepository.findOne(firstGroupSelected));
-        return createdGroups;
     }
 
     @Override
@@ -222,16 +162,4 @@ public class GroupManager implements GroupManagementService {
         userList.addAll(groupRepository.findOne(parentGroup.getId()).getMembers());
 
     }
-
-    private void recursiveParentGroups(Group childGroup, List<Group> parentGroups) {
-        if (childGroup.getParent() != null && childGroup.getParent().getId() != 0) {
-            recursiveParentGroups(childGroup.getParent(),parentGroups);
-        }
-        // add the current group as there are no more parents
-        // todo aakil this adds the group even if it had no parents??? is this a problem, rethink
-        parentGroups.add(childGroup);
-    }
-
-
-
 }

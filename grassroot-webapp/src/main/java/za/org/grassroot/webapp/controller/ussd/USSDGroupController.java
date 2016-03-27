@@ -28,6 +28,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
@@ -454,7 +455,7 @@ public class USSDGroupController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber, saveGroupMenu(mergeGroupMenu, groupUid));
         Group group = groupBroker.load(groupUid);
         // todo: debug why this is returning inactive groups (service method has active flag)
-        List<Group> mergeCandidates = groupManager.getMergeCandidates(user, group.getId());
+        Set<Group> mergeCandidates = groupBroker.mergeCandidates(user.getUid(), groupUid);
 
         if (mergeCandidates == null || mergeCandidates.size() == 0) {
             menu = new USSDMenu(getMessage(thisSection, mergeGroupMenu, promptKey + ".error", user));
@@ -464,7 +465,7 @@ public class USSDGroupController extends USSDController {
         } else {
             menu = new USSDMenu(getMessage(thisSection, mergeGroupMenu, promptKey, user));
             menu = ussdGroupUtil.addListOfGroupsToMenu(menu, groupMenus + mergeGroupMenu + "-confirm?firstGroupSelected=" + groupUid,
-                                         mergeCandidates, user);
+                                         new ArrayList<>(mergeCandidates), user);
         }
         return menuBuilder(menu);
     }

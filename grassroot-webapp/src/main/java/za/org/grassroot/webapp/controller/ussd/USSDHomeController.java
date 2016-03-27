@@ -487,7 +487,6 @@ public class USSDHomeController extends USSDController {
     @RequestMapping(value = path + U404)
     @ResponseBody
     public Request notBuilt(@RequestParam(value= phoneNumber) String inputNumber) throws URISyntaxException {
-        // String errorMessage = "Sorry! We haven't built that yet. We're working on it.";
         String errorMessage = messageSource.getMessage("ussd.error", null, new Locale("en"));
         return menuBuilder(new USSDMenu(errorMessage, optionsHomeExit(userManager.findByInputNumber(inputNumber))));
     }

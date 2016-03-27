@@ -41,10 +41,6 @@ public interface UserManagementService {
 
     User loadOrSaveUser(String inputNumber);
 
-    User loadOrSaveUser(String inputNumber, String currentUssdMenu);
-
-    User loadOrSaveUser(String inputNumber, boolean isInitiatingSession);
-
     User findByInputNumber(String inputNumber) throws NoSuchUserException;
 
     User findByInputNumber(String inputNumber, String currentUssdMenu) throws NoSuchUserException;
