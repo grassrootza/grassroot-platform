@@ -418,14 +418,10 @@ public class USSDLogBookController extends USSDController {
     @ResponseBody
     public Request setLogBookEntryDone(@RequestParam(value = phoneNumber) String inputNumber,
                                        @RequestParam(value = logBookParam) String logBookUid,
-                                       @RequestParam(value = assignUserID, required = false) Long completedByUserId,
+                                       @RequestParam(value = assignUserID, required = false) String completedByUserUid,
                                        @RequestParam(value = "completed_date", required = false) String completedDate) throws URISyntaxException {
         // todo: check permissions
         User user = userManager.findByInputNumber(inputNumber, null);
-        String completedByUserUid = null;
-        if (completedByUserId != null) {
-            completedByUserUid = userManager.loadUser(completedByUserId).getUid();
-        }
 
         LogBook logBook = logBookBroker.load(logBookUid);
         LocalDateTime completedDateTime = DateTimeUtil.parsePreformattedDate(reformatDateInput(completedDate), stdHour, stdMinute);

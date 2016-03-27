@@ -45,8 +45,6 @@ public interface LogBookService {
 
     LogBook setDueDate(Long logBookId, LocalDateTime actionByDateTime);
 
-    LogBook setAssignedToUser(Long logBookId, Long assignedToUserId);
-
     LogBook setMessage(Long logBookId, String message);
 
     LogBook save(LogBook logBook);

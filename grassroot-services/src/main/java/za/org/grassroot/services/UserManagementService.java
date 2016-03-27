@@ -20,6 +20,8 @@ public interface UserManagementService {
     Methods to create and load a specific user
      */
 
+    User load(String userUid);
+
     User createUserProfile(User userProfile);
 
     User createUserWebProfile(User userProfile) throws UserExistsException;
@@ -28,34 +30,20 @@ public interface UserManagementService {
 
     String generateAndroidUserVerifier(String phoneNumber, String displayName);
 
-
-    User getUserById(Long userId);
-
-    User loadUserByUid(String userUid);
-
     boolean userExist(String phoneNumber);
-
-    boolean isFirstInitiatedSession(String phoneNumber);
 
     boolean isFirstInitiatedSession(User user);
 
     boolean isPartOfActiveGroups(User user);
 
 
-
     User save(User userToSave);
-
-    void saveList(List<User> usersToSave);
 
     User loadOrSaveUser(String inputNumber);
 
     User loadOrSaveUser(String inputNumber, String currentUssdMenu);
 
-    void saveUssdMenu(User user, String menuToSave);
-
     User loadOrSaveUser(String inputNumber, boolean isInitiatingSession);
-
-    User loadOrSaveUser(User passedUser);
 
     User findByInputNumber(String inputNumber) throws NoSuchUserException;
 
@@ -65,35 +53,19 @@ public interface UserManagementService {
 
     User setInitiatedSession(User sessionUser);
 
-    User loadUser(Long userId);
+    Group fetchGroupUserMustRename(User user);
 
     /*
     Methods to return lists of users
      */
 
-    List<User> getAllUsers();
-
-    Integer getUserCount();
-
-    Page<User> getDeploymentLog(Integer pageNumber);
-
-    List<User> searchByInputNumber(String inputNumber);
-
-    List<User> searchByDisplayName(String displayName);
+    long getUserCount();
 
     List<User> searchByGroupAndNameNumber(String groupUid, String nameOrNumber);
-
-    User reformatPhoneNumber(User sessionUser);
 
     List<User> getUsersFromNumbers(List<String> listOfNumbers);
 
     List<User> getGroupMembersSortedById(Group group);
-
-    List<User> getExistingUsersFromNumbers(List<String> listOfNumbers);
-
-    List<User> getGroupMembersWithoutCreator(Group group);
-
-    List<User> getGroupMembersWithout(Group group, Long excludedUserId);
 
     Page<User> getGroupMembers(Group group, int pageNumber, int pageSize);
 
@@ -118,19 +90,11 @@ public interface UserManagementService {
 
     User resetLastUssdMenu(User sessionUser);
 
-    void putLastUSSDMenu(String phoneNumber, String lastUssdMenu);
-
     User setLastUssdMenu(User sessionUser, String lastUssdMenu);
 
     User setDisplayName(User user, String displayName);
 
-    String getDisplayName(Long userId);
-
     User setUserLanguage(User sessionUser, String locale);
-
-    User setUserLanguage(Long userId, String locale);
-
-    String getUserLocale(User sessionUser);
 
     LinkedHashMap<String, String> getImplementedLanguages();
 
@@ -146,7 +110,6 @@ public interface UserManagementService {
     List<User> loadSubsetUsersMasked(List<Long> ids);
 
     UserDTO loadUser(String phoneNumber);
-
 
     UserDTO loadUserCreateRequest(String phoneNumber);
 

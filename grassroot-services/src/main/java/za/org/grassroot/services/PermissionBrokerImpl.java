@@ -2,6 +2,7 @@ package za.org.grassroot.services;
 
 import edu.emory.mathcs.backport.java.util.Collections;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -157,13 +158,19 @@ public class PermissionBrokerImpl implements PermissionBroker {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public Set<GroupDTO> getActiveGroupDTOs(User user, Permission requiredPermission) {
+    public GroupPage getPageOfGroupDTOs(User user, Permission requiredPermission, int pageNumber, int pageSize) {
+        return new GroupPage(getActiveGroupDTOs(user, requiredPermission), pageNumber, pageSize);
+    }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<GroupDTO> getActiveGroupDTOs(User user, Permission requiredPermission) {
+
+        // we use a list here because the sorting matter
         List<Object[]> listObjArray =  groupRepository.findActiveUserGroupsOrderedByRecentEvent(user.getId());
         final boolean filterByPermission = (requiredPermission != null);
 
-        // todo: the permission checking version of this defeats the purpose, by getting all the groups anyway, so, rethink
+        // todo: the permission checking version of this defeats some of the purpose, by getting all the groups anyway, so, rethink
         List<GroupDTO> list = new ArrayList<>();
         for (Object[] objArray : listObjArray) {
             GroupDTO groupDTO = new GroupDTO(objArray);
@@ -177,7 +184,7 @@ public class PermissionBrokerImpl implements PermissionBroker {
             }
         }
 
-        return new HashSet<>(list);
+        return list;
     }
 
     @Override

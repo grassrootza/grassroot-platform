@@ -188,7 +188,7 @@ public class LogBookController extends BaseController {
             log.info("Found replicated entries ... adding them to model");
             List<LogBook> replicatedEntries = logBookService.getAllReplicatedEntriesFromParentLogBook(logBookEntry);
             log.info("Here are the replicated entries ... " + replicatedEntries);
-            List<Group> relevantSubGroups = groupManagementService.getListGroupsFromLogbooks(replicatedEntries);
+            List<Group> relevantSubGroups = logBookBroker.retrieveGroupsFromLogBooks(replicatedEntries);
             model.addAttribute("hasReplicatedEntries", true);
             model.addAttribute("replicatedEntries", replicatedEntries);
             model.addAttribute("replicatedGroups", relevantSubGroups);
@@ -229,7 +229,7 @@ public class LogBookController extends BaseController {
                                            @RequestParam(value="completedByAssigned", required=false) boolean completedByAssigned,
                                            @RequestParam(value="designateCompletingUser", required=false) boolean designateCompletor,
                                            @RequestParam(value="specifyCompletedDate", required=false) boolean setCompletedDate,
-                                           @RequestParam(value="completingUserId", required=false) Long completedByUserId,
+                                           @RequestParam(value="completingUserUid", required=false) String completedByUserUid,
                                            @RequestParam(value="completedOnDate", required=false) String completedOnDate,
                                            HttpServletRequest request) {
 
@@ -239,7 +239,7 @@ public class LogBookController extends BaseController {
         Timestamp completedDate = (setCompletedDate) ? Timestamp.valueOf(LocalDateTime.parse(completedOnDate, pickerParser)) : null;
 
         LogBook logBook = logBookService.load(logBookId);
-        User completedByUser = userManagementService.loadUser(completedByUserId);
+        User completedByUser = userManagementService.load(completedByUserUid);
 
         if (completedByAssigned || !designateCompletor) {
             log.info("No user assigned, so either setting as complete today or specifying a completion date");

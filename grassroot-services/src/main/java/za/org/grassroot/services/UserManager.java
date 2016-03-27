@@ -70,6 +70,12 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Autowired
     private UserRequestRepository userCreateRequestRepository;
 
+
+    @Override
+    public User load(String userUid) {
+        return userRepository.findOneByUid(userUid);
+    }
+
     @Override
     public User createUserProfile(User userProfile) {
         return userRepository.save(userProfile);
@@ -199,34 +205,12 @@ public class UserManager implements UserManagementService, UserDetailsService {
         return token.getCode();
     }
 
-
     @Override
-    public List<User> getAllUsers() {
-        return Lists.newArrayList(userRepository.findAll());
-    }
-
-    @Override
-    public Integer getUserCount() {
+    public long getUserCount() {
         // todo: switch this to a count query in repository, though, won't be called often, so not urgent
-        return getAllUsers().size();
+        return userRepository.count();
     }
 
-    @Override
-    public User getUserById(Long userId) {
-        return userRepository.findOne(userId);
-    }
-
-    @Override
-    public User loadUserByUid(String userUid) {
-        return userRepository.findOneByUid(userUid);
-    }
-
-    @Override
-    public Page<User> getDeploymentLog(Integer pageNumber) {
-
-        PageRequest request = new PageRequest(pageNumber - 1, PAGE_SIZE, Sort.Direction.DESC);
-        return userRepository.findAll(request);
-    }
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -249,11 +233,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public User save(User userToSave) {
         return userRepository.save(userToSave);
-    }
-
-    @Override
-    public void saveList(List<User> usersToSave) {
-        userRepository.save(usersToSave);
     }
 
     /**
@@ -283,9 +262,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         return sessionUser;
     }
 
-    //@Async
-    @Override
-    public void saveUssdMenu(User user, String menuToSave) {
+    private void saveUssdMenu(User user, String menuToSave) {
         log.info("USSD menu passed to services: " + menuToSave);
         cacheUtilService.putUssdMenuForUser(user.getPhoneNumber(), menuToSave);
         user.setLastUssdMenu(menuToSave); // probably remove this once we have logging & are using cache
@@ -305,33 +282,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
         return userRepository.save(sessionUser);
     }
 
-    /**
-     * Method used in web application, which takes a half-formed user from Thymeleaf (or whatever view technology) and
-     * first checks if a user with that phone number exists, and what information we do/don't have, then updates accordingy
-     */
-    @Override
-    public User loadOrSaveUser(User passedUser) {
-
-        // principal requirement is a non-zero phone number
-        if (passedUser.getPhoneNumber() != null && !passedUser.getPhoneNumber().trim().equals("")) {
-            // if we have a phone number, use it to either load a user or create one
-            User loadedUser = loadOrSaveUser(passedUser.getPhoneNumber());
-
-            // if the user doesn't have a name, but we do have one from the passed user, set the name accordingly
-            if (!loadedUser.hasName() && passedUser.getDisplayName() != null) {
-                loadedUser.setDisplayName(passedUser.getDisplayName());
-                loadedUser = save(loadedUser);
-            }
-
-            // todo: fill out other data
-
-            return userRepository.save(loadedUser);
-
-        }
-
-        return null;
-    }
-
     @Override
     public User findByInputNumber(String inputNumber) throws NoSuchUserException {
         User sessionUser = userRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(inputNumber));
@@ -349,28 +299,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public List<User> searchByInputNumber(String inputNumber) {
-        String phoneNumber = PhoneNumberUtil.convertPhoneNumberFragment(inputNumber);
-        return MaskingUtil.maskUsers(userRepository.findByPhoneNumberContaining(phoneNumber));
-    }
-
-    @Override
-    public List<User> searchByDisplayName(String displayName) {
-        return MaskingUtil.maskUsers(userRepository.findByDisplayNameContaining(displayName));
-    }
-
-    @Override
     public List<User> searchByGroupAndNameNumber(String groupUid, String nameOrNumber) {
         return userRepository.findByGroupsPartOfAndDisplayNameContainingIgnoreCaseOrPhoneNumberLike(
                 groupBroker.load(groupUid), "%" + nameOrNumber + "%", "%" + nameOrNumber + "%");
-    }
-
-
-    @Override
-    public User reformatPhoneNumber(User sessionUser) {
-        String correctedPhoneNumber = PhoneNumberUtil.convertPhoneNumber(sessionUser.getPhoneNumber());
-        sessionUser.setPhoneNumber(correctedPhoneNumber);
-        return userRepository.save(sessionUser);
     }
 
     @Override
@@ -397,20 +328,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public List<User> getExistingUsersFromNumbers(List<String> listOfNumbers) {
-        return userRepository.findExistingUsers(listOfNumbers);
-    }
-
-    public List<User> getGroupMembersWithoutCreator(Group group) {
-        return userRepository.findByGroupsPartOfAndIdNot(group, group.getCreatedByUser().getId());
-    }
-
-    @Override
-    public List<User> getGroupMembersWithout(Group group, Long excludedUserId) {
-        return userRepository.findByGroupsPartOfAndIdNot(group, excludedUserId);
-    }
-
-    @Override
     public Page<User> getGroupMembers(Group group, int pageNumber, int pageSize) {
         return userRepository.findByGroupsPartOf(group, new PageRequest(pageNumber,pageSize));
     }
@@ -418,11 +335,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public boolean userExist(String phoneNumber) {
         return userRepository.existsByPhoneNumber(phoneNumber);
-    }
-
-    @Override
-    public boolean isFirstInitiatedSession(String phoneNumber) {
-        return loadOrSaveUser(phoneNumber).isHasInitiatedSession();
     }
 
     @Override
@@ -520,8 +432,12 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public User loadUser(Long userId) {
-        return userRepository.findOne(userId);
+    public Group fetchGroupUserMustRename(User user) {
+        Group lastCreatedGroup = groupRepository.findFirstByCreatedByUserOrderByIdDesc(user);
+        if (lastCreatedGroup != null && lastCreatedGroup.isActive() && !lastCreatedGroup.hasName())
+            return lastCreatedGroup;
+        else
+            return null;
     }
 
     @Override
@@ -543,19 +459,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public void putLastUSSDMenu(String phoneNumber, String lastUssdMenu) {
-        cacheUtilService.putUssdMenuForUser(phoneNumber, lastUssdMenu);
-    }
-
-    @Override
     public User setDisplayName(User user, String displayName) {
         user.setDisplayName(displayName);
         return userRepository.save(user);
-    }
-
-    @Override
-    public String getDisplayName(Long userId) {
-        return loadUser(userId).nameToDisplay();
     }
 
     @Override
@@ -563,21 +469,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
         sessionUser.setLanguageCode(locale);
         cacheUtilService.putUserLanguage(sessionUser.getPhoneNumber(), locale);
         return userRepository.save(sessionUser);
-    }
-
-    @Override
-    public User setUserLanguage(Long userId, String locale) {
-        return setUserLanguage(getUserById(userId), locale);
-    }
-
-    @Override
-    public String getUserLocale(User sessionUser) {
-
-        if (sessionUser.getLanguageCode() == null || sessionUser.getLanguageCode().trim().equals(""))
-            return "en";
-        else
-            return sessionUser.getLanguageCode();
-
     }
 
     @Override

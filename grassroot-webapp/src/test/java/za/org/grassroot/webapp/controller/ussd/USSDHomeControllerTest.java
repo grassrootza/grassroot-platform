@@ -5,9 +5,6 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.Event;
@@ -15,8 +12,8 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Meeting;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.services.GroupPage;
 
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -260,7 +257,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.loadOrSaveUser(phoneForTests)).thenReturn(testUser);
         when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
-        when(groupManagementServiceMock.groupToRename(testUser)).thenReturn(testGroup);
+        when(userManagementServiceMock.fetchGroupUserMustRename(testUser)).thenReturn(testGroup);
 
         // todo: work out how to verify that it actually returned the prompt to rename the group
         mockMvc.perform(get(openingMenu).param(phoneParameter, testUser.getPhoneNumber())).
@@ -272,7 +269,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(1)).loadOrSaveUser(phoneForTests);
         verify(userManagementServiceMock, times(1)).findByInputNumber(phoneForTests);
         verify(groupBrokerMock, times(1)).updateName(testUser.getUid(), testGroup.getUid(), testGroupName);
-        verify(groupManagementServiceMock, times(3)).groupToRename(testUser);
+        verify(userManagementServiceMock, times(3)).fetchGroupUserMustRename(testUser);
     }
 
     /*
@@ -318,17 +315,17 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
                                                new Group("gc3", testUser),
                                                new Group("gc4", testUser));
 
-        Page<Group> groupPage = new PageImpl<Group>(testGroups, new PageRequest(1, 3), 4); // need to work out how to do
+        GroupPage groupPage = GroupPage.createFromGroups(testGroups, 1, 3);
 
         when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
-        when(groupManagementServiceMock.getPageOfActiveGroups(testUser, 1, 3)).thenReturn(groupPage);
+        when(permissionBroker.getPageOfGroupDTOs(testUser, null, 1, 3)).thenReturn(groupPage);
 
         mockMvc.perform(get("/ussd/group_page").param(phoneParameter, phoneForTests).param("prompt", "Look at pages").
                 param("page", "1").param("existingUri", "/ussd/blank").param("newUri", "/ussd/blank2")).
                 andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(phoneForTests);
-        verify(groupManagementServiceMock, times(1)).getPageOfActiveGroups(testUser, 1, 3);
+        verify(permissionBroker, times(1)).getPageOfGroupDTOs(testUser, null, 1, 3);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(groupManagementServiceMock);
     }

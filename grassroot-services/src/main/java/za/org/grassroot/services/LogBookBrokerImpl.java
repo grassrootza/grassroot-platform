@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class LogBookBrokerImpl implements LogBookBroker {
@@ -147,5 +148,13 @@ public class LogBookBrokerImpl implements LogBookBroker {
 		permissionBroker.validateGroupPermission(user, group, null); // make sure user is part of group
 
 		return logBookRepository.findByGroupUidAndCompletedOrderByActionByDateDesc(groupUid, entriesComplete, new PageRequest(pageNumber, pageSize));
+	}
+
+	@Override
+	public List<Group> retrieveGroupsFromLogBooks(List<LogBook> logBooks) {
+		return logBooks.stream()
+				.filter(logBook -> logBook.getParent().getJpaEntityType().equals(JpaEntityType.GROUP))
+				.map(logBook -> (Group) logBook.getParent())
+				.collect(Collectors.toList());
 	}
 }

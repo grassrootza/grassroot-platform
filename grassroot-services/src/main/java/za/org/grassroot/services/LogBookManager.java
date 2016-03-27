@@ -129,14 +129,6 @@ public class LogBookManager implements LogBookService {
     }
 
     @Override
-    public LogBook setAssignedToUser(Long logBookId, Long assignedToUserId) {
-        LogBook logBook = load(logBookId);
-        User user = userManagementService.loadUser(assignedToUserId);
-        // todo: implement this using new LogBookBroker or whatever ...
-        throw new UnsupportedOperationException("implement this using new LogBookBroker or whatever");
-    }
-
-    @Override
     public LogBook setMessage(Long logBookId, String message) {
         LogBook logBook = load(logBookId);
         logBook.setMessage(message);

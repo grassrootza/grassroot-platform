@@ -141,7 +141,7 @@ public class AdminController extends BaseController {
             pageToDisplay = "admin/users/home";
         } else if (foundUsers.size() == 1) {
             // display just that user, todo: rethink this once refactored all to Uids
-            User user = userManagementService.getUserById(foundUsers.get(0).getId());
+            User user = userManagementService.load(foundUsers.get(0).getUid());
             model.addAttribute("user", foundUsers.get(0));
             model.addAttribute("numberGroups", permissionBroker.getActiveGroupDTOs(user, null).size());
             pageToDisplay = "admin/users/view";
@@ -199,7 +199,7 @@ public class AdminController extends BaseController {
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/admin/groups/list")
-    public String listGroups(Model model,@RequestParam(value="createdByUser", required=false) Long createdByUserId,
+    public String listGroups(Model model,@RequestParam(value="createdByUser", required=false) String createdByUserUid,
                              @RequestParam(value="groupMemberSize", required=false) Integer groupSize,
                              @RequestParam(value="createdAfter", required=false) String createdAfter,
                              @RequestParam(value="createdBefore", required=false) String createdBefore) {
@@ -211,10 +211,10 @@ public class AdminController extends BaseController {
         log.info("createdBeforeDate: " + createdBeforeDate);
 
         User createdByUser;
-        if (createdByUserId == null || createdByUserId == 0)
+        if (createdByUserUid == null || createdByUserUid.trim().equals(""))
             createdByUser = null;
         else
-            createdByUser = userManagementService.loadUser(createdByUserId);
+            createdByUser = userManagementService.load(createdByUserUid);
 
         List<Group> groupList = groupManagementService.getGroupsFiltered(createdByUser, groupSize, createdAfterDate, createdBeforeDate);
 
@@ -253,10 +253,10 @@ public class AdminController extends BaseController {
      */
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping(value = "/admin/groups/roles/change")
-    public String changeGroupRole(Model model, @RequestParam String groupUid, @RequestParam("userId") Long userId,
+    public String changeGroupRole(Model model, @RequestParam String groupUid, @RequestParam("userUid") String userUid,
                                   @RequestParam("roleName") String roleName, HttpServletRequest request) {
 
-        User userToModify = userManagementService.loadUser(userId);
+        User userToModify = userManagementService.load(userUid);
         log.info("Found this user ... " + userToModify);
         Group group = groupBroker.load(groupUid);
 
@@ -375,14 +375,14 @@ public class AdminController extends BaseController {
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping(value = "/admin/accounts/designate_confirmed", method = RequestMethod.POST)
-    public String designateUserDo(Model model, @RequestParam("userId") Long userId, @RequestParam("accountId") Long accountId) {
+    public String designateUserDo(Model model, @RequestParam String userUid, @RequestParam("accountId") Long accountId) {
 
         // todo: add error handling, etc
 
         String roleName = "ROLE_ACCOUNT_ADMIN";
         log.info("Okay, adding the role " + roleName + " to a user ...");
 
-        User userToDesignate = userManagementService.loadUser(userId);
+        User userToDesignate = userManagementService.load(userUid);
         Account account = accountManagementService.loadAccount(accountId);
 
         log.info("Inside designating method, going to add role on this account: " + account.getAccountName() + ", " +

@@ -1,5 +1,6 @@
 package za.org.grassroot.services;
 
+import org.springframework.data.domain.Sort;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
@@ -8,6 +9,7 @@ import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
 import org.springframework.security.access.AccessDeniedException;
 
+import java.util.List;
 import java.util.Set;
 
 public interface PermissionBroker {
@@ -51,9 +53,20 @@ public interface PermissionBroker {
      * which contains less internal information than the Group entity, but includes last event and modification timestamps.
      * @param user The user for whom the set of groups is required
      * @param requiredPermission The permission being checked. Passing null returns all active groups.
-     * @return The set of GroupDTO entities for the user.
+     * @return The list of GroupDTO entities for the user, sorted by recent activity.
      */
-    Set<GroupDTO> getActiveGroupDTOs(User user, Permission requiredPermission);
+    List<GroupDTO> getActiveGroupDTOs(User user, Permission requiredPermission);
+
+    /**
+     * Return a list of groups for which the user has a requisite permission, which have not been deactivated, and which
+     * are filtered by a given permission. In future, replace with Spring/JPA page instead of home-cooked version
+     * @param user The user for whom the page of groups is required
+     * @param requiredPermission The permission by which to filter
+     * @param pageNumber The page number
+     * @param pageSize The page size
+     * @return A page of group DTOs with back & forward information
+     */
+    GroupPage getPageOfGroupDTOs(User user, Permission requiredPermission, int pageNumber, int pageSize);
 
     Set<Permission> getPermissions(Group group, String roleName);
 

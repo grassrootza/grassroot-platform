@@ -21,32 +21,12 @@ import java.util.List;
 public interface GroupManagementService {
 
     /*
-    Methods to create, save and name groups
-     */
-
-    Group groupToRename(User sessionUser);
-
-    /*
-    Methods to load and find groups
-    */
-
-    public List<Group> getCreatedGroups(User creatingUser);
-
-    public boolean hasActiveGroupsPartOf(User user); // replace in time wth getGroupsByPermission
-
-    public Page<Group> getPageOfActiveGroups(User sessionUser, int pageNumber, int pageSize);
-
-    public List<Group> getListGroupsFromLogbooks(List<LogBook> logBooks);
-
-    /*
     Methods do deal with sub groups and parent groups
      */
 
     public List<Group> getSubGroups(Group group);
 
     public List<User> getUsersInGroupNotSubGroups(Long groupId);
-
-    public List<User> getAllUsersInGroupAndSubGroups(Long groupId);
 
     public List<User> getAllUsersInGroupAndSubGroups(Group group);
 

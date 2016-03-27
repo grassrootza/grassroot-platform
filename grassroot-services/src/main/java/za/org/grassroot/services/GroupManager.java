@@ -52,49 +52,6 @@ public class GroupManager implements GroupManagementService {
     @Autowired
     private GroupLogRepository groupLogRepository;
 
-    /*
-    SECTION: Loading groups, finding properties, etc
-     */
-
-    @Override
-    public List<Group> getCreatedGroups(User creatingUser) {
-        return groupRepository.findByCreatedByUserAndActiveOrderByCreatedDateTimeDesc(creatingUser, true);
-    }
-
-    @Override
-    public Page<Group> getPageOfActiveGroups(User sessionUser, int pageNumber, int pageSize) {
-        return groupRepository.findByMembershipsUserAndActive(sessionUser, new PageRequest(pageNumber, pageSize), true);
-    }
-
-    @Override
-    public List<Group> getListGroupsFromLogbooks(List<LogBook> logBooks) {
-        return logBooks.stream()
-                .filter(logBook -> logBook.getParent().getJpaEntityType().equals(JpaEntityType.GROUP))
-                .map(logBook -> (Group) logBook.getParent())
-                .collect(Collectors.toList());
-    }
-
-    /*
-    Methods to implement finding last group and prompting to rename if unnamed. May make this a little more complex
-    in future (e.g., check not just last created group, but any unnamed created groups above X users, or so on). Hence
-    a little duplication / redundancy for now.
-     */
-
-    @Override
-    public Group groupToRename(User sessionUser) {
-        Group lastCreatedGroup = groupRepository.findFirstByCreatedByUserOrderByIdDesc(sessionUser);
-        if (lastCreatedGroup != null && lastCreatedGroup.isActive() && !lastCreatedGroup.hasName())
-            return lastCreatedGroup;
-        else
-            return null;
-    }
-
-    @Override
-    public boolean hasActiveGroupsPartOf(User user) {
-        // return !getActiveGroupsPartOf(user).isEmpty();
-        return groupRepository.countByMembershipsUserAndActiveTrue(user) > 0;
-    }
-
     /**
      * Methods for working with subgroups
      */
@@ -107,11 +64,6 @@ public class GroupManager implements GroupManagementService {
     @Override
     public List<User> getUsersInGroupNotSubGroups(Long groupId) {
         return userManager.getGroupMembersSortedById(groupRepository.findOne(groupId));
-    }
-
-    @Override
-    public List<User> getAllUsersInGroupAndSubGroups(Long groupId) {
-        return getAllUsersInGroupAndSubGroups(groupRepository.findOne(groupId));
     }
 
     @Override
@@ -193,9 +145,8 @@ public class GroupManager implements GroupManagementService {
 
     @Override
     public List<Group> getMergeCandidates(User mergingUser, Long firstGroupSelected) {
-
-        // todo: lots of error handling etc
-        List<Group> createdGroups = getCreatedGroups(mergingUser);
+        // todo: lots of error handling etc, and replace with permission checking
+        List<Group> createdGroups = groupRepository.findByCreatedByUserAndActiveOrderByCreatedDateTimeDesc(mergingUser, true);
         createdGroups.remove(groupRepository.findOne(firstGroupSelected));
         return createdGroups;
     }

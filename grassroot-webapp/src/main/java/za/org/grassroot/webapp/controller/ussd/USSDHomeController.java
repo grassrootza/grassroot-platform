@@ -174,7 +174,7 @@ public class USSDHomeController extends USSDController {
         // todo: optimize this -- it is currently doing 2-4 DB calls on every start menu ... need to consolidate somehow to one
         log.info("Checking if user needs to respond to anything, either a vote or an RSVP ...");
         return userManager.needsToVoteOrRSVP(sessionUser) || sessionUser.needsToRenameSelf(5)
-            || (groupManager.groupToRename(sessionUser) != null);
+            || (userManager.fetchGroupUserMustRename(sessionUser) != null);
     }
 
     private USSDResponseTypes neededResponse(User sessionUser) {
@@ -188,7 +188,7 @@ public class USSDHomeController extends USSDController {
         }
         if (userManager.needsToRSVP(sessionUser)) return USSDResponseTypes.MTG_RSVP;
         if (userManager.needsToRenameSelf(sessionUser)) return USSDResponseTypes.RENAME_SELF;
-        if (groupManager.groupToRename(sessionUser) != null) return USSDResponseTypes.NAME_GROUP;
+        if (userManager.fetchGroupUserMustRename(sessionUser) != null) return USSDResponseTypes.NAME_GROUP;
 
         return USSDResponseTypes.NONE;
 
@@ -250,7 +250,7 @@ public class USSDHomeController extends USSDController {
                 openingMenu.setNextURI(renameUserMenu);
                 break;
             case NAME_GROUP:
-                Group group = groupManager.groupToRename(sessionUser);
+                Group group = userManager.fetchGroupUserMustRename(sessionUser);
                 openingMenu = (groupBroker.isDeactivationAvailable(sessionUser, group, true)) ?
                         renameGroupAllowInactive(sessionUser, group.getUid(), dateFormat.format(group.getCreatedDateTime().toLocalDateTime())) :
                         renameGroupNoInactiveOption(sessionUser, group.getUid(), dateFormat.format(group.getCreatedDateTime().toLocalDateTime()));
@@ -452,6 +452,7 @@ public class USSDHomeController extends USSDController {
     Helper methods, for group pagination, event pagination, etc.
      */
 
+    // todo: make sure this works with permissions ... by passing in the section
     @RequestMapping(value = path + "group_page")
     @ResponseBody
     public Request groupPaginationHelper(@RequestParam(value= phoneNumber) String inputNumber,
@@ -463,9 +464,8 @@ public class USSDHomeController extends USSDController {
         /*
          todo: likely need to add permission checking to the list of parameters, but for now just saying "false"
           */
-        return menuBuilder(ussdGroupUtil.
-                userGroupMenuPaginated(userManager.findByInputNumber(inputNumber), prompt, existingUri,
-                                       newUri, pageNumber, null,false));
+        return menuBuilder(ussdGroupUtil.userGroupMenuPaginated(userManager.findByInputNumber(inputNumber), prompt, existingUri,
+                                       newUri, pageNumber, null));
 
     }
 

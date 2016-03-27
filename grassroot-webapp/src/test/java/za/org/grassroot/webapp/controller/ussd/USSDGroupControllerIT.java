@@ -157,7 +157,8 @@ public class USSDGroupControllerIT extends USSDAbstractIT {
                 build().toUri();
         executeQueries(Arrays.asList(createGroupUri));
         User sessionUser = userManager.findByInputNumber(testPhone);
-        testGroup = groupManager.getCreatedGroups(sessionUser).get(0);
+        // testGroup = groupManager.getCreatedGroups(sessionUser).get(0);
+        testGroup = new Group("", sessionUser);
         return testGroup;
 
     }

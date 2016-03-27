@@ -11,6 +11,7 @@ import java.sql.Timestamp;
 public class MaskedUserDTO {
 
     private Long id;
+    private String uid;
     private String firstName;
     private String lastName;
     private String displayName;
@@ -25,6 +26,7 @@ public class MaskedUserDTO {
 
     public MaskedUserDTO(User user) {
         this.id = user.getId();
+        this.uid = user.getUid();
         this.firstName = MaskingUtil.maskName(user.getFirstName());
         this.lastName = MaskingUtil.maskName(user.getLastName());
         this.displayName = MaskingUtil.maskName(user.getDisplayName());
@@ -41,6 +43,8 @@ public class MaskedUserDTO {
     public Long getId() {
         return id;
     }
+
+    public String getUid() { return uid; }
 
     public String getFirstName() {
         return firstName;

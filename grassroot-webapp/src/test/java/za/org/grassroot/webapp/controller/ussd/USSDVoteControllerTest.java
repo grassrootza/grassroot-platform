@@ -5,12 +5,11 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.services.GroupPage;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.util.USSDEventUtil;
 
@@ -76,18 +75,18 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
         for (Group testGroup : testGroups) {
             testGroup.addMember(testUser);
         }
-        Page<Group> pageTestGroups = new PageImpl<Group>(testGroups);
+        GroupPage pageTestGroups = GroupPage.createFromGroups(testGroups, 0, 3);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(eventManagementServiceMock.userHasEventsToView(testUser, EventType.VOTE)).thenReturn(-9);
-        when(groupManagementServiceMock.hasActiveGroupsPartOf(testUser)).thenReturn(true);
-        when(groupManagementServiceMock.getPageOfActiveGroups(testUser, 0, 3)).thenReturn(pageTestGroups);
+        when(userManagementServiceMock.isPartOfActiveGroups(testUser)).thenReturn(true);
+        when(permissionBroker.getPageOfGroupDTOs(testUser, null, 0, 3)).thenReturn(pageTestGroups);
 
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupManagementServiceMock, times(1)).hasActiveGroupsPartOf(testUser);
-        verify(groupManagementServiceMock, times(1)).getPageOfActiveGroups(any(User.class), anyInt(), anyInt());
+        verify(userManagementServiceMock, times(1)).isPartOfActiveGroups(testUser);
+        verify(permissionBroker, times(1)).getPageOfGroupDTOs(any(User.class), null, anyInt(), anyInt());
         verifyNoMoreInteractions(groupManagementServiceMock);
         verify(eventManagementServiceMock, times(1)).userHasEventsToView(testUser, EventType.VOTE);
         verifyNoMoreInteractions(eventManagementServiceMock);
@@ -97,14 +96,14 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
     public void voteStartIfNoGroupsShouldDisplay() throws Exception {
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(eventManagementServiceMock.userHasEventsToView(testUser, EventType.VOTE)).thenReturn(-9);
-        when(groupManagementServiceMock.hasActiveGroupsPartOf(testUser)).thenReturn(false);
+        when(userManagementServiceMock.isPartOfActiveGroups(testUser)).thenReturn(false);
 
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(anyString());
+        verify(userManagementServiceMock, times(1)).isPartOfActiveGroups(testUser);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventManagementServiceMock, times(1)).userHasEventsToView(testUser, EventType.VOTE);
         verifyNoMoreInteractions(eventManagementServiceMock);
-        verify(groupManagementServiceMock, times(1)).hasActiveGroupsPartOf(testUser);
         verifyNoMoreInteractions(groupManagementServiceMock);
 
     }
@@ -117,18 +116,18 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
     @Test
     public void selectNewVoteWithGroupsShouldWork() throws Exception {
         String urlToSave = USSDSection.VOTES.toPath() + "new";
-        Page<Group> pageTestGroups = new PageImpl<Group>(Arrays.asList(new Group("tg1", testUser), new Group("tg2", testUser)));
+        GroupPage pageTestGroups = GroupPage.createFromGroups(Arrays.asList(new Group("tg1", testUser), new Group("tg2", testUser)), 0, 3);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        when(groupManagementServiceMock.hasActiveGroupsPartOf(testUser)).thenReturn(true);
-        when(groupManagementServiceMock.getPageOfActiveGroups(testUser, 0, 3)).thenReturn(pageTestGroups);
+        when(userManagementServiceMock.isPartOfActiveGroups(testUser)).thenReturn(true);
+        when(permissionBroker.getPageOfGroupDTOs(testUser, null, 0, 3)).thenReturn(pageTestGroups);
 
         mockMvc.perform(get(path + "new").param(phoneParam, testUserPhone)).andExpect(status().isOk());
         mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1")).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
+        verify(userManagementServiceMock, times(2)).isPartOfActiveGroups(testUser);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupManagementServiceMock, times(2)).hasActiveGroupsPartOf(testUser);
-        verify(groupManagementServiceMock, times(2)).getPageOfActiveGroups(testUser, 0, 3);
+        verify(permissionBroker, times(2)).getPageOfGroupDTOs(testUser, null, 0, 3);
         verifyNoMoreInteractions(groupManagementServiceMock);
     }
 

@@ -179,7 +179,7 @@ public class GroupController extends BaseController {
     @RequestMapping("view")
     public String viewGroupIndex(Model model, @RequestParam String groupUid) {
 
-        User user = userManagementService.getUserById(getUserProfile().getId()); // todo: remove this once caching etc working
+        User user = getUserProfile();
 
         Long startTime = System.currentTimeMillis();
         // note: the "get permissions" call will throw the error if not in group
@@ -389,7 +389,7 @@ public class GroupController extends BaseController {
 
         // todo: check permissions
         Group group = groupBroker.load(groupUid);
-        User user = userManagementService.loadUserByUid(getUserProfile().getUid());
+        User user = userManagementService.load(getUserProfile().getUid());
         if (!isUserPartOfGroup(getUserProfile(), group)) throw new AccessDeniedException("");
 
         log.info("Okay, modifying this group: " + group.toString());

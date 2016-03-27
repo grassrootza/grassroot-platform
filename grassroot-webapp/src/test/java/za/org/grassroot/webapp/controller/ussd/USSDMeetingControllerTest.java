@@ -5,11 +5,10 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.services.GroupPage;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -91,7 +90,8 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         for (Group group : existingGroupList) {
             group.addMember(testUser);
         }
-        Page<Group> groupPage = new PageImpl<Group>(existingGroupList);
+
+        GroupPage groupPage = GroupPage.createFromGroups(existingGroupList, 0, 3);
 
         List<Event> emptyMeetingList = new ArrayList<>();
 //        Event dummyEvent = new Event("", testUser);
@@ -100,14 +100,14 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(eventManagementServiceMock.getUpcomingEventsUserCreated(testUser)).thenReturn(emptyMeetingList);
-        when(groupManagementServiceMock.hasActiveGroupsPartOf(testUser)).thenReturn(true);
-        when(groupManagementServiceMock.getPageOfActiveGroups(testUser, 0, 3)).thenReturn(groupPage);
+        when(userManagementServiceMock.isPartOfActiveGroups(testUser)).thenReturn(true);
+        when(permissionBroker.getPageOfGroupDTOs(testUser, null, 0, 3)).thenReturn(groupPage);
 
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupManagementServiceMock, times(1)).getPageOfActiveGroups(any(User.class), anyInt(), anyInt());
+        verify(permissionBroker, times(1)).getPageOfGroupDTOs(any(User.class), null, anyInt(), anyInt());
         verify(eventManagementServiceMock, times(1)).getUpcomingEventsUserCreated(testUser);
         verifyNoMoreInteractions(eventManagementServiceMock);
 

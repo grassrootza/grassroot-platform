@@ -94,7 +94,7 @@ public class HomeController extends BaseController {
         Long startTimeCountGroups = System.currentTimeMillis();
         log.info(String.format("Getting user profile took %d msecs", startTimeCountGroups - startTime));
 
-        if (groupManagementService.hasActiveGroupsPartOf(user)) {
+        if (userManagementService.isPartOfActiveGroups(user)) {
             log.info(String.format("Counting user groups took ... %d msecs", System.currentTimeMillis() - startTimeCountGroups));
             homePageModelAndView = getHomePageUserHasGroups(model, user);
         } else {

@@ -24,4 +24,6 @@ public interface LogBookBroker {
 	void complete(String logBookUid, LocalDateTime completionTime, String completedByUserUid);
 
 	Page<LogBook> retrieveGroupLogBooks(String userUid, String groupUid, boolean entriesComplete, int pageNumber, int pageSize);
+
+	List<Group> retrieveGroupsFromLogBooks(List<LogBook> logBooks);
 }

@@ -1,11 +1,12 @@
 package za.org.grassroot.webapp.util;
 
+import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
@@ -36,7 +37,7 @@ public class USSDGroupUtil extends USSDUtil {
     private static final Logger log = LoggerFactory.getLogger(USSDGroupUtil.class);
 
     @Autowired
-    private GroupManagementService groupManager;
+    private UserManagementService userManager;
 
     @Autowired
     private GroupBroker groupBroker;
@@ -61,13 +62,19 @@ public class USSDGroupUtil extends USSDUtil {
     private static final String validNumbers = "valid";
     private static final String invalidNumbers = "error";
     private static final String subjectMenu = "subject",
-            placeMenu = "place", existingGroupMenu = "menu", timeMenu = "time",
+            existingGroupMenu = "menu",
             unsubscribePrompt = "unsubscribe",
-            groupTokenMenu = "token", renameGroupPrompt = "rename",
-            addMemberPrompt = "addnumber", mergeGroupMenu = "merge",
+            groupTokenMenu = "token",
+            renameGroupPrompt = "rename",
+            addMemberPrompt = "addnumber",
             inactiveMenu = "inactive";
 
     private static final SimpleDateFormat unnamedGroupDate = new SimpleDateFormat("d MMM");
+
+    private static final Map<USSDSection, Permission> SectionPermissionMap = ImmutableMap.of(
+            USSDSection.MEETINGS, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING,
+            USSDSection.VOTES, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE,
+            USSDSection.LOGBOOK, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
 
     /**
      * SECTION 1: menus to ask a user to pick a group, including via pagination
@@ -75,7 +82,7 @@ public class USSDGroupUtil extends USSDUtil {
      */
 
     public USSDMenu askForGroupAllowCreateNew(User sessionUser, USSDSection section, String nextUrl, String newPrompt,
-                                              String createNewGroup, String nonGroupParams, boolean checkPermissions) throws URISyntaxException {
+                                              String createNewGroup, String nonGroupParams) throws URISyntaxException {
 
         /* Two cases:
         (a) user has no groups, so just ask for one and then go to the next page (goes to newGroupMenu)
@@ -85,7 +92,7 @@ public class USSDGroupUtil extends USSDUtil {
         USSDMenu groupMenu;
         log.info("Inside askForGroupAllowCreateNew ... newGroupUrl is ..." + createNewGroup);
 
-        if (!groupManager.hasActiveGroupsPartOf(sessionUser)) {
+        if (!userManager.isPartOfActiveGroups(sessionUser)) {
             // case (b), ask for a name and then go to the next menu
             groupMenu = createGroupPrompt(sessionUser, section, createNewGroup);
         } else {
@@ -93,23 +100,23 @@ public class USSDGroupUtil extends USSDUtil {
             String prompt = getMessage(section, groupKeyForMessages, promptKey + ".existing", sessionUser);
             String existingGroupUri = section.toPath() + nextUrl + ((nonGroupParams == null) ? "" : nonGroupParams);
             String newGroupUri = section.toPath() + newPrompt + ((nonGroupParams == null) ? "" : nonGroupParams);
-            groupMenu = userGroupMenuPageOne(sessionUser, prompt, existingGroupUri, newGroupUri, section, checkPermissions);
+            groupMenu = userGroupMenuPageOne(sessionUser, prompt, existingGroupUri, newGroupUri, section);
         }
         return groupMenu;
     }
 
     public USSDMenu askForGroupNoInlineNew(User sessionUser, USSDSection section, String promptIfExisting, String promptIfEmpty,
-                                           String urlIfExisting, String urlIfEmpty, String nonGroupParams, boolean checkPermissions) throws URISyntaxException {
+                                           String urlIfExisting, String urlIfEmpty, String nonGroupParams) throws URISyntaxException {
         USSDMenu groupMenu;
         // todo: replace this with a check on permissions
-        if (!groupManager.hasActiveGroupsPartOf(sessionUser)) {
+        if (!userManager.isPartOfActiveGroups(sessionUser)) {
             groupMenu = new USSDMenu(promptIfEmpty);
             groupMenu.addMenuOption(urlIfEmpty, getMessage(section, groupKeyForMessages, "options.new", sessionUser));
             groupMenu.addMenuOption("start", getMessage("start", sessionUser));
             groupMenu.addMenuOption("exit", getMessage("exit.option", sessionUser));
         } else {
             String existingGroupUri = section.toPath() + urlIfExisting + ((nonGroupParams == null) ? "" : nonGroupParams);
-            groupMenu = userGroupMenuPageOne(sessionUser, promptIfExisting, existingGroupUri, null, section, checkPermissions);
+            groupMenu = userGroupMenuPageOne(sessionUser, promptIfExisting, existingGroupUri, null, section);
         }
         return groupMenu;
     }
@@ -119,33 +126,34 @@ public class USSDGroupUtil extends USSDUtil {
         final String promptIfExisting = getMessage(section, groupKeyForMessages, promptKey, user);
         final String promptIfEmpty = getMessage(section, groupKeyForMessages, promptKey + ".empty", user);
         final String urlIfEmpty = GROUP_MANAGER.toPath() + "create";
-        return askForGroupNoInlineNew(user, section, promptIfExisting, promptIfEmpty, menuIfExisting, urlIfEmpty, "", false);
+        return askForGroupNoInlineNew(user, section, promptIfExisting, promptIfEmpty, menuIfExisting, urlIfEmpty, "");
     }
 
     // similar helper method
     public USSDMenu askForGroupNoInlineNew(User user, USSDSection section, String menuIfExisting, String promptIfNotEmpty) throws URISyntaxException {
         final String promptIfEmpty = getMessage(section, groupKeyForMessages, promptKey + ".empty", user);
         final String urlIfEmpty = GROUP_MANAGER.toPath() + "create";
-        return askForGroupNoInlineNew(user, section, promptIfNotEmpty, promptIfEmpty, menuIfExisting, urlIfEmpty, "", false);
+        return askForGroupNoInlineNew(user, section, promptIfNotEmpty, promptIfEmpty, menuIfExisting, urlIfEmpty, "");
     }
 
     public USSDMenu userGroupMenuPageOne(User user, String prompt, String existingGroupUrl, String newGroupUrl,
-                                         USSDSection section, boolean checkPermissions) throws URISyntaxException {
-        return userGroupMenuPaginated(user, prompt, existingGroupUrl, newGroupUrl, 0, section, checkPermissions);
+                                         USSDSection section) throws URISyntaxException {
+        return userGroupMenuPaginated(user, prompt, existingGroupUrl, newGroupUrl, 0, section);
     }
 
     public USSDMenu userGroupMenuPaginated(User user, String prompt, String urlForExistingGroups, String urlForNewGroup,
-                                           Integer pageNumber, USSDSection section, boolean checkPermissions)
+                                           Integer pageNumber, USSDSection section)
             throws URISyntaxException {
 
         USSDMenu menu = new USSDMenu(prompt);
 
-        // todo: this is going to be a problem if hit a page with only one group ... redo
-        Page<Group> groupsPartOf = groupManager.getPageOfActiveGroups(user, pageNumber, PAGE_LENGTH);
+        Permission filter = SectionPermissionMap.get(section); // returning null is what we want if key not present
+        GroupPage groupsPartOf = permissionBroker.getPageOfGroupDTOs(user, filter, pageNumber, PAGE_LENGTH);
+
         if (groupsPartOf.getTotalElements() == 1 && section != USSDSection.MEETINGS) { // exclude meetings since can create new in it
-            menu = skipGroupSelection(user, section, groupsPartOf.iterator().next());
+            menu = skipGroupSelection(user, section, groupsPartOf.getContent().get(0));
         } else {
-            menu = addListOfGroupsToMenu(menu,section, urlForExistingGroups, groupsPartOf.getContent(), user, checkPermissions);
+            menu = addListOfGroupsToMenu(menu,section, urlForExistingGroups, groupsPartOf.getContent(), user);
             if (groupsPartOf.hasNext())
                 menu.addMenuOption(USSDUrlUtil.paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, pageNumber + 1),
                         "More groups"); // todo: i18n
@@ -170,25 +178,17 @@ public class USSDGroupUtil extends USSDUtil {
         return menu;
     }
 
-    public USSDMenu addListOfGroupsToMenu(USSDMenu menu,USSDSection section, String nextMenuUrl, List<Group> groups,
-                                          User user, boolean checkPerm ) {
+    public USSDMenu addListOfGroupsToMenu(USSDMenu menu, USSDSection section, String nextMenuUrl, List<GroupDTO> groups,
+                                          User user) {
 
         final String formedUrl = (!nextMenuUrl.contains("?")) ?
                 (nextMenuUrl + groupUidUrlEnding) :
                 (nextMenuUrl + "&" + groupUidParameter + "=");
 
-        for (Group group : groups) {
-
+        for (GroupDTO group : groups) {
             String name = (group.hasName()) ? group.getGroupName() :
                     getMessage(groupKeyForMessages, "unnamed", "label", unnamedGroupDate.format(group.getCreatedDateTime()), user);
-
-            if (checkPerm) {
-                if (hasPermission(section, group, user)) {
-                    menu.addMenuOption(formedUrl + group.getUid(), name);
-                }
-            } else {
-                menu.addMenuOption(formedUrl + group.getUid(), name);
-            }
+            menu.addMenuOption(formedUrl + group.getUid(), name);
         }
         return menu;
     }
@@ -255,7 +255,7 @@ public class USSDGroupUtil extends USSDUtil {
         return menu;
     }
 
-    private USSDMenu skipGroupSelection(User user, USSDSection section, Group group) {
+    private USSDMenu skipGroupSelection(User user, USSDSection section, GroupDTO group) {
         USSDMenu menu = null;
         String nextUrl;
         switch (section) {
@@ -270,7 +270,7 @@ public class USSDGroupUtil extends USSDUtil {
                 String logBookUid = logBookRequestBroker.create(user.getUid(), group.getUid()).getUid();
                 cacheManager.putUssdMenuForUser(user.getPhoneNumber(), saveLogMenu(subjectMenu, logBookUid));
                 nextUrl = "log/due_date" + USSDUrlUtil.logbookIdUrlSuffix + logBookUid;
-                menu = new USSDMenu(getMessage(section, subjectMenu, promptKey + ".skipped", group.getName(""), user), nextUrl);
+                menu = new USSDMenu(getMessage(section, subjectMenu, promptKey + ".skipped", group.getDisplayName(""), user), nextUrl);
                 break;
             case GROUP_MANAGER:
                 menu = existingGroupMenu(user, group.getUid(), true);

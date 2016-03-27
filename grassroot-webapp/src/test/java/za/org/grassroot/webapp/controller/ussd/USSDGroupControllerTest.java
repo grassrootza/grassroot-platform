@@ -67,11 +67,11 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         testGroup.addMember(testUser);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(groupManagementServiceMock.hasActiveGroupsPartOf(testUser)).thenReturn(false);
+        when(userManagementServiceMock.isPartOfActiveGroups(testUser)).thenReturn(false);
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupManagementServiceMock, times(1)).hasActiveGroupsPartOf(testUser);
+        verify(userManagementServiceMock, times(1)).isPartOfActiveGroups(testUser);
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
