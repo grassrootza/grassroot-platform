@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by luke on 2016/01/13.
@@ -210,13 +211,13 @@ public class PaidAccountController extends BaseController {
 
     private List<Group> getCandidateGroupsToDesignate(User user, Account account) {
         Long startTime = System.currentTimeMillis();
-        List<Group> groupsPartOf = groupManagementService.getActiveGroupsPartOf(user);
+        Set<Group> groupsPartOf = permissionBroker.getActiveGroups(user, null);
         List<PaidGroup> alreadyDesignated = accountManagementService.getGroupsPaidForByAccount(account);
         for (PaidGroup paidGroup : alreadyDesignated)
             if (groupsPartOf.contains(paidGroup.getGroup())) groupsPartOf.remove(paidGroup.getGroup());
         Long endTime = System.currentTimeMillis();
         log.info(String.format("Fetched list of groups that can be designated, took %d ms", endTime - startTime));
-        return groupsPartOf;
+        return new ArrayList<>(groupsPartOf);
     }
 
     private Model addRecordsToModel(String attr, Model model, Group group, EventType type, LocalDateTime start, LocalDateTime end) {

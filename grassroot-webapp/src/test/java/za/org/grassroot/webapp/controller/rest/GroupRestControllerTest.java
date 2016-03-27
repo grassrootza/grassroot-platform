@@ -12,6 +12,7 @@ import za.org.grassroot.core.domain.Meeting;
 import za.org.grassroot.services.MembershipInfo;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -37,12 +38,11 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
 
     @Before
     public void setUp() {
-
         mockMvc = MockMvcBuilders.standaloneSetup(groupRestController).build();
     }
+
     @Test
     public void createGroupShouldWork() throws Exception {
-
         settingUpDummyData(group, groups, membershipInfo, membersToAdd);
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         // todo: change the below
@@ -52,18 +52,20 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
         // todo: switch to groupBroker call
         // verify(groupManagementServiceMock).changeGroupDescription(group.getUid(), "This is a test a group", sessionTestUser.getUid());
     }
+
     @Test
     public void getUserGroupsShouldWork() throws Exception {
 
         settingUpDummyData(group, groups, membershipInfo, membersToAdd);
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(eventManagementServiceMock.getMostRecentEvent(group)).thenReturn(event);
-        when(groupManagementServiceMock.getActiveGroupsPartOf(sessionTestUser)).thenReturn(groups);
+        when(permissionBrokerMock.getActiveGroups(sessionTestUser, null)).thenReturn(new HashSet<>(groups));
         mockMvc.perform(get(path + "list/{phoneNumber}/{code}", testUserPhone, testUserCode)).andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
         verify(eventManagementServiceMock).getMostRecentEvent(group);
-        verify(groupManagementServiceMock).getActiveGroupsPartOf(sessionTestUser);
+        verify(permissionBrokerMock).getActiveGroups(sessionTestUser, null);
     }
+
     @Test
     public void searchForGroupsShouldWork() throws Exception {
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
@@ -72,6 +74,7 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupBrokerMock).findGroupFromJoinCode(testSearchTerm);
     }
+
     @Test
     public void searchRequestToJoinGroup() throws Exception {
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);

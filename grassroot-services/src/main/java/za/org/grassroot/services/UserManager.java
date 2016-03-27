@@ -21,6 +21,7 @@ import za.org.grassroot.core.domain.UserCreateRequest;
 import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.UserLogType;
+import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.repository.UserRequestRepository;
 import za.org.grassroot.core.util.MaskingUtil;
@@ -55,7 +56,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Autowired
     private UserRepository userRepository;
     @Autowired
-    private GroupManagementService groupManagementService;
+    private GroupRepository groupRepository;
     @Autowired
     private GroupBroker groupBroker;
     @Autowired
@@ -428,6 +429,11 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public boolean isFirstInitiatedSession(User user) {
         // may want to reload from DB, but could slow it down quite a bit
         return !user.isHasInitiatedSession();
+    }
+
+    @Override
+    public boolean isPartOfActiveGroups(User user) {
+        return (groupRepository.countByMembershipsUserAndActiveTrue(user) > 0);
     }
 
     @Override

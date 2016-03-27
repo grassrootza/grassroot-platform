@@ -48,6 +48,9 @@ public class EventManager implements EventManagementService {
     UserRepository userRepository;
 
     @Autowired
+    GroupRepository groupRepository;
+
+    @Autowired
     GroupManagementService groupManager;
 
     @Autowired
@@ -169,7 +172,7 @@ public class EventManager implements EventManagementService {
             // fetch from the database
             Map eventMap = new HashedMap<Long, Long>();
             outstandingRSVPs = new ArrayList<Event>();
-            List<Group> groups = groupManager.getActiveGroupsPartOf(user);
+            List<Group> groups = groupRepository.findByMembershipsUserAndActive(user, true);
             log.fine("getOutstandingResponseForUser...after...getGroupsPartOf...");
             if (groups != null) {
                 log.fine("getOutstandingResponseForUser...number of groups..." + groups.size());

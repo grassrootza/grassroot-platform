@@ -13,10 +13,7 @@ import za.org.grassroot.webapp.controller.BaseController;
 
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.beans.HasPropertyWithValue.hasProperty;
@@ -54,18 +51,13 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
         Event testVote = null;
         testVote.setId(dummyId);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
-        when(groupManagementServiceMock.isUserInGroup(testGroup, sessionTestUser)).thenReturn(true);
-        // when(groupManagementServiceMock.canUserCallVote(dummyId, sessionTestUser)).thenReturn(true);
-        when(groupManagementServiceMock.getActiveGroupsPartOf(sessionTestUser)).thenReturn(testPossibleGroups);
         mockMvc.perform(get("/vote/create").param("groupId", String.valueOf(dummyId))).andExpect(status().isOk())
                 .andExpect(view().name("vote/create"))
                 .andExpect(model().attribute("group",
                         hasProperty("id", is(1L))));
         verify(groupBrokerMock, times(1)).load(testGroup.getUid());
-        // verify(groupManagementServiceMock, times(1)).canUserCallVote(dummyId, sessionTestUser);
-        verify(groupManagementServiceMock, times(1)).isUserInGroup(testGroup, sessionTestUser);
+        verify(permissionBrokerMock, times(1)).validateGroupPermission(sessionTestUser, testGroup, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
         verifyNoMoreInteractions(groupManagementServiceMock);
-
 
     }
 
@@ -74,16 +66,16 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
         Group testGroup = new Group("Dummy Group3", new User("234345345"));
 
         testGroup.setId(dummyId);
-        List<Group> testPossibleGroups = new ArrayList<>();
+        Set<Group> testPossibleGroups = new HashSet<>();
         testPossibleGroups.add(testGroup);
         Event testVote = null;
         testVote.setId(dummyId);
-        when(groupManagementServiceMock.getActiveGroupsPartOf(sessionTestUser)).thenReturn(testPossibleGroups);
+        when(permissionBrokerMock.getActiveGroups(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE)).thenReturn(testPossibleGroups);
         mockMvc.perform(get("/vote/create")).andExpect(status().isOk())
                 .andExpect(view().name("vote/create"))
                 .andExpect(model().attribute("possibleGroups",
                         hasItem(testGroup)));
-        verify(groupManagementServiceMock, times(1)).getActiveGroupsPartOf(sessionTestUser);
+        verify(permissionBrokerMock, times(1)).getActiveGroups(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
         verifyNoMoreInteractions(groupManagementServiceMock);
 
     }
@@ -99,16 +91,13 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
         testGroup.setId(dummyId);
         // when(groupManagementServiceMock.canUserCallVote(dummyId, sessionTestUser)).thenReturn(true);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
-        when(groupManagementServiceMock.isUserInGroup(testGroup, sessionTestUser)).thenReturn(true);
         mockMvc.perform(post("/vote/create").param("selectedGroupId", String.valueOf(dummyId))
                 .sessionAttr("vote", testVote))
                 .andExpect(model().attribute("eventId", is(dummyId)))
                 .andExpect(model().attributeExists(BaseController.MessageType.SUCCESS.getMessageKey()))
                 .andExpect(view().name("vote/view"));
         verify(groupBrokerMock, times(1)).load(testGroup.getUid());
-        // verify(groupManagementServiceMock, times(1)).canUserCallVote(dummyId, sessionTestUser);
-        verify(groupManagementServiceMock, times(1)).isUserInGroup(testGroup, sessionTestUser);
-        // verify(eventManagementServiceMock, times(1)).createVote(testVote);
+        // todo: eventBroker verify
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyNoMoreInteractions(eventManagementServiceMock);
     }

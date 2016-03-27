@@ -92,11 +92,6 @@ public class USSDUrlUtil {
         return USSDSection.MEETINGS.toPath() + menu + "?entityUid=" + entityUid + setInterruptedFlag + revisingFlag;
     }
 
-    public static String saveMeetingMenu(String menu, Long eventId, boolean revising) {
-        String revisingFlag = (revising) ? "&revising=1" : "";
-        return USSDSection.MEETINGS.toPath() + menu + "?eventId=" + eventId + setInterruptedFlag + revisingFlag;
-    }
-
     public static String saveMtgMenuWithAction(String menu, Long eventId, String action) {
         return USSDSection.MEETINGS.toPath() + menu + "?eventId=" + eventId + "&action=" + action + setInterruptedFlag;
     }
@@ -113,10 +108,6 @@ public class USSDUrlUtil {
         return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupUid=" + groupUid + addInterruptedInput + encodeParameter(input);
     }
 
-    public static String saveVoteMenu(String menu, Long eventId) {
-        return USSDSection.VOTES.toPath() + menu + "?eventId=" + eventId + setInterruptedFlag; // include the +1
-    }
-
     public static String saveVoteMenu(String menu, String requestUid) {
         return USSDSection.VOTES.toPath() + menu + "?eventUid=" + requestUid + setInterruptedFlag;
     }
@@ -125,17 +116,17 @@ public class USSDUrlUtil {
         return USSDSection.VOTES.toPath() + menu + "?requestUid=" + requestUid + setRevisingFlag;
     }
 
-    public static String saveLogMenu(String menu, Long logBookId) {
-        return USSDSection.LOGBOOK.toPath() + menu + "?logbookid=" + logBookId + setInterruptedFlag;
+    public static String saveLogMenu(String menu, String logBookUid) {
+        return USSDSection.LOGBOOK.toPath() + menu + "?logbookUid=" + logBookUid + setInterruptedFlag;
     }
 
-    public static String saveLogMenu(String menu, Long logBookId, String priorInput) {
+    public static String saveLogMenu(String menu, String logBookUid, String priorInput) {
 
-        return saveLogMenu(menu, logBookId) + addInterruptedInput + encodeParameter(priorInput);
+        return saveLogMenu(menu, logBookUid) + addInterruptedInput + encodeParameter(priorInput);
     }
 
-    public static String saveLogMenu(String menu, Long logBookId, String priorInput, Long assignUserId) {
-        return saveLogMenu(menu, logBookId, priorInput) + (assignUserId != null ? "&assignUserId=" + assignUserId : "");
+    public static String saveLogMenu(String menu, String logBookUid, String priorInput, Long assignUserId) {
+        return saveLogMenu(menu, logBookUid, priorInput) + (assignUserId != null ? "&assignUserId=" + assignUserId : "");
 
     }
 
@@ -152,13 +143,8 @@ public class USSDUrlUtil {
         return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupUid=" + groupUid;
     }
 
-    public static String logViewExistingUrl(String menu, Long groupId, Boolean done, Integer pageNumber) {
-        return USSDSection.LOGBOOK.toPath() + menu + "?groupId=" + groupId + "&done=" + done + "&pageNumber=" + pageNumber;
-    }
-
-    public static String logViewExistingUrl(String menu, Long groupId, boolean done) {
-        return USSDSection.LOGBOOK.toPath() + menu + "?groupId=" + groupId + "&done=" + done;
-
+    public static String logViewExistingUrl(String menu, String groupUid, Boolean done, Integer pageNumber) {
+        return USSDSection.LOGBOOK.toPath() + menu + "?groupUid=" + groupUid + "&done=" + done + "&pageNumber=" + pageNumber;
     }
 
 }

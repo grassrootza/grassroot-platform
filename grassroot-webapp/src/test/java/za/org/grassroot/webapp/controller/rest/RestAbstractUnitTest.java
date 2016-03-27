@@ -67,6 +67,8 @@ public class RestAbstractUnitTest
     protected GroupBroker groupBrokerMock;
     @Mock
     protected EventBroker eventBrokerMock;
+    @Mock
+    protected PermissionBroker permissionBrokerMock;
 
     protected MessageSource messageSource() {
 

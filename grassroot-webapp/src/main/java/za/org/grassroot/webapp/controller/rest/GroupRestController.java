@@ -44,9 +44,12 @@ public class GroupRestController {
     @Autowired
     GroupLogService groupLogService;
 
-
     @Autowired
     GroupBroker groupBroker;
+
+    @Autowired
+    PermissionBroker permissionBroker;
+
     private Logger log = Logger.getLogger(getClass().getCanonicalName());
     @Autowired
     private GroupJoinRequestService groupJoinRequestService;
@@ -79,11 +82,11 @@ public class GroupRestController {
     public ResponseEntity<ResponseWrapper> getUserGroups(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String token) {
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
-        List<Group> groupList = groupManagementService.getActiveGroupsPartOf(user);
+        Set<Group> groupSet = permissionBroker.getActiveGroups(user, null);
         ResponseWrapper responseWrapper;
-        if (!groupList.isEmpty()) {
+        if (!groupSet.isEmpty()) {
             List<GroupResponseWrapper> groups = new ArrayList<>();
-            for (Group group : groupList) {
+            for (Group group : groupSet) {
                 Role role = group.getMembership(user).getRole();
                 groups.add(createWrapper(group,role));
             }

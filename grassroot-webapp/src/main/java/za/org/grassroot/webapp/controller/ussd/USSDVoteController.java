@@ -262,14 +262,14 @@ public class USSDVoteController extends USSDController {
     @RequestMapping(value = path + "details")
     @ResponseBody
     public Request viewVoteDetails(@RequestParam(value = phoneNumber) String inputNumber,
-                                   @RequestParam(value = eventIdParam) Long eventId,
+                                   @RequestParam(value = entityUidParam) String eventUid,
                                    @RequestParam(value = "back") String backMenu) throws URISyntaxException {
         // todo: decide whether to allow users to change the closing time (& permissions, of course)
         // todo: have some way of counting reminders and only allow once unless paid account
         // todo: reconsider whether to save URL here, might want to set back to null
 
-        User user = userManager.findByInputNumber(inputNumber, saveVoteMenu("details", eventId));
-        Event vote = eventManager.loadEvent(eventId);
+        User user = userManager.findByInputNumber(inputNumber, saveVoteMenu("details", eventUid));
+        Event vote = eventBroker.load(eventUid);
         boolean futureEvent = vote.getEventStartDateTime().toLocalDateTime().isAfter(LocalDateTime.now());
 
         RSVPTotalsDTO voteResults = eventManager.getVoteResultsDTO(vote);
@@ -279,7 +279,7 @@ public class USSDVoteController extends USSDController {
 
         menu.addMenuOption(voteMenus + backMenu, getMessage(thisSection, "details", optionsKey + "back", user));
         if (futureEvent)
-            menu.addMenuOption("reminder" + eventIdUrlSuffix + eventId, getMessage(thisSection, "details", optionsKey + "reminder", user));
+            menu.addMenuOption("reminder" + entityUidUrlSuffix + eventUid, getMessage(thisSection, "details", optionsKey + "reminder", user));
 
         return menuBuilder(menu);
     }
@@ -287,15 +287,15 @@ public class USSDVoteController extends USSDController {
     @RequestMapping(value = path + "reminder")
     @ResponseBody
     public Request sendVoteReminderConfirm(@RequestParam(value = phoneNumber) String inputNumber,
-                                           @RequestParam(value = eventIdParam) Long eventId) throws URISyntaxException {
+                                           @RequestParam(value = entityUidParam) String eventUid) throws URISyntaxException {
 
         // todo: mention how many people will get the reminder
-        User user = userManager.findByInputNumber(inputNumber, saveVoteMenu("reminder", eventId));
-        Event vote = eventManager.loadEvent(eventId);
+        User user = userManager.findByInputNumber(inputNumber, saveVoteMenu("reminder", eventUid));
+        Event vote = eventBroker.load(eventUid);
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, "reminder", promptKey, user));
-        menu.addMenuOptions(optionsYesNo(user, voteMenus + "reminder-do?eventId=" + eventId,
-                voteMenus + "details?eventId=" + eventId));
+        menu.addMenuOptions(optionsYesNo(user, voteMenus + "reminder-do?eventId=" + eventUid,
+                voteMenus + "details?eventId=" + eventUid));
 
         return menuBuilder(menu);
     }
@@ -303,10 +303,10 @@ public class USSDVoteController extends USSDController {
     @RequestMapping(value = path + "reminder-do")
     @ResponseBody
     public Request sendVoteReminderDo(@RequestParam(value = phoneNumber) String inputNumber,
-                                      @RequestParam(value = eventIdParam) Long eventId) throws URISyntaxException {
+                                      @RequestParam(value = entityUidParam) String eventUid) throws URISyntaxException {
         // use meeting reminder functions
         User user = userManager.findByInputNumber(inputNumber, null);
-        eventManager.sendManualReminder(eventManager.loadEvent(eventId), "");
+        eventManager.sendManualReminder(eventBroker.load(eventUid), "");
         return menuBuilder(new USSDMenu(getMessage(thisSection, "reminder-do", promptKey, user), optionsHomeExit(user)));
     }
 

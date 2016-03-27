@@ -24,6 +24,8 @@ public interface LogBookRepository extends JpaRepository<LogBook, Long> {
     List<LogBook> findAllByGroupIdAndCompletedAndActionByDateGreaterThan(Long groupId, boolean completed, Timestamp dueDate);
     Page<LogBook> findAllByGroupIdAndCompletedAndActionByDateGreaterThan(Long groupId, Pageable pageable, boolean completed, Timestamp dueDate);
 
+    Page<LogBook> findByGroupUidAndCompletedOrderByActionByDateDesc(String groupUid, boolean completed, Pageable pageable);
+
     Page<LogBook> findAll(Pageable pageable);
 
     List<LogBook> findAllByAssignedMembersId(Long assignToUserId);

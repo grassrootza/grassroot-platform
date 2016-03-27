@@ -112,7 +112,7 @@ public class GroupController extends BaseController {
 
     private boolean isUserPartOfGroup(User sessionUser, Group group) {
         // todo: do this from cache so it's not slow ...
-        return groupManagementService.isUserInGroup(group, sessionUser);
+        return permissionBroker.isGroupPermissionAvailable(sessionUser, group, null);
     }
 
     /*
@@ -576,7 +576,7 @@ public class GroupController extends BaseController {
 
         Group groupToMakeChild = groupBroker.load(groupUid);
 
-        List<Group> userGroups = groupManagementService.getActiveGroupsPartOf(getUserProfile());
+        Set<Group> userGroups = permissionBroker.getActiveGroups(getUserProfile(), null);
         userGroups.remove(groupToMakeChild);
         List<Group> possibleParents = new ArrayList<>(userGroups);
 

@@ -16,13 +16,11 @@ import za.org.grassroot.GrassRootServicesConfig;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.services.GroupBroker;
-import za.org.grassroot.services.GroupManagementService;
-import za.org.grassroot.services.MembershipInfo;
-import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.services.*;
 
 import java.util.List;
 import java.util.Set;
@@ -54,6 +52,9 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
 
     @Autowired
     private GroupBroker groupBroker;
+
+    @Autowired
+    private PermissionBroker permissionBroker;
 
     private final String testUserBase = "081000555";
     private final String testGroupBase = "test group ";
@@ -150,8 +151,8 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
 
         groupBroker.addMembers(user2.getUid(), group2.getUid(), Sets.newHashSet(member1));
         assertTrue(group2.getMembers().contains(user1));
-        List<Group> list1 = groupManagementService.getActiveGroupsPartOf(user1);
-        List<Group> list2 = groupManagementService.getCreatedGroups(user1);
+        Set<Group> list1 = permissionBroker.getActiveGroups(user1, null);
+        Set<Group> list2 = permissionBroker.getActiveGroups(user1, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         assertNotEquals(list1, list2);
         assertThat(list1.size(), is(2));
         assertThat(list2.size(), is(1));

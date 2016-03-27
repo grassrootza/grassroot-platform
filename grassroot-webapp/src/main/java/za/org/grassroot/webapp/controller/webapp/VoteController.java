@@ -3,7 +3,6 @@ package za.org.grassroot.webapp.controller.webapp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -21,7 +20,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
-import java.util.Map;
 
 import static za.org.grassroot.core.domain.Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE;
 
@@ -70,7 +68,7 @@ public class VoteController extends BaseController {
             voteRequest.setAppliesToGroup(group);
         } else {
             // todo: filter for permissions
-            model.addAttribute("possibleGroups", permissionBroker.getActiveGroupsWithPermission(getUserProfile(), GROUP_PERMISSION_CREATE_GROUP_VOTE));
+            model.addAttribute("possibleGroups", permissionBroker.getActiveGroups(getUserProfile(), GROUP_PERMISSION_CREATE_GROUP_VOTE));
         }
 
         model.addAttribute("vote", voteRequest);

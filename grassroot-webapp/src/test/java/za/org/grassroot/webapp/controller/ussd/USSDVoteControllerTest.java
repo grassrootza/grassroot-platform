@@ -21,7 +21,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -29,7 +28,7 @@ import java.util.List;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
+import static za.org.grassroot.webapp.util.USSDUrlUtil.backVoteUrl;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.saveVoteMenu;
 
 
@@ -140,7 +139,7 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
         testGroup.setId(1L);
         Event testVote = new Vote("someVote", Timestamp.from(Instant.now()), testUser, testGroup, true);
         testVote.setId(1L);
-        String interruptedUrl = saveVoteMenu("issue", 1L);
+        String interruptedUrl = saveVoteMenu("issue", testVote.getUid());
         String revisingUrl = backVoteUrl("issue", testVote.getUid());
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
@@ -191,7 +190,7 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
 
         Event testVote = new Vote("somevote", Timestamp.from(Instant.now()), testUser, new Group("somegroup", testUser));
         testVote.setId(1L);
-        String interruptedUrl = saveVoteMenu("time_custom", 1L);
+        String interruptedUrl = saveVoteMenu("time_custom", testVote.getUid());
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, interruptedUrl)).thenReturn(testUser);
 

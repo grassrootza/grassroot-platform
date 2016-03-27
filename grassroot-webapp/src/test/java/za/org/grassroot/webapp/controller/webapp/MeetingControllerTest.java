@@ -111,17 +111,16 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void sendFreeFormWorksWithGroupNotSpecified() throws Exception {
-        ArrayList<Group> dummyGroups = new ArrayList<>();
+        Set<Group> dummyGroups = new HashSet<>();
         Group dummyGroup = new Group("", sessionTestUser);
         dummyGroup.setId(dummyId);
         dummyGroups.add(dummyGroup);
-        when(groupManagementServiceMock.getActiveGroupsPartOf(sessionTestUser)).thenReturn(
-                dummyGroups);
+        when(permissionBrokerMock.getActiveGroups(sessionTestUser, null)).thenReturn(dummyGroups);
         mockMvc.perform(get("/meeting/free")).andExpect(status()
                 .isOk()).andExpect((view().name("meeting/free"))
         ).andExpect(model().attribute("userGroups", hasItem(dummyGroup)))
                 .andExpect(model().attribute("groupSpecified", is(false)));
-        verify(groupManagementServiceMock, times(2)).getActiveGroupsPartOf(sessionTestUser);
+        verify(permissionBrokerMock, times(2)).getActiveGroups(sessionTestUser, null);
         verifyZeroInteractions(eventManagementServiceMock);
         verifyZeroInteractions(eventLogManagementServiceMock);
         verifyNoMoreInteractions(userManagementServiceMock);
@@ -168,8 +167,8 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         minuteOptions.add(oneDay);
         when(userManagementServiceMock.fetchUserByUsername(testUserPhone)).thenReturn(sessionTestUser);
 //        when(eventManagementServiceMock.createMeeting(sessionTestUser)).thenReturn(dummyMeeting);
-        when(permissionBrokerMock.getActiveGroupsWithPermission(sessionTestUser,
-                                                                Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING)).thenReturn(dummyGroups);
+        when(permissionBrokerMock.getActiveGroups(sessionTestUser,
+                                                  Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING)).thenReturn(dummyGroups);
 
         mockMvc.perform(get("/meeting/create")).andExpect(status().isOk())
                 .andExpect((view().name("meeting/create")))
@@ -177,7 +176,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(model().attribute("userGroups", hasItem(dummyGroup)));
 
 //        verify(eventManagementServiceMock, times(1)).createMeeting(sessionTestUser);
-        verify(permissionBrokerMock, times(1)).getActiveGroupsWithPermission(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
+        verify(permissionBrokerMock, times(1)).getActiveGroups(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyNoMoreInteractions(eventManagementServiceMock);
@@ -325,9 +324,8 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void sendFreeFormWorksWithoutGroupId() throws Exception{
         Group testGroup = new Group("",sessionTestUser);
-        List<Group> dummyGroups = Arrays.asList(testGroup);
-        when(groupManagementServiceMock.getActiveGroupsPartOf(sessionTestUser)).thenReturn(dummyGroups);
-        when(groupManagementServiceMock.getActiveGroupsPartOf(sessionTestUser)).thenReturn(dummyGroups);
+        Set<Group> dummyGroups = Collections.singleton(testGroup);
+        when(permissionBrokerMock.getActiveGroups(sessionTestUser, null)).thenReturn(dummyGroups);
 
         testGroup.addMember(sessionTestUser);
 
@@ -335,7 +333,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(view().name("meeting/free")).andExpect(model()
                 .attribute("userGroups", hasItem(testGroup)))
                 .andExpect(model().attribute("groupSpecified", is(false)));
-        verify(groupManagementServiceMock, times(2)).getActiveGroupsPartOf(sessionTestUser);
+        verify(permissionBrokerMock, times(1)).getActiveGroups(sessionTestUser, null);
         verifyZeroInteractions(eventManagementServiceMock);
         verifyZeroInteractions(eventLogManagementServiceMock);
         verifyNoMoreInteractions(userManagementServiceMock);

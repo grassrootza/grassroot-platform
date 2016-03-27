@@ -50,14 +50,6 @@ public class MemberPicker {
     }
 
     public Set<String> getSelectedUids() {
-        /* Set<String> memberUids = new HashSet<>();
-        for (AssignmentWrapper m : listOfMembers) {
-            if (m.isSelected()) {
-                log.info("This user is selected: " + m.getNameToDisplay());
-                memberUids.add(m.getUserUid());
-            }
-        }
-        return memberUids;*/
         return listOfMembers.stream().filter(m -> m.isSelected()).map(m -> m.getUserUid()).collect(Collectors.toSet());
     }
 

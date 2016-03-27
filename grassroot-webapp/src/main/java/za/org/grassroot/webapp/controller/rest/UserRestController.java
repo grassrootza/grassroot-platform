@@ -14,6 +14,7 @@ import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.PasswordTokenService;
+import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
@@ -38,6 +39,9 @@ public class UserRestController {
 
     @Autowired
     GroupManagementService groupManagementService;
+
+    @Autowired
+    PermissionBroker permissionBroker;
 
 
 
@@ -97,7 +101,7 @@ public class UserRestController {
         if (passwordTokenService.isVerificationCodeValid(phoneNumber, token)) {
             User user = userManagementService.loadOrSaveUser(phoneNumber);
             VerificationTokenCode longLivedToken = passwordTokenService.generateLongLivedCode(user);
-            boolean hasGroups =  !groupManagementService.getActiveGroupsPartOf(user).isEmpty();
+            boolean hasGroups = userManagementService.isPartOfActiveGroups(user);
             return new ResponseEntity<>(new AuthenticationResponseWrapper(HttpStatus.OK, RestMessage.LOGIN_SUCCESS,
                     RestStatus.SUCCESS, new TokenDTO(longLivedToken),user.getDisplayName(), hasGroups), HttpStatus.OK);
         }

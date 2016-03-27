@@ -34,19 +34,9 @@ public interface GroupManagementService {
 
     public boolean hasActiveGroupsPartOf(User user); // replace in time wth getGroupsByPermission
 
-    public List<Group> getActiveGroupsPartOf(User sessionUser);
-
-    public List<GroupDTO> getActiveGroupsPartOfOrderedByRecent(User sessionUser);
-
     public Page<Group> getPageOfActiveGroups(User sessionUser, int pageNumber, int pageSize);
 
     public List<Group> getListGroupsFromLogbooks(List<LogBook> logBooks);
-
-    /*
-    Methods to find if a user has an outstanding group management action to perform or groups on which they can perform it
-     */
-
-    public boolean isUserInGroup(Group group, User user);
 
     /*
     Methods do deal with sub groups and parent groups

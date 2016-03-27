@@ -255,7 +255,7 @@
           <button class="btn btn-default">Call a meeting</button></a>
         <a th:if="${canCallVote}" href="" th:href="@{/vote/create(groupUid=${group.uid})}">
           <button class="btn btn-default">Take a vote</button></a>
-        <a href="" th:href="@{/log/view(groupId=${group.id})}"><button class="btn btn-default">Manage to-dos</button></a>
+        <a href="" th:href="@{/log/view(groupUid=${group.uid})}"><button class="btn btn-default">Manage to-dos</button></a>
       </div>
     </div>
 

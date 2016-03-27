@@ -62,21 +62,6 @@ public class GroupManager implements GroupManagementService {
     }
 
     @Override
-    public List<Group> getActiveGroupsPartOf(User sessionUser) {
-        return groupRepository.findByMembershipsUserAndActive(sessionUser, true);
-    }
-
-    @Override
-    public List<GroupDTO> getActiveGroupsPartOfOrderedByRecent(User sessionUser) {
-        List<Object[]> listObjArray =  groupRepository.findActiveUserGroupsOrderedByRecentEvent(sessionUser.getId());
-        List<GroupDTO> list = new ArrayList<>();
-        for (Object[] objArray : listObjArray) {
-            list.add(new GroupDTO(objArray));
-        }
-        return list;
-    }
-
-    @Override
     public Page<Group> getPageOfActiveGroups(User sessionUser, int pageNumber, int pageSize) {
         return groupRepository.findByMembershipsUserAndActive(sessionUser, new PageRequest(pageNumber, pageSize), true);
     }
@@ -87,16 +72,6 @@ public class GroupManager implements GroupManagementService {
                 .filter(logBook -> logBook.getParent().getJpaEntityType().equals(JpaEntityType.GROUP))
                 .map(logBook -> (Group) logBook.getParent())
                 .collect(Collectors.toList());
-    }
-
-    /*
-    Methods to find if a user has an outstanding group management action to perform or groups on which they can perform it
-     */
-
-    @Override
-    public boolean isUserInGroup(Group group, User user) {
-        // at some point may want to make this more efficient than getter method
-        return groupRepository.countByIdAndMembershipsUser(group.getId(), user) > 0;
     }
 
     /*

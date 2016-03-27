@@ -39,6 +39,10 @@ public interface UserManagementService {
 
     boolean isFirstInitiatedSession(User user);
 
+    boolean isPartOfActiveGroups(User user);
+
+
+
     User save(User userToSave);
 
     void saveList(List<User> usersToSave);

@@ -6,9 +6,11 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -131,20 +133,51 @@ public class PermissionBrokerImpl implements PermissionBroker {
     }
 
     public boolean isGroupPermissionAvailable(User user, Group group, Permission requiredPermission) {
-        for (Membership membership : user.getMemberships()) {
-            if (membership.getGroup().equals(group)) {
-                return membership.getRole().getPermissions().contains(requiredPermission);
+        if (requiredPermission == null) {
+            return group.getMembers().contains(user);
+        } else {
+            for (Membership membership : user.getMemberships()) {
+                if (membership.getGroup().equals(group)) {
+                    return membership.getRole().getPermissions().contains(requiredPermission);
+                }
             }
+            return false;
         }
-        return false;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Set<Group> getActiveGroupsWithPermission(User user, Permission requiredPermission) {
+    public Set<Group> getActiveGroups(User user, Permission requiredPermission) {
         List<Group> allActiveGroups = groupRepository.findByMembershipsUserAndActive(user, true);
-        return allActiveGroups.stream().filter(g -> isGroupPermissionAvailable(user, g, requiredPermission)).
+        if (requiredPermission == null)
+            return new HashSet<>(allActiveGroups);
+        else
+            return allActiveGroups.stream().filter(g -> isGroupPermissionAvailable(user, g, requiredPermission)).
                 collect(Collectors.toSet());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Set<GroupDTO> getActiveGroupDTOs(User user, Permission requiredPermission) {
+
+        List<Object[]> listObjArray =  groupRepository.findActiveUserGroupsOrderedByRecentEvent(user.getId());
+        final boolean filterByPermission = (requiredPermission != null);
+
+        // todo: the permission checking version of this defeats the purpose, by getting all the groups anyway, so, rethink
+        List<GroupDTO> list = new ArrayList<>();
+        for (Object[] objArray : listObjArray) {
+            GroupDTO groupDTO = new GroupDTO(objArray);
+            if (filterByPermission) {
+                for (Membership membership : user.getMemberships()) {
+                    if (membership.getGroup().getUid().equals(groupDTO.getUid()) && membership.getRole().getPermissions().contains(requiredPermission))
+                        list.add(groupDTO);
+                }
+            } else {
+                list.add(groupDTO);
+            }
+        }
+
+        return new HashSet<>(list);
     }
 
     @Override

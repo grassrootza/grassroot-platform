@@ -71,7 +71,7 @@ public class MeetingController extends BaseController {
             groupSpecified = true;
         } else {
             // todo: filter by permissions, and include number of members (for confirm modal)
-            model.addAttribute("userGroups", permissionBroker.getActiveGroupsWithPermission(sessionUser, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING));
+            model.addAttribute("userGroups", permissionBroker.getActiveGroups(sessionUser, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING));
             groupSpecified = false;
         }
 
@@ -250,13 +250,9 @@ public class MeetingController extends BaseController {
             model.addAttribute("group", groupBroker.load(groupUid));
             groupSpecified = true;
         } else {
-
-            System.out.println("No group selected, pass the list of possible");
-            model.addAttribute("userGroups", groupManagementService.getActiveGroupsPartOf(sessionUser)); // todo: or just use user.getGroupsPartOf?
-            List<Group> activeGroups = groupManagementService.getActiveGroupsPartOf(sessionUser);
+            Set<Group> activeGroups = permissionBroker.getActiveGroups(sessionUser, null); // only where organizer?
             model.addAttribute("userGroups", activeGroups);
             log.info("ZOG: MTG: userGroups ..." + activeGroups);
-
             groupSpecified = false;
         }
         model.addAttribute("groupSpecified", groupSpecified); // slightly redundant, but use it to tell Thymeleaf what to do

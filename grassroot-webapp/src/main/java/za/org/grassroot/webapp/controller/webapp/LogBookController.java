@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -64,7 +63,7 @@ public class LogBookController extends BaseController {
         if (groupUid == null || groupUid.trim().equals("")) {
             model.addAttribute("groupSpecified", false);
             model.addAttribute("possibleGroups", permissionBroker.
-                    getActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY));
+                    getActiveGroups(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY));
             entryWrapper = new LogBookWrapper(JpaEntityType.GROUP);
         } else {
             model.addAttribute("groupSpecified", true);
@@ -120,8 +119,6 @@ public class LogBookController extends BaseController {
         Set<String> assignedUids;
         if ("members".equals(logBookEntry.getAssignmentType())) {
             MemberPicker listOfMembers = logBookEntry.getMemberPicker();
-            log.info("The member picker that we have is ... " + listOfMembers.toString());
-            log.info("The number of selected memberUids : ... " + listOfMembers.getSelectedUids().size());
             log.info("The memberUids are : ..." + Joiner.on(", ").join(listOfMembers.getSelectedUids()));
             assignedUids = listOfMembers.getSelectedUids();
         } else {
@@ -161,13 +158,14 @@ public class LogBookController extends BaseController {
     }
 
     @RequestMapping(value = "/log/details")
-    public String viewLogBookDetails(Model model, @RequestParam(value="logBookId", required=true) Long logBookId) {
+    public String viewLogBookDetails(Model model, @RequestParam String logBookUid) {
 
-        // todo: be able to view "children" of the log book once design changed to allow it (replicate by logbook rather than group)
+        // todo: be able to view "children" of the log book once design changed to allow it
+        // (replicate by logbook rather than group)
 
-        log.info("Finding details about logbook entry with Id ..." + logBookId);
+        log.info("Finding details about logbook entry with Id ..." + logBookUid);
 
-        LogBook logBookEntry = logBookService.load(logBookId);
+        LogBook logBookEntry = logBookBroker.load(logBookUid);
 
         log.info("Retrieved logBook entry with these details ... " + logBookEntry);
 
@@ -246,14 +244,14 @@ public class LogBookController extends BaseController {
         if (completedByAssigned || !designateCompletor) {
             log.info("No user assigned, so either setting as complete today or specifying a completion date");
             if (setCompletedDate) {
-                logBookBroker.complete(logBook.getUid(), completedDate, null);
+                logBookBroker.complete(logBook.getUid(), completedDate.toLocalDateTime(), null);
             } else {
                 logBookBroker.complete(logBook.getUid(), null, null);
             }
         } else {
             log.info("User assigned, so marking it accordingly");
             if (setCompletedDate) {
-                logBookBroker.complete(logBook.getUid(), completedDate, completedByUser.getUid());
+                logBookBroker.complete(logBook.getUid(), completedDate.toLocalDateTime(), completedByUser.getUid());
             } else {
                 logBookBroker.complete(logBook.getUid(), null, completedByUser.getUid());
             }
@@ -316,7 +314,7 @@ public class LogBookController extends BaseController {
         savedLogBook = logBookService.save(savedLogBook);
 
         addMessage(model, MessageType.SUCCESS, "log.modified.done", request);
-        return viewLogBookDetails(model, savedLogBook.getId());
+        return viewLogBookDetails(model, savedLogBook.getUid());
     }
 
     private Map<Integer, String> reminderTimeDescriptions() {

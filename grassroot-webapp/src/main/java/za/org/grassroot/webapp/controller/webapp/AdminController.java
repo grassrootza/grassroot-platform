@@ -17,7 +17,6 @@ import za.org.grassroot.core.dto.MaskedUserDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.*;
-import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.MemberWrapper;
 
@@ -46,6 +45,9 @@ public class AdminController extends BaseController {
 
     @Autowired
     private GroupBroker groupBroker;
+
+    @Autowired
+    private PermissionBroker permissionBroker;
 
     @Autowired
     private AccountManagementService accountManagementService;
@@ -141,7 +143,7 @@ public class AdminController extends BaseController {
             // display just that user, todo: rethink this once refactored all to Uids
             User user = userManagementService.getUserById(foundUsers.get(0).getId());
             model.addAttribute("user", foundUsers.get(0));
-            model.addAttribute("numberGroups", groupManagementService.getActiveGroupsPartOf(user).size());
+            model.addAttribute("numberGroups", permissionBroker.getActiveGroupDTOs(user, null).size());
             pageToDisplay = "admin/users/view";
         } else {
             // display a list of users

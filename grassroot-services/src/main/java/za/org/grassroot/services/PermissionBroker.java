@@ -3,19 +3,57 @@ package za.org.grassroot.services;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
+
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.Set;
 
 public interface PermissionBroker {
 
+    /**
+     * Sets the role permissions for a group from one of the permission templates available
+     * @param group The group for which the roles' permissions are being reset
+     * @param template The template from which to draw the permissions
+     */
     void setRolePermissionsFromTemplate(Group group, GroupPermissionTemplate template);
 
+    /**
+     * Checks if a user has a required permission on a group and throws an error if the user does not
+     * @param user The user for whom we are checking permission
+     * @param targetGroup The group on which we are checking permission
+     * @param requiredPermission The permission (from the Permission enum) to check. If this is null, the method just
+     *                           checks that the user is a member of this group
+     * @throws AccessDeniedException
+     */
     void validateGroupPermission(User user, Group targetGroup, Permission requiredPermission);
 
+    /**
+     * Similar to validateGroupPermission, but returns true or false instead of throwing an error
+     * @param user The user to check
+     * @param group The group that the user is supposed ot be a member of
+     * @param requiredPermission The permission to check (passing null checks for group membership)
+     * @return true if the permission is available, false if not
+     */
     boolean isGroupPermissionAvailable(User user, Group group, Permission requiredPermission);
 
-    Set<Group> getActiveGroupsWithPermission(User user, Permission requiredPermission);
+    /**
+     * Return the set of groups on which the user has a requisite permission, and which have not been deactivated.
+     * @param user The user for whom the list of groups is required
+     * @param requiredPermission The permission being checked. Passing null returns all active groups the user is in.
+     * @return The requisite set of groups (returns full group entities)
+     */
+    Set<Group> getActiveGroups(User user, Permission requiredPermission);
+
+    /**
+     * Returns the set of active groups for which the user has the required permission. Returns the GroupDTO entity,
+     * which contains less internal information than the Group entity, but includes last event and modification timestamps.
+     * @param user The user for whom the set of groups is required
+     * @param requiredPermission The permission being checked. Passing null returns all active groups.
+     * @return The set of GroupDTO entities for the user.
+     */
+    Set<GroupDTO> getActiveGroupDTOs(User user, Permission requiredPermission);
 
     Set<Permission> getPermissions(Group group, String roleName);
 

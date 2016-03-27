@@ -10,14 +10,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by luke on 2015/10/16.
+ * Created by aakil.
  */
 public class GroupViewNodeSql {
 
     private static final Logger log = LoggerFactory.getLogger(GroupViewNodeSql.class);
 
-
-    // private GroupViewNode parent;
     private List<GroupViewNodeSql> subgroups;
 
     private String groupName;

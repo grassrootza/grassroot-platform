@@ -3,6 +3,8 @@ package za.org.grassroot.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
@@ -14,6 +16,7 @@ import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -32,6 +35,14 @@ public class LogBookBrokerImpl implements LogBookBroker {
 	private LogBookRepository logBookRepository;
 	@Autowired
 	private GenericJmsTemplateProducerService jmsTemplateProducerService;
+
+	@Autowired
+	PermissionBroker permissionBroker;
+
+	@Override
+	public LogBook load(String logBookUid) {
+		return logBookRepository.findOneByUid(logBookUid);
+	}
 
 	@Override
 	@Transactional
@@ -106,7 +117,7 @@ public class LogBookBrokerImpl implements LogBookBroker {
 
 	@Override
 	@Transactional
-	public void complete(String logBookUid, Timestamp completionTime, String completedByUserUid) {
+	public void complete(String logBookUid, LocalDateTime completionTime, String completedByUserUid) {
 		Objects.requireNonNull(logBookUid);
 
 		User completedByUser = completedByUserUid == null ? null : userRepository.findOneByUid(completedByUserUid);
@@ -120,7 +131,21 @@ public class LogBookBrokerImpl implements LogBookBroker {
 		}
 
 		logBook.setCompleted(true);
-		logBook.setCompletedDate(completionTime);
+		logBook.setCompletedDate(Timestamp.valueOf(completionTime));
 		logBook.setCompletedByUser(completedByUser);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Page<LogBook> retrieveGroupLogBooks(String userUid, String groupUid, boolean entriesComplete, int pageNumber, int pageSize) {
+		Objects.requireNonNull(userUid);
+		Objects.requireNonNull(groupUid);
+
+		User user = userRepository.findOneByUid(userUid);
+		Group group = groupRepository.findOneByUid(groupUid);
+
+		permissionBroker.validateGroupPermission(user, group, null); // make sure user is part of group
+
+		return logBookRepository.findByGroupUidAndCompletedOrderByActionByDateDesc(groupUid, entriesComplete, new PageRequest(pageNumber, pageSize));
 	}
 }

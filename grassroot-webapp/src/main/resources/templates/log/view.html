@@ -31,7 +31,7 @@
         <tbody>
         <tr th:each="entry : ${incompleteEntries}">
           <td><span th:text="${#dates.format(entry.createdDateTime, 'dd MMM yyyy')}">Date time</span></td>
-          <td><a th:href="@{details(logBookId=${entry.id})}"><span th:text="${entry.message}">Description</span></a></td>
+          <td><a th:href="@{details(logBookUid=${entry.uid})}"><span th:text="${entry.message}">Description</span></a></td>
           <td><span th:text="${#dates.format(entry.actionByDate, 'dd MMM yyyy, HH:mm')}">Due date</span></td>
           <td><a th:href="@{complete(logBookId=${entry.id})}"><button class="info">Mark complete</button></a></td>
         </tr>
@@ -55,7 +55,7 @@
         <tbody>
         <tr th:each="entry: ${completedEntries}">
           <td><span th:text="${#dates.format(entry.createdDateTime, 'dd MMM yyyy')}">Date time created</span></td>
-          <td><a th:href="@{details(logBookId=${entry.id})}"><span th:text="${entry.message}">Description</span></a></td>
+          <td><a th:href="@{details(logBookUid=${entry.uid})}"><span th:text="${entry.message}">Description</span></a></td>
           <td><span th:text="${#dates.format(entry.completedDate, 'dd MMM yyyy')}">Completed date</span></td>
           <td></td>
         </tr>
