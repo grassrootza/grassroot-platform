@@ -32,8 +32,8 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     private static final String testUserPhone = "27801110000";
     private static final String testUserUid = "test-user-unique-id";
     private static final String phoneParam = "msisdn";
-    private static final String groupParam = "groupId";
-    private static final String testGroupIdString = "1";
+    private static final String groupParam = "groupUid";
+    private String testGroupIdString;
 
     private static final String path = "/ussd/group/";
 
@@ -58,7 +58,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         testUser = new User(testUserPhone);
         testGroup = new Group("test group", testUser);
         testMembers.add(new MembershipInfo(testUserPhone, BaseRoles.ROLE_GROUP_ORGANIZER, null));
-
+        testGroupIdString = testGroup.getUid();
     }
 
     @Test
@@ -70,9 +70,9 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.isPartOfActiveGroups(testUser)).thenReturn(false);
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
-        verifyNoMoreInteractions(userManagementServiceMock);
         verify(userManagementServiceMock, times(1)).isPartOfActiveGroups(testUser);
-        verifyNoMoreInteractions(groupManagementServiceMock);
+        verifyNoMoreInteractions(userManagementServiceMock);
+        verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
 
@@ -95,7 +95,6 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupBrokerMock, times(2)).isDeactivationAvailable(testUser, testGroup, true);
         verify(groupBrokerMock, times(2)).load(testGroup.getUid());
-        verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
 
@@ -114,7 +113,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupBrokerMock, times(2)).load(testGroup.getUid());
-        verifyNoMoreInteractions(groupManagementServiceMock);
+        verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
 
@@ -128,8 +127,8 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
                 param("request", "a renamed test group")).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupBrokerMock, times(1)).updateName(testGroup.getUid(), testUser.getUid(), "a renamed test group");
-        verifyNoMoreInteractions(groupManagementServiceMock);
+        verify(groupBrokerMock, times(1)).updateName(testUser.getUid(), testGroup.getUid(), "a renamed test group");
+        verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
 
@@ -150,7 +149,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupBrokerMock, times(2)).load(testGroup.getUid());
-        verifyNoMoreInteractions(groupManagementServiceMock);
+        verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
 
@@ -165,14 +164,13 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         when(groupBrokerMock.openJoinToken(testUserUid, testGroup.getUid(), true, LocalDateTime.now().plusDays(3))).
                 thenReturn("abc");
 
-        mockMvc.perform(get(path + "token-do").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString).
+        mockMvc.perform(get(path + "token-do").param(phoneParam, testUserPhone).param(groupParam, testGroup.getUid()).
                 param("days", "3")).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
-        verify(groupBrokerMock, times(1)).load(testGroup.getUid());
-        verify(groupBrokerMock, times(1)).openJoinToken(testUser.getUid(), testGroup.getUid(), true, any(LocalDateTime.class));
+        verify(groupBrokerMock, times(1)).openJoinToken(eq(testUser.getUid()), eq(testGroup.getUid()), eq(true), any(LocalDateTime.class));
         verifyNoMoreInteractions(userManagementServiceMock);
-        verifyNoMoreInteractions(groupManagementServiceMock);
+        verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
 
@@ -183,12 +181,12 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         testGroup.setTokenExpiryDateTime(Timestamp.valueOf(LocalDateTime.now().plusDays(3)));
         when(userManagementServiceMock.findByInputNumber(testUserPhone, saveGroupMenu("token", testGroup.getUid()))).thenReturn(testUser);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
-        mockMvc.perform(get(path + "token").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
+        mockMvc.perform(get(path + "token").param(phoneParam, testUserPhone).param(groupParam, testGroup.getUid())).
                 andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, saveGroupMenu("token", testGroup. getUid()));
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupBrokerMock, times(1)).load(testGroup.getUid());
-        verifyNoMoreInteractions(groupManagementServiceMock);
+        verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
 
@@ -208,8 +206,8 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupBrokerMock, times(2)).load(testGroup.getUid());
-        // verify(groupManagementServiceMock, times(1)).extendGroupToken(testGroup, 3, testUser);
-        verifyNoMoreInteractions(groupManagementServiceMock);
+        verify(groupBrokerMock, times(1)).openJoinToken(eq(testUser.getUid()), eq(testGroup.getUid()), eq(true), any());
+        verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
 
@@ -235,10 +233,8 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, null);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupBrokerMock, times(1)).load(testGroup.getUid());
         verify(groupBrokerMock, times(1)).closeJoinToken(testUser.getUid(), testGroup.getUid());
-
-        verifyNoMoreInteractions(groupManagementServiceMock);
+        verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
 
@@ -273,9 +269,6 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupBrokerMock, times(1)).addMembers(testUser.getUid(), testGroup.getUid(), ordinaryMember("0801110001"));
         verifyNoMoreInteractions(groupBrokerMock);
-        verify(groupBrokerMock, times(1)).load(testGroup.getUid());
-        verify(groupBrokerMock, times(1)).load(testGroup.getUid());
-        verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
 
@@ -304,7 +297,6 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupBrokerMock, times(1)).unsubscribeMember(testUser.getUid(), testGroup.getUid());
         verifyNoMoreInteractions(groupBrokerMock);
-        verifyZeroInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
 
@@ -325,7 +317,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupBrokerMock, times(2)).mergeCandidates(testUser.getUid(), testGroup.getUid());
-        verifyNoMoreInteractions(groupManagementServiceMock);
+        verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
 
@@ -347,7 +339,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupBrokerMock, times(2)).mergeCandidates(testUser.getUid(), testGroup.getUid());
-        verifyNoMoreInteractions(groupManagementServiceMock);
+        verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(groupManagementServiceMock);
     }
 
@@ -356,16 +348,20 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         resetTestGroup();
         Group mergingGroup = new Group("tg1", testUser);
         mergingGroup.setId(2L);
-        String urlToSave = saveGroupMenuWithParams("merge-confirm", mergingGroup.getUid(), "&firstGroupSelected=" + testGroup.getId());
+        String urlToSave = saveGroupMenuWithParams("merge-confirm",
+                                                   mergingGroup.getUid(), "&firstGroupSelected=" + testGroup.getUid());
+
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         when(groupBrokerMock.load(mergingGroup.getUid())).thenReturn(mergingGroup);
-        mockMvc.perform(get(path + "merge-confirm").param(phoneParam, testUserPhone).param(groupParam, "2").
-                param("firstGroupSelected", "" + testGroup.getId())).andExpect(status().isOk());
+
+        mockMvc.perform(get(path + "merge-confirm").param(phoneParam, testUserPhone).param(groupParam, mergingGroup.getUid()).
+                param("firstGroupSelected", testGroup.getUid())).andExpect(status().isOk());
+
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupBrokerMock, times(2)).load(anyString());
-        verifyNoMoreInteractions(groupManagementServiceMock);
+        verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
 
@@ -380,14 +376,13 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         when(groupBrokerMock.load(mergingGroup.getUid())).thenReturn(mergingGroup);
         when(groupBrokerMock.merge(testUser.getUid(), testGroup.getUid(), mergingGroup.getUid(),
                                                     false, false, false, null)).thenReturn(mergingGroup);
-        mockMvc.perform(get(path + "merge-do").param(phoneParam, testUserPhone).param("groupId1", testGroupIdString).
-                param("groupId2", "" + mergingGroup.getId()).param("action", "inactive")).andExpect(status().isOk());
+        mockMvc.perform(get(path + "merge-do").param(phoneParam, testUserPhone).param("groupUid1", testGroup.getUid()).
+                param("groupUid2", "" + mergingGroup.getUid()).param("action", "inactive")).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupBrokerMock, times(1)).merge(testUser.getUid(), testGroup.getUid(), mergingGroup.getUid(), false, false, false, null);
         verify(groupBrokerMock, times(2)).load(anyString());
         verifyNoMoreInteractions(groupBrokerMock);
-        verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
 
@@ -396,11 +391,11 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         resetTestGroup();
         testGroup.setActive(true);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
-        mockMvc.perform(get(path + "inactive").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
+        mockMvc.perform(get(path + "inactive").param(phoneParam, testUserPhone).param(groupParam, testGroup.getUid())).
                 andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verifyNoMoreInteractions(groupManagementServiceMock);
+        verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
 
@@ -416,16 +411,14 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
         mockMvc.perform(get(path + "inactive-do").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
                 andExpect(status().isOk());
-        mockMvc.perform(get(path + "inactive-do").param(phoneParam, testUserPhone).param(groupParam, "" + errorGroup.getId())).
+        mockMvc.perform(get(path + "inactive-do").param(phoneParam, testUserPhone).param(groupParam, errorGroup.getUid())).
                 andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupBrokerMock, times(1)).deactivate(testUser.getUid(), testGroup.getUid(), true);
+        verify(groupBrokerMock, times(1)).deactivate(testUser.getUid(), errorGroup.getUid(), true);
         // verifyNoMoreInteractions(groupBrokerMock); // need to test exception is thrown ...
-        verify(groupBrokerMock, times(1)).load(testGroup.getUid());
-        verify(groupBrokerMock, times(1)).load(errorGroup.getUid());
-        verifyNoMoreInteractions(groupManagementServiceMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
 
@@ -437,7 +430,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         mockMvc.perform(get(path + "create").param(phoneParam, testUserPhone)).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verifyZeroInteractions(groupManagementServiceMock);
+        verifyZeroInteractions(groupBrokerMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
 
@@ -456,9 +449,8 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(1)).setLastUssdMenu(testUser, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupBrokerMock, times(1)).create(testUser.getUid(), nameToPass, null, testMembers, template, null);
-        verifyNoMoreInteractions(groupBrokerMock);
         verify(groupBrokerMock, times(1)).openJoinToken(testUser.getUid(), testGroup.getUid(), false, null);
-        verifyNoMoreInteractions(groupManagementServiceMock);
+        verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
 
@@ -478,9 +470,6 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupBrokerMock, times(1)).load(testGroup.getUid());
-        verify(groupBrokerMock, times(1)).load(testGroup.getUid());
-        verifyNoMoreInteractions(groupManagementServiceMock);
         verify(groupBrokerMock, times(1)).addMembers(testUser.getUid(), testGroup.getUid(), member);
         verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(eventManagementServiceMock);
@@ -497,7 +486,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupBrokerMock, times(1)).load(testGroup.getUid());
-        verifyNoMoreInteractions(groupManagementServiceMock);
+        verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
 

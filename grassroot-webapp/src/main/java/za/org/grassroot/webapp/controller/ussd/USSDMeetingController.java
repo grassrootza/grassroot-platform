@@ -157,7 +157,7 @@ public class USSDMeetingController extends USSDController {
 
         // if priorInput exists, we have been interrupted, so use that as userInput, else use what is passed as 'request'
         String userInput = (priorInput != null) ? USSDUrlUtil.decodeParameter(priorInput) : userResponse;
-        String includeGroup = (groupUid != null || groupUid.equals("")) ? groupUidUrlSuffix + groupUid : ""; // there is no case where eventId is not null but groupId is
+        String includeGroup = (groupUid != null && !groupUid.equals("")) ? groupUidUrlSuffix + groupUid : ""; // there is no case where eventId is not null but groupId is
         String includeEvent = (eventId != null) ? ("&" + eventIdParam + "=" + eventId) : "";
 
         String urlToSave = USSDUrlUtil.saveMenuUrlWithInput(thisSection, groupHandlingMenu, includeGroup + includeEvent, userInput);
@@ -169,7 +169,7 @@ public class USSDMeetingController extends USSDController {
             thisMenu = new USSDMenu(true);
             if (groupUid == null || groupUid.equals("")) {
                 String newGroupUid = ussdGroupUtil.addNumbersToNewGroup(user, USSDSection.MEETINGS, thisMenu, userInput, groupHandlingMenu);
-                cacheManager.putUssdMenuForUser(phoneNumber, USSDUrlUtil.
+                cacheManager.putUssdMenuForUser(inputNumber, USSDUrlUtil.
                         saveMenuUrlWithInput(thisSection, groupHandlingMenu, groupUidUrlSuffix + newGroupUid, userInput));
             } else {
                 thisMenu = ussdGroupUtil.addNumbersToExistingGroup(
@@ -209,13 +209,14 @@ public class USSDMeetingController extends USSDController {
                               @RequestParam(value = interruptedFlag, required = false) boolean interrupted,
                               @RequestParam(value = "revising", required = false) boolean revising) throws URISyntaxException {
 
-        User sessionUser = userManager.findByInputNumber(inputNumber, saveMeetingMenu(subjectMenu, mtgRequestUid, revising));
+        User sessionUser = userManager.findByInputNumber(inputNumber);
 
         if (!interrupted && !revising) {
             MeetingRequest meetingRequest = eventRequestBroker.createEmptyMeetingRequest(sessionUser.getUid(), groupUid);
             mtgRequestUid = meetingRequest.getUid();
         }
 
+        cacheManager.putUssdMenuForUser(inputNumber, saveMeetingMenu(subjectMenu, mtgRequestUid, revising));
         String promptMessage = getMessage(thisSection, subjectMenu, promptKey, sessionUser);
         String nextUrl = (!revising) ? nextUrl(subjectMenu, mtgRequestUid) : confirmUrl(subjectMenu, mtgRequestUid);
         return menuBuilder(new USSDMenu(promptMessage, nextUrl));
@@ -372,7 +373,7 @@ public class USSDMeetingController extends USSDController {
         String mtgDescription;
 
         if (meeting.isRsvpRequired()) {
-            // todo: use enums instead of literal strings for the map
+            // todo: use enums instead of literal strings for the map (i.e., switch to RSVP toals DTO
             Map<String, Integer> rsvpResponses = eventManager.getMeetingRsvpTotals(meeting);
             int answeredYes = rsvpResponses.get("yes");
             int answeredNo = rsvpResponses.get("no");
@@ -415,7 +416,7 @@ public class USSDMeetingController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber);
         MeetingRequest changeRequest = (requestUid == null) ? eventRequestBroker.createChangeRequest(user.getUid(), eventUid) :
                 (MeetingRequest) eventRequestBroker.load(requestUid);
-        cacheManager.putUssdMenuForUser(inputNumber, editingMtgMenuUrl(changeMeetingLocation, eventUid, requestUid, null));
+        cacheManager.putUssdMenuForUser(inputNumber, editingMtgMenuUrl(changeMeetingLocation, eventUid, changeRequest.getUid(), null));
         USSDMenu menu = new USSDMenu(getMessage(thisSection, changeMeetingLocation, promptKey, changeRequest.getEventLocation(), user));
         menu.setFreeText(true);
         menu.setNextURI(editingMtgMenuUrl(modifyConfirm, eventUid, changeRequest.getUid(), changeMeetingLocation));
@@ -430,7 +431,7 @@ public class USSDMeetingController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber);
         MeetingRequest changeRequest = (requestUid == null) ? eventRequestBroker.createChangeRequest(user.getUid(), eventUid) :
                 (MeetingRequest) eventRequestBroker.load(requestUid);
-        cacheManager.putUssdMenuForUser(inputNumber, editingMtgMenuUrl(newTime, eventUid, requestUid, null));
+        cacheManager.putUssdMenuForUser(inputNumber, editingMtgMenuUrl(newTime, eventUid, changeRequest.getUid(), null));
         String existingTime = changeRequest.getEventStartDateTime().toLocalDateTime().format(DateTimeUtil.preferredTimeFormat);
         USSDMenu menu = new USSDMenu(getMessage(thisSection, "change", "time." + promptKey, existingTime, user));
         menu.setFreeText(true);
@@ -445,7 +446,7 @@ public class USSDMeetingController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber);
         MeetingRequest changeRequest = (requestUid == null) ? eventRequestBroker.createChangeRequest(user.getUid(), eventUid) :
                 (MeetingRequest) eventRequestBroker.load(requestUid);
-        cacheManager.putUssdMenuForUser(inputNumber, editingMtgMenuUrl(newDate, eventUid, requestUid, null));
+        cacheManager.putUssdMenuForUser(inputNumber, editingMtgMenuUrl(newDate, eventUid, changeRequest.getUid(), null));
         String existingDate = changeRequest.getEventStartDateTime().toLocalDateTime().format(DateTimeUtil.preferredDateFormat);
         USSDMenu menu = new USSDMenu(getMessage(thisSection, "change", "date." + promptKey, existingDate, user));
         menu.setFreeText(true);

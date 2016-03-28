@@ -1,5 +1,7 @@
 package za.org.grassroot.services;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.dto.GroupDTO;
 
@@ -13,6 +15,8 @@ import java.util.List;
  * todo: create a custom specification so that we can use jpa page instead
  */
 public class GroupPage {
+
+    private static final Logger log = LoggerFactory.getLogger(GroupPage.class);
 
     private List<GroupDTO> groups;
     private boolean next;
@@ -38,7 +42,9 @@ public class GroupPage {
     // utility method for tests, and may come in handy in future
     public static GroupPage createFromGroups(List<Group> originalGroups, int pageNumber, int pageSize) {
         List<GroupDTO> groupDTOs = new ArrayList<>();
-        for (Group g : originalGroups) groupDTOs.add(new GroupDTO(g));
+        for (Group g : originalGroups) {
+            groupDTOs.add(new GroupDTO(g));
+        }
         return new GroupPage(groupDTOs, pageNumber, pageSize);
     }
 
@@ -49,5 +55,16 @@ public class GroupPage {
     public boolean hasPrevious() { return previous; }
 
     public int getTotalElements() { return totalElements; }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("GroupPage{");
+        sb.append("totalElements=").append(totalElements);
+        for (GroupDTO g : groups) {
+            sb.append(", group: ").append(g.getGroupName());
+        }
+        sb.append("}");
+        return sb.toString();
+    }
 
 }

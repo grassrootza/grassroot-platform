@@ -72,7 +72,8 @@ public class USSDGroupController extends USSDController {
                              @RequestParam(value="interrupted", required=false) boolean interrupted) throws URISyntaxException {
 
         // in case went "back" from menu in middle of create group
-        User sessionUser = (interrupted) ? userManager.findByInputNumber(inputNumber, null) : userManager.findByInputNumber(inputNumber);
+        User sessionUser = (interrupted) ? userManager.findByInputNumber(inputNumber, null) :
+                userManager.findByInputNumber(inputNumber);
         return menuBuilder(ussdGroupUtil.askForGroupAllowCreateNew(sessionUser, USSDSection.GROUP_MANAGER, existingGroupMenu,
                                                                    createGroupMenu, createGroupMenu + doSuffix, null));
     }
@@ -291,7 +292,7 @@ public class USSDGroupController extends USSDController {
     @RequestMapping(value = groupPath + groupTokenMenu + doSuffix)
     @ResponseBody
     public Request createToken(@RequestParam(value= phoneNumber) String inputNumber,
-                               @RequestParam(value= groupIdParam) String groupUid,
+                               @RequestParam(value= groupUidParam) String groupUid,
                                @RequestParam(value="days") Integer daysValid) throws URISyntaxException {
 
         /* Generate a token, but also set the interruption switch back to null -- group creation is finished, if group was created */
@@ -453,7 +454,6 @@ public class USSDGroupController extends USSDController {
 
         USSDMenu menu;
         User user = userManager.findByInputNumber(inputNumber, saveGroupMenu(mergeGroupMenu, groupUid));
-        Group group = groupBroker.load(groupUid);
         // todo: debug why this is returning inactive groups (service method has active flag)
         Set<Group> mergeCandidates = groupBroker.mergeCandidates(user.getUid(), groupUid);
 
@@ -478,8 +478,9 @@ public class USSDGroupController extends USSDController {
 
         // todo: specify which one is smaller
         // todo: check permissions
-        User user = userManager.findByInputNumber(inputNumber, saveGroupMenuWithParams(mergeGroupMenu + "-confirm", groupUid1,
-                                                                                       "&firstGroupSelected=" + firstGroupSelected));
+        User user = userManager.findByInputNumber(inputNumber,
+                                                  saveGroupMenuWithParams(mergeGroupMenu + "-confirm", groupUid1,
+                                                                          "&firstGroupSelected=" + firstGroupSelected));
         String[] groupNames = new String[] { groupBroker.load(groupUid1).getName(""),
                 groupBroker.load(firstGroupSelected).getName("") };
 
@@ -565,7 +566,7 @@ public class USSDGroupController extends USSDController {
     @RequestMapping(value = groupPath + inactiveMenu + doSuffix)
     @ResponseBody
     public Request inactiveDo(@RequestParam(value= phoneNumber) String inputNumber,
-                              @RequestParam(value= groupIdParam) String groupUid) throws URISyntaxException {
+                              @RequestParam(value= groupUidParam) String groupUid) throws URISyntaxException {
 
         // todo: check for user role & permissions (must have all of them)
 

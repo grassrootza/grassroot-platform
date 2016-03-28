@@ -18,10 +18,17 @@ public class GroupDTO {
     private String groupName;
     private int group_size;
 
-
     private List<String> phoneNumbers;
 
     public GroupDTO(Group group){
+        this.id = group.getId();
+        this.uid = group.getUid();
+        this.active = group.isActive();
+        this.created_date_time = group.getCreatedDateTime();
+        this.description = group.getDescription();
+        this.groupName = group.getGroupName();
+        this.group_size = -1;
+        // we leave out group size as, if we need it, then use the query
     }
 
     private GroupDTO(){
@@ -64,7 +71,7 @@ public class GroupDTO {
     public String getDisplayName(String unnamedPrefix) {
         if (hasName()) {
             return groupName;
-        } else if (unnamedPrefix.trim().length() == 0) {
+        } else if (unnamedPrefix.trim().length() == 0 && group_size != 0) {
             return "Unnamed group (" + group_size + " members)";
         } else {
             return unnamedPrefix;
@@ -81,6 +88,7 @@ public class GroupDTO {
 
     @Override
     public String toString() {
+        if (phoneNumbers == null) return groupName;
         return phoneNumbers.toString();
     }
 

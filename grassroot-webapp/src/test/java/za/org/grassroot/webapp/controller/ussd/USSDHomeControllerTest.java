@@ -318,14 +318,14 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         GroupPage groupPage = GroupPage.createFromGroups(testGroups, 1, 3);
 
         when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
-        when(permissionBroker.getPageOfGroupDTOs(testUser, null, 1, 3)).thenReturn(groupPage);
+        when(permissionBrokerMock.getPageOfGroupDTOs(testUser, null, 1, 3)).thenReturn(groupPage);
 
         mockMvc.perform(get("/ussd/group_page").param(phoneParameter, phoneForTests).param("prompt", "Look at pages").
                 param("page", "1").param("existingUri", "/ussd/blank").param("newUri", "/ussd/blank2")).
                 andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(phoneForTests);
-        verify(permissionBroker, times(1)).getPageOfGroupDTOs(testUser, null, 1, 3);
+        verify(permissionBrokerMock, times(1)).getPageOfGroupDTOs(testUser, null, 1, 3);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(groupManagementServiceMock);
     }

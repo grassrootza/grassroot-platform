@@ -53,7 +53,6 @@ public class EventLogRepositoryTest {
         EventLog dbEventLog = list.get(0);
         assertEquals(event.getId(), dbEventLog.getEvent().getId());
         assertEquals("you are hereby invited to the test meeting", dbEventLog.getMessage());
-
     }
 
     @Test

@@ -102,8 +102,9 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         GroupWrapper dummyGroupCreator = new GroupWrapper();
         dummyGroupCreator.setGroupName("DummyGroup");
         dummyGroupCreator.addMember(new MembershipInfo(sessionTestUser));
-        mockMvc.perform(get("/group/create")).andExpect(view().name("group/create")).andExpect(model()
-                .attribute("groupCreator", hasProperty("addedMembers", hasSize(dummyGroupCreator.getAddedMembers().size()))));
+        mockMvc.perform(get("/group/create"))
+                .andExpect(view().name("group/create"))
+                .andExpect(model().attribute("groupCreator", hasProperty("addedMembers", hasSize(dummyGroupCreator.getAddedMembers().size()))));
     }
 
     @Test
@@ -111,9 +112,9 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         Group dummyGroup = Group.makeEmpty();
 
         when(groupBrokerMock.load(dummyGroup.getUid())).thenReturn(dummyGroup);
-        mockMvc.perform(get("/group/create").param("parent", dummyGroup.getUid())).
-                andExpect(view().name("group/create")).andExpect(model().attribute("groupCreator",
-                hasProperty("parent", is(dummyGroup))));
+        mockMvc.perform(get("/group/create").param("parent", dummyGroup.getUid()))
+                .andExpect(view().name("group/create"))
+                .andExpect(model().attribute("groupCreator", hasProperty("parent", is(dummyGroup))));
         verify(groupBrokerMock, times(1)).load(dummyGroup.getUid());
         verifyNoMoreInteractions(groupManagementServiceMock);
         verifyNoMoreInteractions(userManagementServiceMock);
@@ -387,16 +388,16 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(groupManagementServiceMock.getGroupSize(testGroupLarge.getId(), false)).thenReturn(testGroupLarge.getMembers().size());
         for (int i = 0; i < orders.length; i++) {
             if (i < 2) {
-                mockMvc.perform(post("/group/consolidate/confirm").param("groupId1", String.valueOf(1L))
-                        .param("groupId2", String.valueOf(2L)).param("order", orders[i])
+                mockMvc.perform(post("/group/consolidate/confirm").param("groupUid1", testGroupSmall.getUid())
+                        .param("groupUid2", testGroupLarge.getUid()).param("order", orders[i])
                         .param("leaveActive", String.valueOf(true)))
                         .andExpect(model().attribute("groupInto", hasProperty("id", is(2L))))
                         .andExpect(model().attribute("groupFrom", hasProperty("id", is(1L))))
                         .andExpect(model().attribute("numberFrom", is(testGroupSmall.getMembers().size())))
                         .andExpect(model().attribute("leaveActive", is(true)));
             } else {
-                mockMvc.perform(post("/group/consolidate/confirm").param("groupId1", String.valueOf(1L))
-                        .param("groupId2", String.valueOf(2L)).param("order", orders[i]).param("leaveActive", "true")).
+                mockMvc.perform(post("/group/consolidate/confirm").param("groupUid1", String.valueOf(testGroupSmall.getUid()))
+                        .param("groupId2", testGroupLarge.getUid()).param("order", orders[i]).param("leaveActive", "true")).
                         andExpect(model().attribute("groupInto", hasProperty("id", is(1L)))).
                         andExpect(model().attribute("groupFrom", hasProperty("id", is(2L)))).
                         andExpect(model().attribute("numberFrom", is(testGroupLarge.getMembers().size()))).
@@ -427,8 +428,8 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(groupManagementServiceMock.getGroupSize(testGroupInto.getId(), false)).thenReturn(1);
         when(groupBrokerMock.load(testGroupInto.getUid())).thenReturn(testGroupInto);
 
-        mockMvc.perform(post("/group/consolidate/do").param("groupInto", String.valueOf(testGroupInto.getId()))
-                .param("groupFrom", String.valueOf(testGroupFrom.getId())).param("leaveActive", "true").param("confirm_field", "merge"))
+        mockMvc.perform(post("/group/consolidate/do").param("groupInto", testGroupInto.getUid())
+                .param("groupFrom", testGroupFrom.getUid()).param("leaveActive", "true").param("confirm_field", "merge"))
                 .andExpect(model().attribute("groupId", is(String.valueOf(testGroupInto.getId()))))
                 .andExpect(flash().attributeExists(BaseController.MessageType.SUCCESS.getMessageKey()))
                 .andExpect(view().name("redirect:/group/view"));
@@ -524,7 +525,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(groupManagementServiceMock.getMonthsGroupActive(testGroup)).thenReturn(dummyMonths);
         when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, testGroup, null)).thenReturn(true);
 
-        mockMvc.perform(get("/group/history").param("groupId", String.valueOf(dummyId))).
+        mockMvc.perform(get("/group/history").param("groupUid", testGroup.getUid())).
                 andExpect(view().name("group/history")).
                 andExpect(model().attribute("group", hasProperty("id", is(dummyId)))).
                 andExpect(model().attribute("eventsInPeriod", is(dummyEvents))).

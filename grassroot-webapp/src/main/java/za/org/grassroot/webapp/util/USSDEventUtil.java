@@ -142,7 +142,8 @@ public class USSDEventUtil extends USSDUtil {
                 break;
             case timeOnly:
                 EventRequest eventReq = eventRequestBroker.load(eventUid);
-                Timestamp newTimestamp = changeTimestampTimes(eventReq.getEventStartDateTime(), userInput);
+                String reformattedTime = DateTimeUtil.reformatTimeInput(userInput);
+                Timestamp newTimestamp = changeTimestampTimes(eventReq.getEventStartDateTime(), reformattedTime);
                 log.info("This is what we got back ... " + preferredDateTimeFormat.format(newTimestamp.toLocalDateTime()));
                 eventRequestBroker.updateStartTimestamp(userUid, eventUid, newTimestamp);
                 break;

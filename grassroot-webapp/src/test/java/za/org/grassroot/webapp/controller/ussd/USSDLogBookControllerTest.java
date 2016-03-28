@@ -36,28 +36,47 @@ import static za.org.grassroot.webapp.util.USSDUrlUtil.userInputParam;
  */
 public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
-    public static final String assignUserID = "assignUserId";
     private static final Logger log = LoggerFactory.getLogger(USSDLogBookControllerTest.class);
+
+    public static final String assignUserID = "assignUserId";
+
     private static final String testUserPhone = "0601110001";
     private static final String phoneParam = "msisdn";
-    private static final String logBookIdParam = "logbookid";
-    private static final Long testLogBookId = 1L;
+    private static final String logBookIdParam = "logbookUid";
     private static final Long dummyId = 1L;
     private static final String dummyUserInput = "blah blah blah blah";
     private static final int hour = 13;
     private static final int minutes = 00;
-    private static final String groupMenu = "group", subjectMenu = "subject", dueDateMenu = "due_date",
-            assignMenu = "assign", searchUserMenu = "search_user", pickUserMenu = "pick_user", confirmMenu = "confirm", send = "send";
-    private static final String entryTypeMenu = "type", listEntriesMenu = "list", viewEntryMenu = "view", viewEntryDates = "view_dates",
-            viewAssignment = "view_assigned", setCompleteMenu = "set_complete", viewCompleteMenu = "view_complete",
-            completingUser = "choose_completor", pickCompletor = "pick_completor", completedDate = "date_completed",
-            confirmCompleteDate = "confirm_date", confirmComplete = "confirm_complete";
+    private static final String groupMenu = "group",
+            subjectMenu = "subject",
+            dueDateMenu = "due_date",
+            assignMenu = "assign",
+            searchUserMenu = "search_user",
+            pickUserMenu = "pick_user",
+            confirmMenu = "confirm",
+            send = "send";
+    private static final String entryTypeMenu = "type",
+            listEntriesMenu = "list",
+            viewEntryMenu = "view",
+            viewEntryDates = "view_dates",
+            viewAssignment = "view_assigned",
+            setCompleteMenu = "set_complete",
+            viewCompleteMenu = "view_complete",
+            completingUser = "choose_completor",
+            pickCompletor = "pick_completor",
+            completedDate = "date_completed",
+            confirmCompleteDate = "confirm_date",
+            confirmComplete = "confirm_complete";
 
     private static final String path = "/ussd/log/";
+
     @InjectMocks
     USSDLogBookController ussdLogBookController;
+
     @Mock
     UserRepository userRepository;
+
+
     private User testUser;
 
     @Before
@@ -86,13 +105,13 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         GroupPage pageOfGroups = GroupPage.createFromGroups(testGroups, 0, 3);
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(userManagementServiceMock.isPartOfActiveGroups(testUser)).thenReturn(true);
-        when(permissionBroker.getPageOfGroupDTOs(testUser, null, 0, 3)).thenReturn(pageOfGroups);
+        when(permissionBrokerMock.getPageOfGroupDTOs(testUser, null, 0, 3)).thenReturn(pageOfGroups);
         mockMvc.perform(get(path + groupMenu).param(phoneParam, testUserPhone).param("new", "1")).
                 andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verify(userManagementServiceMock, times(1)).isPartOfActiveGroups(testUser);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(permissionBroker, times(1)).getPageOfGroupDTOs(testUser, null, 0, 3);
+        verify(permissionBrokerMock, times(1)).getPageOfGroupDTOs(testUser, null, 0, 3);
         verifyNoMoreInteractions(groupManagementServiceMock);
 
     }
@@ -128,7 +147,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         String urlToSave = USSDUrlUtil.logViewExistingUrl(listEntriesMenu, testGroup.getUid(), true, 0);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(logBookServiceMock.getAllLogBookEntriesForGroup(dummyId, 0, 3, true)).thenReturn(dummyPageOfGroups);
-        mockMvc.perform(get(path + listEntriesMenu).param(phoneParam, testUserPhone).param("groupId", String.valueOf(dummyId))
+        mockMvc.perform(get(path + listEntriesMenu).param(phoneParam, testUserPhone).param("groupUid", testGroup.getUid())
                 .param("done", String.valueOf(true))).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
         verify(logBookServiceMock, times(1)).getAllLogBookEntriesForGroup(dummyId, 0, 3, true);
@@ -144,7 +163,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         dummyLogBook.setId(dummyId);
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
 //        when(logBookServiceMock.create(testUser.getId(), dummyGroup.getId(), false)).thenReturn(dummyLogBook);
-        mockMvc.perform(get(path + "subject").param("msisdn", testUserPhone).param("groupId", String.valueOf(dummyId)))
+        mockMvc.perform(get(path + "subject").param("msisdn", testUserPhone).param("groupUid", dummyGroup.getUid()))
                 .andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verify(userManagementServiceMock, times(1)).setLastUssdMenu(testUser, saveLogMenu("subject", dummyLogBook.getUid()));
