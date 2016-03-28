@@ -33,8 +33,8 @@ public interface LogBookRepository extends JpaRepository<LogBook, Long> {
 
     List<LogBook> findAllByReplicatedGroupId(Long replicatedGroupId);
     List<LogBook> findAllByReplicatedGroupIdAndCompleted(Long replicatedGroupId, boolean completed);
-    List<LogBook> findAllByReplicatedGroupIdAndMessage(Long replicatedGroupId, String message);
-    List<LogBook> findAllByReplicatedGroupIdAndMessageAndCreatedDateTimeOrderByGroupIdAsc(Long replicatedGroupId, String message, Timestamp createdDateTime);
+    List<LogBook> findAllByReplicatedGroupIdAndMessageOrderByGroupIdAsc(Long replicatedGroupId, String message);
+    List<LogBook> findAllByReplicatedGroupIdAndMessageAndActionByDateOrderByGroupIdAsc(Long replicatedGroupId, String message, Timestamp actionByDateTime);
 
     // methods for analyzing logbooks (for admin)
     Long countByCreatedDateTimeBetween(Timestamp start, Timestamp end);
@@ -42,7 +42,7 @@ public interface LogBookRepository extends JpaRepository<LogBook, Long> {
     @Query(value = "select * from log_book l where l.action_by_date is not null and l.completed = false and l.number_of_reminders_left_to_send > 0 and (l.action_by_date + l.reminder_minutes * INTERVAL '1 minute') < current_timestamp", nativeQuery = true)
     List<LogBook> findLogBookReminders();
 
-    @Query(value = "select count(*) from log_book l where l.replicated_group_id=?1 and l.message=?2 and l.created_date_time=?3", nativeQuery = true)
-    int countReplicatedEntries(Long groupId, String message, Timestamp createdDateTime);
+    @Query(value = "select count(*) from log_book l where l.replicated_group_id=?1 and l.message=?2 and l.action_by_date=?3", nativeQuery = true)
+    int countReplicatedEntries(Long groupId, String message, Timestamp actionByDate);
 
 }

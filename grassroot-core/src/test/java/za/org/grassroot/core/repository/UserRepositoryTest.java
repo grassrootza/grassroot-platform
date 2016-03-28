@@ -60,7 +60,7 @@ public class UserRepositoryTest {
 
         User userToCreate = new User("12345");
         assertNull(userToCreate.getId());
-        assertNull(userToCreate.getCreatedDateTime());
+        assertNotNull(userToCreate.getUid());
         userRepository.save(userToCreate);
 
         assertThat(userRepository.count(), is(1L));
@@ -95,7 +95,7 @@ public class UserRepositoryTest {
     public void shouldSaveAndFindByPhoneNumber() throws Exception {
         User userToCreate = new User("54321");
         assertNull(userToCreate.getId());
-        assertNull(userToCreate.getCreatedDateTime());
+        assertNotNull(userToCreate.getUid());
         User savedUser = userRepository.save(userToCreate);
         Assert.assertNotEquals(Long.valueOf(0), savedUser.getId());
         User foundUser = userRepository.findByPhoneNumber("54321");

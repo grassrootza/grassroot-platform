@@ -1,6 +1,5 @@
 package za.org.grassroot.services;
 
-import org.hibernate.jpa.criteria.expression.UnaryOperatorExpression;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -8,7 +7,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
-import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.LogBookRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
@@ -91,7 +89,7 @@ public class LogBookManager implements LogBookService {
 
     @Override
     public List<LogBook> getAllReplicatedEntriesForGroupAndMessage(Long groupId, String message) {
-        return logBookRepository.findAllByReplicatedGroupIdAndMessage(groupId, message);
+        return logBookRepository.findAllByReplicatedGroupIdAndMessageOrderByGroupIdAsc(groupId, message);
     }
 
     @Override
@@ -101,8 +99,8 @@ public class LogBookManager implements LogBookService {
 
     @Override
     public List<LogBook> getAllReplicatedEntriesFromParentLogBook(LogBook logBook) {
-        return logBookRepository.findAllByReplicatedGroupIdAndMessageAndCreatedDateTimeOrderByGroupIdAsc(logBook.resolveGroup().getId(), logBook.getMessage(),
-                                                                                                         logBook.getCreatedDateTime());
+        return logBookRepository.findAllByReplicatedGroupIdAndMessageAndActionByDateOrderByGroupIdAsc(logBook.resolveGroup().getId(), logBook.getMessage(),
+                                                                                                      logBook.getActionByDate());
     }
 
     @Override

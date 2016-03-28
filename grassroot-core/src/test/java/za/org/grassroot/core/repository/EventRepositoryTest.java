@@ -65,7 +65,7 @@ public class EventRepositoryTest {
         Meeting eventToCreate = new Meeting("", testStartDateTime, userToDoTests, groupToDoTests, "The testing location");
 
         assertNull(eventToCreate.getId());
-        assertNull(eventToCreate.getCreatedDateTime());
+        assertNotNull(eventToCreate.getUid());
 
         eventRepository.save(eventToCreate);
 
@@ -134,7 +134,7 @@ public class EventRepositoryTest {
     }
 
     @Test
-    public void shouldNotFindOneFutureVote() {
+    public void shouldNotFindOnePastVote() {
         User user = userRepository.save(new User("0831111113"));
         Group group = groupRepository.save(new Group("events for group test",user));
 
@@ -147,15 +147,15 @@ public class EventRepositoryTest {
     }
 
     @Test
-    public void shouldNotFindOneFutureVoteBecauseMeeting() {
+    public void shouldNotFindMeetingWhenLookingForVote() {
         User user = userRepository.save(new User("0831111114"));
         Group group = groupRepository.save(new Group("events for group test",user));
 
         Date expiry = DateTimeUtil.roundHourUp(DateTimeUtil.addHoursToDate(new Date(), 1));
         Timestamp expiryTS = new Timestamp(expiry.getTime());
 
-        Event vote = eventRepository.save(new Vote("testing vote query", expiryTS, user, group, true));
-        vote = eventRepository.save(vote);
+        Event meeting = eventRepository.save(new Meeting("testing vote query", expiryTS, user, group, "somewhere"));
+        meeting = eventRepository.save(meeting);
         List<Event> list = eventRepository.findAllVotesAfterTimeStamp(new Date());
         assertEquals(0,list.size());
 

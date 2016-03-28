@@ -53,7 +53,7 @@ public class GroupRepositoryTest {
 
         Group groupToCreate = new Group("TestGroup", userToDoTests);
         assertNull(groupToCreate.getId());
-        assertNull(groupToCreate.getCreatedDateTime());
+        assertNotNull(groupToCreate.getUid());
         groupRepository.save(groupToCreate);
 
         assertThat(groupRepository.count(), is(1l));
@@ -85,7 +85,7 @@ public class GroupRepositoryTest {
 
         Group groupToCreate = new Group("TestGroup", userToDoTests);
         assertNull(groupToCreate.getId());
-        assertNull(groupToCreate.getCreatedDateTime());
+        assertNotNull(groupToCreate.getUid());
         groupRepository.save(groupToCreate);
         Group groupFromDb = groupRepository.findByCreatedByUser(userToDoTests).iterator().next();
         log.info(groupFromDb.toString());

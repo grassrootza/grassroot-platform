@@ -85,7 +85,6 @@ public class AbstractEventEntity {
 		this.createdDateTime = Timestamp.from(Instant.now());
 
 		this.name = Objects.requireNonNull(name);
-		this.description = Objects.requireNonNull(description);
 		this.eventStartDateTime = Objects.requireNonNull(eventStartDateTime);
 		this.createdByUser = Objects.requireNonNull(createdByUser);
 		this.appliesToGroup = Objects.requireNonNull(appliesToGroup);
@@ -94,6 +93,7 @@ public class AbstractEventEntity {
 		this.relayable = relayable;
 		this.reminderType = Objects.requireNonNull(reminderType);
 		this.customReminderMinutes = customReminderMinutes;
+		this.description = (description == null) ? "" : description;
 	}
 
 	public Long getId() {
