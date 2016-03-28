@@ -46,9 +46,6 @@ public class VoteController extends BaseController {
     EventManagementService eventManagementService;
 
     @Autowired
-    GroupManagementService groupManagementService;
-
-    @Autowired
     EventLogManagementService eventLogManagementService;
 
     @RequestMapping("create")
@@ -57,6 +54,7 @@ public class VoteController extends BaseController {
         boolean groupSpecified = (groupUid != null);
         User user = getUserProfile();
 
+        // todo: not sre if we even need this ...
         VoteRequest voteRequest = VoteRequest.makeEmpty(user, null);
         voteRequest.setRsvpRequired(true);
 
@@ -160,17 +158,18 @@ public class VoteController extends BaseController {
         return viewVote(model, eventUid);
     }
 
-    @RequestMapping(value = "/vote/answer", method = RequestMethod.POST)
-    public String answerVote(Model model, @RequestParam(value="eventId") Long eventId,
-                             @RequestParam(value="answer") String answer, HttpServletRequest request, RedirectAttributes redirectAttributes) {
+    @RequestMapping(value = "answer", method = RequestMethod.POST)
+    public String answerVote(Model model, @RequestParam String eventUid, @RequestParam String answer,
+                             HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
-        Event vote = eventManagementService.loadEvent(eventId);
+        Event vote = eventBroker.load(eventUid);
         User sessionUser = getUserProfile();
 
         eventLogManagementService.rsvpForEvent(vote, sessionUser, EventRSVPResponse.fromString(answer));
 
         addMessage(redirectAttributes, MessageType.INFO, "vote.recorded", request);
-        return "redirect:/home";
+        redirectAttributes.addAttribute("eventUid", vote.getUid());
+        return "redirect:/vote/view";
 
     }
 

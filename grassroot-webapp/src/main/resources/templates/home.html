@@ -73,8 +73,8 @@
                 at <span th:text="${event.eventLocation}">meeting location</span>.
               </div>
               <div class="col-md-3 pull-right">
-                <a th:href="@{meeting/rsvp(eventId=${event.id},answer=yes)}"><button class="btn btn-primary btn-sm" type="submit" name="yes">Yes</button></a>
-                <a th:href="@{meeting/rsvp(eventId=${event.id},answer=no)}"><button class="btn btn-danger btn-sm" type="submit" name="no">No</button></a>
+                <a th:href="@{meeting/rsvp(eventUid=${event.uid},answer=yes)}"><button class="btn btn-primary btn-sm" type="submit" name="yes">Yes</button></a>
+                <a th:href="@{meeting/rsvp(eventUid=${event.uid},answer=no)}"><button class="btn btn-danger btn-sm" type="submit" name="no">No</button></a>
               </div>
             </div>
           </li>
@@ -96,7 +96,7 @@
         <div class="col-md-12">
           <div th:each="event : ${votesToAnswer}" class="bs-component">
             <form class="list-group" th:action="@{vote/answer}" method="post">
-              <input type="hidden" name="eventId" th:value="${event.id}" />
+              <input type="hidden" name="eventUid" th:value="${event.uid}" />
               <div class="list-group-item">
                 <div class="row">
                   <div class="col-md-4">

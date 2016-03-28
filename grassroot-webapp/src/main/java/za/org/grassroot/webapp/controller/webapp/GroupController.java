@@ -647,19 +647,24 @@ public class GroupController extends BaseController {
             case "small_to_large":
                 Group groupA = groupBroker.load(groupUid1);
                 Group groupB = groupBroker.load(groupUid2);
+                log.info("ZOG: Going small to large ... size1={}, size2={}", groupA.getMemberships().size(), groupB.getMemberships().size());
                 if (groupA.getMemberships().size() >= groupB.getMemberships().size()) {
+                    log.info("ZOG: Okay, going from size2 into size1");
                     groupInto = groupA;
                     groupFrom = groupB;
                 } else {
+                    log.info("ZOG: Okay, going from size1 into size2");
                     groupInto = groupB;
                     groupFrom = groupA;
                 }
                 break;
             case "2_into_1":
+                log.info("ZOG: Moving members from group 2 into group 1");
                 groupInto = groupBroker.load(groupUid1);
                 groupFrom = groupBroker.load(groupUid2);
                 break;
             case "1_into_2":
+                log.info("ZOG: Moving members from group 1 into group 2");
                 groupInto = groupBroker.load(groupUid2);
                 groupFrom = groupBroker.load(groupUid1);
                 break;
@@ -717,7 +722,7 @@ public class GroupController extends BaseController {
 
         if (monthToView == null) {
             startDateTime = LocalDate.now().withDayOfMonth(1).atStartOfDay();
-            endDateTime = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS); // leaving miliseconds on causes spurious test failures
+            endDateTime = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES); // leaving seconds out on causes spurious test failures
         } else {
             startDateTime = LocalDate.parse("01-" + monthToView, DateTimeFormatter.ofPattern("dd-M-yyyy")).atStartOfDay();
             endDateTime = startDateTime.plusMonths(1L);

@@ -123,7 +123,7 @@ public class MeetingController extends BaseController {
 
         int rsvpYesTotal = eventManagementService.getListOfUsersThatRSVPYesForEvent(meeting).size();
         boolean canViewRsvps = permissionBroker.isGroupPermissionAvailable(
-                user, meeting.getAppliesToGroup(), Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS);
+                user, meeting.resolveGroup(), Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS);
         boolean canAlterDetails = meeting.getCreatedByUser().equals(user);
 
         model.addAttribute("meeting", meeting);
@@ -177,7 +177,7 @@ public class MeetingController extends BaseController {
         // todo: maybe move this into a common place ... since call it from all controllers ...
         int minutes = (customMinutes != null && reminderType.equals(EventReminderType.CUSTOM)) ? customMinutes : 0;
         eventBroker.updateReminderSettings(getUserProfile().getUid(), eventUid, reminderType, minutes);
-        Instant newScheduledTime = eventBroker.load(eventUid).getScheduledReminderTime();
+        Instant newScheduledTime = eventBroker.loadMeeting(eventUid).getScheduledReminderTime();
         if (newScheduledTime != null) {
             // todo: make sure this actually works properly with zones, on AWS in Ireland, etc ...
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("h:mm a' on 'E, d MMMM").withZone(ZoneId.systemDefault());
@@ -307,10 +307,10 @@ public class MeetingController extends BaseController {
      */
 
     @RequestMapping(value = "rsvp")
-    public String rsvpYes(Model model, @RequestParam Long eventId, @RequestParam String answer,
+    public String rsvpYes(Model model, @RequestParam String eventUid, @RequestParam String answer,
                           HttpServletRequest request, RedirectAttributes attributes) {
 
-        Event meeting = eventManagementService.loadEvent(eventId);
+        Meeting meeting = eventBroker.loadMeeting(eventUid);
         User user = getUserProfile();
 
         switch (answer) {
