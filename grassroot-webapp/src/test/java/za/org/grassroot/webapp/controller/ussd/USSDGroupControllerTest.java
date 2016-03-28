@@ -340,7 +340,6 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupBrokerMock, times(2)).mergeCandidates(testUser.getUid(), testGroup.getUid());
         verifyNoMoreInteractions(groupBrokerMock);
-        verifyZeroInteractions(groupManagementServiceMock);
     }
 
     @Test

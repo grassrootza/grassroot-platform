@@ -128,7 +128,7 @@ public class USSDLogBookController extends USSDController {
             logBookUid = logBookRequestBroker.create(user.getUid(), groupUid).getUid();
         }
 
-        userManager.setLastUssdMenu(user, saveLogMenu(subjectMenu, logBookUid));
+        cacheManager.putUssdMenuForUser(inputNumber, saveLogMenu(subjectMenu, logBookUid));
         USSDMenu menu = new USSDMenu(getMessage(thisSection, subjectMenu, promptKey, user),
                                      nextOrConfirmUrl(subjectMenu, dueDateMenu, logBookUid, revising));
         return menuBuilder(menu);
@@ -160,11 +160,12 @@ public class USSDLogBookController extends USSDController {
                                        @RequestParam(value = interruptedInput, required = false) String priorInput) throws URISyntaxException {
 
         userInput = (priorInput !=null) ? priorInput : userInput;
-        priorMenu=(priorMenu != null) ? priorMenu: "";
+        priorMenu = (priorMenu != null) ? priorMenu: "";
+        String urlToSave = saveLogMenu(confirmMenu, logBookUid, priorMenu, userInput, !interrupted);
 
-        User user = userManager.findByInputNumber(inputNumber,saveLogMenu(confirmMenu, logBookUid, userInput));
+        User user = userManager.findByInputNumber(inputNumber, urlToSave);
 
-        updateLogBookRequest(user.getUid(), logBookUid, priorMenu, userInput);
+        if (!interrupted) updateLogBookRequest(user.getUid(), logBookUid, priorMenu, userInput);
         LogBookRequest logBookRequest = logBookRequestBroker.load(logBookUid);
 
         String formattedDueDate = dateFormat.format(logBookRequest.getActionByDate().toLocalDateTime());
@@ -404,7 +405,8 @@ public class USSDLogBookController extends USSDController {
                                         @RequestParam(value = interruptedInput, required =false) String priorInput) throws URISyntaxException {
 
         userInput = (priorInput !=null) ? priorInput : userInput;
-        User user = userManager.findByInputNumber(inputNumber, saveLogMenu(confirmCompleteDate, logBookUid, userInput));
+        log.info("ZOG: Going to save this menu ... " + saveLogMenu(confirmCompleteDate, logBookUid, userInput, !interrupted));
+        User user = userManager.findByInputNumber(inputNumber, saveLogMenu(confirmCompleteDate, logBookUid, userInput, !interrupted));
         String formattedResponse = reformatDateInput(userInput);
         String confirmUrl = returnUrl(setCompleteMenu + doSuffix, logBookUid) + "&completed_date=" + encodeParameter(formattedResponse);
 
@@ -416,16 +418,15 @@ public class USSDLogBookController extends USSDController {
 
     @RequestMapping(path + setCompleteMenu + doSuffix)
     @ResponseBody
-    public Request setLogBookEntryDone(@RequestParam(value = phoneNumber) String inputNumber,
+    public Request setLogBookEntryComplete(@RequestParam(value = phoneNumber) String inputNumber,
                                        @RequestParam(value = logBookParam) String logBookUid,
                                        @RequestParam(value = assignUserID, required = false) String completedByUserUid,
                                        @RequestParam(value = "completed_date", required = false) String completedDate) throws URISyntaxException {
         // todo: check permissions
         User user = userManager.findByInputNumber(inputNumber, null);
 
-        LogBook logBook = logBookBroker.load(logBookUid);
         LocalDateTime completedDateTime = DateTimeUtil.parsePreformattedDate(reformatDateInput(completedDate), stdHour, stdMinute);
-        logBookBroker.complete(logBook.getUid(), completedDateTime, completedByUserUid);
+        logBookBroker.complete(logBookUid, completedDateTime, completedByUserUid);
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, setCompleteMenu, promptKey, user));
         // todo: consider adding option to go back to either section start or group logbook start

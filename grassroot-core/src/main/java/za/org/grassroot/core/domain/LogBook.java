@@ -4,6 +4,7 @@ import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 

@@ -46,7 +46,7 @@ public class USSDUserControllerTest extends USSDAbstractUnitTest {
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verifyZeroInteractions(groupManagementServiceMock);
+        verifyZeroInteractions(groupBrokerMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
 
@@ -58,7 +58,7 @@ public class USSDUserControllerTest extends USSDAbstractUnitTest {
         mockMvc.perform(get(path + "name").param(phoneParam, testUserPhone)).andExpect(status().isOk());
         mockMvc.perform(get(path + "name").param(phoneParam, namedUser.getPhoneNumber())).andExpect(status().isOk());
         verify(userManagementServiceMock, times(2)).findByInputNumber(anyString());
-        verifyNoMoreInteractions(groupManagementServiceMock);
+        verifyNoMoreInteractions(groupBrokerMock);
         verifyNoMoreInteractions(eventManagementServiceMock);
     }
 
@@ -76,7 +76,7 @@ public class USSDUserControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(2)).findByInputNumber(anyString());
         verify(userManagementServiceMock, times(2)).save(any(User.class));
         verifyNoMoreInteractions(userManagementServiceMock);
-        verifyZeroInteractions(groupManagementServiceMock);
+        verifyZeroInteractions(groupBrokerMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
 
@@ -84,7 +84,7 @@ public class USSDUserControllerTest extends USSDAbstractUnitTest {
     public void changeLanguageMenuShouldWork() throws Exception {
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
 
-        verifyZeroInteractions(groupManagementServiceMock);
+        verifyZeroInteractions(groupBrokerMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
 
@@ -92,7 +92,7 @@ public class USSDUserControllerTest extends USSDAbstractUnitTest {
     public void changeLanguageConfirmShouldWork() throws Exception {
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
 
-        verifyZeroInteractions(groupManagementServiceMock);
+        verifyZeroInteractions(groupBrokerMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
 

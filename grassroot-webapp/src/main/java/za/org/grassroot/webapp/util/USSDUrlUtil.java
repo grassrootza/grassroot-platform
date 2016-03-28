@@ -121,12 +121,16 @@ public class USSDUrlUtil {
     }
 
     public static String saveLogMenu(String menu, String logBookUid, String priorInput) {
-
         return saveLogMenu(menu, logBookUid) + addInterruptedInput + encodeParameter(priorInput);
     }
 
-    public static String saveLogMenu(String menu, String logBookUid, String priorInput, Long assignUserId) {
-        return saveLogMenu(menu, logBookUid, priorInput) + (assignUserId != null ? "&assignUserId=" + assignUserId : "");
+    // todo: use this above, or figure out a more elegant way around it
+    public static String saveLogMenu(String menu, String logBookUid, String priorInput, boolean encodeInput) {
+        return saveLogMenu(menu, logBookUid) + addInterruptedInput + (encodeInput ? encodeParameter(priorInput) : priorInput);
+    }
+
+    public static String saveLogMenu(String menu, String logBookUid, String previousMenu, String priorInput, boolean encodeInput) {
+        return saveLogMenu(menu, logBookUid, priorInput, encodeInput) + "&prior_menu=" + previousMenu;
 
     }
 

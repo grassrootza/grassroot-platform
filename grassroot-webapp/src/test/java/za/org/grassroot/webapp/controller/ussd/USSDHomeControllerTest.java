@@ -7,10 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Meeting;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.GroupPage;
@@ -169,15 +166,8 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         Group testGroup = new Group(testGroupName, testUser);
 
 //        Event vote = new Event(testUser, EventType.VOTE, true);
-        Event vote = null; // todo: new design?
-        vote.setId(1L); // since we will need this in getting and displaying
-        vote.setName("Are unit tests working?");
-        vote.setAppliesToGroup(testGroup);
-
-        Map<String, String> voteDetails = new HashMap<>();
-        voteDetails.put("groupName", testGroup.getGroupName());
-        voteDetails.put("creatingUser", testUser.getDisplayName());
-        voteDetails.put("eventSubject", "Are unit tests working?");
+        Vote vote = new Vote("are unit tests working?", Timestamp.valueOf(LocalDateTime.now().plusHours(1L)), testUser, testGroup);
+        vote.setId(1L);
 
         List<User> votingUsers = new ArrayList<>(languageUsers);
         votingUsers.add(testUser);
@@ -193,12 +183,14 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
             when(userManagementServiceMock.needsToVoteOrRSVP(user)).thenReturn(true);
             when(userManagementServiceMock.needsToVote(user)).thenReturn(true);
             when(eventManagementServiceMock.getNextOutstandingVote(user)).thenReturn(vote.getId());
+            when(eventManagementServiceMock.loadEvent(vote.getId())).thenReturn(vote);
 
             mockMvc.perform(get(openingMenu).param(phoneParameter, user.getPhoneNumber())).andExpect(status().isOk());
             verify(userManagementServiceMock, times(1)).needsToVoteOrRSVP(user);
             verify(eventManagementServiceMock, times(1)).getNextOutstandingVote(user);
 
             // note: the fact that message source accessor is not wired up may mean this is not actually testing
+            mockMvc.perform(get("/ussd/start").param(phoneParameter, user.getPhoneNumber()));
             mockMvc.perform(get("/ussd/vote").param(phoneParameter, user.getPhoneNumber()).param("eventId", "" + vote.getId()).
                     param("response", "yes")).andExpect(status().isOk());
 
@@ -263,7 +255,9 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         mockMvc.perform(get(openingMenu).param(phoneParameter, testUser.getPhoneNumber())).
                 andExpect(status().isOk());
 
-        mockMvc.perform(get("/ussd/group-start").param(phoneParameter, phoneForTests).param("groupId", "" + testGroup.getId()).
+        mockMvc.perform(get("/ussd/group-start").
+                param(phoneParameter, phoneForTests).
+                param("groupUid", "" + testGroup.getUid()).
                 param("request", testGroupName)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).loadOrSaveUser(phoneForTests);
@@ -327,7 +321,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(1)).findByInputNumber(phoneForTests);
         verify(permissionBrokerMock, times(1)).getPageOfGroupDTOs(testUser, null, 1, 3);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verifyNoMoreInteractions(groupManagementServiceMock);
+        verifyNoMoreInteractions(permissionBrokerMock);
     }
 
     /*

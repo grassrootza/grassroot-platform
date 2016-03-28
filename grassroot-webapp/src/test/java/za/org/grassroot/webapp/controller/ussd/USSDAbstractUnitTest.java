@@ -34,9 +34,6 @@ public abstract class USSDAbstractUnitTest {
     protected UserManagementService userManagementServiceMock;
 
     @Mock
-    protected GroupManagementService groupManagementServiceMock;
-
-    @Mock
     protected GroupBroker groupBrokerMock;
 
     @Mock
@@ -46,9 +43,6 @@ public abstract class USSDAbstractUnitTest {
     protected EventLogManagementService eventLogManagementServiceMock;
 
     @Mock
-    protected LogBookService logBookServiceMock;
-
-    @Mock
     protected PermissionBroker permissionBrokerMock;
 
     @Mock
@@ -56,6 +50,12 @@ public abstract class USSDAbstractUnitTest {
 
     @Mock
     protected EventRequestBroker eventRequestBrokerMock;
+
+    @Mock
+    protected LogBookBroker logBookBrokerMock;
+
+    @Mock
+    protected LogBookRequestBroker logBookRequestBrokerMock;
 
     @Mock
     protected CacheUtilManager cacheUtilManagerMock;
