@@ -9,7 +9,7 @@ import java.util.Objects;
 
 @Entity
 @DiscriminatorValue("MEETING")
-public class Meeting extends Event implements VoteContainer {
+public class Meeting extends Event<MeetingContainer> implements VoteContainer {
 
 	@Column(name = "location", length = 50)
 	private String eventLocation;
@@ -18,17 +18,17 @@ public class Meeting extends Event implements VoteContainer {
 		// for JPA
 	}
 
-	public Meeting(String name, Timestamp startDateTime, User user, Group group, String eventLocation) {
-		this(name, startDateTime, user, group, eventLocation, false);
+	public Meeting(String name, Timestamp startDateTime, User user, MeetingContainer parent, String eventLocation) {
+		this(name, startDateTime, user, parent, eventLocation, false);
 	}
 
-	public Meeting(String name, Timestamp startDateTime, User user, Group group, String eventLocation, boolean includeSubGroups) {
-		this(name, startDateTime, user, group, eventLocation, includeSubGroups, false, false, EventReminderType.DISABLED, 0, null);
+	public Meeting(String name, Timestamp startDateTime, User user, MeetingContainer parent, String eventLocation, boolean includeSubGroups) {
+		this(name, startDateTime, user, parent, eventLocation, includeSubGroups, false, false, EventReminderType.DISABLED, 0, null);
 	}
 
-	public Meeting(String name, Timestamp startDateTime, User user, Group group, String eventLocation, boolean includeSubGroups,
+	public Meeting(String name, Timestamp startDateTime, User user, MeetingContainer parent, String eventLocation, boolean includeSubGroups,
 				   boolean rsvpRequired, boolean relayable, EventReminderType reminderType, int customReminderMinutes, String description) {
-		super(startDateTime, user, group, name, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes, description);
+		super(startDateTime, user, name, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes, description);
 		this.eventLocation = Objects.requireNonNull(eventLocation);
 		setScheduledReminderActive(true);
 	}

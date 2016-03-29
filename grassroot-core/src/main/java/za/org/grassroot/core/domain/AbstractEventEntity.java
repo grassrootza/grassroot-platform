@@ -11,7 +11,7 @@ import java.util.Objects;
  * This class should contain all fields common to both Event and EventRequest entity
  */
 @MappedSuperclass
-public class AbstractEventEntity {
+public abstract class AbstractEventEntity<P extends UidIdentifiable> {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "id", nullable = false)
@@ -74,11 +74,15 @@ public class AbstractEventEntity {
 	@Column(name = "custom_reminder_minutes")
 	protected int customReminderMinutes;
 
+	public abstract void setParent(P parent);
+
+	public abstract P getParent();
+
 	protected AbstractEventEntity() {
 		// for JPA
 	}
 
-	protected AbstractEventEntity(String name, Timestamp eventStartDateTime, User createdByUser, Group appliesToGroup,
+	protected AbstractEventEntity(String name, Timestamp eventStartDateTime, User createdByUser,
 								  boolean includeSubGroups, boolean rsvpRequired, boolean relayable,
 								  EventReminderType reminderType, int customReminderMinutes, String description) {
 		this.uid = UIDGenerator.generateId();
@@ -87,7 +91,6 @@ public class AbstractEventEntity {
 		this.name = Objects.requireNonNull(name);
 		this.eventStartDateTime = Objects.requireNonNull(eventStartDateTime);
 		this.createdByUser = Objects.requireNonNull(createdByUser);
-		this.appliesToGroup = Objects.requireNonNull(appliesToGroup);
 		this.includeSubGroups = includeSubGroups;
 		this.rsvpRequired = rsvpRequired;
 		this.relayable = relayable;
@@ -138,14 +141,6 @@ public class AbstractEventEntity {
 
 	public void setCreatedByUser(User createdByUser) {
 		this.createdByUser = createdByUser;
-	}
-
-	public Group getAppliesToGroup() {
-		return appliesToGroup;
-	}
-
-	public void setAppliesToGroup(Group appliesToGroup) {
-		this.appliesToGroup = appliesToGroup;
 	}
 
 	public boolean isIncludeSubGroups() {

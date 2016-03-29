@@ -300,9 +300,9 @@ public class EventNotificationConsumer {
     private List<User> getAllUsersForGroup(Event event) {
         // todo: replace this with calling the parent and/or just using assigned members
         if (event.isIncludeSubGroups()) {
-            return groupManagementService.getAllUsersInGroupAndSubGroups(event.getAppliesToGroup());
+            return groupManagementService.getAllUsersInGroupAndSubGroups(event.resolveGroup());
         } else {
-            return new ArrayList<>(event.getAppliesToGroup().getMembers());
+            return new ArrayList<>(event.resolveGroup().getMembers());
         }
     }
 

@@ -10,7 +10,7 @@ import java.sql.Timestamp;
 
 @Entity
 @DiscriminatorValue("VOTE")
-public class Vote extends Event {
+public class Vote extends Event<VoteContainer> {
 
 	@ManyToOne
 	@JoinColumn(name = "meeting_id")
@@ -20,16 +20,16 @@ public class Vote extends Event {
 		// for JPA
 	}
 
-	public Vote(String name, Timestamp startDateTime, User user, Group group) {
-		this(name, startDateTime, user, group, false);
+	public Vote(String name, Timestamp startDateTime, User user, VoteContainer parent) {
+		this(name, startDateTime, user, parent, false);
 	}
 
-	public Vote(String name, Timestamp startDateTime, User user, Group group, boolean includeSubGroups) {
-		this(name, startDateTime, user, group, includeSubGroups, false, null);
+	public Vote(String name, Timestamp startDateTime, User user, VoteContainer parent, boolean includeSubGroups) {
+		this(name, startDateTime, user, parent, includeSubGroups, false, null);
 	}
 
-	public Vote(String name, Timestamp startDateTime, User user, Group group, boolean includeSubGroups, boolean relayable, String description) {
-		super(startDateTime, user, group, name, includeSubGroups, true, relayable, EventReminderType.DISABLED, 0, description);
+	public Vote(String name, Timestamp startDateTime, User user, VoteContainer parent, boolean includeSubGroups, boolean relayable, String description) {
+		super(startDateTime, user, name, includeSubGroups, true, relayable, EventReminderType.DISABLED, 0, description);
 	}
 
 	@Override

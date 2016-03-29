@@ -5,6 +5,7 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.EventLog;
+import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
@@ -39,10 +40,10 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
     public void creatingAVoteShouldWork() throws Exception {
 
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
-        when(eventBrokerMock.createVote(sessionTestUser.getUid(), voteEvent.getUid(), voteEvent.getName(), testTimestamp, true, true, testEventDescription, Collections.emptySet())).thenReturn(voteEvent);
+        when(eventBrokerMock.createVote(sessionTestUser.getUid(), voteEvent.getUid(), JpaEntityType.GROUP, voteEvent.getName(), testTimestamp, true, true, testEventDescription, Collections.emptySet())).thenReturn(voteEvent);
         mockMvc.perform(post(path + "/create/{id}/{phoneNumber}/{code}", voteEvent.getUid(), testUserPhone, testUserCode).param("title", testEventTitle).param("closingTime", String.valueOf(testTimestamp)).param("description", testEventDescription).param("reminderMins", String.valueOf(10)).param("notifyGroup", String.valueOf(true)).param("includeSubgroups", String.valueOf(true))).andExpect(status().isCreated()).andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
-        verify(eventBrokerMock).createVote(sessionTestUser.getUid(), voteEvent.getUid(), voteEvent.getName(), testTimestamp, true, true, testEventDescription, Collections.emptySet());
+        verify(eventBrokerMock).createVote(sessionTestUser.getUid(), voteEvent.getUid(), JpaEntityType.GROUP, voteEvent.getName(), testTimestamp, true, true, testEventDescription, Collections.emptySet());
     }
 
     @Test

@@ -21,7 +21,7 @@ public class EventDTO  implements Serializable {
     private Timestamp eventStartDateTime;
 
     private User createdByUser;
-    private Group appliesToGroup;
+    private UidIdentifiable parent;
     private boolean canceled;
     private EventType eventType;
 
@@ -81,7 +81,7 @@ public class EventDTO  implements Serializable {
         this.createdDateTime = event.getCreatedDateTime();
         this.eventStartDateTime = event.getEventStartDateTime();
         this.createdByUser = event.getCreatedByUser();
-        this.appliesToGroup = event.getAppliesToGroup();
+        this.parent = event instanceof Meeting ? ((Meeting) event).getParent() : ((Vote) event).getParent();
         this.canceled = event.isCanceled();
         this.eventType = event.getEventType();
         this.name = event.getName();
@@ -103,9 +103,9 @@ public class EventDTO  implements Serializable {
 
     public Event getEventObject() {
         if (eventType.equals(EventType.MEETING)) {
-            return new Meeting(name, eventStartDateTime, createdByUser, appliesToGroup, eventLocation, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes, description);
+            return new Meeting(name, eventStartDateTime, createdByUser, (MeetingContainer) parent, eventLocation, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes, description);
         } else {
-            return new Vote(name, eventStartDateTime, createdByUser, appliesToGroup, includeSubGroups, relayable, description);
+            return new Vote(name, eventStartDateTime, createdByUser, (VoteContainer) parent, includeSubGroups, relayable, description);
         }
     }
 
@@ -147,12 +147,8 @@ public class EventDTO  implements Serializable {
         this.createdByUser = createdByUser;
     }
 
-    public Group getAppliesToGroup() {
-        return appliesToGroup;
-    }
-
-    public void setAppliesToGroup(Group appliesToGroup) {
-        this.appliesToGroup = appliesToGroup;
+    public UidIdentifiable getParent() {
+        return parent;
     }
 
     public boolean isCanceled() {
@@ -255,7 +251,7 @@ public class EventDTO  implements Serializable {
                 ", createdDateTime=" + createdDateTime +
                 ", eventStartDateTime=" + eventStartDateTime +
                 ", createdByUser=" + createdByUser +
-                ", appliesToGroup=" + appliesToGroup +
+                ", parent=" + parent +
                 ", canceled=" + canceled +
                 ", eventType=" + eventType +
                 ", name='" + name + '\'' +

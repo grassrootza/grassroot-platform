@@ -140,7 +140,7 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
         testGroup.setId(1L);
         VoteRequest testVote = VoteRequest.makeEmpty();
         testVote.setName("someVote");
-        testVote.setAppliesToGroup(testGroup);
+        testVote.setParent(testGroup);
 
         String interruptedUrl = saveVoteMenu("issue", testVote.getUid());
         String revisingUrl = backVoteUrl("issue", testVote.getUid());

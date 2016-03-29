@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.EventRequest;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -84,7 +85,7 @@ public class USSDEventUtil extends USSDUtil {
         log.info("Returned " + upcomingEvents.size() + " events as upcoming ...");
 
         for (Event event : upcomingEvents) {
-            String menuLine = event.getAppliesToGroup().getName("") + ": "
+            String menuLine = event.resolveGroup().getName("") + ": "
                     + mtgFormat.format(event.getEventStartDateTime().toLocalDateTime());
             log.info("Here is the description ..." + menuLine);
             if (askMenu.getMenuCharLength() + enumLength + menuLine.length() + lastOptionBuffer < 160)

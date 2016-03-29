@@ -6,6 +6,7 @@ import org.mockito.InjectMocks;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.domain.EventReminderType;
+import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
@@ -43,10 +44,10 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
         Set<String> membersToAdd = new HashSet<>();
 
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
-        when(eventBrokerMock.createMeeting(sessionTestUser.getUid(), group.getUid(), testEventTitle, testTimestamp, testEventLocation, true, true, true, EventReminderType.CUSTOM, 5, testEventDescription, membersToAdd)).thenReturn(meetingEvent);
+        when(eventBrokerMock.createMeeting(sessionTestUser.getUid(), group.getUid(), JpaEntityType.GROUP, testEventTitle, testTimestamp, testEventLocation, true, true, true, EventReminderType.CUSTOM, 5, testEventDescription, membersToAdd)).thenReturn(meetingEvent);
         mockMvc.perform(post(path + "/create/{id}/{phoneNumber}/{code}", group.getUid(), testUserPhone, testUserCode).param("title", testEventTitle).param("description", testEventDescription).param("startTime", String.valueOf(testTimestamp)).param("notifyGroup", String.valueOf(true)).param("reminderMins", String.valueOf(5)).param("location", testEventLocation).param("includeSubGroups", String.valueOf(true)).param("rsvpRequired", String.valueOf(true))).andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
-        verify(eventBrokerMock).createMeeting(sessionTestUser.getUid(), group.getUid(), testEventTitle, testTimestamp, testEventLocation, true, true, true, EventReminderType.CUSTOM, 5, testEventDescription, membersToAdd);
+        verify(eventBrokerMock).createMeeting(sessionTestUser.getUid(), group.getUid(), JpaEntityType.GROUP, testEventTitle, testTimestamp, testEventLocation, true, true, true, EventReminderType.CUSTOM, 5, testEventDescription, membersToAdd);
     }
 
     @Test

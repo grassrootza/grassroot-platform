@@ -320,7 +320,7 @@ public class USSDMeetingController extends USSDController {
         thisMenu.addMenuOption(composeBackUri(mtgRequestUid, timeOnly), composeBackMessage(user, "time"));
         thisMenu.addMenuOption(composeBackUri(mtgRequestUid, dateOnly), composeBackMessage(user, "date"));
         thisMenu.addMenuOption(composeBackUri(mtgRequestUid, placeMenu), composeBackMessage(user, placeMenu));
-        thisMenu.addMenuOption(composeBackUri(mtgRequestUid, subjectMenu) + "&groupId=" + meeting.getAppliesToGroup().getId(),
+        thisMenu.addMenuOption(composeBackUri(mtgRequestUid, subjectMenu) + "&groupId=" + meeting.getParent().getId(),
                 composeBackMessage(user, subjectMenu));
 
         return menuBuilder(thisMenu);
@@ -378,8 +378,9 @@ public class USSDMeetingController extends USSDController {
             int answeredYes = rsvpResponses.get("yes");
             int answeredNo = rsvpResponses.get("no");
             int noAnswer = rsvpResponses.get("no_answer");
+            Group group = (Group) meeting.getParent(); // todo: !?!?!?
             String[] messageFields = new String[]{
-                    meeting.getAppliesToGroup().getName(""),
+                    group.getName(""),
                     meeting.getEventLocation(),
                     meeting.getEventStartDateTime().toLocalDateTime().format(dateTimeFormat),
                     "" + eventManager.getNumberInvitees(meeting),
@@ -388,8 +389,9 @@ public class USSDMeetingController extends USSDController {
                     "" + noAnswer};
             mtgDescription = getMessage(thisSection, viewMeetingDetails, promptKey + ".rsvp", messageFields, sessionUser);
         } else {
+            Group group = (Group) meeting.getParent(); // todo: !?!?!?
             String[] messageFields = new String[]{
-                    meeting.getAppliesToGroup().getName(""),
+                    group.getName(""),
                     meeting.getEventLocation(),
                     meeting.getEventStartDateTime().toLocalDateTime().format(dateTimeFormat),
                     "" + eventManager.getNumberInvitees(meeting)};

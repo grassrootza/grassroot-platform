@@ -63,7 +63,7 @@ public class VoteController extends BaseController {
             // note: though service layer checks this, and prior UX, want to catch it here too in case of URL hacking
             permissionBroker.validateGroupPermission(user, group, GROUP_PERMISSION_CREATE_GROUP_VOTE);
             model.addAttribute("group", group);
-            voteRequest.setAppliesToGroup(group);
+            voteRequest.setParent(group);
         } else {
             // todo: filter for permissions
             model.addAttribute("possibleGroups", permissionBroker.getActiveGroups(getUserProfile(), GROUP_PERMISSION_CREATE_GROUP_VOTE));
@@ -82,9 +82,9 @@ public class VoteController extends BaseController {
                                HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
         log.info("Vote passed back to us: " + vote);
-        String groupUid = (selectedGroupUid == null) ? vote.getAppliesToGroup().getUid() : selectedGroupUid;
+        String groupUid = (selectedGroupUid == null) ? vote.getParent().getUid() : selectedGroupUid;
 
-        eventBroker.createVote(getUserProfile().getUid(), groupUid, vote.getName(), vote.getEventStartDateTime(),
+        eventBroker.createVote(getUserProfile().getUid(), groupUid, JpaEntityType.GROUP, vote.getName(), vote.getEventStartDateTime(),
                                vote.isIncludeSubGroups(), vote.isRelayable(), vote.getDescription(), Collections.emptySet());
 
         log.info("Stored vote, at end of creation: " + vote.toString());

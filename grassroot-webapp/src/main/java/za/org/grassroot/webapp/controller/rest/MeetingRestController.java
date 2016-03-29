@@ -62,7 +62,7 @@ public class MeetingRestController {
         if(members != null){
             membersUid.addAll(members);
         }
-        eventBroker.createMeeting(user.getUid(), groupUid, title, Timestamp.valueOf(DateTimeUtil.parseDateTime(time)), location, includeSubGroups, rsvp, relayable,
+        eventBroker.createMeeting(user.getUid(), groupUid, JpaEntityType.GROUP, title, Timestamp.valueOf(DateTimeUtil.parseDateTime(time)), location, includeSubGroups, rsvp, relayable,
                 EventReminderType.CUSTOM, reminderMinutes, description, membersUid);
         ResponseWrapper responseWrapper = new ResponseWrapperImpl(HttpStatus.CREATED, RestMessage.MEETING_CREATED, RestStatus.SUCCESS);
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));

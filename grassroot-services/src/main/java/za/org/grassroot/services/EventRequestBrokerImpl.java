@@ -16,6 +16,7 @@ import java.sql.Timestamp;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class EventRequestBrokerImpl implements EventRequestBroker {
@@ -114,18 +115,21 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
 
 		if (request.getDescription() == null) request.setDescription(""); // since we don't ask for description in USSD
 
-		Set<String> assignedMemberUids = request.getAssignedMembers().stream().map(User::getUid).collect(Collectors.toSet());
+		Stream<User> stream = request.getAssignedMembers().stream();
+		Set<String> assignedMemberUids = stream.map(User::getUid).collect(Collectors.toSet());
 
 		String createdEntityUid;
 		if (request instanceof MeetingRequest) {
 			MeetingRequest meetingRequest = (MeetingRequest) request;
-			createdEntityUid = eventBroker.createMeeting(userUid, meetingRequest.getAppliesToGroup().getUid(), meetingRequest.getName(),
+			MeetingContainer parent = meetingRequest.getParent();
+			createdEntityUid = eventBroker.createMeeting(userUid, parent.getUid(), parent.getJpaEntityType(), meetingRequest.getName(),
 					meetingRequest.getEventStartDateTime(), meetingRequest.getEventLocation(), meetingRequest.isIncludeSubGroups(),
 					rsvpRequired, meetingRequest.isRelayable(), meetingRequest.getReminderType(), meetingRequest.getCustomReminderMinutes(),
 					meetingRequest.getDescription(), assignedMemberUids).getUid();
 		} else {
 			VoteRequest voteRequest = (VoteRequest) request;
-			createdEntityUid = eventBroker.createVote(userUid, voteRequest.getAppliesToGroup().getUid(), voteRequest.getName(),
+			VoteContainer parent = voteRequest.getParent();
+			createdEntityUid = eventBroker.createVote(userUid, parent.getUid(), parent.getJpaEntityType(), voteRequest.getName(),
 					voteRequest.getEventStartDateTime(), voteRequest.isIncludeSubGroups(), voteRequest.isRelayable(),
 					voteRequest.getDescription(), assignedMemberUids).getUid();
 		}

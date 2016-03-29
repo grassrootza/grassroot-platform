@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.EventLog;
+import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
@@ -63,7 +64,7 @@ public class VoteRestController {
         if(members !=null){
             membersUid.addAll(members);
         }
-        eventBroker.createVote(user.getUid(), groupUid, title, Timestamp.valueOf(DateTimeUtil.parseDateTime(time)),
+        eventBroker.createVote(user.getUid(), groupUid, JpaEntityType.GROUP, title, Timestamp.valueOf(DateTimeUtil.parseDateTime(time)),
                 includeSubGroup, relayable, description,membersUid);
         ResponseWrapper responseWrapper = new ResponseWrapperImpl(HttpStatus.CREATED, RestMessage.VOTE_CREATED, RestStatus.SUCCESS);
 

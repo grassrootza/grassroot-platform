@@ -6,6 +6,7 @@ import net.sf.ehcache.Element;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.enums.EventType;
@@ -49,9 +50,9 @@ public class CacheUtilManager implements CacheUtilService {
             Cache cache = cacheManager.getCache("userRSVP");
             Set<User> userList;
             if (event.isIncludeSubGroups()) {
-                userList = new HashSet<>(groupManagementService.getAllUsersInGroupAndSubGroups(event.getAppliesToGroup()));
+                userList = new HashSet<>(groupManagementService.getAllUsersInGroupAndSubGroups((Group) event.getParent()));
             } else {
-                userList = event.getAppliesToGroup().getMembers();
+                userList = ((Group) event.getParent()).getMembers();
             }
             for (User user : userList) {
                 log.info("clearCacheForAllUsersInGroup...user..." + user.getPhoneNumber());

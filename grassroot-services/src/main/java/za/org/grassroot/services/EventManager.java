@@ -138,7 +138,7 @@ public class EventManager implements EventManagementService {
         // todo: there is almost certainly a faster/better way to do this
         Map<User, EventRSVPResponse> rsvpResponses = new LinkedHashMap<>();
 
-        for (User user : event.getAppliesToGroup().getMembers())
+        for (User user : event.resolveGroup().getMembers())
             rsvpResponses.put(user, EventRSVPResponse.NO_RESPONSE);
 
         for (User user : getListOfUsersThatRSVPYesForEvent(event))
@@ -378,13 +378,13 @@ public class EventManager implements EventManagementService {
     @Override
     public int getNumberInvitees(Event event) {
         // may make this more sophisticated once we have message relays in place
-        return (!event.isIncludeSubGroups()) ? event.getAppliesToGroup().getMembers().size() :
-                groupManager.getAllUsersInGroupAndSubGroups(event.getAppliesToGroup()).size();
+        return (!event.isIncludeSubGroups()) ? event.resolveGroup().getMembers().size() :
+                groupManager.getAllUsersInGroupAndSubGroups(event.resolveGroup()).size();
     }
 
     @Override
     public String getGroupName(Event event) {
-        return event.getAppliesToGroup().getName("");
+        return event.resolveGroup().getName("");
     }
 
     @Override

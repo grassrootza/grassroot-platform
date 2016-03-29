@@ -25,7 +25,7 @@ public class EventWrapper {
 
     public EventWrapper(Event event, RSVPTotalsDTO eventResponses, List<EventLog> eventLogs) {
         this.event = event;
-        this.group = event.getAppliesToGroup();
+        this.group = event.resolveGroup();
         this.eventResponses = eventResponses;
         this.eventLogs = eventLogs;
     }
