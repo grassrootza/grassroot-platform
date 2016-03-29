@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.integration.domain.MessageProtocol;
 
+import java.util.List;
+
 /**
  * Created by luke on 2015/09/09.
  */
@@ -12,6 +14,9 @@ public class MessageSendingManager implements MessageSendingService {
 
     @Autowired
     private SmsSendingService smsSender;
+
+    @Autowired
+    private GcmSendingService gcmSender;
 
     @Override
     public String sendMessage(String message, String destination, MessageProtocol messageProtocol) {
@@ -34,5 +39,10 @@ public class MessageSendingManager implements MessageSendingService {
 
         return messageResponse;
 
+    }
+
+    @Override
+    public String sendMessage(Object object, List<String> destination, MessageProtocol messageProtocol) {
+        return null;
     }
 }

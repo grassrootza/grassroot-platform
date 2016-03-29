@@ -70,8 +70,9 @@ public class TaskRestController {
         for (Event event : groupBroker.retrieveGroupEvents(group, null, null, null)) {
             EventLog eventLog = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.EventRSVP);
             boolean hasResponded = eventLogManagementService.userRsvpForEvent(event, user);
-            taskSet.add(new TaskDTO(event, eventLog, user, hasResponded));
-
+            if (event.getEventStartDateTime() != null) {
+                taskSet.add(new TaskDTO(event, eventLog, user, hasResponded));
+            }
         }
 
         for (LogBook logBook : logBookService.getAllLogBookEntriesForGroup(group.getId())) {
