@@ -59,6 +59,9 @@ public abstract class Event extends AbstractEventEntity implements LogBookContai
 	)
 	private Set<User> assignedMembers = new HashSet<>();
 
+	@OneToMany(mappedBy = "event")
+	private Set<LogBook> logBooks = new HashSet<>();
+
 	public abstract EventType getEventType();
 
 	protected Event() {
@@ -129,6 +132,14 @@ public abstract class Event extends AbstractEventEntity implements LogBookContai
 	@Override
 	public void putAssignedMembersCollection(Set<User> assignedMembersCollection) {
 		this.assignedMembers = assignedMembersCollection;
+	}
+
+	@Override
+	public Set<LogBook> getLogBooks() {
+		if (logBooks == null) {
+			logBooks = new HashSet<>();
+		}
+		return logBooks;
 	}
 
 	@Override

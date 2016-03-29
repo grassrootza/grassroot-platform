@@ -94,6 +94,9 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
     @Column(name = "description", nullable = false)
     private String description;
 
+    @OneToMany(mappedBy = "group")
+    private Set<LogBook> logBooks = new HashSet<>();
+
     private Group() {
         // for JPA
     }
@@ -411,6 +414,14 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
     @Override
     public JpaEntityType getJpaEntityType() {
         return JpaEntityType.GROUP;
+    }
+
+    @Override
+    public Set<LogBook> getLogBooks() {
+        if (logBooks == null) {
+            logBooks = new HashSet<>();
+        }
+        return logBooks;
     }
 
     @Override
