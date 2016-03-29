@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.services.GroupManagementService;
 
 import javax.transaction.Transactional;
 import java.util.List;
@@ -33,9 +32,6 @@ import java.util.Set;
 public class GroupAccessControlManager implements GroupAccessControlManagementService {
 
     private static Logger log = LoggerFactory.getLogger(GroupAccessControlManager.class);
-
-    @Autowired
-    private GroupManagementService groupManagementService;
 
     @Autowired
     private PermissionEvaluator permissionEvaluator;

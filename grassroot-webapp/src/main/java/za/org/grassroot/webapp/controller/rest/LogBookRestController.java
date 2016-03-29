@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.LogBookService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
@@ -23,9 +22,6 @@ import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
 @RestController
 @RequestMapping(value = "/api/logbook")
 public class LogBookRestController {
-
-    @Autowired
-    GroupManagementService groupManagementService;
 
     @Autowired
     UserManagementService userManagementService;

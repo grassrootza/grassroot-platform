@@ -44,9 +44,6 @@ public class GroupController extends BaseController {
     private UserManagementService userManagementService;
 
     @Autowired
-    private GroupManagementService groupManagementService;
-
-    @Autowired
     private GroupBroker groupBroker;
 
     @Autowired
@@ -676,7 +673,7 @@ public class GroupController extends BaseController {
 
         model.addAttribute("groupInto", groupInto);
         model.addAttribute("groupFrom", groupFrom);
-        model.addAttribute("numberFrom", groupManagementService.getGroupSize(groupFrom.getId(), false));
+        model.addAttribute("numberFrom", groupFrom.getMembers().size());
         model.addAttribute("leaveActive", leaveActive);
 
         return "group/consolidate_confirm";
@@ -698,7 +695,7 @@ public class GroupController extends BaseController {
             Group consolidatedGroup =
                     groupBroker.merge(getUserProfile().getUid(), groupUidInto, groupUidFrom, leaveActive, true, false, null);
             Integer[] userCounts = new Integer[]{groupFrom.getMembers().size(),
-                    groupManagementService.getGroupSize(consolidatedGroup.getId(), false)};
+                    consolidatedGroup.getMembers().size()};
             redirectAttributes.addAttribute("groupUid", consolidatedGroup.getUid());
             addMessage(redirectAttributes, MessageType.SUCCESS, "group.merge.success", userCounts, request);
             return "redirect:/group/view";
@@ -731,8 +728,8 @@ public class GroupController extends BaseController {
         Long startTime = System.currentTimeMillis();
         List<Event> eventsInPeriod = eventManagementService.getGroupEventsInPeriod(group, startDateTime, endDateTime);
         List<LogBook> logBooksInPeriod = logBookService.getLogBookEntriesInPeriod(group.getId(), startDateTime, endDateTime);
-        List<GroupLog> groupLogsInPeriod = groupLogService.getLogsForGroup(group, startDateTime, endDateTime);
-        List<LocalDate> monthsActive = groupManagementService.getMonthsGroupActive(group);
+        List<GroupLog> groupLogsInPeriod = groupBroker.getLogsForGroup(group, startDateTime, endDateTime);
+        List<LocalDate> monthsActive = groupBroker.getMonthsGroupActive(groupUid);
         Long endTime = System.currentTimeMillis();
 
         log.info(String.format("Retrieved the events and group log ... time taken: %d msecs", endTime - startTime));

@@ -6,23 +6,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.GroupTreeDTO;
+import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.GroupLogType;
-import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
 import za.org.grassroot.services.util.TokenGeneratorService;
 
 import java.sql.Timestamp;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -36,6 +35,15 @@ public class GroupBrokerImpl implements GroupBroker {
     private GroupRepository groupRepository;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private EventRepository eventRepository;
+    @Autowired
+    private MeetingRepository meetingRepository;
+    @Autowired
+    private VoteRepository voteRepository;
+    @Autowired
+    private GroupLogRepository groupLogRepository;
+
     @Autowired
     private PermissionBroker permissionBroker;
     @Autowired
@@ -692,6 +700,85 @@ public class GroupBrokerImpl implements GroupBroker {
         if (childGroup.getParent() != null && childGroup.getParent().getId() != 0) {
             recursiveParentGroups(childGroup.getParent(),parentGroups);
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public LocalDateTime getLastTimeGroupActiveOrModified(String groupUid) {
+        LocalDateTime lastActive = getLastTimeGroupActive(groupUid);
+        LocalDateTime lastModified = getLastTimeGroupModified(groupUid);
+        return (lastActive != null && lastActive.isAfter(lastModified)) ? lastActive : lastModified;
+    }
+
+    private LocalDateTime getLastTimeGroupActive(String groupUid) {
+        Group group = groupRepository.findOneByUid(groupUid);
+        Event latestEvent = eventRepository.findTopByAppliesToGroupOrderByEventStartDateTimeDesc(group);
+        return (latestEvent != null) ? latestEvent.getEventStartDateTime().toLocalDateTime() :
+                group.getCreatedDateTime().toLocalDateTime();
+    }
+
+    private LocalDateTime getLastTimeGroupModified(String groupUid) {
+        Group group = groupRepository.findOneByUid(groupUid);
+        // todo: change groupLog to use localdatetime
+        GroupLog latestGroupLog = groupLogRepository.findFirstByGroupIdOrderByCreatedDateTimeDesc(group.getId());
+        return (latestGroupLog != null) ? LocalDateTime.ofInstant(latestGroupLog.getCreatedDateTime().toInstant(), ZoneId.systemDefault()) :
+                group.getCreatedDateTime().toLocalDateTime();
+    }
+
+    @Override
+    public List<LocalDate> getMonthsGroupActive(String groupUid) {
+        // todo: make this somewhat more sophisticated, including checking for active/inactive months, paid months etc
+        Group group = groupRepository.findOneByUid(groupUid);
+        LocalDate groupStartDate = group.getCreatedDateTime().toLocalDateTime().toLocalDate();
+        LocalDate today = LocalDate.now();
+        LocalDate monthIterator = LocalDate.of(groupStartDate.getYear(), groupStartDate.getMonth(), 1);
+        List<LocalDate> months = new ArrayList<>();
+        while (monthIterator.isBefore(today)) {
+            months.add(monthIterator);
+            monthIterator = monthIterator.plusMonths(1L);
+        }
+        return months;
+    }
+
+    @Override
+    public List<GroupLog> getLogsForGroup(Group group, LocalDateTime periodStart, LocalDateTime periodEnd) {
+        Sort sort = new Sort(Sort.Direction.ASC, "CreatedDateTime");
+        return groupLogRepository.findByGroupIdAndCreatedDateTimeBetween(group.getId(), Timestamp.valueOf(periodStart),
+                                                                         Timestamp.valueOf(periodEnd), sort);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Event> retrieveGroupEvents(Group group, EventType eventType, LocalDateTime periodStart, LocalDateTime periodEnd) {
+        List<Event> events;
+        Sort sort = new Sort(Sort.Direction.ASC, "EventStartDateTime");
+        Timestamp beginning, end;
+        if (periodStart == null && periodEnd == null) {
+            beginning = group.getCreatedDateTime();
+            end = Timestamp.valueOf(DateTimeUtil.getVeryLongTimeAway());
+        } else if (periodStart == null) { // since first condition is false, means period end is not null
+            beginning = group.getCreatedDateTime();
+            end = Timestamp.valueOf(periodEnd);
+        } else if (periodEnd == null) { // since first & second conditions false, means period start is not null
+            beginning = Timestamp.valueOf(periodStart);
+            end = Timestamp.valueOf(DateTimeUtil.getVeryLongTimeAway());
+        } else {
+            beginning = Timestamp.valueOf(periodStart);
+            end = Timestamp.valueOf(periodEnd);
+        }
+
+        switch (eventType) {
+            case MEETING:
+                events = (List) meetingRepository.findByAppliesToGroupAndEventStartDateTimeBetween(group, beginning, end);
+                break;
+            case VOTE:
+                events = (List)voteRepository.findByAppliesToGroupAndEventStartDateTimeBetween(group, beginning, end);
+                break;
+            default:
+               events = eventRepository.findByAppliesToGroupAndEventStartDateTimeBetween(group, beginning, end, sort);
+        }
+
+        return events;
     }
 
 }

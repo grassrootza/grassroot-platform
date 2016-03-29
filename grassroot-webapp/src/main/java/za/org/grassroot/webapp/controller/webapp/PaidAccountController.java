@@ -14,7 +14,10 @@ import org.springframework.web.bind.annotation.SessionAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.services.*;
+import za.org.grassroot.services.AccountManagementService;
+import za.org.grassroot.services.EventLogManagementService;
+import za.org.grassroot.services.EventManagementService;
+import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.EventWrapper;
 
@@ -39,9 +42,6 @@ public class PaidAccountController extends BaseController {
 
     @Autowired
     private AccountManagementService accountManagementService;
-
-    @Autowired
-    private GroupManagementService groupManagementService;
 
     @Autowired
     private GroupBroker groupBroker;
@@ -117,7 +117,7 @@ public class PaidAccountController extends BaseController {
         model.addAttribute("paidGroupRecord", paidGroupRecord);
         model.addAttribute("dateDescription", dateDescription);
         model.addAttribute("beginDate", beginDate.toLocalDate());
-        model.addAttribute("monthsToView", groupManagementService.getMonthsGroupActive(underlyingGroup));
+        model.addAttribute("monthsToView", groupBroker.getMonthsGroupActive(underlyingGroup.getUid()));
 
         return "paid_account/view_logs";
     }

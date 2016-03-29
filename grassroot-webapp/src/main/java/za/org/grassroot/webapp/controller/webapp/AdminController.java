@@ -22,7 +22,10 @@ import za.org.grassroot.webapp.model.web.MemberWrapper;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
 
 /**
  * Created by luke on 2015/10/08.
@@ -39,9 +42,6 @@ public class AdminController extends BaseController {
 
     @Autowired
     private UserManagementService userManagementService;
-
-    @Autowired
-    private GroupManagementService groupManagementService;
 
     @Autowired
     private GroupBroker groupBroker;
@@ -169,7 +169,7 @@ public class AdminController extends BaseController {
         if (page == -1) {
             model.addAttribute("paginated", false);
             model.addAttribute("countBase", 0);
-            List<Group> groupList = groupManagementService.getAllGroups();
+            List<Group> groupList = analyticalService.getAllGroups();
             model.addAttribute("groupList", groupList);
         } else {
 
@@ -177,7 +177,7 @@ public class AdminController extends BaseController {
 
             model.addAttribute("paginated", true);
             model.addAttribute("countBase", page * GROUP_PAGE_SIZE);
-            Page<Group> groupList = groupManagementService.getAllActiveGroupsPaginated(page, GROUP_PAGE_SIZE);
+            Page<Group> groupList = analyticalService.getAllActiveGroupsPaginated(page, GROUP_PAGE_SIZE);
 
             Integer previousPage = (groupList.hasPrevious()) ? page - 1 : -1;
             Integer nextPage = (groupList.hasNext()) ? page + 1 : -1;
@@ -216,7 +216,7 @@ public class AdminController extends BaseController {
         else
             createdByUser = userManagementService.load(createdByUserUid);
 
-        List<Group> groupList = groupManagementService.getGroupsFiltered(createdByUser, groupSize, createdAfterDate, createdBeforeDate);
+        List<Group> groupList = analyticalService.getGroupsFiltered(createdByUser, groupSize, createdAfterDate, createdBeforeDate);
 
         model.addAttribute("groupList", groupList);
         return "admin/groups/list";

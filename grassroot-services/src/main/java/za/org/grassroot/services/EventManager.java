@@ -1,25 +1,21 @@
 package za.org.grassroot.services;
 
 import org.apache.commons.collections4.map.HashedMap;
-import org.apache.commons.lang3.SerializationUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.dto.EventChanged;
 import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.*;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.util.CacheUtilService;
 
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.logging.Logger;
@@ -51,9 +47,6 @@ public class EventManager implements EventManagementService {
     GroupRepository groupRepository;
 
     @Autowired
-    GroupManagementService groupManager;
-
-    @Autowired
     GroupBroker groupBroker;
 
     @Autowired
@@ -78,17 +71,8 @@ public class EventManager implements EventManagementService {
     private final static double SMS_COST = 0.2; // might move to message services
 
     @Override
-    public Event loadEvent(Long eventId) {
-        return eventRepository.findOne(eventId);
-    }
-
-    @Override
     public Event getMostRecentEvent(Group group) {
-        List<Event> events = eventRepository.findByAppliesToGroupOrderByEventStartDateTimeDesc(group);
-        if(!events.isEmpty()){
-            return events.get(0);
-        }
-        return null;
+        return eventRepository.findTopByAppliesToGroupOrderByEventStartDateTimeDesc(group);
     }
 
     @Override
@@ -101,11 +85,6 @@ public class EventManager implements EventManagementService {
         results.put("no_answer", totalsDTO.getNumberOfUsers() - totalsDTO.getYes() - totalsDTO.getNo());
 
         return results;
-    }
-
-    @Override
-    public List<Event> findByAppliesToGroup(Group group) {
-        return eventRepository.findByAppliesToGroup(group);
     }
 
     @Override
@@ -377,14 +356,9 @@ public class EventManager implements EventManagementService {
 
     @Override
     public int getNumberInvitees(Event event) {
-        // may make this more sophisticated once we have message relays in place
+        // may make this more sophisticated once we have message relays in place, also, switch to using parent
         return (!event.isIncludeSubGroups()) ? event.getAppliesToGroup().getMembers().size() :
-                groupManager.getAllUsersInGroupAndSubGroups(event.getAppliesToGroup()).size();
-    }
-
-    @Override
-    public String getGroupName(Event event) {
-        return event.getAppliesToGroup().getName("");
+                userManagementService.fetchByGroup(event.getAppliesToGroup().getUid(), true).size();
     }
 
     @Override
@@ -448,17 +422,6 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
-    public int countEventsForGroupInTimePeriod(Group group, EventType eventType, LocalDateTime periodStart, LocalDateTime periodEnd) {
-        // todo: replace this with a count query
-        return getEventsForGroupInTimePeriod(group, eventType, periodStart, periodEnd).size();
-    }
-
-    @Override
-    public int countNumberMessagesForGroupInTimePeriod(Group group, EventType eventType, LocalDateTime periodStart, LocalDateTime periodEnd) {
-        return 0;
-    }
-
-    @Override
     public double getCostOfMessagesForEvent(Event event, double costPerMessage) {
         return eventLogManagementService.countNonRSVPEventLogsForEvent(event) * costPerMessage;
     }
@@ -468,12 +431,7 @@ public class EventManager implements EventManagementService {
         return getCostOfMessagesForEvent(event, SMS_COST);
     }
 
-    @Override
-    public double getCostOfMessagesForGroupInPeriod(Group group, EventType eventType, LocalDateTime periodStart, LocalDateTime periodEnd) {
-        return 0;
-    }
-
-    @Override
+    /*@Override
     public double getTotalCostGroupInPeriod(Group group, LocalDateTime periodStart, LocalDateTime periodEnd) {
         // todo: a repository method that doesn't bother with event type ...
         Sort sort = new Sort(Sort.Direction.ASC, "EventStartDateTime");
@@ -483,7 +441,7 @@ public class EventManager implements EventManagementService {
         for (Event event : events)
             costCounter += getCostOfMessagesDefault(event);
         return costCounter;
-    }
+    }*/
 
     @Override
     public int notifyUnableToProcessEventReply(User user) {

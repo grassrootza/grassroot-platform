@@ -14,7 +14,6 @@ import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrapper;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
 import za.org.grassroot.webapp.model.rest.TaskDTO;
@@ -45,9 +44,6 @@ public class TaskRestController {
     LogBookService logBookService;
 
     @Autowired
-    GroupManagementService groupManagementService;
-
-    @Autowired
     GroupBroker groupBroker;
 
 
@@ -71,7 +67,7 @@ public class TaskRestController {
 
         Set<TaskDTO> taskSet = new HashSet<>();
 
-        for (Event event : eventManagementService.findByAppliesToGroup(group)) {
+        for (Event event : groupBroker.retrieveGroupEvents(group, null, null, null)) {
             EventLog eventLog = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.EventRSVP);
             boolean hasResponded = eventLogManagementService.userRsvpForEvent(event, user);
             taskSet.add(new TaskDTO(event, eventLog, user, hasResponded));

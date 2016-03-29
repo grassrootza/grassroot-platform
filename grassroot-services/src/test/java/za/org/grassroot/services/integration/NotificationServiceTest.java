@@ -8,27 +8,21 @@ import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.GrassRootServicesConfig;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.MeetingNotificationService;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.*;
+import java.util.Date;
+import java.util.Locale;
 import java.util.logging.Logger;
 
-import static junit.framework.Assert.*;
 import static junit.framework.Assert.assertTrue;
 
 /**
@@ -54,9 +48,6 @@ public class NotificationServiceTest {
 
     @Autowired
     EventRepository eventRepository;
-
-    @Autowired
-    GroupManagementService groupManagementService;
 
     //TODO this test as well as the corresponding test welcome.vm should be removed
     //     this is only useful now to test application configuration

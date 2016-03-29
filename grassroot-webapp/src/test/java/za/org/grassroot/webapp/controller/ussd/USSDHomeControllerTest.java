@@ -182,12 +182,11 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
             when(userManagementServiceMock.findByInputNumber(user.getPhoneNumber())).thenReturn(user);
             when(userManagementServiceMock.needsToVoteOrRSVP(user)).thenReturn(true);
             when(userManagementServiceMock.needsToVote(user)).thenReturn(true);
-            when(eventManagementServiceMock.getNextOutstandingVote(user)).thenReturn(vote.getId());
-            when(eventManagementServiceMock.loadEvent(vote.getId())).thenReturn(vote);
+            when(eventManagementServiceMock.getOutstandingVotesForUser(user)).thenReturn(Collections.singletonList(vote));
 
             mockMvc.perform(get(openingMenu).param(phoneParameter, user.getPhoneNumber())).andExpect(status().isOk());
             verify(userManagementServiceMock, times(1)).needsToVoteOrRSVP(user);
-            verify(eventManagementServiceMock, times(1)).getNextOutstandingVote(user);
+            verify(eventManagementServiceMock, times(1)).getOutstandingVotesForUser(user);
 
             // note: the fact that message source accessor is not wired up may mean this is not actually testing
             mockMvc.perform(get("/ussd/start").param(phoneParameter, user.getPhoneNumber()));

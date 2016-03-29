@@ -1,30 +1,20 @@
 package za.org.grassroot.webapp.controller.ussd;
 
 import org.custommonkey.xmlunit.XMLUnit;
-import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.services.GroupManagementService;
+import za.org.grassroot.services.AnalyticalManager;
 import za.org.grassroot.services.UserManagementService;
-import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
-
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertSame;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.*;
 
 
 /**
@@ -38,7 +28,7 @@ public class USSDGroupControllerIT extends USSDAbstractIT {
     UserManagementService userManager;
 
     @Autowired
-    GroupManagementService groupManager;
+    AnalyticalManager analyticalManager;
 
     @Autowired
     GroupRepository groupRepository;
@@ -165,7 +155,7 @@ public class USSDGroupControllerIT extends USSDAbstractIT {
 
     private void deleteAllGroups(){
 
-        List<Group> userGroups= groupManager.getAllGroups();
+        List<Group> userGroups= analyticalManager.getAllGroups();
         for(Group group: userGroups){
             groupRepository.delete(group.getId());
         }

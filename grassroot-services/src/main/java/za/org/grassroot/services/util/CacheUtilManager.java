@@ -3,18 +3,20 @@ package za.org.grassroot.services.util;
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.services.GroupManagementService;
+import za.org.grassroot.services.UserManagementService;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Logger;
 
 /**
  * Created by aakilomar on 11/2/15.
@@ -22,13 +24,13 @@ import java.util.logging.Logger;
 @Component
 public class CacheUtilManager implements CacheUtilService {
 
-    private Logger log = Logger.getLogger(getClass().getCanonicalName());
+    private Logger log = LoggerFactory.getLogger(CacheUtilManager.class);
 
     @Autowired
     CacheManager cacheManager;
 
     @Autowired
-    GroupManagementService groupManagementService;
+    UserManagementService userManagementService;
 
     @Override
     public void clearRsvpCacheForUser(User user, EventType eventType) {
@@ -37,7 +39,7 @@ public class CacheUtilManager implements CacheUtilService {
             Cache cache = cacheManager.getCache("userRSVP");
             cache.remove(cacheKey);
         } catch (Exception e) {
-            log.severe("FAILED to clear userRSVP..." + user.getId() + " error: " + e.toString());
+            log.error("FAILED to clear userRSVP..." + user.getId() + " error: " + e.toString());
         }
 
     }
@@ -49,21 +51,20 @@ public class CacheUtilManager implements CacheUtilService {
             Cache cache = cacheManager.getCache("userRSVP");
             Set<User> userList;
             if (event.isIncludeSubGroups()) {
-                userList = new HashSet<>(groupManagementService.getAllUsersInGroupAndSubGroups(event.getAppliesToGroup()));
+                // note: if includeSubGroups is ticked, can assume parent type is group
+                Group group = event.getAppliesToGroup();
+                userList = new HashSet<>(userManagementService.fetchByGroup(group.getUid(), true));
             } else {
                 userList = event.getAppliesToGroup().getMembers();
             }
             for (User user : userList) {
                 log.info("clearCacheForAllUsersInGroup...user..." + user.getPhoneNumber());
-                // exclude createdbyuser as she has already been cleared
-            //    if (user.getId() != event.getCreatedByUser().getId()) {
-                    String cacheKey = event.getEventType().toString() + "|" + user.getId();
-                    log.info("clearCacheForAllUsersInGroup...removing..." + cacheKey);
-                    try {
-                        cache.remove(cacheKey);
-                    } catch (Exception e2) {
+                String cacheKey = event.getEventType().toString() + "|" + user.getId();
+                log.info("clearCacheForAllUsersInGroup...removing..." + cacheKey);
+                try {
+                    cache.remove(cacheKey);
+                } catch (Exception e2) {
 
-                 //   }
                 }
             }
         } catch (Exception e) {
@@ -83,7 +84,7 @@ public class CacheUtilManager implements CacheUtilService {
             outstandingRSVPs = (List<Event>) cache.get(cacheKey).getObjectValue();
 
         } catch (Exception e) {
-            log.fine("Could not retrieve outstanding RSVP/Vote from cache  userRSVP for user " + user.getPhoneNumber() + " error: " + e.toString() + " eventType: " + eventType.toString());
+            log.debug("Could not retrieve outstanding RSVP/Vote from cache  userRSVP for user " + user.getPhoneNumber() + " error: " + e.toString() + " eventType: " + eventType.toString());
         }
         return outstandingRSVPs;
     }
@@ -95,7 +96,7 @@ public class CacheUtilManager implements CacheUtilService {
             String cacheKey = eventType.toString() + "|" + user.getId();
             cache.put(new Element(cacheKey,outstandingRSVPs));
         } catch (Exception e) {
-            log.severe(e.toString());
+            log.error(e.toString());
         }
 
     }
@@ -107,7 +108,7 @@ public class CacheUtilManager implements CacheUtilService {
             Cache cache = cacheManager.getCache("userUSSDMenu");
             cache.put(new Element(phoneNumber, urlToCache));
         } catch (Exception e) {
-            log.severe(e.toString());
+            log.error(e.toString());
         }
     }
 
@@ -118,7 +119,7 @@ public class CacheUtilManager implements CacheUtilService {
             Cache cache = cacheManager.getCache("userUSSDMenu");
             cache.remove(phoneNumber);
         } catch (Exception e) {
-            log.severe(e.toString());
+            log.error(e.toString());
         }
     }
 
@@ -130,7 +131,7 @@ public class CacheUtilManager implements CacheUtilService {
         try {
             menuToReturn = (String) cache.get(phoneNumber).getObjectValue();
         } catch (Exception e) {
-            log.fine("Could not find a stored USSD menu for phone number ..." + phoneNumber);
+            log.debug("Could not find a stored USSD menu for phone number ..." + phoneNumber);
             menuToReturn = null;
         }
         return menuToReturn;
@@ -154,7 +155,7 @@ public class CacheUtilManager implements CacheUtilService {
             Cache cache = cacheManager.getCache("user");
             cache.put(new Element(user.getPhoneNumber(), user));
         } catch (Exception e) {
-            log.severe(e.toString());
+            log.error(e.toString());
         }
 
     }
@@ -165,7 +166,7 @@ public class CacheUtilManager implements CacheUtilService {
             Cache cache = cacheManager.getCache("user_language");
             cache.put(new Element(inputNumber, language));
         } catch (Exception e) {
-            log.severe(e.toString());
+            log.error(e.toString());
         }
     }
 
@@ -176,7 +177,7 @@ public class CacheUtilManager implements CacheUtilService {
             Cache cache = cacheManager.getCache("user_language");
             language = String.valueOf(cache.get(inputNumber).getObjectValue());
         } catch (Exception e) {
-            log.severe(e.toString());
+            log.error(e.toString());
         }
         return language;
 
@@ -188,7 +189,7 @@ public class CacheUtilManager implements CacheUtilService {
             Cache cache = cacheManager.getCache("user_language");
             cache.remove(phoneNumber);
         } catch (Exception e) {
-            log.severe(e.toString());
+            log.error(e.toString());
         }
 
     }

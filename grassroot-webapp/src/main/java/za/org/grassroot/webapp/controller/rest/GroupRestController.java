@@ -1,13 +1,14 @@
 package za.org.grassroot.webapp.controller.rest;
 
 import com.google.common.collect.Sets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
@@ -16,10 +17,10 @@ import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.*;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Logger;
 
 /**
  * Created by paballo.
@@ -28,9 +29,7 @@ import java.util.logging.Logger;
 @RequestMapping(value = "/api/group")
 public class GroupRestController {
 
-
-    @Autowired
-    GroupManagementService groupManagementService;
+    private Logger log = LoggerFactory.getLogger(GroupRestController.class);
 
     @Autowired
     EventManagementService eventManagementService;
@@ -50,7 +49,6 @@ public class GroupRestController {
     @Autowired
     PermissionBroker permissionBroker;
 
-    private Logger log = Logger.getLogger(getClass().getCanonicalName());
     @Autowired
     private GroupJoinRequestService groupJoinRequestService;
 
@@ -177,6 +175,7 @@ public class GroupRestController {
     private GroupResponseWrapper createWrapper(Group group, Role role) {
         Event event = eventManagementService.getMostRecentEvent(group);
         GroupLog groupLog = groupLogService.load(group.getId());
+        LocalDateTime latestTimeActiveOrModified = groupBroker.getLastTimeGroupActiveOrModified(group.getUid());
         GroupResponseWrapper responseWrapper;
         if (event != null) {
             if (event.getEventStartDateTime() != null && event.getEventStartDateTime()

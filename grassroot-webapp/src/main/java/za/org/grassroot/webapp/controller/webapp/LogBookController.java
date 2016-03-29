@@ -13,7 +13,10 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.services.*;
+import za.org.grassroot.services.EventBroker;
+import za.org.grassroot.services.GroupBroker;
+import za.org.grassroot.services.LogBookBroker;
+import za.org.grassroot.services.LogBookService;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.LogBookWrapper;
 import za.org.grassroot.webapp.model.web.MemberPicker;
@@ -28,13 +31,11 @@ import java.util.*;
  * Created by luke on 2016/01/02.
  */
 @Controller
+@RequestMapping("/log/")
 public class LogBookController extends BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(LogBookController.class);
     private static final DateTimeFormatter pickerParser = DateTimeFormatter.ofPattern("dd/MM/yyyy h:mm a");
-
-    @Autowired
-    private GroupManagementService groupManagementService;
 
     @Autowired
     private GroupBroker groupBroker;
@@ -46,19 +47,19 @@ public class LogBookController extends BaseController {
     private LogBookBroker logBookBroker;
 
     @Autowired
-    private LogBookRequestBroker logBookRequestBroker;
+    private EventBroker eventBroker;
 
     /**
      * SECTION: Views and methods for creating logbook entries
      */
 
-    @RequestMapping("/log/create")
+    @RequestMapping("create")
     public String createLogBook(Model model, @RequestParam(value="groupUid", required=false) String groupUid) {
 
         // Thymeleaf insists on messing everything up if we try to set groupId, or just in general create the entity
         // on the next page instead of here, so we have to do some redundant & silly entity creation
         LogBookWrapper entryWrapper;
-        User user = (User) getUserProfile();
+        User user = getUserProfile();
 
         if (groupUid == null || groupUid.trim().equals("")) {
             model.addAttribute("groupSpecified", false);
@@ -76,7 +77,24 @@ public class LogBookController extends BaseController {
         return "log/create";
     }
 
-    @RequestMapping(value = "/log/confirm", method = RequestMethod.POST)
+    /*
+    Okay, trying to implement new, meeting-as-parent-model
+    todo: consolidate with above, once comfortable in how it works
+     */
+
+    @RequestMapping("create/meeting")
+    public String createLogBookWithMeetingParent(Model model, @RequestParam String meetingUid) {
+
+        Meeting parent = eventBroker.loadMeeting(meetingUid);
+        LogBookWrapper wrapper = new LogBookWrapper(JpaEntityType.MEETING, meetingUid, parent.getName());
+
+        model.addAttribute("parent", parent);
+        model.addAttribute("logBook", wrapper);
+
+        return "log/create_meeting";
+    }
+
+    @RequestMapping(value = "confirm", method = RequestMethod.POST)
     public String confirmLogBookEntry(Model model, @ModelAttribute("entry") LogBookWrapper logBookEntry,
                                       @RequestParam(value="selectedGroupUid", required = false) String selectedGroupUid,
                                       @RequestParam(value="subGroups", required=false) boolean subGroups, HttpServletRequest request) {
@@ -100,7 +118,7 @@ public class LogBookController extends BaseController {
             // todo: use the tree methods to make this more coherent
             // todo: restrict this to paid groups, and add in message numbers / cost estimates
             model.addAttribute("numberSubGroups", groupBroker.subGroups(group.getUid()).size());
-            model.addAttribute("numberMembers", groupManagementService.getGroupSize(group.getId(), true));
+            model.addAttribute("numberMembers", userManagementService.fetchByGroup(group.getUid(), true).size());
         } else {
             logBookEntry.setMemberPicker(new MemberPicker(group, false));
         }
@@ -112,7 +130,7 @@ public class LogBookController extends BaseController {
 
     }
 
-    @RequestMapping(value = "/log/record", method = RequestMethod.POST)
+    @RequestMapping(value = "record", method = RequestMethod.POST)
     public String recordLogBookEntry(Model model, @ModelAttribute("entry") LogBookWrapper logBookEntry,
                                      HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
@@ -137,11 +155,26 @@ public class LogBookController extends BaseController {
         return "redirect:/log/details";
     }
 
+    @RequestMapping(value = "record/meeting", method = RequestMethod.POST)
+    public String recordEntryWithMeetingParent(Model model, @ModelAttribute("logBook") LogBookWrapper logBook,
+                                               HttpServletRequest request, RedirectAttributes attributes) {
+
+        LogBook created = logBookBroker.create(getUserProfile().getUid(), logBook.getParentEntityType(),
+                                               logBook.getParentUid(), logBook.getMessage(), logBook.getActionByDate(),
+                                               logBook.getReminderMinutes(), false, Collections.emptySet());
+
+        addMessage(attributes, MessageType.SUCCESS, "log.creation.success", request);
+        attributes.addAttribute("logBookUid", created.getUid());
+
+        return "redirect:/log/details";
+
+    }
+
     /**
      * SECTION: Views and methods for examining a group's logbook
      * The standard view just looks at the entry as applied to the group ... There's a click through to check sub-group ones
      */
-    @RequestMapping(value = "/log/view")
+    @RequestMapping(value = "view")
     public String viewGroupLogBook(Model model, @RequestParam String groupUid) {
 
         log.info("Okay, pulling up logbook records ... primarily for the currently assigned group");
@@ -157,7 +190,7 @@ public class LogBookController extends BaseController {
         return "log/view";
     }
 
-    @RequestMapping(value = "/log/details")
+    @RequestMapping(value = "details")
     public String viewLogBookDetails(Model model, @RequestParam String logBookUid) {
 
         // todo: be able to view "children" of the log book once design changed to allow it
@@ -170,7 +203,7 @@ public class LogBookController extends BaseController {
         log.info("Retrieved logBook entry with these details ... " + logBookEntry);
 
         model.addAttribute("entry", logBookEntry);
-        model.addAttribute("group", (Group) logBookEntry.getParent());
+        model.addAttribute("parent", logBookEntry.getParent());
         model.addAttribute("creatingUser", logBookEntry.getCreatedByUser());
         model.addAttribute("isComplete", logBookEntry.isCompleted());
 

@@ -38,9 +38,6 @@ public class AccountManager implements AccountManagementService {
     private UserManagementService userManagementService;
 
     @Autowired
-    private GroupManagementService groupManagementService;
-
-    @Autowired
     private RoleManagementService roleManagementService;
 
     private String accountAdminRole = "ROLE_ACCOUNT_ADMIN";
