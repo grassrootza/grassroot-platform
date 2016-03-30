@@ -407,5 +407,10 @@ public class EventNotificationConsumer {
         messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
     }
 
+    private String getPreferredUserChannel(User user){
+        return null;
+
+    }
+
 }
 
