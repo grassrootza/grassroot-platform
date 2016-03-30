@@ -72,7 +72,7 @@ public class EventManager implements EventManagementService {
 
     @Override
     public Event getMostRecentEvent(Group group) {
-        return eventRepository.findTopByAppliesToGroupOrderByEventStartDateTimeDesc(group);
+        return eventRepository.findTopByAppliesToGroupAndEventStartDateTimeNotNullOrderByEventStartDateTimeDesc(group);
     }
 
     @Override

@@ -254,7 +254,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         mockMvc.perform(get(openingMenu).param(phoneParameter, testUser.getPhoneNumber())).
                 andExpect(status().isOk());
 
-        mockMvc.perform(get("/ussd/testGroup-start").
+        mockMvc.perform(get("/ussd/group-start").
                 param(phoneParameter, phoneForTests).
                 param("groupUid", "" + testGroup.getUid()).
                 param("request", testGroupName)).andExpect(status().isOk());

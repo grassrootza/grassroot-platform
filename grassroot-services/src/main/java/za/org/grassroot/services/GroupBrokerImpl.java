@@ -712,7 +712,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
     private LocalDateTime getLastTimeGroupActive(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
-        Event latestEvent = eventRepository.findTopByAppliesToGroupOrderByEventStartDateTimeDesc(group);
+        Event latestEvent = eventRepository.findTopByAppliesToGroupAndEventStartDateTimeNotNullOrderByEventStartDateTimeDesc(group);
         return (latestEvent != null) ? latestEvent.getEventStartDateTime().toLocalDateTime() :
                 group.getCreatedDateTime().toLocalDateTime();
     }
