@@ -27,7 +27,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
     private static final Logger logger = LoggerFactory.getLogger(MeetingControllerTest.class);
-    private static final Long dummyId = 1L;
 
     @InjectMocks
     private MeetingController meetingController;
@@ -290,7 +289,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         mockMvc.perform(get("/meeting/free").param("groupUid", testGroup.getUid()))
                 .andExpect(status().isOk())
                 .andExpect(view().name("meeting/free"))
-                .andExpect(model().attribute("group", hasProperty("id", is(dummyId))))
+                .andExpect(model().attribute("testGroup", hasProperty("id", is(dummyId))))
                 .andExpect(model().attribute("groupSpecified", is(true)));
         verify(groupBrokerMock, times(1)).load(testGroup.getUid());
         verifyNoMoreInteractions(groupManagementServiceMock);
@@ -331,10 +330,10 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         when(eventManagementServiceMock.sendManualReminder(testEvent, message)).thenReturn(true);
         mockMvc.perform(post("/meeting/free").param("confirmed", "").param("entityId", String.valueOf(dummyId))
                 .param("message", message).param("includeSubGroups", String.valueOf(includeSubGroups)))
-                .andExpect(view().name("redirect:/group/view"))
+                .andExpect(view().name("redirect:/testGroup/view"))
                 .andExpect(model().attribute("groupUid", dummyGroup.getUid()))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/group/view?groupUid=" + dummyGroup.getUid()));//Not happy with this solution
+                .andExpect(redirectedUrl("/testGroup/view?groupUid=" + dummyGroup.getUid()));//Not happy with this solution
         verify(groupBrokerMock, times(1)).load(dummyGroup.getUid());
         verify(eventManagementServiceMock, times(1)).sendManualReminder(testEvent, message);
         verifyZeroInteractions(eventLogManagementServiceMock);
@@ -355,7 +354,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         mockMvc.perform(get("/meeting/free").param("groupId", String.valueOf(dummyId)))
                 .andExpect(status().isOk()).andExpect(view().name("meeting/free"))
-                .andExpect(model().attribute("group", hasProperty("id", is(dummyId))))
+                .andExpect(model().attribute("testGroup", hasProperty("id", is(dummyId))))
                 .andExpect(model().attribute("groupSpecified", is(true)));
         verify(groupBrokerMock, times(1)).load(testGroup.getUid());
         verifyZeroInteractions(eventManagementServiceMock);

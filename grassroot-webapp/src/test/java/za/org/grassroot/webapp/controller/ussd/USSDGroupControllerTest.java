@@ -119,15 +119,15 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
     @Test
     public void renameConfirmShouldWork() throws Exception {
-        // todo: test prior input & new group ranges
+        // todo: test prior input & new testGroup ranges
 
         resetTestGroup();
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
         mockMvc.perform(get(path + "rename-do").param(phoneParam, testUserPhone).param(groupParam, testGroup.getUid()).
-                param("request", "a renamed test group")).andExpect(status().isOk());
+                param("request", "a renamed test testGroup")).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupBrokerMock, times(1)).updateName(testUser.getUid(), testGroup.getUid(), "a renamed test group");
+        verify(groupBrokerMock, times(1)).updateName(testUser.getUid(), testGroup.getUid(), "a renamed test testGroup");
         verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
@@ -283,7 +283,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param(userChoiceParam, interruptedChoice)).
                 andExpect(status().isOk());
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
-        // note: not verifying zero group interactions as may add them in future
+        // note: not verifying zero testGroup interactions as may add them in future
         verifyZeroInteractions(eventManagementServiceMock);
     }
 
@@ -436,9 +436,9 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     @Test
     public void newGroupCreateShouldWork() throws Exception {
         resetTestGroup();
-        String nameToPass = "test group";
+        String nameToPass = "test testGroup";
         String urlToSave = saveGroupMenuWithInput("create-do", testGroup.getUid(), nameToPass);
-        String testGroupUid = "unique-group-id";
+        String testGroupUid = "unique-testGroup-id";
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(groupBrokerMock.create(testUser.getUid(), nameToPass, null, organizer(testUser), template, null)).thenReturn(testGroup);
 
@@ -493,7 +493,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     Helper method to reset testGroup to pristine state
      */
     private void resetTestGroup() {
-        testGroup.setGroupName("test group");
+        testGroup.setGroupName("test testGroup");
         testGroup.setId(1L);
         testGroup.addMember(testUser);
     }

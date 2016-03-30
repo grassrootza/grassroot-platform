@@ -3,6 +3,8 @@ package za.org.grassroot.webapp.controller.rest;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.domain.JpaEntityType;
@@ -25,6 +27,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 public class VoteRestControllerTest extends RestAbstractUnitTest {
 
+    private static final Logger log = LoggerFactory.getLogger(VoteRestControllerTest.class);
+
     @InjectMocks
     VoteRestController voteRestController;
 
@@ -40,16 +44,32 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
     public void creatingAVoteShouldWork() throws Exception {
 
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
-        when(eventBrokerMock.createVote(sessionTestUser.getUid(), voteEvent.getUid(), JpaEntityType.GROUP, voteEvent.getName(), testTimestamp, true, true, testEventDescription, Collections.emptySet())).thenReturn(voteEvent);
-        mockMvc.perform(post(path + "/create/{id}/{phoneNumber}/{code}", voteEvent.getUid(), testUserPhone, testUserCode).param("title", testEventTitle).param("closingTime", String.valueOf(testTimestamp)).param("description", testEventDescription).param("reminderMins", String.valueOf(10)).param("notifyGroup", String.valueOf(true)).param("includeSubgroups", String.valueOf(true))).andExpect(status().isCreated()).andExpect(status().is2xxSuccessful());
+
+        when(eventBrokerMock.createVote(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP,
+                                        voteEvent.getName(), testTimestamp, false, true, testEventDescription,
+                                        Collections.emptySet())).thenReturn(voteEvent);
+
+        log.info("ZOG: Creating a vote, passing these parameters: userUid= {}, groupUid= {}, voteName= {}, time= {}",
+                 sessionTestUser.getUid(), testGroup.getUid(), testEventTitle, testTimestamp.toInstant().toString());
+
+        mockMvc.perform(post(path + "/create/{id}/{phoneNumber}/{code}", testGroup.getUid(), testUserPhone, testUserCode)
+                                .param("title", testEventTitle)
+                                .param("closingTime", testTimestamp.toInstant().toString())
+                                .param("description", testEventDescription)
+                                .param("reminderMins", String.valueOf(10))
+                                .param("notifyGroup", String.valueOf(true))
+                                .param("includeSubgroups", String.valueOf(true)))
+                .andExpect(status().isCreated()).andExpect(status().is2xxSuccessful());
+
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
-        verify(eventBrokerMock).createVote(sessionTestUser.getUid(), voteEvent.getUid(), JpaEntityType.GROUP, voteEvent.getName(), testTimestamp, true, true, testEventDescription, Collections.emptySet());
+        verify(eventBrokerMock).createVote(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP, voteEvent.getName(),
+                                           testTimestamp, false, true, testEventDescription, Collections.emptySet());
     }
 
     @Test
     public void viewingAVoteShouldWork() throws Exception {
 
-        group.addMember(sessionTestUser, new Role("ROLE_GROUP_ORGANIZER", group.getUid()));
+        testGroup.addMember(sessionTestUser, new Role("ROLE_GROUP_ORGANIZER", testGroup.getUid()));
         EventLog eventLog = new EventLog(sessionTestUser, voteEvent, EventLogType.EventRSVP, "This is a test log");
         List<Object[]> list = new ArrayList<>();
         String[] responses = {"1", "2", "3", "4", "5"};
@@ -86,7 +106,11 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
 
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.updateVote(sessionTestUser.getUid(), voteEvent.getUid(), testTimestamp, testEventDescription )).thenReturn(voteEvent);
-        mockMvc.perform(post(path + "/update/{id}/{phoneNumber}/{code}",  voteEvent.getUid(), testUserPhone,  testUserCode).param("title", "Test_Vote").param("closingTime", String.valueOf(testTimestamp)).param("description", testEventDescription)).andExpect(status().is2xxSuccessful());
+        mockMvc.perform(post(path + "/update/{id}/{phoneNumber}/{code}",  voteEvent.getUid(), testUserPhone,  testUserCode)
+                                .param("title", "Test_Vote")
+                                .param("closingTime", testTimestamp.toInstant().toString())
+                                .param("description", testEventDescription))
+                .andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
         verify(eventBrokerMock).updateVote(sessionTestUser.getUid(), voteEvent.getUid(), testTimestamp, testEventDescription);
     }

@@ -10,10 +10,10 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.VerificationTokenCodeRepository;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.*;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 /**
  * Created by paballo on 2016/02/18.
@@ -27,17 +27,29 @@ public class RestAbstractUnitTest
     protected final static String testUserPhone = "27815550000";
     protected final static String testUserCode = "2394";
     protected final static String testGroupName = "test_group";
-    protected final static String testSearchTerm = "group";
+    protected final static String testSearchTerm = "testGroup";
     protected final static String testEventLocation = "Jozi-Hub";
     protected final static String testEventTitle = "Test_Event";
     protected final static String testEventDescription = "A feedback on code reviews.";
-    protected final static Timestamp testTimestamp = Timestamp.valueOf(DateTimeUtil.parseDateTime((DateTimeUtil.addHoursFromNow(5)).toString()));
+    protected final static Timestamp testTimestamp = Timestamp.valueOf(LocalDateTime.now().plusHours(5L));
     protected final static User sessionTestUser = new User(testUserPhone, "testUser");
-    protected final static Group group = new Group(testGroupName, sessionTestUser);
-    protected final static Vote voteEvent = new Vote(testEventTitle, testTimestamp, sessionTestUser, group, true, true, testEventDescription);
-    protected final static Meeting meetingEvent = new Meeting(testEventTitle, testTimestamp, sessionTestUser, group, testEventLocation, true, true, true, EventReminderType.DISABLED, 15, testEventDescription);
-    protected final static LogBook testLogBook = new LogBook(sessionTestUser, group, "A test log book", testTimestamp);
+
+    protected final static Group testGroup = new Group(testGroupName, sessionTestUser);
+
     protected MockMvc mockMvc;
+
+    protected final static Vote voteEvent = new Vote(testEventTitle,
+                                                     testTimestamp,
+                                                     sessionTestUser,
+                                                     testGroup,
+                                                     true,
+                                                     true,
+                                                     testEventDescription);
+
+    protected final static Meeting meetingEvent = new Meeting(testEventTitle, testTimestamp, sessionTestUser, testGroup, testEventLocation, true, true, true, EventReminderType.DISABLED, 15, testEventDescription);
+
+    protected final static LogBook testLogBook = new LogBook(sessionTestUser, testGroup, "A test log book", testTimestamp);
+
 
     @Mock
     protected PermissionBroker permissionBrokerMock;

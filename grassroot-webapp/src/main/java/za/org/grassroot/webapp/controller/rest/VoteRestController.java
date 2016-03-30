@@ -1,14 +1,13 @@
 package za.org.grassroot.webapp.controller.rest;
 
 import com.google.common.collect.Sets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.EventLog;
-import za.org.grassroot.core.domain.JpaEntityType;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
@@ -24,9 +23,11 @@ import za.org.grassroot.webapp.model.rest.ResponseWrappers.EventWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
+import za.org.grassroot.webapp.util.RestUtil;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -37,6 +38,7 @@ import java.util.Set;
 @RequestMapping("/api/vote")
 public class VoteRestController {
 
+    private static final Logger log = LoggerFactory.getLogger(VoteRestController.class);
 
     @Autowired
     EventManagementService eventManagementService;
@@ -52,20 +54,32 @@ public class VoteRestController {
 
 
     @RequestMapping(value = "/create/{id}/{phoneNumber}/{code}", method = RequestMethod.POST)
-    public ResponseEntity<ResponseWrapper> createVote(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
-                                                      @PathVariable("id") String groupUid, @RequestParam("title") String title, @RequestParam(value = "closingTime") String time,
-                                                      @RequestParam(value = "description", required = false) String description, @RequestParam("reminderMins") int reminderMinutes,
-                                                      @RequestParam(value = "notifyGroup", required = false) boolean relayable, @RequestParam("includeSubgroups") boolean includeSubGroup,@RequestParam(value = "members",required = false) List<String> members ){
+    public ResponseEntity<ResponseWrapper> createVote(@PathVariable("phoneNumber") String phoneNumber,
+                                                      @PathVariable("code") String code,
+                                                      @PathVariable("id") String groupUid,
+                                                      @RequestParam("title") String title,
+                                                      @RequestParam(value = "closingTime") String time,
+                                                      @RequestParam(value = "description", required = false) String description,
+                                                      @RequestParam("reminderMins") int reminderMinutes,
+                                                      @RequestParam(value = "notifyGroup", required = false) boolean relayable,
+                                                      @RequestParam(value = "members", required = false) List<String> members) {
 
-
+        log.info("ZOG: Creating vote with parameters ... phoneNumber: {}, groupUid: {}, title: {}, closingTime: {}," +
+                         "description: {}, ",
+                 phoneNumber, groupUid, title, time);
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         Set<String> membersUid = Sets.newHashSet();
-        if(members !=null){
+        if (members != null) {
             membersUid.addAll(members);
         }
-        eventBroker.createVote(user.getUid(), groupUid, JpaEntityType.GROUP, title, Timestamp.valueOf(DateTimeUtil.parseDateTime(time)),
-                includeSubGroup, relayable, description,membersUid);
+
+        Instant eventStartDateTime = Instant.parse(time);
+        Vote vote = eventBroker.createVote(user.getUid(), groupUid, JpaEntityType.GROUP, title, Timestamp.from(eventStartDateTime),
+                                           false, relayable, description, membersUid);
+        eventBroker.updateReminderSettings(user.getUid(), vote.getUid(), EventReminderType.CUSTOM,
+                                           RestUtil.getReminderMinutes(reminderMinutes));
+
         ResponseWrapper responseWrapper = new ResponseWrapperImpl(HttpStatus.CREATED, RestMessage.VOTE_CREATED, RestStatus.SUCCESS);
 
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
@@ -118,7 +132,7 @@ public class VoteRestController {
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         ResponseWrapper responseWrapper;
         try {
-            eventBroker.updateVote(user.getUid(), voteUid, Timestamp.valueOf(DateTimeUtil.parseDateTime(time)), description);
+            eventBroker.updateVote(user.getUid(), voteUid, Timestamp.from(Instant.parse(time)), description);
             responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.VOTE_DETAILS_UPDATED, RestStatus.SUCCESS);
         } catch (java.lang.IllegalStateException e) {
             responseWrapper = new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.VOTE_CANCELLED, RestStatus.FAILURE);
@@ -130,8 +144,9 @@ public class VoteRestController {
 
     }
 
-
     private boolean isOpen(Event event) {
         return event.getEventStartDateTime().after(Timestamp.from(Instant.now()));
     }
+
+
 }

@@ -44,10 +44,21 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
         Set<String> membersToAdd = new HashSet<>();
 
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
-        when(eventBrokerMock.createMeeting(sessionTestUser.getUid(), group.getUid(), JpaEntityType.GROUP, testEventTitle, testTimestamp, testEventLocation, true, true, true, EventReminderType.CUSTOM, 5, testEventDescription, membersToAdd)).thenReturn(meetingEvent);
-        mockMvc.perform(post(path + "/create/{id}/{phoneNumber}/{code}", group.getUid(), testUserPhone, testUserCode).param("title", testEventTitle).param("description", testEventDescription).param("startTime", String.valueOf(testTimestamp)).param("notifyGroup", String.valueOf(true)).param("reminderMins", String.valueOf(5)).param("location", testEventLocation).param("includeSubGroups", String.valueOf(true)).param("rsvpRequired", String.valueOf(true))).andExpect(status().is2xxSuccessful());
+        when(eventBrokerMock.createMeeting(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP,
+                                           testEventTitle, testTimestamp, testEventLocation, true, true, true, EventReminderType.CUSTOM, 5, testEventDescription, membersToAdd)).thenReturn(meetingEvent);
+        mockMvc.perform(post(path + "/create/{id}/{phoneNumber}/{code}", testGroup.getUid(), testUserPhone, testUserCode)
+                                .param("title", testEventTitle)
+                                .param("description", testEventDescription)
+                                .param("startTime", testTimestamp.toInstant().toString())
+                                .param("notifyGroup", String.valueOf(true))
+                                .param("reminderMins", String.valueOf(5))
+                                .param("location", testEventLocation)
+                                .param("includeSubGroups", String.valueOf(false))
+                                .param("rsvpRequired", String.valueOf(true)))
+                .andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
-        verify(eventBrokerMock).createMeeting(sessionTestUser.getUid(), group.getUid(), JpaEntityType.GROUP, testEventTitle, testTimestamp, testEventLocation, true, true, true, EventReminderType.CUSTOM, 5, testEventDescription, membersToAdd);
+        verify(eventBrokerMock).createMeeting(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP,
+                                              testEventTitle, testTimestamp, testEventLocation, false, true, true, EventReminderType.CUSTOM, 5, testEventDescription, membersToAdd);
     }
 
     @Test
@@ -62,7 +73,9 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
 
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.loadMeeting(meetingEvent.getUid())).thenReturn(meetingEvent);
-        mockMvc.perform(get(path + "/rsvp/{id}/{phoneNumber}/{code}", meetingEvent.getUid(), testUserPhone, testUserCode).param("response", "Yes")).andExpect(status().is2xxSuccessful());
+        mockMvc.perform(get(path + "/rsvp/{id}/{phoneNumber}/{code}", meetingEvent.getUid(), testUserPhone, testUserCode)
+                                .param("response", "Yes"))
+                .andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
         verify(eventBrokerMock).loadMeeting(meetingEvent.getUid());
     }
@@ -71,14 +84,15 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
     public void viewRsvpingShouldWork() throws Exception {
 
         Role role = new Role("ROLE_GROUP_ORGANIZER", meetingEvent.getUid());
-        group.addMember(sessionTestUser, role);
+        testGroup.addMember(sessionTestUser, role);
 
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.loadMeeting(meetingEvent.getUid())).thenReturn(meetingEvent);
         when(eventLogManagementServiceMock.getEventLogOfUser(meetingEvent, sessionTestUser, EventLogType.EventRSVP)).thenReturn(testEventLog);
         when(eventLogManagementServiceMock.userRsvpForEvent(meetingEvent, sessionTestUser)).thenReturn(false);
         when(eventLogManagementServiceMock.getRSVPTotalsForEvent(meetingEvent)).thenReturn(testRsvpTotalsDTO);
-        mockMvc.perform(get(path + "/view/{id}/{phoneNumber}/{code}", meetingEvent.getUid(), testUserPhone, testUserCode)).andExpect(status().is2xxSuccessful());
+        mockMvc.perform(get(path + "/view/{id}/{phoneNumber}/{code}", meetingEvent.getUid(), testUserPhone, testUserCode))
+                .andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
         verify(eventBrokerMock).loadMeeting(meetingEvent.getUid());
         verify(eventLogManagementServiceMock).getEventLogOfUser(meetingEvent, sessionTestUser, EventLogType.EventRSVP);

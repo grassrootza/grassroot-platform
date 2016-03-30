@@ -22,6 +22,7 @@ import za.org.grassroot.webapp.model.rest.ResponseWrappers.EventWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
+import za.org.grassroot.webapp.util.RestUtil;
 
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -62,8 +63,9 @@ public class MeetingRestController {
         if(members != null){
             membersUid.addAll(members);
         }
-        eventBroker.createMeeting(user.getUid(), groupUid, JpaEntityType.GROUP, title, Timestamp.valueOf(DateTimeUtil.parseDateTime(time)), location, includeSubGroups, rsvp, relayable,
-                EventReminderType.CUSTOM, reminderMinutes, description, membersUid);
+        Instant meetingDateTime = Instant.parse(time);
+        eventBroker.createMeeting(user.getUid(), groupUid, JpaEntityType.GROUP, title, Timestamp.from(meetingDateTime), location,
+                                  includeSubGroups, rsvp, relayable, EventReminderType.CUSTOM, reminderMinutes, description, membersUid);
         ResponseWrapper responseWrapper = new ResponseWrapperImpl(HttpStatus.CREATED, RestMessage.MEETING_CREATED, RestStatus.SUCCESS);
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
 

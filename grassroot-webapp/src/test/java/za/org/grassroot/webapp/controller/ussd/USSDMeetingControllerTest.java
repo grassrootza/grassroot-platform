@@ -229,15 +229,15 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         testGroup.setId(1L);
         Event testMeeting = new Event("unit test", testUser, testGroup);
         testMeeting.setId(1L);
-        String urlToSave = saveMenuUrlWithInput(thisSection, "group", "?groupId=" + testGroup.getId(), "0");
-        String urlToSave2 = saveMenuUrlWithInput(thisSection, "group",
+        String urlToSave = saveMenuUrlWithInput(thisSection, "testGroup", "?groupId=" + testGroup.getId(), "0");
+        String urlToSave2 = saveMenuUrlWithInput(thisSection, "testGroup",
                                                  "?groupId=" + testGroup.getId() + "&eventId=" + testMeeting.getId(), "0");
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave2)).thenReturn(testUser);
         when(eventManagementServiceMock.createMeeting(testUser, 1L)).thenReturn(testMeeting);
 
-        mockMvc.perform(get(path + "group").param(phoneParam, testUserPhone).param("groupId", "" + testGroup.getId()).
+        mockMvc.perform(get(path + "testGroup").param(phoneParam, testUserPhone).param("groupId", "" + testGroup.getId()).
                 param("request", "0")).andExpect(status().isOk());
         mockMvc.perform(get(base + urlToSave2).param(phoneParam, testUserPhone).param("request", "1")).
                 andExpect(status().isOk());

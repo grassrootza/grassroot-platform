@@ -35,7 +35,7 @@ public class USSDMeetingControllerIT extends USSDAbstractIT {
         return uriToExecute;
     }
 
-    // @author luke : Test to make sure that a user entering a set of phone numbers via meeting menu creates group
+    // @author luke : Test to make sure that a user entering a set of phone numbers via meeting menu creates testGroup
     // note: need to rewrite this also to take account of altered flow in meeting controller
 
     /*
@@ -52,7 +52,7 @@ public class USSDMeetingControllerIT extends USSDAbstractIT {
         Event meetingCreated = eventManager.getLastCreatedEvent(userManager.findByInputNumber(testPhone));
         Long eventId = (meetingCreated != null) ? meetingCreated.getId() : 1;
         String groupPhones = URLEncoder.encode(String.join(" ", testPhones), "UTF-8");
-        final URI createGroupUri = testPhoneUri(mtgPath + "/group").queryParam(eventParam, "" + eventId).
+        final URI createGroupUri = testPhoneUri(mtgPath + "/testGroup").queryParam(eventParam, "" + eventId).
                 queryParam(freeTextParam, groupPhones).build().toUri();
 
         responseEntities.add(template.getForEntity(createGroupUri, String.class));
@@ -88,7 +88,7 @@ public class USSDMeetingControllerIT extends USSDAbstractIT {
         log.info("Group members ArrayList: " + groupMembers);
 
         for (User groupMember : groupMembers) {
-            log.info("Checking this group member: " + PhoneNumberUtil.invertPhoneNumber(groupMember.getPhoneNumber(), ""));
+            log.info("Checking this testGroup member: " + PhoneNumberUtil.invertPhoneNumber(groupMember.getPhoneNumber(), ""));
             if (groupMember != userCreated)
                 assertTrue(testPhones.contains(PhoneNumberUtil.invertPhoneNumber(groupMember.getPhoneNumber(), "")));
         }
@@ -110,10 +110,10 @@ public class USSDMeetingControllerIT extends USSDAbstractIT {
         User userCreated = userManager.findByInputNumber(testPhone);
         Long eventId = eventManager.getLastCreatedEvent(userCreated).getId(); // this is where we need to replace with getting the actual eventId
 
-        urlResponses.putAll(uriExecute(testPhoneUri(mtgPath + "group").queryParam(eventParam, eventId).
+        urlResponses.putAll(uriExecute(testPhoneUri(mtgPath + "testGroup").queryParam(eventParam, eventId).
                 queryParam(freeTextParam, String.join(" ", testPhones)).build().toUri()));
 
-        log.info("Event as stored in DB after group creation and assignment: " + eventManager.loadEvent(eventId));
+        log.info("Event as stored in DB after testGroup creation and assignment: " + eventManager.loadEvent(eventId));
 
         urlResponses.putAll(uriExecute(testMtgParam(eventId, "time", "Saturday 9am", "place")));
         // responseEntities.add(testMtgParam(eventId, "place", "home", "send")); // add in when safe to do so w/out lots SMSs

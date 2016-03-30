@@ -250,11 +250,11 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
         when(userManagementServiceMock.fetchGroupUserMustRename(testUser)).thenReturn(testGroup);
 
-        // todo: work out how to verify that it actually returned the prompt to rename the group
+        // todo: work out how to verify that it actually returned the prompt to rename the testGroup
         mockMvc.perform(get(openingMenu).param(phoneParameter, testUser.getPhoneNumber())).
                 andExpect(status().isOk());
 
-        mockMvc.perform(get("/ussd/group-start").
+        mockMvc.perform(get("/ussd/testGroup-start").
                 param(phoneParameter, phoneForTests).
                 param("groupUid", "" + testGroup.getUid()).
                 param("request", testGroupName)).andExpect(status().isOk());
@@ -296,7 +296,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
     }
 
     /*
-    Make sure group pagination works
+    Make sure testGroup pagination works
      */
     @Test
     public void groupSecondPageShouldWork() throws Exception {

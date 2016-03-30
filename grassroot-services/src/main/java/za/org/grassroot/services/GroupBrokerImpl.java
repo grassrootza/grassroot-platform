@@ -767,15 +767,14 @@ public class GroupBrokerImpl implements GroupBroker {
             end = Timestamp.valueOf(periodEnd);
         }
 
-        switch (eventType) {
-            case MEETING:
-                events = (List) meetingRepository.findByAppliesToGroupAndEventStartDateTimeBetween(group, beginning, end);
-                break;
-            case VOTE:
-                events = (List)voteRepository.findByAppliesToGroupAndEventStartDateTimeBetween(group, beginning, end);
-                break;
-            default:
-               events = eventRepository.findByAppliesToGroupAndEventStartDateTimeBetween(group, beginning, end, sort);
+        if (eventType == null) {
+            events = eventRepository.findByAppliesToGroupAndEventStartDateTimeBetween(group, beginning, end, sort);
+        } else if (eventType.equals(EventType.MEETING)) {
+            events = (List) meetingRepository.findByAppliesToGroupAndEventStartDateTimeBetween(group, beginning, end);
+        } else if (eventType.equals(EventType.VOTE)) {
+            events = (List) voteRepository.findByAppliesToGroupAndEventStartDateTimeBetween(group, beginning, end);
+        } else {
+            events = eventRepository.findByAppliesToGroupAndEventStartDateTimeBetween(group, beginning, end, sort);
         }
 
         return events;

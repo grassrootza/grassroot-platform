@@ -346,7 +346,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     public void selectConsolidateWorksWhenMergeCandidateHasEntries() throws Exception {
 
         Group testGroup = new Group("Dummy Group2", new User("234345345"));
-        Group candidate = new Group("dummy group", sessionTestUser);
+        Group candidate = new Group("dummy testGroup", sessionTestUser);
         Set<Group> testCandidateGroups = Collections.singleton(candidate);
 
         when(groupBrokerMock.mergeCandidates(sessionTestUser.getUid(), testGroup.getUid())).thenReturn(testCandidateGroups);
@@ -455,7 +455,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
         when(groupBrokerMock.load(group.getUid())).thenReturn(group);
         when(groupBrokerMock.isDeactivationAvailable(sessionTestUser, group, true)).thenReturn(true);
-//        when(groupBrokerMock.deactivate(sessionTestUser.getUid(), group.getUid())).thenReturn(group);
+//        when(groupBrokerMock.deactivate(sessionTestUser.getUid(), testGroup.getUid())).thenReturn(testGroup);
         mockMvc.perform(post("/group/inactive").param("groupUid", group.getUid()).param("confirm_field", "delete"))
                 .andExpect(status().is3xxRedirection()).andExpect(view().name("redirect:/home"))
                 .andExpect(redirectedUrl("/home")).andExpect(flash()

@@ -33,7 +33,7 @@ public class USSDGroupControllerIT extends USSDAbstractIT {
     @Autowired
     GroupRepository groupRepository;
 
-    private final String groupPath = "group/";
+    private final String groupPath = "testGroup/";
     private final String groupParam = "groupId";
     private Group testGroup;
 
@@ -83,9 +83,9 @@ public class USSDGroupControllerIT extends USSDAbstractIT {
                 .build().toUri();
         executeQuery(createGroup);
         User sessionUser = userManager.findByInputNumber(testPhone);
-        Group group= groupManager.getLastCreatedGroup(sessionUser);
-        assertThat(group.getGroupName(),is("TAC"));;
-        groupRepository.delete(group.getId());*/
+        Group testGroup= groupManager.getLastCreatedGroup(sessionUser);
+        assertThat(testGroup.getGroupName(),is("TAC"));;
+        groupRepository.delete(testGroup.getId());*/
 
     }
 
@@ -111,14 +111,14 @@ public class USSDGroupControllerIT extends USSDAbstractIT {
                 .build().toUri();
         executeQuery(createGroup);
         User sessionUser = userManager.findByInputNumber(testPhone);
-        Group group= groupManager.getLastCreatedGroup(sessionUser);
-        final URI renameGroup = testPhoneUri(groupPath + "/rename-do").queryParam(groupParam,group.getId())
+        Group testGroup= groupManager.getLastCreatedGroup(sessionUser);
+        final URI renameGroup = testPhoneUri(groupPath + "/rename-do").queryParam(groupParam,testGroup.getId())
                 .queryParam(USSDUrlUtil.userInputParam, "Treatment Action Campaign")
                 .queryParam("newgroup", String.valueOf(false))
                 .build().toUri();
         executeQuery(renameGroup);
-        assertEquals("Treatment Action Campaign",groupManager.getGroupName(group.getId()));
-        groupRepository.delete(group.getId());*/
+        assertEquals("Treatment Action Campaign",groupManager.getGroupName(testGroup.getId()));
+        groupRepository.delete(testGroup.getId());*/
 
     }
 

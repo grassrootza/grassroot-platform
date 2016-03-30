@@ -292,7 +292,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
     @Test
     public void dateProcessingShouldWork() throws Exception {
 
-        Group testGroup = new Group("test group", testUser);
+        Group testGroup = new Group("test testGroup", testUser);
         LogBookRequest dummyLogBook = LogBookRequest.makeEmpty(testUser, testGroup);
 
         LocalDateTime correctDueDate = LocalDateTime.of(2016, 6, 16, 13, 0);

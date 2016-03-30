@@ -44,7 +44,7 @@ public class USSDHomeControllerIT extends USSDAbstractIT {
             "                display=\"true\">Take a vote</option>\n" +
             "        <option command=\"3\" order=\"3\" callback=\"http://localhost:8080/ussd/log/start\"" +
             "                display=\"true\">Record an action</option>\n" +
-            "        <option command=\"4\" order=\"4\" callback=\"http://localhost:8080/ussd/group/start\"" +
+            "        <option command=\"4\" order=\"4\" callback=\"http://localhost:8080/ussd/testGroup/start\"" +
             "                display=\"true\">Manage groups</option>\n" +
             "        <option command=\"5\" order=\"5\" callback=\"http://localhost:8080/ussd/user/start\"" +
             "                display=\"true\">Change profile</option>\n" +
@@ -61,7 +61,7 @@ public class USSDHomeControllerIT extends USSDAbstractIT {
             "                display=\"true\">Biza ivoti</option>\n" +
             "        <option command=\"3\" order=\"3\" callback=\"http://localhost:8080/ussd/log/start\"" +
             "                display=\"true\">Bhala isenzo</option>\n" +
-            "        <option command=\"4\" order=\"4\" callback=\"http://localhost:8080/ussd/group/start\"" +
+            "        <option command=\"4\" order=\"4\" callback=\"http://localhost:8080/ussd/testGroup/start\"" +
             "                display=\"true\">Phatha amaqembu</option>\n" +
             "        <option command=\"5\" order=\"5\" callback=\"http://localhost:8080/ussd/user/start\"" +
             "                display=\"true\">Shintsha iprofile</option>\n" +
@@ -130,7 +130,7 @@ public class USSDHomeControllerIT extends USSDAbstractIT {
         assertThat(renamedUser.nameToDisplay(), is(testDisplayName));
 
         // final test is that on next access to system the name comes up
-        // removing this test for now because the prompt to rename a group now comes up, without a name, so would have
+        // removing this test for now because the prompt to rename a testGroup now comes up, without a name, so would have
         // to either break stand-alone integrity of the tests or alter UX for sake of tests.
 
         final URI nextWelcomeMenu = testPhoneUri("start").build().toUri();
@@ -142,7 +142,7 @@ public class USSDHomeControllerIT extends USSDAbstractIT {
     }
 
 
- //   Test that the group joining code is working
+ //   Test that the testGroup joining code is working
   //  todo: figure out where to start and end transaction to get all of this to not throw spurious failures
 
     @Test
@@ -158,8 +158,8 @@ public class USSDHomeControllerIT extends USSDAbstractIT {
 
         Long groupId = testGroup.getId();
         log.info("Group token URI testing: " + useJoinCode.toString());
-        log.info("The group itself has the token: " + groupManager.loadGroup(groupId).getGroupTokenCode() + ", " +
-                         "and group now stored as: " + groupManager.loadGroup(testGroup.getId()));
+        log.info("The testGroup itself has the token: " + groupManager.loadGroup(groupId).getGroupTokenCode() + ", " +
+                         "and testGroup now stored as: " + groupManager.loadGroup(testGroup.getId()));
         ResponseEntity<String> responseEntity = executeQuery(useJoinCode);
 
         User nonGroupUser = userManager.findByInputNumber(nonGroupPhone);
@@ -187,7 +187,7 @@ public class USSDHomeControllerIT extends USSDAbstractIT {
         Long eventId = eventManager.createEvent("testEvent", testUser).getId();
 
         // generating an interruption in the middle of creating a meeting
-        List<URI> getToGroupCreation = Arrays.asList(testPhoneUriBuild("mtg/start"), testPhoneUri("mtg/group").queryParam(eventParam, "" + eventId).
+        List<URI> getToGroupCreation = Arrays.asList(testPhoneUriBuild("mtg/start"), testPhoneUri("mtg/testGroup").queryParam(eventParam, "" + eventId).
                                                              queryParam(freeTextParam, secondGroupPhone).build().toUri(),
                                                      testPhoneUriBuild("start"));
 

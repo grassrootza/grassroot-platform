@@ -15,4 +15,27 @@ public class RestUtil {
         return permissions.stream().filter(p -> p.toString().contains(filterBy)).collect(Collectors.toSet());
 
     }
+
+    public static int getReminderMinutes(int option) {
+        int reminderMins;
+        switch (option) {
+            case '0':
+                reminderMins = 5;
+                break;
+            case '1':
+                reminderMins = 60;
+                break;
+            case '2':
+                reminderMins = 60 * 12;
+                break;
+            case '3':
+                reminderMins = 60 * 24;
+                break;
+            default:
+                reminderMins = 5;
+                break;
+        }
+        return reminderMins;
+    }
 }
+
