@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.MessageSource;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.UserManagementService;
@@ -45,9 +46,8 @@ public class USSDController {
     protected static final String
             phoneNumber = USSDUrlUtil.phoneNumber,
             userInputParam = USSDUrlUtil.userInputParam,
-            groupIdParam = USSDUrlUtil.groupIdParam,
             groupUidParam = USSDUrlUtil.groupUidParam,
-            eventIdParam = USSDUrlUtil.eventIdParam,
+            entityUidParam = USSDUrlUtil.entityUidParam,
             previousMenu = USSDUrlUtil.previousMenu,
             yesOrNoParam = USSDUrlUtil.yesOrNoParam,
             interruptedFlag = USSDUrlUtil.interruptedFlag,
@@ -55,9 +55,7 @@ public class USSDController {
             revisingFlag = USSDUrlUtil.revisingFlag;
     protected static final String
             startMenu = "start",
-            groupIdUrlSuffix = USSDUrlUtil.groupIdUrlSuffix,
             groupUidUrlSuffix = USSDUrlUtil.groupUidUrlSuffix,
-            eventIdUrlSuffix = USSDUrlUtil.eventIdUrlSuffix,
             entityUidUrlSuffix = USSDUrlUtil.entityUidUrlSuffix,
             doSuffix = "-do";
     // Constants used in i18n and message handling
@@ -85,6 +83,8 @@ public class USSDController {
     protected UserManagementService userManager;
     @Autowired
     protected GroupBroker groupBroker;
+    @Autowired
+    protected EventBroker eventBroker;
     @Autowired
     protected EventManagementService eventManager;
     @Autowired

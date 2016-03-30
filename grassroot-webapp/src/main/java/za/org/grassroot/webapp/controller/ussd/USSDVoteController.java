@@ -40,9 +40,6 @@ public class USSDVoteController extends USSDController {
     private static final Logger log = LoggerFactory.getLogger(USSDVoteController.class);
 
     @Autowired
-    EventBroker eventBroker;
-
-    @Autowired
     EventRequestBroker eventRequestBroker;
 
     @Autowired

@@ -302,7 +302,7 @@ public class USSDHomeController extends USSDController {
         if (defaultPrompt.length() > 120)
             defaultPrompt = getMessage(thisSection, USSDController.startMenu, promptKey + "-" + rsvpMenu + ".short", meetingDetails, sessionUser);
 
-        String optionUri = rsvpMenu + eventIdUrlSuffix + meeting.getId();
+        String optionUri = rsvpMenu + entityUidParam + meeting.getUid();
         USSDMenu openingMenu = new USSDMenu(defaultPrompt);
         openingMenu.setMenuOptions(new LinkedHashMap<>(optionsYesNo(sessionUser, optionUri, optionUri)));
         return openingMenu;
@@ -337,17 +337,18 @@ public class USSDHomeController extends USSDController {
     @RequestMapping(value = path + rsvpMenu)
     @ResponseBody
     public Request rsvpAndWelcome(@RequestParam(value= phoneNumber) String inputNumber,
-                                  @RequestParam(value= eventIdParam) Long eventId,
+                                  @RequestParam(value= entityUidParam) String meetingUid,
                                   @RequestParam(value= yesOrNoParam) String attending) throws URISyntaxException {
 
         String welcomeKey;
         User sessionUser = userManager.loadOrSaveUser(inputNumber);
+        Meeting meeting = eventBroker.loadMeeting(meetingUid);
 
         if (attending.equals("yes")) {
-            eventLogManagementService.rsvpForEvent(eventId, inputNumber, EventRSVPResponse.YES);
+            eventLogManagementService.rsvpForEvent(meeting.getId(), inputNumber, EventRSVPResponse.YES);
             welcomeKey = String.join(".", Arrays.asList(homeKey, startMenu, promptKey, "rsvp-yes"));
         } else {
-            eventLogManagementService.rsvpForEvent(eventId, inputNumber, EventRSVPResponse.NO);
+            eventLogManagementService.rsvpForEvent(meeting.getId(), inputNumber, EventRSVPResponse.NO);
             welcomeKey = String.join(".", Arrays.asList(homeKey, startMenu, promptKey, "rsvp-no"));
         }
 
@@ -358,11 +359,14 @@ public class USSDHomeController extends USSDController {
     @RequestMapping(value = path + "vote")
     @ResponseBody
     public Request voteAndWelcome(@RequestParam(value= phoneNumber) String inputNumber,
-                                  @RequestParam(value= eventIdParam) Long voteId,
+                                  @RequestParam(value= entityUidParam) String voteUid,
                                   @RequestParam(value="response") String response) throws URISyntaxException {
 
         User sessionUser = userManager.findByInputNumber(inputNumber);
-        eventLogManagementService.rsvpForEvent(voteId, inputNumber, EventRSVPResponse.fromString(response));
+        Vote vote = (Vote) eventBroker.load(voteUid);
+
+        // todo: switch this to uid
+        eventLogManagementService.rsvpForEvent(vote.getId(), inputNumber, EventRSVPResponse.fromString(response));
 
         return menuBuilder(new USSDMenu(getMessage(thisSection, startMenu, promptKey, "vote-recorded", sessionUser),
                                         optionsHomeExit(sessionUser)));

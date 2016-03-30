@@ -45,9 +45,6 @@ public class USSDMeetingController extends USSDController {
     private USSDEventUtil eventUtil;
 
     @Autowired
-    private EventBroker eventBroker;
-
-    @Autowired
     private EventRequestBroker eventRequestBroker;
 
     private Logger log = LoggerFactory.getLogger(getClass());
@@ -148,7 +145,6 @@ public class USSDMeetingController extends USSDController {
     @ResponseBody
     public Request createGroup(@RequestParam(value = phoneNumber, required = true) String inputNumber,
                                @RequestParam(value = groupUidParam, required = false) String groupUid,
-                               @RequestParam(value = eventIdParam, required = false) Long eventId,
                                @RequestParam(value = userInputParam, required = false) String userResponse,
                                @RequestParam(value = interruptedFlag, required = false) boolean interrupted,
                                @RequestParam(value = interruptedInput, required = false) String priorInput) throws URISyntaxException {
@@ -158,9 +154,8 @@ public class USSDMeetingController extends USSDController {
         // if priorInput exists, we have been interrupted, so use that as userInput, else use what is passed as 'request'
         String userInput = (priorInput != null) ? USSDUrlUtil.decodeParameter(priorInput) : userResponse;
         String includeGroup = (groupUid != null && !groupUid.equals("")) ? groupUidUrlSuffix + groupUid : ""; // there is no case where eventId is not null but groupId is
-        String includeEvent = (eventId != null) ? ("&" + eventIdParam + "=" + eventId) : "";
 
-        String urlToSave = USSDUrlUtil.saveMenuUrlWithInput(thisSection, groupHandlingMenu, includeGroup + includeEvent, userInput);
+        String urlToSave = USSDUrlUtil.saveMenuUrlWithInput(thisSection, groupHandlingMenu, includeGroup, userInput);
         log.info("In group handling menu, have saved this URL: " + urlToSave);
 
         User user = userManager.findByInputNumber(inputNumber, urlToSave);

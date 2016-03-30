@@ -10,7 +10,7 @@
   <h2 class="text-center"><span  th:text="${vote.name}">Vote</span></h2>
 </div>
 <div layout:fragment="overview">
-  <p class="lead text-center">Vote of "<span th:text="${vote.appliesToGroup.getName('')}">Group name</span>",
+  <p class="lead text-center">Vote of "<span th:text="${vote.resolveGroup().getName('')}">Group name</span>",
   closing at <span th:text="${#calendars.format(vote.eventStartDateTime, 'd MMM, HH:mm')}">date and time</span></p>
 </div>
 

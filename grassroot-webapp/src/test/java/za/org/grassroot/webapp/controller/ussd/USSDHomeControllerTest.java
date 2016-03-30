@@ -183,6 +183,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
             when(userManagementServiceMock.needsToVoteOrRSVP(user)).thenReturn(true);
             when(userManagementServiceMock.needsToVote(user)).thenReturn(true);
             when(eventManagementServiceMock.getOutstandingVotesForUser(user)).thenReturn(Collections.singletonList(vote));
+            when(eventBrokerMock.load(vote.getUid())).thenReturn(vote);
 
             mockMvc.perform(get(openingMenu).param(phoneParameter, user.getPhoneNumber())).andExpect(status().isOk());
             verify(userManagementServiceMock, times(1)).needsToVoteOrRSVP(user);
@@ -190,7 +191,8 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
             // note: the fact that message source accessor is not wired up may mean this is not actually testing
             mockMvc.perform(get("/ussd/start").param(phoneParameter, user.getPhoneNumber()));
-            mockMvc.perform(get("/ussd/vote").param(phoneParameter, user.getPhoneNumber()).param("eventId", "" + vote.getId()).
+            mockMvc.perform(get("/ussd/vote").param(phoneParameter, user.getPhoneNumber()).
+                    param("entityUid", "" + vote.getUid()).
                     param("response", "yes")).andExpect(status().isOk());
 
             verify(eventLogManagementServiceMock, times(1)).rsvpForEvent(vote.getId(), user.getPhoneNumber(),
@@ -204,7 +206,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         resetTestUser();
         Group testGroup = new Group(testGroupName, testUser);
 
-        Event meeting = new Meeting("Meeting about testing", Timestamp.from(Instant.now()), testUser, testGroup, "someLocation");
+        Meeting meeting = new Meeting("Meeting about testing", Timestamp.from(Instant.now()), testUser, testGroup, "someLocation");
         meeting.setId(2L);
 
         List<User> groupMembers = new ArrayList<>(languageUsers);
@@ -220,13 +222,15 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
             when(userManagementServiceMock.needsToVoteOrRSVP(user)).thenReturn(true);
             when(userManagementServiceMock.needsToRSVP(user)).thenReturn(true);
             when(eventManagementServiceMock.getOutstandingRSVPForUser(user)).thenReturn(Collections.singletonList(meeting));
+            when(eventBrokerMock.loadMeeting(meeting.getUid())).thenReturn(meeting);
 
             mockMvc.perform(get(openingMenu).param(phoneParameter, user.getPhoneNumber())).andExpect(status().isOk());
             verify(userManagementServiceMock, times(1)).needsToVoteOrRSVP(user);
             verify(eventManagementServiceMock, times(1)).getOutstandingRSVPForUser(user);
 
-            mockMvc.perform(get("/ussd/vote").param(phoneParameter, user.getPhoneNumber()).param("eventId", "" + meeting.getId()).
-                    param("response", "yes")).andExpect(status().isOk());
+            mockMvc.perform(get("/ussd/rsvp").param(phoneParameter, user.getPhoneNumber())
+                                    .param("entityUid", "" + meeting.getUid())
+                                    .param("confirmed", "yes")).andExpect(status().isOk());
 
             verify(eventLogManagementServiceMock, times(1)).rsvpForEvent(meeting.getId(), user.getPhoneNumber(), EventRSVPResponse.YES);
 
