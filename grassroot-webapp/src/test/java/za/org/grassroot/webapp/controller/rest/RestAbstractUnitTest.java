@@ -9,7 +9,7 @@ import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.repository.VerificationTokenCodeRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.*;
 
@@ -53,8 +53,6 @@ public class RestAbstractUnitTest
     protected EventManagementService eventManagementServiceMock;
     @Mock
     protected PasswordTokenService passwordTokenServiceMock;
-    @Mock
-    protected GroupManagementService groupManagementServiceMock;
     @Mock
     protected GroupJoinRequestService groupJoinRequestServiceMock;
     @Mock

@@ -11,6 +11,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
@@ -29,7 +30,6 @@ import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.exception.UserExistsException;
 import za.org.grassroot.services.util.CacheUtilService;
 
-import javax.transaction.Transactional;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -62,7 +62,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Autowired
     private CacheUtilService cacheUtilService;
     @Autowired
-    private AsyncUserService asyncUserService;
+    private AsyncUserLogger asyncUserService;
     @Autowired
     private UserRequestRepository userCreateRequestRepository;
 
@@ -425,6 +425,29 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<User> fetchByGroup(String groupUid, boolean includeSubgroups) {
+        List<User> users;
+        if (!includeSubgroups) {
+            users = new ArrayList<>(groupRepository.findOneByUid(groupUid).getMembers());
+        } else {
+            Group group = groupRepository.findOneByUid(groupUid);
+            users = new ArrayList<>();
+            recursiveUserAdd(group, users);
+        }
+        return users;
+    }
+
+    private void recursiveUserAdd(Group parentGroup, List<User> userList ) {
+        for (Group childGroup : groupRepository.findByParent(parentGroup)) {
+            recursiveUserAdd(childGroup,userList);
+        }
+        // add all the users at this level
+        userList.addAll(groupRepository.findOne(parentGroup.getId()).getMembers());
+
+    }
+
+    @Override
     public String getLastUssdMenu(String inputNumber) {
         return cacheUtilService.fetchUssdMenuForUser(inputNumber);
     }
@@ -474,29 +497,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     /*
     SECTION: methods to return a masked user entity, for analytics
      */
-    @Override
-    public User loadUserMasked(Long userId) {
-        return MaskingUtil.maskUser(userRepository.findOne(userId));
-    }
-
-    @Override
-    public List<User> loadAllUsersMasked() {
-        List<User> maskedUsers = new ArrayList<>();
-        // todo: work out a much quicker way of doing this than the loop (could get _very_ long)
-        for (User user : userRepository.findAll()) {
-            maskedUsers.add(MaskingUtil.maskUser(user));
-        }
-        return maskedUsers;
-    }
-
-    @Override
-    public List<User> loadSubsetUsersMasked(List<Long> ids) {
-        List<User> maskedUsers = new ArrayList<>();
-        List<User> unmaskedUsers = userRepository.findAll(ids);
-        for (User user : unmaskedUsers)
-            maskedUsers.add(MaskingUtil.maskUser(user));
-        return maskedUsers;
-    }
 
     @Override
     public UserDTO loadUser(String phoneNumber) {

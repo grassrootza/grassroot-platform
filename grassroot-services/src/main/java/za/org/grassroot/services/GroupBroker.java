@@ -1,11 +1,11 @@
 package za.org.grassroot.services;
 
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.GroupTreeDTO;
+import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -76,5 +76,17 @@ public interface GroupBroker {
 
     Group merge(String userUid, String firstGroupUid, String secondGroupUid,
                 boolean leaveActive, boolean orderSpecified, boolean createNew, String newGroupName);
+
+    /** METHODS FOR RETRIEVING GROUP HISTORY & GROUP LOGS **/
+
+    LocalDateTime getLastTimeGroupActiveOrModified(String groupUid);
+
+    List<LocalDate> getMonthsGroupActive(String groupUid);
+
+    List<GroupLog> getLogsForGroup(Group group, LocalDateTime periodStart, LocalDateTime periodEnd);
+
+    // pass null to eventType to get all events
+    // pass null to either of the timestamps to leave unlimited (i.e., all the way to future, or all the way to past
+    List<Event> retrieveGroupEvents(Group group, EventType eventType, LocalDateTime periodStart, LocalDateTime periodEnd);
 
 }

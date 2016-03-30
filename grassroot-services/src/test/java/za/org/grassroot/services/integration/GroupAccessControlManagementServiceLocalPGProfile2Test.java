@@ -1,6 +1,5 @@
 package za.org.grassroot.services.integration;
 
-import com.google.common.collect.ImmutableSet;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -11,14 +10,9 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.GrassRootServicesConfig;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
-import za.org.grassroot.core.domain.*;
-import za.org.grassroot.services.acl.GroupAccessControlManagementService;
-import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.RoleManagementService;
 import za.org.grassroot.services.UserManagementService;
-
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import za.org.grassroot.services.acl.GroupAccessControlManagementService;
 
 /**
  * Test Case For Local PG Only. Ignored By Default
@@ -34,9 +28,6 @@ public class GroupAccessControlManagementServiceLocalPGProfile2Test {
 
     @Autowired
     private GroupAccessControlManagementService groupAccessControlManagementService;
-
-    @Autowired
-    private GroupManagementService groupManagementService;
 
     @Autowired
     private UserManagementService userManagementService;

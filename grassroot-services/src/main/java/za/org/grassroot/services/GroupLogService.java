@@ -13,6 +13,4 @@ public interface GroupLogService {
 
     public GroupLog load(Long groupLogId);
 
-    public List<GroupLog> getLogsForGroup(Group group, LocalDateTime periodStart, LocalDateTime periodEnd);
-
 }

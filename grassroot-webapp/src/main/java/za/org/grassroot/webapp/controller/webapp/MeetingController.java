@@ -19,7 +19,6 @@ import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -33,9 +32,6 @@ import java.util.Set;
 public class MeetingController extends BaseController {
 
     Logger log = LoggerFactory.getLogger(MeetingController.class);
-
-    @Autowired
-    private GroupManagementService groupManagementService;
 
     @Autowired
     private GroupBroker groupBroker;
@@ -141,6 +137,7 @@ public class MeetingController extends BaseController {
         if (canAlterDetails) {
             model.addAttribute("reminderOptions", EventReminderType.values());
             model.addAttribute("customReminderOptions", reminderMinuteOptions());
+            model.addAttribute("todos", meeting.getLogBooks());
         }
 
         return "meeting/view";
@@ -223,11 +220,11 @@ public class MeetingController extends BaseController {
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/meeting/remind", method=RequestMethod.POST)
-    public String sendReminder(Model model, @RequestParam("entityId") Long meetingId, RedirectAttributes redirectAttributes,
+    public String sendReminder(Model model, @RequestParam("entityUid") String meetingUid, RedirectAttributes redirectAttributes,
                                HttpServletRequest request) {
 
         // todo: check for paid group & for feature enabled
-        Meeting meeting = (Meeting) eventManagementService.loadEvent(meetingId);
+        Meeting meeting = eventBroker.loadMeeting(meetingUid);
         eventBroker.sendManualReminder( getUserProfile().getUid(), meeting.getUid(), "");
         addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.reminder.success", request);
         return "redirect:/home";
@@ -261,15 +258,15 @@ public class MeetingController extends BaseController {
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/meeting/free", method = RequestMethod.POST)
-    public String confirmFreeMsg(Model model, @RequestParam(value="groupId") Long groupId, @RequestParam(value="message") String message,
+    public String confirmFreeMsg(Model model, @RequestParam String groupUid, @RequestParam(value="message") String message,
                                  @RequestParam(value="includeSubGroups", required=false) boolean includeSubgroups) {
 
         model.addAttribute("action", "free");
-        model.addAttribute("entityId", groupId);
+        model.addAttribute("entityId", groupUid);
         model.addAttribute("includeSubGroups", includeSubgroups);
 
         model.addAttribute("message", message);
-        int recipients = groupManagementService.getGroupSize(groupId, includeSubgroups);
+        int recipients = userManagementService.fetchByGroup(groupUid, includeSubgroups).size();
         model.addAttribute("recipients", recipients);
         model.addAttribute("cost", recipients * 0.2);
         return "meeting/remind_confirm";

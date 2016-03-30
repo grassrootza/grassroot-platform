@@ -31,7 +31,7 @@ public class EventNotificationConsumer {
     private Logger log = LoggerFactory.getLogger(EventNotificationConsumer.class);
 
     @Autowired
-    GroupManagementService groupManagementService;
+    UserManagementService userManager;
 
     @Autowired
     GroupBroker groupBroker;
@@ -44,6 +44,9 @@ public class EventNotificationConsumer {
 
     @Autowired
     EventManagementService eventManagementService;
+
+    @Autowired
+    EventBroker eventBroker;
 
     @Autowired
     EventLogManagementService eventLogManagementService;
@@ -231,7 +234,7 @@ public class EventNotificationConsumer {
     public void sendNewLogbookNotification(LogBookDTO logBookDTO) {
         log.info("sendNewLogbookNotification...id..." + logBookDTO.getId());
         LogBook logBook = logBookRepository.findOne(logBookDTO.getId());
-        Group  group = logBook.resolveGroup();
+        Group  group = (Group) logBook.getParent();
         Account account = accountManagementService.findAccountForGroup(group);
 
         log.info("Found this account for the group ..." + (account == null ? " none" : account.getAccountName()));
@@ -300,7 +303,7 @@ public class EventNotificationConsumer {
     private List<User> getAllUsersForGroup(Event event) {
         // todo: replace this with calling the parent and/or just using assigned members
         if (event.isIncludeSubGroups()) {
-            return groupManagementService.getAllUsersInGroupAndSubGroups(event.resolveGroup());
+            return userManager.fetchByGroup(event.resolveGroup().getUid(), true);
         } else {
             return new ArrayList<>(event.resolveGroup().getMembers());
         }
@@ -309,7 +312,7 @@ public class EventNotificationConsumer {
     private void sendNewMeetingMessage(User user, EventDTO event) {
         //generate message based on user language
         String message = meetingNotificationService.createMeetingNotificationMessage(user, event);
-        Event meeting = eventManagementService.loadEvent(event.getId()); // todo: switch to use Uids, soon
+        Meeting meeting = eventBroker.loadMeeting(event.getEventUid()); // todo: switch to use Uids, soon
         if (!eventLogManagementService.notificationSentToUser(meeting,user)) {
             log.info("sendNewEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
             messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);

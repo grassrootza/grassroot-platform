@@ -20,9 +20,11 @@ import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.services.*;
+import za.org.grassroot.services.GroupBroker;
+import za.org.grassroot.services.MembershipInfo;
+import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.UserManagementService;
 
-import java.util.List;
 import java.util.Set;
 
 import static org.hamcrest.Matchers.is;
@@ -40,9 +42,6 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
 
     @Autowired
     private UserManagementService userManagementService;
-
-    @Autowired
-    private GroupManagementService groupManagementService;
 
     @Autowired
     private GroupRepository groupRepository;

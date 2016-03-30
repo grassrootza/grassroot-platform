@@ -2,6 +2,8 @@ package za.org.grassroot.services.integration;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
@@ -12,27 +14,16 @@ import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.EventManagementService;
-import za.org.grassroot.services.GroupManagementService;
-import za.org.grassroot.services.UserManagementService;
 
-import java.sql.Timestamp;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
-import java.util.logging.Logger;
 
-import static junit.framework.Assert.*;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThat;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertNotNull;
 
 /**
  * @author Lesetse Kimwaga
@@ -47,17 +38,10 @@ public class EventManagementServiceTest {
    // @Rule
    // public OutputCapture capture = new OutputCapture();
     
-    private Logger log = Logger.getLogger(getClass().getCanonicalName());
-
-
-    @Autowired
-    private UserManagementService userManagementService;
+    private Logger log = LoggerFactory.getLogger(EventManagementServiceTest.class);
 
     @Autowired
     private EventManagementService eventManagementService;
-
-    @Autowired
-    private GroupManagementService groupManagementService;
 
     @Autowired
     UserRepository userRepository;

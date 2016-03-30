@@ -17,6 +17,8 @@ public interface LogBookRepository extends JpaRepository<LogBook, Long> {
 
     LogBook findOneByUid(String uid);
 
+    List<LogBook> findByGroupUidOrEventUid(String groupUid, String eventUid);
+
     List<LogBook> findAllByGroupId(Long groupId);
     List<LogBook> findAllByGroupIdAndCreatedDateTimeBetween(Long groupId, Timestamp start, Timestamp end, Sort sort);
     List<LogBook> findByGroupIdAndMessageAndCreatedDateTime(Long groupId, String message, Timestamp createdDateTime);

@@ -15,7 +15,7 @@ import za.org.grassroot.core.repository.UserLogRepository;
 @Service
 @Transactional
 @Lazy
-public class AsyncUserManager implements AsyncUserService {
+public class AsyncUserLoggerImpl implements AsyncUserLogger {
 
     @Autowired
     UserLogRepository userLogRepository;

@@ -15,15 +15,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.springframework.web.servlet.view.RedirectView;
 import za.org.grassroot.core.util.AuthenticationUtil;
-import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
-import java.util.Optional;
 
 /**
  * @author Lesetse Kimwaga
@@ -35,9 +30,6 @@ public class SigninController {
 
     @Autowired
     UserManagementService userManagementService;
-
-    @Autowired
-    GroupManagementService groupManagementService;
 
     @Autowired
     AuthenticationUtil authenticationUtil;

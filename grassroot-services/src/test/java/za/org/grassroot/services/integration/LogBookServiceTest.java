@@ -9,24 +9,12 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.AbstractTransactionalJUnit4SpringContextTests;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.transaction.TestTransaction;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.GrassRootCoreConfig;
 import za.org.grassroot.GrassRootServicesConfig;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.LogBook;
-import za.org.grassroot.core.domain.User;
-import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.LogBookService;
 import za.org.grassroot.services.UserManagementService;
-
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  * @author Lesetse Kimwaga
@@ -42,9 +30,6 @@ public class LogBookServiceTest extends AbstractTransactionalJUnit4SpringContext
 
     @Autowired
     private UserManagementService userManagementService;
-
-    @Autowired
-    private GroupManagementService groupManagementService;
 
     @Autowired
     LogBookService logBookService;

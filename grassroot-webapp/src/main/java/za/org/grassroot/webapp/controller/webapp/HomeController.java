@@ -10,14 +10,13 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.ModelAndView;
 import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.GroupJoinRequest;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.util.AuthenticationUtil;
 import za.org.grassroot.services.EventManagementService;
+import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.GroupJoinRequestService;
-import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupViewNodeSql;
 
@@ -34,7 +33,7 @@ public class HomeController extends BaseController {
     private static final Logger log = LoggerFactory.getLogger(HomeController.class);
 
     @Autowired
-    GroupManagementService groupManagementService;
+    GroupBroker groupBroker;
 
     @Autowired
     EventManagementService eventManagementService;
@@ -116,7 +115,7 @@ public class HomeController extends BaseController {
 
         Long startTime = System.currentTimeMillis();
         log.info("getHomePage...NEW tree starting...");
-        treeList = groupManagementService.getGroupsMemberOfTree(user.getId());
+        treeList = groupBroker.groupTree(user.getUid());
 
         /*
          Recursive construction in the view node will turn each of these into a tree with a root node as the top level

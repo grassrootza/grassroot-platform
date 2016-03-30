@@ -24,10 +24,6 @@ public interface EventManagementService {
     Methods to find and load events, first by group
      */
 
-    public Event loadEvent(Long eventId);
-
-    List<Event> findByAppliesToGroup(Group appliesToGroup);
-
     List<Meeting> getUpcomingMeetings(Group group);
 
     List<Vote> getUpcomingVotes(Group group);
@@ -80,8 +76,6 @@ public interface EventManagementService {
 
     int getNumberInvitees(Event event);
 
-    String getGroupName(Event event);
-
     /*
     Methods to retrieve information about votes
      */
@@ -108,17 +102,9 @@ public interface EventManagementService {
 
     List<Event> getEventsForGroupInTimePeriod(Group group, EventType eventType, LocalDateTime periodStart, LocalDateTime periodEnd);
 
-    int countEventsForGroupInTimePeriod(Group group, EventType eventType, LocalDateTime periodStart, LocalDateTime periodEnd);
-
-    int countNumberMessagesForGroupInTimePeriod(Group group, EventType eventType, LocalDateTime periodStart, LocalDateTime periodEnd);
-
     double getCostOfMessagesForEvent(Event event, double costPerMessage);
 
     double getCostOfMessagesDefault(Event event);
-
-    double getCostOfMessagesForGroupInPeriod(Group group, EventType eventType, LocalDateTime periodStart, LocalDateTime periodEnd);
-
-    double getTotalCostGroupInPeriod(Group group, LocalDateTime periodStart, LocalDateTime periodEnd);
 
     int notifyUnableToProcessEventReply(User user);
 

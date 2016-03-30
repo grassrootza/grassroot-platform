@@ -1,7 +1,6 @@
 package za.org.grassroot.webapp.controller.ussd;
 
 import org.junit.BeforeClass;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,14 +16,10 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.services.EventManagementService;
-import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.GrassRootWebApplicationConfig;
 
@@ -33,7 +28,6 @@ import javax.net.ssl.*;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -53,9 +47,6 @@ public class USSDAbstractIT {
 
     @Autowired
     protected UserManagementService userManager;
-
-    @Autowired
-    protected GroupManagementService groupManager;
 
     @Autowired
     protected EventManagementService eventManager;

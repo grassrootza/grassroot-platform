@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
@@ -157,4 +158,23 @@ public class LogBookBrokerImpl implements LogBookBroker {
 				.map(logBook -> (Group) logBook.getParent())
 				.collect(Collectors.toList());
 	}
+
+	/*@Override
+	@Transactional(readOnly = true)
+	public List<LogBook> retrieveParentLogBooks(String userUid, String parentUid, JpaEntityType parentType) {
+		Objects.requireNonNull(userUid);
+		Objects.requireNonNull(parentUid);
+		Objects.requireNonNull(parentType);
+
+		User user = userRepository.findOneByUid(userUid);
+		AssignedMembersContainer parent = uidIdentifiableRepository.findOneByUid(AssignedMembersContainer.class,
+																				 parentType, parentUid);
+
+		// todo: decide if, say, group organizers on ultimate group should be able to access this
+		if (!parent.getAssignedMembers().contains(user))
+			throw new AccessDeniedException("Member is not assigned to this parent, so does not have read access");
+
+		return logBookRepository.findByGroupUidOrEventUid(parentUid, parentUid);
+
+	}*/
 }

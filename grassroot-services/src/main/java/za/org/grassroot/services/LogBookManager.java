@@ -36,12 +36,6 @@ public class LogBookManager implements LogBookService {
     private LogBookRepository logBookRepository;
 
     @Autowired
-    private GroupManagementService groupManagementService;
-
-    @Autowired
-    private UserManagementService userManagementService;
-
-    @Autowired
     private GenericJmsTemplateProducerService jmsTemplateProducerService;
 
     @Override

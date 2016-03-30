@@ -12,7 +12,6 @@ import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.core.dto.TokenDTO;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.util.PhoneNumberUtil;
-import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.PasswordTokenService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.UserManagementService;
@@ -36,9 +35,6 @@ public class UserRestController {
 
     @Autowired
     PasswordTokenService passwordTokenService;
-
-    @Autowired
-    GroupManagementService groupManagementService;
 
     @Autowired
     PermissionBroker permissionBroker;

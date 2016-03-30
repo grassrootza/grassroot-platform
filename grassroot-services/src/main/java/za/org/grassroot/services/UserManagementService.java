@@ -34,6 +34,8 @@ public interface UserManagementService {
 
     boolean isFirstInitiatedSession(User user);
 
+    User setInitiatedSession(User sessionUser);
+
     boolean isPartOfActiveGroups(User user);
 
 
@@ -47,9 +49,9 @@ public interface UserManagementService {
 
     User fetchUserByUsername(String username);
 
-    User setInitiatedSession(User sessionUser);
-
     Group fetchGroupUserMustRename(User user);
+
+    List<User> fetchByGroup(String groupUid, boolean includeSubgroups);
 
     /*
     Methods to return lists of users
@@ -98,12 +100,6 @@ public interface UserManagementService {
     Methods to return masked user entities for system analysis
     todo: add security to the methods that load users which are not masked
      */
-
-    User loadUserMasked(Long userId);
-
-    List<User> loadAllUsersMasked();
-
-    List<User> loadSubsetUsersMasked(List<Long> ids);
 
     UserDTO loadUser(String phoneNumber);
 

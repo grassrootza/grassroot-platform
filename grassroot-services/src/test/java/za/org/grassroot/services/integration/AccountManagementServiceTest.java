@@ -39,9 +39,6 @@ public class AccountManagementServiceTest {
     UserManagementService userManagementService;
 
     @Autowired
-    GroupManagementService groupManagementService;
-
-    @Autowired
     GroupBroker groupBroker;
 
     @Autowired

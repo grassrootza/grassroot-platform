@@ -123,7 +123,7 @@ public class USSDEventUtil extends USSDUtil {
     private USSDMenu addListOfEventsToMenu(USSDMenu menu, String nextMenuUrl, List<Event> events, boolean includeGroupName) {
         final String formedUrl = nextMenuUrl + ((nextMenuUrl.contains("?")) ? eventIdLaterParam : eventIdFirstParam);
         for (Event event : events) {
-            String descriptor = (includeGroupName ? eventManager.getGroupName(event) + ": " : "Subject: ") + event.getName();
+            String descriptor = (includeGroupName ? event.resolveGroup().getName("") + ": " : "Subject: ") + event.getName();
             menu.addMenuOption(formedUrl + event.getId(), checkAndTruncateMenuOption(descriptor));
         }
         return menu;

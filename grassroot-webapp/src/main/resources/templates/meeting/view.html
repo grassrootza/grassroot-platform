@@ -33,6 +33,19 @@
           <!-- <button type="button" class="btn btn-default" data-toggle="modal" data-target="#locationChange">Change location</button>-->
           <button type="button" class="btn btn-default" data-toggle="modal" data-target="#changeReminder">Change reminder time</button>
           <button type="button" class="btn btn-default" data-toggle="modal" data-target="#cancelMeeting">Cancel meeting</button>
+          <a th:href="@{/log/create/meeting(meetingUid=${meeting.uid})}"><button type="button" class="btn btn-default">Create meeting to-do</button></a>
+        </div>
+      </div>
+    </div>
+
+    <div th:unless="${#lists.isEmpty(todos)}">
+      <div class="row">
+        <div class="col-md-6 col-md-offset-3">
+          <ul class="list-group">
+            <li class="list-group-item" th:each="logBook : ${todos}">
+              <a th:href="@{/log/details(logBookUid=${logBook.uid})}"><span th:text="${logBook.message}">Text</span></a>
+            </li>
+          </ul>
         </div>
       </div>
     </div>

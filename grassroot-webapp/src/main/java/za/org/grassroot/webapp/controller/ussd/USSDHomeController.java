@@ -270,14 +270,13 @@ public class USSDHomeController extends USSDController {
 
     private USSDMenu assembleVoteMenu(User sessionUser) {
         log.info("Asking for a vote ... from user " + sessionUser);
-        Long voteId = eventManager.getNextOutstandingVote(sessionUser);
-        Vote vote = (Vote) eventManager.loadEvent(voteId);
+        Vote vote = (Vote) eventManager.getOutstandingVotesForUser(sessionUser).get(0);
 
         final String[] promptFields = new String[]{ vote.resolveGroup().getName(""),
                 vote.getCreatedByUser().nameToDisplay(),
                 vote.getName()};
 
-        final String voteUri = "vote" + eventIdUrlSuffix + voteId + "&response=";
+        final String voteUri = "vote" + entityUidUrlSuffix + vote.getUid() + "&response=";
         final String optionMsgKey = voteKey + "." + optionsKey;
 
         USSDMenu openingMenu = new USSDMenu(getMessage(thisSection, startMenu, promptKey + "-vote", promptFields, sessionUser));
@@ -423,7 +422,7 @@ public class USSDHomeController extends USSDController {
         // todo: another round of checks that this should be allowed
         User user = userManager.findByInputNumber(inputNumber);
         Group group = groupBroker.load(groupUid);
-        String sizeOfGroup = "" + (groupManager.getGroupSize(group.getId(), false) - 1); // subtracting the group creator
+        String sizeOfGroup = "" + (group.getMembers().size() - 1); // subtracting the group creator
         String optionsPrefix = thisSection.toKey() + "group.inactive." + optionsKey;
 
         USSDMenu thisMenu = new USSDMenu(getMessage(thisSection, "group", "inactive." + promptKey, sizeOfGroup, user));

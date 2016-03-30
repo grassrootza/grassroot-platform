@@ -7,7 +7,6 @@ import org.springframework.context.MessageSource;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupBroker;
-import za.org.grassroot.services.GroupManagementService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.services.util.CacheUtilManager;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
@@ -84,8 +83,6 @@ public class USSDController {
     protected USSDGroupUtil ussdGroupUtil;
     @Autowired
     protected UserManagementService userManager;
-    @Autowired
-    protected GroupManagementService groupManager;
     @Autowired
     protected GroupBroker groupBroker;
     @Autowired
