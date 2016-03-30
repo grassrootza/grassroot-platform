@@ -51,11 +51,10 @@ public class CacheUtilManager implements CacheUtilService {
             Cache cache = cacheManager.getCache("userRSVP");
             Set<User> userList;
             if (event.isIncludeSubGroups()) {
-                // note: if includeSubGroups is ticked, can assume parent type is group
-                Group group = event.getAppliesToGroup();
+                Group group = (Group) event.getParent();
                 userList = new HashSet<>(userManagementService.fetchByGroup(group.getUid(), true));
             } else {
-                userList = event.getAppliesToGroup().getMembers();
+                userList = ((Group) event.getParent()).getMembers();
             }
             for (User user : userList) {
                 log.info("clearCacheForAllUsersInGroup...user..." + user.getPhoneNumber());

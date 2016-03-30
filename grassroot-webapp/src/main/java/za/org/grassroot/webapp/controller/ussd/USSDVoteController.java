@@ -273,7 +273,7 @@ public class USSDVoteController extends USSDController {
         boolean futureEvent = vote.getEventStartDateTime().toLocalDateTime().isAfter(LocalDateTime.now());
 
         RSVPTotalsDTO voteResults = eventManager.getVoteResultsDTO(vote);
-        String[] fields = new String[]{vote.getAppliesToGroup().getName(""), vote.getName(), "" + voteResults.getYes(),
+        String[] fields = new String[]{vote.resolveGroup().getName(""), vote.getName(), "" + voteResults.getYes(),
                 "" + voteResults.getNo(), "" + voteResults.getMaybe(), "" + voteResults.getNumberNoRSVP()};
         USSDMenu menu = new USSDMenu(getMessage(thisSection, "details", promptKey, fields, user));
 

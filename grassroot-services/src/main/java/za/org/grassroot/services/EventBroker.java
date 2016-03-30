@@ -1,9 +1,6 @@
 package za.org.grassroot.services;
 
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.EventReminderType;
-import za.org.grassroot.core.domain.Meeting;
-import za.org.grassroot.core.domain.Vote;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventType;
 
 import java.sql.Timestamp;
@@ -18,7 +15,7 @@ public interface EventBroker {
 
 	List<Event> loadEventsUserCanManage(String userUid, EventType eventType, int pageNumber, int pageSize);
 
-	Meeting createMeeting(String userUid, String groupUid, String name, Timestamp eventStartDateTime, String eventLocation,
+	Meeting createMeeting(String userUid, String parentUid, JpaEntityType parentType, String name, Timestamp eventStartDateTime, String eventLocation,
 						  boolean includeSubGroups, boolean rsvpRequired, boolean relayable, EventReminderType reminderType,
 						  int customReminderMinutes, String description, Set<String> assignMemberUids);
 
@@ -30,7 +27,7 @@ public interface EventBroker {
 					   boolean includeSubGroups, boolean rsvpRequired, boolean relayable, EventReminderType reminderType,
 					   int customReminderMinutes, String description);
 
-	Vote createVote(String userUid, String groupUid, String name, Timestamp eventStartDateTime,
+	Vote createVote(String userUid, String parentUid, JpaEntityType parentType, String name, Timestamp eventStartDateTime,
 					boolean includeSubGroups, boolean relayable, String description, Set<String> assignMemberUids);
 
     // votes cannot change topic or scope (groups included or not) after creation, just closing time & description field

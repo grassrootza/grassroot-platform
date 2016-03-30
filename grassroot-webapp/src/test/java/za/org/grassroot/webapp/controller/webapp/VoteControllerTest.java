@@ -96,7 +96,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(view().name("redirect:/group/view"))
                 .andExpect(redirectedUrl("/group/view?groupUid=" + testGroup.getUid()));
 
-        verify(eventBrokerMock, times(1)).createVote(sessionTestUser.getUid(), testGroup.getUid(), "test vote",
+        verify(eventBrokerMock, times(1)).createVote(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP, "test vote",
                                                      testTime, false, false, "Abracadabra", Collections.emptySet());
         verifyNoMoreInteractions(groupBrokerMock);
         verifyNoMoreInteractions(eventManagementServiceMock);

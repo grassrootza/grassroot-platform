@@ -9,7 +9,7 @@ import javax.persistence.Entity;
 
 @Entity
 @DiscriminatorValue("MEETING")
-public class MeetingRequest extends EventRequest {
+public class MeetingRequest extends EventRequest<MeetingContainer> {
 	@Column(name = "location", length = 50)
 	private String eventLocation;
 
@@ -23,6 +23,9 @@ public class MeetingRequest extends EventRequest {
 		if (eventLocation == null || eventLocation.trim().equals("")) {
 			return false;
 		}
+		if (getParent() == null) {
+			return false;
+		}
 		return isFilledWithCommonFields();
 	}
 
@@ -34,12 +37,12 @@ public class MeetingRequest extends EventRequest {
 		return makeEmpty(null, null);
 	}
 
-	public static MeetingRequest makeEmpty(User user, Group group) {
+	public static MeetingRequest makeEmpty(User user, MeetingContainer parent) {
 		MeetingRequest request = new MeetingRequest();
 		request.reminderType = EventReminderType.DISABLED;
 		request.uid = UIDGenerator.generateId();
 		request.createdByUser = user;
-		request.appliesToGroup = group;
+		request.setParent(parent);
 		return request;
 	}
 
@@ -47,7 +50,7 @@ public class MeetingRequest extends EventRequest {
 		MeetingRequest request = new MeetingRequest();
 		request.uid = UIDGenerator.generateId(); // be careful not confuse with original meeting's Uid
 		request.name = meeting.getName();
-        request.appliesToGroup = meeting.getAppliesToGroup();
+        request.setParent(meeting.getParent());
         request.createdByUser = meeting.getCreatedByUser();
         request.eventStartDateTime = meeting.getEventStartDateTime();
         request.eventLocation = meeting.getEventLocation();
@@ -63,5 +66,25 @@ public class MeetingRequest extends EventRequest {
 
 	public void setEventLocation(String eventLocation) {
 		this.eventLocation = eventLocation;
+	}
+
+	public MeetingContainer getParent() {
+		if (appliesToGroup != null) {
+			return appliesToGroup;
+		} else if (logBook != null) {
+			return logBook;
+		} else {
+			throw new IllegalStateException("There is no " + MeetingContainer.class.getSimpleName() + " parent defined for " + this);
+		}
+	}
+
+	public void setParent(MeetingContainer parent) {
+		if (parent instanceof Group) {
+			this.appliesToGroup = (Group) parent;
+		} else if (parent instanceof LogBook) {
+			this.logBook = (LogBook) parent;
+		} else {
+			throw new UnsupportedOperationException("Unsupported parent: " + parent);
+		}
 	}
 }

@@ -10,7 +10,7 @@ import javax.persistence.ManyToOne;
 
 @Entity
 @DiscriminatorValue("VOTE")
-public class VoteRequest extends EventRequest {
+public class VoteRequest extends EventRequest<VoteContainer> {
 
 	@ManyToOne
 	@JoinColumn(name = "meeting_id")
@@ -23,6 +23,9 @@ public class VoteRequest extends EventRequest {
 
 	@Override
 	public boolean isFilled() {
+		if (getParent() == null) {
+			return false;
+		}
 		return isFilledWithCommonFields();
 	}
 
@@ -34,12 +37,36 @@ public class VoteRequest extends EventRequest {
 		return makeEmpty(null, null);
 	}
 
-	public static VoteRequest makeEmpty(User user, Group group) {
+	public static VoteRequest makeEmpty(User user, VoteContainer parent) {
 		VoteRequest request = new VoteRequest();
 		request.reminderType = EventReminderType.DISABLED;
 		request.uid = UIDGenerator.generateId();
 		request.createdByUser = user;
-		request.appliesToGroup = group;
+		request.setParent(parent);
 		return request;
+	}
+
+	public VoteContainer getParent() {
+		if (appliesToGroup != null) {
+			return appliesToGroup;
+		} else if (logBook != null) {
+			return logBook;
+		} else if (meeting != null) {
+			return meeting;
+		} else {
+			throw new IllegalStateException("There is no " + VoteContainer.class.getSimpleName() + " parent defined for " + this);
+		}
+	}
+
+	public void setParent(VoteContainer parent) {
+		if (parent instanceof Group) {
+			this.appliesToGroup = (Group) parent;
+		} else if (parent instanceof LogBook) {
+			this.logBook = (LogBook) parent;
+		} else if (parent instanceof Meeting) {
+			this.meeting = (Meeting) parent;
+		} else {
+			throw new UnsupportedOperationException("Unsupported parent: " + parent);
+		}
 	}
 }

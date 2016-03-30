@@ -88,7 +88,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(redirectedUrl("/group/view?groupUid=" + dummyGroup.getUid()));
 
 
-        verify(eventBrokerMock, times(1)).createMeeting(sessionTestUser.getUid(), dummyGroup.getUid(), "test meeting",
+        verify(eventBrokerMock, times(1)).createMeeting(sessionTestUser.getUid(), dummyGroup.getUid(), JpaEntityType.GROUP, "test meeting",
                                                         time, "some place", false, true, false, EventReminderType.CUSTOM, 60,
                                                         "", Collections.emptySet());
         verifyNoMoreInteractions(groupBrokerMock);

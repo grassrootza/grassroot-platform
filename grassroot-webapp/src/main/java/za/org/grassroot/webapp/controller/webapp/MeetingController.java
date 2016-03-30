@@ -63,7 +63,7 @@ public class MeetingController extends BaseController {
         if (groupUid != null) {
             Group group = groupBroker.load(groupUid);
             model.addAttribute("group", group);
-            meeting.setAppliesToGroup(group);
+            meeting.setParent(group);
             groupSpecified = true;
         } else {
             // todo: filter by permissions, and include number of members (for confirm modal)
@@ -93,9 +93,9 @@ public class MeetingController extends BaseController {
         log.info("The event passed back to us: " + meeting.toString());
         log.info("Event location set as: " + meeting.getEventLocation());
 
-        String groupUid = (selectedGroupUid == null) ? meeting.getAppliesToGroup().getUid() : selectedGroupUid;
+        String groupUid = (selectedGroupUid == null) ? meeting.resolveGroup().getUid() : selectedGroupUid;
 
-        eventBroker.createMeeting(getUserProfile().getUid(), groupUid, meeting.getName(),
+        eventBroker.createMeeting(getUserProfile().getUid(), groupUid, JpaEntityType.GROUP, meeting.getName(),
                 meeting.getEventStartDateTime(), meeting.getEventLocation(), meeting.isIncludeSubGroups(),
                 meeting.isRsvpRequired(), meeting.isRelayable(), meeting.getReminderType(), meeting.getCustomReminderMinutes(),
                 "", Collections.emptySet());

@@ -42,6 +42,8 @@ public class EventBrokerImpl implements EventBroker {
 	@Autowired
 	private GroupRepository groupRepository;
 	@Autowired
+	private UidIdentifiableRepository uidIdentifiableRepository;
+	@Autowired
 	private UserRepository userRepository;
 	@Autowired
 	private PermissionBroker permissionBroker;
@@ -74,21 +76,22 @@ public class EventBrokerImpl implements EventBroker {
 
 	@Override
 	@Transactional
-	public Meeting createMeeting(String userUid, String groupUid, String name, Timestamp eventStartDateTime, String eventLocation,
+	public Meeting createMeeting(String userUid, String parentUid, JpaEntityType parentType, String name, Timestamp eventStartDateTime, String eventLocation,
 								 boolean includeSubGroups, boolean rsvpRequired, boolean relayable, EventReminderType reminderType,
 								 int customReminderMinutes, String description, Set<String> assignMemberUids) {
 		Objects.requireNonNull(userUid);
-		Objects.requireNonNull(groupUid);
+		Objects.requireNonNull(parentUid);
+		Objects.requireNonNull(parentType);
 		Objects.requireNonNull(assignMemberUids);
 
 		validateEventStartTime(eventStartDateTime);
 
 		User user = userRepository.findOneByUid(userUid);
-		Group group = groupRepository.findOneByUid(groupUid);
+		MeetingContainer parent = uidIdentifiableRepository.findOneByUid(MeetingContainer.class, parentType, parentUid);
 
-		permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
+		permissionBroker.validateGroupPermission(user, parent.resolveGroup(), Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
 
-		Meeting meeting = new Meeting(name, eventStartDateTime, user, group, eventLocation, includeSubGroups, rsvpRequired,
+		Meeting meeting = new Meeting(name, eventStartDateTime, user, parent, eventLocation, includeSubGroups, rsvpRequired,
 				relayable, reminderType, customReminderMinutes, description);
 		meeting.assignMembers(assignMemberUids);
 
@@ -167,19 +170,20 @@ public class EventBrokerImpl implements EventBroker {
 
 	@Override
 	@Transactional
-	public Vote createVote(String userUid, String groupUid, String name, Timestamp eventStartDateTime,
+	public Vote createVote(String userUid, String parentUid, JpaEntityType parentType, String name, Timestamp eventStartDateTime,
 						   boolean includeSubGroups, boolean relayable, String description, Set<String> assignMemberUids) {
 		Objects.requireNonNull(userUid);
-		Objects.requireNonNull(groupUid);
+		Objects.requireNonNull(parentUid);
+		Objects.requireNonNull(parentType);
 
 		validateEventStartTime(eventStartDateTime);
 
 		User user = userRepository.findOneByUid(userUid);
-		Group group = groupRepository.findOneByUid(groupUid);
+		VoteContainer parent = uidIdentifiableRepository.findOneByUid(VoteContainer.class, parentType, parentUid);
 
-		permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
+		permissionBroker.validateGroupPermission(user, parent.resolveGroup(), Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
 
-		Vote vote = new Vote(name, eventStartDateTime, user, group, includeSubGroups, relayable, description);
+		Vote vote = new Vote(name, eventStartDateTime, user, parent, includeSubGroups, relayable, description);
 		vote.assignMembers(assignMemberUids);
 
 		voteRepository.save(vote);

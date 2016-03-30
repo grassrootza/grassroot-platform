@@ -166,11 +166,11 @@ public class EventLogManager implements EventLogManagementService {
     @Override
     public RSVPTotalsDTO getRSVPTotalsForEvent(Event event) {
         if (!event.isIncludeSubGroups()) {
-            return new RSVPTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), event.getAppliesToGroup().getId(), event.getCreatedByUser().getId()));
+            return new RSVPTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), event.resolveGroup().getId(), event.getCreatedByUser().getId()));
         }
         RSVPTotalsDTO totals = new RSVPTotalsDTO();
-        for (Group group : groupRepository.findGroupAndSubGroupsById(event.getAppliesToGroup().getId())) {
-            totals.add(new RSVPTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), event.getAppliesToGroup().getId(), event.getCreatedByUser().getId())));
+        for (Group group : groupRepository.findGroupAndSubGroupsById(event.resolveGroup().getId())) {
+            totals.add(new RSVPTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), group.getId(), event.getCreatedByUser().getId())));
 
         }
         log.info("getRSVPTotalsForEvent...returning..." + totals.toString());
@@ -180,11 +180,11 @@ public class EventLogManager implements EventLogManagementService {
     @Override
     public RSVPTotalsDTO getVoteResultsForEvent(Event event) {
         if (!event.isIncludeSubGroups()) {
-            final RSVPTotalsDTO rsvpTotalsDTO = new RSVPTotalsDTO(eventLogRepository.voteTotalsForEventAndGroup(event.getId(), event.getAppliesToGroup().getId()));
+            final RSVPTotalsDTO rsvpTotalsDTO = new RSVPTotalsDTO(eventLogRepository.voteTotalsForEventAndGroup(event.getId(), event.resolveGroup().getId()));
             return rsvpTotalsDTO;
         }
         RSVPTotalsDTO totals = new RSVPTotalsDTO();
-        for (Group group : groupRepository.findGroupAndSubGroupsById(event.getAppliesToGroup().getId())) {
+        for (Group group : groupRepository.findGroupAndSubGroupsById(event.resolveGroup().getId())) {
             totals.add(new RSVPTotalsDTO(eventLogRepository.voteTotalsForEventAndGroup(event.getId(), group.getId())));
         }
         log.info("getVoteResultsForEvent...returning..." + totals.toString());

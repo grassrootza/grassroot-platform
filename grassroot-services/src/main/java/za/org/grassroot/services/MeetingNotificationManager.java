@@ -140,7 +140,7 @@ public class MeetingNotificationManager implements MeetingNotificationService {
 
     private String[] populateFields(User user, EventDTO event, double yes, double no, double abstain, double noReply) {
 
-        String salutation = (event.getAppliesToGroup().hasName()) ? event.getAppliesToGroup().getGroupName() : "GrassRoot";
+        String salutation = (((Group) event.getParent()).hasName()) ? ((Group) event.getParent()).getGroupName() : "GrassRoot";
         log.info("populateFields...user..." + user.getPhoneNumber() + "...event..." + event.getId() + "...version..." + event.getVersion());
         SimpleDateFormat sdf = new SimpleDateFormat("EEE d MMM, h:mm a");
         String dateString = "no date specified";

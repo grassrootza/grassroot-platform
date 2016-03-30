@@ -22,7 +22,8 @@ import java.util.Set;
 @Table(name = "event")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "type", discriminatorType = DiscriminatorType.STRING)
-public abstract class Event extends AbstractEventEntity implements LogBookContainer, AssignedMembersContainer, Serializable {
+public abstract class Event<P extends UidIdentifiable> extends AbstractEventEntity<P>
+		implements LogBookContainer, AssignedMembersContainer, Serializable {
 
 	@Column(name = "canceled")
 	private boolean canceled;
@@ -68,9 +69,9 @@ public abstract class Event extends AbstractEventEntity implements LogBookContai
 		// for JPA
 	}
 
-	protected Event(Timestamp eventStartDateTime, User user, Group group, String name, boolean includeSubGroups,
+	protected Event(Timestamp eventStartDateTime, User user, String name, boolean includeSubGroups,
 					boolean rsvpRequired, boolean relayable, EventReminderType reminderType, int customReminderMinutes, String description) {
-		super(name, eventStartDateTime, user, group, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes, description);
+		super(name, eventStartDateTime, user, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes, description);
 		this.canceled = false;
 		this.noRemindersSent = 0;
 		updateScheduledReminderTime();
@@ -113,11 +114,12 @@ public abstract class Event extends AbstractEventEntity implements LogBookContai
 	}
 
 	public void updateScheduledReminderTime() {
+		Group group = resolveGroup();
 		if (getReminderType().equals(EventReminderType.CUSTOM)) {
 			this.scheduledReminderTime = getEventStartDateTime().toInstant().minus(getCustomReminderMinutes(), ChronoUnit.MINUTES);
 
-		} else if (getReminderType().equals(EventReminderType.GROUP_CONFIGURED) && getAppliesToGroup().getReminderMinutes() > 0) {
-			this.scheduledReminderTime = getEventStartDateTime().toInstant().minus(getAppliesToGroup().getReminderMinutes(), ChronoUnit.MINUTES);
+		} else if (getReminderType().equals(EventReminderType.GROUP_CONFIGURED) && group.getReminderMinutes() > 0) {
+			this.scheduledReminderTime = getEventStartDateTime().toInstant().minus(group.getReminderMinutes(), ChronoUnit.MINUTES);
 
 		} else {
 			this.scheduledReminderTime = null;
