@@ -61,13 +61,9 @@ public interface UserManagementService {
 
     List<User> searchByGroupAndNameNumber(String groupUid, String nameOrNumber);
 
-    List<User> getUsersFromNumbers(List<String> listOfNumbers);
-
     List<User> getGroupMembersSortedById(Group group);
 
     Page<User> getGroupMembers(Group group, int pageNumber, int pageSize);
-
-
     /*
     Methods to set and retrieve varfious properties about a user
      */

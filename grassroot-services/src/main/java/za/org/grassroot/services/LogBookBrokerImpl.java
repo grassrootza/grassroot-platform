@@ -79,6 +79,8 @@ public class LogBookBrokerImpl implements LogBookBroker {
 			}
 		}
 
+		// todo: rethink sending out (tell group that to-do is recorded ... make it one reminder)
+
 		return logBook;
 	}
 

@@ -1,61 +1,64 @@
 package za.org.grassroot.core.domain;
 
 import za.org.grassroot.core.enums.UserLogType;
+import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
-import java.io.Serializable;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Created by luke on 2016/02/22.
  */
 @Entity
 @Table(name="user_log",
-        indexes = {@Index(name = "idx_user_log_user_id",  columnList="user_id", unique = false),
-                @Index(name = "idx_user_log_userlogtype", columnList = "user_log_type", unique = false)})
-public class UserLog implements Serializable {
+        uniqueConstraints = {@UniqueConstraint(name = "uk_user_log_request_uid", columnNames = "uid")})
+public class UserLog {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="id", nullable = false)
     private Long id;
 
-    @Basic
-    @Column(name="created_date_time", nullable = false, insertable = true, updatable = false)
-    private Timestamp createdDateTime;
+    @Column(name = "uid", nullable = false, length = 50)
+    private String uid;
 
     @Basic
-    @Column(name="user_log_type")
+    @Column(name="creation_time", nullable = false, updatable = false)
+    private Instant creationTime;
+
+    @Basic
+    @Column(name="user_log_type", nullable = false)
     private UserLogType userLogType;
 
     @Basic
-    @Column(name="user_id")
-    private Long userId;
+    @Column(name="user_uid", nullable = false)
+    private String userUid;
 
     @Basic
     @Column(name="description", length = 255)
     private String description;
 
-    public UserLog() {
+    private UserLog() {
+        // for JPA
     }
 
-    public UserLog(Long userId, UserLogType userLogType) {
-        this.userId = userId;
+    public UserLog(String userUid, UserLogType userLogType) {
+        this.uid = UIDGenerator.generateId();
+        this.creationTime = Instant.now();
+        this.userUid = userUid;
         this.userLogType = userLogType;
     }
 
-    public UserLog(Long userId, UserLogType userLogType, String description) {
-        this.userId = userId;
-        this.userLogType = userLogType;
+    public UserLog(String userUid, UserLogType userLogType, String description) {
+        this(userUid, userLogType);
         this.description = description;
     }
 
     @PreUpdate
     @PrePersist
     public void updateTimeStamps() {
-        if (createdDateTime == null) {
-            createdDateTime = Timestamp.valueOf(LocalDateTime.now());
+        if (creationTime == null) {
+            creationTime = Instant.now();
         }
     }
 
@@ -63,32 +66,20 @@ public class UserLog implements Serializable {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public String getUid() { return uid; }
+
+    public Instant getCreationTime() {
+        return creationTime;
     }
 
-    public Timestamp getCreatedDateTime() {
-        return createdDateTime;
-    }
-
-    public void setCreatedDateTime(Timestamp createdDateTime) {
-        this.createdDateTime = createdDateTime;
-    }
+    public void setCreationTime(Instant creationTime) { this.creationTime = creationTime; }
 
     public UserLogType getUserLogType() {
         return userLogType;
     }
 
-    public void setUserLogType(UserLogType userLogType) {
-        this.userLogType = userLogType;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public String getUserUid() {
+        return userUid;
     }
 
     public String getDescription() {
@@ -103,8 +94,8 @@ public class UserLog implements Serializable {
     public String toString() {
         return "UserLog{" +
                 "id=" + id +
-                ", createdDateTime=" + createdDateTime +
-                ", userId=" + userId +
+                ", creationTime =" + creationTime +
+                ", userUid=" + userUid +
                 ", userLogType=" + userLogType +
                 ", description='" + description + '\'' +
                 '}';
@@ -112,10 +103,7 @@ public class UserLog implements Serializable {
 
     @Override
     public int hashCode() {
-        int result = userId != null ? userId.hashCode() : 0;
-        result = 31 * result + (id != null ? id.hashCode() : 0);
-        result = 31 * result + (createdDateTime != null ? createdDateTime.hashCode() : 0);
-        return result;
+        return (getUid() != null) ? getUid().hashCode() : 0;
     }
 
     @Override
@@ -123,11 +111,9 @@ public class UserLog implements Serializable {
         if (this == o) { return true; }
         if (o == null || getClass() != o.getClass()) { return false; }
 
-        final UserLog userLog = (UserLog) o;
+        final UserLog that = (UserLog) o;
 
-        if (id != null ? !id.equals(userLog.id) : userLog.id != null) { return false; }
-        if (userId != null ? !userId.equals(userLog.userId) : userLog.userId != null) { return false; }
-        if (createdDateTime != null ? !createdDateTime.equals(userLog.createdDateTime) : userLog.createdDateTime != null) { return false; }
+        if (getUid() != null ? !getUid().equals(that.getUid()) : that.getUid() != null) { return false; }
 
         return true;
 

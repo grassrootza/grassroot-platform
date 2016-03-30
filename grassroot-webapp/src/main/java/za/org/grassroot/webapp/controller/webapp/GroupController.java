@@ -176,12 +176,11 @@ public class GroupController extends BaseController {
     @RequestMapping("view")
     public String viewGroupIndex(Model model, @RequestParam String groupUid) {
 
-        User user = getUserProfile();
-
+        // note, coming here after group creation throws permission checking errors, so need to reload user from DB
         Long startTime = System.currentTimeMillis();
-        // note: the "get permissions" call will throw the error if not in group
+        User user = userManagementService.load(getUserProfile().getUid());
         Group group = groupBroker.load(groupUid);
-        Set<Permission> userPermissions = permissionBroker.getPermissions(user, group);
+        Set<Permission> userPermissions = permissionBroker.getPermissions(user, group); // throws exception if not in group
         Long endTime = System.currentTimeMillis();
         log.info(String.format("Checking group membership & loading permissions took ... %d msec", endTime - startTime));
 

@@ -7,11 +7,13 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Meeting;
+import za.org.grassroot.core.domain.Vote;
 import za.org.grassroot.core.dto.EventChanged;
 import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.MeetingRepository;
+import za.org.grassroot.core.repository.VoteRepository;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 
 @Service
@@ -25,6 +27,9 @@ public class AsyncEventMessageSenderImpl implements AsyncEventMessageSender {
     private MeetingRepository meetingRepository;
 
     @Autowired
+    private VoteRepository voteRepository;
+
+    @Autowired
     private GenericJmsTemplateProducerService jmsTemplateProducerService;
 
     @Override
@@ -34,6 +39,14 @@ public class AsyncEventMessageSenderImpl implements AsyncEventMessageSender {
         logger.info("Loaded the meeting ... has this ID ... " + meeting.getId());
         jmsTemplateProducerService.sendWithNoReply("event-added", new EventDTO(meeting));
         logger.info("Queued to event-added..." + meeting.getId() + "...version..." + meeting.getVersion());
+    }
+
+    @Override
+    public void sendNewVoteNotifications(String voteUid) {
+        Vote vote = voteRepository.findOneByUid(voteUid);
+        logger.info("Loadded the vote ... has this UID ... " + vote.getUid());
+        jmsTemplateProducerService.sendWithNoReply("event-added", new EventDTO(vote));
+        logger.info("Queued to event-added..." + vote.getUid() + "...version..." + vote.getVersion());
     }
 
     @Override

@@ -128,8 +128,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
         try {
             User userToReturn = userRepository.saveAndFlush(userToSave);
             if (userExists)
-                asyncUserService.recordUserLog(userToReturn.getId(), UserLogType.CREATED_IN_DB, "User first created via web sign up");
-            asyncUserService.recordUserLog(userToReturn.getId(), UserLogType.CREATED_WEB, "User created web profile");
+                asyncUserService.recordUserLog(userToReturn.getUid(), UserLogType.CREATED_IN_DB, "User first created via web sign up");
+            asyncUserService.recordUserLog(userToReturn.getUid(), UserLogType.CREATED_WEB, "User created web profile");
             return userToReturn;
         } catch (final Exception e) {
             e.printStackTrace();
@@ -172,8 +172,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
         try {
             User userToReturn = userRepository.saveAndFlush(userToSave);
             if (userExists)
-                asyncUserService.recordUserLog(userToReturn.getId(), UserLogType.CREATED_IN_DB, "User first created via web sign up");
-            asyncUserService.recordUserLog(userToReturn.getId(), UserLogType.REGISTERED_ANDROID, "User created android profile");
+                asyncUserService.recordUserLog(userToReturn.getUid(), UserLogType.CREATED_IN_DB, "User first created via web sign up");
+            asyncUserService.recordUserLog(userToReturn.getUid(), UserLogType.REGISTERED_ANDROID, "User created android profile");
             return userToReturn;
         } catch (final Exception e) {
             e.printStackTrace();
@@ -242,7 +242,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             User sessionUser = new User(phoneNumber);
             sessionUser.setUsername(phoneNumber);
             User newUser = userRepository.save(sessionUser);
-            asyncUserService.recordUserLog(newUser.getId(), UserLogType.CREATED_IN_DB, "Created via loadOrSaveUser");
+            asyncUserService.recordUserLog(newUser.getUid(), UserLogType.CREATED_IN_DB, "Created via loadOrSaveUser");
             return newUser;
         } else {
             return userRepository.findByPhoneNumber(phoneNumber);
@@ -286,24 +286,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public List<User> searchByGroupAndNameNumber(String groupUid, String nameOrNumber) {
         return userRepository.findByGroupsPartOfAndDisplayNameContainingIgnoreCaseOrPhoneNumberLike(
                 groupRepository.findOneByUid(groupUid), "%" + nameOrNumber + "%", "%" + nameOrNumber + "%");
-    }
-
-    @Override
-    public List<User> getUsersFromNumbers(List<String> listOfNumbers) {
-
-        List<User> usersToAdd = new ArrayList<User>();
-
-        for (String inputNumber : listOfNumbers) {
-            String phoneNumber = PhoneNumberUtil.convertPhoneNumber(inputNumber);
-            if (!userExist(phoneNumber)) {
-                User userToCreate = userRepository.save(new User(phoneNumber));
-                usersToAdd.add(userToCreate);
-                asyncUserService.recordUserLog(userToCreate.getId(), UserLogType.CREATED_IN_DB, "Created via multi member add");
-            } else {
-                usersToAdd.add(findByInputNumber(inputNumber));
-            }
-        }
-        return usersToAdd;
     }
 
     @Override
@@ -411,7 +393,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public User setInitiatedSession(User sessionUser) {
         sessionUser.setHasInitiatedSession(true);
         jmsTemplateProducerService.sendWithNoReply("welcome-messages", new UserDTO(sessionUser));
-        asyncUserService.recordUserLog(sessionUser.getId(), UserLogType.INITIATED_USSD, "First USSD active session");
+        asyncUserService.recordUserLog(sessionUser.getUid(), UserLogType.INITIATED_USSD, "First USSD active session");
         return userRepository.save(sessionUser);
     }
 

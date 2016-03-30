@@ -10,7 +10,7 @@
   <h2 class="text-center">Meeting: <span  th:text="${meeting.name}">Meeting</span></h2>
 </div>
 <div layout:fragment="overview">
-  <h4 class="text-center">Meeting of "<span th:text="${meeting.appliesToGroup.getName('')}">group</span>"
+  <h4 class="text-center">Meeting of "<span th:text="${meeting.resolveGroup().getName('')}">group</span>"
     on <span th:text="${#calendars.format(meeting.getEventStartDateTime(),'dd MMM, HH:mm')}">date and time</span>
     at <span th:text="${meeting.eventLocation}">place</span></h4>
 </div>
@@ -21,7 +21,7 @@
   <div class="well">
     <div class="row">
       <div class="col-md-6 col-md-offset-3">
-        <p class="text-center"><span th:text="${meeting.appliesToGroup.members.size()}">3</span> people invited.
+        <p class="text-center"><span th:text="${meeting.getAssignedMembers().size()}">3</span> people invited.
         <span th:if="${meeting.rsvpRequired}"><span th:text="${rsvpYesTotal}">X</span> confirmed as attending</span></p>
       </div>
     </div>
@@ -100,7 +100,7 @@
           </div>
           <div class="modal-footer">
             <p class="mark" id="confirm-footer-text">Are you sure? Clicking 'yes' will send a message to
-            <span th:text="*{appliesToGroup.members.size()}">X</span> members.</p>
+            <span th:text="*{getAssignedMembers().size()}">X</span> members.</p>
             <button type="button" class="btn btn-default" data-dismiss="modal" id="cancel-change">Cancel</button>
             <button type="button" class="btn btn-primary" id="change-meeting">Change</button>
             <button type="submit" class="btn btn-primary" id="confirm-change">Confirm</button>
@@ -160,7 +160,7 @@
             <div class="form-group">
               <label class="control-label">Are you sure? Cancelling a meeting cannot be undone.</label>
               <p class="small">This will send a cancellation message to
-                <span th:text="${meeting.getAppliesToGroup().getMemberships().size()}">X</span> members</p>
+                <span th:text="${meeting.getAssignedMembers().size()}">X</span> members</p>
             </div>
           </div>
           <div class="modal-footer">

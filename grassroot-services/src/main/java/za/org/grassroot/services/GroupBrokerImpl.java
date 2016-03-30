@@ -51,6 +51,8 @@ public class GroupBrokerImpl implements GroupBroker {
     @Autowired
     private AsyncGroupEventLogger asyncGroupEventLogger;
     @Autowired
+    private AsyncUserLogger asyncUserLogger;
+    @Autowired
     private TokenGeneratorService tokenGeneratorService;
 
     @Override
@@ -108,12 +110,17 @@ public class GroupBrokerImpl implements GroupBroker {
         return group;
     }
 
-
-
     private void logGroupEventsAfterCommit(Set<GroupLog> groupLogs) {
         if (!groupLogs.isEmpty()) {
             // we want to log group events after transaction has committed
             AfterTxCommitTask afterTxCommitTask = () -> asyncGroupEventLogger.logGroupEvents(groupLogs);
+            applicationEventPublisher.publishEvent(afterTxCommitTask);
+        }
+    }
+
+    private void logUserCreationAfterCommit(Set<String> newUserUids, String description) {
+        if (!newUserUids.isEmpty()) {
+            AfterTxCommitTask afterTxCommitTask = () -> asyncUserLogger.logUserCreation(newUserUids, description);
             applicationEventPublisher.publishEvent(afterTxCommitTask);
         }
     }
@@ -232,17 +239,25 @@ public class GroupBrokerImpl implements GroupBroker {
         Set<User> existingUsers = new HashSet<>(userRepository.findByPhoneNumberIn(memberPhoneNumbers));
         Map<String, User> existingUserMap = existingUsers.stream().collect(Collectors.toMap(User::getPhoneNumber, user -> user));
 
+        Set<String> newlyCreatedUsers = new HashSet<>();
         Set<Membership> memberships = new HashSet<>();
         for (MembershipInfo membershipInfo : membershipInfos) {
-            User user = existingUserMap.getOrDefault(membershipInfo.getPhoneNumberWithCCode(), new User(membershipInfo.getPhoneNumberWithCCode(), membershipInfo.getDisplayName()));
+            User user = existingUserMap.getOrDefault(membershipInfo.getPhoneNumberWithCCode(),
+                                                     createNewUserAndAddToSet(membershipInfo.getPhoneNumberWithCCode(), membershipInfo.getDisplayName(), newlyCreatedUsers));
             String roleName = membershipInfo.getRoleName();
             Membership membership = roleName == null ? group.addMember(user) : group.addMember(user, roleName);
             if (membership != null) {
                 memberships.add(membership);
             }
         }
-
+        logUserCreationAfterCommit(newlyCreatedUsers, String.format("Created by being added to group with ID: %s", group.getUid()));
         return memberships;
+    }
+
+    private User createNewUserAndAddToSet(String phoneNumber, String displayName, Set<String> uidCollector) {
+        User user = new User(phoneNumber, displayName);
+        uidCollector.add(user.getUid());
+        return user;
     }
 
     @Override

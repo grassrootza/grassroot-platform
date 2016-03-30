@@ -40,8 +40,6 @@ public class EventBrokerImpl implements EventBroker {
 	@Autowired
 	private MeetingRepository meetingRepository;
 	@Autowired
-	private GroupRepository groupRepository;
-	@Autowired
 	private UidIdentifiableRepository uidIdentifiableRepository;
 	@Autowired
 	private UserRepository userRepository;
@@ -188,8 +186,8 @@ public class EventBrokerImpl implements EventBroker {
 
 		voteRepository.save(vote);
 
-		jmsTemplateProducerService.sendWithNoReply("event-added", new EventDTO(vote));
-		logger.info("Queued to event-added..." + vote.getId() + "...version..." + vote.getVersion());
+		AfterTxCommitTask afterTxCommitTask = () -> asyncEventMessageSender.sendNewVoteNotifications(vote.getUid());
+        applicationEventPublisher.publishEvent(afterTxCommitTask);
 
 		return vote;
 	}
