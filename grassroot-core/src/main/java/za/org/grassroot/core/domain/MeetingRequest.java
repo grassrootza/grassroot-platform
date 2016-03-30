@@ -42,7 +42,7 @@ public class MeetingRequest extends EventRequest<MeetingContainer> {
 		request.reminderType = EventReminderType.DISABLED;
 		request.uid = UIDGenerator.generateId();
 		request.createdByUser = user;
-		request.setParent(parent);
+		if (parent != null) request.setParent(parent);
 		return request;
 	}
 

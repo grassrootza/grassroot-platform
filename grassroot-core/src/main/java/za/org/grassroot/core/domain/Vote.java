@@ -29,7 +29,7 @@ public class Vote extends Event<VoteContainer> {
 	}
 
 	public Vote(String name, Timestamp startDateTime, User user, VoteContainer parent, boolean includeSubGroups, boolean relayable, String description) {
-		super(startDateTime, user, name, includeSubGroups, true, relayable, EventReminderType.DISABLED, 0, description);
+		super(startDateTime, user, parent, name, includeSubGroups, true, relayable, EventReminderType.DISABLED, 0, description);
 	}
 
 	@Override
