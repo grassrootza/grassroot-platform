@@ -93,8 +93,12 @@ public class EventDTO  implements Serializable {
         this.relayable = event.isRelayable();
         this.version = event.getVersion();
         this.message = "";
+        if (event.getEventType().equals(EventType.MEETING)) {
+            this.eventLocation = ((Meeting) event).getEventLocation();
+        }
     }
 
+    // this may now be redundant, given above
     public EventDTO(Meeting meeting) {
         this ((Event) meeting);
         log.info("Inside the meeting specific constructor ... ");

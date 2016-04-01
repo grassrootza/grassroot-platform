@@ -11,6 +11,7 @@ import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.util.CacheUtilManager;
+import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 
@@ -52,7 +53,7 @@ public class USSDGroupUtil extends USSDUtil {
     PermissionBroker permissionBroker;
 
     @Autowired
-    CacheUtilManager cacheManager;
+    CacheUtilService cacheManager;
 
     private static final String groupKeyForMessages = "group";
 

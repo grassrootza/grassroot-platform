@@ -7,11 +7,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.services.UserManagementService;
 
 import java.util.HashSet;
@@ -21,7 +24,7 @@ import java.util.Set;
 /**
  * Created by aakilomar on 11/2/15.
  */
-@Component
+@Service
 public class CacheUtilManager implements CacheUtilService {
 
     private Logger log = LoggerFactory.getLogger(CacheUtilManager.class);
@@ -45,6 +48,7 @@ public class CacheUtilManager implements CacheUtilService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public void clearCacheForAllUsersInGroup(EventDTO event) {
         log.info("clearCacheForAllUsersInGroup...starting");
         try {
@@ -54,6 +58,7 @@ public class CacheUtilManager implements CacheUtilService {
                 Group group = (Group) event.getParent();
                 userList = new HashSet<>(userManagementService.fetchByGroup(group.getUid(), true));
             } else {
+                // todo: switch this
                 userList = ((Group) event.getParent()).getMembers();
             }
             for (User user : userList) {
@@ -191,6 +196,30 @@ public class CacheUtilManager implements CacheUtilService {
             log.error(e.toString());
         }
 
+    }
+
+    @Override
+    public boolean checkSessionStatus(String userUid, UserInterfaceType interfaceType) {
+        try {
+            Cache cache = cacheManager.getCache("user_session");
+            return (boolean) cache.get(formSessionKey(userUid, interfaceType)).getObjectValue();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    @Override
+    public void setSessionOpen(String userUid, UserInterfaceType interfaceType) {
+        try {
+            Cache cache = cacheManager.getCache("user_session");
+            cache.put(new Element(formSessionKey(userUid, interfaceType), true));
+        } catch (Exception e) {
+            log.error("Error, could not put cache element!! ... " + e.toString());
+        }
+    }
+
+    private String formSessionKey(String userUid, UserInterfaceType interfaceType) {
+        return String.join(userUid, "+", interfaceType.toString());
     }
 
 }

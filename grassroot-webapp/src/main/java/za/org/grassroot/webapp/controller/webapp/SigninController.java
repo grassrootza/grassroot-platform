@@ -46,7 +46,7 @@ public class SigninController {
         authenticationUtil.debugAuthentication();
         if (isRememberMeAuthenticated()) {
             logger.info("isRememberMeAuthenticated...true");
-             return autoLogonUser(request, model);
+            return autoLogonUser(request, model);
         } else {
             logger.info("isRememberMeAuthenticated...false");
 

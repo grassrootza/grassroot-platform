@@ -116,7 +116,7 @@ public class AdminController extends BaseController {
     public String allUsers(Model model) {
 
         User user = getUserProfile();
-        model.addAttribute("totalUserCount", userManagementService.getUserCount());
+        model.addAttribute("totalUserCount", analyticalService.countAllUsers());
 
         return "admin/users/home";
     }
@@ -235,7 +235,7 @@ public class AdminController extends BaseController {
                                                   new String[]{BaseRoles.ROLE_GROUP_ORGANIZER, "Group organizer"});
 
         List<MemberWrapper> members = new ArrayList<>();
-        for (User user : userManagementService.getGroupMembersSortedById(group)) {
+        for (User user : group.getMembers()) {
             Role roleInGroup = group.getMembership(user).getRole();
             log.info("constructingMemberWrapper ... user's role is ... " + ((roleInGroup != null) ? roleInGroup.describe() : "null"));
             members.add(new MemberWrapper(user, group, roleInGroup));

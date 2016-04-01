@@ -13,7 +13,9 @@ import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.GroupJoinRequest;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.GroupTreeDTO;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.AuthenticationUtil;
+import za.org.grassroot.services.AsyncUserLogger;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.GroupJoinRequestService;
@@ -40,6 +42,9 @@ public class HomeController extends BaseController {
 
     @Autowired
     GroupJoinRequestService groupJoinRequestService;
+
+    @Autowired
+    AsyncUserLogger userLogger;
 
     @Autowired
     AuthenticationUtil authenticationUtil;
@@ -80,16 +85,13 @@ public class HomeController extends BaseController {
     }
 
     public ModelAndView generateHomePage(Model model) {
-        /*
-         Recursive construction in the view node will turn each of these into a tree with a root node as the top level
-         group. There may be a more efficient way to do this than the groupManagement call (and/or optimizing within it
-         */
-        // start of SQL tree
 
         Long startTime = System.currentTimeMillis();
         ModelAndView homePageModelAndView;
         log.info("Getting user profile ... ");
         User user = getUserProfile();
+        // will check cache & only log if not called for several hours, i.e., will not log spurious returns to home page
+        userLogger.recordUserSession(getUserProfile().getUid(), UserInterfaceType.WEB);
         Long startTimeCountGroups = System.currentTimeMillis();
         log.info(String.format("Getting user profile took %d msecs", startTimeCountGroups - startTime));
 

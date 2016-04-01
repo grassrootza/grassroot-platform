@@ -24,6 +24,8 @@ public interface UserManagementService {
 
     User createUserProfile(User userProfile);
 
+    UserDTO loadUserCreateRequest(String phoneNumber);
+
     User createUserWebProfile(User userProfile) throws UserExistsException;
 
     User createAndroidUserProfile(UserDTO userDTO) throws UserExistsException;
@@ -38,7 +40,6 @@ public interface UserManagementService {
 
     boolean isPartOfActiveGroups(User user);
 
-
     User save(User userToSave);
 
     User loadOrSaveUser(String inputNumber);
@@ -51,19 +52,16 @@ public interface UserManagementService {
 
     Group fetchGroupUserMustRename(User user);
 
-    List<User> fetchByGroup(String groupUid, boolean includeSubgroups);
-
     /*
     Methods to return lists of users
      */
 
-    long getUserCount();
+    List<User> fetchByGroup(String groupUid, boolean includeSubgroups);
 
     List<User> searchByGroupAndNameNumber(String groupUid, String nameOrNumber);
 
-    List<User> getGroupMembersSortedById(Group group);
-
     Page<User> getGroupMembers(Group group, int pageNumber, int pageSize);
+
     /*
     Methods to set and retrieve varfious properties about a user
      */
@@ -91,14 +89,5 @@ public interface UserManagementService {
     User setUserLanguage(User sessionUser, String locale);
 
     LinkedHashMap<String, String> getImplementedLanguages();
-
-    /*
-    Methods to return masked user entities for system analysis
-    todo: add security to the methods that load users which are not masked
-     */
-
-    UserDTO loadUser(String phoneNumber);
-
-    UserDTO loadUserCreateRequest(String phoneNumber);
 
 }

@@ -16,7 +16,7 @@ import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.*;
-import za.org.grassroot.services.util.CacheUtilManager;
+import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.webapp.util.USSDGroupUtil;
 
 import java.util.Properties;
@@ -58,7 +58,10 @@ public abstract class USSDAbstractUnitTest {
     protected LogBookRequestBroker logBookRequestBrokerMock;
 
     @Mock
-    protected CacheUtilManager cacheUtilManagerMock;
+    protected CacheUtilService cacheUtilManagerMock;
+
+    @Mock
+    protected AsyncUserLogger asyncUserLoggerMock;
 
     @InjectMocks
     protected USSDGroupUtil ussdGroupUtil;

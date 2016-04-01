@@ -37,7 +37,7 @@ public class AsyncEventMessageSenderImpl implements AsyncEventMessageSender {
     public void sendNewMeetingNotifications(String meetingUid) {
         Meeting meeting = meetingRepository.findOneByUid(meetingUid);
         logger.info("Loaded the meeting ... has this ID ... " + meeting.getId());
-        jmsTemplateProducerService.sendWithNoReply("event-added", new EventDTO(meeting));
+        jmsTemplateProducerService.sendWithNoReply("event-added", meetingUid);
         logger.info("Queued to event-added..." + meeting.getId() + "...version..." + meeting.getVersion());
     }
 
@@ -54,7 +54,7 @@ public class AsyncEventMessageSenderImpl implements AsyncEventMessageSender {
     public void sendCancelMeetingNotifications(String meetingUid) {
         Meeting meeting = meetingRepository.findOneByUid(meetingUid);
         logger.info("About to cancel the meeting ..." + meeting.getUid());
-        jmsTemplateProducerService.sendWithNoReply("event-cancelled", new EventDTO(meeting));
+        jmsTemplateProducerService.sendWithNoReply("event-cancelled", meetingUid);
         logger.info("Queued to event-cancelled..." + meeting.getId() + "...version..." + meeting.getVersion());
     }
 

@@ -1,5 +1,6 @@
 package za.org.grassroot.core.domain;
 
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.util.UIDGenerator;
 
@@ -38,6 +39,10 @@ public class UserLog {
     @Column(name="description", length = 255)
     private String description;
 
+    @Basic
+    @Column(name="user_interface", nullable = false)
+    private UserInterfaceType userInterface;
+
     private UserLog() {
         // for JPA
     }
@@ -47,11 +52,13 @@ public class UserLog {
         this.creationTime = Instant.now();
         this.userUid = userUid;
         this.userLogType = userLogType;
+        this.userInterface = UserInterfaceType.UNKNOWN; // to avoid null errors (gets reset subsequently, if necessary)
     }
 
-    public UserLog(String userUid, UserLogType userLogType, String description) {
+    public UserLog(String userUid, UserLogType userLogType, String description, UserInterfaceType userInterfaceType) {
         this(userUid, userLogType);
         this.description = description;
+        this.userInterface = userInterfaceType;
     }
 
     @PreUpdate
@@ -89,6 +96,8 @@ public class UserLog {
     public void setDescription(String description) {
         this.description = description;
     }
+
+    public UserInterfaceType getUserInterface() { return userInterface; }
 
     @Override
     public String toString() {

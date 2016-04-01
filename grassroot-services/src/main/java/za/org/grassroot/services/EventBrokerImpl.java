@@ -315,18 +315,14 @@ public class EventBrokerImpl implements EventBroker {
 	}
 
 	@Override
-	@Transactional
+	@Transactional(readOnly = true)
 	public void sendVoteResults() {
 		List<Vote> votes = voteRepository.findUnsentVoteResults();
 		logger.info("Sending vote results for {} votes...", votes.size());
 		for (Vote vote : votes) {
 			try {
 				logger.info("Sending vote results for vote", vote);
-				// get the totals
-				RSVPTotalsDTO rsvpTotalsDTO = eventLogManagementService.getVoteResultsForEvent(vote);
-
-				// queue vote results request
-				jmsTemplateProducerService.sendWithNoReply("vote-results", new EventWithTotals(new EventDTO(vote), rsvpTotalsDTO));
+				jmsTemplateProducerService.sendWithNoReply("vote-results", vote.getUid());
 			} catch (Exception e) {
 				logger.error("Error while sending vote results for vote: " + vote);
 			}

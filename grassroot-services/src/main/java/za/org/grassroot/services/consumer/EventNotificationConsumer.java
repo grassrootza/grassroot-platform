@@ -79,21 +79,25 @@ public class EventNotificationConsumer {
             "sms.welcome.3"
     };
 
+    @Transactional
     @JmsListener(destination = "event-added", containerFactory = "messagingJmsContainerFactory",
             concurrency = "5")
-    public void sendNewEventNotifications(EventDTO event) {
+    public void sendNewEventNotifications(String eventUid) {
+
+        Event event = eventBroker.load(eventUid);
+        EventDTO eventDTO = new EventDTO(event);
 
         log.info("sendNewEventNotifications... <" + event.toString() + ">");
-        List<User> usersToNotify = getUsersForEvent(event.getEventObject());
+        List<User> usersToNotify = getUsersForEvent(event);
         log.info("sendNewEventNotifications, sending to: {} users", usersToNotify.size());
 
-        for (User user : getUsersForEvent(event.getEventObject())) {
+        for (User user : getUsersForEvent(event)) {
             cacheUtilService.clearRsvpCacheForUser(user,event.getEventType());
-            sendNewMeetingMessage(user, event);
+            sendNewMeetingMessage(user, eventDTO);
         }
     }
 
-
+    @Transactional
     @JmsListener(destination = "event-changed", containerFactory = "messagingJmsContainerFactory",
             concurrency = "1")
     public void sendChangedEventNotifications(EventChanged eventChanged) {
@@ -114,18 +118,21 @@ public class EventNotificationConsumer {
 
     }
 
+    @Transactional
     @JmsListener(destination = "event-cancelled", containerFactory = "messagingJmsContainerFactory",
             concurrency = "1")
-    public void sendCancelledEventNotifications(EventDTO event) {
+    public void sendCancelledEventNotifications(String eventUid) {
+        Event event = eventBroker.load(eventUid);
+        EventDTO eventDTO = (event.getEventType().equals(EventType.MEETING)) ? new EventDTO((Meeting) event) : new EventDTO(event);
         log.trace("sendCancelledEventNotifications... <" + event.toString() + ">");
-        for (User user : getUsersForEvent(event.getEventObject())) {
+        for (User user : getUsersForEvent(event)) {
             //generate message based on user language
-            String message = meetingNotificationService.createCancelMeetingNotificationMessage(user, event);
-            if (!eventLogManagementService.cancelNotificationSentToUser(event.getEventUid(), user.getUid())
-                    && !eventLogManagementService.userRsvpNoForEvent(event.getEventUid(), user.getUid())) {
+            String message = meetingNotificationService.createCancelMeetingNotificationMessage(user, eventDTO);
+            if (!eventLogManagementService.cancelNotificationSentToUser(event.getUid(), user.getUid())
+                    && !eventLogManagementService.userRsvpNoForEvent(event.getUid(), user.getUid())) {
                 log.info("sendCancelledEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
                 messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
-                eventLogManagementService.createEventLog(EventLogType.EventCancelled, event.getEventUid(), user.getUid(), message);
+                eventLogManagementService.createEventLog(EventLogType.EventCancelled, event.getUid(), user.getUid(), message);
             }
         }
 
@@ -146,6 +153,7 @@ public class EventNotificationConsumer {
 
     }
 
+    @Transactional
     @JmsListener(destination = "event-reminder", containerFactory = "messagingJmsContainerFactory",
             concurrency = "3")
     public void sendEventReminder(String eventUid) {
@@ -161,9 +169,9 @@ public class EventNotificationConsumer {
     N.B.
     If logic changes here also see method sendNewLogbookNotification if it must change there as well
      */
+    @Transactional
     @JmsListener(destination = "logbook-reminders", containerFactory = "messagingJmsContainerFactory",
             concurrency = "3")
-    @Transactional
     public void sendLogBookReminder(LogBookDTO logBookDTO) {
         log.info("sendLogBookReminder...logBook..." + logBookDTO);
 
@@ -189,6 +197,7 @@ public class EventNotificationConsumer {
         }
     }
 
+    @Transactional
     @JmsListener(destination = "manual-reminder", containerFactory = "messagingJmsContainerFactory",
             concurrency = "1")
     public void sendManualEventReminder(EventDTO event) {
@@ -199,14 +208,18 @@ public class EventNotificationConsumer {
 
     }
 
+    @Transactional
     @JmsListener(destination = "vote-results", containerFactory = "messagingJmsContainerFactory",
             concurrency = "3")
-    public void sendVoteResults(EventWithTotals event) {
-        log.info("sendVoteResults...event.id..." + event.getEventDTO().getId());
-        for (User user : getUsersForEvent(event.getEventDTO().getEventObject())) {
-            sendVoteResultsToUser(user, event);
-        }
+    public void sendVoteResults(String voteUid) {
+        log.info("sendVoteResults...vote.id..." + voteUid);
+        Vote vote = (Vote) eventBroker.load(voteUid);
+        RSVPTotalsDTO rsvpTotalsDTO = eventLogManagementService.getVoteResultsForEvent(vote);
+        EventWithTotals eventWithTotals = new EventWithTotals(new EventDTO(vote), rsvpTotalsDTO);
 
+        for (User user : getUsersForEvent(vote)) {
+            sendVoteResultsToUser(user, eventWithTotals);
+        }
     }
 
     @JmsListener(destination = "clear-groupcache", containerFactory = "messagingJmsContainerFactory",
@@ -307,9 +320,8 @@ public class EventNotificationConsumer {
         // todo: replace this with calling the parent and/or just using assigned members
         if (event.isIncludeSubGroups()) {
             return userManager.fetchByGroup(event.resolveGroup().getUid(), true);
-        } else if (event.isAllGroupMembersAssigned()){
-            // throwing lazy initialization error if we use resolveGroup
-            return userManager.fetchByGroup(event.resolveGroup().getUid(), false);
+        } else if(event.isAllGroupMembersAssigned()) {
+            return new ArrayList<>(event.resolveGroup().getMembers());
         } else {
             return new ArrayList<>(event.getAssignedMembers());
         }

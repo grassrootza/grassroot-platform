@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
@@ -78,8 +80,9 @@ public class USSDHomeController extends USSDController {
             return menuBuilder(interruptedPrompt(inputNumber));
         }
 
+        log.info("Hit home page, loading user, in thread: {}", Thread.currentThread());
         User sessionUser = userManager.loadOrSaveUser(inputNumber);
-
+        userLogger.recordUserSession(sessionUser.getUid(), UserInterfaceType.USSD);
 
         /*
         Adding some complex logic here to check for one of these things:
@@ -154,13 +157,14 @@ public class USSDHomeController extends USSDController {
         String returnUrl = userManager.getLastUssdMenu(inputNumber);
         log.info("The user was interrupted somewhere ...Here's the URL: " + returnUrl);
 
-        User sessionUser = userManager.findByInputNumber(inputNumber);
-        USSDMenu promptMenu = new USSDMenu(getMessage(thisSection, startMenu, promptKey + "-interrupted", sessionUser));
-        promptMenu.addMenuOption(returnUrl, getMessage(thisSection, startMenu, "interrupted.resume", sessionUser));
-        promptMenu.addMenuOption(startMenu + "_force", getMessage(thisSection, startMenu, "interrupted.start", sessionUser));
+        User user = userManager.findByInputNumber(inputNumber);
+        USSDMenu promptMenu = new USSDMenu(getMessage(thisSection, startMenu, promptKey + "-interrupted", user));
+        promptMenu.addMenuOption(returnUrl, getMessage(thisSection, startMenu, "interrupted.resume", user));
+        promptMenu.addMenuOption(startMenu + "_force", getMessage(thisSection, startMenu, "interrupted.start", user));
 
         // set the user's "last USSD menu" back to null, so avoids them always coming back here
-        userManager.resetLastUssdMenu(sessionUser);
+        userLogger.recordUssdInterruption(user.getUid(), returnUrl);
+        userManager.resetLastUssdMenu(user);
 
         return promptMenu;
 

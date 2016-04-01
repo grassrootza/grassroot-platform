@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.EventRequestBroker;
@@ -309,6 +310,7 @@ public class USSDVoteController extends USSDController {
 
     private String[] setCustomTime(String requestUid, String userInput, User user) {
         LocalDateTime parsedTime = DateTimeUtil.parseDateTime(userInput);
+        userLogger.recordUserInputtedDateTime(user.getUid(), userInput, "vote-custom", UserInterfaceType.USSD);
         eventRequestBroker.updateStartTimestamp(user.getUid(), requestUid, Timestamp.valueOf(parsedTime));
         final String dateTimePrompt = "at " + parsedTime.format(dateTimeFormat);
         return new String[]{eventRequestBroker.load(requestUid).getName(), dateTimePrompt};

@@ -37,12 +37,7 @@ public interface AssignedMembersContainer extends UidIdentifiable {
 	 * @return true if all group members are assigned
      */
 	default boolean isAllGroupMembersAssigned() {
-		// really bad hack for the moment, just so we can get past it ... to come back and fix
-		try {
-			return getAssignedMembers().isEmpty();
-		} catch (LazyInitializationException e) {
-			return true;
-		}
+		return getAssignedMembers().isEmpty();
 	}
 
 	/**

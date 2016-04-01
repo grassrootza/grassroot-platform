@@ -22,5 +22,11 @@
            eternal="false"
            timeToIdleSeconds="3600">
     </cache>
+    <!-- Setting this to an hour, because it is 'time to idle', i.e., refreshed continuously-->
+    <cache name="user_session"
+           maxEntriesLocalHeap="2000"
+           eternal="false"
+           timeToIdleSeconds="3600">
+    </cache>
 
 </ehcache>

@@ -202,13 +202,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public long getUserCount() {
-        // todo: switch this to a count query in repository, though, won't be called often, so not urgent
-        return userRepository.count();
-    }
-
-
-    @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
         if (StringUtils.isEmpty(username)) {
@@ -286,11 +279,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public List<User> searchByGroupAndNameNumber(String groupUid, String nameOrNumber) {
         return userRepository.findByGroupsPartOfAndDisplayNameContainingIgnoreCaseOrPhoneNumberLike(
                 groupRepository.findOneByUid(groupUid), "%" + nameOrNumber + "%", "%" + nameOrNumber + "%");
-    }
-
-    @Override
-    public List<User> getGroupMembersSortedById(Group group) {
-        return userRepository.findByGroupsPartOfOrderByIdAsc(group);
     }
 
     @Override
@@ -479,12 +467,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     /*
     SECTION: methods to return a masked user entity, for analytics
      */
-
-    @Override
-    public UserDTO loadUser(String phoneNumber) {
-        return new UserDTO(userRepository.findByNumber(phoneNumber));
-    }
-
 
     @Override
     public UserDTO loadUserCreateRequest(String phoneNumber) {

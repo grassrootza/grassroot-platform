@@ -11,7 +11,9 @@ import za.org.grassroot.core.domain.EventRequest;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.services.AsyncUserLogger;
 import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.EventRequestBroker;
@@ -23,6 +25,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
+import static za.org.grassroot.core.enums.UserInterfaceType.USSD;
 import static za.org.grassroot.core.util.DateTimeUtil.*;
 
 /**
@@ -40,7 +43,7 @@ public class USSDEventUtil extends USSDUtil {
     private EventRequestBroker eventRequestBroker;
 
     @Autowired
-    private EventBroker eventBroker;
+    private AsyncUserLogger userLogger;
 
     private static final String eventIdParameter = "eventId";
     private static final String entityUidParameter =  "entityUid";
@@ -139,6 +142,7 @@ public class USSDEventUtil extends USSDUtil {
                 break;
             case dateTimeMenu:
                 // todo: handle errors in processing better (i.e., call parseDateTime in menus, pass here already-processed)
+                userLogger.recordUserInputtedDateTime(userUid, userInput, "meeting-creation:", USSD);
                 eventRequestBroker.updateStartTimestamp(userUid, eventUid, Timestamp.valueOf(parseDateTime(userInput)));
                 break;
             case timeOnly:
@@ -146,6 +150,7 @@ public class USSDEventUtil extends USSDUtil {
                 String reformattedTime = DateTimeUtil.reformatTimeInput(userInput);
                 Timestamp newTimestamp = changeTimestampTimes(eventReq.getEventStartDateTime(), reformattedTime);
                 log.info("This is what we got back ... " + preferredDateTimeFormat.format(newTimestamp.toLocalDateTime()));
+                userLogger.recordUserInputtedDateTime(userUid, userInput, "meeting-creation-time-only", USSD);
                 eventRequestBroker.updateStartTimestamp(userUid, eventUid, newTimestamp);
                 break;
             case dateOnly:
@@ -153,6 +158,7 @@ public class USSDEventUtil extends USSDUtil {
                 String reformattedDate = DateTimeUtil.reformatDateInput(userInput);
                 newTimestamp = changeTimestampDates(eventReq.getEventStartDateTime(), reformattedDate);
                 log.info("This is what we got back ... " + preferredDateTimeFormat.format(newTimestamp.toLocalDateTime()));
+                userLogger.recordUserInputtedDateTime(userUid, userInput, "meeting-creation-date-only", USSD);
                 eventRequestBroker.updateStartTimestamp(userUid, eventUid, newTimestamp);
             default:
                 break;
@@ -173,12 +179,14 @@ public class USSDEventUtil extends USSDUtil {
                 oldTimestamp = eventRequestBroker.load(requestUid).getEventStartDateTime();
                 String reformattedTime = DateTimeUtil.reformatTimeInput(newValue);
                 newTimestamp = changeTimestampTimes(oldTimestamp, reformattedTime);
+                userLogger.recordUserInputtedDateTime(userUid, newValue, "meeting-edit-time-only", USSD);
                 eventRequestBroker.updateStartTimestamp(userUid, requestUid, newTimestamp);
                 break;
             case newDate:
                 oldTimestamp = eventRequestBroker.load(requestUid).getEventStartDateTime();
                 String reformattedDate = DateTimeUtil.reformatDateInput(newValue);
                 newTimestamp = changeTimestampDates(oldTimestamp, reformattedDate);
+                userLogger.recordUserInputtedDateTime(userUid, newValue, "meeting-edit-date-only", USSD);
                 eventRequestBroker.updateStartTimestamp(userUid, requestUid, newTimestamp);
                 break;
         }

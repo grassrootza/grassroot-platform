@@ -14,7 +14,6 @@ import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
-import za.org.grassroot.core.enums.UserLogType;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -25,6 +24,8 @@ import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static za.org.grassroot.core.enums.UserInterfaceType.UNKNOWN;
+import static za.org.grassroot.core.enums.UserLogType.*;
 
 /**
  * Created by luke on 2016/02/22.
@@ -47,12 +48,12 @@ public class UserLogRepositoryTest {
     public void shouldSaveAndRetrieveUserLogs() {
         assertThat(userLogRepository.count(), is(0L));
         User testUser = userRepository.save(new User("0605551111"));
-        UserLog createLog = userLogRepository.save(new UserLog(testUser.getUid(), UserLogType.CREATED_IN_DB));
+        UserLog createLog = userLogRepository.save(new UserLog(testUser.getUid(), CREATED_IN_DB));
         testUser.setHasInitiatedSession(true);
         testUser.setHasWebProfile(true);
         testUser = userRepository.save(testUser);
-        UserLog ussdLog = userLogRepository.save(new UserLog(testUser.getUid(), UserLogType.INITIATED_USSD));
-        UserLog webLog = userLogRepository.save(new UserLog(testUser.getUid(), UserLogType.CREATED_WEB));
+        UserLog ussdLog = userLogRepository.save(new UserLog(testUser.getUid(), INITIATED_USSD));
+        UserLog webLog = userLogRepository.save(new UserLog(testUser.getUid(), CREATED_WEB));
 
         List<UserLog> logsForUser = userLogRepository.findByUserUid(testUser.getUid());
         assertNotNull(logsForUser);
@@ -74,11 +75,11 @@ public class UserLogRepositoryTest {
         User testUser = new User("0605550000");
         testUser.setCreatedDateTime(twoMonths);
         testUser = userRepository.save(testUser);
-        UserLog createdLog = new UserLog(testUser.getUid(), UserLogType.CREATED_IN_DB, "Created the user");
+        UserLog createdLog = new UserLog(testUser.getUid(), CREATED_IN_DB, "Created the user", UNKNOWN);
         createdLog.setCreationTime(twoMonths.toInstant());
-        UserLog firstUssd = new UserLog(testUser.getUid(), UserLogType.INITIATED_USSD, "First USSD session");
+        UserLog firstUssd = new UserLog(testUser.getUid(), INITIATED_USSD, "First USSD session", UNKNOWN);
         firstUssd.setCreationTime(oneMonth.toInstant());
-        UserLog createdWeb = new UserLog(testUser.getUid(), UserLogType.CREATED_WEB, "Created web profile");
+        UserLog createdWeb = new UserLog(testUser.getUid(), CREATED_WEB, "Created web profile", UNKNOWN);
         createdWeb.setCreationTime(now.toInstant());
 
         createdLog = userLogRepository.save(createdLog);
@@ -86,9 +87,9 @@ public class UserLogRepositoryTest {
         createdWeb = userLogRepository.save(createdWeb);
 
         List<UserLog> getAll = userLogRepository.findByUserUid(testUser.getUid());
-        List<UserLog> createdLogs = userLogRepository.findByUserLogType(UserLogType.CREATED_IN_DB);
-        List<UserLog> typeUssd = userLogRepository.findByUserLogType(UserLogType.INITIATED_USSD);
-        List<UserLog> typeWeb = userLogRepository.findByUserLogType(UserLogType.CREATED_WEB);
+        List<UserLog> createdLogs = userLogRepository.findByUserLogType(CREATED_IN_DB);
+        List<UserLog> typeUssd = userLogRepository.findByUserLogType(INITIATED_USSD);
+        List<UserLog> typeWeb = userLogRepository.findByUserLogType(CREATED_WEB);
 
         List<UserLog> oneMonthAgo = userLogRepository.findByUserUidAndCreationTimeBetween(
                 testUser.getUid(), LocalDateTime.now().minusDays(45L).toInstant(ZoneOffset.UTC),

@@ -11,6 +11,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.LogBookRequest;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.LogBookBroker;
 import za.org.grassroot.services.LogBookRequestBroker;
@@ -426,6 +427,7 @@ public class USSDLogBookController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber, null);
 
         LocalDateTime completedDateTime = DateTimeUtil.parsePreformattedDate(reformatDateInput(completedDate), stdHour, stdMinute);
+        userLogger.recordUserInputtedDateTime(user.getUid(), completedDate, "logbook-completion", UserInterfaceType.USSD);
         logBookBroker.complete(logBookUid, completedDateTime, completedByUserUid);
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, setCompleteMenu, promptKey, user));
