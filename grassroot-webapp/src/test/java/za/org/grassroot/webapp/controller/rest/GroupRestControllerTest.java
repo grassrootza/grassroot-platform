@@ -49,10 +49,10 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
         settingUpDummyData(testGroup, groups, membershipInfo, membersToAdd);
 
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
-        when(groupBrokerMock.create(sessionTestUser.getUid(), testGroupName, null, membersToAdd, GroupPermissionTemplate.DEFAULT_GROUP, testEventDescription)).thenReturn(testGroup);
+        when(groupBrokerMock.create(sessionTestUser.getUid(), testGroupName, null, membersToAdd, GroupPermissionTemplate.DEFAULT_GROUP, testEventDescription, null)).thenReturn(testGroup);
         mockMvc.perform(post(path + "create/{phoneNumber}/{code}", testUserPhone, testUserCode).param("groupName", testGroupName).param("description", testEventDescription)).andExpect(status().isCreated());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
-        verify(groupBrokerMock).create(sessionTestUser.getUid(), testGroupName, null, membersToAdd, GroupPermissionTemplate.DEFAULT_GROUP, meetingEvent.getDescription());
+        verify(groupBrokerMock).create(sessionTestUser.getUid(), testGroupName, null, membersToAdd, GroupPermissionTemplate.DEFAULT_GROUP, meetingEvent.getDescription(), null);
     }
 
     @Test

@@ -71,7 +71,8 @@
                   <span th:text="${member.getPhoneNumberWithoutCCode()}">Number</span>
                 </td>
                 <td>
-                  <select th:id="|role_${iterStat.index}|" class="form-control">
+                  <select th:id="|role_${iterStat.index}|" class="form-control"
+                          th:disabled="${member.getPhoneNumberWithCCode() == currentUser.getUsername()}">
                     <option th:each="role : ${roles}"
                             th:value="${role[0]}"
                             th:text="${role[1]}"
@@ -81,7 +82,8 @@
                 <td>
                   <input type="hidden" th:id="|msisdn_${iterStat.index}|" th:value="${member.phoneNumber}" />
                   <input type="hidden" th:id="|oldrole_${iterStat.index}|" th:value="${member.roleName}" />
-                  <button type="button" name="changeRole" class="btn btn-default" aria-label="Change role"
+                  <button type="button" th:unless="${member.getPhoneNumberWithCCode() == currentUser.getUsername()}"
+                          name="changeRole" class="btn btn-default" aria-label="Change role"
                           data-toggle="modal" data-target="#confirmModal" th:attr="data-index=${iterStat.index}">
                     Change
                   </button>

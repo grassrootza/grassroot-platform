@@ -16,6 +16,7 @@ import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -59,6 +60,8 @@ public class MeetingController extends BaseController {
         User sessionUser = getUserProfile();
         Meeting meeting = Meeting.makeEmpty(sessionUser);
         meeting.setRsvpRequired(true); // since this is default (and Thymeleaf doesn't handle setting it in template well)
+        meeting.setReminderType(EventReminderType.GROUP_CONFIGURED);
+        meeting.setCustomReminderMinutes(24 * 60);
 
         if (groupUid != null) {
             Group group = groupBroker.load(groupUid);
@@ -71,10 +74,9 @@ public class MeetingController extends BaseController {
             groupSpecified = false;
         }
 
-
         model.addAttribute("meeting", meeting);
         model.addAttribute("groupSpecified", groupSpecified); // slightly redundant, but use it to tell Thymeleaf what to do
-        model.addAttribute("reminderOptions", reminderMinuteOptions());
+        model.addAttribute("reminderOptions", reminderMinuteOptions(false));
 
         log.info("Meeting that we are passing: " + meeting.toString());
         return "meeting/create";
@@ -136,9 +138,12 @@ public class MeetingController extends BaseController {
 
         if (canAlterDetails) {
             model.addAttribute("reminderOptions", EventReminderType.values());
-            model.addAttribute("customReminderOptions", reminderMinuteOptions());
+            model.addAttribute("customReminderOptions", reminderMinuteOptions(false));
             model.addAttribute("todos", meeting.getLogBooks());
         }
+
+        if (meeting.getScheduledReminderTime() != null)
+            model.addAttribute("scheduledReminderTime", Timestamp.from(meeting.getScheduledReminderTime())); // for thymeleaf
 
         return "meeting/view";
     }

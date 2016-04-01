@@ -18,7 +18,7 @@ public interface GroupBroker {
     /** METHODS FOR CREATING AND EDITING GROUPS **/
 
     Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos,
-                 GroupPermissionTemplate groupPermissionTemplate, String description);
+                 GroupPermissionTemplate groupPermissionTemplate, String description, Integer reminderMinutes);
 
     void deactivate(String userUid, String groupUid, boolean checkIfWithinTimeWindow);
 

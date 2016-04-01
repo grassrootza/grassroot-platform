@@ -440,14 +440,14 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         String urlToSave = saveGroupMenuWithInput("create-do", testGroup.getUid(), nameToPass);
         String testGroupUid = "unique-testGroup-id";
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(groupBrokerMock.create(testUser.getUid(), nameToPass, null, organizer(testUser), template, null)).thenReturn(testGroup);
+        when(groupBrokerMock.create(testUser.getUid(), nameToPass, null, organizer(testUser), template, null, null)).thenReturn(testGroup);
 
         mockMvc.perform(get(path + "create-do").param(phoneParam, testUserPhone).param("request", nameToPass)).
                 andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verify(userManagementServiceMock, times(1)).setLastUssdMenu(testUser, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupBrokerMock, times(1)).create(testUser.getUid(), nameToPass, null, testMembers, template, null);
+        verify(groupBrokerMock, times(1)).create(testUser.getUid(), nameToPass, null, testMembers, template, null, null);
         verify(groupBrokerMock, times(1)).openJoinToken(testUser.getUid(), testGroup.getUid(), false, null);
         verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(eventManagementServiceMock);

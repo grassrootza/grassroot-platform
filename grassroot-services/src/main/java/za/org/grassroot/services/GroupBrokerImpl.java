@@ -63,7 +63,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
     @Override
     @Transactional
-    public Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos, GroupPermissionTemplate groupPermissionTemplate, String description) {
+    public Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos, GroupPermissionTemplate groupPermissionTemplate, String description, Integer reminderMinutes) {
 
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(name);
@@ -92,7 +92,9 @@ public class GroupBrokerImpl implements GroupBroker {
         Set<Membership> memberships = addMembers(user, group, membershipInfos);
         permissionBroker.setRolePermissionsFromTemplate(group, groupPermissionTemplate);
 
+        // last: set some advanced features, with defaults in case null passed
         group.setDescription((description == null) ? "" : description);
+        group.setReminderMinutes((reminderMinutes == null) ? (24 * 60) : reminderMinutes);
 
         group = groupRepository.save(group);
 
@@ -238,12 +240,14 @@ public class GroupBrokerImpl implements GroupBroker {
         logger.info("phoneNumbers returned: ...." + memberPhoneNumbers);
         Set<User> existingUsers = new HashSet<>(userRepository.findByPhoneNumberIn(memberPhoneNumbers));
         Map<String, User> existingUserMap = existingUsers.stream().collect(Collectors.toMap(User::getPhoneNumber, user -> user));
+        logger.info("Number of existing users ... " + existingUsers.size());
 
         Set<String> newlyCreatedUsers = new HashSet<>();
         Set<Membership> memberships = new HashSet<>();
         for (MembershipInfo membershipInfo : membershipInfos) {
-            User user = existingUserMap.getOrDefault(membershipInfo.getPhoneNumberWithCCode(),
-                                                     createNewUserAndAddToSet(membershipInfo.getPhoneNumberWithCCode(), membershipInfo.getDisplayName(), newlyCreatedUsers));
+            // note: splitting this instead of getOrDefault, since that method calls default method even if it finds something, hence spurious user creation
+            User user = existingUserMap.get(membershipInfo.getPhoneNumberWithCCode());
+            if (user == null) user = createNewUserAndAddToSet(membershipInfo.getPhoneNumberWithCCode(), membershipInfo.getDisplayName(), newlyCreatedUsers);
             String roleName = membershipInfo.getRoleName();
             Membership membership = roleName == null ? group.addMember(user) : group.addMember(user, roleName);
             if (membership != null) {
@@ -255,6 +259,7 @@ public class GroupBrokerImpl implements GroupBroker {
     }
 
     private User createNewUserAndAddToSet(String phoneNumber, String displayName, Set<String> uidCollector) {
+        logger.info("Adding a new user, via group creation, with phone number ... " + phoneNumber);
         User user = new User(phoneNumber, displayName);
         uidCollector.add(user.getUid());
         return user;
@@ -308,6 +313,10 @@ public class GroupBrokerImpl implements GroupBroker {
     public void updateMembershipRole(String userUid, String groupUid, String memberUid, String roleName) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
+        Objects.requireNonNull(memberUid);
+
+        if (userUid.equals(memberUid))
+            throw new IllegalArgumentException("A user cannot change ther own role: memberUid = " + memberUid);
 
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
@@ -403,7 +412,7 @@ public class GroupBrokerImpl implements GroupBroker {
             Set<MembershipInfo> membershipInfos = MembershipInfo.createFromMembers(groupInto.getMemberships());
             membershipInfos.addAll(MembershipInfo.createFromMembers(groupFrom.getMemberships()));
             // todo: work out what to do about templates ... probably a UX issue more than solving here
-            resultGroup = create(user.getUid(), newGroupName, null, membershipInfos, GroupPermissionTemplate.DEFAULT_GROUP, null);
+            resultGroup = create(user.getUid(), newGroupName, null, membershipInfos, GroupPermissionTemplate.DEFAULT_GROUP, null, null);
             if (!leaveActive) {
                 deactivate(user.getUid(), groupInto.getUid(), false);
                 deactivate(user.getUid(), groupFrom.getUid(), false);
@@ -470,6 +479,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
+        // todo: think about whether to change any events currently pending & set to group default
         group.setReminderMinutes(reminderMinutes);
         String logMessage = String.format("Changed reminder default to %d minutes", reminderMinutes);
         logGroupEventsAfterCommit(Collections.singleton(new GroupLog(group.getId(), user.getId(),

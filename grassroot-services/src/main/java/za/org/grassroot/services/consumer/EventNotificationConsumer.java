@@ -83,9 +83,11 @@ public class EventNotificationConsumer {
             concurrency = "5")
     public void sendNewEventNotifications(EventDTO event) {
 
-        log.trace("sendNewEventNotifications... <" + event.toString() + ">");
+        log.info("sendNewEventNotifications... <" + event.toString() + ">");
+        List<User> usersToNotify = getUsersForEvent(event.getEventObject());
+        log.info("sendNewEventNotifications, sending to: {} users", usersToNotify.size());
 
-        for (User user : getAllUsersForGroup(event.getEventObject())) {
+        for (User user : getUsersForEvent(event.getEventObject())) {
             cacheUtilService.clearRsvpCacheForUser(user,event.getEventType());
             sendNewMeetingMessage(user, event);
         }
@@ -96,7 +98,7 @@ public class EventNotificationConsumer {
             concurrency = "1")
     public void sendChangedEventNotifications(EventChanged eventChanged) {
         log.info("sendChangedEventNotifications... <" + eventChanged.toString() + ">");
-        for (User user : getAllUsersForGroup(eventChanged.getEvent().getEventObject())) {
+        for (User user : getUsersForEvent(eventChanged.getEvent().getEventObject())) {
             //generate message based on user language
             log.info("sendChangedEventNotifications...user..." + user.getPhoneNumber() + "...event..." + eventChanged.getEvent().getId() + "...version..." + eventChanged.getEvent().getVersion() + "...start time changed..." + eventChanged.isStartTimeChanged() + "...starttime..." + eventChanged.getEvent().getEventStartDateTime());
             String message = meetingNotificationService.createChangeMeetingNotificationMessage(user, eventChanged.getEvent());
@@ -116,7 +118,7 @@ public class EventNotificationConsumer {
             concurrency = "1")
     public void sendCancelledEventNotifications(EventDTO event) {
         log.trace("sendCancelledEventNotifications... <" + event.toString() + ">");
-        for (User user : getAllUsersForGroup(event.getEventObject())) {
+        for (User user : getUsersForEvent(event.getEventObject())) {
             //generate message based on user language
             String message = meetingNotificationService.createCancelMeetingNotificationMessage(user, event);
             if (!eventLogManagementService.cancelNotificationSentToUser(event.getEventUid(), user.getUid())
@@ -146,9 +148,10 @@ public class EventNotificationConsumer {
 
     @JmsListener(destination = "event-reminder", containerFactory = "messagingJmsContainerFactory",
             concurrency = "3")
-    public void sendEventReminder(EventDTO event) {
+    public void sendEventReminder(String eventUid) {
+        Event event = eventBroker.load(eventUid);
         log.info("sendEventReminder...event.id..." + event.getId());
-        for (User user : getAllUsersForGroup(event.getEventObject())) {
+        for (User user : getUsersForEvent(event)) {
             sendMeetingReminderMessage(user, event);
         }
 
@@ -190,7 +193,7 @@ public class EventNotificationConsumer {
             concurrency = "1")
     public void sendManualEventReminder(EventDTO event) {
         log.info("sendManualEventReminder...event.id..." + event.getId());
-        for (User user : getAllUsersForGroup(event.getEventObject())) {
+        for (User user : getUsersForEvent(event.getEventObject())) {
             sendManualReminderMessage(user, event);
         }
 
@@ -200,7 +203,7 @@ public class EventNotificationConsumer {
             concurrency = "3")
     public void sendVoteResults(EventWithTotals event) {
         log.info("sendVoteResults...event.id..." + event.getEventDTO().getId());
-        for (User user : getAllUsersForGroup(event.getEventDTO().getEventObject())) {
+        for (User user : getUsersForEvent(event.getEventDTO().getEventObject())) {
             sendVoteResultsToUser(user, event);
         }
 
@@ -300,19 +303,22 @@ public class EventNotificationConsumer {
 
     }
 
-    private List<User> getAllUsersForGroup(Event event) {
+    private List<User> getUsersForEvent(Event event) {
         // todo: replace this with calling the parent and/or just using assigned members
         if (event.isIncludeSubGroups()) {
             return userManager.fetchByGroup(event.resolveGroup().getUid(), true);
+        } else if (event.isAllGroupMembersAssigned()){
+            // throwing lazy initialization error if we use resolveGroup
+            return userManager.fetchByGroup(event.resolveGroup().getUid(), false);
         } else {
-            return new ArrayList<>(event.resolveGroup().getMembers());
+            return new ArrayList<>(event.getAssignedMembers());
         }
     }
 
     private void sendNewMeetingMessage(User user, EventDTO event) {
         //generate message based on user language
         String message = meetingNotificationService.createMeetingNotificationMessage(user, event);
-        Meeting meeting = eventBroker.loadMeeting(event.getEventUid()); // todo: switch to use Uids, soon
+        Meeting meeting = eventBroker.loadMeeting(event.getEventUid());
         if (!eventLogManagementService.notificationSentToUser(meeting,user)) {
             log.info("sendNewEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
             messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
@@ -322,26 +328,22 @@ public class EventNotificationConsumer {
 
     }
 
-    private void sendMeetingReminderMessage(User target, EventDTO event) {
-        //generate message based on target language
-        String message = meetingNotificationService.createMeetingReminderMessage(target, event);
-        /*
-        Do not send vote reminder if the target already voted (userRsvpForEvent)
-         */
+    private void sendMeetingReminderMessage(User target, Event event) {
+        EventDTO eventDTO = (event.getEventType().equals(EventType.MEETING)) ?
+                new EventDTO((Meeting) event) :
+                new EventDTO(event);
+        String message = meetingNotificationService.createMeetingReminderMessage(target, eventDTO);;
         if (event.getEventType() == EventType.VOTE) {
-            if (!eventLogManagementService.reminderSentToUser(event.getEventObject(), target)
-                    && !eventLogManagementService.userRsvpForEvent(event.getEventObject(), target)) {
-                sendMeetingReminderMessageAction(target,event,message);
+            // Do not send vote reminder if the target already voted (userRsvpForEvent)
+            if (!eventLogManagementService.reminderSentToUser(event, target)
+                    && !eventLogManagementService.userRsvpForEvent(event, target)) {
+                sendMeetingReminderMessageAction(target,eventDTO,message);
             }
 
         } else {
-        /*
-        Do not send meeting reminder if the target already rsvp'ed "no"
-         */
-
-            if (!eventLogManagementService.reminderSentToUser(event.getEventObject(), target)
-                    && !eventLogManagementService.userRsvpNoForEvent(event.getEventUid(), target.getUid())) {
-                sendMeetingReminderMessageAction(target,event,message);
+            if (!eventLogManagementService.reminderSentToUser(event, target)
+                    && !eventLogManagementService.userRsvpNoForEvent(event.getUid(), target.getUid())) {
+                sendMeetingReminderMessageAction(target,eventDTO,message);
             }
         }
     }

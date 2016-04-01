@@ -17,6 +17,7 @@ future to close that off (need a way that mistakes can be corrected, but not to 
 
 <div layout:fragment="overview">
   <h4 class="text-center">Add and modify multiple members for a group</h4>
+  <h5 class="text-center">Note: You cannot change your own role in the group</h5>
 </div>
 
 <div layout:fragment="content">
@@ -24,9 +25,10 @@ future to close that off (need a way that mistakes can be corrected, but not to 
   <div layout:fragment="messages"></div>
   <div class="well">
 
+    <div class="col-md-8 col-md-offset-2">
     <form  th:object="${groupModifier}" th:action="@{/group/change_multiple}" method="post" autocomplete="on" class="form-horizontal">
       <input type="hidden" th:field="*{group.Uid}" th:value="${groupModifier.group.Uid}" />
-      <div class="form-group col-lg-10 col-lg-offset-2">
+      <div class="form-group">
         <table class="table col-md-8" id="member-input">
           <thead>
           <tr>
@@ -40,17 +42,17 @@ future to close that off (need a way that mistakes can be corrected, but not to 
           <tr th:each="member, iterStat: *{listOfMembers}">
             <td>
               <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].displayName}" class="form-control"
-                     th:value="${member.displayName}"/>
+                     th:value="${member.displayName}" th:readonly="${member.getPhoneNumberWithCCode() == currentUser.getUsername()}"/>
             </td>
             <td>
               <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].phoneNumber}" class="form-control"
-                     th:value="${member.phoneNumber}"/>
+                     th:value="${member.phoneNumber}" th:readonly="${member.getPhoneNumberWithCCode() == currentUser.getUsername()}"/>
               <span th:if="${#fields.hasErrors('listOfMembers[__${iterStat.index}__].phoneNumber')}"
                     class="alert has-error">Error!</span>
             </td>
             <td>
               <select th:field="*{listOfMembers[__${iterStat.index}__].roleName}" class="form-control"
-                      th:readonly="${groupModifier.canUpdateDetails} == false">
+                      th:disabled="${(groupModifier.canUpdateDetails == false) or (member.getPhoneNumberWithCCode() == currentUser.getUsername())}">
                 <option th:each="role : ${roles}"
                         th:value="${role[0]}"
                         th:text="${role[1]}"
@@ -59,7 +61,8 @@ future to close that off (need a way that mistakes can be corrected, but not to 
             </td>
             <td>
               <button type="submit" name="removeMember" class="btn btn-default" aria-label="Remove"
-                      th:value="${iterStat.index}" th:if="${groupModifier.canRemoveMembers}">
+                      th:value="${iterStat.index}" th:if="${groupModifier.canRemoveMembers}"
+                      th:unless="${member.getPhoneNumberWithCCode() == currentUser.getUsername()}">
                 <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
               </button>
             </td>
@@ -68,7 +71,7 @@ future to close that off (need a way that mistakes can be corrected, but not to 
         </table>
       </div>
       <div class="form-group" th:if="${groupModifier.canAddMembers}">
-        <div class="col-md-4">
+        <div class="col-md-6 pull-right">
           <button type="submit" name="addMember" class="btn btn-default">
             <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
             Add another member
@@ -79,12 +82,13 @@ future to close that off (need a way that mistakes can be corrected, but not to 
         </div>
       </div>
       <div class="form-group">
-        <div class="col-md-8">
+        <div class="col-md-4 pull-right">
           <a th:href="@{view(groupUid=${groupModifier.group.Uid})}" role="button" class="btn btn-default">Cancel</a>
           <button type="submit" class="btn btn-primary">Submit Group</button>
         </div>
       </div>
     </form>
+    </div>
 
   </div>
 </div>

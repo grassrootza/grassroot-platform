@@ -29,9 +29,10 @@
           <div class="form-group">
             <label for="group" class="control-label">Who is meeting? Group:</label>
             <select th:unless="${groupSpecified}" name="selectedGroupUid" id="selectedgroup" class="form-control">
-              <option th:each="group: ${userGroups}"
+              <option th:each="group, iterStat: ${userGroups}"
                       th:value="${group.Uid}"
-                      th:text="${group.groupName}">Groupname</option>
+                      th:text="${group.groupName}"
+                      th:attr="data-mins=#{web.meeting.reminder.group.__${group.reminderMinutes}__}">Groupname</option>
             </select>
             <input th:if="${groupSpecified}" class="form-control" readonly="true" th:placeholder="${group.groupName}" id="group" />
           </div>
@@ -60,7 +61,12 @@
             <label class="control-label">Reminder:</label>
             <select th:field="*{reminderType}" class="form-control" id="reminderType">
               <option value="DISABLED">None</option>
-              <option value="GROUP_CONFIGURED">Group default</option>
+              <option th:if="${groupSpecified}" value="GROUP_CONFIGURED" selected="true">
+                Group default (<span th:text="#{web.meeting.reminder.group.__${group.reminderMinutes}__}">X</span> ahead)
+              </option>
+              <option th:unless="${groupSpecified}" value="GROUP_CONFIGURED" id="groupOption">
+                Group default (<span id="groupReminderTime">X ahead</span>)
+              </option>
               <option value="CUSTOM">Set custom</option>
             </select>
             <div class="radio" id="customReminder">
@@ -102,8 +108,6 @@
 
     $(document).ready(function() {
 
-      $("#customReminder").hide();
-
       $('#datepicker').datetimepicker({
         format: 'DD/MM/YYYY h:mm A',
         widgetPositioning: {
@@ -113,6 +117,12 @@
         minDate: new Date()
       });
 
+      $("#reminderType").changeGroupMinutes();
+      $('#selectedgroup').change(function() {
+        $("#reminderType").changeGroupMinutes();
+      });
+
+      $("#customReminder").hide();
       $('#reminderType').change(function() {
         var selected = $("#reminderType option:selected").val();
         console.log("Selected option: " + selected);
@@ -124,6 +134,15 @@
       });
 
     });
+
+    jQuery.fn.extend({
+      changeGroupMinutes: function() {
+        var groupSelected = $("#selectedgroup option:selected").data("mins");
+        var text = "Group default (" + groupSelected + ")"; // todo: i18n at some point
+        $(this).find("#groupOption").text(text);
+      }
+    });
+
   </script>
 
 </div>

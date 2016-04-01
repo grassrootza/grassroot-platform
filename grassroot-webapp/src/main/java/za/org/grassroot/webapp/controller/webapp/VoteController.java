@@ -71,7 +71,6 @@ public class VoteController extends BaseController {
 
         model.addAttribute("vote", voteRequest);
         model.addAttribute("groupSpecified", groupSpecified);
-        model.addAttribute("reminderOptions", reminderMinuteOptions());
 
         return "vote/create";
     }
@@ -115,7 +114,7 @@ public class VoteController extends BaseController {
         if (canModify) {
             model.addAttribute("canModify", true);
             model.addAttribute("reminderOptions", EventReminderType.values());
-            model.addAttribute("customReminderOptions", reminderMinuteOptions());
+            model.addAttribute("customReminderOptions", reminderMinuteOptions(false));
         }
 
         return "vote/view";

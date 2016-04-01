@@ -12,6 +12,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
+import za.org.grassroot.services.exception.RequestorAlreadyPartOfGroupException;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.*;
@@ -65,7 +66,7 @@ public class GroupRestController {
 
         try {
             groupBroker.create(user.getUid(), groupName, null, addMembersToGroup(phoneNumbers, membersToAdd),
-                               GroupPermissionTemplate.DEFAULT_GROUP, description);
+                               GroupPermissionTemplate.DEFAULT_GROUP, description, null);
 
         } catch (RuntimeException e) {
             return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.GROUP_NOT_CREATED, RestStatus.FAILURE),
@@ -134,9 +135,14 @@ public class GroupRestController {
                                                               String groupToJoinUid) {
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
-        groupJoinRequestService.open(user.getUid(), groupToJoinUid);
-        ResponseWrapper responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.GROUP_JOIN_REQUEST_SENT, RestStatus.SUCCESS);
-
+        ResponseWrapper responseWrapper;
+        try {
+            groupJoinRequestService.open(user.getUid(), groupToJoinUid);
+            responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.GROUP_JOIN_REQUEST_SENT, RestStatus.SUCCESS);
+        } catch (RequestorAlreadyPartOfGroupException e) {
+            responseWrapper = new ResponseWrapperImpl(HttpStatus.CONFLICT, RestMessage.USER_ALREADY_PART_OF_GROUP,
+                                                      RestStatus.FAILURE);
+        }
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
 
     }

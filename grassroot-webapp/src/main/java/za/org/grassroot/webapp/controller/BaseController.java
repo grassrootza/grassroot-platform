@@ -75,17 +75,21 @@ public class BaseController {
     }
 
     /* Helper method used in all the meeting/vote/logbook fields */
-    protected List<String[]> reminderMinuteOptions() {
+    protected List<String[]> reminderMinuteOptions(boolean includeZero) {
 
         List<String[]> minuteOptions = new ArrayList<>();
 
+        String[] twoDays = new String[]{"" + 48 * 60, "Two days ahead"};
         String[] oneDay = new String[]{"" + 24 * 60, "One day ahead"};
         String[] halfDay = new String[]{"" + 6 * 60, "Half a day ahead"};
         String[] oneHour = new String[]{"60", "An hour before"};
+        String[] zero = new String[]{"0", "No reminder"};
 
+        minuteOptions.add(twoDays);
         minuteOptions.add(oneDay);
         minuteOptions.add(halfDay);
         minuteOptions.add(oneHour);
+        if (includeZero) minuteOptions.add(zero);
 
         return minuteOptions;
     }

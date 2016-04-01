@@ -15,6 +15,7 @@ public class GroupWrapper {
 
     private Group group;
     private String groupName;
+    private String groupDescription;
 
     private boolean hasParent;
     private Group parentGroup;
@@ -26,6 +27,8 @@ public class GroupWrapper {
     private boolean canRemoveMembers;
     private boolean canUpdateDetails;
 
+    private int reminderMinutes;
+
     // need to use a list so that we can add and remove
     private List<MembershipInfo> listOfMembers = new ArrayList<>();
 
@@ -33,6 +36,7 @@ public class GroupWrapper {
 
     public GroupWrapper() {
         this.group = Group.makeEmpty();
+        this.reminderMinutes = 24 * 60;
         // this.template = GroupPermissionTemplate.DEFAULT_GROUP;
     }
 
@@ -54,6 +58,10 @@ public class GroupWrapper {
     public String getGroupName() { return groupName; }
 
     public void setGroupName(String groupName) { this.groupName = groupName; }
+
+    public String getGroupDescription() { return groupDescription; }
+
+    public void setGroupDescription(String groupDescription) { this.groupDescription = groupDescription; }
 
     public boolean getHasParent() { return hasParent; }
 
@@ -97,6 +105,10 @@ public class GroupWrapper {
         this.canUpdateDetails = canUpdateDetails;
     }
 
+    public void setReminderMinutes(int reminderMinutes) { this.reminderMinutes = reminderMinutes; }
+
+    public int getReminderMinutes() { return reminderMinutes; }
+
     /*
     Helper method for quickly populating one, for the group modification
      */
@@ -108,6 +120,7 @@ public class GroupWrapper {
         this.group = groupToModify;
         this.groupName = group.getGroupName();
         this.parentGroup = group.getParent();
+        this.reminderMinutes = group.getReminderMinutes();
 
         if (parentGroup != null) {
             this.hasParent = true;

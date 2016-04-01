@@ -17,7 +17,8 @@ public enum GroupLogType {
     TOKEN_CHANGED("join code changed"),
     DISCOVERABLE_CHANGED("discoverable setting changed"),
     LANGUAGE_CHANGED("changed group default language"),
-    PARENT_CHANGED("added or changed parent group");
+    PARENT_CHANGED("added or changed parent group"),
+    MESSAGE_SENT("free form message sent"); // todo : maybe consider shifting to an "account log" or similar
 
     private final String text;
 

@@ -19,6 +19,7 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
+import za.org.grassroot.services.exception.RequestorAlreadyPartOfGroupException;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
 import za.org.grassroot.webapp.util.BulkUserImportUtil;
@@ -140,9 +141,15 @@ public class GroupController extends BaseController {
     @RequestMapping(value = "join/request", method = RequestMethod.POST)
     public String requestToJoinGroup(Model model, @RequestParam(value="uid") String groupToJoinUid,
                                      HttpServletRequest request, RedirectAttributes attributes) {
-        String requestUid = groupJoinRequestService.open(getUserProfile().getUid(), groupToJoinUid);
-        addMessage(attributes, MessageType.INFO, "group.join.request.done", request);
-        return "redirect:/home";
+        try {
+            groupJoinRequestService.open(getUserProfile().getUid(), groupToJoinUid);
+            addMessage(attributes, MessageType.INFO, "group.join.request.done", request);
+            return "redirect:/home";
+        } catch (RequestorAlreadyPartOfGroupException e) {
+            addMessage(attributes, MessageType.INFO, "group.join.request.member", request);
+            attributes.addAttribute("groupUid", groupToJoinUid);
+            return "redirect:/group/view";
+        }
     }
 
     // todo: think about security carefully on these (e.g., on the sequence of calls)
@@ -186,6 +193,7 @@ public class GroupController extends BaseController {
 
         model.addAttribute("group", group);
         model.addAttribute("roles", roleDescriptions);
+        model.addAttribute("reminderOptions", reminderMinuteOptions(true));
         model.addAttribute("languages", userManagementService.getImplementedLanguages().entrySet());
         model.addAttribute("hasParent", (group.getParent() != null));
         model.addAttribute("groupMeetings", eventManagementService.getUpcomingMeetings(group));
@@ -243,6 +251,7 @@ public class GroupController extends BaseController {
         model.addAttribute("groupCreator", groupCreator);
         model.addAttribute("roles", roleDescriptions);
         model.addAttribute("permissionTemplates", permissionTemplates);
+        model.addAttribute("reminderOptions", reminderMinuteOptions(false));
 
         return "group/create";
     }
@@ -262,10 +271,11 @@ public class GroupController extends BaseController {
         }
 
         timeStart = System.currentTimeMillis();
-        User userCreator = getUserProfile();
+        User user = getUserProfile();
         String parentUid = (groupCreator.getHasParent()) ? groupCreator.getParent().getUid() : null;
-        Group groupCreated = groupBroker.create(userCreator.getUid(), groupCreator.getGroupName(),
-                                                parentUid, new HashSet<>(groupCreator.getAddedMembers()), template, null);
+        Group groupCreated = groupBroker.create(user.getUid(), groupCreator.getGroupName(), parentUid,
+                                                new HashSet<>(groupCreator.getAddedMembers()), template, null,
+                                                groupCreator.getReminderMinutes());
         timeEnd = System.currentTimeMillis();
         log.info(String.format("User load & group creation: %d msecs", timeEnd - timeStart));
 
@@ -289,6 +299,7 @@ public class GroupController extends BaseController {
         }
         model.addAttribute("roles", roleDescriptions);
         model.addAttribute("permissionTemplates", permissionTemplates);
+        model.addAttribute("reminderOptions", reminderMinuteOptions(false));
         return "group/create";
     }
 
@@ -299,6 +310,7 @@ public class GroupController extends BaseController {
         groupCreator.getListOfMembers().remove(memberIndex);
         model.addAttribute("roles", roleDescriptions);
         model.addAttribute("permissionTemplates", permissionTemplates);
+        model.addAttribute("reminderOptions", reminderMinuteOptions(false));
         return "group/create";
     }
 
@@ -371,6 +383,14 @@ public class GroupController extends BaseController {
             addMessage(model, MessageType.SUCCESS, "group.visible.success", request);
         }
 
+        return viewGroupIndex(model, groupUid);
+    }
+
+    @RequestMapping(value = "reminder")
+    public String changeReminderMinutes(Model model, @RequestParam String groupUid, @RequestParam int reminderMinutes,
+                                        HttpServletRequest request) {
+        groupBroker.updateGroupDefaultReminderSetting(getUserProfile().getUid(), groupUid, reminderMinutes);
+        addMessage(model, MessageType.SUCCESS, "group.reminder.success", request);
         return viewGroupIndex(model, groupUid);
     }
 
@@ -588,7 +608,7 @@ public class GroupController extends BaseController {
     }
 
     @RequestMapping(value = "link", method = RequestMethod.POST)
-    public String linkToParent(Model model, @RequestParam("groupUid") String groupUid, @RequestParam("parentUid") String parentUid,
+    public String linkToParent(Model model, @RequestParam String groupUid, @RequestParam String parentUid,
                                RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
         // todo: permissions, exceptions, etc.

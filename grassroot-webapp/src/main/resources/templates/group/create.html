@@ -31,16 +31,6 @@
                  title="Group name may not be longer than 20 characters and must not contain any symbols "/>
         </div>
       </div>
-      <div class="form-group">
-        <div class="col-md-offset-2 col-md-8">
-          <label for="groupTemplate" class="control-label">Who will be able to call meetings, events, etc?</label>
-          <select name="groupTemplate" id="groupTemplate" class="form-control">
-            <option th:each="template : ${permissionTemplates}"
-                    th:value="${template[0]}"
-                    th:text="${template[1]}"></option>
-          </select>
-        </div>
-      </div>
 
       <div class="form-group">
         <div class="col-md-offset-2 col-md-8">
@@ -82,15 +72,44 @@
           </tr>
           </tbody>
         </table>
-        </div>
-      </div>
-      <div class="form-group">
-        <div class="col-md-offset-2 col-md-8">
           <button type="submit" name="addMember" class="btn btn-default">
             <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
             Add another member</button>
+          <a href="#advancedOptions" class="btn btn-default" role="button" data-toggle="collapse">Advanced options</a>
         </div>
       </div>
+
+      <div class="collapse" id="advancedOptions">
+        <div class="form-group">
+          <div class="col-md-offset-2 col-md-8">
+            <label for="groupTemplate" class="control-label">Who will be able to call meetings, events, etc?</label>
+            <select name="groupTemplate" id="groupTemplate" class="form-control">
+              <option th:each="template : ${permissionTemplates}"
+                      th:value="${template[0]}"
+                      th:text="${template[1]}"></option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="col-md-offset-2 col-md-8">
+            <label for="reminderMinutes" class="control-label">When will reminders be sent, by default?</label>
+            <select name="reminderMinutes" id="reminderMinutes" class="form-control" th:field="*{reminderMinutes} ">
+              <option th:each="option : ${reminderOptions}"
+                      th:value="${option[0]}"
+                      th:text="${option[1]}"></option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="col-md-offset-2 col-md-8">
+            <label for="groupDescription" class="control-label">Longer group description (optional):</label>
+            <textarea th:field="*{groupDescription}" id="groupDescription" class="form-control" rows="2" maxlength="250">
+              A longer description of the group (visible to web and Android users).
+            </textarea>
+          </div>
+        </div>
+      </div>
+
       <div class="form-group">
         <div class="col-md-offset-2 col-md-8">
           <a th:href="@{/home}" role="button" class="btn btn-default">Cancel</a>

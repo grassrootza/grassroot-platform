@@ -57,7 +57,7 @@ public class AccountManagementServiceTest {
     public void setUp() {
         log.info("Number of standard roles at set up: " + roleManagementService.getNumberStandardRoles());
         testUser = userManagementService.loadOrSaveUser(userNumber);
-        testGroup = groupBroker.create(testUser.getUid(), groupName, null, new HashSet<>(), DEFAULT_GROUP, null);
+        testGroup = groupBroker.create(testUser.getUid(), groupName, null, new HashSet<>(), DEFAULT_GROUP, null, null);
         roleManagementService.createStandardRole(accountAdminRole);
     }
 

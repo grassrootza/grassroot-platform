@@ -281,7 +281,8 @@ public class EventBrokerImpl implements EventBroker {
 					throw new IllegalStateException("Event is not scheduled for reminder: " + event);
 				}
 
-				jmsTemplateProducerService.sendWithNoReply("event-reminder", new EventDTO(event));
+				// todo: figure out how to get and handle errors from here (i.e., so don't set reminders false if an error)
+                jmsTemplateProducerService.sendWithNoReply("event-reminder", event.getUid());
 
 				event.setNoRemindersSent(event.getNoRemindersSent() + 1);
 				event.setScheduledReminderActive(false);

@@ -15,6 +15,7 @@ import za.org.grassroot.core.repository.GroupJoinRequestEventRepository;
 import za.org.grassroot.core.repository.GroupJoinRequestRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.services.exception.RequestorAlreadyPartOfGroupException;
 
 import java.time.Instant;
 import java.util.List;
@@ -51,6 +52,14 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
     public String open(String requestorUid, String groupUid) {
         User requestor = userRepository.findOneByUid(requestorUid);
         Group group = groupRepository.findOneByUid(groupUid);
+
+        if (group.getMembers().contains(requestor))
+            throw new RequestorAlreadyPartOfGroupException("The user requesting to join is already part of this group");
+
+        GroupJoinRequest checkPending = groupJoinRequestRepository.
+                findByGroupAndRequestorAndStatus(group, requestor, GroupJoinRequestStatus.PENDING);
+        if (checkPending != null)
+            return checkPending.getUid();
 
         logger.info("Opening new group join request: requestor={}, group={}", requestor, group);
 

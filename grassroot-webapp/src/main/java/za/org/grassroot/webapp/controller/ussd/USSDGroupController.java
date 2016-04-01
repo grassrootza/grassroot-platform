@@ -13,7 +13,6 @@ import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
@@ -27,7 +26,6 @@ import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
@@ -124,7 +122,7 @@ public class USSDGroupController extends USSDController {
             Long startTime = System.currentTimeMillis();
             MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
             createdGroup = groupBroker.create(user.getUid(), groupName, null, Collections.singleton(creator),
-                                              GroupPermissionTemplate.DEFAULT_GROUP, null);
+                                              GroupPermissionTemplate.DEFAULT_GROUP, null, null);
             groupBroker.openJoinToken(user.getUid(), createdGroup.getUid(), false, null);
             Long endTime = System.currentTimeMillis();
             log.info(String.format("Group has been created ... time taken ... %d msecs", endTime - startTime));

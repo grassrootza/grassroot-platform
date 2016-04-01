@@ -122,6 +122,7 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
 		if (request instanceof MeetingRequest) {
 			MeetingRequest meetingRequest = (MeetingRequest) request;
 			MeetingContainer parent = meetingRequest.getParent();
+            if (meetingRequest.getReminderType() == null) meetingRequest.setReminderType(EventReminderType.GROUP_CONFIGURED);
 			createdEntityUid = eventBroker.createMeeting(userUid, parent.getUid(), parent.getJpaEntityType(), meetingRequest.getName(),
 					meetingRequest.getEventStartDateTime(), meetingRequest.getEventLocation(), meetingRequest.isIncludeSubGroups(),
 					rsvpRequired, meetingRequest.isRelayable(), meetingRequest.getReminderType(), meetingRequest.getCustomReminderMinutes(),
