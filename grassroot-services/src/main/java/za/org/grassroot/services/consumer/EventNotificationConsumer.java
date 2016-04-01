@@ -222,14 +222,19 @@ public class EventNotificationConsumer {
         }
     }
 
-    @JmsListener(destination = "clear-groupcache", containerFactory = "messagingJmsContainerFactory",
+    /*
+    As far as I can tell, this isn't used anywhere (instead the methods loop in here and clear the cache themselves.
+    Since it's the only reason for cache manager wiring user manager, am going to comment out until / unless needed again.
+     */
+    /*@JmsListener(destination = "clear-groupcache", containerFactory = "messagingJmsContainerFactory",
             concurrency = "5")
     public void clearGroupCache(EventDTO event) {
         log.info("clearGroupCache...event.id..." + event.getId());
         cacheUtilService.clearCacheForAllUsersInGroup(event);
 
 
-    }
+    }*/
+
     @JmsListener(destination = "generic-async", containerFactory = "messagingJmsContainerFactory",
             concurrency = "3")
     public void genericAsyncProcessor(GenericAsyncDTO genericAsyncDTO) {

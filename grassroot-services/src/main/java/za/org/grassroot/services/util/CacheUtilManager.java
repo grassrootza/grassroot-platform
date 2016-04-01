@@ -32,9 +32,6 @@ public class CacheUtilManager implements CacheUtilService {
     @Autowired
     CacheManager cacheManager;
 
-    @Autowired
-    UserManagementService userManagementService;
-
     @Override
     public void clearRsvpCacheForUser(User user, EventType eventType) {
         try {
@@ -47,7 +44,10 @@ public class CacheUtilManager implements CacheUtilService {
 
     }
 
-    @Override
+    /*
+    Removing until needed, as allows removal of userManagementService, keeping this strictly interacting with cache
+     */
+    /* @Override
     @Transactional(readOnly = true)
     public void clearCacheForAllUsersInGroup(EventDTO event) {
         log.info("clearCacheForAllUsersInGroup...starting");
@@ -75,7 +75,7 @@ public class CacheUtilManager implements CacheUtilService {
         }
         log.info("clearCacheForAllUsersInGroup...ending");
 
-    }
+    }*/
 
     @Override
     public List<Event> getOutstandingResponseForUser(User user, EventType eventType) {

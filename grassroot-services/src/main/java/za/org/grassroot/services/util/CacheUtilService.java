@@ -15,7 +15,7 @@ public interface CacheUtilService {
 
     void clearRsvpCacheForUser(User user, EventType eventType);
 
-    void clearCacheForAllUsersInGroup(EventDTO event);
+    // void clearCacheForAllUsersInGroup(EventDTO event);
 
     List<Event> getOutstandingResponseForUser(User user, EventType eventType);
 
