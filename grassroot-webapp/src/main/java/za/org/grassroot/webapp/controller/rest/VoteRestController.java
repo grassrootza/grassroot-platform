@@ -74,7 +74,7 @@ public class VoteRestController {
             membersUid.addAll(members);
         }
 
-        Instant eventStartDateTime = Instant.parse(time);
+        Instant eventStartDateTime = Instant.parse(time.trim());
         Vote vote = eventBroker.createVote(user.getUid(), groupUid, JpaEntityType.GROUP, title, Timestamp.from(eventStartDateTime),
                                            false, relayable, description, membersUid);
         eventBroker.updateReminderSettings(user.getUid(), vote.getUid(), EventReminderType.CUSTOM,
@@ -132,7 +132,7 @@ public class VoteRestController {
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         ResponseWrapper responseWrapper;
         try {
-            eventBroker.updateVote(user.getUid(), voteUid, Timestamp.from(Instant.parse(time)), description);
+            eventBroker.updateVote(user.getUid(), voteUid, Timestamp.from(Instant.parse(time.trim())), description);
             responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.VOTE_DETAILS_UPDATED, RestStatus.SUCCESS);
         } catch (java.lang.IllegalStateException e) {
             responseWrapper = new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.VOTE_CANCELLED, RestStatus.FAILURE);
