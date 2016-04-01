@@ -2,9 +2,8 @@ package za.org.grassroot.services;
 
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.EventLog;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.dto.RSVPTotalsDTO;
+import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.dto.RSVPTotalsPerGroupDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
@@ -42,11 +41,9 @@ public interface EventLogManagementService {
 
     boolean userRsvpForEvent(Event event, User user);
 
-    RSVPTotalsDTO getRSVPTotalsForEvent(Long eventId);
+    ResponseTotalsDTO getResponseCountForEvent(Event event);
 
-    RSVPTotalsDTO getRSVPTotalsForEvent(Event event);
-
-    RSVPTotalsDTO getVoteResultsForEvent(Event event);
+    ResponseTotalsDTO getVoteResultsForEvent(Event event);
 
     List<RSVPTotalsPerGroupDTO> getVoteTotalsPerGroup(Long startingGroup, Long event);
 

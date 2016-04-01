@@ -11,6 +11,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
@@ -119,21 +120,21 @@ public class MeetingController extends BaseController {
         Meeting meeting = eventBroker.loadMeeting(eventUid);
         User user = getUserProfile();
 
-        int rsvpYesTotal = eventManagementService.getListOfUsersThatRSVPYesForEvent(meeting).size();
+        ResponseTotalsDTO meetingResponses = eventLogManagementService.getResponseCountForEvent(meeting);
         boolean canViewRsvps = permissionBroker.isGroupPermissionAvailable(
                 user, meeting.resolveGroup(), Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS);
         boolean canAlterDetails = meeting.getCreatedByUser().equals(user);
 
         model.addAttribute("meeting", meeting);
-        model.addAttribute("rsvpYesTotal", rsvpYesTotal);
+        model.addAttribute("responseTotals", meetingResponses);
         model.addAttribute("canViewRsvps", canViewRsvps);
 
         model.addAttribute("canAlterDetails", canAlterDetails); // todo: maybe, or is organizer/committee?
 
         if (canViewRsvps) {
+            // this is clunky, but it's for Thymeleaf
             Set<Map.Entry<User, EventRSVPResponse>> rsvpResponses = eventManagementService.getRSVPResponses(meeting).entrySet();
             model.addAttribute("rsvpResponses", rsvpResponses);
-            log.info("Size of response map: " + rsvpResponses);
         }
 
         if (canAlterDetails) {

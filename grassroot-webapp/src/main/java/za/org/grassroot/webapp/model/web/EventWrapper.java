@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.dto.RSVPTotalsDTO;
+import za.org.grassroot.core.dto.ResponseTotalsDTO;
 
 import java.sql.Timestamp;
 import java.util.List;
@@ -20,10 +20,10 @@ public class EventWrapper {
     Event event;
     Group group;
 
-    RSVPTotalsDTO eventResponses;
+    ResponseTotalsDTO eventResponses;
     List<EventLog> eventLogs;
 
-    public EventWrapper(Event event, RSVPTotalsDTO eventResponses, List<EventLog> eventLogs) {
+    public EventWrapper(Event event, ResponseTotalsDTO eventResponses, List<EventLog> eventLogs) {
         this.event = event;
         this.group = event.resolveGroup();
         this.eventResponses = eventResponses;
@@ -38,7 +38,7 @@ public class EventWrapper {
         return group;
     }
 
-    public RSVPTotalsDTO getEventResponses() {
+    public ResponseTotalsDTO getEventResponses() {
         return eventResponses;
     }
 

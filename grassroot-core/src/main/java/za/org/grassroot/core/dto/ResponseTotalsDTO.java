@@ -1,12 +1,17 @@
 package za.org.grassroot.core.dto;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.Serializable;
 import java.util.List;
 
 /**
  * Created by aakilomar on 9/21/15.
  */
-public class RSVPTotalsDTO implements Serializable {
+public class ResponseTotalsDTO implements Serializable {
+
+    private final static Logger log = LoggerFactory.getLogger(ResponseTotalsDTO.class);
 
     private int yes;
     private int no;
@@ -14,10 +19,10 @@ public class RSVPTotalsDTO implements Serializable {
     private int invalid;
     private int numberOfUsers;
 
-    public RSVPTotalsDTO() {
+    public ResponseTotalsDTO() {
     }
 
-    public RSVPTotalsDTO(List<Object[]> listFields) {
+    public ResponseTotalsDTO(List<Object[]> listFields) {
         Object[] fields = listFields.get(0);
         this.yes = (fields[0] == null) ? 0 : Integer.parseInt(fields[0].toString());
         this.no = (fields[1] == null) ? 0 : Integer.parseInt(fields[1].toString());
@@ -31,7 +36,7 @@ public class RSVPTotalsDTO implements Serializable {
         return numberOfUsers - (yes + no + maybe + invalid);
     }
 
-    public void add(RSVPTotalsDTO other) {
+    public void add(ResponseTotalsDTO other) {
         this.yes += other.getYes();
         this.no += other.getNo();
         this.maybe += other.getMaybe();
@@ -81,7 +86,7 @@ public class RSVPTotalsDTO implements Serializable {
 
     @Override
     public String toString() {
-        return "RSVPTotalsDTO{" +
+        return "ResponseTotalsDTO{" +
                 "yes=" + yes +
                 ", no=" + no +
                 ", maybe=" + maybe +

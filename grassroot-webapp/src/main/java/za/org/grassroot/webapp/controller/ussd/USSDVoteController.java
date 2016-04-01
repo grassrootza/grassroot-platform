@@ -9,13 +9,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.dto.RSVPTotalsDTO;
+import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.EventRequestBroker;
-import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -28,7 +26,6 @@ import java.time.temporal.ChronoUnit;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.backVoteUrl;
-import static za.org.grassroot.webapp.util.USSDUrlUtil.entityUidParam;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.saveVoteMenu;
 
 /**
@@ -270,7 +267,7 @@ public class USSDVoteController extends USSDController {
         Event vote = eventBroker.load(eventUid);
         boolean futureEvent = vote.getEventStartDateTime().toLocalDateTime().isAfter(LocalDateTime.now());
 
-        RSVPTotalsDTO voteResults = eventManager.getVoteResultsDTO(vote);
+        ResponseTotalsDTO voteResults = eventManager.getVoteResultsDTO(vote);
         String[] fields = new String[]{vote.resolveGroup().getName(""), vote.getName(), "" + voteResults.getYes(),
                 "" + voteResults.getNo(), "" + voteResults.getMaybe(), "" + voteResults.getNumberNoRSVP()};
         USSDMenu menu = new USSDMenu(getMessage(thisSection, "details", promptKey, fields, user));

@@ -9,7 +9,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.Role;
-import za.org.grassroot.core.dto.RSVPTotalsDTO;
+import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 
 import java.util.ArrayList;
@@ -74,7 +74,7 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
         List<Object[]> list = new ArrayList<>();
         String[] responses = {"1", "2", "3", "4", "5"};
         list.add(responses);
-        RSVPTotalsDTO rsvpTotalsDTO = new RSVPTotalsDTO(list);
+        ResponseTotalsDTO rsvpTotalsDTO = new ResponseTotalsDTO(list);
 
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.load(voteEvent.getUid())).thenReturn(voteEvent);

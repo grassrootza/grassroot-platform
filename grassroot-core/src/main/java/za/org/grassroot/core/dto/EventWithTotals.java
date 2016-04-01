@@ -8,11 +8,11 @@ import java.io.Serializable;
 public class EventWithTotals implements Serializable {
 
     private EventDTO eventDTO;
-    private RSVPTotalsDTO rsvpTotalsDTO;
+    private ResponseTotalsDTO responseTotalsDTO;
 
-    public EventWithTotals(EventDTO eventDTO, RSVPTotalsDTO rsvpTotalsDTO) {
+    public EventWithTotals(EventDTO eventDTO, ResponseTotalsDTO responseTotalsDTO) {
         this.eventDTO = eventDTO;
-        this.rsvpTotalsDTO = rsvpTotalsDTO;
+        this.responseTotalsDTO = responseTotalsDTO;
     }
 
     public EventDTO getEventDTO() {
@@ -23,19 +23,19 @@ public class EventWithTotals implements Serializable {
         this.eventDTO = eventDTO;
     }
 
-    public RSVPTotalsDTO getRsvpTotalsDTO() {
-        return rsvpTotalsDTO;
+    public ResponseTotalsDTO getResponseTotalsDTO() {
+        return responseTotalsDTO;
     }
 
-    public void setRsvpTotalsDTO(RSVPTotalsDTO rsvpTotalsDTO) {
-        this.rsvpTotalsDTO = rsvpTotalsDTO;
+    public void setResponseTotalsDTO(ResponseTotalsDTO rsvpTotalsDTO) {
+        this.responseTotalsDTO = responseTotalsDTO;
     }
 
     @Override
     public String toString() {
         return "EventWithTotals{" +
                 "eventDTO=" + eventDTO +
-                ", rsvpTotalsDTO=" + rsvpTotalsDTO +
+                ", rsvpTotalsDTO=" + responseTotalsDTO +
                 '}';
     }
 }

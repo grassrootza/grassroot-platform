@@ -8,7 +8,7 @@ import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.domain.EventReminderType;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.Role;
-import za.org.grassroot.core.dto.RSVPTotalsDTO;
+import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 
 import java.util.HashSet;
@@ -30,7 +30,7 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
 
     String path = "/api/meeting";
     EventLog testEventLog = new EventLog();
-    RSVPTotalsDTO testRsvpTotalsDTO = new RSVPTotalsDTO();
+    ResponseTotalsDTO testResponseTotalsDTO = new ResponseTotalsDTO();
 
     @Before
     public void setUp() {
@@ -90,14 +90,14 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
         when(eventBrokerMock.loadMeeting(meetingEvent.getUid())).thenReturn(meetingEvent);
         when(eventLogManagementServiceMock.getEventLogOfUser(meetingEvent, sessionTestUser, EventLogType.EventRSVP)).thenReturn(testEventLog);
         when(eventLogManagementServiceMock.userRsvpForEvent(meetingEvent, sessionTestUser)).thenReturn(false);
-        when(eventLogManagementServiceMock.getRSVPTotalsForEvent(meetingEvent)).thenReturn(testRsvpTotalsDTO);
+        when(eventLogManagementServiceMock.getResponseCountForEvent(meetingEvent)).thenReturn(testResponseTotalsDTO);
         mockMvc.perform(get(path + "/view/{id}/{phoneNumber}/{code}", meetingEvent.getUid(), testUserPhone, testUserCode))
                 .andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
         verify(eventBrokerMock).loadMeeting(meetingEvent.getUid());
         verify(eventLogManagementServiceMock).getEventLogOfUser(meetingEvent, sessionTestUser, EventLogType.EventRSVP);
         verify(eventLogManagementServiceMock).userRsvpForEvent(meetingEvent, sessionTestUser);
-        verify(eventLogManagementServiceMock).getRSVPTotalsForEvent(meetingEvent);
+        verify(eventLogManagementServiceMock).getResponseCountForEvent(meetingEvent);
 
     }
 }

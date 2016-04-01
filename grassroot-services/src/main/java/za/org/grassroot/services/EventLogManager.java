@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.dto.RSVPTotalsDTO;
+import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.dto.RSVPTotalsPerGroupDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
@@ -121,7 +121,7 @@ public class EventLogManager implements EventLogManagementService {
 
             if (event.getEventType() == EventType.VOTE) {
                 // see if everyone voted, if they did expire the vote so that the results are sent out
-                RSVPTotalsDTO rsvpTotalsDTO = getVoteResultsForEvent(event);
+                ResponseTotalsDTO rsvpTotalsDTO = getVoteResultsForEvent(event);
                 log.trace("rsvpForEvent...after..." + rsvpTotalsDTO.toString());
                 if (rsvpTotalsDTO.getNumberNoRSVP() < 1) {
                     Date now = new Date();
@@ -159,33 +159,29 @@ public class EventLogManager implements EventLogManagementService {
     }
 
     @Override
-    public RSVPTotalsDTO getRSVPTotalsForEvent(Long eventId) {
-        return getRSVPTotalsForEvent(eventRepository.findOne(eventId));
-    }
-
-    @Override
-    public RSVPTotalsDTO getRSVPTotalsForEvent(Event event) {
+    @Transactional(readOnly = true)
+    public ResponseTotalsDTO getResponseCountForEvent(Event event) {
         if (!event.isIncludeSubGroups()) {
-            return new RSVPTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), event.resolveGroup().getId(), event.getCreatedByUser().getId()));
+            log.info("Assembling count with eventId: {}, groupId: {}", event.getId(), event.resolveGroup().getId());
+            return new ResponseTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), event.resolveGroup().getId()));
         }
-        RSVPTotalsDTO totals = new RSVPTotalsDTO();
+        ResponseTotalsDTO totals = new ResponseTotalsDTO();
         for (Group group : groupRepository.findGroupAndSubGroupsById(event.resolveGroup().getId())) {
-            totals.add(new RSVPTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), group.getId(), event.getCreatedByUser().getId())));
-
+            totals.add(new ResponseTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), group.getId())));
         }
         log.info("getRSVPTotalsForEvent...returning..." + totals.toString());
         return totals;
     }
 
     @Override
-    public RSVPTotalsDTO getVoteResultsForEvent(Event event) {
+    public ResponseTotalsDTO getVoteResultsForEvent(Event event) {
         if (!event.isIncludeSubGroups()) {
-            final RSVPTotalsDTO rsvpTotalsDTO = new RSVPTotalsDTO(eventLogRepository.voteTotalsForEventAndGroup(event.getId(), event.resolveGroup().getId()));
+            final ResponseTotalsDTO rsvpTotalsDTO = new ResponseTotalsDTO(eventLogRepository.voteTotalsForEventAndGroup(event.getId(), event.resolveGroup().getId()));
             return rsvpTotalsDTO;
         }
-        RSVPTotalsDTO totals = new RSVPTotalsDTO();
+        ResponseTotalsDTO totals = new ResponseTotalsDTO();
         for (Group group : groupRepository.findGroupAndSubGroupsById(event.resolveGroup().getId())) {
-            totals.add(new RSVPTotalsDTO(eventLogRepository.voteTotalsForEventAndGroup(event.getId(), group.getId())));
+            totals.add(new ResponseTotalsDTO(eventLogRepository.voteTotalsForEventAndGroup(event.getId(), group.getId())));
         }
         log.info("getVoteResultsForEvent...returning..." + totals.toString());
         return totals;
@@ -212,26 +208,26 @@ public class EventLogManager implements EventLogManagementService {
         return getNonRSVPEventLogsForEvent(event).size();
     }
 
-//    private void recursiveTotalsAdd(Event event, Group parentGroup, RSVPTotalsDTO rsvpTotalsDTO ) {
+//    private void recursiveTotalsAdd(Event event, Group parentGroup, ResponseTotalsDTO rsvpTotalsDTO ) {
 //
 //        for (Group childGroup : groupRepository.findByParent(parentGroup)) {
 //            recursiveTotalsAdd(event, childGroup, rsvpTotalsDTO);
 //        }
 //
 //        // add all the totals at this level
-//        rsvpTotalsDTO.add(new RSVPTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), parentGroup.getId(),event.getCreatedByUser().getId())));
+//        rsvpTotalsDTO.add(new ResponseTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), parentGroup.getId(),event.getCreatedByUser().getId())));
 //
 //    }
 
 
-//    private void recursiveVotesAdd(Event event, Group parentGroup, RSVPTotalsDTO rsvpTotalsDTO ) {
+//    private void recursiveVotesAdd(Event event, Group parentGroup, ResponseTotalsDTO rsvpTotalsDTO ) {
 //
 //        for (Group childGroup : groupRepository.findByParent(parentGroup)) {
 //            recursiveVotesAdd(event, childGroup, rsvpTotalsDTO);
 //        }
 //
 //        // add all the totals at this level
-//        rsvpTotalsDTO.add(new RSVPTotalsDTO(eventLogRepository.voteTotalsForEventAndGroup(event.getId(), parentGroup.getId())));
+//        rsvpTotalsDTO.add(new ResponseTotalsDTO(eventLogRepository.voteTotalsForEventAndGroup(event.getId(), parentGroup.getId())));
 //
 //    }
 }

@@ -101,8 +101,11 @@ public class EventNotificationConsumer {
     @JmsListener(destination = "event-changed", containerFactory = "messagingJmsContainerFactory",
             concurrency = "1")
     public void sendChangedEventNotifications(EventChanged eventChanged) {
+        // note: have to reload entity instead of get from DTO, else get group members is going to throw errors
+        // but on other hand, the EventChanged entity contains important information, so not changing to UID as elsewhere
         log.info("sendChangedEventNotifications... <" + eventChanged.toString() + ">");
-        for (User user : getUsersForEvent(eventChanged.getEvent().getEventObject())) {
+        Event event = eventBroker.load(eventChanged.getEvent().getEventUid());
+        for (User user : getUsersForEvent(event)) {
             //generate message based on user language
             log.info("sendChangedEventNotifications...user..." + user.getPhoneNumber() + "...event..." + eventChanged.getEvent().getId() + "...version..." + eventChanged.getEvent().getVersion() + "...start time changed..." + eventChanged.isStartTimeChanged() + "...starttime..." + eventChanged.getEvent().getEventStartDateTime());
             String message = meetingNotificationService.createChangeMeetingNotificationMessage(user, eventChanged.getEvent());
@@ -214,7 +217,7 @@ public class EventNotificationConsumer {
     public void sendVoteResults(String voteUid) {
         log.info("sendVoteResults...vote.id..." + voteUid);
         Vote vote = (Vote) eventBroker.load(voteUid);
-        RSVPTotalsDTO rsvpTotalsDTO = eventLogManagementService.getVoteResultsForEvent(vote);
+        ResponseTotalsDTO rsvpTotalsDTO = eventLogManagementService.getVoteResultsForEvent(vote);
         EventWithTotals eventWithTotals = new EventWithTotals(new EventDTO(vote), rsvpTotalsDTO);
 
         for (User user : getUsersForEvent(vote)) {
@@ -310,7 +313,7 @@ public class EventNotificationConsumer {
     private void sendVoteResultsToUser(User user, EventWithTotals eventWithTotals) {
         //generate message based on user language
         EventDTO event = eventWithTotals.getEventDTO();
-        RSVPTotalsDTO totalsDTO = eventWithTotals.getRsvpTotalsDTO();
+        ResponseTotalsDTO totalsDTO = eventWithTotals.getResponseTotalsDTO();
         String message = meetingNotificationService.createVoteResultsMessage(user, event,
                 totalsDTO.getYes(),totalsDTO.getNo(),totalsDTO.getMaybe(),totalsDTO.getNumberNoRSVP());
         if (!eventLogManagementService.voteResultSentToUser(event.getEventUid(), user.getUid())) {

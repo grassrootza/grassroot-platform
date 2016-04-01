@@ -1,12 +1,11 @@
 package za.org.grassroot.webapp.model.rest.ResponseWrappers;
 
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.dto.RSVPTotalsDTO;
+import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.webapp.model.rest.TaskDTO;
 
 import java.time.Instant;
-import java.util.Map;
 
 /**
  * Created by paballo.
@@ -15,9 +14,9 @@ public class EventWrapper extends TaskDTO {
 
     private boolean isCancelled;
     private boolean canEdit;
-    private RSVPTotalsDTO totals;
+    private ResponseTotalsDTO totals;
 
-    public EventWrapper(Event event, EventLog eventLog, User user, boolean hasResponded, RSVPTotalsDTO totals) {
+    public EventWrapper(Event event, EventLog eventLog, User user, boolean hasResponded, ResponseTotalsDTO totals) {
         super(event, eventLog, user, hasResponded);
         this.isCancelled = event.isCanceled();
         this.canEdit = getCanEdit(event,user);
@@ -42,7 +41,7 @@ public class EventWrapper extends TaskDTO {
                 && event.getEventStartDateTime().toInstant().isAfter(Instant.now()));
     }
 
-    public RSVPTotalsDTO getTotals() {
+    public ResponseTotalsDTO getTotals() {
         return totals;
     }
 }

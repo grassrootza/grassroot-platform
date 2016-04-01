@@ -8,7 +8,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.EventDTO;
-import za.org.grassroot.core.dto.RSVPTotalsDTO;
+import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.*;
@@ -78,7 +78,7 @@ public class EventManager implements EventManagementService {
     @Override
     public Map<String, Integer> getMeetingRsvpTotals(Event meeting) {
         Map<String, Integer> results = new HashMap<>();
-        RSVPTotalsDTO totalsDTO = eventLogManagementService.getRSVPTotalsForEvent(meeting);
+        ResponseTotalsDTO totalsDTO = eventLogManagementService.getResponseCountForEvent(meeting);
 
         results.put("yes", totalsDTO.getYes());
         results.put("no", totalsDTO.getNo());
@@ -368,7 +368,7 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
-    public RSVPTotalsDTO getVoteResultsDTO(Event vote) {
+    public ResponseTotalsDTO getVoteResultsDTO(Event vote) {
         return eventLogManagementService.getVoteResultsForEvent(vote);
     }
 

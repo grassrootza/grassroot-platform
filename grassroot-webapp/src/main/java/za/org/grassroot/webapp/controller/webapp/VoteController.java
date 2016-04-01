@@ -9,7 +9,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.dto.RSVPTotalsDTO;
+import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
@@ -66,7 +66,8 @@ public class VoteController extends BaseController {
             voteRequest.setParent(group);
         } else {
             // todo: filter for permissions
-            model.addAttribute("possibleGroups", permissionBroker.getActiveGroups(getUserProfile(), GROUP_PERMISSION_CREATE_GROUP_VOTE));
+            model.addAttribute("possibleGroups", permissionBroker.getActiveGroups(getUserProfile(),
+                                                                                  GROUP_PERMISSION_CREATE_GROUP_VOTE));
         }
 
         model.addAttribute("vote", voteRequest);
@@ -101,7 +102,7 @@ public class VoteController extends BaseController {
         boolean canModify = (vote.getCreatedByUser().equals(getUserProfile())
                 && vote.getEventStartDateTime().toLocalDateTime().isAfter(LocalDateTime.now())); // todo: make this more nuanced
 
-        RSVPTotalsDTO responses = eventManagementService.getVoteResultsDTO(vote);
+        ResponseTotalsDTO responses = eventManagementService.getVoteResultsDTO(vote);
 
         model.addAttribute("vote", vote);
         model.addAttribute("yes", responses.getYes());

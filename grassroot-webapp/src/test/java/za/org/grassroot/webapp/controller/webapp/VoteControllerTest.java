@@ -7,9 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.dto.RSVPTotalsDTO;
+import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import java.sql.Timestamp;
@@ -106,7 +105,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
     public void viewVoteWorks() throws Exception {
 
         Vote testVote = new Vote("test", Timestamp.from(Instant.now()), sessionTestUser, new Group("tg1", sessionTestUser));
-        RSVPTotalsDTO testVoteResults = new RSVPTotalsDTO();
+        ResponseTotalsDTO testVoteResults = new ResponseTotalsDTO();
         testVoteResults.setYes(3);
         testVoteResults.setNo(7);
         testVoteResults.setMaybe(3);

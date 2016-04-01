@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 
 import java.sql.Timestamp;
@@ -43,25 +44,27 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         Meeting dummyMeeting = new Meeting("test meeting", Timestamp.valueOf(LocalDateTime.now().plusDays(1L)),
                                            sessionTestUser, dummyGroup, "some place");
 
-        List<User> listOfDummyYesResponses = new ArrayList<>();
+        ResponseTotalsDTO testCount = new ResponseTotalsDTO();
+        testCount.setYes(1);
         HashMap<User, EventRSVPResponse> dummyResponsesMap = mock(HashMap.class);
         dummyResponsesMap.put(sessionTestUser, EventRSVPResponse.YES);
-        when(eventBrokerMock.loadMeeting(dummyMeeting.getUid())).thenReturn(dummyMeeting);
+
+         when(eventBrokerMock.loadMeeting(dummyMeeting.getUid())).thenReturn(dummyMeeting);
         when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, dummyGroup,
                                                              Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS)).thenReturn(true);
-        when(eventManagementServiceMock.getListOfUsersThatRSVPYesForEvent(dummyMeeting)).thenReturn(listOfDummyYesResponses);
+        when(eventLogManagementServiceMock.getResponseCountForEvent(dummyMeeting)).thenReturn(testCount);
         when(eventManagementServiceMock.getRSVPResponses(dummyMeeting)).thenReturn(dummyResponsesMap);
 
         mockMvc.perform(get("/meeting/view").param("eventUid", dummyMeeting.getUid()))
                 .andExpect(status().isOk())
                 .andExpect(view().name("meeting/view"))
                 .andExpect(model().attribute("meeting", hasProperty("uid", is(dummyMeeting.getUid()))))
-                .andExpect(model().attribute("rsvpYesTotal", equalTo(listOfDummyYesResponses.size())))
+                .andExpect(model().attribute("responseTotals", hasProperty("yes", is(1))))
                 .andExpect(model().attribute("rsvpResponses", hasItems(dummyResponsesMap.entrySet().toArray())));
 
         verify(permissionBrokerMock, times(1)).isGroupPermissionAvailable(sessionTestUser, dummyGroup, Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS);
         verify(eventBrokerMock, times(1)).loadMeeting(dummyMeeting.getUid());
-        verify(eventManagementServiceMock, times(1)).getListOfUsersThatRSVPYesForEvent(dummyMeeting);
+        verify(eventLogManagementServiceMock, times(1)).getResponseCountForEvent(dummyMeeting);
         verify(eventManagementServiceMock, times(1)).getRSVPResponses(dummyMeeting);
         verifyNoMoreInteractions(permissionBrokerMock);
         verifyNoMoreInteractions(eventBrokerMock);
@@ -149,17 +152,19 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
                                            sessionTestUser, testGroup, "some place");
 
         List<User> listOfDummyYesResponses = Arrays.asList(new User("", "testUser"));
+        ResponseTotalsDTO testCount = new ResponseTotalsDTO();
+        testCount.setYes(1);
 
         when(eventBrokerMock.loadMeeting(dummyMeeting.getUid())).thenReturn(dummyMeeting);
         when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, testGroup,
                                                              Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS)).thenReturn(true);
+        when(eventLogManagementServiceMock.getResponseCountForEvent(dummyMeeting)).thenReturn(testCount);
         when(eventManagementServiceMock.getListOfUsersThatRSVPYesForEvent(dummyMeeting)).thenReturn(listOfDummyYesResponses);
-        // when(eventManagementServiceMock.getRSVPResponses(dummyMeeting)).thenReturn(listOfDummyYesResponses);
 
         mockMvc.perform(post("/meeting/modify").sessionAttr("meeting", dummyMeeting).contentType(MediaType.APPLICATION_FORM_URLENCODED))
                 .andExpect(status().isOk())
                 .andExpect(model().attribute("meeting", hasProperty("uid", is(dummyMeeting.getUid()))))
-                .andExpect(model().attribute("rsvpYesTotal", equalTo(listOfDummyYesResponses.size())))
+                .andExpect(model().attribute("responseTotals", hasProperty("yes", is(1))))
                 .andExpect(view().name("meeting/view"));
 
         verify(eventBrokerMock, times(1)).loadMeeting(dummyMeeting.getUid());
@@ -167,7 +172,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
                                                         dummyMeeting.getEventStartDateTime(), dummyMeeting.getEventLocation());
         verifyNoMoreInteractions(eventBrokerMock);
         verify(eventManagementServiceMock, times(1)).getRSVPResponses(dummyMeeting);
-        verify(eventManagementServiceMock, times(1)).getListOfUsersThatRSVPYesForEvent(dummyMeeting);
+        verify(eventLogManagementServiceMock, times(1)).getResponseCountForEvent(dummyMeeting);
         verifyNoMoreInteractions(eventManagementServiceMock);
         verifyZeroInteractions(userManagementServiceMock);
     }
@@ -202,28 +207,28 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         Meeting dummyMeeting = new Meeting("test meeting", Timestamp.valueOf(LocalDateTime.now().plusDays(1L)),
                                            sessionTestUser, testGroup, "some place");
 
-        List<User> listOfDummyYesResponses = new ArrayList<>();
+        ResponseTotalsDTO testCount = new ResponseTotalsDTO();
+        testCount.setYes(2);
         HashMap<User, EventRSVPResponse> dummyResponsesMap = mock(HashMap.class);
         dummyResponsesMap.put(sessionTestUser, EventRSVPResponse.YES);
 
         when(eventBrokerMock.loadMeeting(dummyMeeting.getUid())).thenReturn(dummyMeeting);
         when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, testGroup,
                                                              Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS)).thenReturn(true);
-        when(eventManagementServiceMock.getListOfUsersThatRSVPYesForEvent(dummyMeeting))
-                .thenReturn(listOfDummyYesResponses);
+        when(eventLogManagementServiceMock.getResponseCountForEvent(dummyMeeting)).thenReturn(testCount);
         when(eventManagementServiceMock.getRSVPResponses(dummyMeeting)).thenReturn(dummyResponsesMap);
 
         mockMvc.perform(post("/meeting/rsvp").param("eventUid", dummyMeeting.getUid()).param("answer", "yes"))
                 .andExpect(view().name("meeting/view"))
                 .andExpect(model().attribute("meeting", hasProperty("uid", is(dummyMeeting.getUid()))))
-                .andExpect(model().attribute("rsvpYesTotal", equalTo(listOfDummyYesResponses.size())))
+                .andExpect(model().attribute("responseTotals", hasProperty("yes", is(2))))
                 .andExpect(model().attribute("rsvpResponses", hasItems(dummyResponsesMap.entrySet().toArray())));
 
         verify(eventBrokerMock, times(2)).loadMeeting(dummyMeeting.getUid());
         verify(eventLogManagementServiceMock, times(1)).rsvpForEvent(dummyMeeting, sessionTestUser, EventRSVPResponse.YES);
         verify(permissionBrokerMock, times(1)).isGroupPermissionAvailable(sessionTestUser, testGroup,
                                                                           Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS);
-        verify(eventManagementServiceMock, times(1)).getListOfUsersThatRSVPYesForEvent(dummyMeeting);
+        verify(eventLogManagementServiceMock, times(1)).getResponseCountForEvent(dummyMeeting);
         verify(eventManagementServiceMock, times(1)).getRSVPResponses(dummyMeeting);
         verifyNoMoreInteractions(eventBrokerMock);
         verifyNoMoreInteractions(permissionBrokerMock);

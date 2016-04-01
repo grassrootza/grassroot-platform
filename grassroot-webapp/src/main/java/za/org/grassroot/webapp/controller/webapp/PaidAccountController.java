@@ -227,7 +227,7 @@ public class PaidAccountController extends BaseController {
         List<EventWrapper> eventsWrappedForDisplay = new ArrayList<>();
 
         for (Event event : eventsInPeriod)
-            eventsWrappedForDisplay.add(new EventWrapper(event, eventLogService.getRSVPTotalsForEvent(event),
+            eventsWrappedForDisplay.add(new EventWrapper(event, eventLogService.getResponseCountForEvent(event),
                                                          eventLogService.getNonRSVPEventLogsForEvent(event)));
 
         model.addAttribute(attr, eventsWrappedForDisplay);

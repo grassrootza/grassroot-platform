@@ -8,11 +8,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.dto.RSVPTotalsDTO;
+import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.services.EventManagementService;
@@ -27,7 +26,6 @@ import za.org.grassroot.webapp.util.RestUtil;
 
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -93,7 +91,7 @@ public class VoteRestController {
         Event event = eventBroker.load(voteUid);
         EventLog eventLog = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.EventRSVP);
         boolean hasResponded = eventLogManagementService.userRsvpForEvent(event, user);
-        RSVPTotalsDTO totals = eventLogManagementService.getVoteResultsForEvent(event);
+        ResponseTotalsDTO totals = eventLogManagementService.getVoteResultsForEvent(event);
         EventWrapper eventWrapper = new EventWrapper(event, eventLog, user, hasResponded, totals);
         ResponseWrapper responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.VOTE_DETAILS, RestStatus.SUCCESS, eventWrapper);
 

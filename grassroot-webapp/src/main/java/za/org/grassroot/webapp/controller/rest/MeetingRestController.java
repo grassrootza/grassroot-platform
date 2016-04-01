@@ -8,7 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jms.IllegalStateException;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.dto.RSVPTotalsDTO;
+import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -22,7 +22,6 @@ import za.org.grassroot.webapp.model.rest.ResponseWrappers.EventWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
-import za.org.grassroot.webapp.util.RestUtil;
 
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -120,7 +119,7 @@ public class MeetingRestController {
         Meeting meeting = eventBroker.loadMeeting(id);
         EventLog eventLog = eventLogManagementService.getEventLogOfUser(meeting, user, EventLogType.EventRSVP);
         boolean hasResponded = eventLogManagementService.userRsvpForEvent(meeting, user);
-        RSVPTotalsDTO totals = eventLogManagementService.getRSVPTotalsForEvent(meeting);
+        ResponseTotalsDTO totals = eventLogManagementService.getResponseCountForEvent(meeting);
         EventWrapper eventWrapper = new EventWrapper(meeting, eventLog, user, hasResponded, totals);
         ResponseWrapper responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.MEETING_DETAILS, RestStatus.SUCCESS,
                 eventWrapper);

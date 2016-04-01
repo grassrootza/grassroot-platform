@@ -9,10 +9,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.dto.EventChanged;
 import za.org.grassroot.core.dto.EventDTO;
-import za.org.grassroot.core.dto.EventWithTotals;
-import za.org.grassroot.core.dto.RSVPTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.*;
@@ -26,6 +23,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+
+import static za.org.grassroot.core.domain.EventReminderType.CUSTOM;
+import static za.org.grassroot.core.domain.EventReminderType.DISABLED;
 
 @Service
 public class EventBrokerImpl implements EventBroker {
@@ -92,6 +92,13 @@ public class EventBrokerImpl implements EventBroker {
 		Meeting meeting = new Meeting(name, eventStartDateTime, user, parent, eventLocation, includeSubGroups, rsvpRequired,
 				relayable, reminderType, customReminderMinutes, description);
 		meeting.assignMembers(assignMemberUids);
+
+		// else sometimes reminder setting will be in the past, causing duplication of meetings; defaulting to an hour
+		if (!reminderType.equals(DISABLED) && meeting.getScheduledReminderTime().isBefore(Instant.now())) {
+			meeting.setCustomReminderMinutes(60);
+			meeting.setReminderType(CUSTOM);
+			meeting.updateScheduledReminderTime();
+		}
 
 		meetingRepository.save(meeting);
 
@@ -227,9 +234,16 @@ public class EventBrokerImpl implements EventBroker {
 
         // todo: permission checking
         Event event = eventRepository.findOneByUid(eventUid);
-        event.setReminderType(reminderType);
+		event.setReminderType(reminderType);
         event.setCustomReminderMinutes(customReminderMinutes);
         event.updateScheduledReminderTime();
+
+		// as above, check if this puts reminder time in past, and, if so, default it to one hour (on assumption meeting is urgent
+		if (!reminderType.equals(DISABLED) && event.getScheduledReminderTime().isBefore(Instant.now())) {
+            event.setReminderType(CUSTOM);
+            event.setCustomReminderMinutes(60);
+            event.updateScheduledReminderTime();
+        }
     }
 
     private void validateEventStartTime(Timestamp eventStartDateTime) {
