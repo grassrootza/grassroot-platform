@@ -2,6 +2,8 @@ package za.org.grassroot.core.domain;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import za.org.grassroot.core.enums.UserMessagingPreference;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
@@ -10,6 +12,8 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static za.org.grassroot.core.util.PhoneNumberUtil.invertPhoneNumber;
 
 //todo: reconsider if language should be nullable, or not null and set to "en" by default (when set not nullable, broke tests)
 
@@ -63,12 +67,11 @@ public class User implements UserDetails {
     @Column(name ="android")
     private boolean hasAndroidProfile = false;
 
+    @Column(name = "message_preference", nullable = false)
+    private UserMessagingPreference messagingPreference;
 
     @Column(name = "enabled")
     private boolean enabled = true;
-
-    @Column(name = "lastUssdMenu")
-    private String lastUssdMenu;
 
     @Column(name = "initiated_session")
     private boolean hasInitiatedSession;
@@ -104,6 +107,7 @@ public class User implements UserDetails {
         this.username = phoneNumber;
         this.displayName = displayName;
         this.languageCode = "en";
+        this.messagingPreference = UserMessagingPreference.SMS; // as default
         this.createdDateTime = Timestamp.from(Instant.now());
     }
 
@@ -131,10 +135,6 @@ public class User implements UserDetails {
 
     public String getUid() {
         return uid;
-    }
-
-    void setUid(String uid) {
-        this.uid = uid;
     }
 
     public String getFirstName() {
@@ -181,11 +181,8 @@ public class User implements UserDetails {
         return createdDateTime;
     }
 
-    public void setCreatedDateTime(Timestamp createdDateTime) {
-        this.createdDateTime = createdDateTime;
-    }
-
     public Account getAccountAdministered() { return accountAdministered; }
+
     public void setAccountAdministered(Account accountAdministered) { this.accountAdministered = accountAdministered; }
 
     public Set<Membership> getMemberships() {
@@ -243,11 +240,15 @@ public class User implements UserDetails {
         return hasAndroidProfile;
     }
 
+    public UserMessagingPreference getMessagingPreference() { return messagingPreference; }
+
     public void setHasAndroidProfile(boolean hasAndroidProfile){
         this.hasAndroidProfile =hasAndroidProfile;
     }
 
     public void setHasWebProfile(boolean hasWebProfile) { this.hasWebProfile = hasWebProfile; }
+
+    public void setMessagingPreference(UserMessagingPreference messagingPreference) { this.messagingPreference = messagingPreference; }
 
     public boolean getEnabled() {
         return enabled;
@@ -276,11 +277,6 @@ public class User implements UserDetails {
         Objects.requireNonNull(role);
         this.standardRoles.remove(role);
     }
-
-    public String getLastUssdMenu() { return lastUssdMenu; }
-
-    public void setLastUssdMenu(String lastUssdMenu) { this.lastUssdMenu = lastUssdMenu; }
-
 
     /*
     We use this to differentiate between users who have initiated a G/R session on their own, and those who have just
@@ -371,37 +367,9 @@ public class User implements UserDetails {
         }
     }
 
-    // can't call this the more natural getGroupName, or any variant, or Spring's getter handling throws a fit
+    // can't call this the more natural getName, or any variant, or Spring's getter handling throws a fit
     // refactoring to avoid confusion with property displayName -- point is this returns name, or phone number if no name
     public String nameToDisplay() { return getName(""); }
-
-    /**
-     * Inserting string functions to handle phone numbers here, for the moment
-     * todo: remove these to use only the Util class
-     */
-
-    public static String invertPhoneNumber(String storedNumber, String joinString) {
-
-        // todo: handle error if number has gotten into database in incorrect format
-        // todo: make this much faster, e.g., use a simple regex / split function?
-        String prefix = String.join("", Arrays.asList("0", storedNumber.substring(2, 4)));
-        String midnumbers, finalnumbers;
-
-        try {
-            midnumbers = storedNumber.substring(4, 7);
-            finalnumbers = storedNumber.substring(7, 11);
-        } catch (Exception e) { // in case the string doesn't have enough digits ...
-            midnumbers = storedNumber.substring(4);
-            finalnumbers = "";
-        }
-
-        return String.join(joinString, Arrays.asList(prefix, midnumbers, finalnumbers));
-
-    }
-
-    public static String invertPhoneNumber(String storedNumber) {
-        return invertPhoneNumber(storedNumber, " ");
-    }
 
     @Override
     public boolean equals(Object o) {

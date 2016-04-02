@@ -29,7 +29,7 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
     MeetingRestController meetingRestController;
 
     String path = "/api/meeting";
-    EventLog testEventLog = new EventLog();
+    EventLog testEventLog = new EventLog(sessionTestUser, meetingEvent, EventLogType.EventNotification, "test notification", null);
     ResponseTotalsDTO testResponseTotalsDTO = new ResponseTotalsDTO();
 
     @Before

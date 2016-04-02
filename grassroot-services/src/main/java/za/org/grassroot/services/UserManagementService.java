@@ -80,8 +80,6 @@ public interface UserManagementService {
 
     String getLastUssdMenu(String inputNumber);
 
-    User resetLastUssdMenu(User sessionUser);
-
     User setLastUssdMenu(User sessionUser, String lastUssdMenu);
 
     User setDisplayName(User user, String displayName);

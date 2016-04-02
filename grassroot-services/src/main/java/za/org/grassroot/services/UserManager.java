@@ -247,11 +247,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
      */
 
     private void saveUssdMenu(User user, String menuToSave) {
-        log.info("USSD menu passed to services: " + menuToSave);
+        log.info("USSD menu passed to cache: " + menuToSave);
         cacheUtilService.putUssdMenuForUser(user.getPhoneNumber(), menuToSave);
-        user.setLastUssdMenu(menuToSave); // probably remove this once we have logging & are using cache
-        user = userRepository.save(user);
-        log.info("USSD menu stored: " + user.getLastUssdMenu());
     }
 
     /*
@@ -420,13 +417,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public String getLastUssdMenu(String inputNumber) {
         return cacheUtilService.fetchUssdMenuForUser(inputNumber);
-    }
-
-    @Override
-    public User resetLastUssdMenu(User sessionUser) {
-        cacheUtilService.clearUssdMenuForUser(sessionUser.getPhoneNumber());
-        sessionUser.setLastUssdMenu(null); // as above, to make async &/or remove once cache and async all working
-        return userRepository.save(sessionUser);
     }
 
     @Override

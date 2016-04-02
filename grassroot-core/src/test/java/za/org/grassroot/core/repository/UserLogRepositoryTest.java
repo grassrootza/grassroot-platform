@@ -73,7 +73,6 @@ public class UserLogRepositoryTest {
         Sort sort = new Sort(Sort.Direction.ASC, "creationTime");
 
         User testUser = new User("0605550000");
-        testUser.setCreatedDateTime(twoMonths);
         testUser = userRepository.save(testUser);
         UserLog createdLog = new UserLog(testUser.getUid(), CREATED_IN_DB, "Created the user", UNKNOWN);
         createdLog.setCreationTime(twoMonths.toInstant());

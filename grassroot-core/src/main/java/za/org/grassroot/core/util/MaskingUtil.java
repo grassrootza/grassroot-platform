@@ -49,7 +49,6 @@ public class MaskingUtil {
         maskedUser.setDisplayName(maskName(user.getDisplayName()));
         maskedUser.setFirstName(maskName(user.getFirstName()));
         maskedUser.setLastName(maskName(user.getLastName()));
-        maskedUser.setCreatedDateTime(user.getCreatedDateTime());
         maskedUser.setLanguageCode(user.getLanguageCode());
         maskedUser.setHasWebProfile(user.isHasWebProfile());
         return maskedUser;

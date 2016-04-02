@@ -16,5 +16,6 @@ public enum EventLogType {
     EventRSVP,
     EventTest,
     EventResult,
-    EventManualReminder
+    EventManualReminder,
+    FreeFormMessage
 }

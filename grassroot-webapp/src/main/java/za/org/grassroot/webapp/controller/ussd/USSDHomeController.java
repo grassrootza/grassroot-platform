@@ -164,7 +164,7 @@ public class USSDHomeController extends USSDController {
 
         // set the user's "last USSD menu" back to null, so avoids them always coming back here
         userLogger.recordUssdInterruption(user.getUid(), returnUrl);
-        userManager.resetLastUssdMenu(user);
+        cacheManager.clearUssdMenuForUser(inputNumber);
 
         return promptMenu;
 

@@ -70,7 +70,7 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
     public void viewingAVoteShouldWork() throws Exception {
 
         testGroup.addMember(sessionTestUser, new Role("ROLE_GROUP_ORGANIZER", testGroup.getUid()));
-        EventLog eventLog = new EventLog(sessionTestUser, voteEvent, EventLogType.EventRSVP, "This is a test log");
+        EventLog eventLog = new EventLog(sessionTestUser, voteEvent, EventLogType.EventRSVP, "This is a test log", null);
         List<Object[]> list = new ArrayList<>();
         String[] responses = {"1", "2", "3", "4", "5"};
         list.add(responses);

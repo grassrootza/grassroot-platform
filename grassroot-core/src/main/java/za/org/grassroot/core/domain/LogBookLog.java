@@ -39,8 +39,6 @@ public class LogBookLog {
     @Column(name="message_to")
     private String messageTo;
 
-
-
     @PreUpdate
     @PrePersist
     public void updateTimeStamps() {

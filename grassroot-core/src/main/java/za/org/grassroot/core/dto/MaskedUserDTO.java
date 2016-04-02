@@ -22,7 +22,6 @@ public class MaskedUserDTO {
     private boolean hasInitiatedSession;
     private boolean webProfile;
     private boolean enabled;
-    private String lastUssdMenu;
 
     public MaskedUserDTO(User user) {
         this.id = user.getId();
@@ -37,7 +36,6 @@ public class MaskedUserDTO {
         this.hasInitiatedSession = user.isHasInitiatedSession();
         this.webProfile = user.isHasWebProfile();
         this.enabled = user.isEnabled();
-        this.lastUssdMenu = user.getLastUssdMenu();
     }
 
     public Long getId() {
@@ -80,7 +78,4 @@ public class MaskedUserDTO {
         return enabled;
     }
 
-    public String getLastUssdMenu() {
-        return lastUssdMenu;
-    }
 }

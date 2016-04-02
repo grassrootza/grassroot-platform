@@ -12,9 +12,12 @@ package za.org.grassroot.core.domain;
  */
 
 import za.org.grassroot.core.enums.EventLogType;
+import za.org.grassroot.core.enums.UserMessagingPreference;
+import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Calendar;
 
 @Entity
@@ -25,6 +28,9 @@ public class EventLog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="id", nullable = false)
     private Long id;
+
+    @Column(name = "uid", nullable = false, unique = true)
+    private String uid;
 
     @Basic
     @Column(name="created_date_time", insertable = true, updatable = false)
@@ -43,6 +49,10 @@ public class EventLog {
     @Column
     private String message;
 
+    @Basic
+    @Column(name = "message_default", insertable = true, nullable = false)
+    private UserMessagingPreference defaultMessageType;
+
     @PreUpdate
     @PrePersist
     public void updateTimeStamps() {
@@ -51,38 +61,35 @@ public class EventLog {
         }
     }
 
-
-
     /*
     Constructors
      */
 
-
-    public EventLog() {
-
+    private EventLog() {
+        // for JPA
     }
 
-    public EventLog(User user, Event event, EventLogType eventLogType, String message) {
+    public EventLog(User user, Event event, EventLogType eventLogType, String message, UserMessagingPreference defaultMessageType) {
+        this.uid = UIDGenerator.generateId();
         this.user = user;
         this.event = event;
         this.eventLogType = eventLogType;
         this.message = message;
+        this.createdDateTime = Timestamp.from(Instant.now());
+        if (defaultMessageType == null)
+            this.defaultMessageType = user.getMessagingPreference();
+        else
+            this.defaultMessageType = defaultMessageType;
     }
 
     public Long getId() {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public String getUid() { return uid; }
 
     public Timestamp getCreatedDateTime() {
         return createdDateTime;
-    }
-
-    public void setCreatedDateTime(Timestamp createdDateTime) {
-        this.createdDateTime = createdDateTime;
     }
 
     public User getUser() {
@@ -117,15 +124,21 @@ public class EventLog {
         this.message = message;
     }
 
+    public UserMessagingPreference getDefaultMessageType() { return defaultMessageType; }
+
+    public void setDefaultMessageType(UserMessagingPreference defaultMessageType) { this.defaultMessageType = defaultMessageType; }
+
     @Override
     public String toString() {
         return "EventLog{" +
                 "id=" + id +
+                ", uid=" + uid +
                 ", createdDateTime=" + createdDateTime +
                 ", user=" + user +
                 ", event=" + event +
                 ", eventLogType=" + eventLogType +
                 ", message='" + message + '\'' +
+                ", messageType=" + defaultMessageType +
                 '}';
     }
 }

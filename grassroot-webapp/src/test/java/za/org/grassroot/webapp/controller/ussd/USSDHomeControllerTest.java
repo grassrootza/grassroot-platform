@@ -121,15 +121,14 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
     public void forcedStartMenuShouldWork() throws Exception {
 
         testUser.setHasInitiatedSession(true);
-        testUser.setLastUssdMenu("/ussd/mtg/start"); // irrelevant if this is well formed or not, just testing if it asks
+        // switch the next thing to cache manager
+        // testUser.setLastUssdMenu("/ussd/mtg/start"); // irrelevant if this is well formed or not, just testing if it asks
 
         when(userManagementServiceMock.loadOrSaveUser(phoneForTests)).thenReturn(testUser);
         when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
 
         mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests)).andExpect(status().isOk());
         mockMvc.perform(get(openingMenu + "_force").param(phoneParameter, phoneForTests)).andExpect(status().isOk());
-
-        testUser.setLastUssdMenu("");
 
     }
 
@@ -176,7 +175,6 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
             testGroup.addMember(user); // this may be redundant
             user.setHasInitiatedSession(false);
-            user.setLastUssdMenu("");
 
             when(userManagementServiceMock.loadOrSaveUser(user.getPhoneNumber())).thenReturn(user);
             when(userManagementServiceMock.findByInputNumber(user.getPhoneNumber())).thenReturn(user);
@@ -215,7 +213,6 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         for (User user: groupMembers) {
 
             user.setHasInitiatedSession(false);
-            user.setLastUssdMenu("");
 
             when(userManagementServiceMock.loadOrSaveUser(user.getPhoneNumber())).thenReturn(user);
             when(userManagementServiceMock.findByInputNumber(user.getPhoneNumber())).thenReturn(user);
@@ -350,7 +347,6 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
         testUser.setDisplayName(testUserName);
         testUser.setLanguageCode("en");
-        testUser.setLastUssdMenu("");
 
     }
 
