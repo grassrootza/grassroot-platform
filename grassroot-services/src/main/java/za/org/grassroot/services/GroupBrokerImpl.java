@@ -578,7 +578,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
-        group.setGroupTokenCode("");
+        group.setGroupTokenCode(null);
         group.setTokenExpiryDateTime(Timestamp.from(Instant.now()));
 
         logGroupEventsAfterCommit(Collections.singleton(new GroupLog(group.getId(), user.getId(), GroupLogType.TOKEN_CHANGED,
