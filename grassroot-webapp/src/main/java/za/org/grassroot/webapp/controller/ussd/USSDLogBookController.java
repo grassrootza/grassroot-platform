@@ -69,7 +69,7 @@ public class USSDLogBookController extends USSDController {
             pickCompletor = "pick_completor",
             completedDate = "date_completed",
             confirmCompleteDate = "confirm_date",
-            assignUserID = "assignUserId";
+            assignUserID = "assignUserUid";
 
     private static final String logBookParam = "logbookUid", logBookUrlSuffix = "?" + logBookParam + "=";
     private static final String priorMenuSuffix = "&" + previousMenu + "=";
@@ -241,7 +241,7 @@ public class USSDLogBookController extends USSDController {
             menu = new USSDMenu(getMessage(thisSection, listEntriesMenu, promptKey, user));
             for (LogBook entry : entries) {
                 String description = truncateEntryDescription(entry);
-                menu.addMenuOption(urlBase + entry.getId(), description);
+                menu.addMenuOption(urlBase + entry.getUid(), description);
             }
             if (entries.hasNext()) {
                 String nextPageUri = logMenus + listEntriesMenu + groupUidUrlSuffix + groupUid + "&done=" + doneEntries + "&pageNumber=" + (pageNumber + 1);
@@ -461,7 +461,7 @@ public class USSDLogBookController extends USSDController {
             Iterator<User> iterator = possibleUsers.iterator();
             while (menu.getMenuCharLength() < 100 && iterator.hasNext()) {
                 User possibleUser = iterator.next();
-                menu.addMenuOption(returnUrl(nextMenu, logBookUid) + "&assignUserId=" + possibleUser.getId(),
+                menu.addMenuOption(returnUrl(nextMenu, logBookUid) + "&assignUserUid=" + possibleUser.getUid(),
                         possibleUser.nameToDisplay());
             }
         } else {

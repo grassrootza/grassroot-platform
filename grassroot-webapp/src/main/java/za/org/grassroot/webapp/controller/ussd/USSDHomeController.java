@@ -306,7 +306,7 @@ public class USSDHomeController extends USSDController {
         if (defaultPrompt.length() > 120)
             defaultPrompt = getMessage(thisSection, USSDController.startMenu, promptKey + "-" + rsvpMenu + ".short", meetingDetails, sessionUser);
 
-        String optionUri = rsvpMenu + entityUidParam + meeting.getUid();
+        String optionUri = rsvpMenu + entityUidUrlSuffix + meeting.getUid();
         USSDMenu openingMenu = new USSDMenu(defaultPrompt);
         openingMenu.setMenuOptions(new LinkedHashMap<>(optionsYesNo(sessionUser, optionUri, optionUri)));
         return openingMenu;

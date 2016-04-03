@@ -35,7 +35,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
     private static final Logger log = LoggerFactory.getLogger(USSDLogBookControllerTest.class);
 
-    public static final String assignUserID = "assignUserId";
+    public static final String assignUserID = "assignUserUid";
 
     private static final String testUserPhone = "0601110001";
     private static final String phoneParam = "msisdn";
