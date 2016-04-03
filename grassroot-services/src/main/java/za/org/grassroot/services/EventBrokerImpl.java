@@ -93,9 +93,9 @@ public class EventBrokerImpl implements EventBroker {
 				relayable, reminderType, customReminderMinutes, description);
 		meeting.assignMembers(assignMemberUids);
 
-		// else sometimes reminder setting will be in the past, causing duplication of meetings; defaulting to an hour
+		// else sometimes reminder setting will be in the past, causing duplication of meetings; defaulting to 3 hours
 		if (!reminderType.equals(DISABLED) && meeting.getScheduledReminderTime().isBefore(Instant.now())) {
-			meeting.setCustomReminderMinutes(60);
+			meeting.setCustomReminderMinutes(180);
 			meeting.setReminderType(CUSTOM);
 			meeting.updateScheduledReminderTime();
 		}
@@ -241,7 +241,7 @@ public class EventBrokerImpl implements EventBroker {
 		// as above, check if this puts reminder time in past, and, if so, default it to one hour (on assumption meeting is urgent
 		if (!reminderType.equals(DISABLED) && event.getScheduledReminderTime().isBefore(Instant.now())) {
             event.setReminderType(CUSTOM);
-            event.setCustomReminderMinutes(60);
+            event.setCustomReminderMinutes(180);
             event.updateScheduledReminderTime();
         }
     }

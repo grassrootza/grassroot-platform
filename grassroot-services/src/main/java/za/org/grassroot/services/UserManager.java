@@ -111,12 +111,10 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
         } else {
 
-            userProfile.setPhoneNumber(phoneNumber);
-            userProfile.setUsername(phoneNumber);
-            // for some reason String.join was not inserting the space properly, so changing to a straight concatenation;
-            userProfile.setDisplayName(userProfile.getFirstName() + " " + userProfile.getLastName());
-            userProfile.setHasWebProfile(true);
-            userToSave = userProfile;
+            userToSave = new User(phoneNumber, userProfile.getFirstName() + " " + userProfile.getLastName());
+            userToSave.setUsername(phoneNumber);
+            userToSave.setHasWebProfile(true);
+
         }
 
         if (passwordEncoder != null) {

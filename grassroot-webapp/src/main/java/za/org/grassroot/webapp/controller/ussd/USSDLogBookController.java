@@ -426,7 +426,8 @@ public class USSDLogBookController extends USSDController {
         // todo: check permissions
         User user = userManager.findByInputNumber(inputNumber, null);
 
-        LocalDateTime completedDateTime = DateTimeUtil.parsePreformattedDate(reformatDateInput(completedDate), stdHour, stdMinute);
+        LocalDateTime completedDateTime = (completedDate != null) ?
+                DateTimeUtil.parsePreformattedDate(reformatDateInput(completedDate), stdHour, stdMinute) : LocalDateTime.now();
         userLogger.recordUserInputtedDateTime(user.getUid(), completedDate, "logbook-completion", UserInterfaceType.USSD);
         logBookBroker.complete(logBookUid, completedDateTime, completedByUserUid);
 
