@@ -1,0 +1,133 @@
+package za.org.grassroot.core.domain;
+
+import za.org.grassroot.core.enums.AccountLogType;
+import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.core.enums.UserLogType;
+import za.org.grassroot.core.util.UIDGenerator;
+
+import javax.persistence.*;
+import java.time.Instant;
+
+/**
+ * Created by luke on 2016/04/03.
+ */
+@Entity
+@Table(name="account_log",
+        uniqueConstraints = {@UniqueConstraint(name = "uk_account_log_uid", columnNames = "uid")})
+public class AccountLog {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name="id", nullable = false)
+    private Long id;
+
+    @Column(name = "uid", nullable = false, length = 50)
+    private String uid;
+
+    @ManyToOne
+    private Account account;
+
+    @Basic
+    @Column(name="creation_time", nullable = false, updatable = false)
+    private Instant creationTime;
+
+    @Basic
+    @Column(name="account_log_type", nullable = false)
+    private AccountLogType accountLogType;
+
+    @Basic
+    @Column(name="user_uid", nullable = false)
+    private String userUid;
+
+    @Basic
+    @Column(name="group_uid")
+    private String groupUid;
+
+    @Basic
+    @Column(name="paid_group_uid")
+    private String paidGroupUid;
+
+    @Basic
+    @Column(name="description", length = 255)
+    private String description;
+
+    private AccountLog() {
+        // for JPA
+    }
+
+    public AccountLog(String userUid, Account account, AccountLogType accountLogType, String groupUid,
+                      String paidGroupUid, String description) {
+        this.uid = UIDGenerator.generateId();
+        this.userUid = userUid;
+        this.account = account;
+        this.accountLogType = accountLogType;
+        this.groupUid = groupUid;
+        this.paidGroupUid = paidGroupUid;
+        this.description = description;
+        this.creationTime = Instant.now();
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getUid() { return uid; }
+
+    public Account getAccount() { return account; }
+
+    public Instant getCreationTime() {
+        return creationTime;
+    }
+
+    public void setCreationTime(Instant creationTime) { this.creationTime = creationTime; }
+
+    public AccountLogType getAccountLogType() {
+        return accountLogType;
+    }
+
+    public String getUserUid() {
+        return userUid;
+    }
+
+    public String getGroupUid() { return groupUid; }
+
+    public String getPaidGroupUid() { return paidGroupUid; }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    @Override
+    public String toString() {
+        return "AccountLog{" +
+                "id=" + id +
+                ", creationTime =" + creationTime +
+                ", userUid=" + userUid +
+                ", groupUid=" + groupUid +
+                ", accountLogType=" + accountLogType +
+                ", description='" + description + '\'' +
+                '}';
+    }
+
+    @Override
+    public int hashCode() {
+        return (getUid() != null) ? getUid().hashCode() : 0;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) { return true; }
+        if (o == null || getClass() != o.getClass()) { return false; }
+
+        final AccountLog that = (AccountLog) o;
+
+        if (getUid() != null ? !getUid().equals(that.getUid()) : that.getUid() != null) { return false; }
+
+        return true;
+
+    }
+}

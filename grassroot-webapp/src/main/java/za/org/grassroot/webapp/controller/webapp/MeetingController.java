@@ -50,6 +50,9 @@ public class MeetingController extends BaseController {
     @Autowired
     private EventLogManagementService eventLogManagementService;
 
+    @Autowired
+    private AsyncEventMessageSender messageSender;
+
     /**
      * Meeting creation
      */
@@ -243,7 +246,7 @@ public class MeetingController extends BaseController {
 
     // Major todo: make this secured against the user's role as 'admin' on an institutional account
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "/meeting/free")
+    @RequestMapping(value = "free")
     public String sendFreeForm(Model model, @RequestParam(value="groupUid", required=false) String groupUid) {
 
         boolean groupSpecified;
@@ -255,7 +258,6 @@ public class MeetingController extends BaseController {
         } else {
             Set<Group> activeGroups = permissionBroker.getActiveGroups(sessionUser, null); // only where organizer?
             model.addAttribute("userGroups", activeGroups);
-            log.info("ZOG: MTG: userGroups ..." + activeGroups);
             groupSpecified = false;
         }
         model.addAttribute("groupSpecified", groupSpecified); // slightly redundant, but use it to tell Thymeleaf what to do
@@ -263,12 +265,12 @@ public class MeetingController extends BaseController {
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "/meeting/free", method = RequestMethod.POST)
+    @RequestMapping(value = "free", method = RequestMethod.POST)
     public String confirmFreeMsg(Model model, @RequestParam String groupUid, @RequestParam(value="message") String message,
                                  @RequestParam(value="includeSubGroups", required=false) boolean includeSubgroups) {
 
         model.addAttribute("action", "free");
-        model.addAttribute("entityId", groupUid);
+        model.addAttribute("groupUid", groupUid);
         model.addAttribute("includeSubGroups", includeSubgroups);
 
         model.addAttribute("message", message);
@@ -280,29 +282,19 @@ public class MeetingController extends BaseController {
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "/meeting/free", method = RequestMethod.POST, params = {"confirmed"})
-    public String sendFreeMsg(Model model, @RequestParam(value="entityUid") String groupUid, @RequestParam(value="message") String message,
-                              @RequestParam(value="includeSubGroups", required=false) boolean includeSubgroups,
+    @RequestMapping(value = "free", method = RequestMethod.POST, params = {"confirmed"})
+    public String sendFreeMsg(Model model, @RequestParam(value="groupUid") String groupUid,
+                              @RequestParam(value="message") String message,
                               RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
         // todo: check that this group is paid for (and filter on previous page)
 
-        log.info("Sending free form message ... includeSubGroups set to ... " + includeSubgroups);
-
-        // todo: this should be properly redesigned into directly calling "messaging service", bypassing whole fake event entity thing
-        if (true) {
-            throw new UnsupportedOperationException("This is not supported after event refactoring!!!");
-        }
-/*
-        Event dummyEvent = eventManagementService.createEvent("", getUserProfile(), group, includeSubgroups);
-        boolean messageSent = eventManagementService.sendManualReminder(dummyEvent, message);
-        log.info("We just sent a free form message with result: " + messageSent);
-*/
+        log.info("Sending free form message: {}, to this group: {}", message, groupUid);
+        messageSender.sendFreeFormMessage(getUserProfile().getUid(), groupUid, message);
 
         redirectAttributes.addAttribute("groupUid", groupUid);
         addMessage(redirectAttributes, MessageType.SUCCESS, "sms.message.sent", request);
         return "redirect:/group/view";
-
     }
 
     /**

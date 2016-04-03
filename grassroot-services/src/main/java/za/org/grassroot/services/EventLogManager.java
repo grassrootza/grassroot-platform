@@ -45,14 +45,6 @@ public class EventLogManager implements EventLogManagementService {
     @Autowired
     CacheUtilService cacheUtilService;
 
-
-    /* @Override
-    public EventLog createEventLog(EventLogType eventLogType, Event event, User user, String message) {
-        EventLog eventLog = eventLogRepository.save(new EventLog(user, event, eventLogType, message));
-        eventLogRepository.flush();
-        return eventLog;
-    }*/
-
     @Override
     @Transactional
     public EventLog createEventLog(EventLogType eventLogType, String eventUid, String userUid, String message) {

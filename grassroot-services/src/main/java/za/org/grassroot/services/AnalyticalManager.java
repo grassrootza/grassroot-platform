@@ -9,10 +9,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MaskedUserDTO;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.repository.EventRepository;
-import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.repository.LogBookRepository;
-import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.repository.*;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -37,6 +34,12 @@ public class AnalyticalManager implements AnalyticalService {
 
     @Autowired
     private EventRepository eventRepository;
+
+    @Autowired
+    private MeetingRepository meetingRepository;
+
+    @Autowired
+    private VoteRepository voteRepository;
 
     @Autowired
     private LogBookRepository logBookRepository;
@@ -140,13 +143,20 @@ public class AnalyticalManager implements AnalyticalService {
 
     @Override
     public Long countAllEvents(EventType eventType) {
-        return eventRepository.countByEventTypeAndEventStartDateTimeNotNull(eventType.getEventClass());
+        if (eventType.equals(EventType.MEETING)) {
+            return meetingRepository.count();
+        } else {
+            return voteRepository.count();
+        }
     }
 
     @Override
     public int countEventsCreatedInInterval(LocalDateTime start, LocalDateTime end, EventType eventType) {
-        return eventRepository.countByEventTypeAndCreatedDateTimeBetweenAndEventStartDateTimeNotNull(
-                eventType.getEventClass(), Timestamp.valueOf(start), Timestamp.valueOf(end));
+        if (eventType.equals(EventType.MEETING)) {
+            return meetingRepository.countByCreatedDateTimeBetween(Timestamp.valueOf(start), Timestamp.valueOf(end));
+        } else {
+            return voteRepository.countByCreatedDateTimeBetween(Timestamp.valueOf(start), Timestamp.valueOf(end));
+        }
     }
 
     /**

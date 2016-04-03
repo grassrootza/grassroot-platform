@@ -32,9 +32,8 @@
     </div> -->
     <div class="row">
       <form th:action="@{${action}}" method="post" class="form-horizontal col-lg-8">
-        <input type="hidden" name="entityId" th:value="${entityId}" />
+        <input type="hidden" name="groupUid" th:value="${groupUid}" />
         <!-- Neither of the following two are used by reminders, so could be in th:switch statement, but seems no harm not to -->
-        <input type="hidden" name="includeSubGroups" th:value="${includeSubGroups}" />
         <input type="hidden" name="message" th:value="${message}" />
         <div class="form-group">
           <div class="col-lg-4">

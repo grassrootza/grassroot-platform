@@ -17,6 +17,8 @@ public interface VoteRepository extends JpaRepository<Vote, Long> {
 
 	Vote findOneByUid(String uid);
 
+	int countByCreatedDateTimeBetween(Timestamp start, Timestamp end);
+
 	@Query(value = "SELECT * FROM event e WHERE start_date_time  between  (current_timestamp - INTERVAL '1 hour') and current_timestamp AND e.type = 'VOTE' AND e.canceled = FALSE AND (SELECT count(*) FROM event_log el WHERE el.event_log_type = 7 AND e.id = el.event_id) = 0", nativeQuery = true)
 	List<Vote> findUnsentVoteResults();
 

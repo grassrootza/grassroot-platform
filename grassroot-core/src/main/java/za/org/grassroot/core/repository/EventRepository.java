@@ -23,7 +23,6 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 	Event findTopByAppliesToGroupAndEventStartDateTimeNotNullOrderByEventStartDateTimeDesc(Group group);
 
 	List<Event> findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(Group group, Date startTime, boolean cancelled);
-//    List<Event> findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceledAndEventType(Group group, Date startTime, boolean cancelled, EventType eventType);
 
 	List<Event> findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(User user, Date startTime, boolean cancelled);
 
@@ -34,11 +33,11 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 	/*
 	Some methods for analytical services, to count, find events, etc
 	 */
-	@Query(value = "select count(e) from Event e where e.class = :eventClass and e.eventStartDateTime is not null")
-	Long countByEventTypeAndEventStartDateTimeNotNull(Class<? extends Event> eventClass);
+	// @Query(value = "select count(e) from Event e where e.class = :eventClass and e.eventStartDateTime is not null")
+	// Long countByEventTypeAndEventStartDateTimeNotNull(Class<? extends Event> eventClass);
 
-	@Query(value = "select count(e) from Event e where e.class = :eventClass and e.createdDateTime between :start and :end and e.eventStartDateTime is not null")
-	int countByEventTypeAndCreatedDateTimeBetweenAndEventStartDateTimeNotNull(Class<? extends Event> eventClass, Timestamp start, Timestamp end);
+	// @Query(value = "select count(e) from Event e where e.class = :eventClass and e.createdDateTime between :start and :end and e.eventStartDateTime is not null")
+	// int countByEventTypeAndCreatedDateTimeBetween(EventType eventType, Timestamp start, Timestamp end);
 
 
 	/*

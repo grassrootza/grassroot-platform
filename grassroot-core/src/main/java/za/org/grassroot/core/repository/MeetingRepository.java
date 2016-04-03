@@ -17,6 +17,8 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
 
 	Meeting findOneByUid(String uid);
 
+    int countByCreatedDateTimeBetween(Timestamp start, Timestamp end);
+
 	List<Meeting> findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(Group group, Date startTime, boolean cancelled);
 
 	Page<Meeting> findByAppliesToGroupMembershipsUserAndCanceledOrderByEventStartDateTimeDesc(User user, boolean canceled, Pageable page);

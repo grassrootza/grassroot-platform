@@ -10,4 +10,6 @@ public interface AsyncEventMessageSender {
     void sendCancelMeetingNotifications(String meetingUid);
     void sendChangedEventNotification(String eventUid, EventType eventType, boolean startTimeChanged);
 
+    void sendFreeFormMessage(String sendingUserUid, String groupUid, String message);
+
 }

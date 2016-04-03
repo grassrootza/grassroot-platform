@@ -21,6 +21,8 @@ import za.org.grassroot.services.util.CacheUtilService;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by aakilomar on 8/31/15.
@@ -208,7 +210,6 @@ public class EventNotificationConsumer {
         for (User user : getUsersForEvent(event.getEventObject())) {
             sendManualReminderMessage(user, event);
         }
-
     }
 
     @Transactional
@@ -223,6 +224,20 @@ public class EventNotificationConsumer {
         for (User user : getUsersForEvent(vote)) {
             sendVoteResultsToUser(user, eventWithTotals);
         }
+    }
+
+    @Transactional
+    @JmsListener(destination = "free-form", containerFactory = "messagingJmsContainerFactory", concurrency = "1")
+    public void sendFreeFormMessage(Map<String, String> message) {
+        log.info("sendFreeFormMessage... groupUid={}, message={}", message.get("group-uid"), message.get("message"));
+        Set<User> members = groupBroker.load(message.get("group-uid")).getMembers();
+        String messageText = message.get("message");
+        for (User user : members) {
+            // todo: record this for paid group / account ...
+            messageSendingService.sendMessage(messageText, user.getPhoneNumber(), MessageProtocol.SMS);
+            eventLogManagementService.createEventLog(EventLogType.FreeFormMessage, null, user.getUid(), messageText);
+        }
+
     }
 
     /*
