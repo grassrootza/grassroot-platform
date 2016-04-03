@@ -536,7 +536,7 @@ public class GroupBrokerImpl implements GroupBroker {
         Group group = groupRepository.findOneByUid(groupUid);
 
         String tokenToReturn, logMessage;
-        LocalDateTime currentExpiry = group.getTokenExpiryDateTime().toLocalDateTime();
+        LocalDateTime currentExpiry = (group.getTokenExpiryDateTime() != null) ? group.getTokenExpiryDateTime().toLocalDateTime() : null;
         final LocalDateTime endOfCentury = DateTimeUtil.getVeryLongTimeAway();
 
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
