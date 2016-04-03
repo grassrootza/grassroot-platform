@@ -95,7 +95,7 @@ public class EventNotificationConsumer {
 
         for (User user : getUsersForEvent(event)) {
             cacheUtilService.clearRsvpCacheForUser(user,event.getEventType());
-            sendNewMeetingMessage(user, eventDTO);
+            sendNewEventMessage(user, eventDTO);
         }
     }
 
@@ -152,7 +152,7 @@ public class EventNotificationConsumer {
         List<Event> upComingEvents = eventManagementService.getUpcomingEventsForGroupAndParentGroups(newGroupMember.getGroup());
         if (upComingEvents != null) {
             for (Event upComingEvent : upComingEvents) {
-                sendNewMeetingMessage(newGroupMember.getNewMember(), new EventDTO(upComingEvent));
+                sendNewEventMessage(newGroupMember.getNewMember(), new EventDTO(upComingEvent));
             }
         }
 
@@ -350,11 +350,11 @@ public class EventNotificationConsumer {
         }
     }
 
-    private void sendNewMeetingMessage(User user, EventDTO event) {
+    private void sendNewEventMessage(User user, EventDTO event) {
         //generate message based on user language
         String message = meetingNotificationService.createMeetingNotificationMessage(user, event);
-        Meeting meeting = eventBroker.loadMeeting(event.getEventUid());
-        if (!eventLogManagementService.notificationSentToUser(meeting,user)) {
+        Event eventEntity = eventBroker.load(event.getEventUid());
+        if (!eventLogManagementService.notificationSentToUser(eventEntity, user)) {
             log.info("sendNewEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
             messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
             eventLogManagementService.createEventLog(EventLogType.EventNotification, event.getEventObject().getUid(),

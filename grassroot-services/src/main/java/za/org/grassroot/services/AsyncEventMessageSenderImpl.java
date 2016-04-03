@@ -58,7 +58,7 @@ public class AsyncEventMessageSenderImpl implements AsyncEventMessageSender {
     public void sendNewVoteNotifications(String voteUid) {
         Vote vote = voteRepository.findOneByUid(voteUid);
         logger.info("Loadded the vote ... has this UID ... " + vote.getUid());
-        jmsTemplateProducerService.sendWithNoReply("event-added", new EventDTO(vote));
+        jmsTemplateProducerService.sendWithNoReply("event-added", voteUid);
         logger.info("Queued to event-added..." + vote.getUid() + "...version..." + vote.getVersion());
     }
 
