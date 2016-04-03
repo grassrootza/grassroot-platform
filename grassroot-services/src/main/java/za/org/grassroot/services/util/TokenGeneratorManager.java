@@ -1,12 +1,12 @@
 package za.org.grassroot.services.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.repository.GroupRepository;
 
-import javax.annotation.PostConstruct;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Logger;
 
 /**
  * Created by aakilomar on 9/16/15.
@@ -14,7 +14,7 @@ import java.util.logging.Logger;
 @Component
 public class TokenGeneratorManager implements TokenGeneratorService {
 
-    private Logger log = Logger.getLogger(getClass().getCanonicalName());
+    private Logger logger = LoggerFactory.getLogger(TokenGeneratorManager.class);
 
     @Autowired
     private GroupRepository groupRepository;

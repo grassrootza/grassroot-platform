@@ -84,7 +84,7 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     Find the max(groupTokenCode) in table
     N.B. remove this when we stop using integer values
      */
-    @Query(value = "SELECT COALESCE(MAX(CAST(group_token_code as INTEGER)),123) FROM group_profile g", nativeQuery = true)
+    @Query(value = "SELECT COALESCE(MAX(CAST(group_token_code as INTEGER)),123) FROM group_profile g WHERE group_token_code NOT LIKE ''", nativeQuery = true)
     int getMaxTokenValue();
     
     /* find a group by id and return it and all it's subgroups
