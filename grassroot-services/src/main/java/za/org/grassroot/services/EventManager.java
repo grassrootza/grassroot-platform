@@ -1,6 +1,8 @@
 package za.org.grassroot.services;
 
 import org.apache.commons.collections4.map.HashedMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -18,7 +20,6 @@ import za.org.grassroot.services.util.CacheUtilService;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.logging.Logger;
 
 /**
  * Created by aakilomar on 8/20/15.
@@ -26,7 +27,7 @@ import java.util.logging.Logger;
 @Component
 public class EventManager implements EventManagementService {
 
-    private Logger log = Logger.getLogger(getClass().getCanonicalName());
+    private Logger log = LoggerFactory.getLogger(EventManager.class);
 
     //TODO aakil move this to the properties file as soon as you get the property injection to work
     private final int SITE_REMINDERMINUTES = 1440; // 24hours
@@ -155,18 +156,18 @@ public class EventManager implements EventManagementService {
             Map eventMap = new HashedMap<Long, Long>();
             outstandingRSVPs = new ArrayList<Event>();
             List<Group> groups = groupRepository.findByMembershipsUserAndActive(user, true);
-            log.fine("getOutstandingResponseForUser...after...getGroupsPartOf...");
+            log.debug("getOutstandingResponseForUser...after...getGroupsPartOf...");
             if (groups != null) {
-                log.fine("getOutstandingResponseForUser...number of groups..." + groups.size());
+                log.debug("getOutstandingResponseForUser...number of groups..." + groups.size());
 
                 for (Group group : groups) {
-                    log.fine("getOutstandingResponseForUser...before...getUpcomingEventsForGroupAndParentGroups..." + group.getId());
+                    log.debug("getOutstandingResponseForUser...before...getUpcomingEventsForGroupAndParentGroups..." + group.getId());
                     List<Event> upcomingEvents = getUpcomingEventsForGroupAndParentGroups(group);
-                    log.fine("getOutstandingResponseForUser...after...getUpcomingEventsForGroupAndParentGroups..." + group.getId());
+                    log.debug("getOutstandingResponseForUser...after...getUpcomingEventsForGroupAndParentGroups..." + group.getId());
 
                     if (upcomingEvents != null) {
                         for (Event event : upcomingEvents) {
-                            log.fine("getOutstandingResponseForUser...start...event check..." + event.getId());
+                            log.debug("getOutstandingResponseForUser...start...event check..." + event.getId());
 
                             if (event.isRsvpRequired() && event.getEventType() == eventType) {
                                 //rsvp
@@ -194,11 +195,11 @@ public class EventManager implements EventManagementService {
                                     }
                                 }
                             } else {
-                                log.fine("getOutstandingResponseForUser...start...event check..." + event.getId() + "...NOT matching on eventtype..." + event.getEventType().toString() + "... or RSVP required..." + event.isRsvpRequired());
+                                log.debug("getOutstandingResponseForUser...start...event check..." + event.getId() + "...NOT matching on eventtype..." + event.getEventType().toString() + "... or RSVP required..." + event.isRsvpRequired());
 
                             }
 
-                            log.fine("getOutstandingResponseForUser...end...event check..." + event.getId());
+                            log.debug("getOutstandingResponseForUser...end...event check..." + event.getId());
 
                         }
                     }
@@ -226,7 +227,7 @@ public class EventManager implements EventManagementService {
 
         if (parentGroups != null) {
             for (Group parentGroup : parentGroups) {
-                log.fine("parentGroup..." + parentGroup.getId());
+                log.debug("parentGroup..." + parentGroup.getId());
                 List<Event> parentEvents = getUpcomingEvents(parentGroup);
                 if (parentEvents != null) {
                     for (Event upComingEvent : parentEvents) {
@@ -281,14 +282,15 @@ public class EventManager implements EventManagementService {
     @Override
     public boolean userHasEventsToView(User user, EventType type, boolean upcomingOnly) {
         // todo: this may be _very_ expensive if Hibernate is looping through lists, replace with a query pronto
-        log.info("Checking on the repository ... ");
+        log.info("Checking on the repository ... for event type: {}", type.toString());
         if (upcomingOnly) {
             return userHasFutureEventsToView(user, type);
         } else {
             if (type.equals(EventType.MEETING)) {
-                return meetingRepository.findByAppliesToGroupMembershipsUserAndCanceledOrderByEventStartDateTimeDesc(user, false).isEmpty();
+                return !meetingRepository.findByAppliesToGroupMembershipsUserAndCanceledOrderByEventStartDateTimeDesc(user, false).isEmpty();
             } else {
-                return voteRepository.findByAppliesToGroupMembershipsUserAndCanceledOrderByEventStartDateTimeDesc(user, false).isEmpty();
+                log.info("Looking on vote repository, for this user: {}", user);
+                return !voteRepository.findByAppliesToGroupMembershipsUserAndCanceledOrderByEventStartDateTimeDesc(user, false).isEmpty();
             }
         }
     }

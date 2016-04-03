@@ -32,7 +32,7 @@ public interface VoteRepository extends JpaRepository<Vote, Long> {
 
 	List<Vote> findByAppliesToGroupAndEventStartDateTimeBetween(Group group, Timestamp startDateTime, Timestamp endDateTime);
 
-	List<Meeting> findByAppliesToGroupMembershipsUserAndCanceledOrderByEventStartDateTimeDesc(User user, boolean canceled);
-	List<Meeting> findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceled(User user, Date startTime, boolean cancelled);
-	List<Meeting> findByAppliesToGroupMembershipsUserAndEventStartDateTimeLessThanAndCanceled(User user, Date startTime, boolean cancelled);
+	List<Vote> findByAppliesToGroupMembershipsUserAndCanceledOrderByEventStartDateTimeDesc(User user, boolean canceled);
+	List<Vote> findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceled(User user, Date startTime, boolean cancelled);
+	List<Vote> findByAppliesToGroupMembershipsUserAndEventStartDateTimeLessThanAndCanceled(User user, Date startTime, boolean cancelled);
 }

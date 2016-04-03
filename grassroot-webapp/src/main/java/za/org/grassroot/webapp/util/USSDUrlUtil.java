@@ -109,11 +109,11 @@ public class USSDUrlUtil {
     }
 
     public static String saveVoteMenu(String menu, String requestUid) {
-        return USSDSection.VOTES.toPath() + menu + "?eventUid=" + requestUid + setInterruptedFlag;
+        return USSDSection.VOTES.toPath() + menu + "?entityUid=" + requestUid + setInterruptedFlag;
     }
 
     public static String backVoteUrl(String menu, String requestUid) {
-        return USSDSection.VOTES.toPath() + menu + "?requestUid=" + requestUid + setRevisingFlag;
+        return USSDSection.VOTES.toPath() + menu + "?entityUid=" + requestUid + setRevisingFlag;
     }
 
     public static String saveLogMenu(String menu, String logBookUid) {

@@ -45,11 +45,9 @@ public class USSDEventUtil extends USSDUtil {
     @Autowired
     private AsyncUserLogger userLogger;
 
-    private static final String eventIdParameter = "eventId";
     private static final String entityUidParameter =  "entityUid";
-    private static final String eventIdFirstParam = "?" + eventIdParameter + "=";
-    private static final String eventIdLaterParam = "&" + eventIdParameter + "=";
     private static final String entityUidFirstParam = "?" + entityUidParameter + "=";
+    private static final String entityUidLaterParam = "&" + entityUidParameter + "=";
 
     private static final String subjectMenu = "subject",
             placeMenu = "place",
@@ -73,18 +71,19 @@ public class USSDEventUtil extends USSDUtil {
      */
 
     // todo: generalize to askForEvent so we can use this for votes, and paginate
-    public USSDMenu askForMeeting(User sessionUser, String callingMenu, String existingUrl, String newUrl) {
+    public USSDMenu askForMeeting(User user, String callingMenu, String existingUrl, String newUrl) {
 
         final USSDSection mtgSection = USSDSection.MEETINGS;
         final String meetingMenus = mtgSection.toPath();
 
-        USSDMenu askMenu = new USSDMenu(getMessage(mtgSection, callingMenu, promptKey + ".new-old", sessionUser));
-        final String newMeetingOption = getMessage(mtgSection, callingMenu, optionsKey + "new", sessionUser);
+        USSDMenu askMenu = new USSDMenu(getMessage(mtgSection, callingMenu, promptKey + ".new-old", user));
+        final String newMeetingOption = getMessage(mtgSection, callingMenu, optionsKey + "new", user);
 
         final Integer enumLength = "X. ".length();
         final Integer lastOptionBuffer = enumLength + newMeetingOption.length();
 
-        List<Event> upcomingEvents = eventManager.getPaginatedEventsCreatedByUser(sessionUser, 0, 3);
+        // todo: paginate upcoming meetings
+        List<Event> upcomingEvents = eventManager.getEventsUserCanView(user, EventType.MEETING, 1, 0, 3).getContent();
         log.info("Returned " + upcomingEvents.size() + " events as upcoming ...");
 
         for (Event event : upcomingEvents) {
@@ -124,10 +123,10 @@ public class USSDEventUtil extends USSDUtil {
     }
 
     private USSDMenu addListOfEventsToMenu(USSDMenu menu, String nextMenuUrl, List<Event> events, boolean includeGroupName) {
-        final String formedUrl = nextMenuUrl + ((nextMenuUrl.contains("?")) ? eventIdLaterParam : eventIdFirstParam);
+        final String formedUrl = nextMenuUrl + ((nextMenuUrl.contains("?")) ? entityUidLaterParam : entityUidFirstParam);
         for (Event event : events) {
             String descriptor = (includeGroupName ? event.resolveGroup().getName("") + ": " : "Subject: ") + event.getName();
-            menu.addMenuOption(formedUrl + event.getId(), checkAndTruncateMenuOption(descriptor));
+            menu.addMenuOption(formedUrl + event.getUid(), checkAndTruncateMenuOption(descriptor));
         }
         return menu;
     }

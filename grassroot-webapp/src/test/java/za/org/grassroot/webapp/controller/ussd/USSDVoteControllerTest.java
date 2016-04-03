@@ -151,10 +151,10 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
 
         mockMvc.perform(get(path + "issue").param(phoneParam, testUserPhone).param("groupUid", "" + testGroup.getUid())).
                 andExpect(status().isOk());
-        mockMvc.perform(get(base + interruptedUrl).param(phoneParam, testUserPhone).param("request", "1").
-                                param("entityUid", testVote.getUid())).andExpect(status().isOk());
-        mockMvc.perform(get(base + revisingUrl).param(phoneParam, testUserPhone).param("request", "2").
-                param("entityUid", testVote.getUid())).andExpect(status().isOk());
+        mockMvc.perform(get(base + interruptedUrl).param(phoneParam, testUserPhone).param("request", "1")).
+                andExpect(status().isOk());
+        mockMvc.perform(get(base + revisingUrl).param(phoneParam, testUserPhone).param("request", "2")).
+                andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(3)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
@@ -176,10 +176,10 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
 
         mockMvc.perform(get(path + "time").param(phoneParam, testUserPhone).param("entityUid", requestUid).
                 param("request", "test vote")).andExpect(status().isOk());
-        mockMvc.perform(get(base + interruptedUrl).param(phoneParam, testUserPhone).param("request", "1").
-                param("entityUid", testVote.getUid())).andExpect(status().isOk());
-        mockMvc.perform(get(base + revisingUrl).param(phoneParam, testUserPhone).param("request", "3").
-                param("entityUid", testVote.getUid())).andExpect(status().isOk());
+        mockMvc.perform(get(base + interruptedUrl).param(phoneParam, testUserPhone).param("request", "1")).
+                andExpect(status().isOk());
+        mockMvc.perform(get(base + revisingUrl).param(phoneParam, testUserPhone).param("request", "3")).
+                andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(3)).findByInputNumber(testUserPhone, interruptedUrl);
         verifyNoMoreInteractions(userManagementServiceMock);
@@ -198,8 +198,8 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
 
         mockMvc.perform(get(path + "time_custom").param(phoneParam, testUserPhone).param("entityUid", testVote.getUid())).
                 andExpect(status().isOk());
-        mockMvc.perform(get("/ussd/" + interruptedUrl).param(phoneParam, testUserPhone).param("request", "1").
-                param("entityUid", testVote.getUid())).andExpect(status().isOk());
+        mockMvc.perform(get("/ussd/" + interruptedUrl).param(phoneParam, testUserPhone).param("request", "1")).
+                andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, interruptedUrl);
         verifyNoMoreInteractions(userManagementServiceMock);
@@ -227,8 +227,8 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
         testVote.setEventStartDateTime(Timestamp.valueOf(tomorrow5pm));
         mockMvc.perform(get(path + "confirm").param(phoneParam, testUserPhone).param("entityUid", requestUid).
                 param("request", "Revised subject").param("field", "issue")).andExpect(status().isOk());
-        mockMvc.perform(get(base + interruptedUrl).param(phoneParam, testUserPhone).param("entityUid", requestUid).
-                param("request", "1")).andExpect(status().isOk());
+        mockMvc.perform(get(base + interruptedUrl).param(phoneParam, testUserPhone).param("request", "1")).
+                andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(4)).findByInputNumber(testUserPhone, interruptedUrl);
         verifyNoMoreInteractions(userManagementServiceMock);

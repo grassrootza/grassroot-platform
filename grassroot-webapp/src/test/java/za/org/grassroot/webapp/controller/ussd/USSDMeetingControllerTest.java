@@ -5,8 +5,10 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.GroupPage;
 import za.org.grassroot.services.MembershipInfo;
@@ -119,14 +121,14 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         Group group = new Group("someGroup", testUser);
         Timestamp startTime = Timestamp.from(Instant.now());
 
-
         List<Event> upcomingMeetingList = Arrays.asList(
                 new Meeting("meeting1", startTime, testUser, group, "someLocation"),
                 new Meeting("meeting2", startTime, testUser, group, "someLocation"),
                 new Meeting("meeting3", startTime, testUser, group, "someLocation"));
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(eventManagementServiceMock.getUpcomingEventsUserCreated(testUser)).thenReturn(upcomingMeetingList);
+        when(eventManagementServiceMock.getEventsUserCanView(testUser, EventType.MEETING, 1, 0, 3)).thenReturn(
+                new PageImpl<Event>(upcomingMeetingList));
 
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
 

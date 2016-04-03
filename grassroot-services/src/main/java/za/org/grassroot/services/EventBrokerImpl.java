@@ -248,9 +248,11 @@ public class EventBrokerImpl implements EventBroker {
 
     private void validateEventStartTime(Timestamp eventStartDateTime) {
 		Instant now = Instant.now();
-		if (!eventStartDateTime.toInstant().isAfter(now)) {
+		// commenting this out just for now, because parser is unreliable & haven't built recovery means so will annoy users
+		// come back to this soon though
+		/*if (!eventStartDateTime.toInstant().isAfter(now)) {
 			throw new EventStartTimeNotInFutureException("Event start time " + eventStartDateTime + " is not in the future");
-		}
+		}*/
 	}
 
 	@Override
