@@ -1,4 +1,4 @@
-DELETE FROM event WHERE applies_to_group IS NULL;
+-- DELETE FROM event WHERE applies_to_group IS NULL;
 DELETE FROM event WHERE send_blocked = true;
 DELETE FROM event WHERE event_type = 2 or event_type = 3;
 
