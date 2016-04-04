@@ -73,8 +73,9 @@ public class MeetingController extends BaseController {
             meeting.setParent(group);
             groupSpecified = true;
         } else {
-            // todo: filter by permissions, and include number of members (for confirm modal)
-            model.addAttribute("userGroups", permissionBroker.getActiveGroups(sessionUser, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING));
+            User user = userManagementService.load(getUserProfile().getUid()); // refresh user entity, in case permissions changed
+            model.addAttribute("userGroups",
+                               permissionBroker.getActiveGroups(user, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING));
             groupSpecified = false;
         }
 

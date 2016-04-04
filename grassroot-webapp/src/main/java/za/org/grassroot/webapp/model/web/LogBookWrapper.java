@@ -105,7 +105,7 @@ public class LogBookWrapper {
 
     public void calculateScheduledReminderTime() {
         Objects.requireNonNull(actionByDate);
-        scheduledReminderTime = Timestamp.valueOf(actionByDate.toLocalDateTime().minusMinutes(reminderMinutes));
+        scheduledReminderTime = Timestamp.valueOf(actionByDate.toLocalDateTime().plusMinutes(reminderMinutes));
     }
 
     public void setScheduledReminderTime(Timestamp scheduledReminderTime) {

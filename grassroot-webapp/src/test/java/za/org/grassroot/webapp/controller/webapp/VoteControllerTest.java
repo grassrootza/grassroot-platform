@@ -48,6 +48,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
         Group testGroup = new Group("Dummy Group3", new User("234345345"));
 
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
+        when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
 
         mockMvc.perform(get("/vote/create").param("groupUid", testGroup.getUid()))
                 .andExpect(status().isOk())
@@ -66,6 +67,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
         Group testGroup = new Group("Dummy Group3", new User("234345345"));
         Set<Group> testPossibleGroups = Collections.singleton(testGroup);
 
+        when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
         when(permissionBrokerMock.getActiveGroups(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE)).thenReturn(testPossibleGroups);
 
         mockMvc.perform(get("/vote/create"))

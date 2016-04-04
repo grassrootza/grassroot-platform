@@ -130,6 +130,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         String[] oneDay = new String[]{"" + 24 * 60, "One day ahead"};
         minuteOptions.add(oneDay);
 
+        when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
         when(permissionBrokerMock.getActiveGroups(sessionTestUser,
                                                   Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING)).thenReturn(dummyGroups);
 
@@ -138,6 +139,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(model().attribute("groupSpecified", is(false)))
                 .andExpect(model().attribute("userGroups", hasItem(dummyGroup)));
 
+        verify(userManagementServiceMock, times(1)).load(sessionTestUser.getUid());
         verify(permissionBrokerMock, times(1)).getActiveGroups(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(groupBrokerMock);

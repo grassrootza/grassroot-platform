@@ -23,7 +23,6 @@ import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.repository.UserRequestRepository;
-import za.org.grassroot.core.util.MaskingUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.exception.NoSuchUserException;
@@ -404,7 +403,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     private void recursiveUserAdd(Group parentGroup, List<User> userList ) {
-        for (Group childGroup : groupRepository.findByParent(parentGroup)) {
+        for (Group childGroup : groupRepository.findByParentAndActiveTrue(parentGroup)) {
             recursiveUserAdd(childGroup,userList);
         }
         // add all the users at this level

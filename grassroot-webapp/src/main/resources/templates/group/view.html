@@ -123,7 +123,7 @@
             <li><a href="javascript:void(0)" data-toggle="modal" data-target="#languageModal">Set default language</a></li>
             <li class="divider"></li>
             <li th:if="${not hasParent}"><a th:href="@{/group/parent(groupUid=${group.uid})}">Link to a parent group</a></li>
-            <li><a href="" th:href="@{/group/consolidate/select(groupId=${group.uid})}">Merge with another group</a></li>
+            <li><a href="" th:href="@{/group/consolidate/select(groupUid=${group.uid})}">Merge with another group</a></li>
             <li th:if="${canDeleteGroup}">
               <a href="javascript:void(0)" data-toggle="modal" data-target="#delModal">Delete group</a>
             </li>

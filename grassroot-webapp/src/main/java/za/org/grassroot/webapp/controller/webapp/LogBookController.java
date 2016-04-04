@@ -238,55 +238,49 @@ public class LogBookController extends BaseController {
         return "log/details";
     }
 
-    @RequestMapping("/log/complete")
-    public String completeLogBookForm(Model model, @RequestParam(value="logBookId", required=true) Long logBookId) {
+    @RequestMapping("complete")
+    public String completeLogBookForm(Model model, @RequestParam String logBookUid) {
 
-        LogBook logBookEntry = logBookService.load(logBookId);
-        // todo: implement this using new design
-/*
-        boolean assignedEntry = logBookEntry.getAssignedToUser() != null;
-        model.addAttribute("hasAssignedUser", assignedEntry);
-        if (assignedEntry)
-            model.addAttribute("assignedUser", logBookEntry.getAssignedToUser());
-*/
+        LogBook logBookEntry = logBookBroker.load(logBookUid);
         model.addAttribute("entry", logBookEntry);
-        Group group = (Group) logBookEntry.getParent();
-        model.addAttribute("groupMembers", group.getMembers());
+        Set<User> assignedMembers = (logBookEntry.isAllGroupMembersAssigned()) ?
+                logBookEntry.resolveGroup().getMembers() : logBookEntry.getAssignedMembers();
+        model.addAttribute("assignedMembers", assignedMembers);
 
         return "log/complete";
     }
 
     // todo: check that this user has permission to mark the logbook entry as completed
-    @RequestMapping(value = "/log/complete-do", method = RequestMethod.POST)
-    public String markLogBookEntryComplete(Model model, @RequestParam(value="logBookId", required=true) Long logBookId,
+    @RequestMapping(value = "complete-do", method = RequestMethod.POST)
+    public String markLogBookEntryComplete(Model model, @RequestParam String logBookUid,
                                            @RequestParam(value="completedByAssigned", required=false) boolean completedByAssigned,
                                            @RequestParam(value="designateCompletingUser", required=false) boolean designateCompletor,
                                            @RequestParam(value="specifyCompletedDate", required=false) boolean setCompletedDate,
                                            @RequestParam(value="completingUserUid", required=false) String completedByUserUid,
-                                           @RequestParam(value="completedOnDate", required=false) String completedOnDate,
+                                           @RequestParam(value="completedOnDate", required=false) Timestamp completedOnDate,
                                            HttpServletRequest request) {
 
         // todo: refactor this quite a bit
         log.info("Marking logbook entry as completed ... ");
 
-        Timestamp completedDate = (setCompletedDate) ? Timestamp.valueOf(LocalDateTime.parse(completedOnDate, pickerParser)) : null;
+        LocalDateTime completedDate = (setCompletedDate) ? completedOnDate.toLocalDateTime() : LocalDateTime.now();
 
-        LogBook logBook = logBookService.load(logBookId);
+        LogBook logBook = logBookBroker.load(logBookUid);
         User completedByUser = userManagementService.load(completedByUserUid);
 
         if (completedByAssigned || !designateCompletor) {
             log.info("No user assigned, so either setting as complete today or specifying a completion date");
             if (setCompletedDate) {
-                logBookBroker.complete(logBook.getUid(), completedDate.toLocalDateTime(), null);
+                logBookBroker.complete(logBook.getUid(), completedDate, null);
             } else {
-                logBookBroker.complete(logBook.getUid(), null, null);
+                logBookBroker.complete(logBook.getUid(), LocalDateTime.now(), null);
             }
         } else {
-            log.info("User assigned, so marking it accordingly");
+            log.info("User assigned, so marking it accordingly, with completing user uid: {}", completedByUserUid);
             if (setCompletedDate) {
-                logBookBroker.complete(logBook.getUid(), completedDate.toLocalDateTime(), completedByUser.getUid());
+                logBookBroker.complete(logBook.getUid(), completedDate, completedByUser.getUid());
             } else {
-                logBookBroker.complete(logBook.getUid(), null, completedByUser.getUid());
+                logBookBroker.complete(logBook.getUid(), LocalDateTime.now(), completedByUser.getUid());
             }
         }
 
@@ -296,7 +290,7 @@ public class LogBookController extends BaseController {
     }
 
     // todo : more permissions than just the below!
-    @RequestMapping("/log/modify")
+    @RequestMapping("modify")
     public String modifyLogBookEntry(Model model, @RequestParam(value="logBookId") Long logBookId) {
         LogBook logBook = logBookService.load(logBookId);
         Group group = (Group) logBook.getParent();
@@ -318,7 +312,7 @@ public class LogBookController extends BaseController {
     }
 
     // todo: permission checking
-    @RequestMapping(value = "/log/modify", method = RequestMethod.POST)
+    @RequestMapping(value = "modify", method = RequestMethod.POST)
     public String changeLogBookEntry(Model model, @ModelAttribute("logBook") LogBook logBook,
                                      @RequestParam(value = "assignToUser", required = false) boolean assignToUser, HttpServletRequest request) {
 

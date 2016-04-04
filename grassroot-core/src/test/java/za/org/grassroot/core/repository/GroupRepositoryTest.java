@@ -124,7 +124,7 @@ public class GroupRepositoryTest {
         Group gb = groupRepository.save(new Group("gb", user));
         Group gb1 = groupRepository.save(new Group("gb1", user, gb));
         Group gb2 = groupRepository.save(new Group("gb2", user, gb));
-        List<Group> children = groupRepository.findByParent(gb);
+        List<Group> children = groupRepository.findByParentAndActiveTrue(gb);
         assertEquals(2,children.size());
         for (Group child : children) {
             log.debug("child......" + child.toString());

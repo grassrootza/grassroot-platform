@@ -54,9 +54,6 @@ public class GroupController extends BaseController {
     private LogBookService logBookService;
 
     @Autowired
-    private GroupLogService groupLogService;
-
-    @Autowired
     private GroupJoinRequestService groupJoinRequestService;
 
     @Autowired
@@ -235,18 +232,13 @@ public class GroupController extends BaseController {
 
         if (parentUid != null) {
             Group parent = groupBroker.load(parentUid);
-            if (parent != null) {
-                groupCreator = new GroupWrapper(parent);
-            } else {
-                groupCreator = new GroupWrapper();
-            }
+            groupCreator = new GroupWrapper(parent);
         } else {
             groupCreator = new GroupWrapper();
+            MembershipInfo creator = new MembershipInfo(getUserProfile().getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER,
+                                                        getUserProfile().getDisplayName());
+            groupCreator.addMember(creator); // to remove ambiguity about group creator being part of group
         }
-
-        MembershipInfo creator = new MembershipInfo(getUserProfile().getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER,
-                                                    getUserProfile().getDisplayName());
-        groupCreator.addMember(creator); // to remove ambiguity about group creator being part of group
 
         model.addAttribute("groupCreator", groupCreator);
         model.addAttribute("roles", roleDescriptions);
@@ -653,8 +645,7 @@ public class GroupController extends BaseController {
 
     @RequestMapping(value = "consolidate/confirm", method = RequestMethod.POST)
     public String consolidateGroupsConfirm(Model model, @RequestParam String groupUid1, @RequestParam String groupUid2,
-                                           @RequestParam String order,
-                                           @RequestParam(value = "leaveActive", required = false) boolean leaveActive) {
+                                           @RequestParam String order, @RequestParam(value = "leaveActive", required = false) boolean leaveActive) {
 
         Group groupInto;
         Group groupFrom;
@@ -709,6 +700,7 @@ public class GroupController extends BaseController {
             addMessage(redirectAttributes, MessageType.ERROR, "group.merge.error", request);
             return "redirect:/home";
         } else {
+            log.info("Merging the groups, leave active set to: {}", leaveActive);
             Group groupInto = groupBroker.load(groupUidInto);
             Group groupFrom = groupBroker.load(groupUidFrom);
             Group consolidatedGroup =

@@ -52,7 +52,7 @@ public class VoteController extends BaseController {
     public String createVote(Model model, @RequestParam(value="groupUid", required = false) String groupUid) {
 
         boolean groupSpecified = (groupUid != null);
-        User user = getUserProfile();
+        User user = userManagementService.load(getUserProfile().getUid()); // in case permissions changed, call entity from DB
 
         // todo: not sre if we even need this ...
         VoteRequest voteRequest = VoteRequest.makeEmpty(user, null);
@@ -65,9 +65,7 @@ public class VoteController extends BaseController {
             model.addAttribute("group", group);
             voteRequest.setParent(group);
         } else {
-            // todo: filter for permissions
-            model.addAttribute("possibleGroups", permissionBroker.getActiveGroups(getUserProfile(),
-                                                                                  GROUP_PERMISSION_CREATE_GROUP_VOTE));
+            model.addAttribute("possibleGroups", permissionBroker.getActiveGroups(user, GROUP_PERMISSION_CREATE_GROUP_VOTE));
         }
 
         model.addAttribute("vote", voteRequest);

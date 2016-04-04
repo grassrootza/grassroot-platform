@@ -433,6 +433,8 @@ public class GroupBrokerImpl implements GroupBroker {
             logGroupEventsAfterCommit(groupLogs);
         }
 
+        logger.info("Group from active status is now : {}", groupFrom.isActive());
+        groupRepository.saveAndFlush(groupFrom);
         return resultGroup;
     }
 
@@ -514,7 +516,7 @@ public class GroupBrokerImpl implements GroupBroker {
         group.setDefaultLanguage(newLocale);
 
         if (includeSubGroups) {
-            List<Group> subGroups = new ArrayList<>(groupRepository.findByParent(group));
+            List<Group> subGroups = new ArrayList<>(groupRepository.findByParentAndActiveTrue(group));
             if (subGroups != null && !subGroups.isEmpty()) {
                 for (Group subGroup : subGroups)
                     updateGroupDefaultLanguage(userUid, subGroup.getUid(), newLocale, true);
@@ -631,7 +633,7 @@ public class GroupBrokerImpl implements GroupBroker {
     @Override
     public Set<Group> subGroups(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
-        return new HashSet<>(groupRepository.findByParent(group));
+        return new HashSet<>(groupRepository.findByParentAndActiveTrue(group));
     }
 
     @Override

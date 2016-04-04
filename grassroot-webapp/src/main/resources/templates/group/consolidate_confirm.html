@@ -22,8 +22,8 @@
     <div class="row">
       <div class="col-md-8 col-md-offset-2">
         <form th:action="@{/group/consolidate/do}" method="post" class="form-vertical">
-          <input type="hidden" name="groupInto" th:value="${groupInto.id}" />
-          <input type="hidden" name="groupFrom" th:value="${groupFrom.id}" />
+          <input type="hidden" name="groupInto" th:value="${groupInto.uid}" />
+          <input type="hidden" name="groupFrom" th:value="${groupFrom.uid}" />
           <input type="hidden" name="leaveActive" th:value="${leaveActive}" />
           <div class="form-group">
             <label for="confirm_field">
