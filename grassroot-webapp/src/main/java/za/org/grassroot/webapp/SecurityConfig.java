@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.security.SecurityProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.env.Environment;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -40,8 +41,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Autowired
     DataSource dataSource;
-
-
+    
     @Override
     public void configure(WebSecurity web) throws Exception {
         web.ignoring()
@@ -49,7 +49,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/public/**")
                 .antMatchers("/i18n/**")
                 .antMatchers("/api/**")
-                .antMatchers("/ussd/**")
+                //.antMatchers("/ussd/**")
                 .antMatchers("/web/**")
                 .antMatchers("/test/**")
                 .antMatchers("/console/**")
@@ -58,10 +58,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/500").
                 antMatchers("/403");
 
+
     }
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
+
         http
                 .formLogin()
                 .successHandler(savedRequestAwareAuthenticationSuccessHandler())
@@ -80,6 +82,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/accounts/recovery").permitAll()
                 .antMatchers("/accounts/recovery/success").permitAll()
                 .antMatchers("/grass-root-verification/*").permitAll()
+                .antMatchers("/ussd/**").hasIpAddress(System.getenv("USSD_GATEWAY"))
                 .antMatchers("/home").fullyAuthenticated()
                 .anyRequest()
                 .fullyAuthenticated()

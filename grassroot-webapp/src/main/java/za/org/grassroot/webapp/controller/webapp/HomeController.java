@@ -65,7 +65,7 @@ public class HomeController extends BaseController {
     @RequestMapping("/")
     public ModelAndView getRootPage(Model model, HttpServletRequest request) {
 
-        log.debug("Getting home page");
+        log.debug("Getting home page, for user with IP address ..." + request.getRemoteAddr());
 
         if (signinController.isRememberMeAuthenticated()) {
             return signinController.autoLogonUser(request, model);

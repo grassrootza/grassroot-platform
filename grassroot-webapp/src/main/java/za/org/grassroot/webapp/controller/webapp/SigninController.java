@@ -89,7 +89,7 @@ public class SigninController {
      * Authenticate User and Redirect to Main Page
      */
     public ModelAndView autoLogonUser(HttpServletRequest request, Model model) {
-        logger.info("autoLogonUser...");
+        logger.info("autoLogonUser... IP address: {}", request.getRemoteAddr());
         try {
             Long startTime = System.currentTimeMillis();
             request.getSession();//ensure that the session exists

@@ -1,5 +1,7 @@
 package za.org.grassroot.webapp.validation;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
@@ -15,6 +17,8 @@ import za.org.grassroot.webapp.model.web.UserAccountRecovery;
 
 @Component("userAccountRecoveryValidator")
 public class UserAccountRecoveryValidator implements Validator{
+
+    private static final Logger log = LoggerFactory.getLogger(UserAccountRecoveryValidator.class);
 
     @Autowired
     private PasswordTokenService passwordTokenService;
@@ -40,19 +44,17 @@ public class UserAccountRecoveryValidator implements Validator{
         if(!errors.hasErrors())
         {
 
-            if(!userAccountRecovery.getNewPassword().equals(userAccountRecovery.getPasswordConfirm()))
-            {
+            if(!userAccountRecovery.getNewPassword().equals(userAccountRecovery.getPasswordConfirm())) {
                 errors.rejectValue("passwordConfirm","user.account.recovery.passwordConfirm.notEqual");
             }
 
             if(!passwordTokenService.isVerificationCodeValid(userAccountRecovery.getUsername(),
-                    userAccountRecovery.getVerificationCode()))
-            {
+                    userAccountRecovery.getVerificationCode())) {
                 errors.rejectValue("verificationCode","user.account.recovery.verificationCode.invalid");
             }
 
-            if(!userManagementService.userExist(userAccountRecovery.getUsername()))
-            {
+            if(!userManagementService.userExist(userAccountRecovery.getUsername())) {
+                log.info("Validator error! On username non existent, username is: {}" + userAccountRecovery.getUsername());
                 errors.rejectValue("username", "user.account.recovery.username.nonExistent");
             }
         }
