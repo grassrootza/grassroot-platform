@@ -5,6 +5,7 @@ import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Objects;
 
 @Entity
@@ -18,15 +19,15 @@ public class Meeting extends Event<MeetingContainer> implements VoteContainer {
 		// for JPA
 	}
 
-	public Meeting(String name, Timestamp startDateTime, User user, MeetingContainer parent, String eventLocation) {
+	public Meeting(String name, Instant startDateTime, User user, MeetingContainer parent, String eventLocation) {
 		this(name, startDateTime, user, parent, eventLocation, false);
 	}
 
-	public Meeting(String name, Timestamp startDateTime, User user, MeetingContainer parent, String eventLocation, boolean includeSubGroups) {
+	public Meeting(String name, Instant startDateTime, User user, MeetingContainer parent, String eventLocation, boolean includeSubGroups) {
 		this(name, startDateTime, user, parent, eventLocation, includeSubGroups, false, false, EventReminderType.DISABLED, 0, null);
 	}
 
-	public Meeting(String name, Timestamp startDateTime, User user, MeetingContainer parent, String eventLocation, boolean includeSubGroups,
+	public Meeting(String name, Instant startDateTime, User user, MeetingContainer parent, String eventLocation, boolean includeSubGroups,
 				   boolean rsvpRequired, boolean relayable, EventReminderType reminderType, int customReminderMinutes, String description) {
 		super(startDateTime, user, parent, name, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes, description);
 		this.eventLocation = Objects.requireNonNull(eventLocation);

@@ -11,6 +11,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
 
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 
@@ -18,17 +19,15 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
 	Event findOneByUid(String uid);
 
-	List<Event> findByAppliesToGroup(Group group);
-
 	Event findTopByAppliesToGroupAndEventStartDateTimeNotNullOrderByEventStartDateTimeDesc(Group group);
 
-	List<Event> findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(Group group, Date startTime, boolean cancelled);
+	List<Event> findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(Group group, Instant startTime, boolean cancelled);
 
-	List<Event> findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(User user, Date startTime, boolean cancelled);
+	List<Event> findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(User user, Instant startTime, boolean cancelled);
 
-	Page<Event> findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(User user, Timestamp startTime, boolean cancelled, Pageable page);
+	Page<Event> findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(User user, Instant startTime, boolean cancelled, Pageable page);
 
-	Page<Event> findByCreatedByUserAndEventStartDateTimeGreaterThanAndEventTypeAndCanceledFalse(User user, Timestamp startTime, EventType eventType, Pageable page);
+	Page<Event> findByCreatedByUserAndEventStartDateTimeGreaterThanAndEventTypeAndCanceledFalse(User user, Instant startTime, EventType eventType, Pageable page);
 
 	/*
 	Some methods for analytical services, to count, find events, etc
@@ -55,13 +54,13 @@ where e.canceled = FALSE
 
 	 */
 	@Query(value = "select e from Event e where e.canceled = false and eventStartDateTime > ?1 and e.scheduledReminderTime < ?1 and e.scheduledReminderActive = true")
-	List<Event> findEventsForReminders(Date time);
+	List<Event> findEventsForReminders(Instant fromInstant);
 
 	@Query(value = "select v from Vote v where v.eventStartDateTime > ?1 and v.canceled = false")
-	List<Event> findAllVotesAfterTimeStamp(Date date);
+	List<Event> findAllVotesAfterTimeStamp(Instant fromInstant);
 
-	@Query(value = "SELECT count(*) from Event e where e.start_date_time > current_timestamp and e.applies_to_group in (select group_id from group_user_membership where user_id = ?1)", nativeQuery = true)
-	int countFutureEvents(Long userId);
+	@Query(value = "SELECT count(*) from Event e where e.start_date_time > ?2 and e.applies_to_group in (select group_id from group_user_membership where user_id = ?1)", nativeQuery = true)
+	int countFutureEvents(Long userId, Instant fromInstant);
 
 
 	/*
@@ -84,5 +83,5 @@ where e.canceled = FALSE
 	/*
 	Queries for analysis, i.e., counting and retrieving how many events took place in a certain period
 	 */
-	List<Event> findByAppliesToGroupAndEventStartDateTimeBetween(Group group, Timestamp start, Timestamp end, Sort sort);
+	List<Event> findByAppliesToGroupAndEventStartDateTimeBetween(Group group, Instant start, Instant end, Sort sort);
 }

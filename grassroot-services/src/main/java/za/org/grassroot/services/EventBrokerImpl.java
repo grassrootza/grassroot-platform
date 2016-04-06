@@ -13,6 +13,7 @@ import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 
@@ -26,6 +27,8 @@ import java.util.Set;
 
 import static za.org.grassroot.core.domain.EventReminderType.CUSTOM;
 import static za.org.grassroot.core.domain.EventReminderType.DISABLED;
+import static za.org.grassroot.core.util.DateTimeUtil.*;
+import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
 
 @Service
 public class EventBrokerImpl implements EventBroker {
@@ -74,7 +77,7 @@ public class EventBrokerImpl implements EventBroker {
 
 	@Override
 	@Transactional
-	public Meeting createMeeting(String userUid, String parentUid, JpaEntityType parentType, String name, Timestamp eventStartDateTime, String eventLocation,
+	public Meeting createMeeting(String userUid, String parentUid, JpaEntityType parentType, String name, LocalDateTime eventStartDateTime, String eventLocation,
 								 boolean includeSubGroups, boolean rsvpRequired, boolean relayable, EventReminderType reminderType,
 								 int customReminderMinutes, String description, Set<String> assignMemberUids) {
 		Objects.requireNonNull(userUid);
@@ -82,15 +85,16 @@ public class EventBrokerImpl implements EventBroker {
 		Objects.requireNonNull(parentType);
 		Objects.requireNonNull(assignMemberUids);
 
-		validateEventStartTime(eventStartDateTime);
+		Instant eventStartDateTimeInSystem = convertToSystemTime(eventStartDateTime, getSAST());
+		validateEventStartTime(eventStartDateTimeInSystem);
 
 		User user = userRepository.findOneByUid(userUid);
 		MeetingContainer parent = uidIdentifiableRepository.findOneByUid(MeetingContainer.class, parentType, parentUid);
 
 		permissionBroker.validateGroupPermission(user, parent.resolveGroup(), Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
 
-		Meeting meeting = new Meeting(name, eventStartDateTime, user, parent, eventLocation, includeSubGroups, rsvpRequired,
-				relayable, reminderType, customReminderMinutes, description);
+		Meeting meeting = new Meeting(name, eventStartDateTimeInSystem, user, parent, eventLocation,
+                                      includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes, description);
 		meeting.assignMembers(assignMemberUids);
 
 		// else sometimes reminder setting will be in the past, causing duplication of meetings; defaulting to 3 hours
@@ -112,7 +116,7 @@ public class EventBrokerImpl implements EventBroker {
 
 	@Override
     @Transactional
-	public void updateMeeting(String userUid, String meetingUid, String name, Timestamp eventStartDateTime, String eventLocation) {
+	public void updateMeeting(String userUid, String meetingUid, String name, LocalDateTime eventStartDateTime, String eventLocation) {
 		Objects.requireNonNull(userUid);
         Objects.requireNonNull(meetingUid);
         Objects.requireNonNull(name);
@@ -125,10 +129,11 @@ public class EventBrokerImpl implements EventBroker {
             throw new IllegalStateException("Meeting is canceled: " + meeting);
         }
 
-        boolean startTimeChanged = !eventStartDateTime.equals(meeting.getEventStartDateTime());
+        Instant convertedStartDateTime = convertToSystemTime(eventStartDateTime, getSAST());
+        boolean startTimeChanged = !convertedStartDateTime.equals(meeting.getEventStartDateTime());
         if (startTimeChanged) {
-            validateEventStartTime(eventStartDateTime);
-            meeting.setEventStartDateTime(eventStartDateTime);
+            validateEventStartTime(convertedStartDateTime);
+            meeting.setEventStartDateTime(convertedStartDateTime);
 			meeting.updateScheduledReminderTime();
         }
 
@@ -140,7 +145,7 @@ public class EventBrokerImpl implements EventBroker {
 
 	@Override
 	@Transactional
-	public void updateMeeting(String userUid, String meetingUid, String name, Timestamp eventStartDateTime,
+	public void updateMeeting(String userUid, String meetingUid, String name, LocalDateTime eventStartDateTime,
 							  String eventLocation, boolean includeSubGroups, boolean rsvpRequired,
 							  boolean relayable, EventReminderType reminderType, int customReminderMinutes, String description) {
 
@@ -153,14 +158,15 @@ public class EventBrokerImpl implements EventBroker {
 
 		Meeting meeting = (Meeting) eventRepository.findOneByUid(meetingUid);
 
+        Instant convertedStartDateTime = convertToSystemTime(eventStartDateTime, getSAST());
 		if (meeting.isCanceled()) {
 			throw new IllegalStateException("Meeting is canceled: " + meeting);
 		}
-		validateEventStartTime(eventStartDateTime);
-		boolean startTimeChanged = !eventStartDateTime.equals(meeting.getEventStartDateTime());
+		validateEventStartTime(convertedStartDateTime);
+		boolean startTimeChanged = !convertedStartDateTime.equals(meeting.getEventStartDateTime());
 
 		meeting.setName(name);
-		meeting.setEventStartDateTime(eventStartDateTime);
+		meeting.setEventStartDateTime(convertedStartDateTime);
 		meeting.setEventLocation(eventLocation);
 		meeting.setIncludeSubGroups(includeSubGroups);
 		meeting.setRsvpRequired(rsvpRequired);
@@ -175,20 +181,21 @@ public class EventBrokerImpl implements EventBroker {
 
 	@Override
 	@Transactional
-	public Vote createVote(String userUid, String parentUid, JpaEntityType parentType, String name, Timestamp eventStartDateTime,
+	public Vote createVote(String userUid, String parentUid, JpaEntityType parentType, String name, LocalDateTime eventStartDateTime,
 						   boolean includeSubGroups, boolean relayable, String description, Set<String> assignMemberUids) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(parentUid);
 		Objects.requireNonNull(parentType);
 
-		validateEventStartTime(eventStartDateTime);
+		Instant convertedClosingDateTime = convertToSystemTime(eventStartDateTime, getSAST());
+        validateEventStartTime(convertedClosingDateTime);
 
 		User user = userRepository.findOneByUid(userUid);
 		VoteContainer parent = uidIdentifiableRepository.findOneByUid(VoteContainer.class, parentType, parentUid);
 
 		permissionBroker.validateGroupPermission(user, parent.resolveGroup(), Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
 
-		Vote vote = new Vote(name, eventStartDateTime, user, parent, includeSubGroups, relayable, description);
+		Vote vote = new Vote(name, convertedClosingDateTime, user, parent, includeSubGroups, relayable, description);
 		vote.assignMembers(assignMemberUids);
 
 		voteRepository.save(vote);
@@ -201,7 +208,7 @@ public class EventBrokerImpl implements EventBroker {
 
 	@Override
 	@Transactional
-	public Vote updateVote(String userUid, String voteUid, Timestamp eventStartDateTime, String description) {
+	public Vote updateVote(String userUid, String voteUid, LocalDateTime eventStartDateTime, String description) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(voteUid);
 
@@ -212,9 +219,11 @@ public class EventBrokerImpl implements EventBroker {
 			throw new IllegalStateException("Vote is canceled: " + vote);
 		}
 
+		Instant convertedClosingDateTime = convertToSystemTime(eventStartDateTime, getSAST());
+
 		if (!vote.getEventStartDateTime().equals(eventStartDateTime)) {
-			validateEventStartTime(eventStartDateTime);
-			vote.setEventStartDateTime(eventStartDateTime);
+			validateEventStartTime(convertedClosingDateTime);
+			vote.setEventStartDateTime(convertedClosingDateTime);
 			vote.updateScheduledReminderTime();
 		}
 
@@ -246,7 +255,7 @@ public class EventBrokerImpl implements EventBroker {
         }
     }
 
-    private void validateEventStartTime(Timestamp eventStartDateTime) {
+    private void validateEventStartTime(Instant eventStartDateTimeInstant) {
 		Instant now = Instant.now();
 		// commenting this out just for now, because parser is unreliable & haven't built recovery means so will annoy users
 		// come back to this soon though

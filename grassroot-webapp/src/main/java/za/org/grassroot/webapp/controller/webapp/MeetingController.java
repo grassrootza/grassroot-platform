@@ -16,6 +16,7 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
+import za.org.grassroot.webapp.model.web.MeetingWrapper;
 
 import javax.servlet.http.HttpServletRequest;
 import java.sql.Timestamp;
@@ -64,58 +65,44 @@ public class MeetingController extends BaseController {
     @RequestMapping("create")
     public String createMeetingIndex(Model model, @RequestParam(value="groupUid", required=false) String groupUid) {
 
-        boolean groupSpecified;
-        User sessionUser = getUserProfile();
-        Meeting meeting = Meeting.makeEmpty(sessionUser);
-        meeting.setRsvpRequired(true); // since this is default (and Thymeleaf doesn't handle setting it in template well)
-        meeting.setReminderType(EventReminderType.GROUP_CONFIGURED);
-        meeting.setCustomReminderMinutes(24 * 60);
+        MeetingWrapper meeting = MeetingWrapper.makeEmpty(EventReminderType.GROUP_CONFIGURED, 24*60, true);
 
         if (groupUid != null) {
             Group group = groupBroker.load(groupUid);
             model.addAttribute("group", group);
-            meeting.setParent(group);
-            groupSpecified = true;
+            meeting.setParentUid(groupUid);
         } else {
             User user = userManagementService.load(getUserProfile().getUid()); // refresh user entity, in case permissions changed
             model.addAttribute("userGroups",
                                permissionBroker.getActiveGroups(user, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING));
-            groupSpecified = false;
         }
 
         model.addAttribute("meeting", meeting);
-        model.addAttribute("groupSpecified", groupSpecified); // slightly redundant, but use it to tell Thymeleaf what to do
         model.addAttribute("reminderOptions", reminderMinuteOptions(false));
 
-        log.info("Meeting that we are passing: " + meeting.toString());
+        log.info("Wrapper we are passing: " + meeting.toString());
         return "meeting/create";
 
     }
 
     @RequestMapping(value = "create", method = RequestMethod.POST)
-    public String createMeeting(Model model, @ModelAttribute("meeting") Meeting meeting, BindingResult bindingResult,
+    public String createMeeting(Model model, @ModelAttribute("meeting") MeetingWrapper meeting, BindingResult bindingResult,
                                 @RequestParam(value="selectedGroupUid", required=false) String selectedGroupUid,
                                 HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
         // todo: add error handling and validation
         // todo: check that we have all the needed information and/or add a confirmation screen
-        // todo: put this data transformation else where:Maybe Wrapper?
 
-        log.info("The event passed back to us: " + meeting.toString());
-        log.info("Event location set as: " + meeting.getEventLocation());
+        log.info("The meeting wrapper as passed back to us: " + meeting.toString());
 
-        String groupUid = (selectedGroupUid == null) ? meeting.resolveGroup().getUid() : selectedGroupUid;
-        Instant eventStartDateTimeForStoring = convertToSystemTime(meeting.getEventStartDateTime().toLocalDateTime(), getSAST());
-
-        eventBroker.createMeeting(getUserProfile().getUid(), groupUid, JpaEntityType.GROUP, meeting.getName(),
-                Timestamp.from(eventStartDateTimeForStoring), meeting.getEventLocation(), meeting.isIncludeSubGroups(),
-                meeting.isRsvpRequired(), meeting.isRelayable(), meeting.getReminderType(), meeting.getCustomReminderMinutes(),
-                "", Collections.emptySet());
-
-        log.info("Stored meeting, at end of creation method: " + meeting.toString());
+        eventBroker.createMeeting(getUserProfile().getUid(), meeting.getParentUid(), meeting.getParentEntityType(),
+                                  meeting.getTitle(), meeting.getMeetingDateTime(), meeting.getLocation(),
+                                  meeting.isIncludeSubgroups(), meeting.isRsvpRequired(), meeting.isRelayable(),
+                                  meeting.getReminderType(), meeting.getCustomReminderMinutes(), meeting.getDescription(),
+                                  meeting.getAssignedMembers());
 
         addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.creation.success", request);
-        redirectAttributes.addAttribute("groupUid", groupUid);
+        redirectAttributes.addAttribute("groupUid", meeting.getParentUid());
         return "redirect:/group/view";
     }
 
@@ -134,7 +121,7 @@ public class MeetingController extends BaseController {
                 user, meeting.resolveGroup(), Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS);
         boolean canAlterDetails = meeting.getCreatedByUser().equals(user);
 
-        model.addAttribute("meeting", meeting);
+        model.addAttribute("meeting", new MeetingWrapper(meeting));
         model.addAttribute("responseTotals", meetingResponses);
         model.addAttribute("canViewRsvps", canViewRsvps);
 
@@ -160,15 +147,16 @@ public class MeetingController extends BaseController {
 
 
     @RequestMapping(value = "modify", method=RequestMethod.POST)
-    public String changeMeeting(Model model, @ModelAttribute("meeting") Meeting changedMeeting, HttpServletRequest request) {
+    public String changeMeeting(Model model, @ModelAttribute("meeting") MeetingWrapper changedMeeting, HttpServletRequest request) {
 
         // todo: double check permissions in location update
         log.info("Okay, here is the meeting passed back ... " + changedMeeting);
-        eventBroker.updateMeeting(getUserProfile().getUid(), changedMeeting.getUid(), changedMeeting.getName(),
-                                  changedMeeting.getEventStartDateTime(), changedMeeting.getEventLocation());
-        addMessage(model, MessageType.SUCCESS, "meeting.update.success", request);
-        return viewMeetingDetails(model, changedMeeting.getUid());
 
+        eventBroker.updateMeeting(getUserProfile().getUid(), changedMeeting.getEventUid(), changedMeeting.getTitle(),
+                                  changedMeeting.getMeetingDateTime(), changedMeeting.getLocation());
+
+        addMessage(model, MessageType.SUCCESS, "meeting.update.success", request);
+        return viewMeetingDetails(model, changedMeeting.getEventUid());
     }
 
     @RequestMapping(value = "cancel", method=RequestMethod.POST)

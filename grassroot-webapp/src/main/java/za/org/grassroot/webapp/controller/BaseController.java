@@ -18,6 +18,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.webapp.util.LocalDateTimePropertyEditor;
 import za.org.grassroot.webapp.util.SqlTimestampPropertyEditor;
 
 import javax.servlet.http.HttpServletRequest;
@@ -37,14 +38,14 @@ public class BaseController {
     public static final String ERRORS_MESSAGES_KEY = "errors";
 
     public enum MessageType {
-        INFO("infoMessage"), SUCCESS("successMessage"), ERROR("errorMessage");
+        INFO("infoMessage"),
+        SUCCESS("successMessage"),
+        ERROR("errorMessage");
 
         private String messageKey;
-
         MessageType(String messageKey) {
             this.messageKey = messageKey;
         }
-
         public String getMessageKey() {
             return messageKey;
         }
@@ -63,6 +64,12 @@ public class BaseController {
 
     @Autowired
     protected PermissionBroker permissionBroker;
+
+    @InitBinder
+    protected void initBinder(HttpServletRequest request, ServletRequestDataBinder binder) {
+        binder.registerCustomEditor(java.sql.Timestamp.class, new SqlTimestampPropertyEditor());
+        binder.registerCustomEditor(java.time.LocalDateTime.class, new LocalDateTimePropertyEditor());
+    }
 
     protected User getUserProfile() {
 
@@ -129,9 +136,6 @@ public class BaseController {
         this.messageSourceAccessor = new MessageSourceAccessor(messageSource);
 
     }
-
-
-
 
     /**
      *
@@ -210,8 +214,4 @@ public class BaseController {
         return messageSourceAccessor.getMessage("web." + msgKey, args, locale);
     }
 
-    @InitBinder
-    protected void initBinder(HttpServletRequest request, ServletRequestDataBinder binder) {
-        binder.registerCustomEditor(java.sql.Timestamp.class, new SqlTimestampPropertyEditor());
-    }
 }

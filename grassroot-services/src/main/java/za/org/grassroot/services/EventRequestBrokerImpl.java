@@ -164,7 +164,8 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
 
         if (request instanceof MeetingRequest) {
             MeetingRequest meetingChangeRequest = (MeetingRequest) request;
-            eventBroker.updateMeeting(userUid, eventUid, meetingChangeRequest.getName(), meetingChangeRequest.getEventStartDateTime(),
+            eventBroker.updateMeeting(userUid, eventUid, meetingChangeRequest.getName(),
+									  meetingChangeRequest.getEventStartDateTime().toLocalDateTime(),
                                       meetingChangeRequest.getEventLocation());
         } else {
             VoteRequest voteRequest = (VoteRequest) request;

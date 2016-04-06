@@ -69,7 +69,7 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 		// for JPA
 	}
 
-	protected Event(Timestamp eventStartDateTime, User user, UidIdentifiable parent, String name, boolean includeSubGroups,
+	protected Event(Instant eventStartDateTime, User user, UidIdentifiable parent, String name, boolean includeSubGroups,
 					boolean rsvpRequired, boolean relayable, EventReminderType reminderType, int customReminderMinutes, String description) {
 		super(name, eventStartDateTime, user, parent, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes, description);
 		this.canceled = false;
@@ -116,10 +116,10 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 	public void updateScheduledReminderTime() {
 		Group group = resolveGroup();
 		if (getReminderType().equals(EventReminderType.CUSTOM)) {
-			this.scheduledReminderTime = getEventStartDateTime().toInstant().minus(getCustomReminderMinutes(), ChronoUnit.MINUTES);
+			this.scheduledReminderTime = getEventStartDateTime().minus(getCustomReminderMinutes(), ChronoUnit.MINUTES);
 
 		} else if (getReminderType().equals(EventReminderType.GROUP_CONFIGURED) && group.getReminderMinutes() > 0) {
-			this.scheduledReminderTime = getEventStartDateTime().toInstant().minus(group.getReminderMinutes(), ChronoUnit.MINUTES);
+			this.scheduledReminderTime = getEventStartDateTime().minus(group.getReminderMinutes(), ChronoUnit.MINUTES);
 
 		} else {
 			this.scheduledReminderTime = null;

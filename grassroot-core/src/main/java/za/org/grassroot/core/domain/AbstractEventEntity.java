@@ -1,10 +1,12 @@
 package za.org.grassroot.core.domain;
 
+import org.springframework.format.annotation.DateTimeFormat;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
-import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
@@ -21,7 +23,7 @@ public abstract class AbstractEventEntity<P extends UidIdentifiable> {
 	protected String uid;
 
 	@Column(name = "created_date_time", insertable = true, updatable = false)
-	protected Timestamp createdDateTime;
+	protected Instant createdDateTime;
 
 	@Column(name = "name", length = 40)
 	protected String name;
@@ -34,7 +36,7 @@ public abstract class AbstractEventEntity<P extends UidIdentifiable> {
 	For voting this the vote expire time
 	 */
 	@Column(name = "start_date_time")
-	protected Timestamp eventStartDateTime;
+	protected Instant eventStartDateTime;
 
 	@ManyToOne
 	@JoinColumn(name = "created_by_user")
@@ -82,11 +84,11 @@ public abstract class AbstractEventEntity<P extends UidIdentifiable> {
 		// for JPA
 	}
 
-	protected AbstractEventEntity(String name, Timestamp eventStartDateTime, User createdByUser, UidIdentifiable parent,
+	protected AbstractEventEntity(String name, Instant eventStartDateTime, User createdByUser, UidIdentifiable parent,
 								  boolean includeSubGroups, boolean rsvpRequired, boolean relayable,
 								  EventReminderType reminderType, int customReminderMinutes, String description) {
 		this.uid = UIDGenerator.generateId();
-		this.createdDateTime = Timestamp.from(Instant.now());
+		this.createdDateTime = Instant.now();
 
 		this.name = Objects.requireNonNull(name);
 		this.eventStartDateTime = Objects.requireNonNull(eventStartDateTime);
@@ -120,11 +122,11 @@ public abstract class AbstractEventEntity<P extends UidIdentifiable> {
 		return uid;
 	}
 
-	public Timestamp getCreatedDateTime() {
+	public Instant getCreatedDateTime() {
 		return createdDateTime;
 	}
 
-	public void setCreatedDateTime(Timestamp createdDateTime) {
+	public void setCreatedDateTime(Instant createdDateTime) {
 		this.createdDateTime = createdDateTime;
 	}
 
@@ -136,11 +138,15 @@ public abstract class AbstractEventEntity<P extends UidIdentifiable> {
 		this.name = name;
 	}
 
-	public Timestamp getEventStartDateTime() {
+	public Instant getEventStartDateTime() {
 		return eventStartDateTime;
 	}
 
-	public void setEventStartDateTime(Timestamp eventStartDateTime) {
+	public LocalDateTime getEventDateTimeAtSAST() {
+		return eventStartDateTime.atZone(DateTimeUtil.getSAST()).toLocalDateTime();
+	}
+
+	public void setEventStartDateTime(Instant eventStartDateTime) {
 		this.eventStartDateTime = eventStartDateTime;
 	}
 
