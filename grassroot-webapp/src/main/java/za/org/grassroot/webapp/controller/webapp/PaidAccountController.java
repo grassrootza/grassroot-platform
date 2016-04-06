@@ -98,7 +98,8 @@ public class PaidAccountController extends BaseController {
             beginDate = LocalDate.parse("01-" + monthToView, dtf).atStartOfDay();
             endDate = beginDate.plusMonths(1L);
             dateDescription = "Meetings and votes held in " + beginDate.format(DateTimeFormatter.ofPattern("MMM yyyy"));
-            log.info(String.format("Getting records between %s and a month later", beginDate.format(DateTimeUtil.preferredDateFormat)));
+            log.info(String.format("Getting records between %s and a month later",
+                                   DateTimeUtil.getPreferredDateFormat().format(beginDate)));
         }
 
         final Long timeStart = System.currentTimeMillis();

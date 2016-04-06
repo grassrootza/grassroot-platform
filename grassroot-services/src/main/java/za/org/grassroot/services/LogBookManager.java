@@ -17,6 +17,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.logging.Logger;
 
+import static za.org.grassroot.core.util.DateTimeUtil.getPreferredDateFormat;
+
 /**
  * Created by aakilomar on 12/5/15.
  */
@@ -142,7 +144,7 @@ public class LogBookManager implements LogBookService {
     @Override
     public LogBook setCompleted(Long logBookId, Long completedByUserId, String completedDate) {
         if (completedDate != null) {
-            Timestamp timestamp = Timestamp.valueOf(LocalDate.parse(completedDate, DateTimeUtil.preferredDateFormat).atStartOfDay());
+            Timestamp timestamp = Timestamp.valueOf(LocalDate.parse(completedDate, getPreferredDateFormat()).atStartOfDay());
             return (completedByUserId == null) ? setCompleted(logBookId, timestamp) :
                     setCompletedWithDate(logBookId, completedByUserId, timestamp);
         } else {

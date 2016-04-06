@@ -2,25 +2,24 @@ package za.org.grassroot.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.stereotype.Component;
-import org.springframework.ui.velocity.VelocityEngineUtils;
-import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.EventDTO;
-import za.org.grassroot.core.dto.LogBookDTO;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.FormatUtil;
 
 import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.Locale;
-import java.util.Map;
 import java.util.logging.Logger;
+
+import static za.org.grassroot.core.util.DateTimeUtil.*;
+import static za.org.grassroot.core.util.DateTimeUtil.convertToUserTimeZone;
 
 /**
  * Created by aakilomar on 8/24/15.
@@ -142,10 +141,10 @@ public class MeetingNotificationManager implements MeetingNotificationService {
 
         String salutation = (((Group) event.getParent()).hasName()) ? ((Group) event.getParent()).getGroupName() : "GrassRoot";
         log.info("populateFields...user..." + user.getPhoneNumber() + "...event..." + event.getId() + "...version..." + event.getVersion());
-        SimpleDateFormat sdf = new SimpleDateFormat("EEE d MMM, h:mm a");
+        DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
         String dateString = "no date specified";
         if (event.getEventStartDateTime() != null) {
-            dateString = sdf.format(event.getEventStartDateTime().getTime());
+            dateString = sdf.format(convertToUserTimeZone(event.getEventStartDateTime().toInstant(), getSAST()));
         }
         String[] eventVariables = new String[]{
                 salutation,

@@ -148,7 +148,7 @@ public class USSDEventUtil extends USSDUtil {
                 EventRequest eventReq = eventRequestBroker.load(eventUid);
                 String reformattedTime = DateTimeUtil.reformatTimeInput(userInput);
                 Timestamp newTimestamp = changeTimestampTimes(eventReq.getEventStartDateTime(), reformattedTime);
-                log.info("This is what we got back ... " + preferredDateTimeFormat.format(newTimestamp.toLocalDateTime()));
+                log.info("This is what we got back ... " + getPreferredDateTimeFormat().format(newTimestamp.toLocalDateTime()));
                 userLogger.recordUserInputtedDateTime(userUid, userInput, "meeting-creation-time-only", USSD);
                 eventRequestBroker.updateStartTimestamp(userUid, eventUid, newTimestamp);
                 break;
@@ -156,7 +156,7 @@ public class USSDEventUtil extends USSDUtil {
                 eventReq = eventRequestBroker.load(eventUid);
                 String reformattedDate = DateTimeUtil.reformatDateInput(userInput);
                 newTimestamp = changeTimestampDates(eventReq.getEventStartDateTime(), reformattedDate);
-                log.info("This is what we got back ... " + preferredDateTimeFormat.format(newTimestamp.toLocalDateTime()));
+                log.info("This is what we got back ... " + getPreferredDateTimeFormat().format(newTimestamp.toLocalDateTime()));
                 userLogger.recordUserInputtedDateTime(userUid, userInput, "meeting-creation-date-only", USSD);
                 eventRequestBroker.updateStartTimestamp(userUid, eventUid, newTimestamp);
             default:

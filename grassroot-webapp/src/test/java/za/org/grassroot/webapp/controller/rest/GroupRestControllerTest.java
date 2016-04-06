@@ -15,6 +15,7 @@ import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import static org.mockito.Mockito.*;
@@ -60,8 +61,8 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
 
         sessionTestUser.setId(2L);
         GroupLog groupLog = new GroupLog(testGroup.getId(), sessionTestUser.getId(), GroupLogType.GROUP_ADDED, sessionTestUser.getId());
-        groupLog.setCreatedDateTime(Date.from(Instant.now()));
-        groupLog.setCreatedDateTime(DateTimeUtil.addHoursFromNow(1));
+        groupLog.setCreatedDateTime(Instant.now());
+        groupLog.setCreatedDateTime(Instant.now().plus(1, ChronoUnit.HOURS));
         testGroup.addMember(sessionTestUser, "ROLE_GROUP_ORGANIZER");
         groupSet.add(testGroup);
 

@@ -5,6 +5,7 @@ import za.org.grassroot.core.enums.GroupLogType;
 
 import javax.persistence.*;
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.Date;
 
 @Entity
@@ -20,7 +21,7 @@ public class GroupLog implements Serializable {
 
     @Basic
     @Column(name="created_date_time", insertable = true, updatable = false)
-    private Date createdDateTime;
+    private Instant createdDateTime;
 
     @Basic
     @Column(name="group_id")
@@ -64,7 +65,7 @@ public class GroupLog implements Serializable {
     @PrePersist
     public void updateTimeStamps() {
         if (createdDateTime == null) {
-            createdDateTime = new Date();
+            createdDateTime = Instant.now();
         }
     }
 
@@ -76,11 +77,11 @@ public class GroupLog implements Serializable {
         this.id = id;
     }
 
-    public Date getCreatedDateTime() {
+    public Instant getCreatedDateTime() {
         return createdDateTime;
     }
 
-    public void setCreatedDateTime(Date createdDateTime) {
+    public void setCreatedDateTime(Instant createdDateTime) {
         this.createdDateTime = createdDateTime;
     }
 

@@ -244,8 +244,8 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
     @Test
     public void sendMenuShouldWork() throws Exception {
 
-        Date testClosingTime = DateTimeUtil.addMinutesAndTrimSeconds(new Date(), 7);
-        Timestamp testTimestamp = new Timestamp(testClosingTime.getTime());
+        Instant testClosingTime = Instant.now().plus(7, ChronoUnit.MINUTES).truncatedTo(ChronoUnit.MINUTES);
+        Timestamp testTimestamp = Timestamp.from(testClosingTime);
 
         VoteRequest testVote = VoteRequest.makeEmpty();
         testVote.setCreatedByUser(testUser);

@@ -10,13 +10,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.Calendar;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -25,54 +25,34 @@ import java.util.regex.Pattern;
  */
 public class DateTimeUtil {
 
-    private static Logger log = LoggerFactory.getLogger(DateTimeUtil.class);
+    private static final Logger log = LoggerFactory.getLogger(DateTimeUtil.class);
 
     // todo: replace with getters
-    public static final DateTimeFormatter preferredDateFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-    public static final DateTimeFormatter preferredTimeFormat = DateTimeFormatter.ofPattern("HH:mm");
-    public static final DateTimeFormatter preferredDateTimeFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
-
-    private static final String possibleTimeDelims = "[-,:hH]+";
-    private static final Joiner timeJoiner = Joiner.on(":").skipNulls();
-    private static final Pattern timeWithDelims = Pattern.compile("\\d{1,2}" + possibleTimeDelims + "\\d\\d");
-    private static final Pattern timeWithoutDelims = Pattern.compile("\\d{3,4}");
-    private static final Pattern timeHourOnly = Pattern.compile("\\d{1,2}[am|pm]?");
-    private static final Pattern neededOutput = Pattern.compile("\\d{2}:\\d{2}");
-    private static final String possibleDateDelims = "[- /.]";
-
-    // todo: make this a bit better in terms of requiring matches
-    private static final Pattern dateVariationWithYear = Pattern.compile("\\d{1,2}[- /.]\\d{1,2}[- /.]\\d{4}$");
-    private static final Pattern getDateVariationWithOutYear = Pattern.compile("\\d{1,2}[- /.]\\d{1,2}");
+    private static final DateTimeFormatter preferredDateFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+    private static final DateTimeFormatter preferredTimeFormat = DateTimeFormatter.ofPattern("HH:mm");
+    private static final DateTimeFormatter preferredDateTimeFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
 
     private static final LocalDateTime veryLongTimeAway = LocalDateTime.of(2099, 12, 31, 23, 59);
 
-    /*
-    Inserting method to parse date time user input and, if it can be parsed, set the timestamp accordingly.
-    todo: a lot of error handling and looking through the tree to make sure this is right.
-    todo: come up with a more sensible default if the parsing fails, rather than current time
-    todo: work on handling methods / customize the util library to handle local languages
-    todo: make sure the timezone is being set properly
-     */
-    private static final Pattern neededDateOutput = Pattern.compile("^(0?[1-9]|[12][0-9]|3[01])-(0?[1-9]|1[012])-^(19|20)\\d\\d$");
-    private static final Joiner dateJoiner = Joiner.on("-").skipNulls();
-
-
-    /*
-    Helper method to deal with messy user input of a time string, more strict but also more likely to be accurate than
-    free form parsing above. The menu prompt does give the preferred format of HH:mm, but never know, so check for a
-    range of possible delimiters, and three basic patterns -- 15:30, 3:30 pm, 1530. Since there may be stuff around the
-    outside, all we care about is finding a match, not the whole input matching, and then whether we have to add 12 to
-    hour if 'pm' has been entered. We check for those, then give up if none work
-     */
+    public static DateTimeFormatter getPreferredDateFormat() { return preferredDateFormat; }
+    public static DateTimeFormatter getPreferredTimeFormat() { return preferredTimeFormat; }
+    public static DateTimeFormatter getPreferredDateTimeFormat() { return preferredDateTimeFormat; }
 
     public static LocalDateTime getVeryLongTimeAway() {
         return veryLongTimeAway;
     }
-
     public static Timestamp getVeryLongTimestamp() {
         return Timestamp.valueOf(veryLongTimeAway);
     }
 
+    private static final ZoneId zoneSAST = ZoneId.of("Africa/Johannesburg");
+    private static final ZoneId zoneSystem = ZoneId.systemDefault();
+
+    /**
+     * Method that invokes the date time parser directly, with no attempt to map to a predefined format or regex
+     * @param passedValue
+     * @return LocalDateTime of most likely match; if no match, returns the current date time rounded up to next hour
+     */
     public static LocalDateTime parseDateTime(String passedValue) {
 
         LocalDateTime parsedDateTime;
@@ -84,246 +64,239 @@ public class DateTimeUtil {
             parsedDateTime = parsedDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
             log.info("Date time processed: " + parsedDateTime.toString());
         } else {
-            parsedDateTime = LocalDateTime.now();
+            parsedDateTime = LocalDateTime.now().plus(1, ChronoUnit.HOURS).truncatedTo(ChronoUnit.HOURS);
         }
 
         return parsedDateTime;
-
     }
 
-    public static LocalDateTime parsePreformattedString(String formattedValue) {
-        // todo: exception handling just in case someone uses this / passes it badly
-        return LocalDateTime.parse(formattedValue, preferredDateTimeFormat);
+    public static Instant convertToSystemTime(LocalDateTime userInput, ZoneId userZoneId) {
+        ZonedDateTime userTime = ZonedDateTime.of(userInput, userZoneId);
+        ZonedDateTime systemTime = userTime.withZoneSameInstant(zoneSystem);
+
+        log.info("Time at user: {}, time at system: {}", userTime.format(DateTimeFormatter.ISO_DATE_TIME),
+                 systemTime.format(DateTimeFormatter.ISO_DATE_TIME));
+
+        return systemTime.toInstant();
     }
 
-    public static LocalDateTime parsePreformattedDate(String formattedValue, int hour, int minute) {
-        return LocalDateTime.of(LocalDate.parse(formattedValue,preferredDateFormat),LocalTime.of(hour, minute));
+    public static ZonedDateTime convertToUserTimeZone(Instant timeInSystem, ZoneId userZoneId) {
+        ZonedDateTime zonedDateTime = timeInSystem.atZone(userZoneId);
+        log.info("Time in system: {}, converted to zone: {}", timeInSystem.toString(), zonedDateTime.format(DateTimeFormatter.ISO_DATE_TIME));
+        return zonedDateTime;
     }
 
-    // todo: major refactor of this
+    public static ZoneId getSAST() { return zoneSAST; }
+
+    private static final String possibleTimeDelimiters = "[-,:hH]+";
+    private static final String meridian = ".*pm?";
+    private static final Joiner timeJoiner = Joiner.on(":").skipNulls();
+    private static final Pattern timePatternWithDelimiters = Pattern.compile("\\d{1,2}" + possibleTimeDelimiters + "\\d\\d");
+    private static final Pattern timePatternWithoutDelimiters = Pattern.compile("\\d{3,4}");
+    private static final Pattern timeWithHourOnly = Pattern.compile("\\d{1,2}[am|pm]?");
+    private static final Pattern neededTimePattern = Pattern.compile("\\d{2}:\\d{2}");
+
+    private static final String possibleDateDelimiters = "[- /.]";
+    private static final Joiner dateJoiner = Joiner.on("-").skipNulls();
+    private static final Pattern datePatternWithYear = Pattern.compile("\\d{1,2}[- /.]\\d{1,2}[- /.]\\d{4}$");
+    private static final Pattern datePatternWithoutYear = Pattern.compile("\\d{1,2}[- /.]\\d{1,2}");
+    private static final Pattern datePatternWithoutDelimiters = Pattern.compile("\\d{3,4}");
+    private static final Pattern neededDatePattern = Pattern.compile("\\d{2}-\\d{2}-\\d{4}");
+
+    /**
+     * Helper method to deal with messy user input of a time string, more strict but also more likely to be accurate than
+     * free form parsing above. The menu prompt does give the preferred format of HH:mm, but never know, so check for a
+     * range of possible delimiters, and three basic patterns -- 15:30, 3:30 pm, 1530. Since there may be stuff around the
+     * outside, all we care about is finding a match, not the whole input matching, and then whether we have to add 12 to
+     * hour if 'pm' has been entered. We check for those, then give up if none work
+     * @param userResponse The string that the user has entered
+     * @return The string reformated as mm:HH, if it matched any of the known patterns, else the string as-is
+     */
+
     public static String reformatTimeInput(String userResponse) {
 
-        // note: we only need to worry about am/pm if pm is entered, and in that case add 12 to hour
-
         String reformattedTime;
-        final String trimmedResponse = userResponse.trim().toLowerCase()
-                .replace("^[-,:]",":");
-        boolean pmStringEntered = Pattern.matches(".*pm?", trimmedResponse);
 
-        log.info("We have been passed this as our input ... " + trimmedResponse + " ... and we found pm: " + pmStringEntered);
+        final String trimmedResponse = userResponse.trim().toLowerCase().replace(possibleTimeDelimiters,":");
+        boolean pmEntered = Pattern.matches(meridian, trimmedResponse);
 
-        final Matcher matcherDelims = timeWithDelims.matcher(trimmedResponse);
-        final Matcher matcherNoDelims = timeWithoutDelims.matcher(trimmedResponse);
-        final Matcher matcherHours = timeHourOnly.matcher(trimmedResponse);
+        log.info("reformTimeInput... given this as input:{}, trimmed to this: {}, and found pm: {}", userResponse, trimmedResponse, pmEntered);
 
-        if (matcherDelims.find()) {
-            // todo: make even more robust, to, e.g., a delim character at front
-            // todo: see if we can get rid of the list casting (iterator.next was behaving badly on first attempt)
-            String digitsOnly = matcherDelims.group(0);
-            log.info("Okay, the response matched the pattern XX:YY, or a variant thereof, extracted as ... " + digitsOnly);
-            List<String> split = Lists.newArrayList(Splitter.on(CharMatcher.anyOf(possibleTimeDelims)).omitEmptyStrings().split(digitsOnly));
-            log.info("And the split gives us ...  " + split.toString());
-            int hours = Integer.parseInt(split.get(0)) + (pmStringEntered ? 12 : 0);
-            reformattedTime = timeJoiner.join(new String[]{String.format("%02d", hours), split.get(1)});
+        final Matcher tryMatchWithDelimiters = timePatternWithDelimiters.matcher(trimmedResponse);
+        final Matcher tryMatchWithoutDelimiters = timePatternWithoutDelimiters.matcher(trimmedResponse);
+        final Matcher tryMatchOnlyHavingHours = timeWithHourOnly.matcher(trimmedResponse);
 
-        } else if (matcherNoDelims.find()) {
-            log.info("Okay, no delimiter, but 3-4 digits in a row, assuming those are it ...");
+        if (tryMatchWithDelimiters.find()) {
+
+            String timeWithoutDelims = tryMatchWithDelimiters.group(0);
+            log.info("reformatTimeInput ... matched XX:YY, or variant, extracted as: {}", timeWithoutDelims);
+            List<String> splitDigits = Lists.newArrayList(
+                    Splitter.on(CharMatcher.anyOf(possibleTimeDelimiters)).omitEmptyStrings().split(timeWithoutDelims));
+            int hours = Integer.parseInt(splitDigits.get(0)) + (pmEntered ? 12 : 0);
+            reformattedTime = timeJoiner.join(new String[]{String.format("%02d", hours), splitDigits.get(1)});
+
+        } else if (tryMatchWithoutDelimiters.find()) {
+
+            log.info("reformatTimeInput ... no delimiter, 3-4 digits in a row, assuming those are it ...");
+            String digitString = tryMatchWithoutDelimiters.group(0);
+            int digitsForHours = (Integer.parseInt(digitString.substring(0, 2)) < 13) ? 2 : 1;
+            reformattedTime = timeJoiner.join(new String[]{
+                    String.format("%02d", Integer.parseInt(digitString.substring(0, digitsForHours))),
+                    String.format("%02d", Integer.parseInt(digitString.substring(digitString.length() - digitsForHours))) });
+
+        } else if (tryMatchOnlyHavingHours.find()) {
+
+            log.info("reformatTimeInput ... no delimiter, only a couple digits, assuming hours ...");
+            List<String> split = Lists.newArrayList(
+                    Splitter.on(CharMatcher.anyOf("[ap ]")).omitEmptyStrings().split(trimmedResponse));
             try {
-                String digitSubString = matcherNoDelims.group(0);
-                int hourDigits = digitSubString.length() - 2;
-                int hours = Integer.parseInt(digitSubString.substring(0, hourDigits)) + (pmStringEntered ? 12 : 0);
-                int minutes = Integer.parseInt(digitSubString.substring(hourDigits, hourDigits + 2));
-                reformattedTime = timeJoiner.join(new String[]{String.format("%02d", hours), String.format("%02d", minutes)});
-                log.info("Finished up with digits and we have: " + reformattedTime);
-            } catch (NumberFormatException e) {
-                log.info("Didn't work -- got a parsing error on the digits");
-                reformattedTime = userResponse;
-            }
-        } else if (matcherHours.find()) {
-            // todo: refactor this tree to be more readable and efficient
-            log.info("Okay, no delimiter, just a couple of digits hence assuming hours");
-            List<String> split = Lists.newArrayList(Splitter.on(CharMatcher.anyOf("[ap ]")).omitEmptyStrings().split(trimmedResponse));
-            try {
-                int hours = Integer.parseInt(split.get(0)) + (pmStringEntered ? 12 : 0);
+                int hours = Integer.parseInt(split.get(0)) + (pmEntered ? 12 : 0);
                 reformattedTime = timeJoiner.join(new String[]{String.format("%02d", hours), "00"});
-                log.info("Finished up with hours and we have: " + reformattedTime);
             } catch (NumberFormatException e) {
-                reformattedTime = userResponse;
+                log.info("reformatTimeInput error when trying to parse hours, return string without white space");
+                return trimmedResponse;
             }
+
         } else {
-            log.info("Giving up right at the start, defaulting back to userResponse");
-            // give up and hope the natural language parser figures it out
+            log.info("reformatTimeInput ... no patterns matched, return the string just without white space");
             return trimmedResponse;
         }
 
-        // do this more verbosely first, until we have the logs working
-        // return (neededOutput.matcher(reformattedTime).matches()) ? reformattedTime : userResponse;
-
-        if (neededOutput.matcher(reformattedTime).matches()) {
-            log.info("It worked! Returning reformatted time ..." + reformattedTime);
-            return reformattedTime;
-        } else {
-            log.info("Got all the way to the end and, nope");
-            return trimmedResponse;
-        }
+        log.info("reformatTimeInput .... at conclusion, trying to return: {}" + reformattedTime);
+        return (neededTimePattern.matcher(reformattedTime).matches()) ? reformattedTime : trimmedResponse;
 
     }
 
+    /**
+     * Helper method, similar to reformatTimeInput, that checks user input against common/suggested date formats, and
+     * returns formatted as dd-mm-yyyy, or else just returns the string if no pattern matches
+     * @param userResponse
+     * @return String reformatted, if understood, else the paramater as-is
+     */
     public static String reformatDateInput(String userResponse) {
-        // todo: as above, make this process properly ... for now, shortcut is to use natural language parser
-        String trimmedResponse = userResponse.trim().toLowerCase();
-        log.info("This is the response we have ... ");
-        final Matcher yearMatcher = dateVariationWithYear.matcher(trimmedResponse);
-        final Matcher noYearMatcher = getDateVariationWithOutYear.matcher(trimmedResponse);
-        String formattedResponse;
+
+        String trimmedResponse = userResponse.trim().toLowerCase().replace(possibleDateDelimiters,"-");
+
+        log.info("reformDateInput... given this as input:{}, trimmed to this: {}", userResponse, trimmedResponse);
+
+        final Matcher yearMatcher = datePatternWithYear.matcher(trimmedResponse);
+        final Matcher noYearMatcher = datePatternWithoutYear.matcher(trimmedResponse);
+        final Matcher noDelimMatcher = datePatternWithoutDelimiters.matcher(trimmedResponse);
+
+        String reformattedDate;
+
         if (yearMatcher.find()) {
+
             String dateOnly = yearMatcher.group(0);
-            log.info("Looks like we have a valid date string ... " + dateOnly);
-            List<String> dividedUp = Lists.newArrayList(Splitter.on(CharMatcher.anyOf(possibleDateDelims)).omitEmptyStrings().split(dateOnly));
-            log.info("And now it's sliced apart into this list ... " + dividedUp.toString());
-            formattedResponse = dateJoiner.join(new String[]{String.format("%02d", Integer.parseInt(dividedUp.get(0))),
-                    String.format("%02d", Integer.parseInt(dividedUp.get(1))),
-                    dividedUp.get(2)});
+            log.info("reformDateInput ... valid date string with years: {}", dateOnly);
+            List<String> dividedUp = Lists.newArrayList(
+                    Splitter.on(CharMatcher.anyOf(possibleDateDelimiters)).omitEmptyStrings().split(dateOnly));
+            reformattedDate = dateJoiner.join(new String[]{
+                    String.format("%02d", Integer.parseInt(dividedUp.get(0))), // day
+                    String.format("%02d", Integer.parseInt(dividedUp.get(1))), // month
+                    dividedUp.get(2)}); // year
+
         } else if (noYearMatcher.find()) {
+
             String dateOnly = noYearMatcher.group(0);
-            log.info("We have a valid dd-MM string, it looks like ... " + dateOnly);
-            List<String> dividedUp = Lists.newArrayList(Splitter.on(CharMatcher.anyOf(possibleDateDelims)).omitEmptyStrings().split(dateOnly));
-            log.info("Now it's sliced apart into this list ..." + dividedUp.toString());
-            // todo: make the year switch over to next year if date/month is in advance of today
-            formattedResponse = dateJoiner.join(new String[]{String.format("%02d", Integer.parseInt(dividedUp.get(0))),
-                    String.format("%02d", Integer.parseInt(dividedUp.get(1))),
-                    Year.now().toString()});
+            log.info("reformDateInput .... valid dd-MM string found, extracted as: {}", dateOnly);
+            List<String> dividedUp = Lists.newArrayList(
+                    Splitter.on(CharMatcher.anyOf(possibleDateDelimiters)).omitEmptyStrings().split(dateOnly));
+            String year = (Integer.parseInt(dividedUp.get(1)) >= LocalDateTime.now().getMonthValue()) ?
+                    Year.now().toString() : Year.now().plusYears(1).toString();
+            reformattedDate = dateJoiner.join(new String[]{
+                    String.format("%02d", Integer.parseInt(dividedUp.get(0))),
+                    String.format("%02d", Integer.parseInt(dividedUp.get(1))), year});
+
+        } else if (noDelimMatcher.find()) {
+
+            try {
+                log.info("reformDateInput ... no delimiter, found 3-4 digits in a row, assuming those are it ..");
+                String digitString = noDelimMatcher.group(0);
+                // not failsafe, but as good as we can make it (will interpret 104 as 1 april, most of rest will get)
+                int digitsForMonths = (Integer.parseInt(digitString.substring(digitString.length() - 2)) < 13) ? 2 : 1;
+                String month = digitString.substring(digitString.length() - digitsForMonths);
+                String days = digitString.substring(0, digitString.length() - digitsForMonths);
+                String year = (Integer.parseInt(month) >= LocalDateTime.now().getMonthValue()) ?
+                        Year.now().toString() : Year.now().plusYears(1).toString();
+                reformattedDate = dateJoiner.join(new String[]{
+                        String.format("%02d", Integer.parseInt(days)),
+                        String.format("%02d", Integer.parseInt(month)), year});
+            } catch (Exception e) { // lots could go wrong
+                log.info("reformDateInput ... something went wrong: {}", e.toString());
+                return trimmedResponse;
+            }
+
         } else {
-            formattedResponse = parseDateTime(userResponse).format(preferredDateFormat);
+            return trimmedResponse;
         }
-        log.info("formatted"+formattedResponse);
 
-        return formattedResponse;
+        log.info("reformDateInput .... at conclusion, trying to return: {}" + reformattedDate);
+        return (neededDatePattern.matcher(reformattedDate).matches()) ? reformattedDate : trimmedResponse;
     }
 
-    /*
-    Quick useful methods for adding hours and minutes to dates and timestamps
+    /**
+     * Method that will take a string representing a date and update a timestamp, leaving the time unchanged. It will
+     * first try to process the string in the preferred format; if it fails, it invokes the language processor
+     * @param timestamp The original timestamp
+     * @param revisedDateString The string representing the new date
+     * @return The revised timestamp, with the new date, but original time
      */
-
-    public static Timestamp addHoursFromNow(int numberOfHours) {
-        return Timestamp.valueOf(LocalDateTime.now().plusHours(numberOfHours));
-    }
-
-    public static Date addHoursToDate(Date date, int numberOfHours) {
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(date);
-        calendar.add(Calendar.HOUR, numberOfHours);
-        return calendar.getTime();
-    }
-
-    public static Date addMinutesToDate(Date date, int numberOfMinutes) {
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(date);
-        calendar.add(Calendar.MINUTE, numberOfMinutes);
-        return calendar.getTime();
-    }
-
-    public static Date roundMinutesUp(Date date) {
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(date);
-        calendar.add(Calendar.MINUTE, 1);
-        calendar.set(Calendar.SECOND, 0);
-        calendar.set(Calendar.MILLISECOND, 0);
-        return calendar.getTime();
-    }
-
-    public static Date roundMinutesDown(Date date) {
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(date);
-        calendar.set(Calendar.SECOND, 0);
-        calendar.set(Calendar.MILLISECOND, 0);
-        return calendar.getTime();
-    }
-
-    public static Date addMinutesAndTrimSeconds(Date date, int numberOfMinutes) {
-        return roundMinutesDown(addMinutesToDate(date, numberOfMinutes));
-    }
-
-    public static Date addMinutesAndRoundUp(Date date, int numberOfMinutes) {
-        return roundMinutesUp(addMinutesToDate(date, numberOfMinutes));
-    }
-
-    public static Date roundHourUp(Date date) {
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(date);
-        calendar.add(Calendar.HOUR, 1);
-        calendar.set(Calendar.MINUTE, 0);
-        calendar.set(Calendar.SECOND, 0);
-        calendar.set(Calendar.MILLISECOND, 0);
-        return calendar.getTime();
-    }
-
-    public static Date roundHourDown(Date date) {
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(date);
-        calendar.set(Calendar.MINUTE, 0);
-        calendar.set(Calendar.SECOND, 0);
-        calendar.set(Calendar.MILLISECOND, 0);
-        return calendar.getTime();
-    }
-
-    /*
-    Methods to alter dates without altering times, necessarily
-     */
-
-
     public static Timestamp changeTimestampDates(Timestamp timestamp, String revisedDateString) {
+        Objects.requireNonNull(timestamp);
+        Objects.requireNonNull(revisedDateString);
+
         LocalDate revisedDate;
         try {
             revisedDate = LocalDate.parse(revisedDateString, preferredDateFormat);
         } catch (DateTimeParseException e) {
             revisedDate = LocalDate.from(parseDateTime(revisedDateString));
         }
-        return (Timestamp.valueOf(
-                changeDatesWithoutChangingTime(timestamp.toLocalDateTime(), revisedDate.atStartOfDay())));
+        LocalDateTime newDateTime = LocalDateTime.of(revisedDate, timestamp.toLocalDateTime().toLocalTime());
+        return Timestamp.valueOf(newDateTime);
     }
 
-    public static LocalDateTime changeDatesWithoutChangingTime(LocalDateTime origDateTime, LocalDateTime revisedDateTime) {
-        return changeDatesWithoutChangingTime(origDateTime, revisedDateTime.getYear(),
-                revisedDateTime.getMonthValue(), revisedDateTime.getDayOfMonth());
-    }
-
-    public static LocalDateTime changeDatesWithoutChangingTime(LocalDateTime origDateTime, int year, int month, int dayOfMonth) {
-        return origDateTime.withYear(year).withMonth(month).withDayOfMonth(dayOfMonth);
-    }
-
+    /**
+     * Method that will take a string representing a time and update a timestamp, leaving the date unchanged. It will
+     * first try to process the string in the preferred time format ("HH:mm"); if it fails, it invokes the language processor
+     * @param timestamp The original timestamp
+     * @param revisedTimeString The string representing the new time
+     * @return The revised timestamp, with the new date, but original time
+     */
     public static Timestamp changeTimestampTimes(Timestamp timestamp, String revisedTimeString) {
+        Objects.requireNonNull(timestamp);
+        Objects.requireNonNull(revisedTimeString);
+
         LocalTime revisedTime;
         try {
             revisedTime = LocalTime.parse(revisedTimeString, preferredTimeFormat);
         } catch (DateTimeParseException e) {
             revisedTime = LocalTime.from(parseDateTime(revisedTimeString));
         }
-        return Timestamp.valueOf(changeTimesWithoutChangingDates(timestamp.toLocalDateTime(),
-                revisedTime.getHour(), revisedTime.getMinute()));
+        LocalDateTime newDateTime = LocalDateTime.of(timestamp.toLocalDateTime().toLocalDate(), revisedTime);
+        return Timestamp.valueOf(newDateTime);
     }
 
-    public static LocalDateTime changeTimesWithoutChangingDates(LocalDateTime origDateTime, int hour, int minute) {
-        return origDateTime.withHour(hour).withMinute(minute);
-    }
-
-    /*
-    Simple method to turn strings from HTML date-time-picker into a Timestamp, if not done within Thymeleaf
+    /**
+     * Method that takes a string already preformatted to conform to preferred date format, and returns a LocalDateTime
+     * that corresponds to that date, at a specific hour and minute
+     * @param formattedValue The date string, pre-formatted to the pattern "dd-MM-yyyy"
+     * @param hour The hour at which to set the local date time
+     * @param minute The minute at which to set the local date time
+     * @return A local date time object representing the provided string at the specified hour and minute
      */
-    public static Date processDateString(String dateString, SimpleDateFormat sdf) {
+    public static LocalDateTime convertDateStringToLocalDateTime(String formattedValue, int hour, int minute) {
+        Objects.requireNonNull(formattedValue);
+        if ((hour < 0 || hour > 24) || (minute < 0 || minute > 60)) {
+            throw new IllegalArgumentException("Illegal argument! Hours and minutes must be in range 0-24, 0-60");
+        }
         try {
-            return (dateString == null || dateString.trim().equals("")) ?
-                    null : sdf.parse(dateString);
-        } catch (Exception e) {
-            return null;
+            final LocalDate parsedDate = LocalDate.parse(formattedValue, preferredDateFormat);
+            return LocalDateTime.of(parsedDate, LocalTime.of(hour, minute));
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("Illegal argument! Date string not formatted as dd-MM-yyyy");
         }
     }
-
-    public static Date processDateString(String dateString) {
-        return processDateString(dateString, new SimpleDateFormat("dd/MM/yyyy HH:mm a"));
-    }
-
-
 
     public static int numberOfMinutesForDays(int days) {
         return 60 * 24 * days;

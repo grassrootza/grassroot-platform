@@ -25,6 +25,8 @@ import java.net.URISyntaxException;
 import java.util.*;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
+import static za.org.grassroot.core.util.DateTimeUtil.getPreferredDateFormat;
+import static za.org.grassroot.core.util.DateTimeUtil.getPreferredTimeFormat;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 
 /**
@@ -260,7 +262,7 @@ public class USSDMeetingController extends USSDController {
 
         User user = userManager.findByInputNumber(inputNumber, saveMeetingMenu(timeOnly, mtgRequestUid, false));
         MeetingRequest meetingRequest = (MeetingRequest) eventRequestBroker.load(mtgRequestUid);
-        String currentlySetTime = meetingRequest.getEventStartDateTime().toLocalDateTime().format(DateTimeUtil.preferredTimeFormat);
+        String currentlySetTime = meetingRequest.getEventStartDateTime().toLocalDateTime().format(getPreferredTimeFormat());
 
         // String passingField = "&" + ((nextMenu.equals(confirmMenu)) ? previousMenu : "action") + "=" + timeOnly;
         // String loadFlag = (loadString) ? "&load_string=1" : "";
@@ -280,7 +282,7 @@ public class USSDMeetingController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber, saveMeetingMenu(dateOnly, mtgRequestUid, false));
         MeetingRequest meetingRequest = (MeetingRequest) eventRequestBroker.load(mtgRequestUid);
 
-        String currentlySetDate = meetingRequest.getEventStartDateTime().toLocalDateTime().format(DateTimeUtil.preferredDateFormat);
+        String currentlySetDate = meetingRequest.getEventStartDateTime().toLocalDateTime().format(getPreferredDateFormat());
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, "change", "date." + promptKey, currentlySetDate, user));
         menu.setFreeText(true);
@@ -429,7 +431,7 @@ public class USSDMeetingController extends USSDController {
         MeetingRequest changeRequest = (requestUid == null) ? eventRequestBroker.createChangeRequest(user.getUid(), eventUid) :
                 (MeetingRequest) eventRequestBroker.load(requestUid);
         cacheManager.putUssdMenuForUser(inputNumber, editingMtgMenuUrl(newTime, eventUid, changeRequest.getUid(), null));
-        String existingTime = changeRequest.getEventStartDateTime().toLocalDateTime().format(DateTimeUtil.preferredTimeFormat);
+        String existingTime = changeRequest.getEventStartDateTime().toLocalDateTime().format(getPreferredTimeFormat());
         USSDMenu menu = new USSDMenu(getMessage(thisSection, "change", "time." + promptKey, existingTime, user));
         menu.setFreeText(true);
         menu.setNextURI(editingMtgMenuUrl(modifyConfirm, eventUid, changeRequest.getUid(), newTime));
@@ -444,7 +446,7 @@ public class USSDMeetingController extends USSDController {
         MeetingRequest changeRequest = (requestUid == null) ? eventRequestBroker.createChangeRequest(user.getUid(), eventUid) :
                 (MeetingRequest) eventRequestBroker.load(requestUid);
         cacheManager.putUssdMenuForUser(inputNumber, editingMtgMenuUrl(newDate, eventUid, changeRequest.getUid(), null));
-        String existingDate = changeRequest.getEventStartDateTime().toLocalDateTime().format(DateTimeUtil.preferredDateFormat);
+        String existingDate = changeRequest.getEventStartDateTime().toLocalDateTime().format(getPreferredDateFormat());
         USSDMenu menu = new USSDMenu(getMessage(thisSection, "change", "date." + promptKey, existingDate, user));
         menu.setFreeText(true);
         menu.setNextURI(editingMtgMenuUrl(modifyConfirm, eventUid, changeRequest.getUid(), newDate));

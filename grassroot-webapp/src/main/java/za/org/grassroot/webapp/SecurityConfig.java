@@ -41,7 +41,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Autowired
     DataSource dataSource;
-    
+
     @Override
     public void configure(WebSecurity web) throws Exception {
         web.ignoring()

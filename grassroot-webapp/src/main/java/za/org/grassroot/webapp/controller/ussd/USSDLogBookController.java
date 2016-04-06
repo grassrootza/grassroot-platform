@@ -427,7 +427,7 @@ public class USSDLogBookController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber, null);
 
         LocalDateTime completedDateTime = (completedDate != null) ?
-                DateTimeUtil.parsePreformattedDate(reformatDateInput(completedDate), stdHour, stdMinute) : LocalDateTime.now();
+                DateTimeUtil.convertDateStringToLocalDateTime(reformatDateInput(completedDate), stdHour, stdMinute) : LocalDateTime.now();
         userLogger.recordUserInputtedDateTime(user.getUid(), completedDate, "logbook-completion", UserInterfaceType.USSD);
         logBookBroker.complete(logBookUid, completedDateTime, completedByUserUid);
 
@@ -444,7 +444,7 @@ public class USSDLogBookController extends USSDController {
                 break;
             case dueDateMenu:
                 String formattedDateString =  reformatDateInput(value);
-                logBookRequestBroker.updateDueDate(userUid, logBookRequestUid, DateTimeUtil.parsePreformattedDate(
+                logBookRequestBroker.updateDueDate(userUid, logBookRequestUid, DateTimeUtil.convertDateStringToLocalDateTime(
                         formattedDateString, stdHour, stdMinute));
                 break;
         }

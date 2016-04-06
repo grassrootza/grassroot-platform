@@ -16,7 +16,9 @@ import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,7 +41,7 @@ public class LogBookRepositoryTest {
     @Autowired
     UserRepository userRepository;
 
-
+    private Timestamp addHoursFromNow(int hours) { return Timestamp.from(Instant.now().plus(hours, ChronoUnit.HOURS)); }
 
     @Test
     public void shouldSaveAndRetrieveLogBookForGroup()  {
@@ -47,8 +49,8 @@ public class LogBookRepositoryTest {
         User user = userRepository.save(new User("001111141"));
         Group group = groupRepository.save(new Group("test logbook", user));
         Group groupUnrelated = groupRepository.save(new Group("not related logbook", user));
-        LogBook lb1 = logBookRepository.save(new LogBook(user, group,"just do it", DateTimeUtil.addHoursFromNow(2)));
-        LogBook lbUnrelated = logBookRepository.save(new LogBook(user, groupUnrelated, "just do it too", DateTimeUtil.addHoursFromNow(2)));
+        LogBook lb1 = logBookRepository.save(new LogBook(user, group,"just do it", addHoursFromNow(2)));
+        LogBook lbUnrelated = logBookRepository.save(new LogBook(user, groupUnrelated, "just do it too", addHoursFromNow(2)));
         List<LogBook> list = logBookRepository.findAllByGroupId(group.getId());
         assertEquals(1,list.size());
         assertEquals(lb1.getId(),list.get(0).getId());
@@ -60,8 +62,8 @@ public class LogBookRepositoryTest {
         User user = userRepository.save(new User("001111142"));
         Group group = groupRepository.save(new Group("test logbook", user));
         Group groupUnrelated = groupRepository.save(new Group("not related logbook", user));
-        LogBook lb1 = logBookRepository.save(new LogBook(user, group, "just do it", DateTimeUtil.addHoursFromNow(2)));
-        LogBook lbUnrelated = logBookRepository.save(new LogBook(user, groupUnrelated, "just do it too", DateTimeUtil.addHoursFromNow(2)));
+        LogBook lb1 = logBookRepository.save(new LogBook(user, group, "just do it", addHoursFromNow(2)));
+        LogBook lbUnrelated = logBookRepository.save(new LogBook(user, groupUnrelated, "just do it too", addHoursFromNow(2)));
     }
 
     @Test
@@ -69,8 +71,8 @@ public class LogBookRepositoryTest {
 
         User user = userRepository.save(new User("001111143"));
         Group group = groupRepository.save(new Group("test logbook", user));
-        LogBook lb1 = logBookRepository.save(new LogBook(user, group,"just do it", DateTimeUtil.addHoursFromNow(2)));
-        LogBook lb2 = logBookRepository.save(new LogBook(user, group, "just do it too", DateTimeUtil.addHoursFromNow(2)));
+        LogBook lb1 = logBookRepository.save(new LogBook(user, group,"just do it", addHoursFromNow(2)));
+        LogBook lb2 = logBookRepository.save(new LogBook(user, group, "just do it too", addHoursFromNow(2)));
         lb1.setCompleted(true);
         lb1 = logBookRepository.save(lb1);
     }
@@ -79,8 +81,8 @@ public class LogBookRepositoryTest {
 
         User user = userRepository.save(new User("001111144"));
         Group group = groupRepository.save(new Group("test logbook", user));
-        LogBook lb1 = logBookRepository.save(new LogBook(user, group, "just do it", DateTimeUtil.addHoursFromNow(2), 60, null, 3));
-        LogBook lb2 = logBookRepository.save(new LogBook(user, group, "not assigned", DateTimeUtil.addHoursFromNow(2)));
+        LogBook lb1 = logBookRepository.save(new LogBook(user, group, "just do it", addHoursFromNow(2), 60, null, 3));
+        LogBook lb2 = logBookRepository.save(new LogBook(user, group, "not assigned", addHoursFromNow(2)));
         List<LogBook> list = logBookRepository.findAllByAssignedMembersId(user.getId());
         assertEquals(1,list.size());
 //        lb2.setAssignedToUser(user);
@@ -97,8 +99,8 @@ public class LogBookRepositoryTest {
         group.addMember(user);
         groupRepository.save(group);
 
-        LogBook lb1 = new LogBook(user, group, "assigned 1", DateTimeUtil.addHoursFromNow(2), 60, null, 3);
-        LogBook lb2 = new LogBook(user, group, "not assigned", DateTimeUtil.addHoursFromNow(2), 60, null, 3);
+        LogBook lb1 = new LogBook(user, group, "assigned 1", addHoursFromNow(2), 60, null, 3);
+        LogBook lb2 = new LogBook(user, group, "not assigned", addHoursFromNow(2), 60, null, 3);
         lb1.assignMembers(Collections.singleton(user.getUid()));
 
         logBookRepository.save(lb1);

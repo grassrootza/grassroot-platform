@@ -13,6 +13,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
 
@@ -20,9 +21,12 @@ import javax.servlet.http.HttpServletRequest;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Set;
+
+import static za.org.grassroot.core.util.DateTimeUtil.*;
 
 
 /**
@@ -101,9 +105,10 @@ public class MeetingController extends BaseController {
         log.info("Event location set as: " + meeting.getEventLocation());
 
         String groupUid = (selectedGroupUid == null) ? meeting.resolveGroup().getUid() : selectedGroupUid;
+        Instant eventStartDateTimeForStoring = convertToSystemTime(meeting.getEventStartDateTime().toLocalDateTime(), getSAST());
 
         eventBroker.createMeeting(getUserProfile().getUid(), groupUid, JpaEntityType.GROUP, meeting.getName(),
-                meeting.getEventStartDateTime(), meeting.getEventLocation(), meeting.isIncludeSubGroups(),
+                Timestamp.from(eventStartDateTimeForStoring), meeting.getEventLocation(), meeting.isIncludeSubGroups(),
                 meeting.isRsvpRequired(), meeting.isRelayable(), meeting.getReminderType(), meeting.getCustomReminderMinutes(),
                 "", Collections.emptySet());
 

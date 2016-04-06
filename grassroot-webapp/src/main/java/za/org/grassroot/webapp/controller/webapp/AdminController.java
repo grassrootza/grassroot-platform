@@ -21,6 +21,7 @@ import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.MemberWrapper;
 
 import javax.servlet.http.HttpServletRequest;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -201,11 +202,8 @@ public class AdminController extends BaseController {
     @RequestMapping("/admin/groups/list")
     public String listGroups(Model model,@RequestParam(value="createdByUser", required=false) String createdByUserUid,
                              @RequestParam(value="groupMemberSize", required=false) Integer groupSize,
-                             @RequestParam(value="createdAfter", required=false) String createdAfter,
-                             @RequestParam(value="createdBefore", required=false) String createdBefore) {
-
-        Date createdAfterDate = DateTimeUtil.processDateString(createdAfter);
-        Date createdBeforeDate = DateTimeUtil.processDateString(createdBefore);
+                             @RequestParam(value="createdAfter", required=false) Timestamp createdAfterDate,
+                             @RequestParam(value="createdBefore", required=false) Timestamp createdBeforeDate) {
 
         log.info("createdAfterDate: " + createdAfterDate);
         log.info("createdBeforeDate: " + createdBeforeDate);

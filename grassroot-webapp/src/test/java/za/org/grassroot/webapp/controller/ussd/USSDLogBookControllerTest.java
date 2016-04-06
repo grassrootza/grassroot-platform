@@ -24,7 +24,7 @@ import java.util.List;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static za.org.grassroot.core.util.DateTimeUtil.parsePreformattedDate;
+import static za.org.grassroot.core.util.DateTimeUtil.convertDateStringToLocalDateTime;
 import static za.org.grassroot.core.util.DateTimeUtil.reformatDateInput;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 
@@ -303,7 +303,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
             String urlToSave = USSDUrlUtil.saveLogMenu(confirmMenu, dummyLogBook.getUid(), dueDateMenu, date, true);
             String formattedDateString = reformatDateInput(date).trim();
-            dummyLogBook.setActionByDate(Timestamp.valueOf(parsePreformattedDate(formattedDateString, 13, 0)));
+            dummyLogBook.setActionByDate(Timestamp.valueOf(convertDateStringToLocalDateTime(formattedDateString, 13, 0)));
             when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
             when(logBookRequestBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
 
@@ -545,8 +545,8 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
         dummyLogBook.assignMembers(Collections.singleton(testUser.getUid()));
         dummyLogBook.setCompletedByUser(testUser);
-        String completed_date = "20/2";
-        LocalDateTime correctDateTime = LocalDateTime.of(2016, 2, 20, 13, 0);
+        String completed_date = "20/11";
+        LocalDateTime correctDateTime = LocalDateTime.of(2016, 11, 20, 13, 0);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
 

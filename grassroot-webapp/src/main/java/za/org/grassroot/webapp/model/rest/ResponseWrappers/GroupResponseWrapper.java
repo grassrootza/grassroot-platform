@@ -48,7 +48,7 @@ public class GroupResponseWrapper {
         this.id = group.getUid();
         this.groupName = group.getGroupName();
         this.description = groupLog.getDescription();
-        this.dateTime =new Timestamp(groupLog.getCreatedDateTime().getTime());
+        this.dateTime =Timestamp.from(groupLog.getCreatedDateTime());
         this.groupCreator = group.getCreatedByUser().getDisplayName();
         this.role = (role!=null)?role.getName():null;
         this.groupMemberCount = group.getMemberships().size();

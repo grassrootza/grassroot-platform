@@ -15,6 +15,7 @@ import za.org.grassroot.services.GroupPage;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import static org.mockito.Mockito.*;
@@ -141,7 +142,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         Group testGroup = new Group(testGroupName, new User("27601110000"));
 
         testGroup.setGroupTokenCode("111");
-        testGroup.setTokenExpiryDateTime(new Timestamp(DateTimeUtil.addHoursToDate(new Date(), 24 * 7).getTime()));
+        testGroup.setTokenExpiryDateTime(Timestamp.valueOf(LocalDateTime.now().plus(1, ChronoUnit.WEEKS)));
 
         when(userManagementServiceMock.loadOrSaveUser(phoneForTests)).thenReturn(testUser);
         when(groupBrokerMock.findGroupFromJoinCode("111")).thenReturn(testGroup);

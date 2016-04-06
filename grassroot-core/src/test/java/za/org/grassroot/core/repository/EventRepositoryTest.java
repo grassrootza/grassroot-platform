@@ -19,6 +19,7 @@ import javax.transaction.Transactional;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -122,8 +123,8 @@ public class EventRepositoryTest {
         User user = userRepository.save(new User("0831111112"));
         Group group = groupRepository.save(new Group("events for group test",user));
 
-        Date expiry = DateTimeUtil.roundHourUp(DateTimeUtil.addHoursToDate(new Date(), 1));
-        Timestamp expiryTS = new Timestamp(expiry.getTime());
+        Instant expiry = Instant.now().plus(1, ChronoUnit.HOURS).truncatedTo(ChronoUnit.HOURS);
+        Timestamp expiryTS = Timestamp.from(expiry);
 
         Event vote = eventRepository.save(new Vote("testing vote query", expiryTS, user, group, true));
 
@@ -138,8 +139,7 @@ public class EventRepositoryTest {
         User user = userRepository.save(new User("0831111113"));
         Group group = groupRepository.save(new Group("events for group test",user));
 
-        Date expiry = DateTimeUtil.roundHourDown(new Date());
-        Timestamp expiryTS = new Timestamp(expiry.getTime());
+        Timestamp expiryTS = Timestamp.from(Instant.now().truncatedTo(ChronoUnit.HOURS));
         Event vote = eventRepository.save(new Vote("testing vote query", expiryTS, user, group, true));
         vote = eventRepository.save(vote);
         List<Event> list = eventRepository.findAllVotesAfterTimeStamp(new Date());
@@ -151,8 +151,7 @@ public class EventRepositoryTest {
         User user = userRepository.save(new User("0831111114"));
         Group group = groupRepository.save(new Group("events for group test",user));
 
-        Date expiry = DateTimeUtil.roundHourUp(DateTimeUtil.addHoursToDate(new Date(), 1));
-        Timestamp expiryTS = new Timestamp(expiry.getTime());
+        Timestamp expiryTS = Timestamp.from(Instant.now().truncatedTo(ChronoUnit.HOURS).plus(1, ChronoUnit.HOURS));
 
         Event meeting = eventRepository.save(new Meeting("testing vote query", expiryTS, user, group, "somewhere"));
         meeting = eventRepository.save(meeting);
