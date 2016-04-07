@@ -3,7 +3,10 @@ package za.org.grassroot.services.async;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.integration.support.MessageBuilder;
 import org.springframework.jms.annotation.JmsListener;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
@@ -14,11 +17,14 @@ import za.org.grassroot.core.repository.LogBookLogRepository;
 import za.org.grassroot.core.repository.LogBookRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.integration.domain.MessageProtocol;
+import za.org.grassroot.core.domain.MessageProtocol;
+import za.org.grassroot.integration.services.GcmService;
 import za.org.grassroot.integration.services.MessageSendingService;
+import za.org.grassroot.integration.services.NotificationService;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.util.CacheUtilService;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -71,6 +77,14 @@ public class EventNotificationConsumer {
     @Autowired
     PasswordTokenService passwordTokenService;
 
+    @Autowired
+    GcmService gcmService;
+
+    @Autowired
+    MessageChannel requestChannel;
+
+    @Autowired
+    NotificationService notificationService;
 
     /*
     change this to add messages or stop messages altogether by leaving it empty.
@@ -115,9 +129,12 @@ public class EventNotificationConsumer {
                     && (!eventLogManagementService.userRsvpNoForEvent(eventChanged.getEvent().getEventUid(), user.getUid())
                     || eventChanged.isStartTimeChanged())) {
                 log.info("sendChangedEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
-                messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
-                eventLogManagementService.createEventLog(EventLogType.EventChange, eventChanged.getEvent().getEventUid(),
-                                                         user.getUid(), message);
+               EventLog eventLog = eventLogManagementService.createEventLog(EventLogType.EventChange, eventChanged.getEvent().getEventUid(),
+                        user.getUid(), message);
+               // messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
+                Notification notification = notificationService.createNotification(user,eventLog,Instant.now());
+                messageSendingService.sendMessage(notification);
+
             }
         }
 
@@ -136,8 +153,11 @@ public class EventNotificationConsumer {
             if (!eventLogManagementService.cancelNotificationSentToUser(event.getUid(), user.getUid())
                     && !eventLogManagementService.userRsvpNoForEvent(event.getUid(), user.getUid())) {
                 log.info("sendCancelledEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
-                messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
-                eventLogManagementService.createEventLog(EventLogType.EventCancelled, event.getUid(), user.getUid(), message);
+               EventLog eventLog = eventLogManagementService.createEventLog(EventLogType.EventCancelled, event.getUid(), user.getUid(), message);
+                Notification notification= notificationService.createNotification(user,eventLog,Instant.now());
+                messageSendingService.sendMessage(notification);
+              //  messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
+
             }
         }
 
@@ -236,6 +256,7 @@ public class EventNotificationConsumer {
             // todo: record this for paid group / account ...
             messageSendingService.sendMessage(messageText, user.getPhoneNumber(), MessageProtocol.SMS);
             eventLogManagementService.createEventLog(EventLogType.FreeFormMessage, null, user.getUid(), messageText);
+
         }
 
     }
@@ -333,8 +354,10 @@ public class EventNotificationConsumer {
                 totalsDTO.getYes(),totalsDTO.getNo(),totalsDTO.getMaybe(),totalsDTO.getNumberNoRSVP());
         if (!eventLogManagementService.voteResultSentToUser(event.getEventUid(), user.getUid())) {
             log.info("sendVoteResultsToUser...send message..." + message + "...to..." + user.getPhoneNumber());
-            messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
-            eventLogManagementService.createEventLog(EventLogType.EventResult, event.getEventUid(), user.getUid(), message);
+           // messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
+            EventLog eventLog =eventLogManagementService.createEventLog(EventLogType.EventResult, event.getEventUid(), user.getUid(), message);
+            Notification notification = notificationService.createNotification(user,eventLog,Instant.now());
+            messageSendingService.sendMessage(notification);
         }
 
     }
@@ -356,18 +379,22 @@ public class EventNotificationConsumer {
         Event eventEntity = eventBroker.load(event.getEventUid());
         if (!eventLogManagementService.notificationSentToUser(eventEntity, user)) {
             log.info("sendNewEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
-            messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
-            eventLogManagementService.createEventLog(EventLogType.EventNotification, event.getEventObject().getUid(),
-                                                     user.getUid(), message);
+            EventLog eventLog =eventLogManagementService.createEventLog(EventLogType.EventNotification, event.getEventObject().getUid(),
+                    user.getUid(), message);
+
+                Notification notification = notificationService.createNotification(user,eventLog, Instant.now());
+                messageSendingService.sendMessage(notification);
+               // messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
+            }
         }
 
-    }
+
 
     private void sendMeetingReminderMessage(User target, Event event) {
         EventDTO eventDTO = (event.getEventType().equals(EventType.MEETING)) ?
                 new EventDTO((Meeting) event) :
                 new EventDTO(event);
-        String message = meetingNotificationService.createMeetingReminderMessage(target, eventDTO);;
+        String message = meetingNotificationService.createMeetingReminderMessage(target, eventDTO);
         if (event.getEventType() == EventType.VOTE) {
             // Do not send vote reminder if the target already voted (userRsvpForEvent)
             if (!eventLogManagementService.reminderSentToUser(event, target)
@@ -412,17 +439,23 @@ public class EventNotificationConsumer {
 
     private void sendMeetingReminderMessageAction(User user, EventDTO event, String message) {
         log.info("sendMeetingReminderMessage...send message..." + message + "...to..." + user.getPhoneNumber());
-        messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
-        eventLogManagementService.createEventLog(EventLogType.EventReminder, event.getEventUid(), user.getUid(), message);
+      //  messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
+        EventLog eventLog = eventLogManagementService.createEventLog(EventLogType.EventReminder, event.getEventUid(), user.getUid(), message);
+        Notification notification = notificationService.createNotification(user,eventLog,Instant.now());
+        messageSendingService.sendMessage(notification);
 
     }
 
     private void sendManualMessageAction(User user, EventDTO event, String message) {
         log.info("sendManualMessageAction...send message..." + message + "...to..." + user.getPhoneNumber());
-        messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
-        eventLogManagementService.createEventLog(EventLogType.EventManualReminder, event.getEventUid(), user.getUid(), message);
+      //  messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
+        EventLog eventLog = eventLogManagementService.createEventLog(EventLogType.EventManualReminder, event.getEventUid(), user.getUid(), message);
+        Notification notification = notificationService.createNotification(user,eventLog,Instant.now());
+        messageSendingService.sendMessage(notification);
+
 
     }
+
 
     private void sendLogBookReminderMessage(User user,Group group, LogBook logBook) {
         log.info("sendLogBookReminderMessage...user..." + user.getPhoneNumber() + "...logbook..." + logBook.getMessage());
@@ -444,10 +477,17 @@ public class EventNotificationConsumer {
         messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
     }
 
-    private String getPreferredUserChannel(User user){
-        return null;
-
+    private String getRegistrationId(User user){
+        return gcmService.getGcmKey(user);
     }
+
+
+
+
+
+
+
+    
 
 }
 
