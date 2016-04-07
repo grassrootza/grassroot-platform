@@ -1,4 +1,4 @@
-package za.org.grassroot.integration.domain;
+package za.org.grassroot.core.domain;
 
 /**
  * @author Lesetse Kimwaga
