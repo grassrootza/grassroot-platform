@@ -8,7 +8,11 @@ import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.dto.*;
 import za.org.grassroot.core.repository.LogBookRepository;
+import za.org.grassroot.core.repository.VoteRepository;
+import za.org.grassroot.integration.services.NotificationService;
+
 import za.org.grassroot.services.EventBroker;
+import za.org.grassroot.services.async.GenericJmsTemplateProducerService;
 
 import javax.jms.Message;
 import javax.jms.ObjectMessage;
@@ -31,6 +35,9 @@ public class ScheduledTasks {
 
     @Autowired
     private LogBookRepository logBookRepository;
+
+    @Autowired
+    NotificationService notificationService;
 
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendReminders() {
@@ -66,6 +73,13 @@ public class ScheduledTasks {
         }
         log.info("sendLogBookReminders..." + count + "...queued to logbook-reminders");
 
+    }
+
+
+    @Scheduled(fixedRate = 300000) //runs every 5 minutes
+    public void resendFailedDeliveries() {
+        log.info("sending messages via sms that were not delivered by gcm");
+        notificationService.resendNotDelivered();
     }
 
     /*

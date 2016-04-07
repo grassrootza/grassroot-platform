@@ -15,26 +15,47 @@ import java.util.Map;
  */
 public interface MeetingNotificationService {
 
-    public String createMeetingNotificationMessage(User user, EventDTO event);
+    String createMeetingNotificationMessage(User user, EventDTO event);
+
+     String createMeetingNotification(User user, EventDTO event, String channel);
 
     String createLogBookReminderMessage(User user, Group group, LogBook logBook);
 
+    String createLogBookReminderMessage(User user, Group group, LogBook logBook, String channel);
+
+
     String createNewLogBookNotificationMessage(User user, Group group, LogBook logBook, boolean assigned);
 
-    public String createChangeMeetingNotificationMessage(User user, EventDTO event);
+    String createNewLogBookNotificationMessage(User user, Group group, LogBook logBook, boolean assigned, String channel);
 
-    public String createCancelMeetingNotificationMessage(User user, EventDTO event);
+    String createChangeMeetingNotificationMessage(User user, EventDTO event);
 
-    public String createMeetingReminderMessage(User user, EventDTO event);
+    String createChangeMeetingNotificationMessage(User user, EventDTO eventDTO, String channel);
 
-    public String createVoteResultsMessage(User user, EventDTO event, double yes, double no, double abstain, double noReply);
+    String createCancelMeetingNotificationMessage(User user, EventDTO event);
+
+    String createCancelMeetingNotificationMessage(User user, EventDTO eventDTO, String channel);
+
+    String createMeetingReminderMessage(User user, EventDTO event);
+
+    String createMeetingReminderMessage(User user, EventDTO eventDTO, String channel);
+
+    String createVoteResultsMessage(User user, EventDTO event, double yes, double no, double abstain, double noReply);
+
+    String createVoteResultsmessage(User user, EventDTO eventDTO, double yes, double no, double abstain, double noReply, String channel);
 
     /*
     Helper method to produce messages in different languages, for confirmation screens
      */
-    public String createMeetingReminderMessage(String locale, User user, EventDTO event);
+    String createMeetingReminderMessage(String locale, User user, EventDTO event);
+
+    String createMeetingReminderMessage(String locale, User user, EventDTO event,String channel);
 
     String createWelcomeMessage(String messageId, UserDTO userDTO);
 
+    String createWelcomeMessage(String messageId, UserDTO userDTO, String channel);
+
     String createReplyFailureMessage(User user);
+
+
 }
