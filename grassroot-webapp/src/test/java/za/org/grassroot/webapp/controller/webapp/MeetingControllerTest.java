@@ -45,15 +45,16 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     public void shouldShowMeetingDetails() throws Exception {
 
         Group dummyGroup = new Group("Dummy Group3", new User("234345345"));
-        Meeting dummyMeeting = new Meeting("test meeting", oneDayAway,
-                                           sessionTestUser, dummyGroup, "some place");
+        Meeting dummyMeeting = new Meeting("test meeting", oneDayAway, sessionTestUser, dummyGroup, "some place");
+
+         logger.info("ZOG: dummyMeetingIs: {} ", dummyMeeting);
 
         ResponseTotalsDTO testCount = new ResponseTotalsDTO();
         testCount.setYes(1);
         HashMap<User, EventRSVPResponse> dummyResponsesMap = mock(HashMap.class);
         dummyResponsesMap.put(sessionTestUser, EventRSVPResponse.YES);
 
-         when(eventBrokerMock.loadMeeting(dummyMeeting.getUid())).thenReturn(dummyMeeting);
+        when(eventBrokerMock.loadMeeting(dummyMeeting.getUid())).thenReturn(dummyMeeting);
         when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, dummyGroup,
                                                              Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS)).thenReturn(true);
         when(eventLogManagementServiceMock.getResponseCountForEvent(dummyMeeting)).thenReturn(testCount);
@@ -62,7 +63,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         mockMvc.perform(get("/meeting/view").param("eventUid", dummyMeeting.getUid()))
                 .andExpect(status().isOk())
                 .andExpect(view().name("meeting/view"))
-                .andExpect(model().attribute("meeting", hasProperty("uid", is(dummyMeeting.getUid()))))
+                .andExpect(model().attribute("meeting", hasProperty("entityUid", is(dummyMeeting.getUid()))))
                 .andExpect(model().attribute("responseTotals", hasProperty("yes", is(1))))
                 .andExpect(model().attribute("rsvpResponses", hasItems(dummyResponsesMap.entrySet().toArray())));
 
@@ -116,8 +117,6 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         mockMvc.perform(get("/meeting/create").param("groupUid", testGroup.getUid()))
                 .andExpect((view().name("meeting/create"))).andExpect(status().isOk())
                 .andExpect(model().attribute("group", hasProperty("uid", is(testGroup.getUid()))))
-                .andExpect(model().attribute("meeting", hasProperty("createdByUser", is(sessionTestUser))))
-                .andExpect(model().attribute("groupSpecified", is(true)))
                 .andExpect(model().attribute("reminderOptions", hasItem(oneDay)));
 
         verify(groupBrokerMock, times(1)).load(testGroup.getUid());
@@ -141,7 +140,6 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
         mockMvc.perform(get("/meeting/create")).andExpect(status().isOk())
                 .andExpect((view().name("meeting/create")))
-                .andExpect(model().attribute("groupSpecified", is(false)))
                 .andExpect(model().attribute("userGroups", hasItem(dummyGroup)));
 
         verify(userManagementServiceMock, times(1)).load(sessionTestUser.getUid());
@@ -170,7 +168,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
         mockMvc.perform(post("/meeting/modify").sessionAttr("meeting", dummyMeeting).contentType(MediaType.APPLICATION_FORM_URLENCODED))
                 .andExpect(status().isOk())
-                .andExpect(model().attribute("meeting", hasProperty("uid", is(dummyMeeting.getUid()))))
+                .andExpect(model().attribute("meeting", hasProperty("entityUid", is(dummyMeeting.getUid()))))
                 .andExpect(model().attribute("responseTotals", hasProperty("yes", is(1))))
                 .andExpect(view().name("meeting/view"));
 
@@ -228,7 +226,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
         mockMvc.perform(post("/meeting/rsvp").param("eventUid", dummyMeeting.getUid()).param("answer", "yes"))
                 .andExpect(view().name("meeting/view"))
-                .andExpect(model().attribute("meeting", hasProperty("uid", is(dummyMeeting.getUid()))))
+                .andExpect(model().attribute("meeting", hasProperty("entityUid", is(dummyMeeting.getUid()))))
                 .andExpect(model().attribute("responseTotals", hasProperty("yes", is(2))))
                 .andExpect(model().attribute("rsvpResponses", hasItems(dummyResponsesMap.entrySet().toArray())));
 
@@ -260,7 +258,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
                                 .param("reminderType", EventReminderType.CUSTOM.name())
                                 .param("custom_minutes", String.valueOf(60*24)))
                 .andExpect(view().name("meeting/view"))
-                .andExpect(model().attribute("meeting", hasProperty("uid", is(dummyMeeting.getUid()))));
+                .andExpect(model().attribute("meeting", hasProperty("entityUid", is(dummyMeeting.getUid()))));
 
         verify(eventBrokerMock, times(2)).loadMeeting(dummyMeeting.getUid());
         verify(eventBrokerMock, times(1)).updateReminderSettings(sessionTestUser.getUid(), dummyMeeting.getUid(),

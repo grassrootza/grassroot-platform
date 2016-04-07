@@ -10,8 +10,10 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MaskedUserDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
@@ -152,10 +154,12 @@ public class AnalyticalManager implements AnalyticalService {
 
     @Override
     public int countEventsCreatedInInterval(LocalDateTime start, LocalDateTime end, EventType eventType) {
+        Instant intervalStart = DateTimeUtil.convertToSystemTime(start, DateTimeUtil.getSAST());
+        Instant intervalEnd = DateTimeUtil.convertToSystemTime(end, DateTimeUtil.getSAST());
         if (eventType.equals(EventType.MEETING)) {
-            return meetingRepository.countByCreatedDateTimeBetween(Timestamp.valueOf(start), Timestamp.valueOf(end));
+            return meetingRepository.countByCreatedDateTimeBetween(intervalStart, intervalEnd);
         } else {
-            return voteRepository.countByCreatedDateTimeBetween(Timestamp.valueOf(start), Timestamp.valueOf(end));
+            return voteRepository.countByCreatedDateTimeBetween(intervalStart, intervalEnd);
         }
     }
 

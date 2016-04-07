@@ -21,6 +21,7 @@ import za.org.grassroot.webapp.util.USSDEventUtil;
 
 import java.net.URISyntaxException;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
@@ -203,7 +204,7 @@ public class USSDVoteController extends USSDController {
             }
         } else {
             EventRequest vote = eventRequestBroker.load(requestUid);
-            promptFields = new String[]{vote.getName(), "at " + vote.getEventStartDateTime().toLocalDateTime().format(dateTimeFormat)};
+            promptFields = new String[]{vote.getName(), "at " + vote.getEventDateTimeAtSAST().format(dateTimeFormat)};
         }
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, "confirm", promptKey, promptFields, user));
@@ -227,7 +228,7 @@ public class USSDVoteController extends USSDController {
         String createdUid = eventRequestBroker.finish(user.getUid(), requestUid, true);
 
         Event vote = eventBroker.load(createdUid);
-        log.info("Vote details confirmed! Closing date and time: " + vote.getEventStartDateTime().toLocalDateTime().format(dateTimeFormat));
+        log.info("Vote details confirmed! Closing date and time: " + vote.getEventDateTimeAtSAST().format(dateTimeFormat));
         USSDMenu menu = new USSDMenu(getMessage(thisSection, "send", promptKey, user), optionsHomeExit(user));
 
         return menuBuilder(menu);
@@ -265,7 +266,7 @@ public class USSDVoteController extends USSDController {
 
         User user = userManager.findByInputNumber(inputNumber, saveVoteMenu("details", eventUid));
         Event vote = eventBroker.load(eventUid);
-        boolean futureEvent = vote.getEventStartDateTime().toLocalDateTime().isAfter(LocalDateTime.now());
+        boolean futureEvent = vote.getEventStartDateTime().isAfter(Instant.now());
 
         ResponseTotalsDTO voteResults = eventManager.getVoteResultsDTO(vote);
         String[] fields = new String[]{vote.resolveGroup().getName(""), vote.getName(), "" + voteResults.getYes(),
@@ -308,7 +309,7 @@ public class USSDVoteController extends USSDController {
     private String[] setCustomTime(String requestUid, String userInput, User user) {
         LocalDateTime parsedTime = DateTimeUtil.parseDateTime(userInput);
         userLogger.recordUserInputtedDateTime(user.getUid(), userInput, "vote-custom", UserInterfaceType.USSD);
-        eventRequestBroker.updateStartTimestamp(user.getUid(), requestUid, Timestamp.valueOf(parsedTime));
+        eventRequestBroker.updateEventDateTime(user.getUid(), requestUid, parsedTime);
         final String dateTimePrompt = "at " + parsedTime.format(dateTimeFormat);
         return new String[]{eventRequestBroker.load(requestUid).getName(), dateTimePrompt};
     }
@@ -338,7 +339,7 @@ public class USSDVoteController extends USSDController {
                 break;
         }
 
-        eventRequestBroker.updateStartTimestamp(user.getUid(), requestUid, Timestamp.valueOf(proposedDateTime));
+        eventRequestBroker.updateEventDateTime(user.getUid(), requestUid, proposedDateTime);
         EventRequest voteRequest = eventRequestBroker.load(requestUid);
         return new String[]{voteRequest.getName(), dateTimePrompt};
 
@@ -348,13 +349,14 @@ public class USSDVoteController extends USSDController {
         String dateTime;
         eventRequestBroker.updateName(user.getUid(), requestUid, userInput);
         EventRequest vote = eventRequestBroker.load(requestUid);
-        if (vote.getEventStartDateTime().toLocalDateTime().isBefore(LocalDateTime.now().plusMinutes(7L))) {
+        if (vote.getEventStartDateTime().isBefore(Instant.now().plus(7, ChronoUnit.MINUTES))) {
             // user is manipulating an "instant" vote so need to reset the counter, else may expire before send
-            eventRequestBroker.updateStartTimestamp(user.getUid(), requestUid, Timestamp.valueOf(LocalDateTime.now().plusMinutes(7L)));
+            // todo: make sure this is actually working with timezones
+            eventRequestBroker.updateEventDateTime(user.getUid(), requestUid, LocalDateTime.now().plusMinutes(7L));
             dateTime = getMessage(thisSection, "confirm", "time.instant", user);
         } else {
             // need a quick way to do "at" in i18n
-            dateTime = "at " + vote.getEventStartDateTime().toLocalDateTime().format(dateTimeFormat);
+            dateTime = "at " + vote.getEventDateTimeAtSAST().format(dateTimeFormat);
         }
         return new String[]{userInput, dateTime};
     }

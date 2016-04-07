@@ -144,7 +144,7 @@ public class MeetingNotificationManager implements MeetingNotificationService {
         DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
         String dateString = "no date specified";
         if (event.getEventStartDateTime() != null) {
-            dateString = sdf.format(convertToUserTimeZone(event.getEventStartDateTime().toInstant(), getSAST()));
+            dateString = sdf.format(event.getEventStartDateTime().atZone(getSAST()));
         }
         String[] eventVariables = new String[]{
                 salutation,

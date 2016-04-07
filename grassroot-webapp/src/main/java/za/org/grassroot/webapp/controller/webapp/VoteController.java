@@ -16,7 +16,6 @@ import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -82,7 +81,7 @@ public class VoteController extends BaseController {
         log.info("Vote passed back to us: " + vote);
         String groupUid = (selectedGroupUid == null) ? vote.getParent().getUid() : selectedGroupUid;
 
-        eventBroker.createVote(getUserProfile().getUid(), groupUid, JpaEntityType.GROUP, vote.getName(), vote.getEventStartDateTime(),
+        eventBroker.createVote(getUserProfile().getUid(), groupUid, JpaEntityType.GROUP, vote.getName(), vote.getEventDateTimeAtSAST(),
                                vote.isIncludeSubGroups(), vote.isRelayable(), vote.getDescription(), Collections.emptySet());
 
         log.info("Stored vote, at end of creation: " + vote.toString());
@@ -98,7 +97,7 @@ public class VoteController extends BaseController {
 
         Event vote = eventBroker.load(eventUid);
         boolean canModify = (vote.getCreatedByUser().equals(getUserProfile())
-                && vote.getEventStartDateTime().toLocalDateTime().isAfter(LocalDateTime.now())); // todo: make this more nuanced
+                && vote.getEventStartDateTime().isAfter(Instant.now())); // todo: make this more nuanced
 
         ResponseTotalsDTO responses = eventManagementService.getVoteResultsDTO(vote);
 
@@ -122,7 +121,7 @@ public class VoteController extends BaseController {
     @RequestMapping(value = "description", method = RequestMethod.POST)
     public String changeDescription(Model model, @ModelAttribute("vote") Vote vote, HttpServletRequest request) {
         log.info("Vote we are passed back ... " + vote);
-        eventBroker.updateVote(getUserProfile().getUid(), vote.getUid(), vote.getEventStartDateTime(), vote.getDescription());
+        eventBroker.updateVote(getUserProfile().getUid(), vote.getUid(), vote.getEventDateTimeAtSAST(), vote.getDescription());
         addMessage(model, MessageType.SUCCESS, "vote.update.done", request);
         return viewVote(model, vote.getUid());
     }
@@ -131,9 +130,9 @@ public class VoteController extends BaseController {
     public String changeDateTime(Model model, @ModelAttribute("vote") Vote vote, HttpServletRequest request) {
         // note: this is pretty much the same as above, but may make it more sophisticated later, so am keeping separate
         Vote changedVote = eventBroker.updateVote(getUserProfile().getUid(), vote.getUid(),
-                                                  vote.getEventStartDateTime(), vote.getDescription());
+                                                  vote.getEventDateTimeAtSAST(), vote.getDescription());
         String toDisplay = DateTimeFormatter.ofPattern("h:mm a' on 'E, d MMMM").
-                format(changedVote.getEventStartDateTime().toLocalDateTime());
+                format(changedVote.getEventDateTimeAtSAST());
         addMessage(model, MessageType.SUCCESS, "vote.update.closing.done", new String[] {toDisplay}, request);
         return viewVote(model, vote.getUid());
     }

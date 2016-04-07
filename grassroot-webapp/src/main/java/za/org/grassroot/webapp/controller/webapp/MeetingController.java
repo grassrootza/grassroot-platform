@@ -99,7 +99,7 @@ public class MeetingController extends BaseController {
                                   meeting.getTitle(), meeting.getMeetingDateTime(), meeting.getLocation(),
                                   meeting.isIncludeSubgroups(), meeting.isRsvpRequired(), meeting.isRelayable(),
                                   meeting.getReminderType(), meeting.getCustomReminderMinutes(), meeting.getDescription(),
-                                  meeting.getAssignedMembers());
+                                  Collections.emptySet());
 
         addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.creation.success", request);
         redirectAttributes.addAttribute("groupUid", meeting.getParentUid());
@@ -152,11 +152,11 @@ public class MeetingController extends BaseController {
         // todo: double check permissions in location update
         log.info("Okay, here is the meeting passed back ... " + changedMeeting);
 
-        eventBroker.updateMeeting(getUserProfile().getUid(), changedMeeting.getEventUid(), changedMeeting.getTitle(),
+        eventBroker.updateMeeting(getUserProfile().getUid(), changedMeeting.getEntityUid(), changedMeeting.getTitle(),
                                   changedMeeting.getMeetingDateTime(), changedMeeting.getLocation());
 
         addMessage(model, MessageType.SUCCESS, "meeting.update.success", request);
-        return viewMeetingDetails(model, changedMeeting.getEventUid());
+        return viewMeetingDetails(model, changedMeeting.getEntityUid());
     }
 
     @RequestMapping(value = "cancel", method=RequestMethod.POST)

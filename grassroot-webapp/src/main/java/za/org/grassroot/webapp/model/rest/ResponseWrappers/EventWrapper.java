@@ -34,11 +34,11 @@ public class EventWrapper extends TaskDTO {
     private boolean getCanEdit(Event event, User user) {
         Role role = event.resolveGroup().getMembership(user).getRole();
         if (event.getEventType().equals(EventType.MEETING)
-                && event.getEventStartDateTime().toInstant().isAfter(Instant.now())) {
+                && event.getEventStartDateTime().isAfter(Instant.now())) {
             return role.getPermissions().contains(Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
         }
         return (role.getPermissions().contains(Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE)
-                && event.getEventStartDateTime().toInstant().isAfter(Instant.now()));
+                && event.getEventStartDateTime().isAfter(Instant.now()));
     }
 
     public ResponseTotalsDTO getTotals() {

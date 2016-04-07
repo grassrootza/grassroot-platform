@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Date;
@@ -27,6 +28,8 @@ import java.util.List;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
+import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.backVoteUrl;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.saveVoteMenu;
 
@@ -224,7 +227,7 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
                 param("request", "1").param("field", "standard").param("time", "instant")).andExpect(status().isOk());
         mockMvc.perform(get(path + "confirm").param(phoneParam, testUserPhone).param("entityUid", requestUid).
                 param("request", "Tomorrow 5pm").param("field", "custom")).andExpect(status().isOk());
-        testVote.setEventStartDateTime(Timestamp.valueOf(tomorrow5pm));
+        testVote.setEventStartDateTime(convertToSystemTime(tomorrow5pm, getSAST()));
         mockMvc.perform(get(path + "confirm").param(phoneParam, testUserPhone).param("entityUid", requestUid).
                 param("request", "Revised subject").param("field", "issue")).andExpect(status().isOk());
         mockMvc.perform(get(base + interruptedUrl).param(phoneParam, testUserPhone).param("request", "1")).
@@ -233,8 +236,8 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(4)).findByInputNumber(testUserPhone, interruptedUrl);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventRequestBrokerMock, times(4)).load(requestUid);
-        verify(eventRequestBrokerMock, times(1)).updateStartTimestamp(userUid, requestUid, Timestamp.valueOf(in7minutes));
-        verify(eventRequestBrokerMock, times(1)).updateStartTimestamp(userUid, requestUid, Timestamp.valueOf(tomorrow5pm));
+        verify(eventRequestBrokerMock, times(1)).updateEventDateTime(userUid, requestUid, in7minutes);
+        verify(eventRequestBrokerMock, times(1)).updateEventDateTime(userUid, requestUid, tomorrow5pm);
         verify(eventRequestBrokerMock, times(1)).updateName(userUid, requestUid, "Revised subject");
         verifyNoMoreInteractions(eventRequestBrokerMock);
 
@@ -245,17 +248,14 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
     public void sendMenuShouldWork() throws Exception {
 
         Instant testClosingTime = Instant.now().plus(7, ChronoUnit.MINUTES).truncatedTo(ChronoUnit.MINUTES);
-        Timestamp testTimestamp = Timestamp.from(testClosingTime);
 
         VoteRequest testVote = VoteRequest.makeEmpty();
         testVote.setCreatedByUser(testUser);
         testVote.setName("test vote");
-        testVote.setEventStartDateTime(testTimestamp);
+        testVote.setEventStartDateTime(testClosingTime);
         String requestUid = testVote.getUid();
 
-        Vote savedVote = new Vote("test vote", testTimestamp, testUser, new Group("tg1", testUser));
-
-        String testParamTime = (new SimpleDateFormat("yyyy-MM-dd HH:mm")).format(testTimestamp);
+        Vote savedVote = new Vote("test vote", testClosingTime, testUser, new Group("tg1", testUser));
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
         when(eventRequestBrokerMock.finish(testUser.getUid(), requestUid, true)).thenReturn("fake-UID");

@@ -70,7 +70,7 @@ public class EventBrokerImpl implements EventBroker {
 	public List<Event> loadEventsUserCanManage(String userUid, EventType eventType, int pageNumber, int pageSize) {
 		User user = userRepository.findOneByUid(userUid);
 		Page<Event> pageOfEvents = eventRepository.
-			findByCreatedByUserAndEventStartDateTimeGreaterThanAndEventTypeAndCanceledFalse(user, Timestamp.valueOf(LocalDateTime.now()), EventType.MEETING,
+			findByCreatedByUserAndEventStartDateTimeGreaterThanAndEventTypeAndCanceledFalse(user, Instant.now(), EventType.MEETING,
 																							new PageRequest(pageNumber, pageSize));
 		return pageOfEvents.getContent();
 	}
@@ -294,7 +294,7 @@ public class EventBrokerImpl implements EventBroker {
 	@Transactional
 	public void sendScheduledReminders() {
 		Instant now = Instant.now();
-		List<Event> events = eventRepository.findEventsForReminders(Date.from(now));
+		List<Event> events = eventRepository.findEventsForReminders(Instant.now());
 		logger.info("Sending scheduled reminders for {} event(s)", events.size());
 
 		for (Event event : events) {

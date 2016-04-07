@@ -10,13 +10,17 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.EventRequestRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.exception.EventRequestNotFilledException;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static za.org.grassroot.core.util.DateTimeUtil.*;
 
 @Service
 public class EventRequestBrokerImpl implements EventRequestBroker {
@@ -82,13 +86,13 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
 
 	@Override
 	@Transactional
-	public void updateStartTimestamp(String userUid, String eventRequestUid, Timestamp startTimestamp) {
+	public void updateEventDateTime(String userUid, String eventRequestUid, LocalDateTime eventDateTime) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(eventRequestUid);
-		Objects.requireNonNull(startTimestamp);
+		Objects.requireNonNull(eventDateTime);
 
 		EventRequest request = eventRequestRepository.findOneByUid(eventRequestUid);
-		request.setEventStartDateTime(startTimestamp);
+		request.setEventStartDateTime(convertToSystemTime(eventDateTime, getSAST()));
 	}
 
 	@Override
@@ -124,14 +128,14 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
 			MeetingContainer parent = meetingRequest.getParent();
             if (meetingRequest.getReminderType() == null) meetingRequest.setReminderType(EventReminderType.GROUP_CONFIGURED);
 			createdEntityUid = eventBroker.createMeeting(userUid, parent.getUid(), parent.getJpaEntityType(), meetingRequest.getName(),
-					meetingRequest.getEventStartDateTime(), meetingRequest.getEventLocation(), meetingRequest.isIncludeSubGroups(),
+					meetingRequest.getEventDateTimeAtSAST(), meetingRequest.getEventLocation(), meetingRequest.isIncludeSubGroups(),
 					rsvpRequired, meetingRequest.isRelayable(), meetingRequest.getReminderType(), meetingRequest.getCustomReminderMinutes(),
 					meetingRequest.getDescription(), assignedMemberUids).getUid();
 		} else {
 			VoteRequest voteRequest = (VoteRequest) request;
 			VoteContainer parent = voteRequest.getParent();
 			createdEntityUid = eventBroker.createVote(userUid, parent.getUid(), parent.getJpaEntityType(), voteRequest.getName(),
-					voteRequest.getEventStartDateTime(), voteRequest.isIncludeSubGroups(), voteRequest.isRelayable(),
+					voteRequest.getEventDateTimeAtSAST(), voteRequest.isIncludeSubGroups(), voteRequest.isRelayable(),
 					voteRequest.getDescription(), assignedMemberUids).getUid();
 		}
 
@@ -165,11 +169,11 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
         if (request instanceof MeetingRequest) {
             MeetingRequest meetingChangeRequest = (MeetingRequest) request;
             eventBroker.updateMeeting(userUid, eventUid, meetingChangeRequest.getName(),
-									  meetingChangeRequest.getEventStartDateTime().toLocalDateTime(),
+									  meetingChangeRequest.getEventDateTimeAtSAST(),
                                       meetingChangeRequest.getEventLocation());
         } else {
             VoteRequest voteRequest = (VoteRequest) request;
-            eventBroker.updateVote(userUid, eventUid, voteRequest.getEventStartDateTime(), voteRequest.getDescription());
+            eventBroker.updateVote(userUid, eventUid, voteRequest.getEventDateTimeAtSAST(), voteRequest.getDescription());
         }
 
         eventRequestRepository.delete(request);

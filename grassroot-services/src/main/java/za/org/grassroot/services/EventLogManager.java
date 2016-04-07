@@ -15,6 +15,7 @@ import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.util.CacheUtilService;
 
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -117,7 +118,7 @@ public class EventLogManager implements EventLogManagementService {
                 log.trace("rsvpForEvent...after..." + rsvpTotalsDTO.toString());
                 if (rsvpTotalsDTO.getNumberNoRSVP() < 1) {
                     Date now = new Date();
-                    event.setEventStartDateTime(new Timestamp(now.getTime()));
+                    event.setEventStartDateTime(Instant.now());
                     eventRepository.save(event);
                 }
             }

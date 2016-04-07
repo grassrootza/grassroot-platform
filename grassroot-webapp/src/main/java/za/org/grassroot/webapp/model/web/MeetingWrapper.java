@@ -14,7 +14,7 @@ import java.util.Set;
  */
 public class MeetingWrapper {
 
-    private String eventUid;
+    private String entityUid;
     private String parentUid;
     private JpaEntityType parentEntityType;
 
@@ -37,7 +37,7 @@ public class MeetingWrapper {
     }
 
     public MeetingWrapper(Meeting meeting) {
-        this.eventUid = meeting.getUid();
+        this.entityUid = meeting.getUid();
         this.parentEntityType = meeting.getParent().getJpaEntityType();
         this.parentUid = meeting.getParent().getUid();
         this.title = meeting.getName();
@@ -64,12 +64,12 @@ public class MeetingWrapper {
         return meetingWrapper;
     }
 
-    public String getEventUid() {
-        return eventUid;
+    public String getEntityUid() {
+        return entityUid;
     }
 
-    public void setEventUid(String eventUid) {
-        this.eventUid = eventUid;
+    public void setEntityUid(String entityUid) {
+        this.entityUid = entityUid;
     }
 
     public String getParentUid() {
@@ -171,7 +171,7 @@ public class MeetingWrapper {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("MeetingWrapper{");
-        sb.append("eventUid='").append(eventUid).append('\'');
+        sb.append("entityUid='").append(entityUid).append('\'');
         sb.append("parentUid='").append(parentUid).append('\'');
         sb.append("parentType='").append(parentEntityType).append('\'');
         sb.append("title='").append(title).append('\'');

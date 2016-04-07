@@ -27,16 +27,18 @@ public class DateTimeUtil {
 
     private static final Logger log = LoggerFactory.getLogger(DateTimeUtil.class);
 
-    // todo: replace with getters
     private static final DateTimeFormatter preferredDateFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy");
     private static final DateTimeFormatter preferredTimeFormat = DateTimeFormatter.ofPattern("HH:mm");
     private static final DateTimeFormatter preferredDateTimeFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
+
+    private static final DateTimeFormatter preferredRestFormat = DateTimeFormatter.ISO_DATE_TIME;
 
     private static final LocalDateTime veryLongTimeAway = LocalDateTime.of(2099, 12, 31, 23, 59);
 
     public static DateTimeFormatter getPreferredDateFormat() { return preferredDateFormat; }
     public static DateTimeFormatter getPreferredTimeFormat() { return preferredTimeFormat; }
     public static DateTimeFormatter getPreferredDateTimeFormat() { return preferredDateTimeFormat; }
+    public static DateTimeFormatter getPreferredRestFormat() { return preferredRestFormat; }
 
     public static LocalDateTime getVeryLongTimeAway() {
         return veryLongTimeAway;
@@ -238,12 +240,12 @@ public class DateTimeUtil {
     /**
      * Method that will take a string representing a date and update a timestamp, leaving the time unchanged. It will
      * first try to process the string in the preferred format; if it fails, it invokes the language processor
-     * @param timestamp The original timestamp
+     * @param originalDateTime The original date and time
      * @param revisedDateString The string representing the new date
      * @return The revised timestamp, with the new date, but original time
      */
-    public static Timestamp changeTimestampDates(Timestamp timestamp, String revisedDateString) {
-        Objects.requireNonNull(timestamp);
+    public static LocalDateTime changeTimestampDates(LocalDateTime originalDateTime, String revisedDateString) {
+        Objects.requireNonNull(originalDateTime);
         Objects.requireNonNull(revisedDateString);
 
         LocalDate revisedDate;
@@ -252,19 +254,19 @@ public class DateTimeUtil {
         } catch (DateTimeParseException e) {
             revisedDate = LocalDate.from(parseDateTime(revisedDateString));
         }
-        LocalDateTime newDateTime = LocalDateTime.of(revisedDate, timestamp.toLocalDateTime().toLocalTime());
-        return Timestamp.valueOf(newDateTime);
+        LocalDateTime newDateTime = LocalDateTime.of(revisedDate, originalDateTime.toLocalTime());
+        return newDateTime;
     }
 
     /**
-     * Method that will take a string representing a time and update a timestamp, leaving the date unchanged. It will
+     * Method that will take a string representing a time and update an instant, leaving the date unchanged. It will
      * first try to process the string in the preferred time format ("HH:mm"); if it fails, it invokes the language processor
-     * @param timestamp The original timestamp
+     * @param originalDateTime The original local date time
      * @param revisedTimeString The string representing the new time
      * @return The revised timestamp, with the new date, but original time
      */
-    public static Timestamp changeTimestampTimes(Timestamp timestamp, String revisedTimeString) {
-        Objects.requireNonNull(timestamp);
+    public static LocalDateTime changeTimestampTimes(LocalDateTime originalDateTime, String revisedTimeString) {
+        Objects.requireNonNull(originalDateTime);
         Objects.requireNonNull(revisedTimeString);
 
         LocalTime revisedTime;
@@ -273,8 +275,8 @@ public class DateTimeUtil {
         } catch (DateTimeParseException e) {
             revisedTime = LocalTime.from(parseDateTime(revisedTimeString));
         }
-        LocalDateTime newDateTime = LocalDateTime.of(timestamp.toLocalDateTime().toLocalDate(), revisedTime);
-        return Timestamp.valueOf(newDateTime);
+        LocalDateTime newDateTime = LocalDateTime.of(originalDateTime.toLocalDate(), revisedTime);
+        return newDateTime;
     }
 
     /**

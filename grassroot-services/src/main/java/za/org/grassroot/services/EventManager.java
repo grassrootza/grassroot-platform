@@ -14,12 +14,16 @@ import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.util.CacheUtilService;
 
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
+
+import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
 
 /**
  * Created by aakilomar on 8/20/15.
@@ -90,17 +94,17 @@ public class EventManager implements EventManagementService {
 
     @Override
     public List<Meeting> getUpcomingMeetings(Group group) {
-        return meetingRepository.findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(group, new Date(), false);
+        return meetingRepository.findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(group, Instant.now(), false);
     }
 
     @Override
     public List<Vote> getUpcomingVotes(Group group) {
-        return voteRepository.findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(group, new Date(), false);
+        return voteRepository.findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(group, Instant.now(), false);
     }
 
     @Override
     public List<Event> getUpcomingEvents(Group group) {
-        return eventRepository.findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(group, new Date(), false);
+        return eventRepository.findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(group, Instant.now(), false);
     }
 
     @Override
@@ -132,7 +136,7 @@ public class EventManager implements EventManagementService {
 
     @Override
     public int countUpcomingEvents(Long userId) {
-        return eventRepository.countFutureEvents(userId);
+        return eventRepository.countFutureEvents(userId, Instant.now());
     }
 
 
@@ -154,12 +158,13 @@ public class EventManager implements EventManagementService {
         if (outstandingRSVPs == null) {
             // fetch from the database
             Map eventMap = new HashedMap<Long, Long>();
-            outstandingRSVPs = new ArrayList<Event>();
+            outstandingRSVPs = new ArrayList<>();
             List<Group> groups = groupRepository.findByMembershipsUserAndActive(user, true);
             log.debug("getOutstandingResponseForUser...after...getGroupsPartOf...");
+
+            // major todo: must be a more elegant way to do this, e.g., via a single query
             if (groups != null) {
                 log.debug("getOutstandingResponseForUser...number of groups..." + groups.size());
-
                 for (Group group : groups) {
                     log.debug("getOutstandingResponseForUser...before...getUpcomingEventsForGroupAndParentGroups..." + group.getId());
                     List<Event> upcomingEvents = getUpcomingEventsForGroupAndParentGroups(group);
@@ -170,14 +175,13 @@ public class EventManager implements EventManagementService {
                             log.debug("getOutstandingResponseForUser...start...event check..." + event.getId());
 
                             if (event.isRsvpRequired() && event.getEventType() == eventType) {
-                                //rsvp
                                 if ((eventType == EventType.MEETING && event.getCreatedByUser().getId() != user.getId())
                                         || eventType != EventType.MEETING) {
 
                                     //N.B. remove this if statement if you want to allow votes for people that joined the group late
                                     if (eventType == EventType.VOTE) {
                                         Timestamp joined = groupLogRepository.getGroupJoinedDate(group.getId(), user.getId());
-                                        if (joined != null && joined.after(event.getCreatedDateTime())) {
+                                        if (joined != null && joined.after(Timestamp.from(event.getCreatedDateTime()))) {
                                             log.info(String.format("Excluding vote %s for %s as the user joined group %s after the vote was called", event.getName(), user.getPhoneNumber(), group.getId()));
                                             continue;
                                         }
@@ -244,7 +248,7 @@ public class EventManager implements EventManagementService {
 
     @Override
     public List<Event> getUpcomingEventsUserCreated(User requestingUser) {
-        return eventRepository.findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(requestingUser, new Date(), false);
+        return eventRepository.findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(requestingUser, Instant.now(), false);
     }
 
     @Override
@@ -252,18 +256,17 @@ public class EventManager implements EventManagementService {
         // todo: at some point we will need this to be efficient ... for now, doing a very slow kludge, and going to avoid using the method
         if (type.equals(EventType.MEETING)) {
             return (List) meetingRepository.findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceled
-                    (requestingUser, new Date(), false);
+                    (requestingUser, Instant.now(), false);
         } else {
             return (List) voteRepository.findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceled
-                    (requestingUser, new Date(), false);
+                    (requestingUser, Instant.now(), false);
         }
     }
 
     @Override
     public List<Event> getPaginatedEventsCreatedByUser(User sessionUser, int pageNumber, int pageSize) {
         Page<Event> pageOfEvents = eventRepository.
-                findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(sessionUser, Timestamp.valueOf(LocalDateTime.now()),
-                                                                               false, new PageRequest(pageNumber, pageSize));
+                findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(sessionUser, Instant.now(), false, new PageRequest(pageNumber, pageSize));
         return pageOfEvents.getContent();
     }
 
@@ -300,11 +303,11 @@ public class EventManager implements EventManagementService {
         // todo: in future performance tweaking, may turn this into a direct count query
         if (type.equals(EventType.MEETING)) {
             return !meetingRepository.
-                    findByAppliesToGroupMembershipsUserAndEventStartDateTimeLessThanAndCanceled(user, new Date(), false).
+                    findByAppliesToGroupMembershipsUserAndEventStartDateTimeLessThanAndCanceled(user, Instant.now(), false).
                     isEmpty();
         } else {
             return !voteRepository.
-                    findByAppliesToGroupMembershipsUserAndEventStartDateTimeLessThanAndCanceled(user, new Date(), false).
+                    findByAppliesToGroupMembershipsUserAndEventStartDateTimeLessThanAndCanceled(user, Instant.now(), false).
                     isEmpty();
         }
     }
@@ -314,11 +317,11 @@ public class EventManager implements EventManagementService {
         // todo: as above, probably want to turn this into a count query
         if (type.equals(EventType.MEETING)) {
             return !meetingRepository.
-                    findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceled(user, new Date(), false).
+                    findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceled(user, Instant.now(), false).
                     isEmpty();
         } else {
             return !voteRepository.
-                    findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceled(user, new Date(), false).
+                    findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceled(user, Instant.now(), false).
                     isEmpty();
         }
     }
@@ -329,19 +332,19 @@ public class EventManager implements EventManagementService {
         if (pastPresentOrBoth == -1) {
             if (type.equals(EventType.MEETING)) {
                 return (Page) meetingRepository.findByAppliesToGroupMembershipsUserAndEventStartDateTimeLessThanAndCanceledOrderByEventStartDateTimeDesc(
-                        user, new Date(), false, new PageRequest(pageNumber, pageSize));
+                        user, Instant.now(), false, new PageRequest(pageNumber, pageSize));
             } else {
                 return (Page) voteRepository.findByAppliesToGroupMembershipsUserAndEventStartDateTimeLessThanAndCanceledOrderByEventStartDateTimeDesc(
-                        user, new Date(), false, new PageRequest(pageNumber, pageSize));
+                        user, Instant.now(), false, new PageRequest(pageNumber, pageSize));
             }
 
         } else if (pastPresentOrBoth == 1) {
             if (type.equals(EventType.MEETING)) {
                 return (Page) meetingRepository.findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledOrderByEventStartDateTimeDesc(
-                        user, new Date(), false, new PageRequest(pageNumber, pageSize));
+                        user, Instant.now(), false, new PageRequest(pageNumber, pageSize));
             } else {
                 return (Page) voteRepository.findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledOrderByEventStartDateTimeDesc(
-                        user, new Date(), false, new PageRequest(pageNumber, pageSize));
+                        user, Instant.now(), false, new PageRequest(pageNumber, pageSize));
             }
 
         } else {
@@ -402,24 +405,24 @@ public class EventManager implements EventManagementService {
     @Override
     public List<Event> getGroupEventsInPeriod(Group group, LocalDateTime periodStart, LocalDateTime periodEnd) {
         Sort sort = new Sort(Sort.Direction.ASC, "EventStartDateTime");
-        return eventRepository.findByAppliesToGroupAndEventStartDateTimeBetween(group, Timestamp.valueOf(periodStart),
-                Timestamp.valueOf(periodEnd), sort);
+        Instant start = convertToSystemTime(periodStart, DateTimeUtil.getSAST());
+        Instant end = convertToSystemTime(periodEnd, DateTimeUtil.getSAST());
+        return eventRepository.findByAppliesToGroupAndEventStartDateTimeBetween(group, start, end, sort);
     }
 
     /**
      * SECTION:
-     * major todo: consider refactoring these into a "eventAnalyticalService" or similar, to make this class less sprawling
      */
 
 
     @Override
     public List<Event> getEventsForGroupInTimePeriod(Group group, EventType eventType, LocalDateTime periodStart, LocalDateTime periodEnd) {
+        Instant start = convertToSystemTime(periodStart, DateTimeUtil.getSAST());
+        Instant end = convertToSystemTime(periodEnd, DateTimeUtil.getSAST());
         if (eventType.equals(EventType.MEETING)) {
-            return (List) meetingRepository.
-                    findByAppliesToGroupAndEventStartDateTimeBetween(group, Timestamp.valueOf(periodStart), Timestamp.valueOf(periodEnd));
+            return (List) meetingRepository.findByAppliesToGroupAndEventStartDateTimeBetween(group, start, end);
         } else {
-            return (List) voteRepository.
-                    findByAppliesToGroupAndEventStartDateTimeBetween(group, Timestamp.valueOf(periodStart), Timestamp.valueOf(periodEnd));
+            return (List) voteRepository.findByAppliesToGroupAndEventStartDateTimeBetween(group, start, end);
         }
     }
 
