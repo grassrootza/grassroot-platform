@@ -19,9 +19,12 @@ import javax.transaction.Transactional;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
+import static java.time.temporal.ChronoUnit.*;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
@@ -61,9 +64,9 @@ public class EventRepositoryTest {
         Group groupToDoTests = new Group("Test Group", userToDoTests);
         groupRepository.save(groupToDoTests);
 
-        Timestamp testStartDateTime = Timestamp.valueOf("2015-08-18 10:00:00.0");
+        Instant meetingStartDateTime = LocalDateTime.of(2015, 8, 18, 10, 0).toInstant(ZoneOffset.UTC);
 
-        Meeting eventToCreate = new Meeting("", testStartDateTime, userToDoTests, groupToDoTests, "The testing location");
+        Meeting eventToCreate = new Meeting("", meetingStartDateTime, userToDoTests, groupToDoTests, "The testing location");
 
         assertNull(eventToCreate.getId());
         assertNotNull(eventToCreate.getUid());
@@ -79,7 +82,7 @@ public class EventRepositoryTest {
 
 //        assertThat(eventFromDb.getParentAppliesToGroup().getGroupName(), is("Test Group"));
         assertThat(eventFromDb.getCreatedByUser().getPhoneNumber(), is("55555"));
-        assertThat(eventFromDb.getEventStartDateTime(), is(testStartDateTime));
+        assertThat(eventFromDb.getEventStartDateTime(), is(meetingStartDateTime));
     }
 
     @Test
@@ -87,22 +90,18 @@ public class EventRepositoryTest {
         User user = userRepository.save(new User("0827654321"));
         Group group = groupRepository.save(new Group("events for group test",user));
 
-        Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.MINUTE, -10);
-        Date pastDate = cal.getTime();
-        Event pastEvent = eventRepository.save(new Meeting("past event", new Timestamp(pastDate.getTime()), user, group,"someLoc", false));
-        cal.add(Calendar.MINUTE, 20);
-        Date futureDate = cal.getTime();
+        Instant pastDate = Instant.now().minus(10, MINUTES);
+        Event pastEvent = eventRepository.save(new Meeting("past event", pastDate, user, group,"someLoc", false));
+        Instant futureDate = pastDate.plus(20, MINUTES);
         pastEvent = eventRepository.save(pastEvent);
-        Event futureEvent = eventRepository.save(new Meeting("future event", new Timestamp(futureDate.getTime()), user,group,"someLoc"));
+        Event futureEvent = eventRepository.save(new Meeting("future event", futureDate, user,group,"someLoc"));
         futureEvent = eventRepository.save(futureEvent);
-        // cancelled event
-        Event futureEventCan = eventRepository.save(new Meeting("future event cancelled", new Timestamp(futureDate.getTime()), user, group, "someLocation"));
+        Event futureEventCan = eventRepository.save(new Meeting("future event cancelled", futureDate, user, group, "someLocation"));
         futureEventCan.setCanceled(true);
         futureEventCan = eventRepository.save(futureEventCan);
 
         //
-        List<Event> list = eventRepository.findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(group, new Date(), false);
+        List<Event> list = eventRepository.findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(group, Instant.now(), false);
         assertEquals(1, list.size());
         assertEquals("future event", list.get(0).getName());
     }
@@ -111,7 +110,7 @@ public class EventRepositoryTest {
     public void shouldReturnSameObjectOnSecondUpdate() {
         User user = userRepository.save(new User("085551234","test dup event user"));
         Group group = groupRepository.save(new Group("test dup event",user));
-        Meeting event = (Meeting) eventRepository.save(new Meeting("duplicate event test", Timestamp.from(Instant.now()), user, group, "someLoc"));
+        Meeting event = (Meeting) eventRepository.save(new Meeting("duplicate event test", Instant.now(), user, group, "someLoc"));
         event.setEventLocation("dup location");
         Event event2 = eventRepository.save(event);
         assertEquals(event.getId(),event2.getId());
@@ -123,13 +122,12 @@ public class EventRepositoryTest {
         User user = userRepository.save(new User("0831111112"));
         Group group = groupRepository.save(new Group("events for group test",user));
 
-        Instant expiry = Instant.now().plus(1, ChronoUnit.HOURS).truncatedTo(ChronoUnit.HOURS);
-        Timestamp expiryTS = Timestamp.from(expiry);
+        Instant expiry = Instant.now().plus(1, HOURS).truncatedTo(HOURS);
 
-        Event vote = eventRepository.save(new Vote("testing vote query", expiryTS, user, group, true));
+        Event vote = eventRepository.save(new Vote("testing vote query", expiry, user, group, true));
 
         vote = eventRepository.save(vote);
-        List<Event> list = eventRepository.findAllVotesAfterTimeStamp(new Date());
+        List<Event> list = eventRepository.findAllVotesAfterTimeStamp(Instant.now());
         assertEquals(1,list.size());
 
     }
@@ -139,10 +137,10 @@ public class EventRepositoryTest {
         User user = userRepository.save(new User("0831111113"));
         Group group = groupRepository.save(new Group("events for group test",user));
 
-        Timestamp expiryTS = Timestamp.from(Instant.now().truncatedTo(ChronoUnit.HOURS));
-        Event vote = eventRepository.save(new Vote("testing vote query", expiryTS, user, group, true));
+        Instant expiry = Instant.now().truncatedTo(HOURS);
+        Event vote = eventRepository.save(new Vote("testing vote query", expiry, user, group, true));
         vote = eventRepository.save(vote);
-        List<Event> list = eventRepository.findAllVotesAfterTimeStamp(new Date());
+        List<Event> list = eventRepository.findAllVotesAfterTimeStamp(Instant.now());
         assertEquals(0,list.size());
     }
 
@@ -151,11 +149,11 @@ public class EventRepositoryTest {
         User user = userRepository.save(new User("0831111114"));
         Group group = groupRepository.save(new Group("events for group test",user));
 
-        Timestamp expiryTS = Timestamp.from(Instant.now().truncatedTo(ChronoUnit.HOURS).plus(1, ChronoUnit.HOURS));
+        Instant expiry = Instant.now().truncatedTo(HOURS).plus(1, HOURS);
 
-        Event meeting = eventRepository.save(new Meeting("testing vote query", expiryTS, user, group, "somewhere"));
+        Event meeting = eventRepository.save(new Meeting("testing vote query", expiry, user, group, "somewhere"));
         meeting = eventRepository.save(meeting);
-        List<Event> list = eventRepository.findAllVotesAfterTimeStamp(new Date());
+        List<Event> list = eventRepository.findAllVotesAfterTimeStamp(Instant.now());
         assertEquals(0,list.size());
 
     }
@@ -172,12 +170,12 @@ public class EventRepositoryTest {
         group.addMember(user2);
         group = groupRepository.save(group);
 
-        Event event1 = eventRepository.save(new Meeting("test", Timestamp.from(Instant.now()), user2, group, "someLoc"));
+        Event event1 = eventRepository.save(new Meeting("test", Instant.now(), user2, group, "someLoc"));
 
         Group group2 = groupRepository.save(new Group("tg2", user2));
         group2.addMember(user2);
         group2 = groupRepository.save(group2);
-        Event event2 = eventRepository.save(new Meeting("test2", Timestamp.from(Instant.now()), user2, group2, "someLoc"));
+        Event event2 = eventRepository.save(new Meeting("test2", Instant.now(), user2, group2, "someLoc"));
 
         List<Event> events = eventRepository.findByAppliesToGroupMembershipsUser(user1);
         List<Event> events2 = eventRepository.findByAppliesToGroupMembershipsUser(user2);
@@ -206,14 +204,13 @@ public class EventRepositoryTest {
         group.addMember(user);
         group = groupRepository.save(group);
 
-        Event event1 = eventRepository.save(new Meeting("test", Timestamp.valueOf(LocalDateTime.now().plusWeeks(1L)), user, group, "someLoc"));
+        Event event1 = eventRepository.save(new Meeting("test", Instant.now().plus(7, DAYS), user, group, "someLoc"));
         event1 = eventRepository.save(event1);
 
-        Event event2 = eventRepository.save(new Vote("test2", Timestamp.from(Instant.now()), user, group));
-        event2.setEventStartDateTime(Timestamp.valueOf(LocalDateTime.now().minusWeeks(1L)));
+        Event event2 = eventRepository.save(new Vote("test2", Instant.now().minus(7, DAYS), user, group));
         event2 = eventRepository.save(event2);
 
-        Event event3 = eventRepository.save(new Meeting("test3", Timestamp.valueOf(LocalDateTime.now().plusDays(2L)), user, group, "someLoc"));
+        Event event3 = eventRepository.save(new Meeting("test3", Instant.now().plus(7, DAYS), user, group, "someLoc"));
         event3.setCanceled(true);
         event3 = eventRepository.save(event3);
     }
@@ -226,21 +223,21 @@ public class EventRepositoryTest {
         Group group1 = groupRepository.save(new Group("tg1", user));
         Group group2 = groupRepository.save(new Group("tg2", user));
 
-        Event event1 = eventRepository.save(new Meeting("test", Timestamp.valueOf(LocalDateTime.now().minusWeeks(1L)), user, group1, "someLoc"));
+        Event event1 = eventRepository.save(new Meeting("test", Instant.now().minus(7, DAYS), user, group1, "someLoc"));
         event1 = eventRepository.save(event1);
 
-        Event event2 = eventRepository.save(new Meeting("test2", Timestamp.valueOf(LocalDateTime.now().minusWeeks(5L)), user, group1, "someLoc"));
+        Event event2 = eventRepository.save(new Meeting("test2", Instant.now().minus(5*7, DAYS), user, group1, "someLoc"));
         event2 = eventRepository.save(event2);
 
-        Event event3 = eventRepository.save(new Vote("test3", Timestamp.valueOf(LocalDateTime.now().minusWeeks(1L)), user, group1));
+        Event event3 = eventRepository.save(new Vote("test3", Instant.now().minus(7, DAYS), user, group1));
         event3 = eventRepository.save(event3);
 
-        Event event4 = eventRepository.save(new Meeting("test4", Timestamp.valueOf(LocalDateTime.now().minusWeeks(1L)), user, group2, "someLoc"));
+        Event event4 = eventRepository.save(new Meeting("test4", Instant.now().minus(7, DAYS), user, group2, "someLoc"));
         event4 = eventRepository.save(event4);
 
-        Timestamp now = Timestamp.valueOf(LocalDateTime.now());
-        Timestamp oneMonthBack = Timestamp.valueOf(LocalDateTime.now().minusMonths(1L));
-        Timestamp twoMonthsBack = Timestamp.valueOf(LocalDateTime.now().minusMonths(2L));
+        Instant now = Instant.now();
+        Instant oneMonthBack = LocalDateTime.now().minusMonths(1L).toInstant(ZoneOffset.UTC);
+        Instant twoMonthsBack = LocalDateTime.now().minusMonths(2L).toInstant(ZoneOffset.UTC);
 
         List<Meeting> test1 = meetingRepository.
                 findByAppliesToGroupAndEventStartDateTimeBetween(group1, oneMonthBack, now);
@@ -266,6 +263,8 @@ public class EventRepositoryTest {
 
     }
 
+    // this is throwing an H2 specific error, on the user of specific time stamp, so commenting out for now
+
     @Test
     public void countUpcomingEventsShouldWork() {
 
@@ -282,15 +281,15 @@ public class EventRepositoryTest {
         group2.addMember(user2);
         group2 = groupRepository.save(group2);
 
-        Event event1 = new Meeting("count check", Timestamp.valueOf(LocalDateTime.now().plusDays(2L)), user, group, "someLoc");
-        Event event2 = new Meeting("count check 2", Timestamp.valueOf(LocalDateTime.now().minusDays(2L)), user, group2, "someLoc");
+        Event event1 = new Meeting("count check", Instant.now().plus(2, DAYS), user, group, "someLoc");
+        Event event2 = new Meeting("count check 2", Instant.now().minus(2, DAYS), user, group2, "someLoc");
 
         event1 = eventRepository.save(event1);
         event2 = eventRepository.save(event2);
 
-        int numberUpcomingEvents1 = eventRepository.countFutureEvents(user.getId());
+        int numberUpcomingEvents1 = eventRepository.countFutureEvents(user.getId(), Instant.now());
         assertThat(numberUpcomingEvents1, is(1));
-        int numberUpcomingEvents2 = eventRepository.countFutureEvents(user2.getId());
+        int numberUpcomingEvents2 = eventRepository.countFutureEvents(user2.getId(), Instant.now());
         assertThat(numberUpcomingEvents2, is(0));
 
     }

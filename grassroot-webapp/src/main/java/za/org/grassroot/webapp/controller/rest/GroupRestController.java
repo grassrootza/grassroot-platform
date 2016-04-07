@@ -185,7 +185,7 @@ public class GroupRestController {
         GroupResponseWrapper responseWrapper;
         if (event != null) {
             if (event.getEventStartDateTime() != null && event.getEventStartDateTime()
-                    .after(Timestamp.from(groupLog.getCreatedDateTime()))) {
+                    .isAfter(groupLog.getCreatedDateTime())) {
                 responseWrapper = new GroupResponseWrapper(group, event, role);
             } else {
                 responseWrapper = new GroupResponseWrapper(group, groupLog, role);

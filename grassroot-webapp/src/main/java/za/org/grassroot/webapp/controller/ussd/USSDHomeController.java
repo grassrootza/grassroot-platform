@@ -299,7 +299,7 @@ public class USSDHomeController extends USSDController {
         String[] meetingDetails = new String[] { meeting.resolveGroup().getName(""),
                 meeting.getCreatedByUser().nameToDisplay(),
                 meeting.getName(),
-                meeting.getEventStartDateTime().toLocalDateTime().format(dateTimeFormat) };
+                meeting.getEventDateTimeAtSAST().format(dateTimeFormat) };
 
         // if the composed message is longer than 120 characters, we are going to go over, so return a shortened message
         String defaultPrompt = getMessage(thisSection, USSDController.startMenu, promptKey + "-" + rsvpMenu, meetingDetails, sessionUser);

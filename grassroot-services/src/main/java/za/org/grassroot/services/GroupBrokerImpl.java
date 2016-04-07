@@ -26,6 +26,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static za.org.grassroot.core.util.DateTimeUtil.*;
+
 @Service
 public class GroupBrokerImpl implements GroupBroker {
 
@@ -539,7 +541,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
         String tokenToReturn, logMessage;
         LocalDateTime currentExpiry = (group.getTokenExpiryDateTime() != null) ? group.getTokenExpiryDateTime().toLocalDateTime() : null;
-        final LocalDateTime endOfCentury = DateTimeUtil.getVeryLongTimeAway();
+        final LocalDateTime endOfCentury = getVeryLongTimeAway();
 
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
@@ -740,7 +742,7 @@ public class GroupBrokerImpl implements GroupBroker {
     private LocalDateTime getLastTimeGroupActive(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
         Event latestEvent = eventRepository.findTopByAppliesToGroupAndEventStartDateTimeNotNullOrderByEventStartDateTimeDesc(group);
-        return (latestEvent != null) ? latestEvent.getEventStartDateTime().toLocalDateTime() :
+        return (latestEvent != null) ? latestEvent.getEventDateTimeAtSAST() :
                 group.getCreatedDateTime().toLocalDateTime();
     }
 
@@ -748,7 +750,7 @@ public class GroupBrokerImpl implements GroupBroker {
         Group group = groupRepository.findOneByUid(groupUid);
         // todo: change groupLog to use localdatetime
         GroupLog latestGroupLog = groupLogRepository.findFirstByGroupIdOrderByCreatedDateTimeDesc(group.getId());
-        return (latestGroupLog != null) ? LocalDateTime.ofInstant(latestGroupLog.getCreatedDateTime(), DateTimeUtil.getSAST()) :
+        return (latestGroupLog != null) ? LocalDateTime.ofInstant(latestGroupLog.getCreatedDateTime(), getSAST()) :
                 group.getCreatedDateTime().toLocalDateTime();
     }
 
@@ -779,19 +781,19 @@ public class GroupBrokerImpl implements GroupBroker {
     public List<Event> retrieveGroupEvents(Group group, EventType eventType, LocalDateTime periodStart, LocalDateTime periodEnd) {
         List<Event> events;
         Sort sort = new Sort(Sort.Direction.ASC, "EventStartDateTime");
-        Timestamp beginning, end;
+        Instant beginning, end;
         if (periodStart == null && periodEnd == null) {
-            beginning = group.getCreatedDateTime();
-            end = Timestamp.valueOf(DateTimeUtil.getVeryLongTimeAway());
+            beginning = group.getCreatedDateTime().toInstant();
+            end = convertToSystemTime(getVeryLongTimeAway(), getSAST());
         } else if (periodStart == null) { // since first condition is false, means period end is not null
-            beginning = group.getCreatedDateTime();
-            end = Timestamp.valueOf(periodEnd);
+            beginning = group.getCreatedDateTime().toInstant();
+            end = convertToSystemTime(periodEnd, getSAST());
         } else if (periodEnd == null) { // since first & second conditions false, means period start is not null
-            beginning = Timestamp.valueOf(periodStart);
-            end = Timestamp.valueOf(DateTimeUtil.getVeryLongTimeAway());
+            beginning = convertToSystemTime(periodStart, getSAST());
+            end = getVeryLongTimeAway().toInstant(ZoneOffset.UTC);
         } else {
-            beginning = Timestamp.valueOf(periodStart);
-            end = Timestamp.valueOf(periodEnd);
+            beginning = convertToSystemTime(periodStart, getSAST());
+            end = convertToSystemTime(periodEnd, getSAST());
         }
 
         if (eventType == null) {

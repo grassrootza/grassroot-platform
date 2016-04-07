@@ -11,7 +11,9 @@ import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
+import za.org.grassroot.core.util.DateTimeUtil;
 
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -21,6 +23,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static za.org.grassroot.core.util.DateTimeUtil.getPreferredRestFormat;
 
 /**
  * Created by Siyanda Mzam on 2016/03/22.
@@ -46,15 +49,15 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
 
         when(eventBrokerMock.createVote(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP,
-                                        voteEvent.getName(), testTimestamp, false, true, testEventDescription,
+                                        voteEvent.getName(), testDateTime, false, true, testEventDescription,
                                         Collections.emptySet())).thenReturn(voteEvent);
 
         log.info("ZOG: Creating a vote, passing these parameters: userUid= {}, groupUid= {}, voteName= {}, time= {}",
-                 sessionTestUser.getUid(), testGroup.getUid(), testEventTitle, testTimestamp.toInstant().toString());
+                 sessionTestUser.getUid(), testGroup.getUid(), testEventTitle, testDateTime.toString());
 
         mockMvc.perform(post(path + "/create/{id}/{phoneNumber}/{code}", testGroup.getUid(), testUserPhone, testUserCode)
                                 .param("title", testEventTitle)
-                                .param("closingTime", testTimestamp.toInstant().toString())
+                                .param("closingTime", testDateTime.format(getPreferredRestFormat()))
                                 .param("description", testEventDescription)
                                 .param("reminderMins", String.valueOf(10))
                                 .param("notifyGroup", String.valueOf(true))
@@ -63,7 +66,7 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
 
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
         verify(eventBrokerMock).createVote(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP, voteEvent.getName(),
-                                           testTimestamp, false, true, testEventDescription, Collections.emptySet());
+                                           testDateTime, false, true, testEventDescription, Collections.emptySet());
     }
 
     @Test
@@ -105,13 +108,13 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
     public void updatingTheVoteShouldWork() throws Exception {
 
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
-        when(eventBrokerMock.updateVote(sessionTestUser.getUid(), voteEvent.getUid(), testTimestamp, testEventDescription )).thenReturn(voteEvent);
+        when(eventBrokerMock.updateVote(sessionTestUser.getUid(), voteEvent.getUid(), testDateTime, testEventDescription)).thenReturn(voteEvent);
         mockMvc.perform(post(path + "/update/{id}/{phoneNumber}/{code}",  voteEvent.getUid(), testUserPhone,  testUserCode)
                                 .param("title", "Test_Vote")
-                                .param("closingTime", testTimestamp.toInstant().toString())
+                                .param("closingTime", testDateTime.format(getPreferredRestFormat()))
                                 .param("description", testEventDescription))
                 .andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
-        verify(eventBrokerMock).updateVote(sessionTestUser.getUid(), voteEvent.getUid(), testTimestamp, testEventDescription);
+        verify(eventBrokerMock).updateVote(sessionTestUser.getUid(), voteEvent.getUid(), testDateTime, testEventDescription);
     }
 }

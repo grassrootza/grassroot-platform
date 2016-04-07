@@ -24,10 +24,12 @@ import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
 import za.org.grassroot.webapp.util.RestUtil;
 
-import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
+
+import static za.org.grassroot.core.util.DateTimeUtil.getPreferredRestFormat;
 
 /**
  * Created by aakilomar on 10/24/15.
@@ -72,8 +74,8 @@ public class VoteRestController {
             membersUid.addAll(members);
         }
 
-        Instant eventStartDateTime = Instant.parse(time.trim());
-        Vote vote = eventBroker.createVote(user.getUid(), groupUid, JpaEntityType.GROUP, title, Timestamp.from(eventStartDateTime),
+        LocalDateTime eventStartDateTime = LocalDateTime.parse(time.trim(), getPreferredRestFormat());
+        Vote vote = eventBroker.createVote(user.getUid(), groupUid, JpaEntityType.GROUP, title, eventStartDateTime,
                                            false, relayable, description, membersUid);
         eventBroker.updateReminderSettings(user.getUid(), vote.getUid(), EventReminderType.CUSTOM,
                                            RestUtil.getReminderMinutes(reminderMinutes));
@@ -130,7 +132,8 @@ public class VoteRestController {
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         ResponseWrapper responseWrapper;
         try {
-            eventBroker.updateVote(user.getUid(), voteUid, Timestamp.from(Instant.parse(time.trim())), description);
+            LocalDateTime updatedTime = LocalDateTime.parse(time.trim(), getPreferredRestFormat());
+            eventBroker.updateVote(user.getUid(), voteUid, updatedTime, description);
             responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.VOTE_DETAILS_UPDATED, RestStatus.SUCCESS);
         } catch (java.lang.IllegalStateException e) {
             responseWrapper = new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.VOTE_CANCELLED, RestStatus.FAILURE);
@@ -142,9 +145,6 @@ public class VoteRestController {
 
     }
 
-    private boolean isOpen(Event event) {
-        return event.getEventStartDateTime().after(Timestamp.from(Instant.now()));
-    }
-
+    private boolean isOpen(Event event) { return event.getEventStartDateTime().isAfter(Instant.now()); }
 
 }

@@ -9,9 +9,12 @@ import org.springframework.http.MediaType;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import static org.hamcrest.Matchers.*;
@@ -28,6 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
     private static final Logger logger = LoggerFactory.getLogger(MeetingControllerTest.class);
+    private static final Instant oneDayAway = Instant.now().plus(1, ChronoUnit.DAYS);
 
     @InjectMocks
     private MeetingController meetingController;
@@ -41,15 +45,16 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     public void shouldShowMeetingDetails() throws Exception {
 
         Group dummyGroup = new Group("Dummy Group3", new User("234345345"));
-        Meeting dummyMeeting = new Meeting("test meeting", Timestamp.valueOf(LocalDateTime.now().plusDays(1L)),
-                                           sessionTestUser, dummyGroup, "some place");
+        Meeting dummyMeeting = new Meeting("test meeting", oneDayAway, sessionTestUser, dummyGroup, "some place");
+
+         logger.info("ZOG: dummyMeetingIs: {} ", dummyMeeting);
 
         ResponseTotalsDTO testCount = new ResponseTotalsDTO();
         testCount.setYes(1);
         HashMap<User, EventRSVPResponse> dummyResponsesMap = mock(HashMap.class);
         dummyResponsesMap.put(sessionTestUser, EventRSVPResponse.YES);
 
-         when(eventBrokerMock.loadMeeting(dummyMeeting.getUid())).thenReturn(dummyMeeting);
+        when(eventBrokerMock.loadMeeting(dummyMeeting.getUid())).thenReturn(dummyMeeting);
         when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, dummyGroup,
                                                              Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS)).thenReturn(true);
         when(eventLogManagementServiceMock.getResponseCountForEvent(dummyMeeting)).thenReturn(testCount);
@@ -58,7 +63,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         mockMvc.perform(get("/meeting/view").param("eventUid", dummyMeeting.getUid()))
                 .andExpect(status().isOk())
                 .andExpect(view().name("meeting/view"))
-                .andExpect(model().attribute("meeting", hasProperty("uid", is(dummyMeeting.getUid()))))
+                .andExpect(model().attribute("meeting", hasProperty("entityUid", is(dummyMeeting.getUid()))))
                 .andExpect(model().attribute("responseTotals", hasProperty("yes", is(1))))
                 .andExpect(model().attribute("rsvpResponses", hasItems(dummyResponsesMap.entrySet().toArray())));
 
@@ -77,8 +82,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     public void testCreateMeetingWorks() throws Exception {
 
         Group dummyGroup = new Group("Dummy Group3", new User("234345345"));
-        Timestamp time = Timestamp.valueOf(LocalDateTime.now().plusDays(1L));
-        Meeting dummyMeeting = new Meeting("test meeting", time, sessionTestUser, dummyGroup, "some place");
+        Meeting dummyMeeting = new Meeting("test meeting", oneDayAway, sessionTestUser, dummyGroup, "some place");
         dummyMeeting.setRsvpRequired(true);
         dummyMeeting.setReminderType(EventReminderType.CUSTOM);
         dummyMeeting.setCustomReminderMinutes(60);
@@ -91,8 +95,10 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
 
         verify(eventBrokerMock, times(1)).createMeeting(sessionTestUser.getUid(), dummyGroup.getUid(), JpaEntityType.GROUP, "test meeting",
-                                                        time, "some place", false, true, false, EventReminderType.CUSTOM, 60,
+                                                        oneDayAway.atZone(DateTimeUtil.getSAST()).toLocalDateTime(),
+                                                        "some place", false, true, false, EventReminderType.CUSTOM, 60,
                                                         "", Collections.emptySet());
+
         verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(userManagementServiceMock);
     }
@@ -111,8 +117,6 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         mockMvc.perform(get("/meeting/create").param("groupUid", testGroup.getUid()))
                 .andExpect((view().name("meeting/create"))).andExpect(status().isOk())
                 .andExpect(model().attribute("group", hasProperty("uid", is(testGroup.getUid()))))
-                .andExpect(model().attribute("meeting", hasProperty("createdByUser", is(sessionTestUser))))
-                .andExpect(model().attribute("groupSpecified", is(true)))
                 .andExpect(model().attribute("reminderOptions", hasItem(oneDay)));
 
         verify(groupBrokerMock, times(1)).load(testGroup.getUid());
@@ -136,7 +140,6 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
         mockMvc.perform(get("/meeting/create")).andExpect(status().isOk())
                 .andExpect((view().name("meeting/create")))
-                .andExpect(model().attribute("groupSpecified", is(false)))
                 .andExpect(model().attribute("userGroups", hasItem(dummyGroup)));
 
         verify(userManagementServiceMock, times(1)).load(sessionTestUser.getUid());
@@ -150,7 +153,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     public void meetingModificationWorks() throws Exception {
 
         Group testGroup = new Group("Dummy Group3", new User("234345345"));
-        Meeting dummyMeeting = new Meeting("test meeting", Timestamp.valueOf(LocalDateTime.now().plusDays(1L)),
+        Meeting dummyMeeting = new Meeting("test meeting", oneDayAway,
                                            sessionTestUser, testGroup, "some place");
 
         List<User> listOfDummyYesResponses = Arrays.asList(new User("", "testUser"));
@@ -165,13 +168,14 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
         mockMvc.perform(post("/meeting/modify").sessionAttr("meeting", dummyMeeting).contentType(MediaType.APPLICATION_FORM_URLENCODED))
                 .andExpect(status().isOk())
-                .andExpect(model().attribute("meeting", hasProperty("uid", is(dummyMeeting.getUid()))))
+                .andExpect(model().attribute("meeting", hasProperty("entityUid", is(dummyMeeting.getUid()))))
                 .andExpect(model().attribute("responseTotals", hasProperty("yes", is(1))))
                 .andExpect(view().name("meeting/view"));
 
         verify(eventBrokerMock, times(1)).loadMeeting(dummyMeeting.getUid());
         verify(eventBrokerMock, times(1)).updateMeeting(sessionTestUser.getUid(), dummyMeeting.getUid(), dummyMeeting.getName(),
-                                                        dummyMeeting.getEventStartDateTime(), dummyMeeting.getEventLocation());
+                                                        dummyMeeting.getEventStartDateTime().atZone(DateTimeUtil.getSAST()).toLocalDateTime(),
+                                                        dummyMeeting.getEventLocation());
         verifyNoMoreInteractions(eventBrokerMock);
         verify(eventManagementServiceMock, times(1)).getRSVPResponses(dummyMeeting);
         verify(eventLogManagementServiceMock, times(1)).getResponseCountForEvent(dummyMeeting);
@@ -184,7 +188,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     public void rsvpNoShouldWork() throws Exception {
 
         Group testGroup = new Group("Dummy Group3", new User("234345345"));
-        Meeting dummyMeeting = new Meeting("test meeting", Timestamp.valueOf(LocalDateTime.now().plusDays(1L)),
+        Meeting dummyMeeting = new Meeting("test meeting", oneDayAway,
                                            sessionTestUser, testGroup, "some place");
 
         when(eventBrokerMock.loadMeeting(dummyMeeting.getUid())).thenReturn(dummyMeeting);
@@ -206,7 +210,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     public void rsvpYesShouldWork() throws Exception {
 
         Group testGroup = new Group("Dummy Group3", new User("234345345"));
-        Meeting dummyMeeting = new Meeting("test meeting", Timestamp.valueOf(LocalDateTime.now().plusDays(1L)),
+        Meeting dummyMeeting = new Meeting("test meeting", oneDayAway,
                                            sessionTestUser, testGroup, "some place");
 
         ResponseTotalsDTO testCount = new ResponseTotalsDTO();
@@ -222,7 +226,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
         mockMvc.perform(post("/meeting/rsvp").param("eventUid", dummyMeeting.getUid()).param("answer", "yes"))
                 .andExpect(view().name("meeting/view"))
-                .andExpect(model().attribute("meeting", hasProperty("uid", is(dummyMeeting.getUid()))))
+                .andExpect(model().attribute("meeting", hasProperty("entityUid", is(dummyMeeting.getUid()))))
                 .andExpect(model().attribute("responseTotals", hasProperty("yes", is(2))))
                 .andExpect(model().attribute("rsvpResponses", hasItems(dummyResponsesMap.entrySet().toArray())));
 
@@ -243,7 +247,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void changeReminderSettingShouldWork() throws Exception {
         Group testGroup = new Group("Dummy Group3", new User("234345345"));
-        Meeting dummyMeeting = new Meeting("test meeting", Timestamp.valueOf(LocalDateTime.now().plusDays(1L)),
+        Meeting dummyMeeting = new Meeting("test meeting", oneDayAway,
                                            sessionTestUser, testGroup, "some place");
         dummyMeeting.setReminderType(EventReminderType.CUSTOM);
         dummyMeeting.setCustomReminderMinutes(60 * 24);
@@ -254,7 +258,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
                                 .param("reminderType", EventReminderType.CUSTOM.name())
                                 .param("custom_minutes", String.valueOf(60*24)))
                 .andExpect(view().name("meeting/view"))
-                .andExpect(model().attribute("meeting", hasProperty("uid", is(dummyMeeting.getUid()))));
+                .andExpect(model().attribute("meeting", hasProperty("entityUid", is(dummyMeeting.getUid()))));
 
         verify(eventBrokerMock, times(2)).loadMeeting(dummyMeeting.getUid());
         verify(eventBrokerMock, times(1)).updateReminderSettings(sessionTestUser.getUid(), dummyMeeting.getUid(),

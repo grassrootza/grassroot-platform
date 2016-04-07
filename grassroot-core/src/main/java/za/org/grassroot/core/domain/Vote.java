@@ -7,6 +7,7 @@ import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import java.sql.Timestamp;
+import java.time.Instant;
 
 @Entity
 @DiscriminatorValue("VOTE")
@@ -20,15 +21,15 @@ public class Vote extends Event<VoteContainer> {
 		// for JPA
 	}
 
-	public Vote(String name, Timestamp startDateTime, User user, VoteContainer parent) {
+	public Vote(String name, Instant startDateTime, User user, VoteContainer parent) {
 		this(name, startDateTime, user, parent, false);
 	}
 
-	public Vote(String name, Timestamp startDateTime, User user, VoteContainer parent, boolean includeSubGroups) {
+	public Vote(String name, Instant startDateTime, User user, VoteContainer parent, boolean includeSubGroups) {
 		this(name, startDateTime, user, parent, includeSubGroups, false, null);
 	}
 
-	public Vote(String name, Timestamp startDateTime, User user, VoteContainer parent, boolean includeSubGroups, boolean relayable, String description) {
+	public Vote(String name, Instant startDateTime, User user, VoteContainer parent, boolean includeSubGroups, boolean relayable, String description) {
 		super(startDateTime, user, parent, name, includeSubGroups, true, relayable, EventReminderType.DISABLED, 0, description);
 	}
 

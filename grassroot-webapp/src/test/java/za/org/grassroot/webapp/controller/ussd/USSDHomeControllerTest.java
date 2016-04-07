@@ -7,16 +7,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Meeting;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.Vote;
 import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.GroupPage;
 
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -166,7 +171,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         Group testGroup = new Group(testGroupName, testUser);
 
 //        Event vote = new Event(testUser, EventType.VOTE, true);
-        Vote vote = new Vote("are unit tests working?", Timestamp.valueOf(LocalDateTime.now().plusHours(1L)), testUser, testGroup);
+        Vote vote = new Vote("are unit tests working?", Instant.now().plus(1, ChronoUnit.HOURS), testUser, testGroup);
         vote.setId(1L);
 
         List<User> votingUsers = new ArrayList<>(languageUsers);
@@ -205,7 +210,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         resetTestUser();
         Group testGroup = new Group(testGroupName, testUser);
 
-        Meeting meeting = new Meeting("Meeting about testing", Timestamp.from(Instant.now()), testUser, testGroup, "someLocation");
+        Meeting meeting = new Meeting("Meeting about testing", Instant.now(), testUser, testGroup, "someLocation");
         meeting.setId(2L);
 
         List<User> groupMembers = new ArrayList<>(languageUsers);

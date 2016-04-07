@@ -7,6 +7,7 @@ import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.webapp.enums.TaskType;
 import za.org.grassroot.webapp.enums.TodoStatus;
 
@@ -14,7 +15,6 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Comparator;
 
 /**
  * Created by paballo on 2016/03/02.
@@ -31,7 +31,7 @@ public class TaskDTO implements Comparable<TaskDTO>{
     private boolean canAction;
     private String reply;
     @JsonIgnore
-    private Timestamp timestamp;
+    private Instant instant;
 
 
 
@@ -44,8 +44,8 @@ public class TaskDTO implements Comparable<TaskDTO>{
         this.name = event.getCreatedByUser().getDisplayName();
         this.hasResponded = hasResponded;
         this.type = String.valueOf(event.getEventType());
-        this.timestamp = event.getEventStartDateTime();
-        this.deadline =getLocalDateTime(timestamp);
+        this.instant = event.getEventStartDateTime();
+        this.deadline = getLocalDateTime(instant);
         this.reply=(eventLog !=null)?eventLog.getMessage():String.valueOf(TodoStatus.NO_RESPONSE);
         this.canAction = canAction(event, user, hasResponded);
     }
@@ -56,9 +56,9 @@ public class TaskDTO implements Comparable<TaskDTO>{
         this.name = creatingUser.getDisplayName();
         this.hasResponded = (logBook.isCompleted())?true:false;
         this.reply = getTodoStatus(logBook);
-        this.timestamp = logBook.getActionByDate();
+        this.instant = logBook.getActionByDate().toInstant();
         this.type = String.valueOf(TaskType.TODO);
-        this.deadline = getLocalDateTime(timestamp);
+        this.deadline = getLocalDateTime(instant);
         this.canAction = canAction(logBook, user, true);
     }
 
@@ -116,7 +116,7 @@ public class TaskDTO implements Comparable<TaskDTO>{
         boolean canAction = false;
         if (object instanceof Event) {
             Event event = (Event) object;
-            boolean isOpen = event.getEventStartDateTime().after(Timestamp.from(Instant.now()));
+            boolean isOpen = event.getEventStartDateTime().isAfter(Instant.now());
             if (event.getEventType().equals(EventType.MEETING) && isOpen) {
                 canAction = true;
             } else {
@@ -135,9 +135,9 @@ public class TaskDTO implements Comparable<TaskDTO>{
     }
 
 
-    private String getLocalDateTime(Timestamp timestamp) {
+    private String getLocalDateTime(Instant instant ) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
-        return timestamp.toLocalDateTime().atZone(ZoneId.of("Africa/Johannesburg")).format(formatter);
+        return DateTimeUtil.convertToUserTimeZone(instant, DateTimeUtil.getSAST()).format(formatter);
     }
 
     @Override
@@ -154,7 +154,7 @@ public class TaskDTO implements Comparable<TaskDTO>{
         if (!type.equals(taskDTO.type)) return false;
         if (!deadline.equals(taskDTO.deadline)) return false;
         if (!reply.equals(taskDTO.reply)) return false;
-        return timestamp.equals(taskDTO.timestamp);
+        return instant.equals(taskDTO.instant);
 
     }
 
@@ -169,7 +169,7 @@ public class TaskDTO implements Comparable<TaskDTO>{
         result = 31 * result + (hasResponded ? 1 : 0);
         result = 31 * result + (canAction ? 1 : 0);
         result = 31 * result + reply.hashCode();
-        result = 31 * result + timestamp.hashCode();
+        result = 31 * result + instant.hashCode();
         return result;
     }
 

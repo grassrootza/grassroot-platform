@@ -8,6 +8,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -48,7 +49,7 @@ public class EventWrapper {
 
     public String getEventDescription() { return event.getName(); }
 
-    public Timestamp getEventDateTime() { return event.getEventStartDateTime(); }
+    public LocalDateTime getEventDateTime() { return event.getEventDateTimeAtSAST(); }
 
     public int getNumberYesResponses() { return eventResponses.getYes(); }
 

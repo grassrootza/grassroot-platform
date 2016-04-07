@@ -2,6 +2,7 @@ package za.org.grassroot.webapp.model.rest.ResponseWrappers;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import java.sql.Timestamp;
@@ -25,7 +26,7 @@ public class GroupResponseWrapper {
     private String groupCreator;
     private String role;
     private Integer groupMemberCount;
-    private Timestamp dateTime;
+    private LocalDateTime dateTime;
     private Set<Permission> permissions;
     private static final String filterString ="CREATE";
 
@@ -36,7 +37,7 @@ public class GroupResponseWrapper {
         this.id = group.getUid();
         this.groupName = group.getGroupName();
         this.description = event.getName();
-        this.dateTime = event.getEventStartDateTime();
+        this.dateTime = event.getEventDateTimeAtSAST();
         this.groupCreator = group.getCreatedByUser().getDisplayName();
         this.role = (role!=null)?role.getName():null;
         this.groupMemberCount = group.getMemberships().size();
@@ -48,7 +49,7 @@ public class GroupResponseWrapper {
         this.id = group.getUid();
         this.groupName = group.getGroupName();
         this.description = groupLog.getDescription();
-        this.dateTime =Timestamp.from(groupLog.getCreatedDateTime());
+        this.dateTime = groupLog.getCreatedDateTime().atZone(DateTimeUtil.getSAST()).toLocalDateTime();
         this.groupCreator = group.getCreatedByUser().getDisplayName();
         this.role = (role!=null)?role.getName():null;
         this.groupMemberCount = group.getMemberships().size();
@@ -94,7 +95,7 @@ public class GroupResponseWrapper {
     public Set<Permission> getPermissions() {
         return permissions;
     }
-    public Timestamp getDateTime(){return dateTime;}
+    public LocalDateTime getDateTime(){return dateTime;}
 
 
 

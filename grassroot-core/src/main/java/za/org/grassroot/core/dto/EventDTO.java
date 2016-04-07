@@ -7,6 +7,7 @@ import za.org.grassroot.core.enums.EventType;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
+import java.time.Instant;
 
 /**
  * Created by aakilomar on 10/11/15.
@@ -17,8 +18,8 @@ public class EventDTO  implements Serializable {
 
     private String eventLocation;
     private Long id;
-    private Timestamp createdDateTime;
-    private Timestamp eventStartDateTime;
+    private Instant createdDateTime;
+    private Instant eventStartDateTime;
 
     private User createdByUser;
     private UidIdentifiable parent;
@@ -127,19 +128,19 @@ public class EventDTO  implements Serializable {
 
     public String getEventUid() { return this.eventUid; }
 
-    public Timestamp getCreatedDateTime() {
+    public Instant getCreatedDateTime() {
         return createdDateTime;
     }
 
-    public void setCreatedDateTime(Timestamp createdDateTime) {
+    public void setCreatedDateTime(Instant createdDateTime) {
         this.createdDateTime = createdDateTime;
     }
 
-    public Timestamp getEventStartDateTime() {
+    public Instant getEventStartDateTime() {
         return eventStartDateTime;
     }
 
-    public void setEventStartDateTime(Timestamp eventStartDateTime) {
+    public void setEventStartDateTime(Instant eventStartDateTime) {
         this.eventStartDateTime = eventStartDateTime;
     }
 

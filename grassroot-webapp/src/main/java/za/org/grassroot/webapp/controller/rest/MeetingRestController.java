@@ -2,6 +2,8 @@
 package za.org.grassroot.webapp.controller.rest;
 
 import com.google.common.collect.Sets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,7 +13,6 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.services.EventManagementService;
@@ -23,10 +24,12 @@ import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrappe
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
 
-import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
+
+import static za.org.grassroot.core.util.DateTimeUtil.getPreferredRestFormat;
 
 /**
  * Created by paballo on 2016/03/21.
@@ -36,6 +39,7 @@ import java.util.Set;
 @RequestMapping("/api/meeting")
 public class MeetingRestController {
 
+    private static final Logger log = LoggerFactory.getLogger(MeetingRestController.class);
 
     @Autowired
     EventManagementService eventManagementService;
@@ -57,13 +61,16 @@ public class MeetingRestController {
                                                          @RequestParam("location") String location, @RequestParam("includeSubGroups") boolean includeSubGroups, @RequestParam("rsvpRequired") boolean rsvp,
                                                          @RequestParam(value="members", required = false) List<String> members) {
 
+        log.info("REST : received meeting create request... with time string: {}", time);
+
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         Set<String> membersUid = Sets.newHashSet();
         if(members != null){
             membersUid.addAll(members);
         }
-        Instant meetingDateTime = Instant.parse(time);
-        eventBroker.createMeeting(user.getUid(), groupUid, JpaEntityType.GROUP, title, Timestamp.from(meetingDateTime), location,
+
+        LocalDateTime meetingDateTime = LocalDateTime.parse(time, getPreferredRestFormat());
+        eventBroker.createMeeting(user.getUid(), groupUid, JpaEntityType.GROUP, title, meetingDateTime, location,
                                   includeSubGroups, rsvp, relayable, EventReminderType.CUSTOM, reminderMinutes, description, membersUid);
         ResponseWrapper responseWrapper = new ResponseWrapperImpl(HttpStatus.CREATED, RestMessage.MEETING_CREATED, RestStatus.SUCCESS);
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
@@ -76,12 +83,14 @@ public class MeetingRestController {
                                                          @RequestParam("startTime") String time, @RequestParam("notifyGroup") boolean relayable, @RequestParam("reminderMins") int reminderMinutes,
                                                          @RequestParam("location") String location, @RequestParam("includeSubGroups") boolean includeSubGroups, @RequestParam("rsvpRequired") boolean rsvp) {
 
+        log.info("Received update meeting request, with string: " + time);
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         ResponseWrapper responseWrapper;
 
         try {
-            eventBroker.updateMeeting(user.getUid(), meetingUid, title, Timestamp.valueOf(DateTimeUtil.parseDateTime(time)), location, includeSubGroups, rsvp, relayable,
+            LocalDateTime dateTime = LocalDateTime.parse(time, getPreferredRestFormat());
+            eventBroker.updateMeeting(user.getUid(), meetingUid, title, dateTime, location, includeSubGroups, rsvp, relayable,
                     EventReminderType.CUSTOM, reminderMinutes, description);
             responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.MEETING_DETAILS_UPDATED, RestStatus.SUCCESS);
         } catch (IllegalStateException e) {
@@ -128,7 +137,7 @@ public class MeetingRestController {
     }
 
     private boolean isOpen(Event event) {
-        return event.getEventStartDateTime().after(Timestamp.from(Instant.now()));
+        return event.getEventStartDateTime().isAfter(Instant.now());
     }
 
 

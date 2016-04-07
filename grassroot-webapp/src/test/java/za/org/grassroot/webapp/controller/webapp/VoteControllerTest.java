@@ -11,10 +11,10 @@ import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.webapp.controller.BaseController;
 
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Collections;
+import java.util.Set;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.beans.HasPropertyWithValue.hasProperty;
@@ -23,6 +23,8 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
+import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
 /**
  * Created by paballo on 2016/01/22.
@@ -84,10 +86,10 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
     public void voteCreateDoWorks() throws Exception {
 
         Group testGroup = new Group("Dummy Group3", new User("234345345"));
-        Timestamp testTime = Timestamp.valueOf(LocalDateTime.now().plusMinutes(7L));
+        LocalDateTime testTime = LocalDateTime.now().plusMinutes(7L);
         VoteRequest testVote = VoteRequest.makeEmpty(sessionTestUser, testGroup);
         testVote.setName("test vote");
-        testVote.setEventStartDateTime(testTime);
+        testVote.setEventStartDateTime(convertToSystemTime(testTime, getSAST()));
         testVote.setDescription("Abracadabra");
 
         mockMvc.perform(post("/vote/create").contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -106,7 +108,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void viewVoteWorks() throws Exception {
 
-        Vote testVote = new Vote("test", Timestamp.from(Instant.now()), sessionTestUser, new Group("tg1", sessionTestUser));
+        Vote testVote = new Vote("test", Instant.now(), sessionTestUser, new Group("tg1", sessionTestUser));
         ResponseTotalsDTO testVoteResults = new ResponseTotalsDTO();
         testVoteResults.setYes(3);
         testVoteResults.setNo(7);
@@ -132,7 +134,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void answerVoteWorks() throws Exception {
 
-        Vote testVote = new Vote("test", Timestamp.from(Instant.now()), sessionTestUser, new Group("tg1", sessionTestUser));
+        Vote testVote = new Vote("test", Instant.now(), sessionTestUser, new Group("tg1", sessionTestUser));
 
         when(eventBrokerMock.load(testVote.getUid())).thenReturn(testVote);
 

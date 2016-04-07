@@ -5,6 +5,7 @@ import za.org.grassroot.core.domain.MeetingRequest;
 import za.org.grassroot.core.domain.VoteRequest;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 public interface EventRequestBroker {
 	EventRequest load(String eventRequestUid);
@@ -15,7 +16,7 @@ public interface EventRequestBroker {
 
 	void updateName(String userUid, String eventRequestUid, String name);
 
-	void updateStartTimestamp(String userUid, String eventRequestUid, Timestamp startTimestamp);
+	void updateEventDateTime(String userUid, String eventRequestUid, LocalDateTime eventDateTime);
 
 	void updateMeetingLocation(String userUid, String meetingRequestUid, String location);
 
