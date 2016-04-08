@@ -2,10 +2,8 @@ package za.org.grassroot.core.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.EventLog;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventLogType;
 

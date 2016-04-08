@@ -28,7 +28,6 @@ import javax.sql.DataSource;
  * @author Lesetse Kimwaga
  */
 @Configuration
-//@EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
 @Order(SecurityProperties.ACCESS_OVERRIDE_ORDER)
 public class SecurityConfig extends WebSecurityConfigurerAdapter {

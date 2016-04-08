@@ -23,12 +23,12 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
+import org.thymeleaf.extras.java8time.dialect.Java8TimeDialect;
 import za.org.grassroot.webapp.validation.TokenValidationInterceptor;
 
 import javax.servlet.Filter;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
 import java.util.Locale;
 
@@ -39,7 +39,6 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
  * Application  MVC infrastructure configuration
  * @author Lesetse Kimwaga
  */
-
 
 @Configuration
 @ControllerAdvice
@@ -52,6 +51,9 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
     public DataAttributeDialect dataAttributeDialect() {
         return new DataAttributeDialect();
     }
+
+    @Bean
+    public Java8TimeDialect java8TimeDialect() { return new Java8TimeDialect(); }
 
     @ExceptionHandler
     @ResponseStatus(NOT_FOUND)
@@ -127,24 +129,6 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
         }
 
     }
-
-
-//    @Bean
-//    public MessageSource messageSource() {
-//        ReloadableResourceBundleMessageSource messageSource = new ReloadableResourceBundleMessageSource();
-//       // messageSource.setBasename("/messages");
-//        messageSource.setDefaultEncoding("UTF-8");
-//        return messageSource;
-//    }
-//
-//    @Override
-//    public Validator getValidator() {
-//        LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
-//        validator.setValidationMessageSource(messageSource());
-//        return validator;
-//    }
-
-
     @Bean (name = "messageSource")
     public ResourceBundleMessageSource messageSource() {
         ResourceBundleMessageSource source = new ResourceBundleMessageSource();

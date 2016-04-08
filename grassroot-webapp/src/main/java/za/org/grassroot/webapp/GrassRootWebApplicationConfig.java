@@ -16,8 +16,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
-import java.util.Arrays;
-
 /**
  * Created by luke on 2015/07/23.
  */
@@ -28,8 +26,37 @@ import java.util.Arrays;
 @EnableJpaRepositories
 public class GrassRootWebApplicationConfig {
 
+    // private ApplicationContext applicationContext;
+
     @Autowired
     Environment environment;
+
+    /* Spring boot does not support Thymeleaf 3 yet, hence removing this
+
+    public void setApplicationContext(ApplicationContext applicationContext) {
+        this.applicationContext = applicationContext;
+    }
+
+    private ITemplateResolver templateResolver() {
+        SpringResourceTemplateResolver resolver = new SpringResourceTemplateResolver();
+        resolver.setApplicationContext(applicationContext);
+        resolver.setPrefix("classpath:/templates/");
+        resolver.setTemplateMode(TemplateMode.HTML);
+        return resolver;
+    }
+
+    private TemplateEngine templateEngine() {
+        SpringTemplateEngine engine = new SpringTemplateEngine();
+        engine.setTemplateResolver(templateResolver());
+        return engine;
+    }
+
+    @Bean
+    public ViewResolver viewResolver() {
+        ThymeleafViewResolver resolver = new ThymeleafViewResolver();
+        resolver.setTemplateEngine(templateEngine());
+        return resolver;
+    }*/
 
     @Bean
     @Profile({ "staging", "production" })

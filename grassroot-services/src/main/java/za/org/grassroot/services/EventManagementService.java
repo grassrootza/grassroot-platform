@@ -68,7 +68,7 @@ public interface EventManagementService {
 
     Map<User, EventRSVPResponse> getRSVPResponses(Event event);
 
-    int countUpcomingEvents(Long userId);
+    int countUpcomingEvents(User user);
 
     int getNumberInvitees(Event event);
 

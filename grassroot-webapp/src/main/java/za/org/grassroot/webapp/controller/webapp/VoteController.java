@@ -13,6 +13,7 @@ import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
+import za.org.grassroot.webapp.model.web.EventWrapper;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
@@ -54,34 +55,31 @@ public class VoteController extends BaseController {
         User user = userManagementService.load(getUserProfile().getUid()); // in case permissions changed, call entity from DB
 
         // todo: not sre if we even need this ...
-        VoteRequest voteRequest = VoteRequest.makeEmpty(user, null);
-        voteRequest.setRsvpRequired(true);
+        EventWrapper voteWrapper = EventWrapper.makeEmpty(true);
 
         if (groupSpecified) {
             Group group = groupBroker.load(groupUid);
-            // note: though service layer checks this, and prior UX, want to catch it here too in case of URL hacking
-            permissionBroker.validateGroupPermission(user, group, GROUP_PERMISSION_CREATE_GROUP_VOTE);
+            permissionBroker.validateGroupPermission(user, group, GROUP_PERMISSION_CREATE_GROUP_VOTE); // double check, given sensitivity
+            voteWrapper.setParentUid(groupUid);
             model.addAttribute("group", group);
-            voteRequest.setParent(group);
         } else {
             model.addAttribute("possibleGroups", permissionBroker.getActiveGroups(user, GROUP_PERMISSION_CREATE_GROUP_VOTE));
         }
 
-        model.addAttribute("vote", voteRequest);
-        model.addAttribute("groupSpecified", groupSpecified);
+        model.addAttribute("vote", voteWrapper);
 
         return "vote/create";
     }
 
     @RequestMapping(value = "create", method = RequestMethod.POST)
-    public String createVoteDo(Model model, @ModelAttribute("vote") VoteRequest vote, BindingResult bindingResult,
+    public String createVoteDo(Model model, @ModelAttribute("vote") EventWrapper vote, BindingResult bindingResult,
                                @RequestParam(value = "selectedGroupUid", required = false) String selectedGroupUid,
                                HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
-        log.info("Vote passed back to us: " + vote);
-        String groupUid = (selectedGroupUid == null) ? vote.getParent().getUid() : selectedGroupUid;
+        log.info("Vote passed back to us: " + vote.toString());
+        String groupUid = (selectedGroupUid == null) ? vote.getParentUid() : selectedGroupUid;
 
-        eventBroker.createVote(getUserProfile().getUid(), groupUid, JpaEntityType.GROUP, vote.getName(), vote.getEventDateTimeAtSAST(),
+        eventBroker.createVote(getUserProfile().getUid(), groupUid, JpaEntityType.GROUP, vote.getTitle(), vote.getEventDateTime(),
                                vote.isIncludeSubGroups(), vote.isRelayable(), vote.getDescription(), Collections.emptySet());
 
         log.info("Stored vote, at end of creation: " + vote.toString());
@@ -101,7 +99,7 @@ public class VoteController extends BaseController {
 
         ResponseTotalsDTO responses = eventManagementService.getVoteResultsDTO(vote);
 
-        model.addAttribute("vote", vote);
+        model.addAttribute("vote", new EventWrapper(vote));
         model.addAttribute("yes", responses.getYes());
         model.addAttribute("no", responses.getNo());
         model.addAttribute("abstained", responses.getMaybe());

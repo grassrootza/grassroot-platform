@@ -10,6 +10,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.webapp.controller.BaseController;
+import za.org.grassroot.webapp.model.web.EventWrapper;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -32,7 +33,6 @@ import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 public class VoteControllerTest extends WebAppAbstractUnitTest {
 
     private static final Logger logger = LoggerFactory.getLogger(MeetingControllerTest.class);
-    private static final Long dummyId = 1L;
 
     @InjectMocks
     private VoteController voteController;
@@ -87,9 +87,9 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
 
         Group testGroup = new Group("Dummy Group3", new User("234345345"));
         LocalDateTime testTime = LocalDateTime.now().plusMinutes(7L);
-        VoteRequest testVote = VoteRequest.makeEmpty(sessionTestUser, testGroup);
-        testVote.setName("test vote");
-        testVote.setEventStartDateTime(convertToSystemTime(testTime, getSAST()));
+        EventWrapper testVote = EventWrapper.makeEmpty(true);
+        testVote.setTitle("test vote");
+        testVote.setEventDateTime(testTime);
         testVote.setDescription("Abracadabra");
 
         mockMvc.perform(post("/vote/create").contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -123,7 +123,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(model().attribute("no", is(testVoteResults.getNo())))
                 .andExpect(model().attribute("abstained", is(testVoteResults.getMaybe())))
                 .andExpect(model().attribute("possible", is(testVoteResults.getNumberOfUsers())))
-                .andExpect(model().attribute("vote", hasProperty("uid", is(testVote.getUid()))));
+                .andExpect(model().attribute("vote", hasProperty("entityUid", is(testVote.getUid()))));
 
         verify(eventBrokerMock, times(1)).load(testVote.getUid());
         verifyNoMoreInteractions(eventBrokerMock);

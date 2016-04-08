@@ -135,8 +135,8 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
-    public int countUpcomingEvents(Long userId) {
-        return eventRepository.countFutureEvents(userId, Instant.now());
+    public int countUpcomingEvents(User user) {
+        return eventRepository.countByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThan(user, Instant.now());
     }
 
 

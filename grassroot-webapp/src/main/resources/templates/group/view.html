@@ -305,7 +305,7 @@
           <li class="list-group-item" th:each="event, iterStat : ${groupMeetings}">
               <!-- todo: redirect this based on the event type -->
                 <a href="" th:href="@{/meeting/view(eventUid=${event.uid})}"><span th:text="${event.name}"></span></a>
-                <span class="badge" th:text="${#calendars.format(event.getEventStartDateTime(),'dd MMMM yyyy')}">11 September 2015</span>
+                <span class="badge" th:text="${#temporals.format(event.getEventDateTimeAtSAST(),'dd MMMM yyyy')}">11 September 2015</span>
           </li>
         </ul>
       </div>
@@ -324,7 +324,7 @@
           <li class="list-group-item" th:each="event, iterStat : ${groupVotes}">
             <!-- todo: redirect this based on the event type -->
               <a href="" th:href="@{/vote/view(eventUid=${event.uid})}"><span th:text="${event.name}"></span></a>
-              <span class="badge">Closes <span th:text="${#calendars.format(event.getEventStartDateTime(),'dd MMM, HH:mm')}">11 September 2015</span></span>
+              <span class="badge">Closes <span th:text="${#temporals.format(event.getEventDateTimeAtSAST(),'dd MMM, HH:mm')}">11 September 2015</span></span>
           </li>
         </ul>
       </div>
@@ -453,7 +453,7 @@
                     <a th:href="@{/group/view(groupUid=${subgroup.Uid})}"><span th:text="${subgroup.groupName}"></span></a>
                   </h4>
                   <div class="least-content"><span th:text="${subgroup.getMembers().size()}"></span> Members</div>
-                  <p class="list-group-item-text">Est. <span th:text="${#calendars.format(subgroup.getCreatedDateTime(),'dd MMMM yyyy')}">13 May 2011</span></p>
+                  <p class="list-group-item-text">Est. <span th:text="${#temporals.format(subgroup.getCreatedDateTime(),'dd MMMM yyyy')}">13 May 2011</span></p>
                 </div>
               </div>
             </div>

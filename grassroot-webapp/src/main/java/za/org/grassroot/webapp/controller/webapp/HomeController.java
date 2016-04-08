@@ -155,9 +155,7 @@ public class HomeController extends BaseController {
         // end of SQL tree
 
         Long startTime2 = System.currentTimeMillis();
-        log.info("Getting the user from this id ... " + user.getId());
         model.addAttribute("userGroups", permissionBroker.getActiveGroupDTOs(user, null));
-        // model.addAttribute("groupTreesSql", groupViewNodeSqls);
         Long endTime2 = System.currentTimeMillis();
         log.info(String.format("Retrieved the active groups for the user ... took %d msecs", endTime2 - startTime2));
 
@@ -165,11 +163,13 @@ public class HomeController extends BaseController {
         Long startTime3 = System.currentTimeMillis();
         List<Event> meetingsToRsvp = new ArrayList<>();
         List<Event> votesToAnswer = new ArrayList<>();
-        int upcomingEvents = eventManagementService.countUpcomingEvents(user.getId());
+        int upcomingEvents = eventManagementService.countUpcomingEvents(user);
+
         if (upcomingEvents > 0) {
             meetingsToRsvp = eventManagementService.getOutstandingRSVPForUser(user);
             votesToAnswer = eventManagementService.getOutstandingVotesForUser(user);
         }
+
         Long endTime3 = System.currentTimeMillis();
         log.info(String.format("Retrieved %d events for the user ... took %d msecs", upcomingEvents, endTime3 - startTime3));
 

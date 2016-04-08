@@ -21,6 +21,7 @@ import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -99,7 +100,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		// else sometimes reminder setting will be in the past, causing duplication of meetings; defaulting to 3 hours
 		if (!reminderType.equals(DISABLED) && meeting.getScheduledReminderTime().isBefore(Instant.now())) {
-			meeting.setCustomReminderMinutes(180);
+			meeting.setCustomReminderMinutes(60);
 			meeting.setReminderType(CUSTOM);
 			meeting.updateScheduledReminderTime();
 		}
@@ -250,7 +251,7 @@ public class EventBrokerImpl implements EventBroker {
 		// as above, check if this puts reminder time in past, and, if so, default it to one hour (on assumption meeting is urgent
 		if (!reminderType.equals(DISABLED) && event.getScheduledReminderTime().isBefore(Instant.now())) {
             event.setReminderType(CUSTOM);
-            event.setCustomReminderMinutes(180);
+            event.setCustomReminderMinutes(60);
             event.updateScheduledReminderTime();
         }
     }

@@ -19,10 +19,8 @@ import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.MeetingWrapper;
 
 import javax.servlet.http.HttpServletRequest;
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Set;
@@ -95,9 +93,10 @@ public class MeetingController extends BaseController {
 
         log.info("The meeting wrapper as passed back to us: " + meeting.toString());
 
-        eventBroker.createMeeting(getUserProfile().getUid(), meeting.getParentUid(), meeting.getParentEntityType(),
-                                  meeting.getTitle(), meeting.getMeetingDateTime(), meeting.getLocation(),
-                                  meeting.isIncludeSubgroups(), meeting.isRsvpRequired(), meeting.isRelayable(),
+        // todo: move parent selection into MeetingWrapper when implement non-group meetings
+        eventBroker.createMeeting(getUserProfile().getUid(), selectedGroupUid, JpaEntityType.GROUP,
+                                  meeting.getTitle(), meeting.getEventDateTime(), meeting.getLocation(),
+                                  meeting.isIncludeSubGroups(), meeting.isRsvpRequired(), meeting.isRelayable(),
                                   meeting.getReminderType(), meeting.getCustomReminderMinutes(), meeting.getDescription(),
                                   Collections.emptySet());
 
@@ -140,7 +139,8 @@ public class MeetingController extends BaseController {
         }
 
         if (meeting.getScheduledReminderTime() != null)
-            model.addAttribute("scheduledReminderTime", Timestamp.from(meeting.getScheduledReminderTime())); // for thymeleaf
+            model.addAttribute("scheduledReminderTime", DateTimeUtil.convertToUserTimeZone(meeting.getScheduledReminderTime(),
+                                                                                           getSAST()));
 
         return "meeting/view";
     }
@@ -153,7 +153,7 @@ public class MeetingController extends BaseController {
         log.info("Okay, here is the meeting passed back ... " + changedMeeting);
 
         eventBroker.updateMeeting(getUserProfile().getUid(), changedMeeting.getEntityUid(), changedMeeting.getTitle(),
-                                  changedMeeting.getMeetingDateTime(), changedMeeting.getLocation());
+                                  changedMeeting.getEventDateTime(), changedMeeting.getLocation());
 
         addMessage(model, MessageType.SUCCESS, "meeting.update.success", request);
         return viewMeetingDetails(model, changedMeeting.getEntityUid());

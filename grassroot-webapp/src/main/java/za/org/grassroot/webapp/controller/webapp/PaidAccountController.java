@@ -19,7 +19,6 @@ import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.webapp.controller.BaseController;
-import za.org.grassroot.webapp.model.web.EventWrapper;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDate;
@@ -225,13 +224,8 @@ public class PaidAccountController extends BaseController {
 
         // todo: this is _very_ expensive, ~150-200 ms, we will need to optimize it
         List<Event> eventsInPeriod = eventManagementService.getEventsForGroupInTimePeriod(group, type, start, end);
-        List<EventWrapper> eventsWrappedForDisplay = new ArrayList<>();
 
-        for (Event event : eventsInPeriod)
-            eventsWrappedForDisplay.add(new EventWrapper(event, eventLogService.getResponseCountForEvent(event),
-                                                         eventLogService.getNonRSVPEventLogsForEvent(event)));
-
-        model.addAttribute(attr, eventsWrappedForDisplay);
+        model.addAttribute(attr, eventsInPeriod);
         return model;
     }
 

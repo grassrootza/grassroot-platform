@@ -8,11 +8,11 @@
     <artifactId>grassroot</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>GrassRoot Application</name>
+    <name>Grassroot Application</name>
     <url>http://www.grassroot.org.za/</url>
 
     <organization>
-        <name>GrassRoot</name>
+        <name>Grassroot</name>
         <url>http://www.grassroot.org.za/</url>
     </organization>
 

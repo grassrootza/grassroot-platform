@@ -7,12 +7,12 @@
 <body>
 
 <div layout:fragment="header">
-  <h2 class="text-center">Meeting: <span  th:text="${meeting.name}">Meeting</span></h2>
+  <h2 class="text-center">Meeting: <span  th:text="${meeting.title}">Meeting</span></h2>
 </div>
 <div layout:fragment="overview">
-  <h4 class="text-center">Meeting of "<span th:text="${meeting.resolveGroup().getName('')}">group</span>"
-    on <span th:text="${#calendars.format(meeting.getEventStartDateTime(),'dd MMM, HH:mm')}">date and time</span>
-    at <span th:text="${meeting.eventLocation}">place</span></h4>
+  <h4 class="text-center">Meeting of "<span th:text="${meeting.parentName}">group</span>"
+    on <span th:text="${#temporals.format(meeting.eventDateTime,'dd MMM, HH:mm')}">date and time</span>
+    at <span th:text="${meeting.location}">place</span></h4>
 </div>
 
 <div layout:fragment="content">
@@ -81,17 +81,17 @@
           <h4 class="modal-title" id="changeDetailsLabel">Change meeting details</h4>
         </div>
         <form th:action="@{/meeting/modify}" th:object="${meeting}" method="post">
-          <input type="hidden" name="eventUid" th:value="${meeting.getUid()}" />
+          <input type="hidden" name="eventUid" th:value="*{entityUid}" />
           <div class="modal-body">
             <div class="form-group">
               <label for="meeting-location" class="control-label">Location:</label>
               <input type="text" class="form-control" id="meeting-location"
-                     name="location" th:field="*{eventLocation}"/>
+                     name="location" th:field="*{location}"/>
             </div>
             <div class="form-group">
               <label for="datepicker" class="control-label">New date and time:</label>
                 <div class="input-group date" id="datepicker">
-                  <input th:field="*{eventStartDateTime}" type="text" class="form-control" />
+                  <input th:field="*{eventDateTime}" type="text" class="form-control" />
                   <span class="input-group-addon">
                   <span class="glyphicon glyphicon-calendar"></span>
                   </span>
@@ -119,18 +119,18 @@
           <h4 class="modal-title" id="changeReminderLabel">Changed scheduled reminder</h4>
         </div>
         <form th:action="@{/meeting/reminder}" method="post">
-          <input type="hidden" name="eventUid" th:value="${meeting.getUid()}" />
+          <input type="hidden" name="eventUid" th:value="${meeting.entityUid}" />
           <div class="modal-body">
             <div class="form-group">
               <label class="control-label" th:unless="${#strings.equals(meeting.getReminderType(), 'DISABLED')}">The reminder
-                will currently be sent out at <span th:text="${#calendars.format(scheduledReminderTime, 'EEE, dd/MM ''at'' HH:mm')}"></span>.
+                will currently be sent out at <span th:text="${#temporals.format(scheduledReminderTime, 'EEE, dd/MM ''at'' HH:mm')}"></span>.
                 What would you like to change it to?</label>
               <label class="control-label" th:if="${#strings.equals(meeting.getReminderType(), 'DISABLED')}">
               No reminder is set. How would you like to set it?</label>
               <select name="reminderType" class="form-control" id="reminderType">
                 <option value="DISABLED" th:selected="${#strings.equals(meeting.getReminderType(), 'DISABLED')}">None</option>
                 <option value="GROUP_CONFIGURED" th:selected="${#strings.equals(meeting.getReminderType(), 'GROUP_CONFIGURED')}">
-                  Group default (<span th:text="#{web.meeting.reminder.group.__${meeting.resolveGroup().reminderMinutes}__}">X</span> ahead)
+                  Group default (<span th:text="#{web.meeting.reminder.group.__${meeting.defaultReminderMinutes}__}">X</span> ahead)
                 </option>
                 <option value="CUSTOM" th:selected="${#strings.equals(meeting.getReminderType(), 'CUSTOM')}">Set custom</option>
               </select>
@@ -160,7 +160,7 @@
           <h4 class="modal-title" id="cancelLabel">Cancel meeting</h4>
         </div>
         <form th:action="@{/meeting/cancel}" method="post">
-          <input type="hidden" name="eventUid" th:value="${meeting.getUid()}" />
+          <input type="hidden" name="eventUid" th:value="${meeting.entityUid}" />
           <div class="modal-body">
             <div class="form-group">
               <label class="control-label">Are you sure? Cancelling a meeting cannot be undone.</label>
@@ -203,7 +203,7 @@
 
       $('#datepicker').datetimepicker({
         format: 'DD/MM/YYYY h:mm A',
-        defaultDate: /*[[${#dates.formatISO(meeting.getEventStartDateTime())}]]*/,
+        defaultDate: /*[[${#temporals.formatISO(meeting.getEventDateTime())}]]*/,
         widgetPositioning: {
           horizontal: 'right'
         },

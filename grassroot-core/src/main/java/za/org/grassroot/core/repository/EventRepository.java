@@ -10,9 +10,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
 
-import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.Date;
 import java.util.List;
 
 public interface EventRepository extends JpaRepository<Event, Long> {
@@ -29,15 +27,11 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
 	Page<Event> findByCreatedByUserAndEventStartDateTimeGreaterThanAndEventTypeAndCanceledFalse(User user, Instant startTime, EventType eventType, Pageable page);
 
-	/*
-	Some methods for analytical services, to count, find events, etc
-	 */
-	// @Query(value = "select count(e) from Event e where e.class = :eventClass and e.eventStartDateTime is not null")
-	// Long countByEventTypeAndEventStartDateTimeNotNull(Class<? extends Event> eventClass);
+    int countByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThan(User user, Instant instant);
 
-	// @Query(value = "select count(e) from Event e where e.class = :eventClass and e.createdDateTime between :start and :end and e.eventStartDateTime is not null")
-	// int countByEventTypeAndCreatedDateTimeBetween(EventType eventType, Timestamp start, Timestamp end);
+    List<Event> findByAppliesToGroupMembershipsUser(User user);
 
+    List<Event> findByAppliesToGroupAndEventStartDateTimeBetween(Group group, Instant start, Instant end, Sort sort);
 
 	/*
 
@@ -59,17 +53,10 @@ where e.canceled = FALSE
 	@Query(value = "select v from Vote v where v.eventStartDateTime > ?1 and v.canceled = false")
 	List<Event> findAllVotesAfterTimeStamp(Instant fromInstant);
 
-	@Query(value = "SELECT count(*) from Event e where e.start_date_time > ?2 and e.applies_to_group in (select group_id from group_user_membership where user_id = ?1)", nativeQuery = true)
-	int countFutureEvents(Long userId, Instant fromInstant);
+    /* (Some old queries, leaving in, just in case SQL statements come in handy in the future)
 
+    @Query(value = "SELECT * FROM event e WHERE applies_to_group IN (SELECT group_id FROM group_user_membership ")
 
-	/*
-	Some queries to find a user's events : leaving query stub in, as the property traversal by JPA may be expensive, and may want to do counts later
-	 */
-	// @Query(value = "SELECT * FROM event e WHERE applies_to_group IN (SELECT group_id FROM group_user_membership ")
-	List<Event> findByAppliesToGroupMembershipsUser(User user);
-
-/*
 	@Query(value = "select e from Event e where e.appliesToGroup.memberships.user = :user and e.class = :eventClass and e.canceled = :canceled order by e.EventStartDateTime desc")
 	List<Event> findByAppliesToGroupMembershipsUserAndEventTypeAndCanceledOrderByEventStartDateTimeDesc(User user, Class<? extends Event> eventClass, boolean canceled);
 
@@ -78,10 +65,14 @@ where e.canceled = FALSE
 
 	@Query(value = "select e from Event e where e.appliesToGroup.memberships.user = :user and e.class = :eventClass and e.eventStartDateTime < :startTime and e.canceled = :canceled")
 	List<Event> findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeLessThanAndCanceled(User user, Class<? extends Event> eventClass, Date startTime, boolean cancelled);
+
+    @Query(value = "select count(e) from Event e where e.class = :eventClass and e.eventStartDateTime is not null")
+	Long countByEventTypeAndEventStartDateTimeNotNull(Class<? extends Event> eventClass);
+
+	@Query(value = "select count(e) from Event e where e.class = :eventClass and e.createdDateTime between :start and :end and e.eventStartDateTime is not null")
+	int countByEventTypeAndCreatedDateTimeBetween(EventType eventType, Timestamp start, Timestamp end);
+
+
 */
 
-	/*
-	Queries for analysis, i.e., counting and retrieving how many events took place in a certain period
-	 */
-	List<Event> findByAppliesToGroupAndEventStartDateTimeBetween(Group group, Instant start, Instant end, Sort sort);
 }

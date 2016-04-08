@@ -7,11 +7,11 @@
 <body>
 
 <div layout:fragment="header">
-  <h2 class="text-center"><span  th:text="${vote.name}">Vote</span></h2>
+  <h2 class="text-center"><span  th:text="${vote.title}">Vote</span></h2>
 </div>
 <div layout:fragment="overview">
-  <p class="lead text-center">Vote of "<span th:text="${vote.resolveGroup().getName('')}">Group name</span>",
-  closing at <span th:text="${#calendars.format(vote.eventStartDateTime, 'd MMM, HH:mm')}">date and time</span></p>
+  <p class="lead text-center">Vote of "<span th:text="${vote.parentName}">Group name</span>",
+  closing at <span th:text="${#temporals.format(vote.eventDateTime, 'd MMM, HH:mm')}">date and time</span></p>
 </div>
 
 <div layout:fragment="content">
@@ -87,12 +87,12 @@
           <h4 class="modal-title" id="changeClosingTimeLabel">Change vote closing time</h4>
         </div>
         <form th:action="@{/vote/changedatetime}" th:object="${vote}" method="post">
-          <input type="hidden" name="eventUid" th:value="${vote.uid}" />
+          <input type="hidden" name="eventUid" th:value="${vote.entityUid}" />
           <div class="modal-body">
             <div class="form-group">
               <label for="datepicker" class="control-label">When will the vote close?</label>
               <div class="input-group date" id="datepicker">
-                <input name="closingDateTime" th:field="*{eventStartDateTime}" type="text" class="form-control" />
+                <input name="closingDateTime" th:field="*{eventDateTime}" type="text" class="form-control" />
                   <span class="input-group-addon">
                   <span class="glyphicon glyphicon-calendar"></span>
                   </span>
@@ -116,7 +116,7 @@
           <h4 class="modal-title" id="changeDescriptionLabel">Change vote description</h4>
         </div>
         <form th:action="@{/vote/description}" th:object="${vote}" method="post">
-          <input type="hidden" name="eventUid" th:value="${vote.uid}" />
+          <input type="hidden" name="eventUid" th:value="*{entityUid}" />
           <div class="modal-body">
             <div class="form-group">
               <label for="vote-description" class="control-label">Update vote description:</label>
@@ -143,7 +143,7 @@
           <h4 class="modal-title" id="changeReminderLabel">Changed scheduled reminder</h4>
         </div>
         <form th:action="@{/vote/reminder}" method="post">
-          <input type="hidden" name="eventUid" th:value="${vote.getUid()}" />
+          <input type="hidden" name="eventUid" th:value="${vote.entityUid}" />
           <div class="modal-body">
             <div class="form-group">
               <label class="control-label">Change reminder</label>
@@ -180,7 +180,7 @@
 
       $('#datepicker').datetimepicker({
         format: 'DD/MM/YYYY h:mm A',
-        defaultDate: /*[[${#dates.formatISO(vote.getEventStartDateTime())}]]*/,
+        defaultDate: /*[[${#temporals.formatISO(vote.eventDateTime)}]]*/,
         widgetPositioning: {
           horizontal: 'right'
         },

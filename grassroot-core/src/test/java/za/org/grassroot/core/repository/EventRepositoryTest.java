@@ -21,6 +21,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
@@ -268,6 +269,8 @@ public class EventRepositoryTest {
     @Test
     public void countUpcomingEventsShouldWork() {
 
+        LocalDateTime.now().with(ChronoField.DAY_OF_WEEK, 1);
+
         assertThat(eventRepository.count(), is(0L));
 
         User user = userRepository.save(new User("0710001111"));
@@ -287,9 +290,9 @@ public class EventRepositoryTest {
         event1 = eventRepository.save(event1);
         event2 = eventRepository.save(event2);
 
-        int numberUpcomingEvents1 = eventRepository.countFutureEvents(user.getId(), Instant.now());
+        int numberUpcomingEvents1 = eventRepository.countByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThan(user, Instant.now());
         assertThat(numberUpcomingEvents1, is(1));
-        int numberUpcomingEvents2 = eventRepository.countFutureEvents(user2.getId(), Instant.now());
+        int numberUpcomingEvents2 = eventRepository.countByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThan(user2, Instant.now());
         assertThat(numberUpcomingEvents2, is(0));
 
     }

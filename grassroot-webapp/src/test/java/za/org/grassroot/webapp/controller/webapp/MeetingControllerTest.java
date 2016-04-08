@@ -93,7 +93,6 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(view().name("redirect:/group/view"))
                 .andExpect(redirectedUrl("/group/view?groupUid=" + dummyGroup.getUid()));
 
-
         verify(eventBrokerMock, times(1)).createMeeting(sessionTestUser.getUid(), dummyGroup.getUid(), JpaEntityType.GROUP, "test meeting",
                                                         oneDayAway.atZone(DateTimeUtil.getSAST()).toLocalDateTime(),
                                                         "some place", false, true, false, EventReminderType.CUSTOM, 60,

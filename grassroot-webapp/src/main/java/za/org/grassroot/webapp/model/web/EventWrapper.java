@@ -1,63 +1,195 @@
 package za.org.grassroot.webapp.model.web;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.EventLog;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.dto.ResponseTotalsDTO;
+import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.util.DateTimeUtil;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Set;
 
 /**
- * Created by luke on 2016/01/20.
+ * Created by luke on 2016/04/08.
  */
 public class EventWrapper {
 
-    private static final Logger log = LoggerFactory.getLogger(EventWrapper.class);
+    protected String entityUid;
+    protected String parentUid;
+    protected JpaEntityType parentEntityType;
+    protected String parentName;
 
-    Event event;
-    Group group;
+    protected String title;
+    protected String description;
+    protected LocalDateTime eventDateTime;
 
-    ResponseTotalsDTO eventResponses;
-    List<EventLog> eventLogs;
+    protected boolean includeSubGroups;
+    protected boolean rsvpRequired;
+    protected boolean relayable;
 
-    public EventWrapper(Event event, ResponseTotalsDTO eventResponses, List<EventLog> eventLogs) {
-        this.event = event;
-        this.group = event.resolveGroup();
-        this.eventResponses = eventResponses;
-        this.eventLogs = eventLogs;
+    protected EventReminderType reminderType;
+    protected int defaultReminderMinutes;
+    protected int customReminderMinutes;
+
+    protected Set<String> assignedMembers;
+
+    protected EventWrapper() {
+
     }
 
-    public Event getEvent() {
-        return event;
+    public EventWrapper(Event event) {
+        this.entityUid = event.getUid();
+
+        this.parentEntityType = event.getParent().getJpaEntityType();
+        this.parentUid = event.getParent().getUid();
+
+        switch (event.getParent().getJpaEntityType()) {
+            case GROUP:
+                Group parent = (Group) event.getParent();
+                this.parentName = parent.getName("");
+                this.defaultReminderMinutes = parent.getReminderMinutes();
+                break;
+            case MEETING:
+                this.parentName = ((Meeting) event.getParent()).getName();
+                this.defaultReminderMinutes = 0; // todo: fix
+                break;
+            case VOTE:
+                this.parentName = ((Vote) event.getParent()).getName();
+                this.defaultReminderMinutes = 0; // todo: fix
+                break;
+            case LOGBOOK:
+                this.parentName = ((LogBook) event.getParent()).getMessage();
+                this.defaultReminderMinutes = 0; // todo: fix
+                break;
+        }
+
+        this.title = event.getName();
+        this.description = event.getDescription();
+        this.eventDateTime = DateTimeUtil.convertToUserTimeZone(event.getEventStartDateTime(), DateTimeUtil.getSAST())
+                .toLocalDateTime();
+        this.includeSubGroups = event.isIncludeSubGroups();
+        this.rsvpRequired = event.isRsvpRequired();
+        this.relayable = event.isRelayable();
+
+        this.reminderType = event.getReminderType();
+        this.customReminderMinutes = event.getCustomReminderMinutes();
+
+        // todo: assign members ...
     }
 
-    public Group getGroup() {
-        return group;
+    public static EventWrapper makeEmpty(boolean rsvpRequired) {
+        EventWrapper eventWrapper = new EventWrapper();
+        eventWrapper.rsvpRequired = rsvpRequired;
+        return eventWrapper;
     }
 
-    public ResponseTotalsDTO getEventResponses() {
-        return eventResponses;
+    public String getEntityUid() {
+        return entityUid;
     }
 
-    public List<EventLog> getEventLogs() {
-        return eventLogs;
+    public void setEntityUid(String entityUid) {
+        this.entityUid = entityUid;
     }
 
-    public String getEventDescription() { return event.getName(); }
+    public String getParentUid() {
+        return parentUid;
+    }
 
-    public LocalDateTime getEventDateTime() { return event.getEventDateTimeAtSAST(); }
+    public void setParentUid(String parentUid) {
+        this.parentUid = parentUid;
+    }
 
-    public int getNumberYesResponses() { return eventResponses.getYes(); }
+    public JpaEntityType getParentEntityType() {
+        return parentEntityType;
+    }
 
-    // todo: possibly change this to a count of past votes
-    public double getPercentageYesResponses() { return (100 * (double) eventResponses.getYes() / (double) eventResponses.getNumberOfUsers()); }
+    public void setParentEntityType(JpaEntityType parentEntityType) {
+        this.parentEntityType = parentEntityType;
+    }
 
-    public String getCreatingUserName() { return event.getCreatedByUser().nameToDisplay(); }
+    public String getParentName() { return parentName; }
 
-    public int getNumberMessages() { return eventLogs.size(); }
+    public String getTitle() {
+        return title;
+    }
 
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public LocalDateTime getEventDateTime() {
+        return eventDateTime;
+    }
+
+    public void setEventDateTime(LocalDateTime eventDateTime) {
+        this.eventDateTime = eventDateTime;
+    }
+
+    public boolean isIncludeSubGroups() {
+        return includeSubGroups;
+    }
+
+    public void setIncludeSubGroups(boolean includeSubGroups) {
+        this.includeSubGroups = includeSubGroups;
+    }
+
+    public boolean isRsvpRequired() {
+        return rsvpRequired;
+    }
+
+    public void setRsvpRequired(boolean rsvpRequired) {
+        this.rsvpRequired = rsvpRequired;
+    }
+
+    public boolean isRelayable() {
+        return relayable;
+    }
+
+    public void setRelayable(boolean relayable) {
+        this.relayable = relayable;
+    }
+
+    public EventReminderType getReminderType() {
+        return reminderType;
+    }
+
+    public void setReminderType(EventReminderType reminderType) {
+        this.reminderType = reminderType;
+    }
+
+    public int getDefaultReminderMinutes() { return defaultReminderMinutes; }
+
+    public int getCustomReminderMinutes() {
+        return customReminderMinutes;
+    }
+
+    public void setCustomReminderMinutes(int customReminderMinutes) {
+        this.customReminderMinutes = customReminderMinutes;
+    }
+
+    public Set<String> getAssignedMembers() {
+        return assignedMembers;
+    }
+
+    public void setAssignedMembers(Set<String> assignedMembers) {
+        this.assignedMembers = assignedMembers;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("MeetingWrapper{");
+        sb.append("entityUid='").append(entityUid).append('\'');
+        sb.append("parentUid='").append(parentUid).append('\'');
+        sb.append("parentType='").append(parentEntityType).append('\'');
+        sb.append("title='").append(title).append('\'');
+        sb.append("description='").append(description).append('\'');
+        sb.append("datetime='").append(eventDateTime).append('\'');
+        sb.append('}');
+        return sb.toString();
+    }
 }
