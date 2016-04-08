@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.EventRequestBroker;
@@ -107,7 +108,7 @@ public class USSDMeetingController extends USSDController {
         USSDMenu returnMenu;
 
         // todo: replace with call to countFutureEvents plus permission filter
-        if (newMeeting || eventManager.getUpcomingEventsUserCreated(user).size() == 0) {
+        if (newMeeting || !eventManager.userHasEventsToView(user, EventType.MEETING, true)) {
             returnMenu = ussdGroupUtil.askForGroupAllowCreateNew(user, thisSection, nextMenu(startMenu), newGroupMenu,
                                                                  groupHandlingMenu, null);
         } else {

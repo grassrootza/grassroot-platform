@@ -10,7 +10,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.GroupLogType;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
@@ -91,10 +90,10 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
     public void searchRequestToJoinGroup() throws Exception {
 
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
-        when(groupJoinRequestServiceMock.open(sessionTestUser.getUid(), testGroup.getUid())).thenReturn(testGroup.getUid());
+        when(groupJoinRequestServiceMock.open(sessionTestUser.getUid(), testGroup.getUid(), null)).thenReturn(testGroup.getUid());
         mockMvc.perform(post(path + "join/request/{phoneNumber}/{code}", testUserPhone, testUserCode).param("uid", testGroup.getUid())).andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
-        verify(groupJoinRequestServiceMock).open(sessionTestUser.getUid(), testGroup.getUid());
+        verify(groupJoinRequestServiceMock).open(sessionTestUser.getUid(), testGroup.getUid(), null);
     }
 
     @Test

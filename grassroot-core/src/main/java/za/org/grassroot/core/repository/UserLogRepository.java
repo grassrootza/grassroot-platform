@@ -25,6 +25,8 @@ public interface UserLogRepository extends JpaRepository<UserLog, Long> {
     int countByUserUidAndUserLogTypeAndUserInterfaceAndCreationTimeBetween(String userUid, UserLogType userLogType,
                                                                            UserInterfaceType interfaceType, Instant start, Instant end);
 
+    int countByUserUidAndUserLogTypeAndDescription(String userUid, UserLogType userLogType, String description);
+
 
 
 }

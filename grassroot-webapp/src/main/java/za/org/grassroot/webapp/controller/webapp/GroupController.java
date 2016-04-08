@@ -137,9 +137,10 @@ public class GroupController extends BaseController {
 
     @RequestMapping(value = "join/request", method = RequestMethod.POST)
     public String requestToJoinGroup(Model model, @RequestParam(value="uid") String groupToJoinUid,
+                                     @RequestParam(value="request", required = false) String description,
                                      HttpServletRequest request, RedirectAttributes attributes) {
         try {
-            groupJoinRequestService.open(getUserProfile().getUid(), groupToJoinUid);
+            groupJoinRequestService.open(getUserProfile().getUid(), groupToJoinUid, null);
             addMessage(attributes, MessageType.INFO, "group.join.request.done", request);
             return "redirect:/home";
         } catch (RequestorAlreadyPartOfGroupException e) {

@@ -150,6 +150,7 @@ public class USSDGroupUtil extends USSDUtil {
 
         Permission filter = SectionPermissionMap.get(section); // returning null is what we want if key not present
         GroupPage groupsPartOf = permissionBroker.getPageOfGroupDTOs(user, filter, pageNumber, PAGE_LENGTH);
+        log.info("Getting groups for USSD menu, permission={}, found {} groups", filter, groupsPartOf.getTotalElements());
 
         if (groupsPartOf.getTotalElements() == 1 && section != USSDSection.MEETINGS) { // exclude meetings since can create new in it
             menu = skipGroupSelection(user, section, groupsPartOf.getContent().get(0));

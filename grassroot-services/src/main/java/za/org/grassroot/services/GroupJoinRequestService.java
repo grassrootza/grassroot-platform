@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface GroupJoinRequestService {
 
-    String open(String requestorUid, String groupUid);
+    String open(String requestorUid, String groupUid, String description);
 
     void approve(String userUid, String requestUid);
 

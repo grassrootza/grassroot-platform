@@ -46,7 +46,7 @@ public class USSDHomeController extends USSDController {
     private USSDEventUtil eventUtil;
 
     Logger log = LoggerFactory.getLogger(getClass());
-    private static final String path = homePath + "/";
+    private static final String path = homePath;
     private static final USSDSection thisSection = USSDSection.HOME;
 
     private static final String rsvpMenu = "rsvp", renameUserMenu = "rename-start", renameGroupAndStart = "group-start",
@@ -372,9 +372,8 @@ public class USSDHomeController extends USSDController {
         // todo: switch this to uid
         eventLogManagementService.rsvpForEvent(vote.getId(), inputNumber, EventRSVPResponse.fromString(response));
 
-        return menuBuilder(new USSDMenu(getMessage(thisSection, startMenu, promptKey, "vote-recorded", sessionUser),
-                                        optionsHomeExit(sessionUser)));
-
+        String prompt = getMessage(thisSection, startMenu, promptKey + ".vote-recorded", sessionUser);
+        return menuBuilder(new USSDMenu(prompt, optionsHomeExit(sessionUser)));
     }
 
     @RequestMapping(value = path + renameUserMenu)
@@ -386,6 +385,7 @@ public class USSDHomeController extends USSDController {
         String welcomeMessage;
         if ("0".equals(userName) || "".equals(userName.trim())) {
             welcomeMessage = getMessage(thisSection, startMenu, promptKey, sessionUser);
+            userLogger.recordUserLog(sessionUser.getUid(), UserLogType.USER_SKIPPED_NAME, "");
         } else {
             sessionUser = userManager.setDisplayName(sessionUser, userName);
             welcomeMessage = getMessage(thisSection, startMenu, promptKey + "-rename-do", sessionUser.nameToDisplay(), sessionUser);
@@ -401,16 +401,17 @@ public class USSDHomeController extends USSDController {
 
         // todo: use permission model to check if user can actually do this
 
-        User sessionUser = userManager.findByInputNumber(inputNumber);
+        User user = userManager.findByInputNumber(inputNumber);
         String welcomeMessage;
         if (groupName.equals("0") || groupName.trim().equals("")) {
-            welcomeMessage = getMessage(thisSection, startMenu, promptKey, sessionUser);
+            welcomeMessage = getMessage(thisSection, startMenu, promptKey, user);
+            userLogger.recordUserLog(user.getUid(), UserLogType.USER_SKIPPED_NAME, groupUid);
         } else {
-            groupBroker.updateName(sessionUser.getUid(), groupUid, groupName);
-            welcomeMessage = getMessage(thisSection, startMenu, promptKey + "-group-do", sessionUser.nameToDisplay(), sessionUser);
+            groupBroker.updateName(user.getUid(), groupUid, groupName);
+            welcomeMessage = getMessage(thisSection, startMenu, promptKey + "-group-do", user.nameToDisplay(), user);
         }
 
-        return menuBuilder(welcomeMenu(welcomeMessage, sessionUser));
+        return menuBuilder(welcomeMenu(welcomeMessage, user));
 
     }
 

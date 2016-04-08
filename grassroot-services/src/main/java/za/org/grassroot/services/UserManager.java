@@ -30,6 +30,7 @@ import za.org.grassroot.services.exception.UserExistsException;
 import za.org.grassroot.services.util.CacheUtilService;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -297,8 +298,10 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public boolean needsToRenameSelf(User sessionUser) {
-        return sessionUser.needsToRenameSelf(10); // 5 min gap as placeholder for now, to make more a session count if possible
+    @Transactional(readOnly = true)
+    public boolean needsToRenameSelf(User user) {
+        return !user.hasName() && (!asyncUserService.hasSkippedName(user.getUid())
+                && user.getCreatedDateTime().toInstant().isBefore(Instant.now().minus(3, ChronoUnit.MINUTES)));
     }
 
     @Override
@@ -382,7 +385,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public Group fetchGroupUserMustRename(User user) {
         Group lastCreatedGroup = groupRepository.findFirstByCreatedByUserOrderByIdDesc(user);
-        if (lastCreatedGroup != null && lastCreatedGroup.isActive() && !lastCreatedGroup.hasName())
+        if (lastCreatedGroup != null && lastCreatedGroup.isActive() && !lastCreatedGroup.hasName()
+                && !asyncUserService.hasSkippedNamingGroup(user.getUid(), lastCreatedGroup.getUid()))
             return lastCreatedGroup;
         else
             return null;

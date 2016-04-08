@@ -49,7 +49,7 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
 
     @Override
     @Transactional
-    public String open(String requestorUid, String groupUid) {
+    public String open(String requestorUid, String groupUid, String description) {
         User requestor = userRepository.findOneByUid(requestorUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
@@ -61,7 +61,7 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
         if (checkPending != null)
             return checkPending.getUid();
 
-        logger.info("Opening new group join request: requestor={}, group={}", requestor, group);
+        logger.info("Opening new group join request: requestor={}, group={}, description={}", requestor, group, description);
 
         Instant time = Instant.now();
         GroupJoinRequest request = new GroupJoinRequest(requestor, group, time);

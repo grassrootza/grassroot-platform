@@ -247,11 +247,6 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
-    public List<Event> getUpcomingEventsUserCreated(User requestingUser) {
-        return eventRepository.findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(requestingUser, Instant.now(), false);
-    }
-
-    @Override
     public List<Event> getUpcomingEvents(User requestingUser, EventType type) {
         // todo: at some point we will need this to be efficient ... for now, doing a very slow kludge, and going to avoid using the method
         if (type.equals(EventType.MEETING)) {
@@ -314,11 +309,11 @@ public class EventManager implements EventManagementService {
 
     @Override
     public boolean userHasFutureEventsToView(User user, EventType type) {
-        // todo: as above, probably want to turn this into a count query
+        log.info("Checking if user has future events to view, of type: {}", type);
         if (type.equals(EventType.MEETING)) {
-            return !meetingRepository.
-                    findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceled(user, Instant.now(), false).
-                    isEmpty();
+            List<Meeting> events = meetingRepository.findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceled(user, Instant.now(), false);
+            log.info("List of events returned, with size={}, hence returning={}", events.size(), !events.isEmpty());
+            return !events.isEmpty();
         } else {
             return !voteRepository.
                     findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceled(user, Instant.now(), false).

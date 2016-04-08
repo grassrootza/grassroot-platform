@@ -77,4 +77,11 @@ public interface AsyncUserLogger {
      */
     boolean hasSkippedName(String userUid);
 
+    /**
+     * Check if the user has skipped over naming a group in the past, to avoid repeated asked
+     * @param userUid
+     * @param groupUid
+     * @return
+     */
+    boolean hasSkippedNamingGroup(String userUid, String groupUid);
 }

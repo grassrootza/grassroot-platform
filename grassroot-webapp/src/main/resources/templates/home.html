@@ -69,7 +69,7 @@
               <div class="col-md-9">
                 <span th:text="${event.resolveGroup().getName('')}">group name</span>, meeting about
                 "<span th:text="${event.name}" class="mark">Meeting subject</span>", on
-                <span th:text="${#calendars.format(event.getEventStartDateTime(),'dd MMMM')}">date and time</span>
+                <span th:text="${#temporals.format(event.getEventDateTimeAtSAST(),'dd MMMM')}">date and time</span>
                 at <span th:text="${event.eventLocation}">meeting location</span>.
               </div>
               <div class="col-md-3 pull-right">

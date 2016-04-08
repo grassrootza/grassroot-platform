@@ -128,7 +128,13 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
     @Override
     @Transactional(readOnly = true)
     public boolean hasSkippedName(String userUid) {
-        return false;
+        return (userLogRepository.countByUserUidAndUserLogTypeAndDescription(userUid, UserLogType.USER_SKIPPED_NAME, "") > 0);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasSkippedNamingGroup(String userUid, String groupUid) {
+        return userLogRepository.countByUserUidAndUserLogTypeAndDescription(userUid, UserLogType.USER_SKIPPED_NAME, groupUid) > 0;
     }
 
 
