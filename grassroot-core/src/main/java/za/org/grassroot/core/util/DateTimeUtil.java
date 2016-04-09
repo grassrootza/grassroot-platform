@@ -4,8 +4,8 @@ import com.google.common.base.CharMatcher;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
-import com.joestelmach.natty.DateGroup;
-import com.joestelmach.natty.Parser;
+import za.org.grassroot.core.util.natty.src.main.java.com.joestelmach.natty.DateGroup;
+import za.org.grassroot.core.util.natty.src.main.java.com.joestelmach.natty.Parser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
