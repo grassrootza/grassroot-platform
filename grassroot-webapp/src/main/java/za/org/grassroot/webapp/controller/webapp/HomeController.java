@@ -62,27 +62,28 @@ public class HomeController extends BaseController {
     private List<GroupTreeDTO> treeList = null;
 
 
-    @RequestMapping("/")
-    public ModelAndView getRootPage(Model model, HttpServletRequest request) {
+    @RequestMapping(value={"/", "/home"})
+    public ModelAndView getRootPage(Model model, @ModelAttribute("currentUser") UserDetails userDetails,
+                                    HttpServletRequest request) {
 
-        log.debug("Getting home page, for user with IP address ..." + request.getRemoteAddr());
+        log.info("getRootPage ... attempting to authenticate user ...");
+
+        if (signinController.isAuthenticated()) {
+            authenticationUtil.debugAuthentication();
+            return generateHomePage(model);
+        }
 
         if (signinController.isRememberMeAuthenticated()) {
             return signinController.autoLogonUser(request, model);
         }
 
-        if (signinController.isAuthenticated()) {
-            return generateHomePage(model);
-        }
-
         return new ModelAndView("index", model.asMap());
     }
 
-    @RequestMapping("/home")
+    /*@RequestMapping("/home")
     public ModelAndView getHomePage(Model model, @ModelAttribute("currentUser") UserDetails userDetails) {
-        authenticationUtil.debugAuthentication();
         return generateHomePage(model);
-    }
+    }*/
 
     public ModelAndView generateHomePage(Model model) {
 

@@ -139,9 +139,9 @@ public class DateTimeUtil {
 
         } else if (tryMatchWithoutDelimiters.find()) {
 
-            log.info("reformatTimeInput ... no delimiter, 3-4 digits in a row, assuming those are it ...");
             String digitString = tryMatchWithoutDelimiters.group(0);
-            int digitsForHours = (Integer.parseInt(digitString.substring(0, 2)) < 13) ? 2 : 1;
+            int digitsForHours = digitString.length() - 2; // safest assumption is last two digits are minutes (converse is rare)
+            log.info("reformatTimeInput ... no delimiter, 3-4 digits in a row, trying for hours={}", digitString.substring(0,2));
             reformattedTime = timeJoiner.join(new String[]{
                     String.format("%02d", Integer.parseInt(digitString.substring(0, digitsForHours))),
                     String.format("%02d", Integer.parseInt(digitString.substring(digitString.length() - digitsForHours))) });
@@ -164,7 +164,7 @@ public class DateTimeUtil {
             return trimmedResponse;
         }
 
-        log.info("reformatTimeInput .... at conclusion, trying to return: {}" + reformattedTime);
+        log.info("reformatTimeInput .... at conclusion, trying to return: {}", reformattedTime);
         return (neededTimePattern.matcher(reformattedTime).matches()) ? reformattedTime : trimmedResponse;
 
     }

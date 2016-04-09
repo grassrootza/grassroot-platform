@@ -8,13 +8,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Meeting;
+import za.org.grassroot.core.domain.MeetingRequest;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.EventRequestBroker;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
-import za.org.grassroot.services.util.CacheUtilManager;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -112,7 +112,9 @@ public class USSDMeetingController extends USSDController {
             returnMenu = ussdGroupUtil.askForGroupAllowCreateNew(user, thisSection, nextMenu(startMenu), newGroupMenu,
                                                                  groupHandlingMenu, null);
         } else {
-            returnMenu = eventUtil.askForMeeting(user, startMenu, manageMeetingMenu, startMenu + "?newMtg=1");
+            String prompt = getMessage(thisSection, startMenu, promptKey + ".new-old", user);
+            String newOption = getMessage(thisSection, startMenu, optionsKey + "new", user);
+            returnMenu = eventUtil.listUpcomingEvents(user, thisSection, prompt, manageMeetingMenu, true, startMenu + "?newMtg=1", newOption);
         }
 
         log.info("Timing a core menu ... meeting start menu handing over to menu builder ...");
