@@ -8,7 +8,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.EventRequest;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.VoteRequest;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -20,7 +23,6 @@ import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import za.org.grassroot.webapp.util.USSDEventUtil;
 
 import java.net.URISyntaxException;
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -244,7 +246,7 @@ public class USSDVoteController extends USSDController {
         // todo: consider doing a save and return
         User user = userManager.findByInputNumber(inputNumber, voteMenus + "open");
         String prompt = getMessage(thisSection, "open", promptKey, user);
-        return menuBuilder(eventUtil.listUpcomingEvents(user, thisSection, prompt, "details?back=open"));
+        return menuBuilder(eventUtil.listUpcomingEvents(user, thisSection, prompt, "details?back=open", false, null, null));
     }
 
     @RequestMapping(value = path + "old")
@@ -252,7 +254,7 @@ public class USSDVoteController extends USSDController {
     public Request viewOldVotes(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber, voteMenus + "old");
         String prompt = getMessage(thisSection, "old", promptKey, user);
-        return menuBuilder(eventUtil.listPriorEvents(user, thisSection, prompt, voteMenus + "details?back=old", true));
+        return menuBuilder(eventUtil.listPriorEvents(user, thisSection, prompt, "details?back=old", true));
     }
 
     @RequestMapping(value = path + "details")
@@ -264,7 +266,7 @@ public class USSDVoteController extends USSDController {
         // todo: have some way of counting reminders and only allow once unless paid account
         // todo: reconsider whether to save URL here, might want to set back to null
 
-        User user = userManager.findByInputNumber(inputNumber, saveVoteMenu("details", eventUid));
+        User user = userManager.findByInputNumber(inputNumber, saveVoteMenu("details", eventUid) + "&back=" + backMenu  );
         Event vote = eventBroker.load(eventUid);
         boolean futureEvent = vote.getEventStartDateTime().isAfter(Instant.now());
 
@@ -287,7 +289,6 @@ public class USSDVoteController extends USSDController {
 
         // todo: mention how many people will get the reminder
         User user = userManager.findByInputNumber(inputNumber, saveVoteMenu("reminder", eventUid));
-        Event vote = eventBroker.load(eventUid);
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, "reminder", promptKey, user));
         menu.addMenuOptions(optionsYesNo(user, voteMenus + "reminder-do?eventId=" + eventUid,

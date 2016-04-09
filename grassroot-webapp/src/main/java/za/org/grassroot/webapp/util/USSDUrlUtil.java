@@ -23,8 +23,6 @@ public class USSDUrlUtil {
             phoneNumber = "msisdn",
             userInputParam = "request",
             groupUidParam = "groupUid",
-            groupIdParam = "groupId",
-            eventIdParam = "eventId",
             logbookIDParam = "logbookid",
             entityUidParam = "entityUid",
             previousMenu = "prior_menu",
@@ -34,9 +32,7 @@ public class USSDUrlUtil {
             revisingFlag = "revising"; // may want to change this last one
 
     public static final String
-            groupIdUrlSuffix = ("?" + groupIdParam + "="),
             groupUidUrlSuffix = ("?" + groupUidParam + "="),
-            eventIdUrlSuffix = ("?" + eventIdParam + "="),
             logbookIdUrlSuffix = ("?" + logbookIDParam + "="),
             entityUidUrlSuffix = ("?" + entityUidParam + "="),
             setInterruptedFlag = "&" + interruptedFlag + "=1",
@@ -50,10 +46,12 @@ public class USSDUrlUtil {
     }
 
     public static String paginatedEventUrl(String menuPrompt, USSDSection section, String viewEventUrl,
-                                           int pastPresentBoth, boolean includeGroupName, Integer pageNumber) {
+                                           String menuForNew, String optionTextForNew, int pastPresentBoth, boolean includeGroupName, Integer pageNumber) {
+        String newEventParameter = (menuForNew != null) ? "&newMenu=" + encodeParameter(menuForNew) + "&newOption=" +
+                encodeParameter(optionTextForNew) : "";
         return "event_page?section=" + section.toString() + "&prompt=" + encodeParameter(menuPrompt) +
-                "&nextUrl=" + encodeParameter(viewEventUrl) + "&pastPresentBoth=" + pastPresentBoth + "&includeGroupName=" + includeGroupName
-                + "&page=" + pageNumber;
+                "&nextUrl=" + encodeParameter(viewEventUrl) + newEventParameter +
+                "&pastPresentBoth=" + pastPresentBoth + "&includeGroupName=" + includeGroupName + "&page=" + pageNumber;
     }
 
     public static String encodeParameter(String stringToEncode) {
@@ -90,10 +88,6 @@ public class USSDUrlUtil {
     public static String saveMeetingMenu(String menu, String entityUid, boolean revising) {
         String revisingFlag = (revising) ? "&revising=1" : "";
         return USSDSection.MEETINGS.toPath() + menu + "?entityUid=" + entityUid + setInterruptedFlag + revisingFlag;
-    }
-
-    public static String saveMtgMenuWithAction(String menu, Long eventId, String action) {
-        return USSDSection.MEETINGS.toPath() + menu + "?eventId=" + eventId + "&action=" + action + setInterruptedFlag;
     }
 
     public static String saveGroupMenu(String menu, String groupUid) {

@@ -117,10 +117,8 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 		Group group = resolveGroup();
 		if (getReminderType().equals(EventReminderType.CUSTOM)) {
 			this.scheduledReminderTime = getEventStartDateTime().minus(getCustomReminderMinutes(), ChronoUnit.MINUTES);
-
 		} else if (getReminderType().equals(EventReminderType.GROUP_CONFIGURED) && group.getReminderMinutes() > 0) {
 			this.scheduledReminderTime = getEventStartDateTime().minus(group.getReminderMinutes(), ChronoUnit.MINUTES);
-
 		} else {
 			this.scheduledReminderTime = null;
 		}

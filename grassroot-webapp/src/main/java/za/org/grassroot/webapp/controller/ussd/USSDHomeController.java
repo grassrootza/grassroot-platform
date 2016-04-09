@@ -1,6 +1,5 @@
 package za.org.grassroot.webapp.controller.ussd;
 
-import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +13,6 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.services.EventLogManagementService;
-import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDResponseTypes;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -482,6 +480,8 @@ public class USSDHomeController extends USSDController {
     public Request eventPaginationHelper(@RequestParam(value = phoneNumber) String inputNumber,
                                          @RequestParam(value = "section") String section,
                                          @RequestParam(value = "prompt") String prompt,
+                                         @RequestParam(value = "newMenu", required = false) String menuForNew,
+                                         @RequestParam(value = "newOption", required = false) String optionForNew,
                                          @RequestParam(value = "page") Integer pageNumber,
                                          @RequestParam(value = "nextUrl") String nextUrl,
                                          @RequestParam(value = "pastPresentBoth") Integer pastPresentBoth,
@@ -489,7 +489,7 @@ public class USSDHomeController extends USSDController {
         // toto: error handling on the section
         return menuBuilder(eventUtil.listPaginatedEvents(
                 userManager.findByInputNumber(inputNumber), USSDSection.fromString(section),
-                prompt, nextUrl, includeGroupName, pastPresentBoth, pageNumber));
+                prompt, nextUrl, (menuForNew != null), menuForNew, optionForNew, includeGroupName, pastPresentBoth, pageNumber));
     }
 
     @RequestMapping(value = path + U404)
