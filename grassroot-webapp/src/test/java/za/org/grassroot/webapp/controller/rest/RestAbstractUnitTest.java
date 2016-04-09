@@ -10,7 +10,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.VerificationTokenCodeRepository;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.*;
 
 import java.sql.Timestamp;
@@ -18,7 +17,8 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
-import static za.org.grassroot.core.util.DateTimeUtil.*;
+import static za.org.grassroot.core.util.DateTimeUtil.convertToUserTimeZone;
+import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
 /**
  * Created by paballo on 2016/02/18.
@@ -73,8 +73,6 @@ public class RestAbstractUnitTest
     protected PasswordTokenService passwordTokenServiceMock;
     @Mock
     protected GroupJoinRequestService groupJoinRequestServiceMock;
-    @Mock
-    protected GroupLogService groupLogServiceMock;
     @Mock
     protected VerificationTokenCodeRepository verificationTokenCodeRepositoryMock;
     @Mock

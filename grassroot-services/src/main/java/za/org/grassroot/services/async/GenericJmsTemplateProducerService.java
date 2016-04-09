@@ -1,4 +1,4 @@
-package za.org.grassroot.messaging.producer;
+package za.org.grassroot.services.async;
 
 
 import javax.jms.Message;

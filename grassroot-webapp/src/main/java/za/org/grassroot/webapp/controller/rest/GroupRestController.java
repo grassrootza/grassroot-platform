@@ -41,9 +41,6 @@ public class GroupRestController {
     UserManagementService userManagementService;
 
     @Autowired
-    GroupLogService groupLogService;
-
-    @Autowired
     GroupBroker groupBroker;
 
     @Autowired
@@ -179,8 +176,7 @@ public class GroupRestController {
 
     private GroupResponseWrapper createWrapper(Group group, Role role) {
         Event event = eventManagementService.getMostRecentEvent(group);
-        GroupLog groupLog = groupLogService.load(group.getId());
-        LocalDateTime latestTimeActiveOrModified = groupBroker.getLastTimeGroupActiveOrModified(group.getUid());
+        GroupLog groupLog = groupBroker.getMostRecentLog(group);
         GroupResponseWrapper responseWrapper;
         if (event != null) {
             if (event.getEventStartDateTime() != null && event.getEventStartDateTime()

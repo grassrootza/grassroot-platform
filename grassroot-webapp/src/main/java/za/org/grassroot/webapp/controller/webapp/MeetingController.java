@@ -15,6 +15,7 @@ import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.*;
+import za.org.grassroot.services.async.AsyncEventMessageSender;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.MeetingWrapper;
 
@@ -101,7 +102,7 @@ public class MeetingController extends BaseController {
                                   Collections.emptySet());
 
         addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.creation.success", request);
-        redirectAttributes.addAttribute("groupUid", meeting.getParentUid());
+        redirectAttributes.addAttribute("groupUid", selectedGroupUid);
         return "redirect:/group/view";
     }
 

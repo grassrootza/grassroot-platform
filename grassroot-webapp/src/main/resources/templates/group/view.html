@@ -453,7 +453,7 @@
                     <a th:href="@{/group/view(groupUid=${subgroup.Uid})}"><span th:text="${subgroup.groupName}"></span></a>
                   </h4>
                   <div class="least-content"><span th:text="${subgroup.getMembers().size()}"></span> Members</div>
-                  <p class="list-group-item-text">Est. <span th:text="${#temporals.format(subgroup.getCreatedDateTime(),'dd MMMM yyyy')}">13 May 2011</span></p>
+                  <p class="list-group-item-text">Est. <span th:text="${#calendars.format(subgroup.getCreatedDateTime(),'dd MMMM yyyy')}">13 May 2011</span></p>
                 </div>
               </div>
             </div>

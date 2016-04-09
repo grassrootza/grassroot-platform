@@ -1,4 +1,4 @@
-package za.org.grassroot.services.job;
+package za.org.grassroot.services.async;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -6,14 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.LogBook;
-import za.org.grassroot.core.domain.Vote;
 import za.org.grassroot.core.dto.*;
-import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.LogBookRepository;
-import za.org.grassroot.core.repository.VoteRepository;
-import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.EventBroker;
-import za.org.grassroot.services.EventLogManagementService;
 
 import javax.jms.Message;
 import javax.jms.ObjectMessage;
@@ -46,6 +41,12 @@ public class ScheduledTasks {
     public void sendVoteResults() {
         eventBroker.sendVoteResults();
     }
+
+    @Scheduled(cron = "0 0 16 * * *") // runs at 4pm (=6pm SAST) every day
+    public void sendMeetingAcknowledgements() { eventBroker.sendMeetingAcknowledgements(); }
+
+    @Scheduled(cron = "0 0 11 * * *") // runs at 11am (=1pm SAST) every day
+    public void sendMeetingRSVPsToDate() { eventBroker.sendMeetingRSVPsToDate(); }
 
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendLogBookReminders() {

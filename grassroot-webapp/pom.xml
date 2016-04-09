@@ -34,11 +34,6 @@
         </dependency>
         <dependency>
             <groupId>za.org.grassroot</groupId>
-            <artifactId>grassroot-messaging</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>za.org.grassroot</groupId>
             <artifactId>grassroot-integration</artifactId>
             <version>${project.version}</version>
         </dependency>

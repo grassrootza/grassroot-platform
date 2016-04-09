@@ -41,6 +41,10 @@ public interface EventBroker {
 
 	void sendManualReminder(String userUid, String eventUid, String message);
 
+	void sendMeetingRSVPsToDate();
+
+    void sendMeetingAcknowledgements();
+
 	void sendVoteResults();
 
 	void assignMembers(String userUid, String eventUid, Set<String> assignMemberUids);

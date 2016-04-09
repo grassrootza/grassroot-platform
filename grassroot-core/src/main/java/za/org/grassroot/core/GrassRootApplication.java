@@ -1,7 +1,7 @@
 package za.org.grassroot.core;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.core.env.ConfigurableEnvironment;
 
@@ -15,7 +15,7 @@ import static org.springframework.util.StringUtils.arrayToCommaDelimitedString;
  */
 public class GrassRootApplication extends SpringApplication {
 
-    private static final Log logger = LogFactory.getLog(GrassRootApplication.class);
+    private static final Logger logger = LoggerFactory.getLogger(GrassRootApplication.class);
 
     public GrassRootApplication(Class<?> configClass) {
         super(configClass);

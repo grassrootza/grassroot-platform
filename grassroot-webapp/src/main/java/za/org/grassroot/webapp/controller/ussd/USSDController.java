@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.MessageSource;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.*;
-import za.org.grassroot.services.util.CacheUtilManager;
+import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;

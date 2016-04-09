@@ -1,4 +1,4 @@
-package za.org.grassroot.services;
+package za.org.grassroot.services.async;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +13,6 @@ import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.*;
-import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -88,7 +87,7 @@ public class AsyncEventMessageSenderImpl implements AsyncEventMessageSender {
     @Async
     public void sendFreeFormMessage(String sendingUserUid, String groupUid, String message) {
         // todo: move most of this to AccountManager
-        // for now, just let the notification consumer handle the group loading etc., here just check the user
+        // for now, just let the notification async handle the group loading etc., here just check the user
         // has permission (is account admin--later, account admin and it's a paid group, with enough credit
 
         User user = userRepository.findOneByUid(sendingUserUid);

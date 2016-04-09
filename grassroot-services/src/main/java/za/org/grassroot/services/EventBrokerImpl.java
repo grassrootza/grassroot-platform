@@ -13,23 +13,20 @@ import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.*;
-import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
-import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
+import za.org.grassroot.services.async.GenericJmsTemplateProducerService;
+import za.org.grassroot.services.async.AsyncEventMessageSender;
 
-import java.sql.Date;
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
 import static za.org.grassroot.core.domain.EventReminderType.CUSTOM;
 import static za.org.grassroot.core.domain.EventReminderType.DISABLED;
-import static za.org.grassroot.core.util.DateTimeUtil.*;
 import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
+import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
 @Service
 public class EventBrokerImpl implements EventBroker {
@@ -341,6 +338,22 @@ public class EventBrokerImpl implements EventBroker {
 	}
 
 	@Override
+	@Transactional(readOnly = true)
+	public void sendMeetingRSVPsToDate() {
+        List<Meeting> meetings = new ArrayList<>();
+		logger.info("Sending out RSVP totals for {} meetings", meetings.size());
+        for (Meeting meeting : meetings) {
+            // send the thing out
+        }
+	}
+
+    @Override
+    public void sendMeetingAcknowledgements() {
+        List<Meeting> meetings = new ArrayList<>();
+        logger.info("Sending out meeting thank you for {} meetings", meetings.size());
+    }
+
+    @Override
 	@Transactional(readOnly = true)
 	public void sendVoteResults() {
 		List<Vote> votes = voteRepository.findUnsentVoteResults();

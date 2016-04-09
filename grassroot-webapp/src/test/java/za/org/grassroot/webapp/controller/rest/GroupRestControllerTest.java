@@ -68,12 +68,12 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(eventManagementServiceMock.getMostRecentEvent(testGroup)).thenReturn(event);
         when(permissionBrokerMock.getActiveGroups(sessionTestUser, null)).thenReturn(groupSet);
-        when(groupLogServiceMock.load(groupLog.getId())).thenReturn(groupLog);
+        when(groupBrokerMock.getMostRecentLog(testGroup)).thenReturn(groupLog);
         mockMvc.perform(get(path + "list/{phoneNumber}/{code}", testUserPhone, testUserCode)).andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
         verify(eventManagementServiceMock).getMostRecentEvent(testGroup);
         verify(permissionBrokerMock).getActiveGroups(sessionTestUser, null);
-        verify(groupLogServiceMock).load(groupLog.getId());
+        verify(groupBrokerMock).getMostRecentLog(testGroup);
     }
 
     @Test

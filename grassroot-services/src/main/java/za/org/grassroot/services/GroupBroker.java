@@ -81,6 +81,8 @@ public interface GroupBroker {
 
     LocalDateTime getLastTimeGroupActiveOrModified(String groupUid);
 
+    GroupLog getMostRecentLog(Group group);
+
     List<LocalDate> getMonthsGroupActive(String groupUid);
 
     List<GroupLog> getLogsForGroup(Group group, LocalDateTime periodStart, LocalDateTime periodEnd);

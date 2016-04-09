@@ -45,8 +45,6 @@ public abstract class WebAppAbstractUnitTest {
     protected PermissionBroker permissionBrokerMock;
     @Mock
     protected EventManagementService eventManagementServiceMock;
-    @Mock
-    protected GroupLogService groupLogServiceMock;
 
     protected void setUp(BaseController baseController) {
         mockAuthentication();

@@ -1,6 +1,5 @@
 package za.org.grassroot.services;
 
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +18,6 @@ import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Random;
-import java.util.UUID;
 
 /**
  * @author Lesetse Kimwaga
@@ -120,7 +118,7 @@ public class PasswordTokenManager implements PasswordTokenService {
 
         log.info("Trying to match this code (" + code + ") to this user: " + user);
 
-        if (user == null || StringUtils.isEmpty(code)) {
+        if (user == null || (code == null || code.trim().equals(""))) {
             return false;
         }
         //String encodedCode = passwordTokenEncoder.encode(code);

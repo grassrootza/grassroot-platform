@@ -15,7 +15,8 @@ import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.repository.*;
-import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.services.async.AsyncGroupEventLogger;
+import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
 import za.org.grassroot.services.util.TokenGeneratorService;
@@ -737,6 +738,11 @@ public class GroupBrokerImpl implements GroupBroker {
         LocalDateTime lastActive = getLastTimeGroupActive(groupUid);
         LocalDateTime lastModified = getLastTimeGroupModified(groupUid);
         return (lastActive != null && lastActive.isAfter(lastModified)) ? lastActive : lastModified;
+    }
+
+    @Override
+    public GroupLog getMostRecentLog(Group group) {
+        return groupLogRepository.findFirstByGroupIdOrderByCreatedDateTimeDesc(group.getId());
     }
 
     private LocalDateTime getLastTimeGroupActive(String groupUid) {

@@ -16,6 +16,7 @@ import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.*;
+import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.webapp.util.USSDGroupUtil;
 

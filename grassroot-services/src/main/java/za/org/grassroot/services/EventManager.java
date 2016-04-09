@@ -1,6 +1,5 @@
 package za.org.grassroot.services;
 
-import org.apache.commons.collections4.map.HashedMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +14,7 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
+import za.org.grassroot.services.async.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.util.CacheUtilService;
 
 import java.sql.Timestamp;
@@ -157,7 +156,7 @@ public class EventManager implements EventManagementService {
 
         if (outstandingRSVPs == null) {
             // fetch from the database
-            Map eventMap = new HashedMap<Long, Long>();
+            Map<Long, Long> eventMap = new HashMap<>();
             outstandingRSVPs = new ArrayList<>();
             List<Group> groups = groupRepository.findByMembershipsUserAndActive(user, true);
             log.debug("getOutstandingResponseForUser...after...getGroupsPartOf...");

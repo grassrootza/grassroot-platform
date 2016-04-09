@@ -1,4 +1,4 @@
-package za.org.grassroot.services;
+package za.org.grassroot.services.async;
 
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.enums.UserInterfaceType;

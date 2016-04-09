@@ -1,4 +1,4 @@
-package za.org.grassroot.messaging.producer;
+package za.org.grassroot.services.async;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.core.JmsTemplate;

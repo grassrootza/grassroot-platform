@@ -8,8 +8,7 @@ import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.repository.LogBookRepository;
-import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.messaging.producer.GenericJmsTemplateProducerService;
+import za.org.grassroot.services.async.GenericJmsTemplateProducerService;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;

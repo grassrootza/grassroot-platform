@@ -15,7 +15,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.AuthenticationUtil;
-import za.org.grassroot.services.AsyncUserLogger;
+import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.GroupJoinRequestService;
