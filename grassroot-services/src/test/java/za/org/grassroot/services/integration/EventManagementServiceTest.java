@@ -30,7 +30,7 @@ import static junit.framework.Assert.assertNotNull;
  */
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {GrassRootServicesConfig.class})
+@ContextConfiguration(classes = {GrassRootServicesConfig.class,TestContextConfig.class})
 @Transactional
 @ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
 public class EventManagementServiceTest {

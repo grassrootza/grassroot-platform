@@ -29,7 +29,7 @@ import static junit.framework.Assert.assertTrue;
  * Created by aakilomar on 8/24/15.
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = GrassRootServicesConfig.class)
+@ContextConfiguration(classes = {GrassRootServicesConfig.class,TestContextConfig.class} )
 @Transactional
 @ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
 public class NotificationServiceTest {

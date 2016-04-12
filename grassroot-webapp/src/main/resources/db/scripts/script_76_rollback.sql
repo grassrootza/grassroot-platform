@@ -1,0 +1,1 @@
+DROP TABLE gcm_registration;
