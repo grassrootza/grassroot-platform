@@ -55,10 +55,25 @@ public class MessageSendingManager implements MessageSendingService {
        requestChannel.send(createMessage(notification,destination));
     }
 
+/*    @Override
+    public void sendMessage(String destination, Object object) {
+        requestChannel.send(createMessage(object,destination));
+    }*/
+
 
     private Message<Notification> createMessage(Notification notification, String route){
         if(route.equals(null)){route = notification.getUser().getMessagingPreference().name();}
         Message<Notification> message = MessageBuilder.withPayload(notification)
+                .setHeader("route",route).
+                        build();
+
+        return message;
+
+    }
+
+    private Message createMessage(Object object, String route){
+
+        Message<Object> message = MessageBuilder.withPayload(object)
                 .setHeader("route",route).
                         build();
 

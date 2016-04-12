@@ -13,6 +13,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.*;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.enums.NotificationType;
 import za.org.grassroot.core.repository.LogBookLogRepository;
 import za.org.grassroot.core.repository.LogBookRepository;
 import za.org.grassroot.core.repository.UserRepository;
@@ -132,7 +133,7 @@ public class EventNotificationConsumer {
                EventLog eventLog = eventLogManagementService.createEventLog(EventLogType.EventChange, eventChanged.getEvent().getEventUid(),
                         user.getUid(), message);
                // messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
-                Notification notification = notificationService.createNotification(user,eventLog,Instant.now());
+                Notification notification = notificationService.createNotification(user,eventLog,NotificationType.EVENT,Instant.now());
                 messageSendingService.sendMessage(notification);
 
             }
@@ -154,7 +155,7 @@ public class EventNotificationConsumer {
                     && !eventLogManagementService.userRsvpNoForEvent(event.getUid(), user.getUid())) {
                 log.info("sendCancelledEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
                EventLog eventLog = eventLogManagementService.createEventLog(EventLogType.EventCancelled, event.getUid(), user.getUid(), message);
-                Notification notification= notificationService.createNotification(user,eventLog,Instant.now());
+                Notification notification= notificationService.createNotification(user,eventLog,NotificationType.EVENT,Instant.now());
                 messageSendingService.sendMessage(notification);
               //  messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
 
@@ -342,7 +343,6 @@ public class EventNotificationConsumer {
     private void sendVerificationToken(VerificationTokenCode verificationTokenCode){
         log.info("sendingVerficationToken..."+verificationTokenCode.getUsername()+ "...token "+verificationTokenCode.getCode());
         String message =verificationTokenCode.getCode();
-
         messageSendingService.sendMessage(message,verificationTokenCode.getUsername(),MessageProtocol.SMS);
     }
 
@@ -356,7 +356,7 @@ public class EventNotificationConsumer {
             log.info("sendVoteResultsToUser...send message..." + message + "...to..." + user.getPhoneNumber());
            // messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
             EventLog eventLog =eventLogManagementService.createEventLog(EventLogType.EventResult, event.getEventUid(), user.getUid(), message);
-            Notification notification = notificationService.createNotification(user,eventLog,Instant.now());
+            Notification notification = notificationService.createNotification(user,eventLog,NotificationType.EVENT,Instant.now());
             messageSendingService.sendMessage(notification);
         }
 
@@ -382,7 +382,7 @@ public class EventNotificationConsumer {
             EventLog eventLog =eventLogManagementService.createEventLog(EventLogType.EventNotification, event.getEventObject().getUid(),
                     user.getUid(), message);
 
-                Notification notification = notificationService.createNotification(user,eventLog, Instant.now());
+                Notification notification = notificationService.createNotification(user,eventLog, NotificationType.EVENT, Instant.now());
                 messageSendingService.sendMessage(notification);
                // messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
             }
@@ -441,7 +441,7 @@ public class EventNotificationConsumer {
         log.info("sendMeetingReminderMessage...send message..." + message + "...to..." + user.getPhoneNumber());
       //  messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
         EventLog eventLog = eventLogManagementService.createEventLog(EventLogType.EventReminder, event.getEventUid(), user.getUid(), message);
-        Notification notification = notificationService.createNotification(user,eventLog,Instant.now());
+        Notification notification = notificationService.createNotification(user,eventLog,NotificationType.EVENT,Instant.now());
         messageSendingService.sendMessage(notification);
 
     }
@@ -450,7 +450,7 @@ public class EventNotificationConsumer {
         log.info("sendManualMessageAction...send message..." + message + "...to..." + user.getPhoneNumber());
       //  messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
         EventLog eventLog = eventLogManagementService.createEventLog(EventLogType.EventManualReminder, event.getEventUid(), user.getUid(), message);
-        Notification notification = notificationService.createNotification(user,eventLog,Instant.now());
+        Notification notification = notificationService.createNotification(user,eventLog,NotificationType.EVENT,Instant.now());
         messageSendingService.sendMessage(notification);
 
 
@@ -460,15 +460,21 @@ public class EventNotificationConsumer {
     private void sendLogBookReminderMessage(User user,Group group, LogBook logBook) {
         log.info("sendLogBookReminderMessage...user..." + user.getPhoneNumber() + "...logbook..." + logBook.getMessage());
         String message = meetingNotificationService.createLogBookReminderMessage(user,group,logBook);
-        messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
-        logBookLogRepository.save(new LogBookLog(logBook.getId(),message,user.getId(),group.getId(),user.getPhoneNumber()));
+        LogBookLog  logBookLog = logBookLogRepository.save(new LogBookLog(logBook.getId(),message,user.getId(),group.getId(),user.getPhoneNumber()));
+        Notification notification = notificationService.createNotification(user, logBookLog,NotificationType.LOGBOOK, Instant.now());
+        messageSendingService.sendMessage(notification);
+      //  messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
+
 
     }
     private void sendNewLogbookNotificationMessage(User user,Group group, LogBook logBook, boolean assigned) {
         log.info("sendNewLogbookNotificationMessage...user..." + user.getPhoneNumber() + "...logbook..." + logBook.getMessage());
         String message = meetingNotificationService.createNewLogBookNotificationMessage(user,group,logBook, assigned);
-        messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
-        logBookLogRepository.save(new LogBookLog(logBook.getId(),message,user.getId(),group.getId(),user.getPhoneNumber()));
+        LogBookLog logBookLog = logBookLogRepository.save(new LogBookLog(logBook.getId(),message,user.getId(),group.getId(),user.getPhoneNumber()));
+        Notification notification = notificationService.createNotification(user,logBookLog,NotificationType.LOGBOOK,Instant.now());
+        messageSendingService.sendMessage(notification);
+     //   messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
+
 
     }
 

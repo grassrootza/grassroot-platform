@@ -27,7 +27,7 @@ import static za.org.grassroot.services.enums.GroupPermissionTemplate.DEFAULT_GR
  * Created by luke on 2015/11/19.
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = GrassRootServicesConfig.class)
+@ContextConfiguration(classes = {GrassRootServicesConfig.class, TestContextConfig.class})
 @Transactional
 @ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
 public class RoleManagementServiceTest extends AbstractTransactionalJUnit4SpringContextTests {

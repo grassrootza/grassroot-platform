@@ -1,0 +1,63 @@
+package za.org.grassroot.unit;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.enums.UserMessagingPreference;
+import za.org.grassroot.integration.config.InfrastructureConfiguration;
+import za.org.grassroot.integration.router.OutboundMessageRouter;
+
+import static org.junit.Assert.assertEquals;
+
+/**
+ * Created by paballo on 2016/04/11.
+ */
+@ContextConfiguration(classes = {InfrastructureConfiguration.class, OutboundMessageRouter.class})
+@RunWith(SpringJUnit4ClassRunner.class)
+public class OutboundRouterTest {
+
+    @Autowired
+    MessageChannel requestChannel;
+
+    @Autowired
+    MessageChannel smsOutboundChannel;
+
+    @Autowired
+    MessageChannel gcmOutboundChannel;
+
+    @Autowired
+    OutboundMessageRouter outboundMessageRouter;
+
+    @Test
+    public void routingToSmsShouldWork() throws Exception{
+        Message<Notification> message = MessageBuilder.withPayload(new Notification())
+                .setHeader("route",UserMessagingPreference.SMS.toString()).build();
+         assertEquals("smsOutboundChannel", outboundMessageRouter.route(message));
+
+    }
+
+    @Test
+    public void routingToGcmShouldWork() throws Exception{
+        Message<Notification> message = MessageBuilder.withPayload(new Notification())
+                .setHeader("route",UserMessagingPreference.ANDROID_APP.toString()).build();
+        assertEquals("gcmOutboundChannel", outboundMessageRouter.route(message));
+
+    }
+
+    @Test
+    public void routingToSmsShouldWorkWhenRouteIsNull() throws Exception{
+        Message<Notification> message = MessageBuilder.withPayload(new Notification()).build();
+        assertEquals("smsOutboundChannel",outboundMessageRouter.route(message));
+
+    }
+
+
+
+}
+

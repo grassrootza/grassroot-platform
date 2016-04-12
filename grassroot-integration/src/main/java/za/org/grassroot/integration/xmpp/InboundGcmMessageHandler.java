@@ -28,32 +28,29 @@ public class InboundGcmMessageHandler {
     private Logger log = LoggerFactory.getLogger(InboundGcmMessageHandler.class);
 
     @Autowired
-    EventLogRepository eventLogRepository;
-
-    @Autowired
-    UserRepository userRepository;
-
-    @Autowired
     MessageChannel requestChannel;
 
     @Autowired
     NotificationService notificationService;
+
 
     @Autowired
     MessageSendingService messageSendingService;
 
 
     @ServiceActivator(inputChannel = "gcmInboundChannel")
-    private void handleUpstreamMessage(Message message) throws Exception {
+    public void handleUpstreamMessage(Message message) throws Exception {
 
         GcmPacketExtension gcmPacket =
                 (GcmPacketExtension) message.
                         getExtension(GcmPacketExtension.GCM_NAMESPACE);
         String json = gcmPacket.getJson();
         ObjectMapper mapper = new ObjectMapper();
-        Map<String,Object> response = mapper.readValue(json, new TypeReference<Map<String, String>>(){});
+
+        Map<String,Object> response = mapper.readValue(json, new TypeReference<Map<String, Object>>(){});
         String message_type = (String) response.get("message_type");
-        if(message_type.equals(null)){
+        log.info(response.toString());
+        if(message_type == null){
             handleOrdinaryMessage(response);
         }else{
             switch(message_type){
@@ -78,13 +75,16 @@ public class InboundGcmMessageHandler {
     private void handleAcknowledgementReceipt(Map<String, Object> input) {
         String messageId = (String) input.get("message_id");
         String data = String.valueOf(input.get("data"));
+
         log.info("Gcm acknowledges receipt of message " + messageId+ " with payload "+data);
 
     }
 
     private void handleOrdinaryMessage(Map<String, Object> input){
-        //todo: handle ordinary upstream messages
-
+       log.info("Ordinary message received");
+        String messageId = (String) input.get("message_id");
+        String from = String.valueOf(input.get("data"));
+        sendAcknowledment(createAcknowledgeMessage(from,messageId));
     }
 
     private void handleNotAcknowledged(Map<String, Object> input) {
@@ -119,7 +119,8 @@ public class InboundGcmMessageHandler {
     }
     
     private void sendAcknowledment(Map<String,Object> response){
-        
+     //   messageSendingService.sendMessage(UserMessagingPreference.ANDROID_APP.toString(),response);
+
     }
 
 

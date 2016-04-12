@@ -26,7 +26,7 @@ import static org.hamcrest.Matchers.is;
  * @author Lesetse Kimwaga
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {GrassRootServicesConfig.class})
+@ContextConfiguration(classes = {GrassRootServicesConfig.class, TestContextConfig.class})
 @Transactional
 @DirtiesContext
 @ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)

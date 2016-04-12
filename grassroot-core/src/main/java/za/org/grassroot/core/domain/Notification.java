@@ -69,7 +69,7 @@ public class Notification {
     }
 
     public Notification(User user,EventLog eventLog,GcmRegistration gcmRegistration,Boolean read,
-                        Boolean delivered, Instant createdDateTime){
+                        Boolean delivered, NotificationType notificationType, Instant createdDateTime){
         this.uid = UIDGenerator.generateId();
         this.user=user;
         this.eventLog=eventLog;
@@ -77,10 +77,12 @@ public class Notification {
         this.read=read;
         this.delivered=delivered;
         this.createdDateTime=createdDateTime;
+        this.notificationType = notificationType;
+        this.userMessagingPreference = user.getMessagingPreference();
     }
 
     public Notification(User user,LogBookLog logBookLog,GcmRegistration gcmRegistration,Boolean read,
-                        Boolean delivered, Instant createdDateTime){
+                        Boolean delivered, NotificationType notificationType, Instant createdDateTime){
         this.uid = UIDGenerator.generateId();
         this.user=user;
         this.logBookLog = logBookLog;
@@ -88,6 +90,8 @@ public class Notification {
         this.read=read;
         this.delivered=delivered;
         this.createdDateTime=createdDateTime;
+        this.notificationType = notificationType;
+        this.userMessagingPreference = user.getMessagingPreference();
     }
 
     public Long getId() {

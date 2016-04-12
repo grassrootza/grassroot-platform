@@ -1,11 +1,15 @@
 package za.org.grassroot.integration.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.Data;
 
 /**
  * Created by paballo on 2016/04/05.
  */
+@Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class GcmEntity {
 
@@ -19,6 +23,9 @@ public class GcmEntity {
     private Object notification;
 
 
+    public GcmEntity(){
+
+    }
 
     public GcmEntity(String message_id, String to,String collapseKey, Object data){
         this.message_id =message_id;
@@ -27,7 +34,6 @@ public class GcmEntity {
         this.data =data;
 
     }
-
     public GcmEntity(String message_id, String to,String collapseKey, Object data, Object notification){
         this.message_id =message_id;
         this.to = to;

@@ -22,7 +22,7 @@ import za.org.grassroot.services.UserManagementService;
  */
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {GrassRootServicesConfig.class})
+@ContextConfiguration(classes = {GrassRootServicesConfig.class, TestContextConfig.class})
 @DirtiesContext
 @Transactional
 @ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)

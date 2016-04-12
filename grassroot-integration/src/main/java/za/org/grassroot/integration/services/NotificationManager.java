@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.NotificationType;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.repository.NotificationRepository;
 
@@ -37,23 +38,23 @@ public class NotificationManager implements NotificationService{
 
     @Override
     @Transactional
-    public Notification createNotification(User user,  EventLog eventLog,  Instant createdDateTime) {
+    public Notification createNotification(User user, EventLog eventLog, NotificationType notificationType, Instant createdDateTime) {
         Objects.nonNull(user);
         Objects.nonNull(eventLog);
         Objects.nonNull(createdDateTime);
         GcmRegistration gcmRegistration = gcmService.loadByUser(user);
-        Notification notification = new Notification(user,eventLog,gcmRegistration,false,false,createdDateTime);
+        Notification notification = new Notification(user,eventLog,gcmRegistration,false,false,notificationType,createdDateTime);
         return notificationRepository.save(notification);
 
     }
 
     @Override
-    public Notification createNotification(User user, LogBookLog logBookLog, Instant createdDateTime) {
+    public Notification createNotification(User user, LogBookLog logBookLog, NotificationType notificationType, Instant createdDateTime) {
         Objects.nonNull(user);
         Objects.nonNull(logBookLog);
         Objects.nonNull(createdDateTime);
         GcmRegistration gcmRegistration = gcmService.loadByUser(user);
-        Notification notification = new Notification(user,logBookLog,gcmRegistration,false,false,createdDateTime);
+        Notification notification = new Notification(user,logBookLog,gcmRegistration,false,false, notificationType, createdDateTime);
         return notificationRepository.save(notification);
     }
 
