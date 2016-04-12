@@ -13,7 +13,7 @@ import za.org.grassroot.core.enums.EventType;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.sql.Timestamp;
-import java.time.Instant;
+import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.Set;
@@ -122,6 +122,18 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 		} else {
 			this.scheduledReminderTime = null;
 		}
+
+        if (this.scheduledReminderTime != null) {
+            final ZoneId userZone = ZoneId.of("Africa/Johannesburg");
+            ZonedDateTime currentDateTime = ZonedDateTime.ofInstant(this.scheduledReminderTime, userZone);
+            if (currentDateTime.getHour() < 7) {
+                // todo: there _must_ be an easier way to do this, but am getting confused by Java 8 zone offsets etc
+                LocalDate reminderDate = currentDateTime.toLocalDate();
+                LocalTime adjustedReminderTime = LocalTime.of(7, 0);
+                ZonedDateTime revisedDateTime = ZonedDateTime.of(reminderDate, adjustedReminderTime, userZone);
+                this.scheduledReminderTime = revisedDateTime.withZoneSameInstant(ZoneId.systemDefault()).toInstant();
+            }
+        }
 	}
 
 	@Override
