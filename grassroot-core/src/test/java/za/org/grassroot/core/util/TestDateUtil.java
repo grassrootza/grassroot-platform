@@ -15,7 +15,7 @@ import java.time.temporal.TemporalAdjusters;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Created by Siyanda Mzam on 2016/04/07 13:24 AM.
+ * Created by Siyanda Mzam on 2016/04/07 13:24
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = TestContextConfiguration.class)
@@ -115,16 +115,20 @@ public class TestDateUtil {
     public void parsingRelativeDateTimeShouldWork() throws Exception {
 
         final LocalDateTime referenceDateTime = LocalDateTime.of(LocalDate.now(), LocalTime.of(00, 00)).truncatedTo(ChronoUnit.SECONDS);
+        Integer referencedDayValue = 1;
+        Integer todaysReferencedValue = referenceDateTime.getDayOfWeek().getValue();
 
         assertEquals(referenceDateTime.plusHours(19), DateTimeUtil.parseDateTime("today at 7 in the evening").truncatedTo(ChronoUnit.SECONDS));
         assertEquals(referenceDateTime.minusDays(1).plusHours(9), DateTimeUtil.parseDateTime("yesterday at 9 in the morning").truncatedTo(ChronoUnit.SECONDS));
         assertEquals(referenceDateTime.minusDays(2).plusHours(18), DateTimeUtil.parseDateTime("the day before yesterday at 6 in the evening ").truncatedTo(ChronoUnit.SECONDS));
         assertEquals(referenceDateTime.plusDays(2).plusHours(16).plusMinutes(30), DateTimeUtil.parseDateTime("at 4h30pm the day after tomorrow ").truncatedTo(ChronoUnit.SECONDS));
-        assertEquals(referenceDateTime.with(TemporalAdjusters.previous(DayOfWeek.MONDAY)).plusWeeks(3).plusHours(17), DateTimeUtil.parseDateTime("mon after two weeks at 1700").truncatedTo(ChronoUnit.SECONDS));
+        assertEquals(todaysReferencedValue > referencedDayValue ?
+                referenceDateTime.minusDays(todaysReferencedValue - referencedDayValue).plusWeeks(3).plusHours(17) :
+                referenceDateTime.plusDays((referencedDayValue - todaysReferencedValue) ).plusWeeks(2).plusHours(17),
+                DateTimeUtil.parseDateTime("mon after two weeks at 1700").truncatedTo(ChronoUnit.SECONDS));
         assertEquals(referenceDateTime.plusDays(4).plusHours(10), DateTimeUtil.parseDateTime("four days from now @ 10 am").truncatedTo(ChronoUnit.SECONDS));
         assertEquals(referenceDateTime.with(Month.SEPTEMBER).with(TemporalAdjusters.dayOfWeekInMonth(2, DayOfWeek.WEDNESDAY)).plusHours(15).plusMinutes(35), DateTimeUtil.parseDateTime("2nd wednesday of sept at 1535").truncatedTo(ChronoUnit.SECONDS));
-        assertEquals(referenceDateTime.with(Month.DECEMBER).withDayOfMonth(24).withHour(14).withMinute(3), DateTimeUtil.parseDateTime("meeting will be held on christmas eve at 2:03pm").truncatedTo(ChronoUnit.SECONDS));
-        assertEquals(referenceDateTime.with(Month.JANUARY).withDayOfYear(1).plusYears(1).plusMonths(3).plusDays(15).plusHours(13).plusMinutes(40), DateTimeUtil.parseDateTime("at 13h40 on easter monday").truncatedTo(ChronoUnit.SECONDS));
+        assertEquals(referenceDateTime.with(Month.DECEMBER).withDayOfMonth(1).withHour(14).withMinute(3), DateTimeUtil.parseDateTime("dec at 2:03pm").truncatedTo(ChronoUnit.SECONDS));
         assertEquals(referenceDateTime.plusMonths(1).with(TemporalAdjusters.dayOfWeekInMonth(3, DayOfWeek.THURSDAY)).plusHours(13).plusMinutes(23), DateTimeUtil.parseDateTime("third thursday of next month at 13H23").truncatedTo(ChronoUnit.SECONDS));
 
         // TODO: 2016/04/08 Get antlr to recognise the first occurrence of particular dates like, "fri the 13th" or "first/next holiday of this month/year".
