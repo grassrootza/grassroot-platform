@@ -3,7 +3,6 @@ package za.org.grassroot.core.repository;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.internal.exceptions.ExceptionIncludingMockitoWarnings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.test.context.ActiveProfiles;
@@ -32,28 +31,28 @@ import static org.junit.Assert.assertEquals;
 public class NotificationRepositoryTest {
 
     @Autowired
-    NotificationRepository notificationRepository;
+    private NotificationRepository notificationRepository;
 
     @Autowired
-    UserRepository userRepository;
+    private UserRepository userRepository;
 
     @Autowired
-    MeetingRepository meetingRepository;
+    private MeetingRepository meetingRepository;
 
     @Autowired
-    VoteRepository voteRepository;
+    private VoteRepository voteRepository;
 
     @Autowired
-    EventLogRepository eventLogRepository;
+    private EventLogRepository eventLogRepository;
 
     @Autowired
-    GroupRepository groupRepository;
+    private GroupRepository groupRepository;
 
     @Autowired
-    EventRepository eventRepository;
+    private EventRepository eventRepository;
 
     @Autowired
-    GcmRegistrationRepository gcmRegistrationRepository;
+    private GcmRegistrationRepository gcmRegistrationRepository;
 
     @Test
     public void shouldSaveAndRetrieveNotifications() throws Exception{

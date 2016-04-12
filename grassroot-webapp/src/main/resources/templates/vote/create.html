@@ -39,7 +39,7 @@
             <select th:unless="${groupSpecified}" name="selectedGroupUid" id="selectedgroup" class="form-control">
               <option th:each="group: ${possibleGroups}"
                       th:value="${group.uid}"
-                      th:text="${group.groupName}">Groupname</option>
+                      th:text="${group.getName('')}">Groupname</option>
             </select>
             <input th:if="${groupSpecified}" class="form-control" readonly="true" th:placeholder="${group.groupName}" id="group" />
           </div>

@@ -28,10 +28,10 @@ import static org.junit.Assert.assertNotEquals;
 public class GcmRegistrationRepositoryTest {
 
     @Autowired
-    GcmRegistrationRepository gcmRegistrationRepository;
+    private GcmRegistrationRepository gcmRegistrationRepository;
 
     @Autowired
-    UserRepository userRepository;
+    private UserRepository userRepository;
 
 
     @Test

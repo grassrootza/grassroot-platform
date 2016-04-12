@@ -30,7 +30,7 @@
             <select th:unless="${groupSpecified}" name="selectedGroupUid" id="selectedgroup" class="form-control">
               <option th:each="group, iterStat: ${userGroups}"
                       th:value="${group.Uid}"
-                      th:text="${group.groupName}"
+                      th:text="${group.getName('')}"
                       th:attr="data-mins=#{web.meeting.reminder.group.__${group.reminderMinutes}__}">Groupname</option>
             </select>
             <input th:if="${groupSpecified}" class="form-control" readonly="true" th:placeholder="${group.groupName}" id="group" />

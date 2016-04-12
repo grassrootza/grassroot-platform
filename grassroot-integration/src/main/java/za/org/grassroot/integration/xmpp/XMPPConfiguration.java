@@ -26,7 +26,7 @@ public class XMPPConfiguration {
     private String host = "gcm-xmpp.googleapis.com";
     private int port = 5235;
 
-    private Logger log = LoggerFactory.getLogger(InfrastructureConfiguration.class);
+    private Logger log = LoggerFactory.getLogger(XMPPConfiguration.class);
 
     @Bean
     public ConnectionConfiguration connectionConfiguration() {
@@ -36,17 +36,18 @@ public class XMPPConfiguration {
         connectionConfiguration.setSecurityMode(ConnectionConfiguration.SecurityMode.enabled);
         connectionConfiguration.setReconnectionAllowed(true);
         connectionConfiguration.setRosterLoadedAtLogin(false);
-
         return connectionConfiguration;
 
     }
 
     @Bean(name = "gcmConnection")
     public XmppConnectionFactoryBean xmppConnectionFactoryBean() {
+        log.info("Starting up XMPP connection");
         XmppConnectionFactoryBean connectionFactoryBean = new XmppConnectionFactoryBean(connectionConfiguration());
         connectionFactoryBean.setUser(System.getenv("GCM_SENDER_ID"));
         connectionFactoryBean.setPassword(System.getenv("GCM_KEY"));
         connectionFactoryBean.setAutoStartup(true);
+        log.info("XMPP connection succesfully started up");
         return connectionFactoryBean;
     }
 

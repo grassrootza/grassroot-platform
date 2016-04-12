@@ -1,32 +1,21 @@
 package za.org.grassroot.unit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import za.org.grassroot.GrassRootCoreConfig;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.NotificationType;
-import za.org.grassroot.core.repository.EventLogRepository;
-import za.org.grassroot.core.repository.EventRepository;
-import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.integration.config.InfrastructureConfiguration;
 import za.org.grassroot.integration.domain.GcmEntity;
-import za.org.grassroot.integration.router.OutboundMessageRouter;
 import za.org.grassroot.integration.xmpp.GcmPacketExtension;
 import za.org.grassroot.integration.xmpp.GcmTransformer;
-import za.org.grassroot.integration.xmpp.InboundGcmMessageHandler;
 
 import javax.transaction.Transactional;
 import java.time.Instant;
@@ -45,10 +34,8 @@ import static org.junit.Assert.assertEquals;
 @ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
 public class GcmTransformerTest {
 
-
     @Autowired
-    GcmTransformer gcmTransformer;
-
+    private GcmTransformer gcmTransformer;
 
     @Test
     public void transformShouldWork() throws  Exception {
