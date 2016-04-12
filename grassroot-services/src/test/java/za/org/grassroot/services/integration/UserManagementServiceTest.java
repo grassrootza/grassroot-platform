@@ -23,7 +23,7 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
  */
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = GrassRootServicesConfig.class)
+@ContextConfiguration(classes = {GrassRootServicesConfig.class, TestContextConfig.class})
 @EnableTransactionManagement
 @DirtiesContext
 @ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)

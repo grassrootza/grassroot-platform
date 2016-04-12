@@ -33,7 +33,7 @@ import static za.org.grassroot.services.enums.GroupPermissionTemplate.DEFAULT_GR
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = GrassRootServicesConfig.class)
+@ContextConfiguration(classes = {GrassRootServicesConfig.class,TestContextConfig.class})
 @Transactional
 @ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
 public class GroupManagementServiceTest extends AbstractTransactionalJUnit4SpringContextTests {
