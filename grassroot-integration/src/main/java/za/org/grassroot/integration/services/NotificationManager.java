@@ -8,7 +8,6 @@ import za.org.grassroot.core.enums.NotificationType;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.repository.NotificationRepository;
 
-
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
@@ -19,15 +18,15 @@ import java.util.Objects;
 
 @Service
 public class NotificationManager implements NotificationService{
-    @Autowired
-    NotificationRepository notificationRepository;
 
     @Autowired
-    MessageSendingService messageSendingService;
+    private NotificationRepository notificationRepository;
 
     @Autowired
-    GcmService gcmService;
+    private MessageSendingService messageSendingService;
 
+    @Autowired
+    private GcmService gcmService;
 
     @Override
     @Transactional

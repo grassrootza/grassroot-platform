@@ -12,6 +12,7 @@ import java.time.Instant;
 @Table(name ="gcm_registration",
         uniqueConstraints = @UniqueConstraint(name = "uk_gcm_registration_uid", columnNames = "uid"))
 public class GcmRegistration {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)

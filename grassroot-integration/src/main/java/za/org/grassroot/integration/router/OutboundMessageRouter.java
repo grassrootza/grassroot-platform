@@ -6,7 +6,6 @@ import org.springframework.integration.annotation.Router;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Notification;
-import za.org.grassroot.core.dto.EventDTO;
 
 /**
  * Created by paballo on 2016/04/06.
@@ -30,7 +29,9 @@ public class OutboundMessageRouter {
                     log.info("routing to gcm channel");
                     outputChannel = "gcmOutboundChannel";
                     break;
-
+                default:
+                    log.info("badly form route={}, defaulting to sms channel", route);
+                    outputChannel = "smsOutboundChannel";
             }
         }else{
              log.info("Route not specified defaulting to sms");

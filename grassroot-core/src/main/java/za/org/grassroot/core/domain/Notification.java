@@ -51,7 +51,7 @@ public class Notification {
     private UserMessagingPreference userMessagingPreference;
 
     @Enumerated
-    NotificationType notificationType;
+    private NotificationType notificationType;
 
     @Basic
     @Column(name = "message")

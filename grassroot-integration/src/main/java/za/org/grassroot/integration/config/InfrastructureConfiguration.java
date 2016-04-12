@@ -4,12 +4,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.annotation.IntegrationComponentScan;
-import org.springframework.integration.annotation.Router;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.config.EnableIntegration;
-import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
-import za.org.grassroot.core.dto.EventDTO;
 
 /**
  * Created by paballo on 2016/04/01.

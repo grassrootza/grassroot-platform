@@ -23,16 +23,16 @@ import static org.junit.Assert.assertEquals;
 public class OutboundRouterTest {
 
     @Autowired
-    MessageChannel requestChannel;
+    protected MessageChannel requestChannel;
 
     @Autowired
-    MessageChannel smsOutboundChannel;
+    protected MessageChannel smsOutboundChannel;
 
     @Autowired
-    MessageChannel gcmOutboundChannel;
+    protected MessageChannel gcmOutboundChannel;
 
     @Autowired
-    OutboundMessageRouter outboundMessageRouter;
+    protected OutboundMessageRouter outboundMessageRouter;
 
     @Test
     public void routingToSmsShouldWork() throws Exception{

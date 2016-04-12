@@ -11,8 +11,6 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.enums.UserMessagingPreference;
-import za.org.grassroot.core.repository.EventLogRepository;
-import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.integration.services.MessageSendingService;
 import za.org.grassroot.integration.services.NotificationService;
 
@@ -28,14 +26,14 @@ public class InboundGcmMessageHandler {
     private Logger log = LoggerFactory.getLogger(InboundGcmMessageHandler.class);
 
     @Autowired
-    MessageChannel requestChannel;
+    private MessageChannel requestChannel;
 
     @Autowired
-    NotificationService notificationService;
+    private NotificationService notificationService;
 
 
     @Autowired
-    MessageSendingService messageSendingService;
+    private MessageSendingService messageSendingService;
 
 
     @ServiceActivator(inputChannel = "gcmInboundChannel")
@@ -52,7 +50,7 @@ public class InboundGcmMessageHandler {
         log.info(response.toString());
         if(message_type == null){
             handleOrdinaryMessage(response);
-        }else{
+        } else {
             switch(message_type){
             case "ack":
                 handleAcknowledgementReceipt(response);

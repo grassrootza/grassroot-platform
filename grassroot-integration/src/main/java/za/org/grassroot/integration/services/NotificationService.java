@@ -1,9 +1,11 @@
 package za.org.grassroot.integration.services;
 
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.EventLog;
+import za.org.grassroot.core.domain.LogBookLog;
+import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.NotificationType;
 
-import java.sql.Timestamp;
 import java.time.Instant;
 
 /**

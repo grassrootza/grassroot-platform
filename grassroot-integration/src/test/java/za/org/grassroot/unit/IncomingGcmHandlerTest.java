@@ -27,9 +27,9 @@ import javax.transaction.Transactional;
 public class IncomingGcmHandlerTest {
 
     @Autowired
-    InboundGcmMessageHandler messageHandler;
+    private InboundGcmMessageHandler messageHandler;
 
-    String registration =" {\n" +
+    private String registration =" {\n" +
             "      \"category\":\"com.techmorphosis.grassroot.gcm\",\n" +
             "      \"data\":\n" +
             "         {\n" +
@@ -46,7 +46,7 @@ public class IncomingGcmHandlerTest {
         Message message = new Message();
         message.addExtension(new GcmPacketExtension(registration));
         messageHandler.handleUpstreamMessage(message);
-
+        
     }
 
 
