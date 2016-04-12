@@ -51,3 +51,7 @@ grassroot.log*
 
 ## Hibernate schema export DDL script
 schema-export-create.sql
+
+# Natty
+#**/generated/*
+#*.tokens
