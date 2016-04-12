@@ -23,8 +23,12 @@ import za.org.grassroot.webapp.util.USSDEventUtil;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.AbstractMap.SimpleEntry;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
+import static za.org.grassroot.webapp.enums.USSDSection.*;
 
 /**
  * Controller for the USSD menu
@@ -45,22 +49,37 @@ public class USSDHomeController extends USSDController {
 
     Logger log = LoggerFactory.getLogger(getClass());
     private static final String path = homePath;
-    private static final USSDSection thisSection = USSDSection.HOME;
+    private static final USSDSection thisSection = HOME;
 
     private static final String rsvpMenu = "rsvp", renameUserMenu = "rename-start", renameGroupAndStart = "group-start",
             promptGroupRename = "group-rename-prompt", promptConfirmGroupInactive = "group-inactive-confirm";
     private static final int hashPosition = Integer.valueOf(System.getenv("USSD_CODE_LENGTH"));
 
-    public USSDMenu welcomeMenu(String opening, User sessionUser) throws URISyntaxException {
+    private static final String openingMenuKey = String.join(".", Arrays.asList(homeKey, startMenu, optionsKey));
+    private static final Map<USSDSection, String[]> openingMenuOptions = Collections.unmodifiableMap(Stream.of(
+            new SimpleEntry<>(MEETINGS, new String[] { meetingMenus + startMenu, openingMenuKey + mtgKey}),
+            new SimpleEntry<>(VOTES, new String[] { voteMenus + startMenu, openingMenuKey + voteKey}),
+            new SimpleEntry<>(LOGBOOK, new String[] { logMenus + startMenu, openingMenuKey + logKey}),
+            new SimpleEntry<>(GROUP_MANAGER, new String[] { groupMenus + startMenu, openingMenuKey + groupKey}),
+            new SimpleEntry<>(USER_PROFILE, new String[] { userMenus + startMenu, openingMenuKey + userKey})).
+            collect(Collectors.toMap((e) -> e.getKey(), (e) -> e.getValue())));
 
+    private static final List<USSDSection> openingSequenceWithGroups = Arrays.asList(MEETINGS, VOTES, LOGBOOK, GROUP_MANAGER, USER_PROFILE);
+    private static final List<USSDSection> openingSequenceWithoutGroups = Arrays.asList(USER_PROFILE, GROUP_MANAGER, MEETINGS, VOTES, LOGBOOK);
+
+    public USSDMenu welcomeMenu(String opening, User user) throws URISyntaxException {
+
+        Long startTime = System.currentTimeMillis();
         USSDMenu homeMenu = new USSDMenu(opening);
-        Locale menuLang = new Locale(getLanguage(sessionUser));
+        Locale menuLang = new Locale(getLanguage(user));
+        List<USSDSection> menuSequence = userManager.isPartOfActiveGroups(user) ? openingSequenceWithGroups : openingSequenceWithoutGroups;
 
-        homeMenu.addMenuOption(meetingMenus + startMenu, getMessage(homeKey, startMenu, optionsKey + mtgKey, menuLang));
-        homeMenu.addMenuOption(voteMenus + startMenu, getMessage(homeKey, startMenu, optionsKey + voteKey, menuLang));
-        homeMenu.addMenuOption(logMenus + startMenu, getMessage(homeKey, startMenu, optionsKey + logKey, menuLang));
-        homeMenu.addMenuOption(groupMenus + startMenu, getMessage(homeKey, startMenu, optionsKey + groupKey, menuLang));
-        homeMenu.addMenuOption(userMenus + startMenu, getMessage(homeKey, startMenu, optionsKey + userKey, menuLang));
+        for (USSDSection section : menuSequence) {
+            homeMenu.addMenuOption(openingMenuOptions.get(section)[0],
+                                   getMessage(openingMenuOptions.get(section)[1], user));
+        }
+        Long endTime = System.currentTimeMillis();
+        log.info("Assembled USSD opening menu, took {} msecs", endTime - startTime);
 
         return homeMenu;
     }
@@ -100,7 +119,7 @@ public class USSDHomeController extends USSDController {
             openingMenu = requestUserResponse(sessionUser);
         } else if (firstSession(sessionUser)) {
             sessionUser = userManager.setInitiatedSession(sessionUser);
-            openingMenu = askForLanguage(sessionUser);
+            openingMenu = defaultStartMenu(sessionUser);
         } else {
             openingMenu = defaultStartMenu(sessionUser);
         }
@@ -488,7 +507,7 @@ public class USSDHomeController extends USSDController {
                                          @RequestParam(value = "includeGroupName") boolean includeGroupName) throws URISyntaxException {
         // toto: error handling on the section
         return menuBuilder(eventUtil.listPaginatedEvents(
-                userManager.findByInputNumber(inputNumber), USSDSection.fromString(section),
+                userManager.findByInputNumber(inputNumber), fromString(section),
                 prompt, nextUrl, (menuForNew != null), menuForNew, optionForNew, includeGroupName, pastPresentBoth, pageNumber));
     }
 
