@@ -778,8 +778,8 @@ public class GroupBrokerImpl implements GroupBroker {
     @Override
     public List<GroupLog> getLogsForGroup(Group group, LocalDateTime periodStart, LocalDateTime periodEnd) {
         Sort sort = new Sort(Sort.Direction.ASC, "CreatedDateTime");
-        return groupLogRepository.findByGroupIdAndCreatedDateTimeBetween(group.getId(), Timestamp.valueOf(periodStart),
-                                                                         Timestamp.valueOf(periodEnd), sort);
+        return groupLogRepository.findByGroupIdAndCreatedDateTimeBetween(group.getId(), convertToSystemTime(periodStart, getSAST()),
+                                                                         convertToSystemTime(periodEnd, getSAST()), sort);
     }
 
     @Override
