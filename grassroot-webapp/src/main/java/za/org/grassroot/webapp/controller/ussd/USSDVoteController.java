@@ -25,6 +25,7 @@ import za.org.grassroot.webapp.util.USSDEventUtil;
 import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
@@ -318,29 +319,31 @@ public class USSDVoteController extends USSDController {
 
     private String[] setStandardTime(String requestUid, String time, User user) {
 
-        final LocalDateTime proposedDateTime;
+        final ZonedDateTime proposedDateTime;
         final String dateTimePrompt = getMessage(thisSection, "confirm", "time." + time, user);
+
+        ZonedDateTime zonedNow = Instant.now().atZone(DateTimeUtil.getSAST());
 
         switch (time) {
             case "instant":
-                proposedDateTime = LocalDateTime.now().plusMinutes(7L).truncatedTo(ChronoUnit.SECONDS);
+                proposedDateTime = zonedNow.plusMinutes(7L).truncatedTo(ChronoUnit.SECONDS);
                 break;
             case "hour":
-                proposedDateTime = LocalDateTime.now().plusHours(1L);
+                proposedDateTime = zonedNow.plusHours(1L);
                 break;
             case "day":
-                proposedDateTime = LocalDateTime.now().plusDays(1L);
+                proposedDateTime = zonedNow.plusDays(1L);
                 break;
             case "week":
-                proposedDateTime = LocalDateTime.now().plusWeeks(1L);
+                proposedDateTime = zonedNow.plusWeeks(1L);
                 break;
             default:
                 // this should never be called, but need it else Java throws error -- defaulting to instant
-                proposedDateTime = LocalDateTime.now().plusMinutes(7L);
+                proposedDateTime = zonedNow.plusMinutes(7L);
                 break;
         }
 
-        eventRequestBroker.updateEventDateTime(user.getUid(), requestUid, proposedDateTime);
+        eventRequestBroker.updateEventDateTime(user.getUid(), requestUid, proposedDateTime.toLocalDateTime());
         EventRequest voteRequest = eventRequestBroker.load(requestUid);
         return new String[]{voteRequest.getName(), dateTimePrompt};
 
