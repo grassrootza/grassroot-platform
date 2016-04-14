@@ -98,5 +98,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query(value = "select id, display_name,phone_number,language_code from user_profile where user_profile.phone_number =?1", nativeQuery = true)
     Object[] findByNumber(String phoneNumber);
 
+
+
     List<User> findByPhoneNumberIn(Collection<String> phoneNumbers);
 }
