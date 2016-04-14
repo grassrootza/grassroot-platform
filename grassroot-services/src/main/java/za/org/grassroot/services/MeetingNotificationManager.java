@@ -54,18 +54,7 @@ public class MeetingNotificationManager implements MeetingNotificationService {
         return messageSourceAccessor.getMessage(messageKey, populateFields(user, event), locale);
     }
 
-    @Override
-    public String createMeetingNotification(User user, EventDTO event, String channel) {
-        Locale locale =getUserLocale(user);
-        String messageKey;
-        if(event.getEventType() ==EventType.VOTE){
-            messageKey = getLocaleProperty(channel,".vote.send.new");
-        }else{
-            messageKey = event.isRsvpRequired()?getLocaleProperty(channel,".mtg.send.new.rsvp"):
-                    getLocaleProperty(channel,".mtg.send.new");
-        }
-        return messageSourceAccessor.getMessage(messageKey, populateFields(user, event), locale);
-    }
+
 
     @Override
     public String createLogBookReminderMessage(User user, Group group, LogBook logBook) {
@@ -73,12 +62,7 @@ public class MeetingNotificationManager implements MeetingNotificationService {
         return messageSourceAccessor.getMessage("sms.logbook.reminder", populateLogBookFields(user, group, logBook), locale);
     }
 
-    @Override
-    public String createLogBookReminderMessage(User user, Group group, LogBook logBook, String channel) {
-        Locale locale = getUserLocale(user);
-        return messageSourceAccessor.getMessage(getLocaleProperty(channel,".logbook.reminder"),
-                populateLogBookFields(user, group, logBook), locale);
-    }
+
 
     @Override
     public String createNewLogBookNotificationMessage(User user, Group group, LogBook logBook, boolean assigned) {
@@ -90,15 +74,6 @@ public class MeetingNotificationManager implements MeetingNotificationService {
         }
     }
 
-    @Override
-    public String createNewLogBookNotificationMessage(User user, Group group, LogBook logBook, boolean assigned, String channel) {
-        Locale locale = getUserLocale(user);
-        if (assigned) {
-            return messageSourceAccessor.getMessage(getLocaleProperty(channel,".logbook.new.assigned"), populateLogBookFields(user, group, logBook), locale);
-        } else {
-            return messageSourceAccessor.getMessage(getLocaleProperty(channel,".logbook.new.notassigned"), populateLogBookFields(user, group, logBook), locale);
-        }
-    }
 
     @Override
     public String createChangeMeetingNotificationMessage(User user, EventDTO event) {
@@ -109,13 +84,7 @@ public class MeetingNotificationManager implements MeetingNotificationService {
         return messageSourceAccessor.getMessage(messageKey, populateFields(user, event), locale);
     }
 
-    @Override
-    public String createChangeMeetingNotificationMessage(User user, EventDTO event, String channel) {
-        Locale locale = getUserLocale(user);
-        String messageKey = "sms.mtg.send.change";
-        if (event.getEventType() == EventType.VOTE) messageKey = getLocaleProperty(channel,".vote.send.change");
-        return messageSourceAccessor.getMessage(messageKey, populateFields(user, event), locale);
-    }
+
 
     @Override
     public String createCancelMeetingNotificationMessage(User user, EventDTO event) {
@@ -125,13 +94,7 @@ public class MeetingNotificationManager implements MeetingNotificationService {
         return messageSourceAccessor.getMessage(messageKey, populateFields(user, event), locale);
     }
 
-    @Override
-    public String createCancelMeetingNotificationMessage(User user, EventDTO event, String channel) {
-        Locale locale = getUserLocale(user);
-        String messageKey = getLocaleProperty(channel, ".mtg.send.cancel");
-        if (event.getEventType() == EventType.VOTE) messageKey = getLocaleProperty(channel,".vote.send.cancel");
-        return messageSourceAccessor.getMessage(messageKey, populateFields(user, event), locale);
-    }
+
 
     @Override
     public String createMeetingReminderMessage(User user, EventDTO event) {
@@ -141,13 +104,7 @@ public class MeetingNotificationManager implements MeetingNotificationService {
         return messageSourceAccessor.getMessage(messageKey, populateFields(user, event), locale);
     }
 
-    @Override
-    public String createMeetingReminderMessage(User user, EventDTO event, String channel) {
-        Locale locale = getUserLocale(user);
-        String messageKey =  getLocaleProperty(channel,".mtg.send.reminder");
-        if (event.getEventType() == EventType.VOTE) messageKey =getLocaleProperty(channel, ".vote.send.reminder");
-        return messageSourceAccessor.getMessage(messageKey, populateFields(user, event), locale);
-    }
+
 
     @Override
     public String createVoteResultsMessage(User user, EventDTO event, double yes, double no, double abstain, double noReply) {
@@ -156,12 +113,7 @@ public class MeetingNotificationManager implements MeetingNotificationService {
         return messageSourceAccessor.getMessage(messageKey, populateFields(user, event, yes, no, abstain, noReply), locale);
     }
 
-    @Override
-    public String createVoteResultsmessage(User user, EventDTO event, double yes, double no, double abstain, double noReply, String channel) {
-        Locale locale = getUserLocale(user);
-        String messageKey = getLocaleProperty(channel,".vote.send.results");
-        return messageSourceAccessor.getMessage(messageKey, populateFields(user, event, yes, no, abstain, noReply), locale);
-    }
+
 
     @Override
     public String createMeetingReminderMessage(String locale, User user, EventDTO event) {
@@ -169,20 +121,13 @@ public class MeetingNotificationManager implements MeetingNotificationService {
         return messageSourceAccessor.getMessage("sms.mtg.send.reminder", populateFields(user, event), locale);
     }
 
-    @Override
-    public String createMeetingReminderMessage(String locale, User user, EventDTO event, String channel) {
-        return messageSourceAccessor.getMessage(getLocaleProperty(channel,".mtg.send.reminder"), populateFields(user, event), locale);
-    }
+
 
     @Override
     public String createWelcomeMessage(String messageId, UserDTO userDTO) {
         return messageSourceAccessor.getMessage(messageId, populateWelcomeFields(userDTO), getUserLocale(userDTO.getLanguageCode()));
     }
 
-    @Override
-    public String createWelcomeMessage(String messageId, UserDTO userDTO, String channel) {
-        return null;
-    }
 
     @Override
     public String createReplyFailureMessage(User user) {

@@ -18,7 +18,7 @@ public class OutboundMessageRouter {
     @Router(inputChannel="requestChannel")
     public String route(Message<Notification> message) {
         String route = (String) message.getHeaders().get("route");
-        String outputChannel = null;
+        String outputChannel;
         if(route !=null) {
             switch (route) {
                 case "SMS":

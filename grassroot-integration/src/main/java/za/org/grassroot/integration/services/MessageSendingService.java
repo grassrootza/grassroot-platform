@@ -11,7 +11,6 @@ public interface MessageSendingService {
      String sendMessage(String message, String destination, MessageProtocol messageProtocol);
      void sendMessage(Notification notification);
      void sendMessage(String destination, Notification notification);
-     //void sendMessage(String destination, Object object);
 
 
 

@@ -6,14 +6,22 @@ import org.jivesoftware.smack.packet.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.integration.annotation.MessageEndpoint;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.stereotype.Component;
+import za.org.grassroot.core.domain.GcmRegistration;
 import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.UserMessagingPreference;
+import za.org.grassroot.core.repository.EventLogRepository;
+import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.util.PhoneNumberUtil;
+import za.org.grassroot.integration.services.GcmService;
 import za.org.grassroot.integration.services.MessageSendingService;
 import za.org.grassroot.integration.services.NotificationService;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,14 +34,18 @@ public class InboundGcmMessageHandler {
     private Logger log = LoggerFactory.getLogger(InboundGcmMessageHandler.class);
 
     @Autowired
-    private MessageChannel requestChannel;
-
-    @Autowired
-    private NotificationService notificationService;
+    NotificationService notificationService;
 
 
     @Autowired
-    private MessageSendingService messageSendingService;
+    MessageSendingService messageSendingService;
+
+    @Autowired
+    GcmService gcmService;
+
+    @Autowired
+    UserRepository userRepository;
+
 
 
     @ServiceActivator(inputChannel = "gcmInboundChannel")
@@ -43,14 +55,14 @@ public class InboundGcmMessageHandler {
                 (GcmPacketExtension) message.
                         getExtension(GcmPacketExtension.GCM_NAMESPACE);
         String json = gcmPacket.getJson();
+        log.info("Parsed to json = {}", json);
         ObjectMapper mapper = new ObjectMapper();
-
         Map<String,Object> response = mapper.readValue(json, new TypeReference<Map<String, Object>>(){});
         String message_type = (String) response.get("message_type");
         log.info(response.toString());
         if(message_type == null){
             handleOrdinaryMessage(response);
-        } else {
+        }else{
             switch(message_type){
             case "ack":
                 handleAcknowledgementReceipt(response);
@@ -73,7 +85,6 @@ public class InboundGcmMessageHandler {
     private void handleAcknowledgementReceipt(Map<String, Object> input) {
         String messageId = (String) input.get("message_id");
         String data = String.valueOf(input.get("data"));
-
         log.info("Gcm acknowledges receipt of message " + messageId+ " with payload "+data);
 
     }
@@ -81,7 +92,24 @@ public class InboundGcmMessageHandler {
     private void handleOrdinaryMessage(Map<String, Object> input){
        log.info("Ordinary message received");
         String messageId = (String) input.get("message_id");
-        String from = String.valueOf(input.get("data"));
+        String from = String.valueOf(input.get("from"));
+        HashMap<String, Object> data = (HashMap)input.get("data");
+        String action = String.valueOf(data.get("action"));
+        if(action != null) {
+            switch (action) {
+                case "REGISTER":
+                    String phoneNumber = (String) data.get("phoneNumber");
+                    registerUser(from, phoneNumber);
+                    break;
+                case "UPDATE_READ":
+                    String notificationId = (String) data.get("notificationId");
+                    updateReadStatus(notificationId);
+                    break;
+                default: //acton unknown ignore
+                    break;
+
+            }
+        }
         sendAcknowledment(createAcknowledgeMessage(from,messageId));
     }
 
@@ -117,7 +145,29 @@ public class InboundGcmMessageHandler {
     }
     
     private void sendAcknowledment(Map<String,Object> response){
-     //   messageSendingService.sendMessage(UserMessagingPreference.ANDROID_APP.toString(),response);
+        Notification notification = new Notification();
+        GcmRegistration gcmRegistration = gcmService.loadByRegistrationId((String)response.get("to"));
+        notification.setUid((String)response.get("message_id"));
+        notification.setMessageType((String)response.get("message_type"));
+        notification.setGcmRegistration(gcmRegistration);
+        log.info("Acknowledging message with id ={}", notification.getUid());
+
+       messageSendingService.sendMessage(notification);
+
+    }
+    //todo move all ordinary message handling logic to a separate file
+    public void registerUser(String registrationId, String phoneNumber){
+        String convertedNumber= PhoneNumberUtil.convertPhoneNumber(phoneNumber);
+        User user = userRepository.findByPhoneNumber(convertedNumber);
+        log.info("Registering user with phoneNumber={} as a push notification receipient, found user={}",convertedNumber, user);
+        gcmService.registerUser(user,registrationId);
+        user.setMessagingPreference(UserMessagingPreference.ANDROID_APP);
+        userRepository.save(user);
+    }
+
+    public void updateReadStatus(String messageId){
+        log.info("Marking notificatio with id={} as read", messageId);
+        notificationService.updateNotificationReadStatus(messageId,true);
 
     }
 

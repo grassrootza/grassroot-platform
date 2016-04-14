@@ -23,6 +23,10 @@ public class LogBookLog {
     @Basic
     @Column(name="logbook_id")
     private Long logBookId;
+
+    @ManyToOne
+    private LogBook logBook;
+
     @Basic
     @Column
     private String message;
@@ -130,5 +134,13 @@ public class LogBookLog {
                 ", groupId=" + groupId +
                 ", messageTo='" + messageTo + '\'' +
                 '}';
+    }
+
+    public LogBook getLogBook() {
+        return logBook;
+    }
+
+    public void setLogBook(LogBook logBook) {
+        this.logBook = logBook;
     }
 }
