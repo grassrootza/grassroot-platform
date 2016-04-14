@@ -1,5 +1,6 @@
 package za.org.grassroot.integration.services;
 
+import org.springframework.data.domain.Page;
 import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.domain.LogBookLog;
 import za.org.grassroot.core.domain.Notification;
@@ -15,9 +16,11 @@ public interface NotificationService {
 
     Notification loadNotification(String uid);
 
-    Notification createNotification(User user, EventLog eventLog, NotificationType notificationType, Instant createdDateTime);
+    Notification createNotification(User user, EventLog eventLog, NotificationType notificationType, String message, Instant createdDateTime);
 
-    Notification createNotification(User user, LogBookLog logBookLog,NotificationType notificationType, Instant createdDateTime);
+    Page<Notification> getUserNotifications(User user,int pageNumber, int pageSize);
+
+    Notification createNotification(User user, LogBookLog logBookLog, NotificationType notificationType, String message, Instant createdDateTime);
 
     void updateNotificationReadStatus(String notificationUid, boolean read);
 

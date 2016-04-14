@@ -146,7 +146,7 @@ public class GroupRestController {
     @RequestMapping(value="/members/{id}/{phoneNumber}/{code}", method=RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> getGroupMember(@PathVariable("phoneNumber") String phoneNumber,
                                                            @PathVariable("code") String code, @PathVariable("id") String groupUid,
-                                                          @RequestParam("page") Integer page,@RequestParam("size") Integer size){
+                                                          @RequestParam(value = "page", required = false) Integer page,@RequestParam(value = "size",required = false) Integer size){
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         Group group = groupBroker.load(groupUid);
         page = (page.equals(null))?1:page;

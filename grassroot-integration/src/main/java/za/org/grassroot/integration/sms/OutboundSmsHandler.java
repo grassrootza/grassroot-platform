@@ -8,7 +8,6 @@ import org.springframework.integration.annotation.MessageEndpoint;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.messaging.Message;
 import za.org.grassroot.core.domain.Notification;
-import za.org.grassroot.core.enums.NotificationType;
 import za.org.grassroot.integration.services.NotificationService;
 import za.org.grassroot.integration.services.SmsSendingService;
 
@@ -32,8 +31,9 @@ public class OutboundSmsHandler {
         log.info("SMS outbound channel received message={}", message.getPayload().toString());
         Notification notification = message.getPayload();
         String destination =notification.getUser().getPhoneNumber();
-        String msg = (notification.getNotificationType().equals(NotificationType.EVENT)) ?
-                notification.getEventLog().getMessage() : notification.getLogBookLog().getMessage();
+        log.info("Sms outbound channel sending forwarding message to ={}", destination);
+        String msg = notification.getMessage();
+        log.info("Sms outbound channel sending forwarding message  ={}", msg);
         smsSendingService.sendSMS(msg,destination);
         notificationService.updateNotificationDeliveryStatus(notification.getUid(),true);
         notificationService.updateNotificationReadStatus(notification.getUid(),true);

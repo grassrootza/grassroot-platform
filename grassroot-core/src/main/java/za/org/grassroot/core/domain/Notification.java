@@ -57,6 +57,9 @@ public class Notification {
     @Column(name = "message")
     private String message;
 
+    @Transient
+    private String messageType;
+
     @PreUpdate
     @PrePersist
     public void updateTimeStamps() {
@@ -68,8 +71,10 @@ public class Notification {
     public Notification(){
     }
 
+
+
     public Notification(User user,EventLog eventLog,GcmRegistration gcmRegistration,Boolean read,
-                        Boolean delivered, NotificationType notificationType, Instant createdDateTime){
+                        Boolean delivered, NotificationType notificationType, String message, Instant createdDateTime){
         this.uid = UIDGenerator.generateId();
         this.user=user;
         this.eventLog=eventLog;
@@ -79,10 +84,12 @@ public class Notification {
         this.createdDateTime=createdDateTime;
         this.notificationType = notificationType;
         this.userMessagingPreference = user.getMessagingPreference();
+        this.message = eventLog.getMessage();
     }
 
+
     public Notification(User user,LogBookLog logBookLog,GcmRegistration gcmRegistration,Boolean read,
-                        Boolean delivered, NotificationType notificationType, Instant createdDateTime){
+                        Boolean delivered, NotificationType notificationType, String message, Instant createdDateTime){
         this.uid = UIDGenerator.generateId();
         this.user=user;
         this.logBookLog = logBookLog;
@@ -92,6 +99,7 @@ public class Notification {
         this.createdDateTime=createdDateTime;
         this.notificationType = notificationType;
         this.userMessagingPreference = user.getMessagingPreference();
+        this.message = message;
     }
 
     public Long getId() {
@@ -193,6 +201,16 @@ public class Notification {
         this.message = message;
     }
 
+    public String getMessageType() {
+        return messageType;
+    }
+
+    public void setMessageType(String messageType) {
+        this.messageType = messageType;
+    }
+
+
+
     @Override
     public String toString() {
         return "Notification{" +
@@ -202,4 +220,6 @@ public class Notification {
                 ", gcmRegistration=" + gcmRegistration +
                 '}';
     }
+
+
 }

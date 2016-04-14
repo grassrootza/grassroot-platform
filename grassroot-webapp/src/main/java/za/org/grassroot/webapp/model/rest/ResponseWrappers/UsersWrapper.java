@@ -15,11 +15,11 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UsersWrapper {
 
-    List<UserDTO> members;
-    Integer pageNumber;
-    Integer nextPage;
-    Integer previousPage;
-    Integer totalPages;
+    private List<UserDTO> members;
+    private Integer pageNumber;
+    private Integer nextPage;
+    private Integer previousPage;
+    private Integer totalPages;
 
 
     public UsersWrapper(Page<User> page) {
