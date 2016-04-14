@@ -387,12 +387,12 @@ public class EventNotificationConsumer {
         Event eventEntity = eventBroker.load(event.getEventUid());
         if (!eventLogManagementService.notificationSentToUser(eventEntity, user)) {
             log.info("sendNewEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
-            EventLog eventLog =eventLogManagementService.createEventLog(EventLogType.EventNotification, event.getEventObject().getUid(),
-                    user.getUid(), message);
+            EventLog eventLog = eventLogManagementService.createEventLog(EventLogType.EventNotification,
+                                                                         event.getEventUid(), user.getUid(), message);
 
-                Notification notification = notificationService.createNotification(user,eventLog, NotificationType.EVENT);
-                messageSendingService.sendMessage(notification);
-               // messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
+            Notification notification = notificationService.createNotification(user,eventLog, NotificationType.EVENT);
+            messageSendingService.sendMessage(notification);
+            // messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
             }
         }
 

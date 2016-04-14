@@ -19,6 +19,7 @@ import javax.persistence.*;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Calendar;
+import java.util.Objects;
 
 @Entity
 @Table(name="event_log")
@@ -70,6 +71,10 @@ public class EventLog {
     }
 
     public EventLog(User user, Event event, EventLogType eventLogType, String message, UserMessagingPreference defaultMessageType) {
+        Objects.requireNonNull(user);
+        Objects.requireNonNull(event);
+        Objects.requireNonNull(eventLogType);
+
         this.uid = UIDGenerator.generateId();
         this.user = user;
         this.event = event;

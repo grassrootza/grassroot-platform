@@ -1,5 +1,6 @@
 package za.org.grassroot.core.dto;
 
+import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.Notification;
 
@@ -17,22 +18,22 @@ public class NotificationDTO {
     private boolean delivered;
     private boolean read;
 
-    public NotificationDTO(Notification notification){
+    public NotificationDTO(Notification notification, Event event) {
         this.uid = notification.getUid();
-        this.entityUid = notification.getEventLog().getEvent().getUid();
-        this.title = notification.getEventLog().getEvent().resolveGroup().getGroupName();
-        this.message = notification.getMessage();
-        this.delivered=notification.isDelivered();
-        this.read =notification.isRead();
+        this.entityUid = event.getUid();
+        this.title = event.resolveGroup().getGroupName();
+        this.message = (notification.getMessage() != null) ? notification.getMessage() : notification.getEventLog().getMessage();
+        this.delivered = notification.isDelivered();
+        this.read = notification.isRead();
         this.notificationType = notification.getNotificationType().toString();
-        this.createdDatetime=notification.getCreatedDateTime().toString();
+        this.createdDatetime= notification.getCreatedDateTime().toString();
     }
 
     public NotificationDTO(Notification notification, LogBook logBook){
         this.uid = notification.getUid();
         this.entityUid = logBook.getUid();
         this.title = logBook.resolveGroup().getGroupName();
-        this.message = notification.getMessage();
+        this.message = (notification.getMessage() != null) ? notification.getMessage() : notification.getLogBookLog().getMessage();
         this.delivered=notification.isDelivered();
         this.read =notification.isRead();
         this.notificationType = notification.getNotificationType().toString();

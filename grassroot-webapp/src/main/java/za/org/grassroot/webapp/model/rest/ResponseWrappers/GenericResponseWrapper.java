@@ -15,7 +15,6 @@ public class GenericResponseWrapper extends ResponseWrapperImpl {
         this.data =data;
     }
 
-
     public Object getData() {
         return data;
     }

@@ -50,6 +50,7 @@ public class EventLogManager implements EventLogManagementService {
     @Transactional
     public EventLog createEventLog(EventLogType eventLogType, String eventUid, String userUid, String message) {
         Event event = eventRepository.findOneByUid(eventUid);
+        log.info("Creating event log, with event={}", event);
         User user = userRepository.findOneByUid(userUid);
         EventLog eventLog = new EventLog(user, event, eventLogType, message, null);
         return eventLogRepository.save(eventLog);

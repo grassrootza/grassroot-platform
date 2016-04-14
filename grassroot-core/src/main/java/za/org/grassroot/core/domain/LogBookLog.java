@@ -20,12 +20,13 @@ public class LogBookLog {
     @Basic
     @Column(name="created_date_time", insertable = true, updatable = false)
     private Date createdDateTime;
+
     @Basic
     @Column(name="logbook_id")
     private Long logBookId;
 
-    @ManyToOne
-    private LogBook logBook;
+    // @ManyToOne
+    // private LogBook logBook;
 
     @Basic
     @Column
@@ -136,11 +137,11 @@ public class LogBookLog {
                 '}';
     }
 
-    public LogBook getLogBook() {
+    /*public LogBook getLogBook() {
         return logBook;
     }
 
     public void setLogBook(LogBook logBook) {
         this.logBook = logBook;
-    }
+    }*/
 }
