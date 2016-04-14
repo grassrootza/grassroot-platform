@@ -76,15 +76,15 @@ public class DateTimeUtil {
         ZonedDateTime userTime = ZonedDateTime.of(userInput, userZoneId);
         ZonedDateTime systemTime = userTime.withZoneSameInstant(zoneSystem);
 
-        log.info("Time at user: {}, time at system: {}", userTime.format(DateTimeFormatter.ISO_DATE_TIME),
-                 systemTime.format(DateTimeFormatter.ISO_DATE_TIME));
+//        log.info("Time at user: {}, time at system: {}", userTime.format(DateTimeFormatter.ISO_DATE_TIME),
+//                 systemTime.format(DateTimeFormatter.ISO_DATE_TIME));
 
         return systemTime.toInstant();
     }
 
     public static ZonedDateTime convertToUserTimeZone(Instant timeInSystem, ZoneId userZoneId) {
         ZonedDateTime zonedDateTime = timeInSystem.atZone(userZoneId);
-        log.info("Time in system: {}, converted to zone: {}", timeInSystem.toString(), zonedDateTime.format(DateTimeFormatter.ISO_DATE_TIME));
+//        log.info("Time in system: {}, converted to zone: {}", timeInSystem.toString(), zonedDateTime.format(DateTimeFormatter.ISO_DATE_TIME));
         return zonedDateTime;
     }
 

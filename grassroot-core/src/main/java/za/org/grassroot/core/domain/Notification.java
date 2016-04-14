@@ -74,14 +74,14 @@ public class Notification {
 
 
     public Notification(User user,EventLog eventLog,GcmRegistration gcmRegistration,Boolean read,
-                        Boolean delivered, NotificationType notificationType, String message, Instant createdDateTime){
+                        Boolean delivered, NotificationType notificationType, String message){
         this.uid = UIDGenerator.generateId();
         this.user=user;
         this.eventLog=eventLog;
         this.gcmRegistration=gcmRegistration;
         this.read=read;
         this.delivered=delivered;
-        this.createdDateTime=createdDateTime;
+        this.createdDateTime=Instant.now();
         this.notificationType = notificationType;
         this.userMessagingPreference = user.getMessagingPreference();
         this.message = eventLog.getMessage();
@@ -89,14 +89,14 @@ public class Notification {
 
 
     public Notification(User user,LogBookLog logBookLog,GcmRegistration gcmRegistration,Boolean read,
-                        Boolean delivered, NotificationType notificationType, String message, Instant createdDateTime){
+                        Boolean delivered, NotificationType notificationType, String message){
         this.uid = UIDGenerator.generateId();
         this.user=user;
         this.logBookLog = logBookLog;
         this.gcmRegistration=gcmRegistration;
         this.read=read;
         this.delivered=delivered;
-        this.createdDateTime=createdDateTime;
+        this.createdDateTime=Instant.now();
         this.notificationType = notificationType;
         this.userMessagingPreference = user.getMessagingPreference();
         this.message = message;

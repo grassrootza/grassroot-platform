@@ -12,7 +12,9 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.transaction.Transactional;
@@ -52,6 +54,9 @@ public class EventRepositoryTest {
 
     @Autowired
     UserRepository userRepository;
+
+    @Autowired
+    EventLogRepository eventLogRepository;
 
 
     @Test
@@ -264,8 +269,6 @@ public class EventRepositoryTest {
 
     }
 
-    // this is throwing an H2 specific error, on the user of specific time stamp, so commenting out for now
-
     @Test
     public void countUpcomingEventsShouldWork() {
 
@@ -295,6 +298,41 @@ public class EventRepositoryTest {
         int numberUpcomingEvents2 = eventRepository.countByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThan(user2, Instant.now());
         assertThat(numberUpcomingEvents2, is(0));
 
+    }
+
+    @Test
+    public void findMeetingsForResponseMessagesShouldWork() {
+
+        log.info("Finding meeting responses ...");
+
+        User user = userRepository.save(new User("0710001111"));
+        Group group = groupRepository.save(new Group("tg1", user));
+        group.addMember(user);
+        groupRepository.save(group);
+
+        Meeting mtg = new Meeting("count check", Instant.now().plus(2, DAYS), user, group, "someLoc");
+        Meeting mtg2 = new Meeting("count check 2", Instant.now().plus(2, DAYS), user, group, "otherLoc");
+        mtg.setRsvpRequired(true);
+        mtg2.setRsvpRequired(true);
+
+        meetingRepository.save(mtg);
+        meetingRepository.save(mtg2);
+
+        assertThat(meetingRepository.count(), is(2L));
+
+        List<Meeting> checkFirst = meetingRepository.meetingsForResponseTotals(Instant.now(), Instant.now().minus(5, MINUTES), Instant.now());
+        assertThat(checkFirst.size(), is(2));
+        assertThat(checkFirst.contains(mtg), is(true));
+        assertThat(checkFirst.contains(mtg2), is(true));
+
+        EventLog eventLog = new EventLog(user, mtg, EventLogType.EventRsvpTotalMessage, "message", UserMessagingPreference.SMS);
+        eventLogRepository.save(eventLog);
+        assertThat(eventLogRepository.count(), is(1L));
+
+        List<Meeting> checkSecond = meetingRepository.meetingsForResponseTotals(Instant.now(), Instant.now().minus(5, MINUTES), Instant.now());
+        assertThat(checkSecond.size(), is(1));
+        assertThat(checkSecond.contains(mtg), is(false));
+        assertThat(checkSecond.contains(mtg2), is(true));
     }
 
 }

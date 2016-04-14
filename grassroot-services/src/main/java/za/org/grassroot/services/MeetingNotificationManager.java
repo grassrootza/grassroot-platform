@@ -1,5 +1,7 @@
 package za.org.grassroot.services;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.MessageSource;
@@ -9,6 +11,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.EventDTO;
+import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.FormatUtil;
@@ -16,10 +19,8 @@ import za.org.grassroot.core.util.FormatUtil;
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
-import java.util.logging.Logger;
 
 import static za.org.grassroot.core.util.DateTimeUtil.*;
-import static za.org.grassroot.core.util.DateTimeUtil.convertToUserTimeZone;
 
 /**
  * Created by aakilomar on 8/24/15.
@@ -27,7 +28,7 @@ import static za.org.grassroot.core.util.DateTimeUtil.convertToUserTimeZone;
 @Component
 public class MeetingNotificationManager implements MeetingNotificationService {
 
-    private Logger log = Logger.getLogger(getClass().getCanonicalName());
+    private Logger log = LoggerFactory.getLogger(MeetingNotificationManager.class);
 
     @Autowired
     @Qualifier("servicesMessageSource")
@@ -36,6 +37,8 @@ public class MeetingNotificationManager implements MeetingNotificationService {
     @Autowired
     @Qualifier("servicesMessageSourceAccessor")
     MessageSourceAccessor messageSourceAccessor;
+
+    private static final DateTimeFormatter shortDateFormatter = DateTimeFormatter.ofPattern("EEE, d/M");
 
     /*
     Although it says meeting using the same functions for voting!
@@ -122,6 +125,18 @@ public class MeetingNotificationManager implements MeetingNotificationService {
     }
 
 
+
+    @Override
+    public String createMeetingRsvpTotalMessage(User user, EventDTO meeting, ResponseTotalsDTO responses) {
+        log.info("Constructing meeting total message ... with response object totals={}", responses.toString());
+        String[] fields = new String[] { meeting.getName(),
+                meeting.getEventStartDateAtSAST().format(shortDateFormatter),
+                String.valueOf(responses.getYes()),
+                String.valueOf(responses.getNo()),
+                String.valueOf(responses.getNumberNoRSVP()),
+                String.valueOf(responses.getNumberOfUsers()) };
+        return messageSourceAccessor.getMessage("sms.meeting.rsvp.totals", fields, getUserLocale(user));
+    }
 
     @Override
     public String createWelcomeMessage(String messageId, UserDTO userDTO) {

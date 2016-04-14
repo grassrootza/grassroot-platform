@@ -52,7 +52,7 @@ public class ScheduledTasks {
     @Scheduled(cron = "0 0 16 * * *") // runs at 4pm (=6pm SAST) every day
     public void sendMeetingAcknowledgements() { eventBroker.sendMeetingAcknowledgements(); }
 
-    @Scheduled(cron = "0 0 11 * * *") // runs at 11am (=1pm SAST) every day
+    @Scheduled(fixedRate = 3600000) // runs every hour
     public void sendMeetingRSVPsToDate() { eventBroker.sendMeetingRSVPsToDate(); }
 
     @Scheduled(fixedRate = 300000) //runs every 5 minutes

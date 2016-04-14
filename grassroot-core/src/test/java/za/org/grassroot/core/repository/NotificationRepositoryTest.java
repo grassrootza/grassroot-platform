@@ -37,12 +37,6 @@ public class NotificationRepositoryTest {
     private UserRepository userRepository;
 
     @Autowired
-    private MeetingRepository meetingRepository;
-
-    @Autowired
-    private VoteRepository voteRepository;
-
-    @Autowired
     private EventLogRepository eventLogRepository;
 
     @Autowired
@@ -63,7 +57,7 @@ public class NotificationRepositoryTest {
         Event event = eventRepository.save(new Meeting("test meeting",Instant.now(),  user, group, "someLoc"));
         EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.EventNotification, "you are hereby invited to the test meeting", null));
         GcmRegistration gcmRegistration = gcmRegistrationRepository.save(new GcmRegistration(user, "33433", Instant.now()));
-        notificationRepository.save(new Notification(user,eventLog,gcmRegistration,false,false,NotificationType.EVENT,eventLog.getMessage(),Instant.now()));
+        notificationRepository.save(new Notification(user,eventLog,gcmRegistration,false,false,NotificationType.EVENT,eventLog.getMessage()));
         List<Notification> notifications = notificationRepository.findAll();
         assertEquals(1, notifications.size());
         assertEquals(notifications.get(0).getEventLog(), eventLog);
@@ -77,7 +71,7 @@ public class NotificationRepositoryTest {
         Event event = eventRepository.save(new Meeting("test meeting",Instant.now(),  user, group, "someLoc"));
         EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.EventNotification, "you are hereby invited to the test meeting", null));
         GcmRegistration gcmRegistration = gcmRegistrationRepository.save(new GcmRegistration(user, "33433", Instant.now()));
-        notificationRepository.save(new Notification(user,eventLog,gcmRegistration,false,false, NotificationType.EVENT,eventLog.getMessage(),Instant.now()));
+        notificationRepository.save(new Notification(user,eventLog,gcmRegistration,false,false, NotificationType.EVENT,eventLog.getMessage()));
         List<Notification> notifications = notificationRepository.findByUser(user);
         Assert.assertThat(notifications.size(), is(1));
 

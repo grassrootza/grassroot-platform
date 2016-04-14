@@ -41,14 +41,12 @@ public class NotificationManager implements NotificationService{
 
     @Override
     @Transactional
-    public Notification createNotification(User user, EventLog eventLog, NotificationType notificationType, String message, Instant createdDateTime) {
+    public Notification createNotification(User user, EventLog eventLog, NotificationType notificationType) {
         Objects.nonNull(user);
         Objects.nonNull(eventLog);
         Objects.nonNull(notificationType);
-        Objects.nonNull(message);
-        Objects.nonNull(createdDateTime);
         GcmRegistration gcmRegistration =gcmService.loadByUser(user);
-        Notification notification = new Notification(user,eventLog, gcmRegistration,false, false, notificationType,message,createdDateTime);
+        Notification notification = new Notification(user, eventLog, gcmRegistration, false, false, notificationType, eventLog.getMessage());
         return notificationRepository.save(notification);
     }
 
@@ -61,12 +59,12 @@ public class NotificationManager implements NotificationService{
 
     @Override
     @Transactional
-    public Notification createNotification(User user, LogBookLog logBookLog, NotificationType notificationType, String message, Instant createdDateTime) {
+    public Notification createNotification(User user, LogBookLog logBookLog, NotificationType notificationType) {
         Objects.nonNull(user);
         Objects.nonNull(logBookLog);
-        Objects.nonNull(createdDateTime);
         GcmRegistration gcmRegistration = gcmService.loadByUser(user);
-        Notification notification = new Notification(user,logBookLog,gcmRegistration,false,false, notificationType, message, createdDateTime);
+        Notification notification = new Notification(user,logBookLog,gcmRegistration,false,false, notificationType,
+                                                     logBookLog.getMessage());
         return notificationRepository.save(notification);
     }
 

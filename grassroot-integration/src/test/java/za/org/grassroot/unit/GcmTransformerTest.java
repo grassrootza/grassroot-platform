@@ -55,7 +55,7 @@ public class GcmTransformerTest {
         Event event = new Meeting("test meeting",Instant.now(),  user, group, "someLoc");
         EventLog eventLog = new EventLog(user, event, EventLogType.EventNotification, "you are hereby invited to the test meeting", null);
         GcmRegistration gcmRegistration = new GcmRegistration(user,"xzf12", Instant.now());
-        Notification notification = new Notification(user,eventLog,gcmRegistration,false,false, NotificationType.EVENT,eventLog.getMessage(),Instant.now());
+        Notification notification = new Notification(user,eventLog,gcmRegistration,false,false, NotificationType.EVENT,eventLog.getMessage());
         Message<Notification> message = MessageBuilder.withPayload(notification).build();
         org.jivesoftware.smack.packet.Message transforemdMessage = gcmTransformer.transform(message);
         GcmPacketExtension packetExtension = (GcmPacketExtension)transforemdMessage.getExtension(GcmPacketExtension.GCM_NAMESPACE);

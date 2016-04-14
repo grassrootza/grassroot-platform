@@ -307,6 +307,11 @@ public class EventBrokerImpl implements EventBroker {
 				// todo: figure out how to get and handle errors from here (i.e., so don't set reminders false if an error)
                 jmsTemplateProducerService.sendWithNoReply("event-reminder", event.getUid());
 
+				// for meeting calls, send out RSVPs to date
+				if (event.getEventType().equals(EventType.MEETING) && event.isRsvpRequired()) {
+					jmsTemplateProducerService.sendWithNoReply("meeting-responses", event.getUid());
+				}
+
 				event.setNoRemindersSent(event.getNoRemindersSent() + 1);
 				event.setScheduledReminderActive(false);
 
@@ -340,10 +345,22 @@ public class EventBrokerImpl implements EventBroker {
 	@Override
 	@Transactional(readOnly = true)
 	public void sendMeetingRSVPsToDate() {
-        List<Meeting> meetings = new ArrayList<>();
+		LocalDateTime periodEnd = LocalDateTime.now().minusDays(2);
+		LocalDateTime periodStart = periodEnd.minusHours(1);
+        List<Meeting> meetings = meetingRepository.meetingsForResponseTotals(Instant.now(),
+																			 convertToSystemTime(periodStart, getSAST()),
+																			 convertToSystemTime(periodEnd, getSAST()));
+
 		logger.info("Sending out RSVP totals for {} meetings", meetings.size());
         for (Meeting meeting : meetings) {
-            // send the thing out
+            if (meeting.isCanceled()) {
+				throw new IllegalStateException("Meeting is cancelled: " + meeting);
+			}
+			if (!meeting.isRsvpRequired()) {
+				throw new IllegalStateException("Meeting does not require RSVPs" + meeting);
+			}
+
+			jmsTemplateProducerService.sendWithNoReply("meeting-responses", meeting.getUid());
         }
 	}
 
