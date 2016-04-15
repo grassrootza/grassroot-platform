@@ -87,7 +87,7 @@ public class DateGrammarTest extends AbstractGrammarTest {
     assertAST("1980-1-2", "(EXPLICIT_DATE (MONTH_OF_YEAR 1) (DAY_OF_MONTH 2) (YEAR_OF 1980))");
     assertAST("12/12/12", "(EXPLICIT_DATE (MONTH_OF_YEAR 12) (DAY_OF_MONTH 12) (YEAR_OF 12))");
     assertAST("3/4", "(EXPLICIT_DATE (MONTH_OF_YEAR 3) (DAY_OF_MONTH 4))");
-    assertAST("sun, 11/21/2010", "(EXPLICIT_DATE (MONTH_OF_YEAR 11) (DAY_OF_MONTH 21) (DAY_OF_WEEK 1) (YEAR_OF 2010))");
+    assertAST("sun, 21/11/2010", "(EXPLICIT_DATE (MONTH_OF_YEAR 11) (DAY_OF_MONTH 21) (DAY_OF_WEEK 1) (YEAR_OF 2010))");
   }
 
   @Test
