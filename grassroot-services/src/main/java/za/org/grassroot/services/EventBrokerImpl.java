@@ -13,11 +13,15 @@ import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.async.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.async.AsyncEventMessageSender;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -345,11 +349,11 @@ public class EventBrokerImpl implements EventBroker {
 	@Override
 	@Transactional(readOnly = true)
 	public void sendMeetingRSVPsToDate() {
-		LocalDateTime periodEnd = LocalDateTime.now().minusDays(2);
-		LocalDateTime periodStart = periodEnd.minusHours(1);
-        List<Meeting> meetings = meetingRepository.meetingsForResponseTotals(Instant.now(),
-																			 convertToSystemTime(periodStart, getSAST()),
-																			 convertToSystemTime(periodEnd, getSAST()));
+
+        // since the scheduled job runs once an hour, check for meetings created two days ago, in an hour interval
+        Instant start = Instant.now().minus(48, ChronoUnit.HOURS);
+		Instant end = start.minus(1, ChronoUnit.HOURS);
+        List<Meeting> meetings = meetingRepository.meetingsForResponseTotals(Instant.now(), start, end);
 
 		logger.info("Sending out RSVP totals for {} meetings", meetings.size());
         for (Meeting meeting : meetings) {
@@ -366,8 +370,29 @@ public class EventBrokerImpl implements EventBroker {
 
     @Override
     public void sendMeetingAcknowledgements() {
-        List<Meeting> meetings = new ArrayList<>();
+
+        /*
+         First, get the list of meetings that happened yesterday; if across multiple timezones, probably want to change
+         this to be, say, T-12 hours to T-36 hours
+        */
+        LocalDate yesterday = LocalDate.now().minus(1, ChronoUnit.DAYS);
+        Instant start = convertToSystemTime(LocalDateTime.of(yesterday, LocalTime.MIN), getSAST());
+        Instant end = convertToSystemTime(LocalDateTime.of(yesterday, LocalTime.MAX), getSAST());
+
+        List<Meeting> meetings = meetingRepository.findByEventStartDateTimeBetweenAndCanceledFalseAndRsvpRequiredTrue(start, end);
         logger.info("Sending out meeting thank you for {} meetings", meetings.size());
+
+        for (Meeting meeting : meetings) {
+            if (meeting.isCanceled()) {
+                throw new IllegalStateException("Meeting is cancelled: " + meeting);
+            }
+            if (!meeting.isRsvpRequired()) {
+                throw new IllegalStateException("Meeting did not require RSVPs" + meeting);
+            }
+
+            jmsTemplateProducerService.sendWithNoReply("meeting-thankyou", meeting.getUid());
+        }
+
     }
 
     @Override

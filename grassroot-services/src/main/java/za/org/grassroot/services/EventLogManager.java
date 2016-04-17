@@ -57,6 +57,12 @@ public class EventLogManager implements EventLogManagementService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public boolean eventLogRecorded(EventLogType eventLogType, Event event, User user) {
+        return (eventLogRepository.findByEventAndUserAndEventLogType(event, user, eventLogType) != null);
+    }
+
+    @Override
     public boolean notificationSentToUser(Event event, User user) {
         return eventLogRepository.notificationSent(event, user);
     }
@@ -133,8 +139,15 @@ public class EventLogManager implements EventLogManagementService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public EventLog getEventLogOfUser(Event event, User user, EventLogType eventLogType) {
         return eventLogRepository.findByEventAndUserAndEventLogType(event, user,eventLogType);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean userRsvpYesForEvent(Event event, User user) {
+        return eventLogRepository.rsvpYesForEvent(event, user);
     }
 
     @Override

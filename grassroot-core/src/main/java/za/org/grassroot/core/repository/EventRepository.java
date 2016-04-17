@@ -21,8 +21,6 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
 	List<Event> findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(Group group, Instant startTime, boolean cancelled);
 
-	List<Event> findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(User user, Instant startTime, boolean cancelled);
-
 	Page<Event> findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(User user, Instant startTime, boolean cancelled, Pageable page);
 
 	Page<Event> findByCreatedByUserAndEventStartDateTimeGreaterThanAndEventTypeAndCanceledFalse(User user, Instant startTime, EventType eventType, Pageable page);

@@ -8,6 +8,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.EventDTO;
@@ -26,9 +27,9 @@ import static za.org.grassroot.core.util.DateTimeUtil.*;
  * Created by aakilomar on 8/24/15.
  */
 @Component
-public class MeetingNotificationManager implements MeetingNotificationService {
+public class MessageAssemblingManager implements MessageAssemblingService {
 
-    private Logger log = LoggerFactory.getLogger(MeetingNotificationManager.class);
+    private Logger log = LoggerFactory.getLogger(MessageAssemblingManager.class);
 
     @Autowired
     @Qualifier("servicesMessageSource")
@@ -143,6 +144,15 @@ public class MeetingNotificationManager implements MeetingNotificationService {
         return messageSourceAccessor.getMessage(messageId, populateWelcomeFields(userDTO), getUserLocale(userDTO.getLanguageCode()));
     }
 
+    @Override
+    public String createMeetingThankYouMessage(User user, EventDTO event) {
+        // sms.meeting.thankyou = {0}: Thank you for attending the meeting about {1} on {2}. Dial *134*1994# to create and join groups or call meetings.
+        String prefix = (event.getParent().getJpaEntityType().equals(JpaEntityType.GROUP) &&
+                ((Group) event.getParent()).hasName()) ? ((Group) event.getParent()).getGroupName() : "Grassroot";
+        String[] fields = new String[] {  prefix, event.getName(), event.getEventStartDateAtSAST().format(shortDateFormatter) };
+        return messageSourceAccessor.getMessage("sms.meeting.thankyou", fields, getUserLocale(user));
+    }
+
 
     @Override
     public String createReplyFailureMessage(User user) {
@@ -170,7 +180,8 @@ public class MeetingNotificationManager implements MeetingNotificationService {
 
     private String[] populateFields(User user, EventDTO event, double yes, double no, double abstain, double noReply) {
 
-        String salutation = (((Group) event.getParent()).hasName()) ? ((Group) event.getParent()).getGroupName() : "GrassRoot";
+        // todo: switch this to new name (may want a "hasName"/"getName" method defined on UidIdentifiable?
+        String salutation = (((Group) event.getParent()).hasName()) ? ((Group) event.getParent()).getGroupName() : "Grassroot";
         log.info("populateFields...user..." + user.getPhoneNumber() + "...event..." + event.getId() + "...version..." + event.getVersion());
         DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
         String dateString = "no date specified";

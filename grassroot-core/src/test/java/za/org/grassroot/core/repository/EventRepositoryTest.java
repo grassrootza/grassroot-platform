@@ -41,23 +41,13 @@ public class EventRepositoryTest {
     private final static Logger log = LoggerFactory.getLogger(EventRepositoryTest.class);
 
     @Autowired
-    EventRepository eventRepository;
+    private EventRepository eventRepository;
 
     @Autowired
-    MeetingRepository meetingRepository;
+    private GroupRepository groupRepository;
 
     @Autowired
-    VoteRepository voteRepository;
-
-    @Autowired
-    GroupRepository groupRepository;
-
-    @Autowired
-    UserRepository userRepository;
-
-    @Autowired
-    EventLogRepository eventLogRepository;
-
+    private UserRepository userRepository;
 
     @Test
     public void shouldSaveAndRetrieveEventData() throws Exception {
@@ -222,54 +212,6 @@ public class EventRepositoryTest {
     }
 
     @Test
-    public void shouldFindEventsByGroupBetweenTimestamps() {
-
-        assertThat(eventRepository.count(), is(0L));
-        User user = userRepository.save(new User("0813330000"));
-        Group group1 = groupRepository.save(new Group("tg1", user));
-        Group group2 = groupRepository.save(new Group("tg2", user));
-
-        Event event1 = eventRepository.save(new Meeting("test", Instant.now().minus(7, DAYS), user, group1, "someLoc"));
-        event1 = eventRepository.save(event1);
-
-        Event event2 = eventRepository.save(new Meeting("test2", Instant.now().minus(5*7, DAYS), user, group1, "someLoc"));
-        event2 = eventRepository.save(event2);
-
-        Event event3 = eventRepository.save(new Vote("test3", Instant.now().minus(7, DAYS), user, group1));
-        event3 = eventRepository.save(event3);
-
-        Event event4 = eventRepository.save(new Meeting("test4", Instant.now().minus(7, DAYS), user, group2, "someLoc"));
-        event4 = eventRepository.save(event4);
-
-        Instant now = Instant.now();
-        Instant oneMonthBack = LocalDateTime.now().minusMonths(1L).toInstant(ZoneOffset.UTC);
-        Instant twoMonthsBack = LocalDateTime.now().minusMonths(2L).toInstant(ZoneOffset.UTC);
-
-        List<Meeting> test1 = meetingRepository.
-                findByAppliesToGroupAndEventStartDateTimeBetween(group1, oneMonthBack, now);
-        List<Meeting> test2 = meetingRepository.
-                findByAppliesToGroupAndEventStartDateTimeBetween(group1, twoMonthsBack, oneMonthBack);
-        List<Vote> test3 = voteRepository.
-                findByAppliesToGroupAndEventStartDateTimeBetween(group1, oneMonthBack, now);
-        List<Meeting> test4 = meetingRepository.
-                findByAppliesToGroupAndEventStartDateTimeBetween(group2, oneMonthBack, now);
-        List<Event> test5 = eventRepository.
-                findByAppliesToGroupAndEventStartDateTimeBetween(group1, oneMonthBack, now, new Sort(Sort.Direction.ASC, "EventStartDateTime"));
-
-        assertNotNull(test1);
-        assertEquals(test1, Collections.singletonList(event1));
-        assertNotNull(test2);
-        assertEquals(test2, Collections.singletonList(event2));
-        assertNotNull(test3);
-        assertEquals(test3, Collections.singletonList(event3));
-        assertNotNull(test4);
-        assertEquals(test4, Collections.singletonList(event4));
-        assertNotNull(test5);
-        assertEquals(test5, Arrays.asList(event1, event3));
-
-    }
-
-    @Test
     public void countUpcomingEventsShouldWork() {
 
         LocalDateTime.now().with(ChronoField.DAY_OF_WEEK, 1);
@@ -298,41 +240,6 @@ public class EventRepositoryTest {
         int numberUpcomingEvents2 = eventRepository.countByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThan(user2, Instant.now());
         assertThat(numberUpcomingEvents2, is(0));
 
-    }
-
-    @Test
-    public void findMeetingsForResponseMessagesShouldWork() {
-
-        log.info("Finding meeting responses ...");
-
-        User user = userRepository.save(new User("0710001111"));
-        Group group = groupRepository.save(new Group("tg1", user));
-        group.addMember(user);
-        groupRepository.save(group);
-
-        Meeting mtg = new Meeting("count check", Instant.now().plus(2, DAYS), user, group, "someLoc");
-        Meeting mtg2 = new Meeting("count check 2", Instant.now().plus(2, DAYS), user, group, "otherLoc");
-        mtg.setRsvpRequired(true);
-        mtg2.setRsvpRequired(true);
-
-        meetingRepository.save(mtg);
-        meetingRepository.save(mtg2);
-
-        assertThat(meetingRepository.count(), is(2L));
-
-        List<Meeting> checkFirst = meetingRepository.meetingsForResponseTotals(Instant.now(), Instant.now().minus(5, MINUTES), Instant.now());
-        assertThat(checkFirst.size(), is(2));
-        assertThat(checkFirst.contains(mtg), is(true));
-        assertThat(checkFirst.contains(mtg2), is(true));
-
-        EventLog eventLog = new EventLog(user, mtg, EventLogType.EventRsvpTotalMessage, "message", UserMessagingPreference.SMS);
-        eventLogRepository.save(eventLog);
-        assertThat(eventLogRepository.count(), is(1L));
-
-        List<Meeting> checkSecond = meetingRepository.meetingsForResponseTotals(Instant.now(), Instant.now().minus(5, MINUTES), Instant.now());
-        assertThat(checkSecond.size(), is(1));
-        assertThat(checkSecond.contains(mtg), is(false));
-        assertThat(checkSecond.contains(mtg2), is(true));
     }
 
 }

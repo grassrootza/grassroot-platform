@@ -13,7 +13,7 @@ import za.org.grassroot.GrassRootServicesConfig;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.services.MeetingNotificationService;
+import za.org.grassroot.services.MessageAssemblingService;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -37,7 +37,7 @@ public class NotificationServiceTest {
     private Logger log = Logger.getLogger(getClass().getCanonicalName());
 
     @Autowired
-    MeetingNotificationService meetingNotificationService;
+    MessageAssemblingService messageAssemblingService;
 
     @Autowired
     @Qualifier("servicesMessageSourceAccessor")
@@ -74,7 +74,7 @@ public class NotificationServiceTest {
         Group group = groupManagementService.createNewGroup(user, Arrays.asList("0828888888", "0829999999"), false);
         Event event = eventRepository.save(new Event("Drink till you drop", user, group));
         event.setEventLocation("Ellispark");
-        String message = meetingNotificationService.createMeetingNotificationMessage(user, new EventDTO(event));
+        String message = MessageAssemblingService.createMeetingNotificationMessage(user, new EventDTO(event));
         log.info("shouldGiveEnglishMeetingMessage..." + message);
         assertEquals("GrassRoot : 081 777 0000 has called a meeting about Drink till you drop, at Ellispark, on no date specified",
                 message);*/
@@ -86,7 +86,7 @@ public class NotificationServiceTest {
         Group group = groupManagementService.createNewGroup(user, Arrays.asList("0828888888", "0829999999"), false);
         Event event = eventRepository.save(new Event("Drink till you drop",user,group));
         event.setEventLocation("Ellispark");
-        String message = meetingNotificationService.createChangeMeetingNotificationMessage(user, new EventDTO(event));
+        String message = MessageAssemblingService.createChangeMeetingNotificationMessage(user, new EventDTO(event));
         log.info("shouldGiveEnglishMeetingMessage..." + message);
         assertEquals("GrassRoot : 081 777 0000 has changed the meeting about Drink till you drop, it will now be at Ellispark, on no date specified",
                      message);*/
@@ -98,7 +98,7 @@ public class NotificationServiceTest {
         Group group = groupManagementService.createNewGroup(user, Arrays.asList("0828888888", "0829999999"), false);
         Event event = eventRepository.save(new Event("Drink till you drop",user,group));
         event.setEventLocation("Ellispark");
-        String message = meetingNotificationService.createCancelMeetingNotificationMessage(user,new EventDTO(event));
+        String message = MessageAssemblingService.createCancelMeetingNotificationMessage(user,new EventDTO(event));
         log.info("shouldGiveEnglishMeetingMessage..." + message);
         assertEquals("GrassRoot : 081 777 0000 has cancelled the meeting about Drink till you drop, at Ellispark, on no date specified",
                      message);*/

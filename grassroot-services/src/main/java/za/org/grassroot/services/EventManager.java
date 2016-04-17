@@ -17,7 +17,6 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.async.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.util.CacheUtilService;
 
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -67,7 +66,7 @@ public class EventManager implements EventManagementService {
     CacheUtilService cacheUtilService;
 
     @Autowired
-    MeetingNotificationService meetingNotificationService;
+    MessageAssemblingService messageAssemblingService;
 
     @Autowired
     GroupLogRepository groupLogRepository;
@@ -388,7 +387,7 @@ public class EventManager implements EventManagementService {
     public String getReminderMessageForConfirmation(String locale, User user, Event event) {
         log.info("Composing reminder message ... with locale ... " + locale);
         EventDTO eventDTO = new EventDTO(event);
-        return meetingNotificationService.createMeetingReminderMessage(locale, user, eventDTO);
+        return messageAssemblingService.createMeetingReminderMessage(locale, user, eventDTO);
     }
 
     @Override

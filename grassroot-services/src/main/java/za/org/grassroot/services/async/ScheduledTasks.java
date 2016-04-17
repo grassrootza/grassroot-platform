@@ -6,13 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.LogBook;
-import za.org.grassroot.core.dto.*;
+import za.org.grassroot.core.dto.GenericAsyncDTO;
+import za.org.grassroot.core.dto.LogBookDTO;
 import za.org.grassroot.core.repository.LogBookRepository;
-import za.org.grassroot.core.repository.VoteRepository;
 import za.org.grassroot.integration.services.NotificationService;
-
 import za.org.grassroot.services.EventBroker;
-import za.org.grassroot.services.async.GenericJmsTemplateProducerService;
 
 import javax.jms.Message;
 import javax.jms.ObjectMessage;
@@ -50,7 +48,7 @@ public class ScheduledTasks {
     }
 
     @Scheduled(cron = "0 0 16 * * *") // runs at 4pm (=6pm SAST) every day
-    public void sendMeetingAcknowledgements() { eventBroker.sendMeetingAcknowledgements(); }
+    public void sendMeetingThankYous() { eventBroker.sendMeetingAcknowledgements(); }
 
     @Scheduled(fixedRate = 3600000) // runs every hour
     public void sendMeetingRSVPsToDate() { eventBroker.sendMeetingRSVPsToDate(); }

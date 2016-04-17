@@ -17,6 +17,8 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
 
     int countByCreatedDateTimeBetween(Instant start, Instant end);
 
+	List<Meeting> findByEventStartDateTimeBetweenAndCanceledFalseAndRsvpRequiredTrue(Instant startTimeAfter, Instant startTimeBefore);
+
     /**
      * Find meetings for which we should send out response totals (i.e., X said yes, and so forth), being meetings:
      * Called in a certain interval of time

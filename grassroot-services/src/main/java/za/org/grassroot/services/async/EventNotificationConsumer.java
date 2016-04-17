@@ -14,7 +14,6 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.NotificationType;
 import za.org.grassroot.core.repository.LogBookLogRepository;
 import za.org.grassroot.core.repository.LogBookRepository;
-import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.domain.MessageProtocol;
 import za.org.grassroot.integration.services.GcmService;
@@ -37,16 +36,19 @@ public class EventNotificationConsumer {
     private Logger log = LoggerFactory.getLogger(EventNotificationConsumer.class);
 
     @Autowired
-    UserManagementService userManager;
+    private UserManagementService userManager;
 
     @Autowired
-    GroupBroker groupBroker;
+    private GroupBroker groupBroker;
 
     @Autowired
-    MeetingNotificationService meetingNotificationService;
+    private MessageAssemblingService messageAssemblingService;
 
     @Autowired
-    MessageSendingService messageSendingService;
+    private MessageSendingService messageSendingService;
+
+    @Autowired
+    private NotificationService notificationService;
 
     @Autowired
     EventManagementService eventManagementService;
@@ -64,9 +66,6 @@ public class EventNotificationConsumer {
     LogBookRepository logBookRepository;
 
     @Autowired
-    UserRepository userRepository;
-
-    @Autowired
     LogBookLogRepository logBookLogRepository;
 
     @Autowired
@@ -77,12 +76,6 @@ public class EventNotificationConsumer {
 
     @Autowired
     GcmService gcmService;
-
-    @Autowired
-    MessageChannel requestChannel;
-
-    @Autowired
-    NotificationService notificationService;
 
     /*
     change this to add messages or stop messages altogether by leaving it empty.
@@ -122,7 +115,7 @@ public class EventNotificationConsumer {
         for (User user : getUsersForEvent(event)) {
             //generate message based on user language
             log.info("sendChangedEventNotifications...user..." + user.getPhoneNumber() + "...event..." + eventChanged.getEvent().getId() + "...version..." + eventChanged.getEvent().getVersion() + "...start time changed..." + eventChanged.isStartTimeChanged() + "...starttime..." + eventChanged.getEvent().getEventStartDateTime());
-            String message = meetingNotificationService.createChangeMeetingNotificationMessage(user, eventChanged.getEvent());
+            String message = messageAssemblingService.createChangeMeetingNotificationMessage(user, eventChanged.getEvent());
             if (!eventLogManagementService.changeNotificationSentToUser(eventChanged.getEvent().getEventUid(), user.getUid(), message)
                     && (!eventLogManagementService.userRsvpNoForEvent(eventChanged.getEvent().getEventUid(), user.getUid())
                     || eventChanged.isStartTimeChanged())) {
@@ -147,7 +140,7 @@ public class EventNotificationConsumer {
         log.trace("sendCancelledEventNotifications... <" + event.toString() + ">");
         for (User user : getUsersForEvent(event)) {
             //generate message based on user language
-            String message = meetingNotificationService.createCancelMeetingNotificationMessage(user, eventDTO);
+            String message = messageAssemblingService.createCancelMeetingNotificationMessage(user, eventDTO);
             if (!eventLogManagementService.cancelNotificationSentToUser(event.getUid(), user.getUid())
                     && !eventLogManagementService.userRsvpNoForEvent(event.getUid(), user.getUid())) {
                 log.info("sendCancelledEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
@@ -192,11 +185,27 @@ public class EventNotificationConsumer {
         log.info("Sending meeting RSVP totals for meeting={}", meeting.toString());
         User user = meeting.getCreatedByUser();
         ResponseTotalsDTO totals = eventLogManagementService.getResponseCountForEvent(meeting);
-        String message = meetingNotificationService.createMeetingRsvpTotalMessage(user, new EventDTO(meeting), totals);
+        String message = messageAssemblingService.createMeetingRsvpTotalMessage(user, new EventDTO(meeting), totals);
         EventLog eventLog = eventLogManagementService.createEventLog(EventLogType.EventRsvpTotalMessage, meetingUid,
                                                                      user.getUid(), message);
         Notification notification = notificationService.createNotification(user, eventLog, NotificationType.EVENT);
         messageSendingService.sendMessage(notification);
+    }
+
+    @Transactional
+    @JmsListener(destination = "meeting-thankyou", containerFactory = "messagingJmsContainerFactory")
+    public void sendMeetingThankYous(String meetingUid) {
+        Event event = eventBroker.load(meetingUid);
+        for (User user : getUsersForEvent(event)) {
+            String message = messageAssemblingService.createMeetingThankYouMessage(user, new EventDTO(event));
+            if (eventLogManagementService.userRsvpYesForEvent(event, user) &&
+                    !eventLogManagementService.eventLogRecorded(EventLogType.EventThankYouMessage, event, user)) {
+                log.info("sendMeetingThankYous ... send message ... " + message + "...to..." + user.getPhoneNumber());
+                EventLog eventLog = eventLogManagementService.createEventLog(EventLogType.EventThankYouMessage, event.getUid(), user.getUid(), message);
+                Notification notification = notificationService.createNotification(user, eventLog, NotificationType.EVENT);
+                messageSendingService.sendMessage(notification);
+            }
+        }
     }
 
     /*
@@ -343,7 +352,7 @@ public class EventNotificationConsumer {
     private void sendWelcomeMessages(UserDTO userDTO) {
         log.info("sendWelcomeMessages..." + userDTO + "...messages..." + welcomeMessages);
         for (String messageId : welcomeMessages) {
-            String message = meetingNotificationService.createWelcomeMessage(messageId,userDTO);
+            String message = messageAssemblingService.createWelcomeMessage(messageId, userDTO);
             messageSendingService.sendMessage(message,userDTO.getPhoneNumber(),MessageProtocol.SMS);
         }
     }
@@ -358,8 +367,8 @@ public class EventNotificationConsumer {
         //generate message based on user language
         EventDTO event = eventWithTotals.getEventDTO();
         ResponseTotalsDTO totalsDTO = eventWithTotals.getResponseTotalsDTO();
-        String message = meetingNotificationService.createVoteResultsMessage(user, event,
-                totalsDTO.getYes(),totalsDTO.getNo(),totalsDTO.getMaybe(),totalsDTO.getNumberNoRSVP());
+        String message = messageAssemblingService.createVoteResultsMessage(user, event,
+                                                                           totalsDTO.getYes(), totalsDTO.getNo(), totalsDTO.getMaybe(), totalsDTO.getNumberNoRSVP());
         if (!eventLogManagementService.voteResultSentToUser(event.getEventUid(), user.getUid())) {
             log.info("sendVoteResultsToUser...send message..." + message + "...to..." + user.getPhoneNumber());
            // messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
@@ -383,7 +392,7 @@ public class EventNotificationConsumer {
 
     private void sendNewEventMessage(User user, EventDTO event) {
         //generate message based on user language
-        String message = meetingNotificationService.createMeetingNotificationMessage(user, event);
+        String message = messageAssemblingService.createMeetingNotificationMessage(user, event);
         Event eventEntity = eventBroker.load(event.getEventUid());
         if (!eventLogManagementService.notificationSentToUser(eventEntity, user)) {
             log.info("sendNewEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
@@ -402,7 +411,7 @@ public class EventNotificationConsumer {
         EventDTO eventDTO = (event.getEventType().equals(EventType.MEETING)) ?
                 new EventDTO((Meeting) event) :
                 new EventDTO(event);
-        String message = meetingNotificationService.createMeetingReminderMessage(target, eventDTO);
+        String message = messageAssemblingService.createMeetingReminderMessage(target, eventDTO);
         if (event.getEventType() == EventType.VOTE) {
             // Do not send vote reminder if the target already voted (userRsvpForEvent)
             if (!eventLogManagementService.reminderSentToUser(event, target)
@@ -422,7 +431,7 @@ public class EventNotificationConsumer {
         //generate message based on user language if message not captured by the user
         String message = event.getMessage();
         if (message == null || message.trim().equals("")) {
-            message = meetingNotificationService.createMeetingReminderMessage(user, event);
+            message = messageAssemblingService.createMeetingReminderMessage(user, event);
         }
         /*
         Do not send vote reminder if the user already voted (userRsvpForEvent)
@@ -466,7 +475,7 @@ public class EventNotificationConsumer {
 
     private void sendLogBookReminderMessage(User user,Group group, LogBook logBook) {
         log.info("sendLogBookReminderMessage...user..." + user.getPhoneNumber() + "...logbook..." + logBook.getMessage());
-        String message = meetingNotificationService.createLogBookReminderMessage(user,group,logBook);
+        String message = messageAssemblingService.createLogBookReminderMessage(user, group, logBook);
         LogBookLog  logBookLog = logBookLogRepository.save(new LogBookLog(logBook.getId(),message,user.getId(),group.getId(),user.getPhoneNumber()));
         Notification notification = notificationService.createNotification(user, logBookLog,NotificationType.LOGBOOK);
         messageSendingService.sendMessage(notification);
@@ -474,14 +483,14 @@ public class EventNotificationConsumer {
 
     private void sendNewLogbookNotificationMessage(User user,Group group, LogBook logBook, boolean assigned) {
         log.info("sendNewLogbookNotificationMessage...user..." + user.getPhoneNumber() + "...logbook..." + logBook.getMessage());
-        String message = meetingNotificationService.createNewLogBookNotificationMessage(user,group,logBook, assigned);
+        String message = messageAssemblingService.createNewLogBookNotificationMessage(user, group, logBook, assigned);
         LogBookLog logBookLog = logBookLogRepository.save(new LogBookLog(logBook.getId(),message,user.getId(),group.getId(),user.getPhoneNumber()));
         Notification notification = notificationService.createNotification(user,logBookLog,NotificationType.LOGBOOK);
         messageSendingService.sendMessage(notification);
     }
 
     public void sendCouldNotProcessReply(User user){
-        String message = meetingNotificationService.createReplyFailureMessage(user);
+        String message = messageAssemblingService.createReplyFailureMessage(user);
         messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
     }
 

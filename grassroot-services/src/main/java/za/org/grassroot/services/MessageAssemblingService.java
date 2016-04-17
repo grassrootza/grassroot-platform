@@ -14,40 +14,29 @@ import java.util.Map;
 /**
  * Created by aakilomar on 8/24/15.
  */
-public interface MeetingNotificationService {
+public interface MessageAssemblingService {
 
     String createMeetingNotificationMessage(User user, EventDTO event);
 
-
-
     String createLogBookReminderMessage(User user, Group group, LogBook logBook);
-
 
     String createNewLogBookNotificationMessage(User user, Group group, LogBook logBook, boolean assigned);
 
-
     String createChangeMeetingNotificationMessage(User user, EventDTO event);
-
 
     String createCancelMeetingNotificationMessage(User user, EventDTO event);
 
-
     String createMeetingReminderMessage(User user, EventDTO event);
-
 
     String createVoteResultsMessage(User user, EventDTO event, double yes, double no, double abstain, double noReply);
 
-
-    /*
-    Helper method to produce messages in different languages, for confirmation screens
-     */
     String createMeetingReminderMessage(String locale, User user, EventDTO event);
-
 
     String createMeetingRsvpTotalMessage(User user, EventDTO meeting, ResponseTotalsDTO responses);
 
     String createWelcomeMessage(String messageId, UserDTO userDTO);
 
+    String createMeetingThankYouMessage(User user, EventDTO event);
 
     String createReplyFailureMessage(User user);
 
