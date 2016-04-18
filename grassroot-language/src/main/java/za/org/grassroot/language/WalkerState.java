@@ -1,5 +1,8 @@
 package za.org.grassroot.language;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.*;
 
 /**
@@ -7,6 +10,8 @@ import java.util.*;
  */
 public class WalkerState {
   
+  private static final Logger log = LoggerFactory.getLogger(WalkerState.class);
+
   private static final int TWO_DIGIT_YEAR_CENTURY_THRESHOLD = 20;
   private static final String MONTH = "month";
   private static final String DAY = "day";
@@ -45,18 +50,20 @@ public class WalkerState {
    * the next hour from the current time
    */
   public WalkerState() {
-    this(new Date());
+	this(new Date());
   }
 
   public WalkerState(Date referenceDate) {
-    calendarSource = new CalendarSource(referenceDate);
-    resetCalendar();
-    _dateGroup = new DateGroup();
+      log.debug("Constructing walker, reference date={}", referenceDate);
+	calendarSource = new CalendarSource(referenceDate);
+	resetCalendar();
+	_dateGroup = new DateGroup();
+      log.debug("After constructor, calendar year={}", _calendar.get(Calendar.YEAR));
   }
   
   public void setDefaultTimeZone(final TimeZone zone) {
-    _defaultTimeZone = zone;
-    resetCalendar();
+	_defaultTimeZone = zone;
+	resetCalendar();
   }
   
   /**
@@ -78,33 +85,33 @@ public class WalkerState {
    *     1 to 7 (1 being Sunday, 7 being Saturday.) Must be guaranteed to parse as an Integer
    */
   public void seekToDayOfWeek(String direction, String seekType, String seekAmount, String dayOfWeek) {
-    int dayOfWeekInt = Integer.parseInt(dayOfWeek);
-    int seekAmountInt = Integer.parseInt(seekAmount);
-    assert(direction.equals(DIR_LEFT) || direction.equals(DIR_RIGHT));
-    assert(seekType.equals(SEEK_BY_DAY) || seekType.equals(SEEK_BY_WEEK));
-    assert(dayOfWeekInt >= 1 && dayOfWeekInt <= 7);
-    
-    markDateInvocation();
-    
-    int sign = direction.equals(DIR_RIGHT) ? 1 : -1;
-    if(seekType.equals(SEEK_BY_WEEK)) {
-      // set our calendar to this weeks requested day of the week,
-      // then add or subtract the week(s)
-      _calendar.set(Calendar.DAY_OF_WEEK, dayOfWeekInt);
-      _calendar.add(Calendar.DAY_OF_YEAR, seekAmountInt * 7 * sign);
-    }
-    
-    else if(seekType.equals(SEEK_BY_DAY)) {
-      // find the closest day
-      do {
-        _calendar.add(Calendar.DAY_OF_YEAR, sign);
-      } while(_calendar.get(Calendar.DAY_OF_WEEK) != dayOfWeekInt);
-      
-      // now add/subtract any additional days
-      if(seekAmountInt > 0) {
-        _calendar.add(Calendar.WEEK_OF_YEAR, (seekAmountInt - 1) * sign);
-      }
-    }
+	int dayOfWeekInt = Integer.parseInt(dayOfWeek);
+	int seekAmountInt = Integer.parseInt(seekAmount);
+	assert(direction.equals(DIR_LEFT) || direction.equals(DIR_RIGHT));
+	assert(seekType.equals(SEEK_BY_DAY) || seekType.equals(SEEK_BY_WEEK));
+	assert(dayOfWeekInt >= 1 && dayOfWeekInt <= 7);
+
+	markDateInvocation();
+
+	int sign = direction.equals(DIR_RIGHT) ? 1 : -1;
+	if(seekType.equals(SEEK_BY_WEEK)) {
+	  // set our calendar to this weeks requested day of the week,
+	  // then add or subtract the week(s)
+	  _calendar.set(Calendar.DAY_OF_WEEK, dayOfWeekInt);
+	  _calendar.add(Calendar.DAY_OF_YEAR, seekAmountInt * 7 * sign);
+	}
+
+	else if(seekType.equals(SEEK_BY_DAY)) {
+	  // find the closest day
+	  do {
+		_calendar.add(Calendar.DAY_OF_YEAR, sign);
+	  } while(_calendar.get(Calendar.DAY_OF_WEEK) != dayOfWeekInt);
+
+	  // now add/subtract any additional days
+	  if(seekAmountInt > 0) {
+		_calendar.add(Calendar.WEEK_OF_YEAR, (seekAmountInt - 1) * sign);
+	  }
+	}
   }
   
   /**
@@ -115,13 +122,13 @@ public class WalkerState {
    *     will be used.
    */
   public void seekToDayOfMonth(String dayOfMonth) {
-    int dayOfMonthInt = Integer.parseInt(dayOfMonth);
-    assert(dayOfMonthInt >= 1 && dayOfMonthInt <= 31);
-    
-    markDateInvocation();
-    
-    dayOfMonthInt = Math.min(dayOfMonthInt, _calendar.getActualMaximum(Calendar.DAY_OF_MONTH));
-    _calendar.set(Calendar.DAY_OF_MONTH, dayOfMonthInt);
+	int dayOfMonthInt = Integer.parseInt(dayOfMonth);
+	assert(dayOfMonthInt >= 1 && dayOfMonthInt <= 31);
+
+	markDateInvocation();
+
+	dayOfMonthInt = Math.min(dayOfMonthInt, _calendar.getActualMaximum(Calendar.DAY_OF_MONTH));
+	_calendar.set(Calendar.DAY_OF_MONTH, dayOfMonthInt);
   }
   
   /**
@@ -132,13 +139,13 @@ public class WalkerState {
    *     will be used.
    */
   public void seekToDayOfYear(String dayOfYear) {
-    int dayOfYearInt = Integer.parseInt(dayOfYear);
-    assert(dayOfYearInt >= 1 && dayOfYearInt <= 366);
-    
-    markDateInvocation();
-    
-    dayOfYearInt = Math.min(dayOfYearInt, _calendar.getActualMaximum(Calendar.DAY_OF_YEAR));
-    _calendar.set(Calendar.DAY_OF_YEAR, dayOfYearInt);
+	int dayOfYearInt = Integer.parseInt(dayOfYear);
+	assert(dayOfYearInt >= 1 && dayOfYearInt <= 366);
+
+	markDateInvocation();
+
+	dayOfYearInt = Math.min(dayOfYearInt, _calendar.getActualMaximum(Calendar.DAY_OF_YEAR));
+	_calendar.set(Calendar.DAY_OF_YEAR, dayOfYearInt);
   }
   
   /**
@@ -146,12 +153,12 @@ public class WalkerState {
    * @param year
    */
   public void seekToYear(String year) {
-    int yearInt = Integer.parseInt(year);
-    assert(yearInt >= 0 && yearInt < 9999);
-    
-    markDateInvocation();
-    
-    _calendar.set(Calendar.YEAR, getFullYear(yearInt));
+	int yearInt = Integer.parseInt(year);
+	assert(yearInt >= 0 && yearInt < 9999);
+
+	markDateInvocation();
+
+	_calendar.set(Calendar.YEAR, getFullYear(yearInt));
   }
   
   /**
@@ -167,30 +174,30 @@ public class WalkerState {
    *     between 1 and 12 
    */
   public void seekToMonth(String direction, String seekAmount, String month) {
-    int seekAmountInt = Integer.parseInt(seekAmount);
-    int monthInt = Integer.parseInt(month);
-    assert(direction.equals(DIR_LEFT) || direction.equals(DIR_RIGHT));
-    assert(monthInt >= 1 && monthInt <= 12);
-    
-    markDateInvocation();
-    
-    // set the day to the first of month. This step is necessary because if we seek to the 
-    // current day of a month whose number of days is less than the current day, we will 
-    // pushed into the next month.
-    _calendar.set(Calendar.DAY_OF_MONTH, 1);
-    
-    // seek to the appropriate year
-    if(seekAmountInt > 0) {
-      int currentMonth = _calendar.get(Calendar.MONTH) + 1;
-      int sign = direction.equals(DIR_RIGHT) ? 1 : -1;
-      int numYearsToShift = seekAmountInt +
-              (currentMonth == monthInt ? 0 : (currentMonth < monthInt ? sign > 0 ? -1 : 0 : sign > 0 ? 0 : -1));
+	int seekAmountInt = Integer.parseInt(seekAmount);
+	int monthInt = Integer.parseInt(month);
+	assert(direction.equals(DIR_LEFT) || direction.equals(DIR_RIGHT));
+	assert(monthInt >= 1 && monthInt <= 12);
 
-      _calendar.add(Calendar.YEAR, (numYearsToShift * sign));
-    }
-    
-    // now set the month
-    _calendar.set(Calendar.MONTH, monthInt - 1);
+	markDateInvocation();
+
+	// set the day to the first of month. This step is necessary because if we seek to the
+	// current day of a month whose number of days is less than the current day, we will
+	// pushed into the next month.
+	_calendar.set(Calendar.DAY_OF_MONTH, 1);
+
+	// seek to the appropriate year
+	if(seekAmountInt > 0) {
+	  int currentMonth = _calendar.get(Calendar.MONTH) + 1;
+	  int sign = direction.equals(DIR_RIGHT) ? 1 : -1;
+	  int numYearsToShift = seekAmountInt +
+			  (currentMonth == monthInt ? 0 : (currentMonth < monthInt ? sign > 0 ? -1 : 0 : sign > 0 ? 0 : -1));
+
+	  _calendar.add(Calendar.YEAR, (numYearsToShift * sign));
+	}
+
+	// now set the month
+	_calendar.set(Calendar.MONTH, monthInt - 1);
   }
   
   /**
@@ -205,34 +212,34 @@ public class WalkerState {
    * @param span
    */
   public void seekBySpan(String direction, String seekAmount, String span) {
-    if(span.startsWith(SEEK_PREFIX)) span = span.substring(3);
-    int seekAmountInt = Integer.parseInt(seekAmount);
-    assert(direction.equals(DIR_LEFT) || direction.equals(DIR_RIGHT));
-    assert(span.equals(DAY) || span.equals(WEEK) || span.equals(MONTH) || 
-        span.equals(YEAR) || span.equals(HOUR) || span.equals(MINUTE) || 
-        span.equals(SECOND));
-    
-    boolean isDateSeek = span.equals(DAY) || span.equals(WEEK) || 
-      span.equals(MONTH) || span.equals(YEAR);
+	if(span.startsWith(SEEK_PREFIX)) span = span.substring(3);
+	int seekAmountInt = Integer.parseInt(seekAmount);
+	assert(direction.equals(DIR_LEFT) || direction.equals(DIR_RIGHT));
+	assert(span.equals(DAY) || span.equals(WEEK) || span.equals(MONTH) ||
+		span.equals(YEAR) || span.equals(HOUR) || span.equals(MINUTE) ||
+		span.equals(SECOND));
 
-    if(isDateSeek) {
-      markDateInvocation();
-    }
-    else {
-      markTimeInvocation(null);
-    }
-    
-    int sign = direction.equals(DIR_RIGHT) ? 1 : -1;
-    int field = 
-      span.equals(DAY) ? Calendar.DAY_OF_YEAR : 
-      span.equals(WEEK) ? Calendar.WEEK_OF_YEAR :
-      span.equals(MONTH) ? Calendar.MONTH :
-      span.equals(YEAR) ? Calendar.YEAR : 
-      span.equals(HOUR) ? Calendar.HOUR: 
-      span.equals(MINUTE) ? Calendar.MINUTE: 
-      span.equals(SECOND) ? Calendar.SECOND:
-      null;
-    if(field > 0) _calendar.add(field, seekAmountInt * sign);
+	boolean isDateSeek = span.equals(DAY) || span.equals(WEEK) ||
+	  span.equals(MONTH) || span.equals(YEAR);
+
+	if(isDateSeek) {
+	  markDateInvocation();
+	}
+	else {
+	  markTimeInvocation(null);
+	}
+
+	int sign = direction.equals(DIR_RIGHT) ? 1 : -1;
+	int field =
+	  span.equals(DAY) ? Calendar.DAY_OF_YEAR :
+	  span.equals(WEEK) ? Calendar.WEEK_OF_YEAR :
+	  span.equals(MONTH) ? Calendar.MONTH :
+	  span.equals(YEAR) ? Calendar.YEAR :
+	  span.equals(HOUR) ? Calendar.HOUR:
+	  span.equals(MINUTE) ? Calendar.MINUTE:
+	  span.equals(SECOND) ? Calendar.SECOND:
+	  null;
+	if(field > 0) _calendar.add(field, seekAmountInt * sign);
   }
   
   /**
@@ -241,33 +248,33 @@ public class WalkerState {
    * @param dayOfWeek
    */
   public void setDayOfWeekIndex(String index, String dayOfWeek) {
-    int indexInt = Integer.parseInt(index);
-    assert(indexInt > 0 && indexInt < 6);
-    
-    int dayOfWeekInt = Integer.parseInt(dayOfWeek);
-    assert(dayOfWeekInt >= 1 && dayOfWeekInt <= 7);
-    
-    markDateInvocation();
-    
-    // seek to the first day of the current month
-    _calendar.set(Calendar.DAY_OF_MONTH, 1);
-    
-    // if we already passed the day we're looking for, we add a week
-    if(_calendar.get(Calendar.DAY_OF_WEEK) > dayOfWeekInt) {
-      _calendar.add(Calendar.WEEK_OF_MONTH, 1);
-    }
-    
-    // now move to the requested day within the week
-    _calendar.set(Calendar.DAY_OF_WEEK, dayOfWeekInt);
-    int currentMonth = _calendar.get(Calendar.MONTH);
-    
-    // add weeks for our requested index
-    _calendar.add(Calendar.WEEK_OF_MONTH, indexInt - 1);
-    
-    // if we bled into the next month, push back a week
-    if(currentMonth != _calendar.get(Calendar.MONTH)) {
-      _calendar.add(Calendar.WEEK_OF_MONTH, -1);
-    }
+	int indexInt = Integer.parseInt(index);
+	assert(indexInt > 0 && indexInt < 6);
+
+	int dayOfWeekInt = Integer.parseInt(dayOfWeek);
+	assert(dayOfWeekInt >= 1 && dayOfWeekInt <= 7);
+
+	markDateInvocation();
+
+	// seek to the first day of the current month
+	_calendar.set(Calendar.DAY_OF_MONTH, 1);
+
+	// if we already passed the day we're looking for, we add a week
+	if(_calendar.get(Calendar.DAY_OF_WEEK) > dayOfWeekInt) {
+	  _calendar.add(Calendar.WEEK_OF_MONTH, 1);
+	}
+
+	// now move to the requested day within the week
+	_calendar.set(Calendar.DAY_OF_WEEK, dayOfWeekInt);
+	int currentMonth = _calendar.get(Calendar.MONTH);
+
+	// add weeks for our requested index
+	_calendar.add(Calendar.WEEK_OF_MONTH, indexInt - 1);
+
+	// if we bled into the next month, push back a week
+	if(currentMonth != _calendar.get(Calendar.MONTH)) {
+	  _calendar.add(Calendar.WEEK_OF_MONTH, -1);
+	}
   }
   
   /**
@@ -287,30 +294,35 @@ public class WalkerState {
    *     parse as an integer between 0 and 9999
    */
   public void setExplicitDate(String month, String dayOfMonth, String dayOfWeek, String year) {
-    int monthInt = Integer.parseInt(month);
-    assert(monthInt > 0 && monthInt <= 12);
-    
-    int dayOfMonthInt = Integer.parseInt(dayOfMonth);
-    assert(dayOfMonthInt > 0 && dayOfMonthInt <= 31);
-    
-    markDateInvocation();
-    
-    _calendar.set(Calendar.MONTH, monthInt - 1);
-    _calendar.set(Calendar.DAY_OF_MONTH, dayOfMonthInt);
-    
-    if(year != null) {
-      seekToYear(year);
-    }
-    
-    // if no year is given, but a day of week is, we ensure that the resulting
-    // date falls on the given day of week.
-    else if(dayOfWeek != null) {
-      int dayOfWeekInt = Integer.parseInt(dayOfWeek);
-      assert(dayOfWeekInt >= 1 && dayOfWeekInt <= 7);
-      while(_calendar.get(Calendar.DAY_OF_WEEK) != dayOfWeekInt) {
-        _calendar.roll(Calendar.YEAR, false);
-      }
-    }
+	log.debug("Inside explicit date, month={}, dayOfMonth={}, dayOfWeek={}, year={}", month, dayOfMonth, dayOfWeek, year);
+	log.debug("Inside explicit date, at start, calendar default year={}", _calendar.get(Calendar.YEAR));
+
+	int monthInt = Integer.parseInt(month);
+	assert(monthInt > 0 && monthInt <= 12);
+
+	int dayOfMonthInt = Integer.parseInt(dayOfMonth);
+	assert(dayOfMonthInt > 0 && dayOfMonthInt <= 31);
+
+	markDateInvocation();
+
+	_calendar.set(Calendar.MONTH, monthInt - 1);
+	_calendar.set(Calendar.DAY_OF_MONTH, dayOfMonthInt);
+
+	if(year != null) {
+	  seekToYear(year);
+	}
+
+	// if no year is given, but a day of week is, we ensure that the resulting
+	// date falls on the given day of week.
+	else if(dayOfWeek != null) {
+	  int dayOfWeekInt = Integer.parseInt(dayOfWeek);
+	  assert(dayOfWeekInt >= 1 && dayOfWeekInt <= 7);
+	  while(_calendar.get(Calendar.DAY_OF_WEEK) != dayOfWeekInt) {
+		_calendar.roll(Calendar.YEAR, false);
+	  }
+	}
+
+	  log.debug("Inside explicit date, at end, calendar default year={}", _calendar.get(Calendar.YEAR));
   }
   
   /**
@@ -332,51 +344,56 @@ public class WalkerState {
    *     - GMT offset (+05:00, -0500, +5, etc)
    */
   public void setExplicitTime(String hours, String minutes, String seconds, String amPm, String zoneString) {
-    int hoursInt = Integer.parseInt(hours);
-    int minutesInt = minutes != null ? Integer.parseInt(minutes) : 0;
-    assert(amPm == null || amPm.equals(AM) || amPm.equals(PM));
-    assert(hoursInt >= 0);
-    assert(minutesInt >= 0 && minutesInt < 60); 
-    
-    markTimeInvocation(amPm);
-    
-    // reset milliseconds to 0
-    _calendar.set(Calendar.MILLISECOND, 0);
-    
-    // if no explicit zone is given, we use our own
-    TimeZone zone = null;
-    if(zoneString != null) {
-      if(zoneString.startsWith(PLUS) || zoneString.startsWith(MINUS)) {
-        zoneString = GMT + zoneString;
-      }
-      zone = TimeZone.getTimeZone(zoneString);
-    }
-    
-    _calendar.setTimeZone(zone != null ? zone : _defaultTimeZone);
-    
-    _calendar.set(Calendar.HOUR_OF_DAY, hoursInt);
-    // hours greater than 12 are in 24-hour time
-    if(hoursInt <= 12) {
-      int amPmInt = amPm == null ? 
-        (hoursInt >= 12 ? Calendar.PM : Calendar.AM) :
-        amPm.equals(PM) ? Calendar.PM : Calendar.AM;
-      _calendar.set(Calendar.AM_PM, amPmInt);
-      
-      // calendar is whacky at 12 o'clock (must use 0)
-      if(hoursInt == 12) hoursInt = 0;
-      _calendar.set(Calendar.HOUR, hoursInt);
-    }
-    
-    if(seconds != null) {
-      int secondsInt = Integer.parseInt(seconds);
-      assert(secondsInt >= 0 && secondsInt < 60); 
-      _calendar.set(Calendar.SECOND, secondsInt);
-    }
-    else {
-      _calendar.set(Calendar.SECOND, 0);
-    }
-    
-    _calendar.set(Calendar.MINUTE, minutesInt);
+	log.debug("Inside set explicit time, hours={}, minutes={}, zoneString={}", hours, minutes, zoneString);
+	log.debug("At start of explicit time, stored calendar year={}", _calendar.get(Calendar.YEAR));
+
+	int hoursInt = Integer.parseInt(hours);
+	int minutesInt = minutes != null ? Integer.parseInt(minutes) : 0;
+	assert(amPm == null || amPm.equals(AM) || amPm.equals(PM));
+	assert(hoursInt >= 0);
+	assert(minutesInt >= 0 && minutesInt < 60);
+
+	markTimeInvocation(amPm);
+
+	// reset milliseconds to 0
+	_calendar.set(Calendar.MILLISECOND, 0);
+
+	// if no explicit zone is given, we use our own
+	TimeZone zone = null;
+	if(zoneString != null) {
+	  if(zoneString.startsWith(PLUS) || zoneString.startsWith(MINUS)) {
+		zoneString = GMT + zoneString;
+	  }
+	  zone = TimeZone.getTimeZone(zoneString);
+	}
+
+	_calendar.setTimeZone(zone != null ? zone : _defaultTimeZone);
+
+	_calendar.set(Calendar.HOUR_OF_DAY, hoursInt);
+	// hours greater than 12 are in 24-hour time
+	if(hoursInt <= 12) {
+	  int amPmInt = amPm == null ?
+		(hoursInt >= 12 ? Calendar.PM : Calendar.AM) :
+		amPm.equals(PM) ? Calendar.PM : Calendar.AM;
+	  _calendar.set(Calendar.AM_PM, amPmInt);
+
+	  // calendar is whacky at 12 o'clock (must use 0)
+	  if(hoursInt == 12) hoursInt = 0;
+	  _calendar.set(Calendar.HOUR, hoursInt);
+	}
+
+	if(seconds != null) {
+	  int secondsInt = Integer.parseInt(seconds);
+	  assert(secondsInt >= 0 && secondsInt < 60);
+	  _calendar.set(Calendar.SECOND, secondsInt);
+	}
+	else {
+	  _calendar.set(Calendar.SECOND, 0);
+	}
+
+	_calendar.set(Calendar.MINUTE, minutesInt);
+
+	log.debug("Exiting set explicit time, calendar year={}", _calendar.get(Calendar.YEAR));
   }
   
   /**
@@ -387,10 +404,10 @@ public class WalkerState {
    * @param seekAmount    The number of years to seek
    */
   public void seekToHoliday(String holidayString, String direction, String seekAmount) {
-    Holiday holiday = Holiday.valueOf(holidayString);
-    assert(holiday != null);
-    
-    seekToIcsEvent(HOLIDAY_ICS_FILE, holiday.getSummary(), direction, seekAmount);
+	Holiday holiday = Holiday.valueOf(holidayString);
+	assert(holiday != null);
+
+	seekToIcsEvent(HOLIDAY_ICS_FILE, holiday.getSummary(), direction, seekAmount);
   }
 
   /**
@@ -400,10 +417,10 @@ public class WalkerState {
    * @param yearString
    */
   public void seekToHolidayYear(String holidayString, String yearString) {
-    Holiday holiday = Holiday.valueOf(holidayString);
-    assert(holiday != null);
-    
-    seekToIcsEventYear(HOLIDAY_ICS_FILE, yearString, holiday.getSummary());
+	Holiday holiday = Holiday.valueOf(holidayString);
+	assert(holiday != null);
+
+	seekToIcsEventYear(HOLIDAY_ICS_FILE, yearString, holiday.getSummary());
   }
   
   /**
@@ -414,10 +431,10 @@ public class WalkerState {
    * @param seekAmount    The number of years to seek
    */
   public void seekToSeason(String seasonString, String direction, String seekAmount) {
-    Season season = Season.valueOf(seasonString);
-    assert(season!= null);
-    
-    seekToIcsEvent(SEASON_ICS_FILE, season.getSummary(), direction, seekAmount);
+	Season season = Season.valueOf(seasonString);
+	assert(season!= null);
+
+	seekToIcsEvent(SEASON_ICS_FILE, season.getSummary(), direction, seekAmount);
   }
 
   /**
@@ -427,17 +444,17 @@ public class WalkerState {
    * @param yearString
    */
   public void seekToSeasonYear(String seasonString, String yearString) {
-    Season season = Season.valueOf(seasonString);
-    assert(season != null);
-    
-    seekToIcsEventYear(SEASON_ICS_FILE, yearString, season.getSummary());
+	Season season = Season.valueOf(seasonString);
+	assert(season != null);
+
+	seekToIcsEventYear(SEASON_ICS_FILE, yearString, season.getSummary());
   }
 
   /**
    * 
    */
   public void setRecurring() {
-    _dateGroup.setRecurring(true);
+	_dateGroup.setRecurring(true);
   }
   
   /**
@@ -445,171 +462,171 @@ public class WalkerState {
    */
   public void captureDateTime() {
 
-    // The list of times found per capture should always be 1 larger than the number of captures.
-    // If not, that mean no time was given for this capture
-    if(_timeGivenPerCapture.size() < _dateGroup.getDates().size() + 1) {
-      _timeGivenPerCapture.add(false);
-    }
+	// The list of times found per capture should always be 1 larger than the number of captures.
+	// If not, that mean no time was given for this capture
+	if(_timeGivenPerCapture.size() < _dateGroup.getDates().size() + 1) {
+	  _timeGivenPerCapture.add(false);
+	}
 
-    // ditto for meridien indicators found per capture
-    if(_amPmGivenPerCapture.size() < _dateGroup.getDates().size() + 1) {
-      _amPmGivenPerCapture.add(null);
-    }
+	// ditto for meridien indicators found per capture
+	if(_amPmGivenPerCapture.size() < _dateGroup.getDates().size() + 1) {
+	  _amPmGivenPerCapture.add(null);
+	}
 
-    // if other dates have already been added to the date group, we'll
-    // update them to match this one
-    if(_updatePreviousDates) {
-      List<Date> dates = _dateGroup.getDates();
-      if (!dates.isEmpty()) {
-        for (Date date : dates) {
-          Calendar calendar = getCalendar();
-          calendar.setTime(date);
-          for (int field : new int[] { Calendar.DAY_OF_MONTH, Calendar.MONTH, Calendar.YEAR }) {
-            calendar.set(field, _calendar.get(field));
-          }
-          date.setTime(calendar.getTimeInMillis());
-        }
-      }
-      _updatePreviousDates = false;
-    }
+	// if other dates have already been added to the date group, we'll
+	// update them to match this one
+	if(_updatePreviousDates) {
+	  List<Date> dates = _dateGroup.getDates();
+	  if (!dates.isEmpty()) {
+		for (Date date : dates) {
+		  Calendar calendar = getCalendar();
+		  calendar.setTime(date);
+		  for (int field : new int[] { Calendar.DAY_OF_MONTH, Calendar.MONTH, Calendar.YEAR }) {
+			calendar.set(field, _calendar.get(field));
+		  }
+		  date.setTime(calendar.getTimeInMillis());
+		}
+	  }
+	  _updatePreviousDates = false;
+	}
 
-    // if a time was given in this capture, we'll want to use the same time for any previous
-    // captures that lacked time information
-    boolean thisTimeGiven = _timeGivenPerCapture.get(_timeGivenPerCapture.size() - 1);
-    if(thisTimeGiven) {
-      for (int i = 0; i < _timeGivenPerCapture.size() - 1; i++) {
-        boolean timeGiven = _timeGivenPerCapture.get(i);
-        if (!timeGiven) {
-          Date date = _dateGroup.getDates().get(i);
-          Calendar calendar = getCalendar();
-          calendar.setTime(date);
-          for (int field : new int[] { Calendar.HOUR_OF_DAY, Calendar.MINUTE, Calendar.SECOND, Calendar.MILLISECOND}) {
-            calendar.set(field, _calendar.get(field));
-          }
-          date.setTime(calendar.getTimeInMillis());
-        }
-      }
-    }
+	// if a time was given in this capture, we'll want to use the same time for any previous
+	// captures that lacked time information
+	boolean thisTimeGiven = _timeGivenPerCapture.get(_timeGivenPerCapture.size() - 1);
+	if(thisTimeGiven) {
+	  for (int i = 0; i < _timeGivenPerCapture.size() - 1; i++) {
+		boolean timeGiven = _timeGivenPerCapture.get(i);
+		if (!timeGiven) {
+		  Date date = _dateGroup.getDates().get(i);
+		  Calendar calendar = getCalendar();
+		  calendar.setTime(date);
+		  for (int field : new int[] { Calendar.HOUR_OF_DAY, Calendar.MINUTE, Calendar.SECOND, Calendar.MILLISECOND}) {
+			calendar.set(field, _calendar.get(field));
+		  }
+		  date.setTime(calendar.getTimeInMillis());
+		}
+	  }
+	}
 
-    // similarly, if a meridian indicator was given in this capture, we'll want to use the same
-    // indicator for any previous times found without an explicit indicator
-    String thisAmPm = _amPmGivenPerCapture.get(_amPmGivenPerCapture.size() - 1);
-    if (thisAmPm != null) {
-      for (int i = 0; i < _amPmGivenPerCapture.size() - 1; i++) {
-        String amPm = _amPmGivenPerCapture.get(i);
-        if (amPm == null && _timeGivenPerCapture.get(i)) {
-          Date date = _dateGroup.getDates().get(i);
-          Calendar calendar = getCalendar();
-          calendar.setTime(date);
-          int hour = calendar.get(Calendar.HOUR_OF_DAY);
-          if(thisAmPm.equals("am") && hour > 11) {
-            calendar.set(Calendar.HOUR_OF_DAY, hour - 12);
-          }
-          if(thisAmPm.equals("pm") && calendar.get(Calendar.HOUR_OF_DAY) < 12) {
-            calendar.set(Calendar.HOUR_OF_DAY, hour + 12);
-          }
-          date.setTime(calendar.getTimeInMillis());
-        }
-      }
-    }
+	// similarly, if a meridian indicator was given in this capture, we'll want to use the same
+	// indicator for any previous times found without an explicit indicator
+	String thisAmPm = _amPmGivenPerCapture.get(_amPmGivenPerCapture.size() - 1);
+	if (thisAmPm != null) {
+	  for (int i = 0; i < _amPmGivenPerCapture.size() - 1; i++) {
+		String amPm = _amPmGivenPerCapture.get(i);
+		if (amPm == null && _timeGivenPerCapture.get(i)) {
+		  Date date = _dateGroup.getDates().get(i);
+		  Calendar calendar = getCalendar();
+		  calendar.setTime(date);
+		  int hour = calendar.get(Calendar.HOUR_OF_DAY);
+		  if(thisAmPm.equals("am") && hour > 11) {
+			calendar.set(Calendar.HOUR_OF_DAY, hour - 12);
+		  }
+		  if(thisAmPm.equals("pm") && calendar.get(Calendar.HOUR_OF_DAY) < 12) {
+			calendar.set(Calendar.HOUR_OF_DAY, hour + 12);
+		  }
+		  date.setTime(calendar.getTimeInMillis());
+		}
+	  }
+	}
 
-    Date date = _calendar.getTime();
-    if(_dateGroup.isRecurring()) {
-      _dateGroup.setRecurringUntil(date);
-    }
-    else {
-      _dateGroup.addDate(date);
-    }
-    _firstDateInvocationInGroup = true;
+	Date date = _calendar.getTime();
+	if(_dateGroup.isRecurring()) {
+	  _dateGroup.setRecurringUntil(date);
+	}
+	else {
+	  _dateGroup.addDate(date);
+	}
+	_firstDateInvocationInGroup = true;
   }
   
   /**
    * @return the list of date times found 
    */
   public DateGroup getDateGroup() {
-    return _dateGroup;
+	return _dateGroup;
   }
   
   /**
    * Clears any date/times that have been captured
    */
   public void clearDateGroup() {
-    _dateGroup = new DateGroup();
+	_dateGroup = new DateGroup();
   }
   
   /**
    *  Resets the calendar
    */
   private void resetCalendar() {
-    _calendar = getCalendar();
-    if (_defaultTimeZone != null) {
-      _calendar.setTimeZone(_defaultTimeZone);
-    }
-    _currentYear = _calendar.get(Calendar.YEAR);
+	_calendar = getCalendar();
+	if (_defaultTimeZone != null) {
+	  _calendar.setTimeZone(_defaultTimeZone);
+	}
+	_currentYear = _calendar.get(Calendar.YEAR);
   }
   
   private void seekToIcsEvent(String icsFileName, String eventSummary, String direction, String seekAmount) {
-    int seekAmountInt = Integer.parseInt(seekAmount);
-    assert(direction.equals(DIR_LEFT) || direction.equals(DIR_RIGHT));
-    assert(seekAmountInt >= 0);
-    
-    markDateInvocation();
-    
-    // get the current year
-    Calendar cal = getCalendar();
-    cal.setTimeZone(_defaultTimeZone);
-    int currentYear = cal.get(Calendar.YEAR);
-    
-    // look up a suitable period of occurrences
-    boolean forwards = direction.equals(DIR_RIGHT);
-    int startYear = forwards ? currentYear : currentYear - seekAmountInt - 1; 
-    int endYear = forwards ? currentYear + seekAmountInt + 1 : currentYear;
-    Map<Integer, Date> dates = getDatesFromIcs(icsFileName, eventSummary,
-        startYear, endYear);
-    
-    // grab the right one
-    boolean hasPassed = cal.getTime().after(dates.get(currentYear));
-    int targetYear = currentYear + 
-        (forwards ? seekAmountInt + (hasPassed ? 0 : -1) : 
-          (seekAmountInt - (hasPassed ? 1 : 0)) * -1);
-    
-    cal.setTimeZone(_calendar.getTimeZone());
-    cal.setTime(dates.get(targetYear));
-    _calendar.set(Calendar.YEAR, cal.get(Calendar.YEAR));
-    _calendar.set(Calendar.MONTH, cal.get(Calendar.MONTH));
-    _calendar.set(Calendar.DAY_OF_MONTH, cal.get(Calendar.DAY_OF_MONTH));
+	int seekAmountInt = Integer.parseInt(seekAmount);
+	assert(direction.equals(DIR_LEFT) || direction.equals(DIR_RIGHT));
+	assert(seekAmountInt >= 0);
+
+	markDateInvocation();
+
+	// get the current year
+	Calendar cal = getCalendar();
+	cal.setTimeZone(_defaultTimeZone);
+	int currentYear = cal.get(Calendar.YEAR);
+
+	// look up a suitable period of occurrences
+	boolean forwards = direction.equals(DIR_RIGHT);
+	int startYear = forwards ? currentYear : currentYear - seekAmountInt - 1;
+	int endYear = forwards ? currentYear + seekAmountInt + 1 : currentYear;
+	Map<Integer, Date> dates = getDatesFromIcs(icsFileName, eventSummary,
+		startYear, endYear);
+
+	// grab the right one
+	boolean hasPassed = cal.getTime().after(dates.get(currentYear));
+	int targetYear = currentYear +
+		(forwards ? seekAmountInt + (hasPassed ? 0 : -1) :
+		  (seekAmountInt - (hasPassed ? 1 : 0)) * -1);
+
+	cal.setTimeZone(_calendar.getTimeZone());
+	cal.setTime(dates.get(targetYear));
+	_calendar.set(Calendar.YEAR, cal.get(Calendar.YEAR));
+	_calendar.set(Calendar.MONTH, cal.get(Calendar.MONTH));
+	_calendar.set(Calendar.DAY_OF_MONTH, cal.get(Calendar.DAY_OF_MONTH));
   }
   
   private void seekToIcsEventYear(String icsFileName, String yearString, String eventSummary) {
-    int yearInt = Integer.parseInt(yearString);
-    assert(yearInt >= 0);
-    
-    markDateInvocation();
+	int yearInt = Integer.parseInt(yearString);
+	assert(yearInt >= 0);
 
-    // if we couldn't find a date for the given year due to it falling outside of the range of
-    // years present in the ics file, we'll make an educated guess based on the current year.
-    // This is likely to represent the correct start date of the given season, but is not
-    // guaranteed as these dates do shift over time
-    int year = getFullYear(yearInt);
-    Date date = seasonalDateFromIcs(icsFileName, eventSummary, year);
-    if(date == null) {
-      date = seasonalDateFromIcs(icsFileName, eventSummary, getCalendar().get(Calendar.YEAR));
-      if(date != null) {
-        Calendar cal = getCalendar();
-        cal.setTime(date);
-        cal.set(Calendar.YEAR, year);
-        date = cal.getTime();
-      }
-    }
+	markDateInvocation();
 
-    if(date != null) {
-      Calendar cal = getCalendar();
-      cal.setTimeZone(_calendar.getTimeZone());
-      cal.setTime(date);
-      _calendar.set(Calendar.YEAR, cal.get(Calendar.YEAR));
-      _calendar.set(Calendar.MONTH, cal.get(Calendar.MONTH));
-      _calendar.set(Calendar.DAY_OF_MONTH, cal.get(Calendar.DAY_OF_MONTH));
-    }
+	// if we couldn't find a date for the given year due to it falling outside of the range of
+	// years present in the ics file, we'll make an educated guess based on the current year.
+	// This is likely to represent the correct start date of the given season, but is not
+	// guaranteed as these dates do shift over time
+	int year = getFullYear(yearInt);
+	Date date = seasonalDateFromIcs(icsFileName, eventSummary, year);
+	if(date == null) {
+	  date = seasonalDateFromIcs(icsFileName, eventSummary, getCalendar().get(Calendar.YEAR));
+	  if(date != null) {
+		Calendar cal = getCalendar();
+		cal.setTime(date);
+		cal.set(Calendar.YEAR, year);
+		date = cal.getTime();
+	  }
+	}
+
+	if(date != null) {
+	  Calendar cal = getCalendar();
+	  cal.setTimeZone(_calendar.getTimeZone());
+	  cal.setTime(date);
+	  _calendar.set(Calendar.YEAR, cal.get(Calendar.YEAR));
+	  _calendar.set(Calendar.MONTH, cal.get(Calendar.MONTH));
+	  _calendar.set(Calendar.DAY_OF_MONTH, cal.get(Calendar.DAY_OF_MONTH));
+	}
   }
 
   /**
@@ -617,8 +634,8 @@ public class WalkerState {
    * or null if not present.
    */
   private Date seasonalDateFromIcs(String icsFileName, String eventSummary, int year) {
-    Map<Integer, Date> dates = getDatesFromIcs(icsFileName, eventSummary, year, year);
-    return dates.get(year - (eventSummary.equals(Holiday.NEW_YEARS_EVE.getSummary()) ? 1 : 0));
+	Map<Integer, Date> dates = getDatesFromIcs(icsFileName, eventSummary, year, year);
+	return dates.get(year - (eventSummary.equals(Holiday.NEW_YEARS_EVE.getSummary()) ? 1 : 0));
   }
 
   /**
@@ -627,60 +644,60 @@ public class WalkerState {
    */
   private void markDateInvocation() {
 
-    _updatePreviousDates = !_dateGivenInGroup;
-    _dateGivenInGroup = true;
-    _dateGroup.setDateInferred(false);
+	_updatePreviousDates = !_dateGivenInGroup;
+	_dateGivenInGroup = true;
+	_dateGroup.setDateInferred(false);
 
-    if(_firstDateInvocationInGroup) {
-      // if a time has been given within the current date group, 
-      // we capture the current time before resetting the calendar
-      if(_timeGivenInGroup) {
-        int hours = _calendar.get(Calendar.HOUR_OF_DAY);
-        int minutes = _calendar.get(Calendar.MINUTE);
-        int seconds = _calendar.get(Calendar.SECOND);
-        resetCalendar();
-        _calendar.set(Calendar.HOUR_OF_DAY, hours);
-        _calendar.set(Calendar.MINUTE, minutes);
-        _calendar.set(Calendar.SECOND, seconds);
-      }
-      else {
-        resetCalendar();
-      }
-      _firstDateInvocationInGroup = false;
-    }
+	if(_firstDateInvocationInGroup) {
+	  // if a time has been given within the current date group,
+	  // we capture the current time before resetting the calendar
+	  if(_timeGivenInGroup) {
+		int hours = _calendar.get(Calendar.HOUR_OF_DAY);
+		int minutes = _calendar.get(Calendar.MINUTE);
+		int seconds = _calendar.get(Calendar.SECOND);
+		resetCalendar();
+		_calendar.set(Calendar.HOUR_OF_DAY, hours);
+		_calendar.set(Calendar.MINUTE, minutes);
+		_calendar.set(Calendar.SECOND, seconds);
+	  }
+	  else {
+		resetCalendar();
+	  }
+	  _firstDateInvocationInGroup = false;
+	}
   }
   
   /**
    * 
    */
   private void markTimeInvocation(String amPm) {
-    _timeGivenInGroup = true;
-    _dateGroup.setIsTimeInferred(false);
-    _amPmGivenPerCapture.add(amPm);
-    _timeGivenPerCapture.add(true);
+	_timeGivenInGroup = true;
+	_dateGroup.setIsTimeInferred(false);
+	_amPmGivenPerCapture.add(amPm);
+	_timeGivenPerCapture.add(true);
   }
   
   private Map<Integer, Date> getDatesFromIcs(String icsFileName, 
-      String eventSummary, int startYear, int endYear) {
-    IcsSearcher searcher = new IcsSearcher(icsFileName, _defaultTimeZone);
-    return searcher.findDates(startYear, endYear, eventSummary);
+	  String eventSummary, int startYear, int endYear) {
+	IcsSearcher searcher = new IcsSearcher(icsFileName, _defaultTimeZone);
+	return searcher.findDates(startYear, endYear, eventSummary);
   }
   
   private int getFullYear(Integer year) {
-    int result = year;
-    
-    if(year.toString().length() <= 2) {
-      int century = (year > ((_currentYear - 2000) + TWO_DIGIT_YEAR_CENTURY_THRESHOLD)) ? 1900 : 2000;
-      result = year + century;
-    }
-    
-    return result;
+	int result = year;
+
+	if(year.toString().length() <= 2) {
+	  int century = (year > ((_currentYear - 2000) + TWO_DIGIT_YEAR_CENTURY_THRESHOLD)) ? 1900 : 2000;
+	  result = year + century;
+	}
+
+	return result;
   }
   
   /**
    * @return the current calendar
    */
   protected GregorianCalendar getCalendar() {
-    return calendarSource.getCurrentCalendar();
+	return calendarSource.getCurrentCalendar();
   }
 }
