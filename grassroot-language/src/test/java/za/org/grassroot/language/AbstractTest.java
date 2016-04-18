@@ -4,7 +4,6 @@ import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -19,7 +18,6 @@ public abstract class AbstractTest {
 
     private static final Logger log = LoggerFactory.getLogger(AbstractTest.class);
 
-    private static final DateTimeFormatter format = DateTimeFormatter.ISO_DATE_TIME;
     private static Calendar _calendar;
     protected static CalendarSource calendarSource;
     protected static Parser _parser;
@@ -45,7 +43,7 @@ public abstract class AbstractTest {
      * @return
      */
     protected List<Date> parseCollection(Date referenceDate, String value) {
-        log.debug("Inside the AbstractTest Class...about to parse this -> " + value);
+        log.debug("Inside the AbstractTest Class...about to parse this={}, with this ref date={}", value, referenceDate);
         List<DateGroup> dateGroup = _parser.parse(value, referenceDate);
         log.debug("Just parsed it... Got a list of date groups with size " + dateGroup.size());
         return dateGroup.isEmpty() ? new ArrayList<Date>() : dateGroup.get(0).getDates();
@@ -58,7 +56,7 @@ public abstract class AbstractTest {
      * @return
      */
     protected Date parseSingleDate(String value, Date referenceDate) {
-        log.debug("Inside parsingSingleDate...about to thoroughly examine {} for \"dates\"...", value);
+        log.debug("Inside parsingSingleDate..., about to thoroughly examine {} for \"dates\"... with refDate", value, referenceDate);
         List<Date> dates =  parseCollection(referenceDate, value);
         log.debug("Done!!! Works of a beautiful parser look like this -> " + dates);
         assertEquals(1, dates.size());
@@ -142,11 +140,16 @@ public abstract class AbstractTest {
     protected void validateDateTime(Date referenceDate, String value, int day, int month, int year,
                                     int hours, int minutes, int seconds) {
 
-        log.debug("Trying to parse string: " + value);
+        log.debug("Trying to parse string={}, with refDate={}", value, referenceDate);
 
         Date date = parseSingleDate(value, referenceDate);
         log.debug("Tried to parse and now I got back this: " + date.toString());
         validateDateTime(date, day, month, year, hours, minutes, seconds);
+    }
+
+    protected void validateDateTimeUS(Date referenceDate, String value, int month, int day, int year,
+                                      int hours, int minutes, int seconds) {
+        validateDateTime(referenceDate, value, day, month, year, hours, minutes, seconds);
     }
 
     /**
@@ -173,5 +176,10 @@ public abstract class AbstractTest {
         assertEquals(hours, _calendar.get(Calendar.HOUR_OF_DAY));
         assertEquals(minutes, _calendar.get(Calendar.MINUTE));
         assertEquals(seconds, _calendar.get(Calendar.SECOND));
+    }
+
+    protected void validateDateTimeUS(Date date, int month, int day, int year,
+                                      int hours, int minutes, int seconds) {
+        validateDateTime(date, day, month, year, hours, minutes, seconds);
     }
 }

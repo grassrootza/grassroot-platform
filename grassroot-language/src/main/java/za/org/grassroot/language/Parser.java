@@ -78,7 +78,7 @@ public class Parser {
      * @return
      */
     public List<DateGroup> parse(String value, Date referenceDate) {
-        _logger.debug("Inside the Big Boy, The Parser, in the parse method");
+        _logger.debug("Inside the Big Boy, The Parser, in the parse method, with referenceDate={}", referenceDate);
         // lex the input value to obtain our global token stream
         ANTLRInputStream input = null;
         try {
@@ -98,8 +98,13 @@ public class Parser {
             lastStream = stream;
             List<Token> tokens = ((NattyTokenSource) stream.getTokenSource()).getTokens();
             _logger.debug("And then hell broke loose with " + tokens.size() + " tokens found in this stream.");
+            _logger.debug("About to call singleParse, referenceDate={}", referenceDate);
             DateGroup group = singleParse(stream, value, referenceDate);
             _logger.debug("There is your golden group's date token part: " + group.getDates());
+            // temp debugging stuff:
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(group.getDates().get(0));
+            _logger.debug("And the year component of the date={}, zone={}", cal.get(Calendar.YEAR), cal.getTimeZone());
             while ((group == null || group.getDates().size() == 0) && tokens.size() > 0) {
                 if (group == null || group.getDates().size() == 0) {
 
