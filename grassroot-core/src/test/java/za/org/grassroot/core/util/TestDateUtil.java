@@ -123,8 +123,10 @@ public class TestDateUtil {
         assertEquals(referenceDateTime.minusDays(2).plusHours(18), DateTimeUtil.parseDateTime("the day before yesterday at 6 in the evening ").truncatedTo(ChronoUnit.SECONDS));
         assertEquals(referenceDateTime.plusDays(2).plusHours(16).plusMinutes(30), DateTimeUtil.parseDateTime("at 4h30pm the day after tomorrow ").truncatedTo(ChronoUnit.SECONDS));
         assertEquals(todaysReferencedValue > referencedDayValue ?
-                referenceDateTime.minusDays(todaysReferencedValue - referencedDayValue).plusWeeks(3).plusHours(17) :
-                referenceDateTime.plusDays((referencedDayValue - todaysReferencedValue) ).plusWeeks(2).plusHours(17),
+                        referenceDateTime.minusDays(todaysReferencedValue - referencedDayValue).plusWeeks(3).plusHours(17) :
+                        todaysReferencedValue == referencedDayValue ?
+                                referenceDateTime.plusWeeks(3).plusHours(17) :
+                                referenceDateTime.plusDays((referencedDayValue - todaysReferencedValue)).plusWeeks(2).plusHours(17),
                 DateTimeUtil.parseDateTime("mon after two weeks at 1700").truncatedTo(ChronoUnit.SECONDS));
         assertEquals(referenceDateTime.plusDays(4).plusHours(10), DateTimeUtil.parseDateTime("four days from now @ 10 am").truncatedTo(ChronoUnit.SECONDS));
         assertEquals(referenceDateTime.with(Month.SEPTEMBER).with(TemporalAdjusters.dayOfWeekInMonth(2, DayOfWeek.WEDNESDAY)).plusHours(15).plusMinutes(35), DateTimeUtil.parseDateTime("2nd wednesday of sept at 1535").truncatedTo(ChronoUnit.SECONDS));
