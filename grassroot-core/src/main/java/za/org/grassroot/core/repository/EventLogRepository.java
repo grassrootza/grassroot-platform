@@ -17,6 +17,8 @@ public interface EventLogRepository extends JpaRepository<EventLog, Long> {
 
     EventLog findByEventAndUserAndEventLogType(Event event, User user, EventLogType eventLogType);
 
+    EventLog findOneByUid(String uid);
+
     /*
     See if the notification was already sent before sending it
     */

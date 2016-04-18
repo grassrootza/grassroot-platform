@@ -23,7 +23,7 @@ public class USSDUrlUtil {
             phoneNumber = "msisdn",
             userInputParam = "request",
             groupUidParam = "groupUid",
-            logbookIDParam = "logbookid",
+            logbookIDParam = "logbookUid",
             entityUidParam = "entityUid",
             previousMenu = "prior_menu",
             yesOrNoParam = "confirmed",

@@ -88,7 +88,7 @@ date
   | relaxed_date
   | relative_date
   | explicit_relative_date
-  | global_date_prefix WHITE_SPACE date 
+  | global_date_prefix WHITE_SPACE date
       -> ^(RELATIVE_DATE ^(SEEK global_date_prefix date))
   ;
   
@@ -178,7 +178,7 @@ alternative_day_of_year_list
 alternative_day_of_month_list
   // mon may 15 or tues may 16
   : ((relaxed_day_of_week? relaxed_month WHITE_SPACE relaxed_day_of_month (conjunction relaxed_day_of_month)+) (date_time_separator explicit_time)?)
-      -> ^(DATE_TIME ^(EXPLICIT_DATE relaxed_month relaxed_day_of_month) explicit_time?)+
+      -> ^(DATE_TIME ^(EXPLICIT_DATE relaxed_day_of_month relaxed_month ) explicit_time?)+
 
   | first=explicit_day_of_month_part conjunction second=explicit_day_of_month_part WHITE_SPACE alternative_day_seek (date_time_separator explicit_time)?
     -> ^(DATE_TIME ^(RELATIVE_DATE alternative_day_seek $first) explicit_time?)
@@ -271,13 +271,13 @@ relaxed_date
 
 relaxed_date_month_first
   : relaxed_day_of_week? relaxed_month COMMA? WHITE_SPACE relaxed_day_of_month (relaxed_year_prefix relaxed_year)?
-      -> ^(EXPLICIT_DATE relaxed_month relaxed_day_of_month relaxed_day_of_week? relaxed_year?)
+      -> ^(EXPLICIT_DATE relaxed_day_of_month relaxed_month relaxed_day_of_week? relaxed_year?)
   ;
 
 relaxed_date_month_last
   : relaxed_day_of_week? relaxed_day_of_month_prefix? relaxed_day_of_month
       WHITE_SPACE (OF WHITE_SPACE)? relaxed_month (relaxed_year_prefix relaxed_year)?
-        -> ^(EXPLICIT_DATE relaxed_month relaxed_day_of_month relaxed_day_of_week? relaxed_year?)
+        -> ^(EXPLICIT_DATE relaxed_day_of_month relaxed_month relaxed_day_of_week? relaxed_year?)
   ;
 
 relaxed_day_of_week
@@ -323,11 +323,10 @@ relaxed_day_of_year
 relaxed_year
   : SINGLE_QUOTE int_00_to_99_mandatory_prefix
       -> ^(YEAR_OF int_00_to_99_mandatory_prefix)
-      
   | int_four_digits
       -> ^(YEAR_OF int_four_digits)
   ;
-  
+
 relaxed_year_prefix
   : (COMMA WHITE_SPACE? | WHITE_SPACE) (IN WHITE_SPACE THE WHITE_SPACE YEAR WHITE_SPACE)?
   ; 
@@ -341,20 +340,16 @@ formal_date
       -> ^(EXPLICIT_DATE relaxed_month ^(DAY_OF_MONTH INT["1"]) relaxed_year?)
 
   // year first: 1979-02-28, 1980/01/02, etc.  full 4 digit year required to match
-  | relaxed_day_of_week? formal_year_four_digits formal_date_separator (formal_month_of_year | relaxed_month) formal_date_separator formal_day_of_month
-      -> ^(EXPLICIT_DATE formal_month_of_year? relaxed_month? formal_day_of_month relaxed_day_of_week? formal_year_four_digits)
-      
+  | relaxed_day_of_week? formal_year_four_digits formal_date_separator formal_month_of_year formal_date_separator formal_day_of_month
+      -> ^(EXPLICIT_DATE formal_month_of_year? formal_day_of_month relaxed_day_of_week? formal_year_four_digits)
+
   // year last: 1/02/1980, 2/28/79.  2 or 4 digit year is acceptable 
-  | relaxed_day_of_week? formal_day_of_month formal_date_separator formal_month_of_year (formal_date_separator formal_year)?
+  | relaxed_day_of_week? formal_day_of_month formal_date_separator formal_month_of_year  (formal_date_separator formal_year)?
       -> ^(EXPLICIT_DATE formal_day_of_month formal_month_of_year relaxed_day_of_week? formal_year?)
 
   // 15-Apr-2014
   | formal_day_of_month formal_date_separator relaxed_month (formal_date_separator formal_year_four_digits)?
       -> ^(EXPLICIT_DATE formal_day_of_month relaxed_month formal_year_four_digits?)
-
-  // 24 @ 5
-  | formal_day_of_month WHITE_SPACE? formal_month_of_year? AT WHITE_SPACE? explicit_time
-  ->  ^(EXPLICIT_DATE formal_day_of_month formal_month_of_year?)
   ;
   
 formal_month_of_year
@@ -436,9 +431,9 @@ explicit_relative_date
 
   | explicit_day_of_month_part WHITE_SPACE explicit_relative_month_seek (relaxed_year_prefix relaxed_year)?
       -> {$relaxed_year.text != null}?
-           ^(RELATIVE_DATE explicit_relative_month_seek explicit_day_of_month_part ^(EXPLICIT_SEEK relaxed_year))
+           ^(RELATIVE_DATE explicit_day_of_month_part explicit_relative_month_seek ^(EXPLICIT_SEEK relaxed_year))
 
-      ->   ^(RELATIVE_DATE explicit_relative_month_seek explicit_day_of_month_part)
+      ->   ^(RELATIVE_DATE explicit_day_of_month_part explicit_relative_month_seek)
 
   | explicit_day_of_week_part WHITE_SPACE explicit_relative_week_seek
       -> ^(RELATIVE_DATE explicit_relative_week_seek explicit_day_of_week_part)
@@ -833,10 +828,6 @@ explicit_time_hours_minutes returns [String hours, String minutes, String ampm]
 // hour of the day
 hours
   : int_00_to_23_optional_prefix -> ^(HOURS_OF_DAY int_00_to_23_optional_prefix)
-  | word_hour -> ^(HOURS_OF_DAY word_hour)
-  ;
-word_hour
-  : ONE | TWO | THREE | FOUR | FIVE | SIX | SEVEN | EIGHT | NINE | TEN | ELEVEN | TWELVE
   ;
 // minutes of the hour
 minutes
@@ -919,4 +910,5 @@ time_zone_abbreviation
   | MST  -> ZONE["America/Denver"]
   | AKST -> ZONE["America/Anchorage"]
   | HAST -> ZONE["Pacific/Honolulu"]
+  | SAST -> ZONE["Africa/Johannesburg"]
   ;

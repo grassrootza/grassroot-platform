@@ -5,6 +5,7 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.annotation.Repeat;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
@@ -25,8 +26,9 @@ import static org.hamcrest.Matchers.is;
  * @author Lesetse Kimwaga
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {GrassRootServicesConfig.class, GrassRootCoreConfig.class})
+@ContextConfiguration(classes = {GrassRootServicesConfig.class, TestContextConfig.class})
 @Transactional
+@DirtiesContext
 @ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
 public class PasswordTokenManagerTest {
 

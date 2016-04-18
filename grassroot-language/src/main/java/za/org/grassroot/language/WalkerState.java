@@ -441,7 +441,7 @@ public class WalkerState {
   }
   
   /**
-   * 
+   *
    */
   public void captureDateTime() {
 

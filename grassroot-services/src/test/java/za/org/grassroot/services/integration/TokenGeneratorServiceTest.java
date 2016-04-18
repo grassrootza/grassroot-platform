@@ -23,7 +23,7 @@ import za.org.grassroot.services.util.TokenGeneratorService;
  * @author Lesetse Kimwaga
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {GrassRootServicesConfig.class, GrassRootCoreConfig.class})
+@SpringApplicationConfiguration(classes = {GrassRootServicesConfig.class, TestContextConfig.class})
 @Transactional
 @ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
 public class TokenGeneratorServiceTest {
