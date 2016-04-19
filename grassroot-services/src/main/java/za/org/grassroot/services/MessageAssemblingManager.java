@@ -19,9 +19,11 @@ import za.org.grassroot.core.util.FormatUtil;
 
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 
-import static za.org.grassroot.core.util.DateTimeUtil.*;
+import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
 /**
  * Created by aakilomar on 8/24/15.
@@ -158,6 +160,21 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     public String createReplyFailureMessage(User user) {
         return messageSourceAccessor.getMessage("sms.reply.failure", "",getUserLocale(user));
 
+    }
+
+    @Override
+    public String createGroupJoinCodeUseMessage(User user, String groupName, int numberJoined, List<String> namesJoined) {
+        String message;
+        String[] fields;
+        if (namesJoined == null) {
+            fields = new String[] { groupName, String.valueOf(numberJoined) };
+            message = messageSourceAccessor.getMessage("sms.group.join.number", fields, getUserLocale(user));
+        } else {
+            String numbers = String.join(", ", namesJoined);
+            fields = new String[] { groupName, numbers };
+            message = messageSourceAccessor.getMessage("sms.group.join.named", fields, getUserLocale(user));
+        }
+        return message;
     }
 
 

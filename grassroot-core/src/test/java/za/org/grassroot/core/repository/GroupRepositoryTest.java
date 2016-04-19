@@ -13,11 +13,15 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.GroupLogType;
 
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
@@ -42,6 +46,8 @@ public class GroupRepositoryTest {
     @Autowired
     UserRepository userRepository;
 
+    @Autowired
+    GroupLogRepository groupLogRepository;
 
     @Test
     public void shouldSaveAndRetrieveGroupData() throws Exception {
@@ -309,6 +315,22 @@ public class GroupRepositoryTest {
         assertThat(secondList.size(), is(1));
         assertTrue(secondList.contains(testGroup1));
         assertFalse(secondList.contains(testGroup2));
+    }
+
+    @Test
+    public void shouldFindWhereGroupJoinUsed() {
+        assertThat(groupRepository.count(), is(0L));
+        User user = userRepository.save(new User("0801110000"));
+        User user2 = userRepository.save(new User("0801110001"));
+        Group tg1 = groupRepository.save(new Group("tg1", user));
+        Group tg2 = groupRepository.save(new Group("tg2", user));
+        groupLogRepository.save(new GroupLog(tg1.getId(), user2.getId(), GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE,
+                                             0L, "test"));
+        List<Group> groups = groupRepository.findGroupsWhereJoinCodeUsedBetween(Instant.now().minus(1, ChronoUnit.MINUTES),
+                                                                                Instant.now());
+        assertNotNull(groups);
+        assertTrue(groups.contains(tg1));
+        assertFalse(groups.contains(tg2));
     }
 
 }

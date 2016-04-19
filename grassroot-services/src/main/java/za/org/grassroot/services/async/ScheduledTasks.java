@@ -11,9 +11,12 @@ import za.org.grassroot.core.dto.LogBookDTO;
 import za.org.grassroot.core.repository.LogBookRepository;
 import za.org.grassroot.integration.services.NotificationService;
 import za.org.grassroot.services.EventBroker;
+import za.org.grassroot.services.GroupBroker;
 
 import javax.jms.Message;
 import javax.jms.ObjectMessage;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /**
@@ -23,10 +26,13 @@ import java.util.List;
 @Component
 public class ScheduledTasks {
 
-    private Logger log = LoggerFactory.getLogger(getClass().getCanonicalName());
+    private Logger log = LoggerFactory.getLogger(ScheduledTasks.class);
 
     @Autowired
     private EventBroker eventBroker;
+
+    @Autowired
+    private GroupBroker groupBroker;
 
     @Autowired
     private GenericJmsTemplateProducerService jmsTemplateProducerService;
@@ -101,6 +107,9 @@ public class ScheduledTasks {
             e.printStackTrace();
         }
         log.info("queueWelcomeMessages..." + count + "...queued to generic-async");
-
     }
+
+    @Scheduled(cron = "0 0 15 * * *") // runs at 3pm (= 5pm SAST) every day
+    public void sendGroupJoinNotifications() { groupBroker.notifyOrganizersOfJoinCodeUse(Instant.now(),
+                                                                                         Instant.now().minus(1, ChronoUnit.DAYS));}
 }
