@@ -3,6 +3,8 @@ package za.org.grassroot.language;
 import org.antlr.runtime.RecognitionException;
 import org.antlr.runtime.Token;
 import org.antlr.runtime.debug.BlankDebugEventListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -13,6 +15,8 @@ import java.util.*;
  */
 public class ParseListener extends BlankDebugEventListener {
   
+  private static Logger logger = LoggerFactory.getLogger(ParseListener.class);
+
   private int backtracking = 0;
   private Map<String, Stack<List<Token>>> _ruleMap;
   private Map<String, List<ParseLocation>> _locations;
@@ -50,6 +54,7 @@ public class ParseListener extends BlankDebugEventListener {
     }
     
     tokenListStack.push(new ArrayList<Token>());
+    logger.debug("entering ruleName={}", ruleName);
   }
 
   public void exitRule(String filename, String ruleName) {
@@ -87,6 +92,8 @@ public class ParseListener extends BlankDebugEventListener {
       
       list.add(location);
     }
+
+    logger.debug("exiting rule {}, parseLocations={}", ruleName, tokenList.toString());
   }
 
   public void consumeToken(Token token) {

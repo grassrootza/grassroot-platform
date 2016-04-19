@@ -105,13 +105,12 @@ public class DateTimeTest extends AbstractTest {
         logger.debug("Reference date={}", reference);
         calendarSource = new CalendarSource(reference);
 
-        // List<Date> dates = parseCollection(reference, "2009-03-10 9:00 to 11:00");
-        List<Date> dates = parseCollection(reference, "2009-03-10 9:00");
+        List<Date> dates = parseCollection(reference, "10-03-2009 9:00 to 11:00");
         Assert.assertEquals(2, dates.size());
         validateDateTimeUS(dates.get(0), 3, 10, 2009, 9, 0, 0);
         validateDateTimeUS(dates.get(1), 3, 10, 2009, 11, 0, 0);
 
-/*        dates = parseCollection(reference, "26 oct 10:00 am to 11:00 am");
+        dates = parseCollection(reference, "26 oct 10:00 am to 11:00 am");
         Assert.assertEquals(2, dates.size());
         validateDateTimeUS(dates.get(0), 10, 26, 2010, 10, 0, 0);
         validateDateTimeUS(dates.get(1), 10, 26, 2010, 11, 0, 0);
@@ -139,12 +138,13 @@ public class DateTimeTest extends AbstractTest {
         dates = parseCollection(reference, "November 20 2 p.m. - 3 p.m.");
         Assert.assertEquals(2, dates.size());
         validateDateTimeUS(dates.get(0), 11, 20, 2010, 14, 0, 0);
-        validateDateTimeUS(dates.get(1), 11, 20, 2010, 15, 0, 0);*/
+        validateDateTimeUS(dates.get(1), 11, 20, 2010, 15, 0, 0);
     }
 
     @Test
     public void testList() throws Exception {
-        Date reference = DateFormat.getDateInstance(DateFormat.SHORT).parse("05/19/2012");
+        Date reference = (new SimpleDateFormat("dd/MM/yyyy")).parse("19/05/2012");
+        // Date reference = DateFormat.getDateInstance(DateFormat.SHORT).parse("05/19/2012");
         calendarSource = new CalendarSource(reference);
 
         List<Date> dates =
