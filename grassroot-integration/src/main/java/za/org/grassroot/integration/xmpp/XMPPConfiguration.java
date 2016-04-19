@@ -5,6 +5,7 @@ import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.XMPPConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -21,6 +22,7 @@ import javax.net.ssl.SSLSocketFactory;
  */
 @Configuration
 @Import(InfrastructureConfiguration.class)
+@ConditionalOnProperty(name = "gcm.connection.enabled", havingValue = "true",  matchIfMissing = true)
 public class XMPPConfiguration {
 
     private String host = "gcm-xmpp.googleapis.com";
@@ -67,9 +69,4 @@ public class XMPPConfiguration {
         return adapter;
 
     }
-
-
-
-
-
 }
