@@ -15,6 +15,7 @@ public class NotificationDTO {
     private String message;
     private String createdDatetime;
     private String notificationType;
+    private String entityType;
     private boolean delivered;
     private boolean read;
 
@@ -27,6 +28,7 @@ public class NotificationDTO {
         this.read = notification.isRead();
         this.notificationType = notification.getNotificationType().toString();
         this.createdDatetime= notification.getCreatedDateTime().toString();
+        this.entityType = event.getEventType().toString();
     }
 
     public NotificationDTO(Notification notification, LogBook logBook){
@@ -37,9 +39,13 @@ public class NotificationDTO {
         this.delivered=notification.isDelivered();
         this.read =notification.isRead();
         this.notificationType = notification.getNotificationType().toString();
-
         this.createdDatetime=notification.getCreatedDateTime().toString();
+        this.entityType = LogBook.class.toString();
 
+    }
+
+    public String getEntityType() {
+        return entityType;
     }
 
     public String getUid() {
@@ -65,6 +71,8 @@ public class NotificationDTO {
     public String getNotificationType() {
         return notificationType;
     }
+
+
 
 
     public boolean isDelivered() {
