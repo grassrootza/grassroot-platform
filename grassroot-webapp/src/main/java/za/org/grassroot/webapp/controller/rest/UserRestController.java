@@ -1,26 +1,23 @@
 package za.org.grassroot.webapp.controller.rest;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.core.dto.TokenDTO;
 import za.org.grassroot.core.dto.UserDTO;
+import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.PasswordTokenService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.AuthenticationResponseWrapper;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrapper;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
+import za.org.grassroot.webapp.model.rest.ResponseWrappers.*;
 
 /**
  * Created by paballo.
@@ -31,13 +28,14 @@ public class UserRestController {
 
 
     @Autowired
-    UserManagementService userManagementService;
+    private UserManagementService userManagementService;
 
     @Autowired
-    PasswordTokenService passwordTokenService;
+    private PasswordTokenService passwordTokenService;
 
-    @Autowired
-    PermissionBroker permissionBroker;
+    private Logger log = LoggerFactory.getLogger(UserRestController.class);
+
+
 
 
 
@@ -46,10 +44,12 @@ public class UserRestController {
 
         ResponseWrapper responseWrapper;
         if (!ifExists(phoneNumber)) {
+            log.info("Creating a verifier for a new user with phoneNumber ={}", phoneNumber);
             String tokenCode = userManagementService.generateAndroidUserVerifier(phoneNumber, displayName);
             responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.VERIFICATION_TOKEN_SENT, RestStatus.SUCCESS, tokenCode);
             return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
         }
+        log.info("Creating a verifier for user with phoneNumber ={}, user already exists.", phoneNumber);
         responseWrapper = new ResponseWrapperImpl(HttpStatus.CONFLICT, RestMessage.USER_ALREADY_EXISTS, RestStatus.FAILURE);
         return new ResponseEntity<>(responseWrapper,
                 HttpStatus.valueOf(responseWrapper.getCode()));
@@ -62,6 +62,7 @@ public class UserRestController {
 
         UserDTO userDTO = new UserDTO(phoneNumber, null);
         if (passwordTokenService.isVerificationCodeValid(userDTO, code)) {
+            log.info("userdto and code verified, now creating user with phoneNumber ={}", phoneNumber);
             userDTO = userManagementService.loadUserCreateRequest(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
             User user = userManagementService.createAndroidUserProfile(userDTO);
             VerificationTokenCode token = passwordTokenService.generateLongLivedCode(user);
@@ -70,6 +71,7 @@ public class UserRestController {
             return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
 
         }
+        log.info("Token verification for new user failed");
         ResponseWrapper responseWrapper = new ResponseWrapperImpl(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_TOKEN, RestStatus.FAILURE);
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
 
@@ -81,6 +83,7 @@ public class UserRestController {
 
         ResponseWrapper responseWrapper;
         if (ifExists(phoneNumber)) {
+            log.info("Logging in user with phoneNumber={}", phoneNumber);
             String token = userManagementService.generateAndroidUserVerifier(phoneNumber, null);
             responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.VERIFICATION_TOKEN_SENT, RestStatus.SUCCESS,token);
             return new ResponseEntity<>(responseWrapper, HttpStatus.OK);
@@ -99,7 +102,7 @@ public class UserRestController {
             VerificationTokenCode longLivedToken = passwordTokenService.generateLongLivedCode(user);
             boolean hasGroups = userManagementService.isPartOfActiveGroups(user);
             return new ResponseEntity<>(new AuthenticationResponseWrapper(HttpStatus.OK, RestMessage.LOGIN_SUCCESS,
-                    RestStatus.SUCCESS, new TokenDTO(longLivedToken),user.getDisplayName(), hasGroups), HttpStatus.OK);
+                    RestStatus.SUCCESS, new TokenDTO(longLivedToken),user.getDisplayName(),user.getLanguageCode(), hasGroups), HttpStatus.OK);
         }
         return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_TOKEN,
                 RestStatus.FAILURE), HttpStatus.UNAUTHORIZED);
@@ -122,6 +125,35 @@ public class UserRestController {
 
         }
     }
+
+    @RequestMapping(value="/profile/settings/update/{phoneNumber}/{code}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> updateProfileSettings(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
+                                                                @RequestParam("displayName") String displayName, @RequestParam("language") String language, @RequestParam("alertPreference") String preference){
+          User user = userManagementService.loadOrSaveUser(phoneNumber);
+           log.info("Updating profile settings of user={}",phoneNumber);
+           ResponseWrapper responseWrapper;
+          try{
+              userManagementService.updateUserAndroidProfileSettings(user,displayName,language, AlertPreference.valueOf(preference));
+              responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.PROFILE_SETTINGS_UPDATED,RestStatus.SUCCESS);
+          }
+          catch (IllegalArgumentException e){
+              log.info("Invalid arguments supplied " + displayName + " "+ code + " " + preference);
+              responseWrapper = new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.INVALID_INPUT,RestStatus.FAILURE);
+          }
+
+        return new ResponseEntity<>(responseWrapper,HttpStatus.valueOf(responseWrapper.getCode()));
+
+    }
+    @RequestMapping(value="/profile/settings/{phoneNumber}/{code}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> getProfileSettings(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code){
+        User user = userManagementService.loadOrSaveUser(phoneNumber);
+        ProfileSettingsDTO profileSettingsDTO = new ProfileSettingsDTO(user.getDisplayName(),user.getLanguageCode(),user.getAlertPreference().toString());
+        ResponseWrapper responseWrapper = new GenericResponseWrapper(HttpStatus.OK,RestMessage.PROFILE_SETTINGS, RestStatus.SUCCESS, profileSettingsDTO);
+
+        return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
+
+    }
+
 
     private boolean ifExists(String phoneNumber) {
         return userManagementService.userExist(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
