@@ -32,6 +32,9 @@ public class InfrastructureConfiguration {
     @Bean
     public MessageChannel smsOutboundChannel(){return new DirectChannel();}
 
+    @Bean
+    public MessageChannel systemMessageChannel(){return new DirectChannel();}
+
 
 
 
