@@ -74,7 +74,7 @@ public abstract class AbstractTest {
      */
     protected void validateDate(Date referenceDate, String value, int day, int month, int year) {
         Date date = parseSingleDate(value, referenceDate);
-        validateDate(date, month, day, year);
+        validateDate(date, day, month, year);
     }
 
     protected void validateDate(String value, int day, int month, int year) {
@@ -90,6 +90,7 @@ public abstract class AbstractTest {
      * @param year
      */
     protected void validateDate(Date date, int day, int month, int year) {
+        log.debug("Date={}, month={}", date, month);
         _calendar.setTime(date);
         assertEquals(month - 1, _calendar.get(Calendar.MONTH));
         assertEquals(day, _calendar.get(Calendar.DAY_OF_MONTH));
