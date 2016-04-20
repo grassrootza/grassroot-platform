@@ -3,6 +3,11 @@ package za.org.grassroot.core.dto;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.enums.TaskType;
+import za.org.grassroot.core.util.DateTimeUtil;
+
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 
 /**
  * Created by paballo on 2016/04/13.
@@ -27,7 +32,7 @@ public class NotificationDTO {
         this.delivered = notification.isDelivered();
         this.read = notification.isRead();
         this.notificationType = notification.getNotificationType().toString();
-        this.createdDatetime= notification.getCreatedDateTime().toString();
+        this.createdDatetime= getLocalDateTime(notification.getCreatedDateTime());
         this.entityType = event.getEventType().toString();
     }
 
@@ -38,9 +43,9 @@ public class NotificationDTO {
         this.message = (notification.getMessage() != null) ? notification.getMessage() : notification.getLogBookLog().getMessage();
         this.delivered=notification.isDelivered();
         this.read =notification.isRead();
-        this.notificationType = notification.getNotificationType().toString();
-        this.createdDatetime=notification.getCreatedDateTime().toString();
-        this.entityType = LogBook.class.toString();
+        this.notificationType = TaskType.TODO.toString();
+        this.createdDatetime=getLocalDateTime(notification.getCreatedDateTime());
+        this.entityType = TaskType.TODO.toString();
 
     }
 
@@ -81,6 +86,11 @@ public class NotificationDTO {
 
     public boolean isRead() {
         return read;
+    }
+
+    private String getLocalDateTime(Instant instant ) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
+        return DateTimeUtil.convertToUserTimeZone(instant, DateTimeUtil.getSAST()).format(formatter);
     }
 
 

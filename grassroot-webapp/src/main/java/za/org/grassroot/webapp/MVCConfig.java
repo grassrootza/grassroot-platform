@@ -99,6 +99,7 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
                 .addPathPatterns("/api/task/**")
                 .addPathPatterns("/api/vote/**")
                 .addPathPatterns("/api/meeting/**")
+                .addPathPatterns("/api/notification")
                 .excludePathPatterns("/api/group/search");
     }
 
