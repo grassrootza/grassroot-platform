@@ -1,7 +1,6 @@
 package za.org.grassroot.services;
 
 import com.google.common.collect.Sets;
-import edu.emory.mathcs.backport.java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

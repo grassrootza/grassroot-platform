@@ -1,8 +1,6 @@
 package za.org.grassroot.services;
 
-import edu.emory.mathcs.backport.java.util.Collections;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,10 +9,7 @@ import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service

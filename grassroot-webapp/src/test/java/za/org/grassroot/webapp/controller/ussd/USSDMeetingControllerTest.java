@@ -9,14 +9,12 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.GroupPage;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.util.USSDEventUtil;
 
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -26,8 +24,9 @@ import java.util.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static za.org.grassroot.core.util.DateTimeUtil.*;
 import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
+import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
+import static za.org.grassroot.webapp.util.USSDEventUtil.parseDateTime;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 
 /**

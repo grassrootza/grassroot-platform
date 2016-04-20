@@ -7,15 +7,10 @@ import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import za.org.grassroot.language.DateGroup;
-import za.org.grassroot.language.Parser;
-
 import java.sql.Timestamp;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.time.temporal.ChronoUnit;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -50,28 +45,6 @@ public class DateTimeUtil {
 
     private static final ZoneId zoneSAST = ZoneId.of("Africa/Johannesburg");
     private static final ZoneId zoneSystem = ZoneId.systemDefault();
-
-    /**
-     * Method that invokes the date time parser directly, with no attempt to map to a predefined format or regex
-     * @param passedValue
-     * @return LocalDateTime of most likely match; if no match, returns the current date time rounded up to next hour
-     */
-    public static LocalDateTime parseDateTime(String passedValue) {
-
-        LocalDateTime parsedDateTime;
-
-        Parser parser = new Parser();
-        DateGroup firstDateGroup = parser.parse(passedValue).iterator().next();
-        if (firstDateGroup != null) {
-            Date parsedDate = firstDateGroup.getDates().iterator().next();
-            parsedDateTime = parsedDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-            log.info("Date time processed: " + parsedDateTime.toString());
-        } else {
-            parsedDateTime = LocalDateTime.now().plus(1, ChronoUnit.HOURS).truncatedTo(ChronoUnit.HOURS);
-        }
-
-        return parsedDateTime;
-    }
 
     public static Instant convertToSystemTime(LocalDateTime userInput, ZoneId userZoneId) {
         ZonedDateTime userTime = ZonedDateTime.of(userInput, userZoneId);
@@ -238,47 +211,6 @@ public class DateTimeUtil {
         return (neededDatePattern.matcher(reformattedDate).matches()) ? reformattedDate : trimmedResponse;
     }
 
-    /**
-     * Method that will take a string representing a date and update a timestamp, leaving the time unchanged. It will
-     * first try to process the string in the preferred format; if it fails, it invokes the language processor
-     * @param originalDateTime The original date and time
-     * @param revisedDateString The string representing the new date
-     * @return The revised timestamp, with the new date, but original time
-     */
-    public static LocalDateTime changeTimestampDates(LocalDateTime originalDateTime, String revisedDateString) {
-        Objects.requireNonNull(originalDateTime);
-        Objects.requireNonNull(revisedDateString);
-
-        LocalDate revisedDate;
-        try {
-            revisedDate = LocalDate.parse(revisedDateString, preferredDateFormat);
-        } catch (DateTimeParseException e) {
-            revisedDate = LocalDate.from(parseDateTime(revisedDateString));
-        }
-        LocalDateTime newDateTime = LocalDateTime.of(revisedDate, originalDateTime.toLocalTime());
-        return newDateTime;
-    }
-
-    /**
-     * Method that will take a string representing a time and update an instant, leaving the date unchanged. It will
-     * first try to process the string in the preferred time format ("HH:mm"); if it fails, it invokes the language processor
-     * @param originalDateTime The original local date time
-     * @param revisedTimeString The string representing the new time
-     * @return The revised timestamp, with the new date, but original time
-     */
-    public static LocalDateTime changeTimestampTimes(LocalDateTime originalDateTime, String revisedTimeString) {
-        Objects.requireNonNull(originalDateTime);
-        Objects.requireNonNull(revisedTimeString);
-
-        LocalTime revisedTime;
-        try {
-            revisedTime = LocalTime.parse(revisedTimeString, preferredTimeFormat);
-        } catch (DateTimeParseException e) {
-            revisedTime = LocalTime.from(parseDateTime(revisedTimeString));
-        }
-        LocalDateTime newDateTime = LocalDateTime.of(originalDateTime.toLocalDate(), revisedTime);
-        return newDateTime;
-    }
 
     /**
      * Method that takes a string already preformatted to conform to preferred date format, and returns a LocalDateTime

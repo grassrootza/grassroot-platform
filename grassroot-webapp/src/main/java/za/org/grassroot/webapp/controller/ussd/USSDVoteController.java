@@ -308,7 +308,7 @@ public class USSDVoteController extends USSDController {
     }
 
     private String[] setCustomTime(String requestUid, String userInput, User user) {
-        LocalDateTime parsedTime = DateTimeUtil.parseDateTime(userInput);
+        LocalDateTime parsedTime = eventUtil.parseDateTime(userInput);
         userLogger.recordUserInputtedDateTime(user.getUid(), userInput, "vote-custom", UserInterfaceType.USSD);
         eventRequestBroker.updateEventDateTime(user.getUid(), requestUid, parsedTime);
         final String dateTimePrompt = "at " + parsedTime.format(dateTimeFormat);
