@@ -2,6 +2,8 @@ package za.org.grassroot.integration.domain;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import java.util.Map;
+
 /**
  * Created by paballo on 2016/04/05.
  */
@@ -15,29 +17,20 @@ public class GcmEntity {
     private Long time_to_live = 300L; //5 minutes
     private static final boolean delayWhileIdle = false;
     private static final boolean deliveryReceiptRequested =true;
-    private Object data;
-    private Object notification;
+    private Map<String,Object> data;
+    private Map<String,Object> notification;
     private String message_type;
 
-
-    public GcmEntity(){
-
+    public GcmEntity() {
     }
 
-    public GcmEntity(String messageId, String to, String collapseKey, Object data){
-        this.message_id = messageId;
-        this.to = to;
-        this.collapseKey = collapseKey;
-        this.data =data;
-
-    }
     public GcmEntity(String messageId, String to, String messageType){
         this.message_id = messageId;
         this.to = to;
         this.message_type = messageType;
     }
 
-    public GcmEntity(String messageId, String to, String collapseKey, Object data, Object notification){
+    public GcmEntity(String messageId, String to, String collapseKey, Map<String,Object> data, Map<String,Object> notification){
         this.message_id = messageId;
         this.to = to;
         this.collapseKey = collapseKey;
@@ -50,7 +43,7 @@ public class GcmEntity {
         return message_id;
     }
 
-    public Object getNotification() {
+    public Map<String,Object> getNotification() {
         return notification;
     }
 
@@ -74,7 +67,7 @@ public class GcmEntity {
         return deliveryReceiptRequested;
     }
 
-    public Object getData() {
+    public Map<String,Object> getData() {
         return data;
     }
 

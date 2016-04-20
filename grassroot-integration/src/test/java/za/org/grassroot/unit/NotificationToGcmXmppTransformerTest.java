@@ -11,20 +11,16 @@ import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import za.org.grassroot.GrassRootCoreConfig;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.NotificationType;
-import za.org.grassroot.core.repository.LogBookRepository;
-import za.org.grassroot.integration.GrassrootIntegrationConfig;
 import za.org.grassroot.integration.domain.GcmEntity;
 import za.org.grassroot.integration.xmpp.GcmPacketExtension;
-import za.org.grassroot.integration.xmpp.GcmTransformer;
+import za.org.grassroot.integration.xmpp.NotificationToGcmXmppTransformer;
 
 import javax.transaction.Transactional;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
@@ -33,16 +29,16 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by paballo on 2016/04/11.
  */
-@SpringApplicationConfiguration(classes = {GcmTransformer.class,TestContextConfig.class})
+@SpringApplicationConfiguration(classes = {NotificationToGcmXmppTransformer.class,TestContextConfig.class})
 @RunWith(SpringJUnit4ClassRunner.class)
 @Transactional
 @ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
-public class GcmTransformerTest {
+public class NotificationToGcmXmppTransformerTest {
 
-    private Logger log = LoggerFactory.getLogger(GcmTransformerTest.class);
+    private Logger log = LoggerFactory.getLogger(NotificationToGcmXmppTransformerTest.class);
 
     @Autowired
-    private GcmTransformer gcmTransformer;
+    private NotificationToGcmXmppTransformer notificationToGcmXmppTransformer;
 
 
 
@@ -55,39 +51,18 @@ public class GcmTransformerTest {
         Event event = new Meeting("test meeting",Instant.now(),  user, group, "someLoc");
         EventLog eventLog = new EventLog(user, event, EventLogType.EventNotification, "you are hereby invited to the test meeting", null);
         GcmRegistration gcmRegistration = new GcmRegistration(user,"xzf12", Instant.now());
-        Notification notification = new Notification(user,eventLog,gcmRegistration,false,false, NotificationType.EVENT,eventLog.getMessage());
+        Notification notification = new Notification(user,eventLog, false,false, NotificationType.EVENT);
         Message<Notification> message = MessageBuilder.withPayload(notification).build();
-        org.jivesoftware.smack.packet.Message transforemdMessage = gcmTransformer.transform(message);
+        org.jivesoftware.smack.packet.Message transforemdMessage = notificationToGcmXmppTransformer.transform(message).getPayload();
         GcmPacketExtension packetExtension = (GcmPacketExtension)transforemdMessage.getExtension(GcmPacketExtension.GCM_NAMESPACE);
         ObjectMapper mapper =new ObjectMapper();
         GcmEntity entity = mapper.readValue(packetExtension.getJson(), GcmEntity.class);
         log.info(entity.toString());
-        Map<String,String>  data = (HashMap)entity.getData();
+        Map<String,Object> data = entity.getData();
         assertEquals(data.get("description"),notification.getMessage());
 
 
     }
-
-    @Test
-    public void  transformShouldWorkIfAcknowledgement() throws Exception{
-        String messageId = "xxf5s";
-        String registrationId = "xzf12";
-        Notification notification = new Notification();
-        User user = new User("0828875097");
-        GcmRegistration gcmRegistration = new GcmRegistration(user,"xzf12", Instant.now());
-        notification.setUid(messageId);
-        notification.setMessageType("ack");
-        notification.setGcmRegistration(gcmRegistration);
-        Message<Notification> message = MessageBuilder.withPayload(notification).build();
-        org.jivesoftware.smack.packet.Message transforemdMessage = gcmTransformer.transform(message);
-        GcmPacketExtension packetExtension = (GcmPacketExtension)transforemdMessage.getExtension(GcmPacketExtension.GCM_NAMESPACE);
-        ObjectMapper mapper =new ObjectMapper();
-        GcmEntity entity = mapper.readValue(packetExtension.getJson(), GcmEntity.class);
-        assertEquals(entity.getMessage_id(), notification.getUid());
-        log.info(entity.toString());
-
-    }
-
 }
 
 

@@ -49,7 +49,7 @@ public class MessageSendingManager implements MessageSendingService {
 
         String route =(notification.getUser() !=null)?
                 notification.getUser().getMessagingPreference().name():UserMessagingPreference.ANDROID_APP.toString();
-        requestChannel.send(createMessage(notification,route));
+        requestChannel.send( createMessage(notification,route));
 
     }
 

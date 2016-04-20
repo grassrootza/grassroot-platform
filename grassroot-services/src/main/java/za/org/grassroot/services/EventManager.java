@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
@@ -144,6 +145,7 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
+    @Transactional
     public List<Event> getOutstandingRSVPForUser(User user) {
         return getOutstandingResponseForUser(user, EventType.MEETING);
     }
@@ -178,8 +180,8 @@ public class EventManager implements EventManagementService {
 
                                     //N.B. remove this if statement if you want to allow votes for people that joined the group late
                                     if (eventType == EventType.VOTE) {
-                                        Instant joined = groupLogRepository.getGroupJoinedDate(group.getId(), user.getId());
-                                        if (joined != null && joined.isAfter(event.getCreatedDateTime())) {
+                                        Membership membership = group.getMembership(user);
+                                        if (membership != null && membership.getJoinTime().isAfter(event.getCreatedDateTime())) {
                                             log.info(String.format("Excluding vote %s for %s as the user joined group %s after the vote was called", event.getName(), user.getPhoneNumber(), group.getId()));
                                             continue;
                                         }

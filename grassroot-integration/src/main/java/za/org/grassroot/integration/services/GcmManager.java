@@ -32,11 +32,6 @@ public class GcmManager implements GcmService {
     }
 
     @Override
-    public GcmRegistration loadByUser(User user) {
-        return gcmRegistrationRepository.findByUser(user);
-    }
-
-    @Override
     public GcmRegistration registerUser(User user, String registrationId) {
         GcmRegistration gcmRegistration = gcmRegistrationRepository.findByUser(user);
         if (gcmRegistration != null) {

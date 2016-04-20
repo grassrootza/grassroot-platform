@@ -20,13 +20,8 @@ public interface UserLogRepository extends JpaRepository<UserLog, Long> {
 
     List<UserLog> findByUserUidAndCreationTimeBetween(String UserUid, Instant start, Instant end, Sort sort);
 
-    List<UserLog> findByUserLogTypeAndCreationTimeBetween(UserLogType userLogType, Instant start, Instant end, Sort sort);
-
     int countByUserUidAndUserLogTypeAndUserInterfaceAndCreationTimeBetween(String userUid, UserLogType userLogType,
                                                                            UserInterfaceType interfaceType, Instant start, Instant end);
 
     int countByUserUidAndUserLogTypeAndDescription(String userUid, UserLogType userLogType, String description);
-
-
-
 }

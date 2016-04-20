@@ -6,22 +6,18 @@ import org.jivesoftware.smack.packet.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.integration.annotation.MessageEndpoint;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.stereotype.Component;
-import za.org.grassroot.core.domain.GcmRegistration;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.UserMessagingPreference;
-import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.services.GcmService;
 import za.org.grassroot.integration.services.MessageSendingService;
 import za.org.grassroot.integration.services.NotificationService;
 
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,19 +30,19 @@ public class InboundGcmMessageHandler {
     private Logger log = LoggerFactory.getLogger(InboundGcmMessageHandler.class);
 
     @Autowired
-    NotificationService notificationService;
-
-
-    @Autowired
-    MessageSendingService messageSendingService;
+    private NotificationService notificationService;
 
     @Autowired
-    GcmService gcmService;
+    private MessageSendingService messageSendingService;
 
     @Autowired
-    UserRepository userRepository;
+    private GcmService gcmService;
 
+    @Autowired
+    private MessageChannel gcmXmppOutboundChannel;
 
+    @Autowired
+    private UserRepository userRepository;
 
     @ServiceActivator(inputChannel = "gcmInboundChannel")
     public void handleUpstreamMessage(Message message) throws Exception {
@@ -110,18 +106,17 @@ public class InboundGcmMessageHandler {
 
             }
         }
-        sendAcknowledment(createAcknowledgeMessage(from,messageId));
+        sendAcknowledment(from, messageId);
     }
 
     private void handleNotAcknowledged(Map<String, Object> input) {
         String messageId = (String) input.get("message_id");
         Notification notification = notificationService.loadNotification(messageId);
-        log.info("Push Notification delivery failed, now sending sms");
-        log.info("Sending sms to " + notification.getUser().getPhoneNumber());
+        log.info("Push Notification delivery failed, now sending SMS");
+        log.info("Sending SMS to " + notification.getUser().getPhoneNumber());
         messageSendingService.sendMessage(UserMessagingPreference.SMS.name(),notification);
-
-
     }
+
     private void handleDeliveryReceipts(Map<String,Object> input){
         String messageId = String.valueOf(input.get("messageId"));
         log.info("Message " + messageId + " delivery successful, updating notification to read status.");
@@ -136,25 +131,12 @@ public class InboundGcmMessageHandler {
         }
     }
 
-    protected static Map<String,Object> createAcknowledgeMessage(String to, String messageId) {
-        Map<String, Object> message = new HashMap<>();
-        message.put("message_type", "ack");
-        message.put("to", to);
-        message.put("message_id", messageId);
-        return message;
+    private void sendAcknowledment(String registrationId, String messageId){
+        org.springframework.messaging.Message<Message> gcmMessage = GcmXmppMessageCodec.encode(registrationId, messageId, "ack");
+        log.info("Acknowledging message with id ={}", messageId);
+		gcmXmppOutboundChannel.send(gcmMessage);
     }
-    
-    private void sendAcknowledment(Map<String,Object> response){
-        Notification notification = new Notification();
-        GcmRegistration gcmRegistration = gcmService.loadByRegistrationId((String)response.get("to"));
-        notification.setUid((String)response.get("message_id"));
-        notification.setMessageType((String)response.get("message_type"));
-        notification.setGcmRegistration(gcmRegistration);
-        log.info("Acknowledging message with id ={}", notification.getUid());
 
-       messageSendingService.sendMessage(notification);
-
-    }
     //todo move all ordinary message handling logic to a separate file
     public void registerUser(String registrationId, String phoneNumber){
         String convertedNumber= PhoneNumberUtil.convertPhoneNumber(phoneNumber);
@@ -170,9 +152,4 @@ public class InboundGcmMessageHandler {
         notificationService.updateNotificationReadStatus(messageId,true);
 
     }
-
-
-
-
-
 }

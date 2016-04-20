@@ -1,14 +1,11 @@
 package za.org.grassroot.integration.services;
 
 import edu.emory.mathcs.backport.java.util.Collections;
-import org.hibernate.Hibernate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
@@ -16,7 +13,6 @@ import za.org.grassroot.core.dto.NotificationDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.NotificationType;
 import za.org.grassroot.core.enums.UserMessagingPreference;
-import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.LogBookRepository;
 import za.org.grassroot.core.repository.NotificationRepository;
 
@@ -66,8 +62,7 @@ public class NotificationManager implements NotificationService{
         Objects.nonNull(user);
         Objects.nonNull(eventLog);
         Objects.nonNull(notificationType);
-        GcmRegistration gcmRegistration =gcmService.loadByUser(user);
-        Notification notification = new Notification(user, eventLog, gcmRegistration, false, false, notificationType, eventLog.getMessage());
+        Notification notification = new Notification(user, eventLog, false, false, notificationType);
         return notificationRepository.save(notification);
     }
 
@@ -102,8 +97,7 @@ public class NotificationManager implements NotificationService{
     public Notification createNotification(User user, LogBookLog logBookLog, NotificationType notificationType) {
         Objects.nonNull(user);
         Objects.nonNull(logBookLog);
-        GcmRegistration gcmRegistration = gcmService.loadByUser(user);
-        Notification notification = new Notification(user,logBookLog,gcmRegistration,false,false, notificationType,
+        Notification notification = new Notification(user,logBookLog, false,false, notificationType,
                                                      logBookLog.getMessage());
         return notificationRepository.save(notification);
     }

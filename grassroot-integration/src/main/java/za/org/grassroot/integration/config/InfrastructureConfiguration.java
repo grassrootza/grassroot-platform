@@ -24,6 +24,11 @@ public class InfrastructureConfiguration {
     }
 
     @Bean
+    public MessageChannel gcmXmppOutboundChannel(){
+        return new DirectChannel();
+    }
+
+    @Bean
     public MessageChannel requestChannel(){return new DirectChannel();}
 
     @Bean
