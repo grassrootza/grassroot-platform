@@ -58,7 +58,9 @@ public class NotificationRestController {
             responseWrapper = new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.NOTIFICATIONS, RestStatus.FAILURE);
         } else {
             List<String> notificationUid = pageable.getContent().stream().map(n -> n.getUid()).collect(Collectors.toList());
+            log.info("notificaton_uid size={}",notificationUid.size());
             List<NotificationDTO> notificationDTOList = notificationService.fetchNotificationDTOs(notificationUid);
+            log.info("notificationDTOList sizr ={}", notificationDTOList.size());
             NotificationWrapper notificationWrapper = new NotificationWrapper(pageable, notificationDTOList);
             responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.NOTIFICATIONS, RestStatus.SUCCESS, notificationWrapper);
         }

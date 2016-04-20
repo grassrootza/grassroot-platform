@@ -5,6 +5,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserCreateRequest;
 import za.org.grassroot.core.dto.UserDTO;
+import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.exception.UserExistsException;
 
@@ -29,6 +30,8 @@ public interface UserManagementService {
     User createUserWebProfile(User userProfile) throws UserExistsException;
 
     User createAndroidUserProfile(UserDTO userDTO) throws UserExistsException;
+
+    User updateUserAndroidProfileSettings(User user,String name, String language, AlertPreference alertPreference);
 
     String generateAndroidUserVerifier(String phoneNumber, String displayName);
 

@@ -149,8 +149,8 @@ public class GroupRestController {
                                                           @RequestParam(value = "page", required = false) Integer page,@RequestParam(value = "size",required = false) Integer size){
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         Group group = groupBroker.load(groupUid);
-        page = (page.equals(null))?1:page;
-        size=(size.equals(null))?5:size;
+        page = (page == null)?1:page;
+        size=(size == null)?5:size;
         Page<User> pageable = userManagementService.getGroupMembers(group,page-1,size);
         ResponseWrapper responseWrapper;
         if(page >pageable.getTotalPages()){

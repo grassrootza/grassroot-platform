@@ -2,7 +2,9 @@ package za.org.grassroot.core.repository;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import za.org.grassroot.core.domain.GroupLog;
+import za.org.grassroot.core.enums.GroupLogType;
 
 import java.time.Instant;
 import java.util.List;
@@ -17,5 +19,7 @@ public interface GroupLogRepository extends JpaRepository<GroupLog, Long> {
 
 	GroupLog findFirstByGroupIdOrderByCreatedDateTimeDesc(Long groupId);
 
-	List<GroupLog> findByGroupIdAndCreatedDateTimeBetween(Long groupId, Instant startDateTime, Instant endDateTime, Sort sort);
+    List<GroupLog> findByGroupIdAndCreatedDateTimeBetween(Long groupId, Instant startDateTime, Instant endDateTime, Sort sort);
+
+    List<GroupLog> findByGroupIdAndGroupLogTypeAndCreatedDateTimeBetween(Long groupId, GroupLogType type, Instant start, Instant end);
 }

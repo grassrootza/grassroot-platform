@@ -2,6 +2,7 @@ package za.org.grassroot.core.domain;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.util.UIDGenerator;
 
@@ -68,6 +69,9 @@ public class User implements UserDetails {
 
     @Column(name = "message_preference", nullable = false)
     private UserMessagingPreference messagingPreference;
+
+    @Column(name ="alert_preference")
+    private AlertPreference alertPreference;
 
     @Column(name = "enabled")
     private boolean enabled = true;
@@ -248,6 +252,14 @@ public class User implements UserDetails {
     public void setHasWebProfile(boolean hasWebProfile) { this.hasWebProfile = hasWebProfile; }
 
     public void setMessagingPreference(UserMessagingPreference messagingPreference) { this.messagingPreference = messagingPreference; }
+
+    public AlertPreference getAlertPreference() {
+        return alertPreference;
+    }
+
+    public void setAlertPreference(AlertPreference alertPreference) {
+        this.alertPreference = alertPreference;
+    }
 
     public boolean getEnabled() {
         return enabled;

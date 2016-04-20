@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.model.rest.ResponseWrappers;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -11,6 +12,7 @@ import java.util.List;
 /**
  * Created by paballo on 2016/04/13.
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class NotificationWrapper {
 
     private static final Logger log = LoggerFactory.getLogger(NotificationWrapper.class);

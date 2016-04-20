@@ -15,10 +15,7 @@ import za.org.grassroot.webapp.util.USSDEventUtil;
 
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -216,12 +213,11 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
         String userUid = testUser.getUid();
 
         String interruptedUrl = saveVoteMenu("confirm", requestUid);
+        LocalDateTime in7minutes = ZonedDateTime.now(getSAST()).plusMinutes(7L).truncatedTo(ChronoUnit.SECONDS).toLocalDateTime();
         LocalDateTime tomorrow5pm = LocalDateTime.of(LocalDate.now().plusDays(1), LocalTime.of(17, 0));
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, interruptedUrl)).thenReturn(testUser);
         when(eventRequestBrokerMock.load(requestUid)).thenReturn(testVote);
-
-        LocalDateTime in7minutes = LocalDateTime.now().plusMinutes(7L).truncatedTo(ChronoUnit.SECONDS);
 
         mockMvc.perform(get(path + "confirm").param(phoneParam, testUserPhone).param("entityUid", requestUid).
                 param("request", "1").param("field", "standard").param("time", "instant")).andExpect(status().isOk());

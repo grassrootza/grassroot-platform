@@ -148,7 +148,7 @@ public class InboundGcmMessageHandler {
     }
 
     public void updateReadStatus(String messageId){
-        log.info("Marking notificatio with id={} as read", messageId);
+        log.info("Marking notification with id={} as read", messageId);
         notificationService.updateNotificationReadStatus(messageId,true);
 
     }
