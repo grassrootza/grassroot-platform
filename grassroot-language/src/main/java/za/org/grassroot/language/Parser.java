@@ -338,11 +338,10 @@ public class Parser {
                     builder.append(DateParser.tokenNames[token.getType()]).append(" ");
                 }
                 _logger.info(builder.toString());
-
                 streams.add(new CommonTokenStream(new NattyTokenSource(group)));
             }
         }
-        _logger.info("Pheew... Now about to leave the stream token collector. Got a list of token streams with size " + stream.size());
+        _logger.info("Pheew... Now about to leave the stream token collector. Got a list of token streams with size " + streams.size());
         return streams;
     }
 

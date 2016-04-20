@@ -8,7 +8,7 @@ public class DateGrammarTest extends AbstractGrammarTest {
     _ruleName = "date";
     
     assertAST("the day before yesterday", "(RELATIVE_DATE (SEEK < by_day 1 (RELATIVE_DATE (SEEK < by_day 1 day))))");
-    assertAST("1st oct in the year '89", "(EXPLICIT_DATE (MONTH_OF_YEAR 10) (DAY_OF_MONTH 1) (YEAR_OF 89))");
+    assertAST("1st oct in the year '89", "(EXPLICIT_DATE (DAY_OF_MONTH 1) (MONTH_OF_YEAR 10) (YEAR_OF 89))");
     assertAST("2009-10-10", "(EXPLICIT_DATE (MONTH_OF_YEAR 10) (DAY_OF_MONTH 10) (YEAR_OF 2009))");
     assertAST("seven years ago", "(RELATIVE_DATE (SEEK < by_day 7 year))");
     assertAST("next monday", "(RELATIVE_DATE (SEEK > by_week 1 (DAY_OF_WEEK 2)))");
@@ -19,19 +19,19 @@ public class DateGrammarTest extends AbstractGrammarTest {
     _ruleName = "alternative_day_of_month_list";
     
     assertAST("mon may 15 or 16", 
-        "(DATE_TIME (EXPLICIT_DATE (MONTH_OF_YEAR 5) (DAY_OF_MONTH 15))) (DATE_TIME (EXPLICIT_DATE (MONTH_OF_YEAR 5) (DAY_OF_MONTH 16)))");
+        "(DATE_TIME (EXPLICIT_DATE (DAY_OF_MONTH 15) (MONTH_OF_YEAR 5))) (DATE_TIME (EXPLICIT_DATE (DAY_OF_MONTH 16) (MONTH_OF_YEAR 5)))");
     
     assertAST("mon may 15 to 16", 
-        "(DATE_TIME (EXPLICIT_DATE (MONTH_OF_YEAR 5) (DAY_OF_MONTH 15))) (DATE_TIME (EXPLICIT_DATE (MONTH_OF_YEAR 5) (DAY_OF_MONTH 16)))");
+        "(DATE_TIME (EXPLICIT_DATE (DAY_OF_MONTH 15) (MONTH_OF_YEAR 5))) (DATE_TIME (EXPLICIT_DATE (DAY_OF_MONTH 16) (MONTH_OF_YEAR 5)))");
     
     assertAST("mon may 15 and 16", 
-        "(DATE_TIME (EXPLICIT_DATE (MONTH_OF_YEAR 5) (DAY_OF_MONTH 15))) (DATE_TIME (EXPLICIT_DATE (MONTH_OF_YEAR 5) (DAY_OF_MONTH 16)))");
+        "(DATE_TIME (EXPLICIT_DATE (DAY_OF_MONTH 15) (MONTH_OF_YEAR 5))) (DATE_TIME (EXPLICIT_DATE (DAY_OF_MONTH 16) (MONTH_OF_YEAR 5)))");
     
     assertAST("mon may 15 through 16", 
-        "(DATE_TIME (EXPLICIT_DATE (MONTH_OF_YEAR 5) (DAY_OF_MONTH 15))) (DATE_TIME (EXPLICIT_DATE (MONTH_OF_YEAR 5) (DAY_OF_MONTH 16)))");
+        "(DATE_TIME (EXPLICIT_DATE (DAY_OF_MONTH 15) (MONTH_OF_YEAR 5))) (DATE_TIME (EXPLICIT_DATE (DAY_OF_MONTH 16) (MONTH_OF_YEAR 5)))");
     
     assertAST("mon may 15 or 16", 
-        "(DATE_TIME (EXPLICIT_DATE (MONTH_OF_YEAR 5) (DAY_OF_MONTH 15))) (DATE_TIME (EXPLICIT_DATE (MONTH_OF_YEAR 5) (DAY_OF_MONTH 16)))");
+        "(DATE_TIME (EXPLICIT_DATE (DAY_OF_MONTH 15) (MONTH_OF_YEAR 5))) (DATE_TIME (EXPLICIT_DATE (DAY_OF_MONTH 16) (MONTH_OF_YEAR 5)))");
     
     assertAST("first or last day of september", 
         "(DATE_TIME (RELATIVE_DATE (EXPLICIT_SEEK (MONTH_OF_YEAR 9)) (EXPLICIT_SEEK (DAY_OF_MONTH 1)))) (DATE_TIME (RELATIVE_DATE (EXPLICIT_SEEK (MONTH_OF_YEAR 9)) (EXPLICIT_SEEK (DAY_OF_MONTH 31))))");
@@ -66,17 +66,17 @@ public class DateGrammarTest extends AbstractGrammarTest {
   public void relaxed_date() throws Exception {
     _ruleName = "relaxed_date";
   
-    assertAST("oct 1, 1980", "(EXPLICIT_DATE (MONTH_OF_YEAR 10) (DAY_OF_MONTH 1) (YEAR_OF 1980))");
-    assertAST("oct. 1, 1980", "(EXPLICIT_DATE (MONTH_OF_YEAR 10) (DAY_OF_MONTH 1) (YEAR_OF 1980))");
-    assertAST("oct 1,1980", "(EXPLICIT_DATE (MONTH_OF_YEAR 10) (DAY_OF_MONTH 1) (YEAR_OF 1980))");
-    assertAST("1st oct in the year '89", "(EXPLICIT_DATE (MONTH_OF_YEAR 10) (DAY_OF_MONTH 1) (YEAR_OF 89))");
-    assertAST("thirty first of december '80", "(EXPLICIT_DATE (MONTH_OF_YEAR 12) (DAY_OF_MONTH 31) (YEAR_OF 80))");
-    assertAST("the first of december in the year 1980", "(EXPLICIT_DATE (MONTH_OF_YEAR 12) (DAY_OF_MONTH 1) (YEAR_OF 1980))");
-    assertAST("the 2 of february in the year 1980", "(EXPLICIT_DATE (MONTH_OF_YEAR 2) (DAY_OF_MONTH 2) (YEAR_OF 1980))");
-    assertAST("the 2nd of february in the year 1980", "(EXPLICIT_DATE (MONTH_OF_YEAR 2) (DAY_OF_MONTH 2) (YEAR_OF 1980))");
-    assertAST("the second of february in the year 1980", "(EXPLICIT_DATE (MONTH_OF_YEAR 2) (DAY_OF_MONTH 2) (YEAR_OF 1980))");
-    assertAST("jan. 2nd", "(EXPLICIT_DATE (MONTH_OF_YEAR 1) (DAY_OF_MONTH 2))");
-    assertAST("sun, nov 21 2010", "(EXPLICIT_DATE (MONTH_OF_YEAR 11) (DAY_OF_MONTH 21) (DAY_OF_WEEK 1) (YEAR_OF 2010))");
+    assertAST("oct 1, 1980", "(EXPLICIT_DATE (DAY_OF_MONTH 1) (MONTH_OF_YEAR 10) (YEAR_OF 1980))");
+    assertAST("oct. 1, 1980", "(EXPLICIT_DATE (DAY_OF_MONTH 1) (MONTH_OF_YEAR 10) (YEAR_OF 1980))");
+    assertAST("oct 1,1980", "(EXPLICIT_DATE (DAY_OF_MONTH 1) (MONTH_OF_YEAR 10) (YEAR_OF 1980))");
+    assertAST("1st oct in the year '89", "(EXPLICIT_DATE (DAY_OF_MONTH 1) (MONTH_OF_YEAR 10) (YEAR_OF 89))");
+    assertAST("thirty first of december '80", "(EXPLICIT_DATE (DAY_OF_MONTH 31) (MONTH_OF_YEAR 12) (YEAR_OF 80))");
+    assertAST("the first of december in the year 1980", "(EXPLICIT_DATE (DAY_OF_MONTH 1) (MONTH_OF_YEAR 12) (YEAR_OF 1980))");
+    assertAST("the 2 of february in the year 1980", "(EXPLICIT_DATE (DAY_OF_MONTH 2) (MONTH_OF_YEAR 2) (YEAR_OF 1980))");
+    assertAST("the 2nd of february in the year 1980", "(EXPLICIT_DATE (DAY_OF_MONTH 2) (MONTH_OF_YEAR 2) (YEAR_OF 1980))");
+    assertAST("the second of february in the year 1980", "(EXPLICIT_DATE (DAY_OF_MONTH 2) (MONTH_OF_YEAR 2) (YEAR_OF 1980))");
+    assertAST("jan. 2nd", "(EXPLICIT_DATE (DAY_OF_MONTH 2) (MONTH_OF_YEAR 1))");
+    assertAST("sun, nov 21 2010", "(EXPLICIT_DATE (DAY_OF_MONTH 21) (MONTH_OF_YEAR 11) (DAY_OF_WEEK 1) (YEAR_OF 2010))");
   }
   
   @Test
@@ -85,9 +85,9 @@ public class DateGrammarTest extends AbstractGrammarTest {
   
     assertAST("2009-10-10", "(EXPLICIT_DATE (MONTH_OF_YEAR 10) (DAY_OF_MONTH 10) (YEAR_OF 2009))");
     assertAST("1980-1-2", "(EXPLICIT_DATE (MONTH_OF_YEAR 1) (DAY_OF_MONTH 2) (YEAR_OF 1980))");
-    assertAST("12/12/12", "(EXPLICIT_DATE (MONTH_OF_YEAR 12) (DAY_OF_MONTH 12) (YEAR_OF 12))");
-    assertAST("3/4", "(EXPLICIT_DATE (MONTH_OF_YEAR 3) (DAY_OF_MONTH 4))");
-    assertAST("sun, 21/11/2010", "(EXPLICIT_DATE (MONTH_OF_YEAR 11) (DAY_OF_MONTH 21) (DAY_OF_WEEK 1) (YEAR_OF 2010))");
+    assertAST("12/12/12", "(EXPLICIT_DATE (DAY_OF_MONTH 12) (MONTH_OF_YEAR 12) (YEAR_OF 12))");
+    assertAST("3/4", "(EXPLICIT_DATE (DAY_OF_MONTH 3) (MONTH_OF_YEAR 4))");
+    assertAST("sun, 21/11/2010", "(EXPLICIT_DATE (DAY_OF_MONTH 21) (MONTH_OF_YEAR 11) (DAY_OF_WEEK 1) (YEAR_OF 2010))");
   }
 
   @Test
@@ -267,55 +267,55 @@ public class DateGrammarTest extends AbstractGrammarTest {
         "(RELATIVE_DATE (SEEK > by_day 3 week) (EXPLICIT_SEEK (DAY_OF_WEEK 2)))");
     
     assertAST("1st of three months ago",
-        "(RELATIVE_DATE (SEEK < by_day 3 month) (EXPLICIT_SEEK (DAY_OF_MONTH 1)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK (DAY_OF_MONTH 1)) (SEEK < by_day 3 month))");
     
     assertAST("10th of next month",
-        "(RELATIVE_DATE (SEEK > by_week 1 month) (EXPLICIT_SEEK (DAY_OF_MONTH 10)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK (DAY_OF_MONTH 10)) (SEEK > by_week 1 month))");
     
     assertAST("28th of last month",
-        "(RELATIVE_DATE (SEEK < by_week 1 month) (EXPLICIT_SEEK (DAY_OF_MONTH 28)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK (DAY_OF_MONTH 28)) (SEEK < by_week 1 month))");
     
     assertAST("10th of next october",
-        "(RELATIVE_DATE (SEEK > by_week 1 (MONTH_OF_YEAR 10)) (EXPLICIT_SEEK (DAY_OF_MONTH 10)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK (DAY_OF_MONTH 10)) (SEEK > by_week 1 (MONTH_OF_YEAR 10)))");
     
     assertAST("the 30th of this month",
-        "(RELATIVE_DATE (SEEK > by_day 0 month) (EXPLICIT_SEEK (DAY_OF_MONTH 30)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK (DAY_OF_MONTH 30)) (SEEK > by_day 0 month))");
     
     assertAST("10th of the month after next", 
-        "(RELATIVE_DATE (SEEK > by_day 2 month) (EXPLICIT_SEEK (DAY_OF_MONTH 10)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK (DAY_OF_MONTH 10)) (SEEK > by_day 2 month))");
     
     assertAST("the last thursday in november", 
-        "(RELATIVE_DATE (SEEK > by_day 0 (MONTH_OF_YEAR 11)) (EXPLICIT_SEEK 5 (DAY_OF_WEEK 5)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK 5 (DAY_OF_WEEK 5)) (SEEK > by_day 0 (MONTH_OF_YEAR 11)))");
     
     assertAST("the last thursday in november 1999", 
-        "(RELATIVE_DATE (SEEK > by_day 0 (MONTH_OF_YEAR 11)) (EXPLICIT_SEEK (YEAR_OF 1999)) (EXPLICIT_SEEK 5 (DAY_OF_WEEK 5)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK 5 (DAY_OF_WEEK 5)) (SEEK > by_day 0 (MONTH_OF_YEAR 11)) (EXPLICIT_SEEK (YEAR_OF 1999)))");
     
     assertAST("3rd wed in next month",
-        "(RELATIVE_DATE (SEEK > by_week 1 month) (EXPLICIT_SEEK 3 (DAY_OF_WEEK 4)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK 3 (DAY_OF_WEEK 4)) (SEEK > by_week 1 month))");
     
     assertAST("the last sunday in november",
-        "(RELATIVE_DATE (SEEK > by_day 0 (MONTH_OF_YEAR 11)) (EXPLICIT_SEEK 5 (DAY_OF_WEEK 1)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK 5 (DAY_OF_WEEK 1)) (SEEK > by_day 0 (MONTH_OF_YEAR 11)))");
     
     assertAST("the first wed. in january",
-        "(RELATIVE_DATE (SEEK > by_day 0 (MONTH_OF_YEAR 1)) (EXPLICIT_SEEK 1 (DAY_OF_WEEK 4)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK 1 (DAY_OF_WEEK 4)) (SEEK > by_day 0 (MONTH_OF_YEAR 1)))");
     
     assertAST("the last day of february 1999",
-        "(RELATIVE_DATE (SEEK > by_day 0 (MONTH_OF_YEAR 2)) (EXPLICIT_SEEK (DAY_OF_MONTH 31)) (EXPLICIT_SEEK (YEAR_OF 1999)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK (DAY_OF_MONTH 31)) (SEEK > by_day 0 (MONTH_OF_YEAR 2)) (EXPLICIT_SEEK (YEAR_OF 1999)))");
     
     assertAST("the first wed. in january in the year 2004",
-        "(RELATIVE_DATE (SEEK > by_day 0 (MONTH_OF_YEAR 1)) (EXPLICIT_SEEK (YEAR_OF 2004)) (EXPLICIT_SEEK 1 (DAY_OF_WEEK 4)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK 1 (DAY_OF_WEEK 4)) (SEEK > by_day 0 (MONTH_OF_YEAR 1)) (EXPLICIT_SEEK (YEAR_OF 2004)))");
     
     assertAST("last monday of last month", 
-        "(RELATIVE_DATE (SEEK < by_week 1 month) (EXPLICIT_SEEK 5 (DAY_OF_WEEK 2)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK 5 (DAY_OF_WEEK 2)) (SEEK < by_week 1 month))");
     
     assertAST("the last sunday of next nov", 
-        "(RELATIVE_DATE (SEEK > by_week 1 (MONTH_OF_YEAR 11)) (EXPLICIT_SEEK 5 (DAY_OF_WEEK 1)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK 5 (DAY_OF_WEEK 1)) (SEEK > by_week 1 (MONTH_OF_YEAR 11)))");
     
     assertAST("the 3rd sunday of 2 novembers from now", 
-        "(RELATIVE_DATE (SEEK > by_day 2 (MONTH_OF_YEAR 11)) (EXPLICIT_SEEK 3 (DAY_OF_WEEK 1)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK 3 (DAY_OF_WEEK 1)) (SEEK > by_day 2 (MONTH_OF_YEAR 11)))");
     
     assertAST("the last monday in 2 novembers ago", 
-        "(RELATIVE_DATE (SEEK < by_day 2 (MONTH_OF_YEAR 11)) (EXPLICIT_SEEK 5 (DAY_OF_WEEK 2)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK 5 (DAY_OF_WEEK 2)) (SEEK < by_day 2 (MONTH_OF_YEAR 11)))");
     
     assertAST("the beginning of next week", 
         "(RELATIVE_DATE (SEEK > by_week 1 week) (EXPLICIT_SEEK (DAY_OF_WEEK 2)))");
@@ -348,28 +348,28 @@ public class DateGrammarTest extends AbstractGrammarTest {
         "(RELATIVE_DATE (SEEK < by_week 1 week) (EXPLICIT_SEEK (DAY_OF_WEEK 6)))");
     
     assertAST("start of 3 months from now",
-        "(RELATIVE_DATE (SEEK > by_day 3 month) (EXPLICIT_SEEK (DAY_OF_MONTH 1)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK (DAY_OF_MONTH 1)) (SEEK > by_day 3 month))");
     
     assertAST("beginning of next month",
-        "(RELATIVE_DATE (SEEK > by_week 1 month) (EXPLICIT_SEEK (DAY_OF_MONTH 1)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK (DAY_OF_MONTH 1)) (SEEK > by_week 1 month))");
     
     assertAST("end of next month",
-        "(RELATIVE_DATE (SEEK > by_week 1 month) (EXPLICIT_SEEK (DAY_OF_MONTH 31)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK (DAY_OF_MONTH 31)) (SEEK > by_week 1 month))");
     
     assertAST("last day of next month",
-        "(RELATIVE_DATE (SEEK > by_week 1 month) (EXPLICIT_SEEK (DAY_OF_MONTH 31)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK (DAY_OF_MONTH 31)) (SEEK > by_week 1 month))");
     
     assertAST("first day of 3 months from now",
-        "(RELATIVE_DATE (SEEK > by_day 3 month) (EXPLICIT_SEEK (DAY_OF_MONTH 1)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK (DAY_OF_MONTH 1)) (SEEK > by_day 3 month))");
     
     assertAST("end of next october",
-        "(RELATIVE_DATE (SEEK > by_week 1 (MONTH_OF_YEAR 10)) (EXPLICIT_SEEK (DAY_OF_MONTH 31)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK (DAY_OF_MONTH 31)) (SEEK > by_week 1 (MONTH_OF_YEAR 10)))");
     
     assertAST("first day of feb",
-        "(RELATIVE_DATE (SEEK > by_day 0 (MONTH_OF_YEAR 2)) (EXPLICIT_SEEK (DAY_OF_MONTH 1)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK (DAY_OF_MONTH 1)) (SEEK > by_day 0 (MONTH_OF_YEAR 2)))");
     
     assertAST("last day of three februarys from now",
-        "(RELATIVE_DATE (SEEK > by_day 3 (MONTH_OF_YEAR 2)) (EXPLICIT_SEEK (DAY_OF_MONTH 31)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK (DAY_OF_MONTH 31)) (SEEK > by_day 3 (MONTH_OF_YEAR 2)))");
     
     assertAST("in the end of next week",
         "(RELATIVE_DATE (SEEK > by_week 1 week) (EXPLICIT_SEEK (DAY_OF_WEEK 6)))");
@@ -381,19 +381,19 @@ public class DateGrammarTest extends AbstractGrammarTest {
         "(RELATIVE_DATE (SEEK > by_day 2 week) (EXPLICIT_SEEK (DAY_OF_WEEK 6)))");
     
     assertAST("in the start of june",
-        "(RELATIVE_DATE (SEEK > by_day 0 (MONTH_OF_YEAR 6)) (EXPLICIT_SEEK (DAY_OF_MONTH 1)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK (DAY_OF_MONTH 1)) (SEEK > by_day 0 (MONTH_OF_YEAR 6)))");
     
     assertAST("at the end of next week",
         "(RELATIVE_DATE (SEEK > by_week 1 week) (EXPLICIT_SEEK (DAY_OF_WEEK 6)))");
     
     assertAST("at the end of last month",
-        "(RELATIVE_DATE (SEEK < by_week 1 month) (EXPLICIT_SEEK (DAY_OF_MONTH 31)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK (DAY_OF_MONTH 31)) (SEEK < by_week 1 month))");
     
     assertAST("the second day of april",
-        "(RELATIVE_DATE (SEEK > by_day 0 (MONTH_OF_YEAR 4)) (EXPLICIT_SEEK (DAY_OF_MONTH 2)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK (DAY_OF_MONTH 2)) (SEEK > by_day 0 (MONTH_OF_YEAR 4)))");
     
     assertAST("the thirtieth day of next april",
-        "(RELATIVE_DATE (SEEK > by_week 1 (MONTH_OF_YEAR 4)) (EXPLICIT_SEEK (DAY_OF_MONTH 30)))");
+        "(RELATIVE_DATE (EXPLICIT_SEEK (DAY_OF_MONTH 30)) (SEEK > by_week 1 (MONTH_OF_YEAR 4)))");
   }
   
   @Test

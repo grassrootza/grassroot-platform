@@ -1,22 +1,20 @@
 package za.org.grassroot.language.grammar;
 
-import java.io.ByteArrayInputStream;
-import java.lang.reflect.Method;
-
-import junit.framework.Assert;
-
 import org.antlr.runtime.ANTLRInputStream;
 import org.antlr.runtime.CommonTokenStream;
 import org.antlr.runtime.ParserRuleReturnScope;
 import org.antlr.runtime.tree.CommonTree;
 import org.antlr.runtime.tree.CommonTreeNodeStream;
 import org.antlr.runtime.tree.Tree;
-
+import org.junit.Assert;
 import za.org.grassroot.language.ANTLRNoCaseInputStream;
 import za.org.grassroot.language.ParseListener;
 import za.org.grassroot.language.generated.DateLexer;
 import za.org.grassroot.language.generated.DateParser;
 import za.org.grassroot.language.generated.TreeRewrite;
+
+import java.io.ByteArrayInputStream;
+import java.lang.reflect.Method;
 
 public abstract class AbstractGrammarTest {
   protected String _ruleName;

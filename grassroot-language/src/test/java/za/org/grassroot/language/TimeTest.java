@@ -16,10 +16,11 @@ import java.util.TimeZone;
  * @author Joe Stelmach
  */
 public class TimeTest extends AbstractTest {
+
   @BeforeClass
   public static void oneTime() {
     Locale.setDefault(Locale.US);
-    TimeZone.setDefault(TimeZone.getTimeZone("US/Eastern"));
+    TimeZone.setDefault(TimeZone.getTimeZone("Africa/Johannesburg"));
     initCalendarAndParser();
   }
   
@@ -29,7 +30,7 @@ public class TimeTest extends AbstractTest {
    */
   @Test
   public void testFormal() throws Exception {
-    Date reference = DateFormat.getDateInstance(DateFormat.SHORT).parse("1/02/2011");
+    Date reference = sdfNoTime.parse("02/1/2011");
     calendarSource = new CalendarSource(reference);
     validateTime(reference, "0600h", 6, 0, 0);
     validateTime(reference, "06:00h", 6, 0, 0);
@@ -55,7 +56,7 @@ public class TimeTest extends AbstractTest {
   
   @Test
   public void testRelaxed() throws Exception {
-    Date reference = DateFormat.getDateInstance(DateFormat.SHORT).parse("1/02/2011");
+    Date reference = sdfNoTime.parse("02/1/2011");
     calendarSource = new CalendarSource(reference);
     validateTime(reference, "noon", 12, 0, 0);
     validateTime(reference, "at noon", 12, 0, 0);
@@ -74,7 +75,7 @@ public class TimeTest extends AbstractTest {
   
   @Test
   public void testRelative() throws Exception {
-    Date reference = DateFormat.getTimeInstance(DateFormat.SHORT).parse("12:00 pm");
+    Date reference = sdfTime.parse("12:00 pm");
     calendarSource = new CalendarSource(reference);
     validateTime(reference, "in 5 seconds", 12, 0, 5);
     validateTime(reference, "in 5 minutes", 12, 5, 0);
@@ -92,7 +93,7 @@ public class TimeTest extends AbstractTest {
 
   @Test
   public void testAlternatives() throws Exception {
-    Date reference = DateFormat.getTimeInstance(DateFormat.SHORT).parse("12:00 pm");
+    Date reference = sdfTime.parse("12:00 pm");
     calendarSource = new CalendarSource(reference);
 
     List<Date> dates = parseCollection(reference, "12 or 12:30");
@@ -139,7 +140,7 @@ public class TimeTest extends AbstractTest {
 
   @Test
   public void testText() throws Exception {
-    Date reference = DateFormat.getTimeInstance(DateFormat.SHORT).parse("12:00 pm");
+    Date reference = sdfTime.parse("12:00 pm");
 
     List<DateGroup> groups = _parser.parse("5.30pm", reference);
     Assert.assertEquals(1, groups.size());

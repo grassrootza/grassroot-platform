@@ -4,6 +4,7 @@ import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -17,6 +18,9 @@ import static org.junit.Assert.assertEquals;
 public abstract class AbstractTest {
 
     private static final Logger log = LoggerFactory.getLogger(AbstractTest.class);
+    static SimpleDateFormat sdfNoTime = new SimpleDateFormat("dd/MM/yyyy");
+    static SimpleDateFormat sdfWithTime = new SimpleDateFormat("dd/MM/yyyy hh:mm");
+    static SimpleDateFormat sdfTime = new SimpleDateFormat("h:mm a");
 
     private static Calendar _calendar;
     protected static CalendarSource calendarSource;
@@ -56,7 +60,7 @@ public abstract class AbstractTest {
      * @return
      */
     protected Date parseSingleDate(String value, Date referenceDate) {
-        log.debug("Inside parsingSingleDate..., about to thoroughly examine {} for \"dates\"... with refDate", value, referenceDate);
+        log.debug("Inside parsingSingleDate..., about to thoroughly examine {} for \"dates\"... with refDate={}", value, referenceDate);
         List<Date> dates =  parseCollection(referenceDate, value);
         log.debug("Done!!! Works of a beautiful parser look like this -> " + dates);
         assertEquals(1, dates.size());
@@ -73,7 +77,9 @@ public abstract class AbstractTest {
      * @param year
      */
     protected void validateDate(Date referenceDate, String value, int day, int month, int year) {
+        log.debug("About to call singleParse: value={}, referenceDate={}", value, referenceDate);
         Date date = parseSingleDate(value, referenceDate);
+        log.debug("Called singleParse. Now date={}, day={}, month={}, year={}", date, day, month, year);
         validateDate(date, day, month, year);
     }
 
