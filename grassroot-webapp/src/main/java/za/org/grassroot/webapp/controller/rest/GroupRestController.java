@@ -134,7 +134,7 @@ public class GroupRestController {
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         ResponseWrapper responseWrapper;
         try {
-            log.info("User " + phoneNumber "requests to join group with uid " + groupToJoinUid );
+            log.info("User " + phoneNumber +"requests to join group with uid " + groupToJoinUid );
             groupJoinRequestService.open(user.getUid(), groupToJoinUid, null);
             responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.GROUP_JOIN_REQUEST_SENT, RestStatus.SUCCESS);
         } catch (RequestorAlreadyPartOfGroupException e) {
