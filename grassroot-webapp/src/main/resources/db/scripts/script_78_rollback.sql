@@ -1,1 +1,1 @@
-alter table user_profile drop column alertPreference;
+alter table user_profile drop column alert_preference;
