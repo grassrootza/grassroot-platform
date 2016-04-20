@@ -7,8 +7,8 @@ import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.webapp.enums.TaskType;
 import za.org.grassroot.webapp.enums.TodoStatus;
 
 import java.sql.Timestamp;
@@ -45,7 +45,7 @@ public class TaskDTO implements Comparable<TaskDTO>{
         this.type = String.valueOf(event.getEventType());
         this.instant = event.getEventStartDateTime();
         this.deadline = getLocalDateTime(instant);
-        this.reply=(eventLog !=null)?eventLog.getMessage():String.valueOf(TodoStatus.NO_RESPONSE);
+        this.reply=(eventLog !=null && eventLog.getMessage().equals("Invalid RSVP"))?eventLog.getMessage():String.valueOf(TodoStatus.NO_RESPONSE);
         this.canAction = canAction(event, user, hasResponded);
     }
 

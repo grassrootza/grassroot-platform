@@ -4,6 +4,7 @@ import org.springframework.beans.factory.FactoryBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.xmpp.config.XmppConnectionFactoryBean;
+import za.org.grassroot.core.repository.GcmRegistrationRepository;
 import za.org.grassroot.core.repository.LogBookRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.integration.services.GcmService;
@@ -37,6 +38,11 @@ public class TestContextConfig {
     @Bean
     public FactoryBean<SmsSendingService> smsSendingService() {
         return new MockitoFactoryBean<>(SmsSendingService.class);
+    }
+
+    @Bean
+    public FactoryBean<GcmRegistrationRepository> gcmRegistrationRepository() {
+        return new MockitoFactoryBean<>(GcmRegistrationRepository.class);
     }
 
     @Bean

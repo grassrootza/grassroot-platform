@@ -62,7 +62,8 @@ public class UserRestController {
 
         UserDTO userDTO = new UserDTO(phoneNumber, null);
         if (passwordTokenService.isVerificationCodeValid(userDTO, code)) {
-            log.info("userdto and code verified, now creating user with phoneNumber ={}", phoneNumber);
+            log.info("userdto and code verified, now creating user with phoneNumber={}", phoneNumber);
+            log.info("verify code={}", code);
             userDTO = userManagementService.loadUserCreateRequest(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
             User user = userManagementService.createAndroidUserProfile(userDTO);
             VerificationTokenCode token = passwordTokenService.generateLongLivedCode(user);
@@ -89,6 +90,7 @@ public class UserRestController {
             return new ResponseEntity<>(responseWrapper, HttpStatus.OK);
         }
         responseWrapper = new ResponseWrapperImpl(HttpStatus.NOT_FOUND, RestMessage.USER_DOES_NOT_EXIST, RestStatus.FAILURE);
+        log.info("Android login: user with phoneNumber={} does not exist", phoneNumber);
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
 
 
@@ -98,12 +100,14 @@ public class UserRestController {
     public ResponseEntity<ResponseWrapper> authenticate(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String token) {
 
         if (passwordTokenService.isVerificationCodeValid(phoneNumber, token)) {
+            log.info("User authentication successful for user with phoneNumber={}", phoneNumber);
             User user = userManagementService.loadOrSaveUser(phoneNumber);
             VerificationTokenCode longLivedToken = passwordTokenService.generateLongLivedCode(user);
             boolean hasGroups = userManagementService.isPartOfActiveGroups(user);
             return new ResponseEntity<>(new AuthenticationResponseWrapper(HttpStatus.OK, RestMessage.LOGIN_SUCCESS,
                     RestStatus.SUCCESS, new TokenDTO(longLivedToken),user.getDisplayName(),user.getLanguageCode(), hasGroups), HttpStatus.OK);
         }
+        log.info("Android: Okay invalid code supplied by user={}");
         return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_TOKEN,
                 RestStatus.FAILURE), HttpStatus.UNAUTHORIZED);
 

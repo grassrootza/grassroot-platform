@@ -74,7 +74,6 @@ public class Notification {
         this.createdDateTime = Instant.now();
         this.notificationType = notificationType;
         this.userMessagingPreference = user.getMessagingPreference();
-
         this.logBookLog = logBookLog;
         this.eventLog = eventLog;
         this.message = message;

@@ -55,9 +55,9 @@ public class TaskRestController {
         List<TaskDTO> tasks = getTasks(user, group);
         ResponseWrapper responseWrapper;
         if (tasks.isEmpty()) {
-            responseWrapper = new ResponseWrapperImpl(HttpStatus.NOT_FOUND, RestMessage.NO_GROUP_ACTIVITIES, RestStatus.SUCCESS);
+            responseWrapper = new ResponseWrapperImpl(HttpStatus.NOT_FOUND, RestMessage.NO_GROUP_ACTIVITIES, RestStatus.FAILURE);
         } else {
-            responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.GROUP_ACTIVITIES, RestStatus.FAILURE, tasks);
+            responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.GROUP_ACTIVITIES, RestStatus.SUCCESS, tasks);
         }
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
 
