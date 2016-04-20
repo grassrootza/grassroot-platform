@@ -6,7 +6,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -34,8 +33,8 @@ public class DateTimeTest extends AbstractTest {
     @Test
     public void testSpecific() throws Exception {
 
-       SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy hh:mm");
-        final Date reference = sdf.parse("19/5/2012 0:00");
+
+        final Date reference = sdfWithTime.parse("19/5/2012 0:00");
         logger.debug("Reference date={}", reference);
         calendarSource = new CalendarSource(reference);
 
@@ -57,7 +56,7 @@ public class DateTimeTest extends AbstractTest {
 
     @Test
     public void testRelative() throws Exception {
-        Date reference = (new SimpleDateFormat("dd/MM/yyyy hh:mm")).parse("24/2/2011 0:00");
+        Date reference = sdfWithTime.parse("24/2/2011 0:00");
         logger.debug("Reference date={}", reference);
         calendarSource = new CalendarSource(reference);
 
@@ -101,7 +100,7 @@ public class DateTimeTest extends AbstractTest {
 
     @Test
     public void testRange() throws Exception {
-        Date reference = (new SimpleDateFormat("dd/MM/yyyy")).parse("12/6/2010");
+        Date reference = sdfNoTime.parse("12/6/2010");
         logger.debug("Reference date={}", reference);
         calendarSource = new CalendarSource(reference);
 
@@ -143,12 +142,11 @@ public class DateTimeTest extends AbstractTest {
 
     @Test
     public void testList() throws Exception {
-        Date reference = (new SimpleDateFormat("dd/MM/yyyy")).parse("19/05/2012");
+        Date reference = sdfNoTime.parse("19/05/2012");
         // Date reference = DateFormat.getDateInstance(DateFormat.SHORT).parse("05/19/2012");
         calendarSource = new CalendarSource(reference);
 
-        List<Date> dates =
-                parseCollection(reference, "June 25th at 9am and July 2nd at 10am and August 16th at 11am");
+        List<Date> dates = parseCollection(reference, "June 25th at 9am and July 2nd at 10am and August 16th at 11am");
         Assert.assertEquals(3, dates.size());
         validateDateTimeUS(dates.get(0), 6, 25, 2012, 9, 0, 0);
         validateDateTimeUS(dates.get(1), 7, 2, 2012, 10, 0, 0);

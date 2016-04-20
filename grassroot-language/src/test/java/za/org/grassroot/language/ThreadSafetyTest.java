@@ -1,15 +1,14 @@
 package za.org.grassroot.language;
 
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.text.DateFormat;
 import java.util.Date;
 import java.util.Locale;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.TimeZone;
-
-import org.junit.Assert;
-
-import org.junit.Test;
-import org.junit.BeforeClass;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ThreadSafetyTest extends AbstractTest {
 
@@ -21,9 +20,9 @@ public class ThreadSafetyTest extends AbstractTest {
 
   @BeforeClass
   public static void oneTime() {
-    Locale.setDefault(Locale.US);
-    TimeZone.setDefault(TimeZone.getTimeZone("US/Eastern"));
-    dateFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.US);
+    Locale.setDefault(Locale.getDefault());
+    TimeZone.setDefault(TimeZone.getTimeZone("Africa/Johannesburg"));
+    dateFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault());
     initCalendarAndParser();
   }
 

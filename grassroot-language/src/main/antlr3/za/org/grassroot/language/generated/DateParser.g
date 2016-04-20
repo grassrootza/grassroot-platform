@@ -272,6 +272,8 @@ relaxed_date
 relaxed_date_month_first
   : relaxed_day_of_week? relaxed_month COMMA? WHITE_SPACE relaxed_day_of_month (relaxed_year_prefix relaxed_year)?
       -> ^(EXPLICIT_DATE relaxed_day_of_month relaxed_month relaxed_day_of_week? relaxed_year?)
+  | relaxed_day_of_week? relaxed_month COMMA? (WHITE_SPACE | formal_date_separator) relaxed_day_of_month WHITE_SPACE? (relaxed_year_prefix relaxed_year)?
+          -> ^(EXPLICIT_DATE relaxed_day_of_month relaxed_month relaxed_day_of_week? relaxed_year?)
   ;
 
 relaxed_date_month_last
