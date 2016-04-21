@@ -13,7 +13,7 @@
 <div layout:fragment="overview">
   View different month:
   <form th:action="@{/group/history}" method="post">
-    <input type="hidden" name="groupId" th:value="${group.id}" />
+    <input type="hidden" name="groupUid" th:value="${group.uid}" />
     <select name="monthToView">
       <option th:each="date : ${monthsToView}"
               th:value="${date.getMonthValue() + '-' + date.getYear()}"

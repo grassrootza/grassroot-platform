@@ -4,10 +4,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 
 /**
  * Created by aakilomar on 10/11/15.
@@ -143,6 +145,9 @@ public class EventDTO  implements Serializable {
     public void setEventStartDateTime(Instant eventStartDateTime) {
         this.eventStartDateTime = eventStartDateTime;
     }
+
+    public ZonedDateTime getEventStartDateAtSAST() { return DateTimeUtil.convertToUserTimeZone(eventStartDateTime,
+                                                                                               DateTimeUtil.getSAST()); }
 
     public User getCreatedByUser() {
         return createdByUser;

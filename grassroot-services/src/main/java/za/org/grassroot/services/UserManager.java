@@ -19,6 +19,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserCreateRequest;
 import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.core.dto.UserDTO;
+import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
@@ -156,6 +157,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
             userToUpdate.setUsername(phoneNumber);
             userToUpdate.setHasAndroidProfile(true);
+            userProfile.setAlertPreference(AlertPreference.NOTIFY_ALL_EVENTS);
             userToUpdate.setHasInitiatedSession(true);
             userToSave = userToUpdate;
 
@@ -165,6 +167,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             userProfile.setUsername(phoneNumber);
             userProfile.setDisplayName(userDTO.getDisplayName());
             userProfile.setHasAndroidProfile(true);
+            userProfile.setAlertPreference(AlertPreference.NOTIFY_ALL_EVENTS);
             userToSave = userProfile;
         }
 
@@ -179,6 +182,22 @@ public class UserManager implements UserManagementService, UserDetailsService {
             log.warn(e.getMessage());
             throw new UserExistsException("User '" + userProfile.getUsername() + "' already exists!");
         }
+
+    }
+
+    @Override
+    public User updateUserAndroidProfileSettings(User user, String name, String language, AlertPreference alertPreference)
+            throws IllegalArgumentException {
+        Objects.nonNull(user);
+        Objects.nonNull(name);
+        Objects.nonNull(language);
+        Objects.nonNull(alertPreference);
+        user.setDisplayName(name);
+        user.setLanguageCode(language);
+        user.setAlertPreference(alertPreference);
+
+        return userRepository.saveAndFlush(user);
+
 
     }
 

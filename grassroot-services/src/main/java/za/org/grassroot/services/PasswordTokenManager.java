@@ -72,7 +72,7 @@ public class PasswordTokenManager implements PasswordTokenService {
 
         VerificationTokenCode verificationTokenCode = verificationTokenCodeRepository.findByUsername(phoneNumber);
         Random random = new SecureRandom();
-        String code = String.valueOf(new BigInteger(130, random));
+        String code = String.valueOf(100000 + new Random().nextInt(999999));
         if (verificationTokenCode == null) {
             verificationTokenCode = new VerificationTokenCode(PhoneNumberUtil.convertPhoneNumber(phoneNumber), code);
 

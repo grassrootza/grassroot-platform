@@ -56,6 +56,8 @@ public class GroupBrokerImpl implements GroupBroker {
     private AsyncUserLogger asyncUserLogger;
     @Autowired
     private TokenGeneratorService tokenGeneratorService;
+    @Autowired
+    private MessageAssemblingService messageAssemblingService;
 
     @Override
     @Transactional(readOnly = true)
@@ -232,8 +234,43 @@ public class GroupBrokerImpl implements GroupBroker {
 
         logger.info("Adding a member via token code: group={}, user={}, code={}", group, user, tokenPassed);
         group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER);
-        logGroupEventsAfterCommit(Collections.singleton(new GroupLog(group.getId(), user.getId(), GroupLogType.GROUP_MEMBER_ADDED,
-                                               user.getId(), "Member joined via join code: " + tokenPassed)));
+        GroupLog log = new GroupLog(group.getId(), user.getId(), GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE, user.getId(),
+                                    "Member joined via join code: " + tokenPassed);
+        logGroupEventsAfterCommit(Collections.singleton(log));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void notifyOrganizersOfJoinCodeUse(Instant periodStart, Instant periodEnd) {
+        List<Group> groupsWhereJoinCodeUsed = groupRepository.findGroupsWhereJoinCodeUsedBetween(periodStart, periodEnd);
+        // what follows is somewhat expensive, but is fortunately going to be called quite rarely
+        if (groupsWhereJoinCodeUsed != null && !groupsWhereJoinCodeUsed.isEmpty()) {
+            logger.info("People joined groupds today via a join code! Processing for {} groups", groupsWhereJoinCodeUsed.size());
+            for (Group group : groupsWhereJoinCodeUsed) {
+                List<String> joinedUserDescriptions;
+                List<GroupLog> groupLogs = groupLogRepository.findByGroupIdAndGroupLogTypeAndCreatedDateTimeBetween(group.getId(),
+                                                                              GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE,
+                                                                              periodStart, periodEnd);
+                Set<User> organizers = group.getMemberships().stream() // consider adding a getOrganizers method to group
+                        .filter(m -> m.getRole().getName().equals(BaseRoles.ROLE_GROUP_ORGANIZER))
+                        .map(m -> m.getUser()).collect(Collectors.toSet());
+
+                if (groupLogs.size() < 4) { // create explicit list of phone numbers / display names to send to people
+                    joinedUserDescriptions = new ArrayList<>();
+                    for (GroupLog log : groupLogs)
+                        joinedUserDescriptions.add(userRepository.findOne(log.getUserId()).nameToDisplay());
+                } else {
+                    joinedUserDescriptions = null;
+                }
+
+                for (User user : organizers) {
+                    String message = messageAssemblingService.
+                            createGroupJoinCodeUseMessage(user, group.getGroupName(), groupLogs.size(), joinedUserDescriptions);
+                    logger.info("Will send {} this message: {}", user.nameToDisplay(), message);
+                }
+            }
+        }
+
     }
 
     private Set<Membership> addMembers(User initiator, Group group, Set<MembershipInfo> membershipInfos) {
@@ -777,8 +814,8 @@ public class GroupBrokerImpl implements GroupBroker {
     @Override
     public List<GroupLog> getLogsForGroup(Group group, LocalDateTime periodStart, LocalDateTime periodEnd) {
         Sort sort = new Sort(Sort.Direction.ASC, "CreatedDateTime");
-        return groupLogRepository.findByGroupIdAndCreatedDateTimeBetween(group.getId(), Timestamp.valueOf(periodStart),
-                                                                         Timestamp.valueOf(periodEnd), sort);
+        return groupLogRepository.findByGroupIdAndCreatedDateTimeBetween(group.getId(), convertToSystemTime(periodStart, getSAST()),
+                                                                         convertToSystemTime(periodEnd, getSAST()), sort);
     }
 
     @Override

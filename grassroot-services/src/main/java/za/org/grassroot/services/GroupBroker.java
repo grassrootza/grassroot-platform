@@ -5,6 +5,7 @@ import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,6 +38,8 @@ public interface GroupBroker {
     void addMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos);
 
     void addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed);
+
+    void notifyOrganizersOfJoinCodeUse(Instant periodStart, Instant periodEnd);
 
     void removeMembers(String userUid, String groupUid, Set<String> memberUids);
 

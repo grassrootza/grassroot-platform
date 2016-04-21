@@ -50,9 +50,16 @@ public class EventLogManager implements EventLogManagementService {
     @Transactional
     public EventLog createEventLog(EventLogType eventLogType, String eventUid, String userUid, String message) {
         Event event = eventRepository.findOneByUid(eventUid);
+        log.info("Creating event log, with event={}", event);
         User user = userRepository.findOneByUid(userUid);
         EventLog eventLog = new EventLog(user, event, eventLogType, message, null);
         return eventLogRepository.save(eventLog);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean eventLogRecorded(EventLogType eventLogType, Event event, User user) {
+        return (eventLogRepository.findByEventAndUserAndEventLogType(event, user, eventLogType) != null);
     }
 
     @Override
@@ -132,8 +139,15 @@ public class EventLogManager implements EventLogManagementService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public EventLog getEventLogOfUser(Event event, User user, EventLogType eventLogType) {
         return eventLogRepository.findByEventAndUserAndEventLogType(event, user,eventLogType);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean userRsvpYesForEvent(Event event, User user) {
+        return eventLogRepository.rsvpYesForEvent(event, user);
     }
 
     @Override

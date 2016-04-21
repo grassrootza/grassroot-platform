@@ -59,7 +59,8 @@ public class GroupRestController {
         MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
         Set<MembershipInfo> membersToAdd = Sets.newHashSet();
         membersToAdd.add(creator);
-
+        log.info("Requesting to create group with name={}", groupName);
+        log.info("description ={}", description);
         try {
             groupBroker.create(user.getUid(), groupName, null, addMembersToGroup(phoneNumbers, membersToAdd),
                                GroupPermissionTemplate.DEFAULT_GROUP, description, null);
@@ -133,6 +134,7 @@ public class GroupRestController {
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         ResponseWrapper responseWrapper;
         try {
+            log.info("User " + phoneNumber +"requests to join group with uid " + groupToJoinUid );
             groupJoinRequestService.open(user.getUid(), groupToJoinUid, null);
             responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.GROUP_JOIN_REQUEST_SENT, RestStatus.SUCCESS);
         } catch (RequestorAlreadyPartOfGroupException e) {
@@ -146,11 +148,11 @@ public class GroupRestController {
     @RequestMapping(value="/members/{id}/{phoneNumber}/{code}", method=RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> getGroupMember(@PathVariable("phoneNumber") String phoneNumber,
                                                            @PathVariable("code") String code, @PathVariable("id") String groupUid,
-                                                          @RequestParam("page") Integer page,@RequestParam("size") Integer size){
+                                                          @RequestParam(value = "page", required = false) Integer page,@RequestParam(value = "size",required = false) Integer size){
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         Group group = groupBroker.load(groupUid);
-        page = (page.equals(null))?1:page;
-        size=(size.equals(null))?5:size;
+        page = (page == null)?1:page;
+        size=(size == null)?5:size;
         Page<User> pageable = userManagementService.getGroupMembers(group,page-1,size);
         ResponseWrapper responseWrapper;
         if(page >pageable.getTotalPages()){

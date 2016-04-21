@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
@@ -17,7 +18,6 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.async.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.util.CacheUtilService;
 
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -67,7 +67,7 @@ public class EventManager implements EventManagementService {
     CacheUtilService cacheUtilService;
 
     @Autowired
-    MeetingNotificationService meetingNotificationService;
+    MessageAssemblingService messageAssemblingService;
 
     @Autowired
     GroupLogRepository groupLogRepository;
@@ -145,6 +145,7 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
+    @Transactional
     public List<Event> getOutstandingRSVPForUser(User user) {
         return getOutstandingResponseForUser(user, EventType.MEETING);
     }
@@ -179,8 +180,8 @@ public class EventManager implements EventManagementService {
 
                                     //N.B. remove this if statement if you want to allow votes for people that joined the group late
                                     if (eventType == EventType.VOTE) {
-                                        Timestamp joined = groupLogRepository.getGroupJoinedDate(group.getId(), user.getId());
-                                        if (joined != null && joined.after(Timestamp.from(event.getCreatedDateTime()))) {
+                                        Membership membership = group.getMembership(user);
+                                        if (membership != null && membership.getJoinTime().isAfter(event.getCreatedDateTime())) {
                                             log.info(String.format("Excluding vote %s for %s as the user joined group %s after the vote was called", event.getName(), user.getPhoneNumber(), group.getId()));
                                             continue;
                                         }
@@ -388,7 +389,7 @@ public class EventManager implements EventManagementService {
     public String getReminderMessageForConfirmation(String locale, User user, Event event) {
         log.info("Composing reminder message ... with locale ... " + locale);
         EventDTO eventDTO = new EventDTO(event);
-        return meetingNotificationService.createMeetingReminderMessage(locale, user, eventDTO);
+        return messageAssemblingService.createMeetingReminderMessage(locale, user, eventDTO);
     }
 
     @Override

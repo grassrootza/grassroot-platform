@@ -1,18 +1,11 @@
 package za.org.grassroot.webapp.model.rest.ResponseWrappers;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.webapp.util.RestUtil;
 
-import java.sql.Timestamp;
-import java.time.Instant;
-
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Set;
-import java.util.TimeZone;
-import java.util.stream.Collectors;
 
 
 /**

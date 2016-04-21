@@ -11,13 +11,15 @@ public class AuthenticationResponseWrapper extends GenericResponseWrapper {
 
 
     private String displayName;
+    private String language;
     private boolean hasGroups;
 
 
-    public AuthenticationResponseWrapper(HttpStatus code, RestMessage message, RestStatus status, Object data,String displayName, boolean hasGroups){
+    public AuthenticationResponseWrapper(HttpStatus code, RestMessage message, RestStatus status, Object data,String displayName, String language, boolean hasGroups){
         super(code,message,status, data);
         this.hasGroups = hasGroups;
         this.displayName =displayName;
+        this.language = language;
 
     }
 

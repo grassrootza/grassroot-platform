@@ -17,6 +17,8 @@ public interface EventLogManagementService {
 
     EventLog createEventLog(EventLogType eventLogType, String eventUid, String userUid, String message);
 
+    boolean eventLogRecorded(EventLogType eventLogType, Event event, User user);
+
     boolean notificationSentToUser(Event event, User user);
 
     boolean voteResultSentToUser(String voteUid, String userUid);
@@ -36,6 +38,8 @@ public interface EventLogManagementService {
     void rsvpForEvent(Event event, User user, EventRSVPResponse rsvpResponse);
 
     EventLog getEventLogOfUser(Event event, User user,EventLogType eventLogType);
+
+    boolean userRsvpYesForEvent(Event event, User user);
 
     boolean userRsvpNoForEvent(String eventUid, String userUid);
 

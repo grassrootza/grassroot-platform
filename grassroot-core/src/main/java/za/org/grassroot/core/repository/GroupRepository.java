@@ -17,6 +17,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.GroupDTO;
 
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 
@@ -53,7 +54,6 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     Page<Group> findByMembershipsUserAndActive(User user, Pageable pageable, boolean active);
 
     int countByMembershipsUserAndActiveTrue(User user);
-    int countByIdAndMembershipsUser(Long groupId, User user);
 
     /*
     Find a group by a code
@@ -67,7 +67,6 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     Page<Group> findAll(Pageable pageable);
     Page<Group> findAllByActiveOrderByIdAsc(boolean active, Pageable pageable);
     Long countByActive(boolean active);
-    List<Group> findAllByIdIn(List<Long> ids);
 
     /*
     Couple of methods to be able to discover groups, as long as those have opted in
@@ -78,7 +77,6 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     Methods for analytical service, to retrieve and count groups in periods (by created date time)
      */
     int countByCreatedDateTimeBetweenAndActive(Timestamp periodStart, Timestamp periodEnd, boolean active);
-
 
     /*
     Find the max(groupTokenCode) in table
@@ -102,14 +100,8 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     @Query(value = "Select * from getusergroupswithsize(?1) where active = true", nativeQuery = true)
     List<Object[]> findActiveUserGroupsOrderedByRecentEvent(Long userId);
 
-   // @Query(value = "SELECT count(*) from group_profile g WHERE g.active = true AND g.id IN (SELECT group_id from group_user_membership WHERE user_id= ?1)", nativeQuery = true)
-  //  int countActiveGroups(Long userId);
+    @Query(value = "SELECT g FROM Group g WHERE g.id IN (SELECT gl.groupId FROM GroupLog gl WHERE (gl.createdDateTime BETWEEN ?1 AND ?2) AND gl.groupLogType = 16)")
+    List<Group> findGroupsWhereJoinCodeUsedBetween(Instant periodStart, Instant periodEnd);
 
-    // @Query(value = "SELECT count(*) from Event e where e.start_date_time > current_timestamp and e.applies_to_group in (select group_id from group_user_membership where user_id = ?1)", nativeQuery = true)
-
-    @Modifying
-    @Transactional
-    @Query("delete from Group g where g.id = ?1")
-    void deleteById(Long id);
 
 }

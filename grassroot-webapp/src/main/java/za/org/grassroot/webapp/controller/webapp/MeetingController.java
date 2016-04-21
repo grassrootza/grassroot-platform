@@ -161,11 +161,11 @@ public class MeetingController extends BaseController {
     }
 
     @RequestMapping(value = "cancel", method=RequestMethod.POST)
-    public String cancelMeeting(Model model, @ModelAttribute("meeting") Meeting meeting, BindingResult bindingResult,
+    public String cancelMeeting(Model model, @ModelAttribute("meeting") MeetingWrapper meeting, BindingResult bindingResult,
                                 RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
         log.info("Meeting that is about to be cancelled: " + meeting.toString());
-        eventBroker.cancel(getUserProfile().getUid(), meeting.getUid());
+        eventBroker.cancel(getUserProfile().getUid(), meeting.getEntityUid());
         addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.cancel.success", request);
         return "redirect:/home";
 
