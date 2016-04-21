@@ -7,7 +7,6 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.MessageProtocol;
-import za.org.grassroot.core.enums.UserMessagingPreference;
 
 /**
  * Created by luke on 2015/09/09.
@@ -46,10 +45,8 @@ public class MessageSendingManager implements MessageSendingService {
 
     @Override
     public void sendMessage(Notification notification) {
-
-        String route =(notification.getUser() !=null)?
-                notification.getUser().getMessagingPreference().name():UserMessagingPreference.ANDROID_APP.toString();
-        requestChannel.send( createMessage(notification,route));
+        String route = notification.getUser().getMessagingPreference().name();
+        requestChannel.send(createMessage(notification,route));
 
     }
 
@@ -58,9 +55,14 @@ public class MessageSendingManager implements MessageSendingService {
        requestChannel.send(createMessage(notification,destination));
     }
 
+/*    @Override
+    public void sendMessage(String destination, Object object) {
+        requestChannel.send(createMessage(object,destination));
+    }*/
+
 
     private Message<Notification> createMessage(Notification notification, String route){
-        if(route.equals(null) && notification.getUser() !=null){route = notification.getUser().getMessagingPreference().name();}
+        if(route.equals(null)){route = notification.getUser().getMessagingPreference().name();}
         Message<Notification> message = MessageBuilder.withPayload(notification)
                 .setHeader("route",route).
                         build();
@@ -69,7 +71,15 @@ public class MessageSendingManager implements MessageSendingService {
 
     }
 
+    private Message createMessage(Object object, String route){
 
+        Message<Object> message = MessageBuilder.withPayload(object)
+                .setHeader("route",route).
+                        build();
+
+        return message;
+
+    }
 
 
 }

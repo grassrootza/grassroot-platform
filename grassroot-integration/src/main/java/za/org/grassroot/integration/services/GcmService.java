@@ -13,6 +13,7 @@ public interface GcmService {
     GcmRegistration load(String uid);
     GcmRegistration loadByRegistrationId(String registrationId);
     String getGcmKey(User user);
+    GcmRegistration loadByUser(User user);
     GcmRegistration registerUser(User user,String registrationId);
 
 }

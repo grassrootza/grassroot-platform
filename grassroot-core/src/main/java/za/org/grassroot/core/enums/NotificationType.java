@@ -8,7 +8,6 @@ public enum NotificationType {
     EVENT,
     LOGBOOK,
     CHAT,
-    GENERAL,
-    TODO
+    GENERAL
 
 }

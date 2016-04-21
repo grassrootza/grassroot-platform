@@ -53,5 +53,5 @@ grassroot.log*
 schema-export-create.sql
 
 # Natty
-#**/generated/*
-#*.tokens
+**/generated/*.java
+*.tokens

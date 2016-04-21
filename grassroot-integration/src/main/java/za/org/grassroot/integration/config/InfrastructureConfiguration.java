@@ -24,11 +24,6 @@ public class InfrastructureConfiguration {
     }
 
     @Bean
-    public MessageChannel gcmXmppOutboundChannel(){
-        return new DirectChannel();
-    }
-
-    @Bean
     public MessageChannel requestChannel(){return new DirectChannel();}
 
     @Bean
@@ -36,9 +31,6 @@ public class InfrastructureConfiguration {
 
     @Bean
     public MessageChannel smsOutboundChannel(){return new DirectChannel();}
-
-    @Bean
-    public MessageChannel systemMessageChannel(){return new DirectChannel();}
 
 
 

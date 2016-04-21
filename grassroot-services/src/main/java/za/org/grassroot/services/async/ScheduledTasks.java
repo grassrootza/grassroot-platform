@@ -6,17 +6,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.LogBook;
-import za.org.grassroot.core.dto.GenericAsyncDTO;
-import za.org.grassroot.core.dto.LogBookDTO;
+import za.org.grassroot.core.dto.*;
 import za.org.grassroot.core.repository.LogBookRepository;
+import za.org.grassroot.core.repository.VoteRepository;
 import za.org.grassroot.integration.services.NotificationService;
+
 import za.org.grassroot.services.EventBroker;
-import za.org.grassroot.services.GroupBroker;
+import za.org.grassroot.services.async.GenericJmsTemplateProducerService;
 
 import javax.jms.Message;
 import javax.jms.ObjectMessage;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /**
@@ -26,13 +25,10 @@ import java.util.List;
 @Component
 public class ScheduledTasks {
 
-    private Logger log = LoggerFactory.getLogger(ScheduledTasks.class);
+    private Logger log = LoggerFactory.getLogger(getClass().getCanonicalName());
 
     @Autowired
     private EventBroker eventBroker;
-
-    @Autowired
-    private GroupBroker groupBroker;
 
     @Autowired
     private GenericJmsTemplateProducerService jmsTemplateProducerService;
@@ -54,9 +50,9 @@ public class ScheduledTasks {
     }
 
     @Scheduled(cron = "0 0 16 * * *") // runs at 4pm (=6pm SAST) every day
-    public void sendMeetingThankYous() { eventBroker.sendMeetingAcknowledgements(); }
+    public void sendMeetingAcknowledgements() { eventBroker.sendMeetingAcknowledgements(); }
 
-    @Scheduled(fixedRate = 3600000) // runs every hour
+    @Scheduled(cron = "0 0 11 * * *") // runs at 11am (=1pm SAST) every day
     public void sendMeetingRSVPsToDate() { eventBroker.sendMeetingRSVPsToDate(); }
 
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
@@ -107,9 +103,6 @@ public class ScheduledTasks {
             e.printStackTrace();
         }
         log.info("queueWelcomeMessages..." + count + "...queued to generic-async");
-    }
 
-    @Scheduled(cron = "0 0 15 * * *") // runs at 3pm (= 5pm SAST) every day
-    public void sendGroupJoinNotifications() { groupBroker.notifyOrganizersOfJoinCodeUse(Instant.now(),
-                                                                                         Instant.now().minus(1, ChronoUnit.DAYS));}
+    }
 }

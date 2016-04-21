@@ -10,11 +10,7 @@ import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Notification;
-import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.UserMessagingPreference;
-import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.core.util.PhoneNumberUtil;
-import za.org.grassroot.integration.services.GcmService;
 import za.org.grassroot.integration.services.MessageSendingService;
 import za.org.grassroot.integration.services.NotificationService;
 
@@ -30,19 +26,15 @@ public class InboundGcmMessageHandler {
     private Logger log = LoggerFactory.getLogger(InboundGcmMessageHandler.class);
 
     @Autowired
+    private MessageChannel requestChannel;
+
+    @Autowired
     private NotificationService notificationService;
+
 
     @Autowired
     private MessageSendingService messageSendingService;
 
-    @Autowired
-    private GcmService gcmService;
-
-    @Autowired
-    private MessageChannel gcmXmppOutboundChannel;
-
-    @Autowired
-    private UserRepository userRepository;
 
     @ServiceActivator(inputChannel = "gcmInboundChannel")
     public void handleUpstreamMessage(Message message) throws Exception {
@@ -51,14 +43,14 @@ public class InboundGcmMessageHandler {
                 (GcmPacketExtension) message.
                         getExtension(GcmPacketExtension.GCM_NAMESPACE);
         String json = gcmPacket.getJson();
-        log.info("Parsed to json = {}", json);
         ObjectMapper mapper = new ObjectMapper();
+
         Map<String,Object> response = mapper.readValue(json, new TypeReference<Map<String, Object>>(){});
         String message_type = (String) response.get("message_type");
         log.info(response.toString());
         if(message_type == null){
             handleOrdinaryMessage(response);
-        }else{
+        } else {
             switch(message_type){
             case "ack":
                 handleAcknowledgementReceipt(response);
@@ -81,6 +73,7 @@ public class InboundGcmMessageHandler {
     private void handleAcknowledgementReceipt(Map<String, Object> input) {
         String messageId = (String) input.get("message_id");
         String data = String.valueOf(input.get("data"));
+
         log.info("Gcm acknowledges receipt of message " + messageId+ " with payload "+data);
 
     }
@@ -88,35 +81,19 @@ public class InboundGcmMessageHandler {
     private void handleOrdinaryMessage(Map<String, Object> input){
        log.info("Ordinary message received");
         String messageId = (String) input.get("message_id");
-        String from = String.valueOf(input.get("from"));
-        HashMap<String, Object> data = (HashMap)input.get("data");
-        String action = String.valueOf(data.get("action"));
-        if(action != null) {
-            switch (action) {
-                case "REGISTER":
-                    String phoneNumber = (String) data.get("phoneNumber");
-                    registerUser(from, phoneNumber);
-                    break;
-                case "UPDATE_READ":
-                    String notificationId = (String) data.get("notificationId");
-                    updateReadStatus(notificationId);
-                    break;
-                default: //acton unknown ignore
-                    break;
-
-            }
-        }
-        sendAcknowledment(from, messageId);
+        String from = String.valueOf(input.get("data"));
+        sendAcknowledment(createAcknowledgeMessage(from,messageId));
     }
 
     private void handleNotAcknowledged(Map<String, Object> input) {
         String messageId = (String) input.get("message_id");
         Notification notification = notificationService.loadNotification(messageId);
-        log.info("Push Notification delivery failed, now sending SMS");
-        log.info("Sending SMS to " + notification.getUser().getPhoneNumber());
+        log.info("Push Notification delivery failed, now sending sms");
+        log.info("Sending sms to " + notification.getUser().getPhoneNumber());
         messageSendingService.sendMessage(UserMessagingPreference.SMS.name(),notification);
-    }
 
+
+    }
     private void handleDeliveryReceipts(Map<String,Object> input){
         String messageId = String.valueOf(input.get("messageId"));
         log.info("Message " + messageId + " delivery successful, updating notification to read status.");
@@ -131,25 +108,21 @@ public class InboundGcmMessageHandler {
         }
     }
 
-    private void sendAcknowledment(String registrationId, String messageId){
-        org.springframework.messaging.Message<Message> gcmMessage = GcmXmppMessageCodec.encode(registrationId, messageId, "ack");
-        log.info("Acknowledging message with id ={}", messageId);
-		gcmXmppOutboundChannel.send(gcmMessage);
+    protected static Map<String,Object> createAcknowledgeMessage(String to, String messageId) {
+        Map<String, Object> message = new HashMap<>();
+        message.put("message_type", "ack");
+        message.put("to", to);
+        message.put("message_id", messageId);
+        return message;
     }
-
-    //todo move all ordinary message handling logic to a separate file
-    public void registerUser(String registrationId, String phoneNumber){
-        String convertedNumber= PhoneNumberUtil.convertPhoneNumber(phoneNumber);
-        User user = userRepository.findByPhoneNumber(convertedNumber);
-        log.info("Registering user with phoneNumber={} as a push notification receipient, found user={}",convertedNumber, user);
-        gcmService.registerUser(user,registrationId);
-        user.setMessagingPreference(UserMessagingPreference.ANDROID_APP);
-        userRepository.save(user);
-    }
-
-    public void updateReadStatus(String messageId){
-        log.info("Marking notification with id={} as read", messageId);
-        notificationService.updateNotificationReadStatus(messageId,true);
+    
+    private void sendAcknowledment(Map<String,Object> response){
+     //   messageSendingService.sendMessage(UserMessagingPreference.ANDROID_APP.toString(),response);
 
     }
+
+
+
+
+
 }

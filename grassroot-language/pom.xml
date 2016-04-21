@@ -1,9 +1,7 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    <artifactId>grassroot-language</artifactId>
-    <packaging>jar</packaging>
-    <name>Grassroot Language</name>
-    <description>natural language date parser</description>
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <parent>
         <artifactId>grassroot</artifactId>
@@ -12,32 +10,14 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <licenses>
-        <license>
-            <name>MIT License</name>
-            <url>LICENSE</url>
-        </license>
-    </licenses>
+    <artifactId>grassroot-language</artifactId>
+    <name>Grassroot langauge</name>
 
     <properties>
-        <grammar.dir>${basedir}/src/main/antlr3/com/joestelmach/natty/generated</grammar.dir>
+        <grammar.dir>${basedir}/src/main/antlr3/za/org/grassroot/language/generated</grammar.dir>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>sonatype-nexus-snapshots</id>
-            <name>Sonatype Nexus Snapshots</name>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-
-        <repository>
-            <id>sonatype-nexus-staging</id>
-            <name>Nexus Release Repository</name>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
-        </repository>
-    </distributionManagement>
 
     <build>
         <plugins>
@@ -69,7 +49,7 @@
                 <configuration>
                     <filesets>
                         <fileset>
-                            <directory>src/main/java/com/joestelmach/natty/generated</directory>
+                            <directory>src/main/java/za/org/grassroot/language/generated</directory>
                             <includes>
                                 <include>**/*.java</include>
                             </includes>
@@ -93,14 +73,14 @@
                         </goals>
                         <configuration>
                             <debug>true</debug>
-                            <libDirectory>src/main/antlr3/com/joestelmach/natty/generated/imports</libDirectory>
+                            <libDirectory>src/main/antlr3/za/org/grassroot/language/generated/imports</libDirectory>
                             <outputDirectory>src/main/java</outputDirectory>
                             <includes>
-                                <include>com/joestelmach/natty/generated/DateLexer.g</include>
-                                <include>com/joestelmach/natty/generated/DateParser.g</include>
+                                <include>za/org/grassroot/language/generated/DateLexer.g</include>
+                                <include>za/org/grassroot/language/generated/DateParser.g</include>
                             </includes>
                             <excludes>
-                                <exclude>com/joestelmach/natty/generated/imports/NumericRules.g</exclude>
+                                <exclude>za/org/grassroot/language/generated/imports/NumericRules.g</exclude>
                             </excludes>
                         </configuration>
                     </execution>
@@ -113,11 +93,11 @@
                         <configuration>
                             <debug>false</debug>
                             <outputDirectory>src/main/java</outputDirectory>
-                            <libDirectory>src/main/antlr3/com/joestelmach/natty/generated/imports</libDirectory>
+                            <libDirectory>src/main/antlr3/za/org/grassroot/language/generated/imports</libDirectory>
                             <excludes>
-                                <exclude>com/joestelmach/natty/generated/DateLexer.g</exclude>
-                                <exclude>com/joestelmach/natty/generated/DateParser.g</exclude>
-                                <exclude>com/joestelmach/natty/generated/imports/NumericRules.g</exclude>
+                                <exclude>za/org/grassroot/language/generated/DateLexer.g</exclude>
+                                <exclude>za/org/grassroot/language/generated/DateParser.g</exclude>
+                                <exclude>za/org/grassroot/language/generated/imports/NumericRules.g</exclude>
                             </excludes>
                         </configuration>
                     </execution>
@@ -142,71 +122,6 @@
             </plugin>
         </plugins>
     </build>
-
-    <!-- release profile -->
-    <profiles>
-        <profile>
-            <id>release</id>
-            <activation>
-                <property>
-                    <name>performRelease</name>
-                    <value>true</value>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-
-                    <!-- sign artifacts -->
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.4</version>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <!-- generate javadoc.jar -->
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>2.9.1</version>
-                        <executions>
-                            <execution>
-                                <id>attach-javadocs</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                        <configuration>
-                        </configuration>
-                    </plugin>
-
-                    <!-- generate sources.jar -->
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <version>2.2.1</version>
-                        <executions>
-                            <execution>
-                                <id>attach-sources</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 
     <!-- dependencies -->
     <dependencies>

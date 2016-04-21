@@ -1,37 +1,33 @@
 package za.org.grassroot.services;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.MessageSource;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.EventDTO;
-import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.FormatUtil;
 
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Locale;
+import java.util.logging.Logger;
 
-import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
+import static za.org.grassroot.core.util.DateTimeUtil.*;
+import static za.org.grassroot.core.util.DateTimeUtil.convertToUserTimeZone;
 
 /**
  * Created by aakilomar on 8/24/15.
  */
 @Component
-public class MessageAssemblingManager implements MessageAssemblingService {
+public class MeetingNotificationManager implements MeetingNotificationService {
 
-    private Logger log = LoggerFactory.getLogger(MessageAssemblingManager.class);
+    private Logger log = Logger.getLogger(getClass().getCanonicalName());
 
     @Autowired
     @Qualifier("servicesMessageSource")
@@ -40,8 +36,6 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     @Autowired
     @Qualifier("servicesMessageSourceAccessor")
     MessageSourceAccessor messageSourceAccessor;
-
-    private static final DateTimeFormatter shortDateFormatter = DateTimeFormatter.ofPattern("EEE, d/M");
 
     /*
     Although it says meeting using the same functions for voting!
@@ -60,7 +54,18 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         return messageSourceAccessor.getMessage(messageKey, populateFields(user, event), locale);
     }
 
-
+    @Override
+    public String createMeetingNotification(User user, EventDTO event, String channel) {
+        Locale locale =getUserLocale(user);
+        String messageKey;
+        if(event.getEventType() ==EventType.VOTE){
+            messageKey = getLocaleProperty(channel,".vote.send.new");
+        }else{
+            messageKey = event.isRsvpRequired()?getLocaleProperty(channel,".mtg.send.new.rsvp"):
+                    getLocaleProperty(channel,".mtg.send.new");
+        }
+        return messageSourceAccessor.getMessage(messageKey, populateFields(user, event), locale);
+    }
 
     @Override
     public String createLogBookReminderMessage(User user, Group group, LogBook logBook) {
@@ -68,7 +73,12 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         return messageSourceAccessor.getMessage("sms.logbook.reminder", populateLogBookFields(user, group, logBook), locale);
     }
 
-
+    @Override
+    public String createLogBookReminderMessage(User user, Group group, LogBook logBook, String channel) {
+        Locale locale = getUserLocale(user);
+        return messageSourceAccessor.getMessage(getLocaleProperty(channel,".logbook.reminder"),
+                populateLogBookFields(user, group, logBook), locale);
+    }
 
     @Override
     public String createNewLogBookNotificationMessage(User user, Group group, LogBook logBook, boolean assigned) {
@@ -80,6 +90,15 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         }
     }
 
+    @Override
+    public String createNewLogBookNotificationMessage(User user, Group group, LogBook logBook, boolean assigned, String channel) {
+        Locale locale = getUserLocale(user);
+        if (assigned) {
+            return messageSourceAccessor.getMessage(getLocaleProperty(channel,".logbook.new.assigned"), populateLogBookFields(user, group, logBook), locale);
+        } else {
+            return messageSourceAccessor.getMessage(getLocaleProperty(channel,".logbook.new.notassigned"), populateLogBookFields(user, group, logBook), locale);
+        }
+    }
 
     @Override
     public String createChangeMeetingNotificationMessage(User user, EventDTO event) {
@@ -90,7 +109,13 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         return messageSourceAccessor.getMessage(messageKey, populateFields(user, event), locale);
     }
 
-
+    @Override
+    public String createChangeMeetingNotificationMessage(User user, EventDTO event, String channel) {
+        Locale locale = getUserLocale(user);
+        String messageKey = "sms.mtg.send.change";
+        if (event.getEventType() == EventType.VOTE) messageKey = getLocaleProperty(channel,".vote.send.change");
+        return messageSourceAccessor.getMessage(messageKey, populateFields(user, event), locale);
+    }
 
     @Override
     public String createCancelMeetingNotificationMessage(User user, EventDTO event) {
@@ -100,7 +125,13 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         return messageSourceAccessor.getMessage(messageKey, populateFields(user, event), locale);
     }
 
-
+    @Override
+    public String createCancelMeetingNotificationMessage(User user, EventDTO event, String channel) {
+        Locale locale = getUserLocale(user);
+        String messageKey = getLocaleProperty(channel, ".mtg.send.cancel");
+        if (event.getEventType() == EventType.VOTE) messageKey = getLocaleProperty(channel,".vote.send.cancel");
+        return messageSourceAccessor.getMessage(messageKey, populateFields(user, event), locale);
+    }
 
     @Override
     public String createMeetingReminderMessage(User user, EventDTO event) {
@@ -110,7 +141,13 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         return messageSourceAccessor.getMessage(messageKey, populateFields(user, event), locale);
     }
 
-
+    @Override
+    public String createMeetingReminderMessage(User user, EventDTO event, String channel) {
+        Locale locale = getUserLocale(user);
+        String messageKey =  getLocaleProperty(channel,".mtg.send.reminder");
+        if (event.getEventType() == EventType.VOTE) messageKey =getLocaleProperty(channel, ".vote.send.reminder");
+        return messageSourceAccessor.getMessage(messageKey, populateFields(user, event), locale);
+    }
 
     @Override
     public String createVoteResultsMessage(User user, EventDTO event, double yes, double no, double abstain, double noReply) {
@@ -119,7 +156,12 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         return messageSourceAccessor.getMessage(messageKey, populateFields(user, event, yes, no, abstain, noReply), locale);
     }
 
-
+    @Override
+    public String createVoteResultsmessage(User user, EventDTO event, double yes, double no, double abstain, double noReply, String channel) {
+        Locale locale = getUserLocale(user);
+        String messageKey = getLocaleProperty(channel,".vote.send.results");
+        return messageSourceAccessor.getMessage(messageKey, populateFields(user, event, yes, no, abstain, noReply), locale);
+    }
 
     @Override
     public String createMeetingReminderMessage(String locale, User user, EventDTO event) {
@@ -127,18 +169,9 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         return messageSourceAccessor.getMessage("sms.mtg.send.reminder", populateFields(user, event), locale);
     }
 
-
-
     @Override
-    public String createMeetingRsvpTotalMessage(User user, EventDTO meeting, ResponseTotalsDTO responses) {
-        log.info("Constructing meeting total message ... with response object totals={}", responses.toString());
-        String[] fields = new String[] { meeting.getName(),
-                meeting.getEventStartDateAtSAST().format(shortDateFormatter),
-                String.valueOf(responses.getYes()),
-                String.valueOf(responses.getNo()),
-                String.valueOf(responses.getNumberNoRSVP()),
-                String.valueOf(responses.getNumberOfUsers()) };
-        return messageSourceAccessor.getMessage("sms.meeting.rsvp.totals", fields, getUserLocale(user));
+    public String createMeetingReminderMessage(String locale, User user, EventDTO event, String channel) {
+        return messageSourceAccessor.getMessage(getLocaleProperty(channel,".mtg.send.reminder"), populateFields(user, event), locale);
     }
 
     @Override
@@ -147,34 +180,14 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     }
 
     @Override
-    public String createMeetingThankYouMessage(User user, EventDTO event) {
-        // sms.meeting.thankyou = {0}: Thank you for attending the meeting about {1} on {2}. Dial *134*1994# to create and join groups or call meetings.
-        String prefix = (event.getParent().getJpaEntityType().equals(JpaEntityType.GROUP) &&
-                ((Group) event.getParent()).hasName()) ? ((Group) event.getParent()).getGroupName() : "Grassroot";
-        String[] fields = new String[] {  prefix, event.getName(), event.getEventStartDateAtSAST().format(shortDateFormatter) };
-        return messageSourceAccessor.getMessage("sms.meeting.thankyou", fields, getUserLocale(user));
+    public String createWelcomeMessage(String messageId, UserDTO userDTO, String channel) {
+        return null;
     }
-
 
     @Override
     public String createReplyFailureMessage(User user) {
         return messageSourceAccessor.getMessage("sms.reply.failure", "",getUserLocale(user));
 
-    }
-
-    @Override
-    public String createGroupJoinCodeUseMessage(User user, String groupName, int numberJoined, List<String> namesJoined) {
-        String message;
-        String[] fields;
-        if (namesJoined == null) {
-            fields = new String[] { groupName, String.valueOf(numberJoined) };
-            message = messageSourceAccessor.getMessage("sms.group.join.number", fields, getUserLocale(user));
-        } else {
-            String numbers = String.join(", ", namesJoined);
-            fields = new String[] { groupName, numbers };
-            message = messageSourceAccessor.getMessage("sms.group.join.named", fields, getUserLocale(user));
-        }
-        return message;
     }
 
 
@@ -197,8 +210,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
 
     private String[] populateFields(User user, EventDTO event, double yes, double no, double abstain, double noReply) {
 
-        // todo: switch this to new name (may want a "hasName"/"getName" method defined on UidIdentifiable?
-        String salutation = (((Group) event.getParent()).hasName()) ? ((Group) event.getParent()).getGroupName() : "Grassroot";
+        String salutation = (((Group) event.getParent()).hasName()) ? ((Group) event.getParent()).getGroupName() : "GrassRoot";
         log.info("populateFields...user..." + user.getPhoneNumber() + "...event..." + event.getId() + "...version..." + event.getVersion());
         DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
         String dateString = "no date specified";

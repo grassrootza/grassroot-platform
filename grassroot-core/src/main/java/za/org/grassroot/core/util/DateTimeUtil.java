@@ -4,10 +4,11 @@ import com.google.common.base.CharMatcher;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
-import za.org.grassroot.core.util.natty.src.main.java.com.joestelmach.natty.DateGroup;
-import za.org.grassroot.core.util.natty.src.main.java.com.joestelmach.natty.Parser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import za.org.grassroot.language.DateGroup;
+import za.org.grassroot.language.Parser;
 
 import java.sql.Timestamp;
 import java.time.*;
@@ -76,15 +77,15 @@ public class DateTimeUtil {
         ZonedDateTime userTime = ZonedDateTime.of(userInput, userZoneId);
         ZonedDateTime systemTime = userTime.withZoneSameInstant(zoneSystem);
 
-//        log.info("Time at user: {}, time at system: {}", userTime.format(DateTimeFormatter.ISO_DATE_TIME),
-//                 systemTime.format(DateTimeFormatter.ISO_DATE_TIME));
+        log.info("Time at user: {}, time at system: {}", userTime.format(DateTimeFormatter.ISO_DATE_TIME),
+                 systemTime.format(DateTimeFormatter.ISO_DATE_TIME));
 
         return systemTime.toInstant();
     }
 
     public static ZonedDateTime convertToUserTimeZone(Instant timeInSystem, ZoneId userZoneId) {
         ZonedDateTime zonedDateTime = timeInSystem.atZone(userZoneId);
-//        log.info("Time in system: {}, converted to zone: {}", timeInSystem.toString(), zonedDateTime.format(DateTimeFormatter.ISO_DATE_TIME));
+        log.info("Time in system: {}, converted to zone: {}", timeInSystem.toString(), zonedDateTime.format(DateTimeFormatter.ISO_DATE_TIME));
         return zonedDateTime;
     }
 

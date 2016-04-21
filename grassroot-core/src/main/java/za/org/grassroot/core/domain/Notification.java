@@ -31,6 +31,9 @@ public class Notification {
     private User user;
 
     @ManyToOne
+    private GcmRegistration gcmRegistration;
+
+    @ManyToOne
     private EventLog eventLog;
 
     @ManyToOne
@@ -50,6 +53,7 @@ public class Notification {
     @Enumerated
     private NotificationType notificationType;
 
+    @Basic
     @Column(name = "message")
     private String message;
 
@@ -61,30 +65,33 @@ public class Notification {
         }
     }
 
-    private Notification(){
-        // for JPA
+    public Notification(){
     }
 
-    private Notification(User user, Boolean read, Boolean delivered, NotificationType notificationType, LogBookLog logBookLog,
-                         EventLog eventLog, String message) {
+    public Notification(User user,EventLog eventLog,GcmRegistration gcmRegistration,Boolean read,
+                        Boolean delivered, NotificationType notificationType, Instant createdDateTime){
         this.uid = UIDGenerator.generateId();
-        this.user = user;
-        this.read = read;
-        this.delivered = delivered;
-        this.createdDateTime = Instant.now();
+        this.user=user;
+        this.eventLog=eventLog;
+        this.gcmRegistration=gcmRegistration;
+        this.read=read;
+        this.delivered=delivered;
+        this.createdDateTime=createdDateTime;
         this.notificationType = notificationType;
         this.userMessagingPreference = user.getMessagingPreference();
+    }
+
+    public Notification(User user,LogBookLog logBookLog,GcmRegistration gcmRegistration,Boolean read,
+                        Boolean delivered, NotificationType notificationType, Instant createdDateTime){
+        this.uid = UIDGenerator.generateId();
+        this.user=user;
         this.logBookLog = logBookLog;
-        this.eventLog = eventLog;
-        this.message = message;
-    }
-
-    public Notification(User user, EventLog eventLog, Boolean read, Boolean delivered, NotificationType notificationType){
-        this(user, read, delivered, notificationType, null, eventLog, eventLog.getMessage());
-    }
-
-    public Notification(User user, LogBookLog logBookLog, Boolean read, Boolean delivered, NotificationType notificationType, String message){
-        this(user, read, delivered, notificationType, logBookLog, null, message);
+        this.gcmRegistration=gcmRegistration;
+        this.read=read;
+        this.delivered=delivered;
+        this.createdDateTime=createdDateTime;
+        this.notificationType = notificationType;
+        this.userMessagingPreference = user.getMessagingPreference();
     }
 
     public Long getId() {
@@ -118,6 +125,16 @@ public class Notification {
     public void setUser(User user) {
         this.user = user;
     }
+
+    public GcmRegistration getGcmRegistration() {
+        return gcmRegistration;
+    }
+
+    public void setGcmRegistration(GcmRegistration gcmRegistration) {
+        this.gcmRegistration = gcmRegistration;
+    }
+
+
 
     public boolean isRead() {
         return read;
@@ -182,6 +199,7 @@ public class Notification {
                 "uid='" + uid + '\'' +
                 ", createdDateTime=" + createdDateTime +
                 ", user=" + user +
+                ", gcmRegistration=" + gcmRegistration +
                 '}';
     }
 }
