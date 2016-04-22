@@ -25,8 +25,8 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.repository.UserRequestRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
-import za.org.grassroot.services.async.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.async.AsyncUserLogger;
+import za.org.grassroot.services.async.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.exception.UserExistsException;
 import za.org.grassroot.services.util.CacheUtilService;
@@ -48,7 +48,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     private static final Logger log = LoggerFactory.getLogger(UserManager.class);
 
-    private static final int PAGE_SIZE = 50;
     @Autowired
     GenericJmsTemplateProducerService jmsTemplateProducerService;
     @Autowired
@@ -80,6 +79,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
+    @Transactional
     public User createUserWebProfile(User userProfile) throws UserExistsException {
 
         Assert.notNull(userProfile, "User is required");
@@ -91,20 +91,16 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
         if (userExists) {
 
-            System.out.println("The user exists, and their web profile is set to: " + userProfile.isHasWebProfile());
+            log.info("The user exists, and their web profile is set to: " + userProfile.isHasWebProfile());
 
-            User userToUpdate = loadOrSaveUser(phoneNumber);
+            User userToUpdate = findByInputNumber(phoneNumber);
             if (userToUpdate.isHasWebProfile()) {
-                System.out.println("This user has a web profile already");
                 throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a web profile!");
             }
 
             if (!userToUpdate.hasName()) {
-                userToUpdate.setDisplayName(userProfile.getFirstName() + " " + userProfile.getLastName());
+                userToUpdate.setDisplayName(userProfile.getDisplayName());
             }
-
-            userToUpdate.setFirstName(userProfile.getFirstName());
-            userToUpdate.setLastName(userProfile.getLastName());
 
             userToUpdate.setUsername(phoneNumber);
             userToUpdate.setHasWebProfile(true);
@@ -112,11 +108,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
             userToSave = userToUpdate;
 
         } else {
-
-            userToSave = new User(phoneNumber, userProfile.getFirstName() + " " + userProfile.getLastName());
+            userToSave = new User(phoneNumber, userProfile.getDisplayName());
             userToSave.setUsername(phoneNumber);
             userToSave.setHasWebProfile(true);
-
         }
 
         if (passwordEncoder != null) {
@@ -127,13 +121,10 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
         try {
             User userToReturn = userRepository.saveAndFlush(userToSave);
-            if (userExists)
-                asyncUserService.recordUserLog(userToReturn.getUid(), UserLogType.CREATED_IN_DB, "User first created via web sign up");
+            if (!userExists) asyncUserService.recordUserLog(userToReturn.getUid(), UserLogType.CREATED_IN_DB, "User first created via web sign up");
             asyncUserService.recordUserLog(userToReturn.getUid(), UserLogType.CREATED_WEB, "User created web profile");
             return userToReturn;
         } catch (final Exception e) {
-            e.printStackTrace();
-            log.warn(e.getMessage());
             throw new UserExistsException("User '" + userProfile.getUsername() + "' already exists!");
         }
 

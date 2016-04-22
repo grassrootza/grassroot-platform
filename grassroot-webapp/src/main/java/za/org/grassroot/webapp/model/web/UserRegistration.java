@@ -1,8 +1,6 @@
 package za.org.grassroot.webapp.model.web;
 
 import org.hibernate.validator.constraints.NotBlank;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 
@@ -26,7 +24,7 @@ public class UserRegistration {
         this.user = user;
     }
 
-    @NotBlank(message = "First name is required!")
+    /*@NotBlank(message = "First name is required!")
     public  String getFirstName()
     {
         return user.getFirstName();
@@ -41,7 +39,12 @@ public class UserRegistration {
     public void setLastName(String lastName)
     {
         user.setLastName(lastName);
-    }
+    }*/
+
+    @NotBlank(message = "{user.registration.validation.displayname.required}")
+    public String getDisplayName() { return user.getDisplayName(); }
+
+    public void setDisplayName(String displayName) { user.setDisplayName(displayName); }
 
     @NotBlank(message = "{user.registration.validation.password.required}")
     public String getPassword() {

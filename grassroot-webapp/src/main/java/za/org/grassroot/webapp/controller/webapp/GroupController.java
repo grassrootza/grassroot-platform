@@ -118,15 +118,15 @@ public class GroupController extends BaseController {
     // todo: work out how to prevent a computer just cycling through all possible numbers on the token code (as, e.g., DoS)
 
     @RequestMapping(value = "search")
-    public String searchForGroup(Model model, @RequestParam String searchTerm) {
-        String tokenSearch = searchTerm.contains("*134*1994*") ?
-                    searchTerm.substring("*134*1994*".length(), searchTerm.length() - 1) : searchTerm;
+    public String searchForGroup(Model model, @RequestParam String term) {
+        String tokenSearch = term.contains("*134*1994*") ?
+                    term.substring("*134*1994*".length(), term.length() - 1) : term;
         log.info("searching for group ... token to use ... " + tokenSearch);
         Group groupByToken = groupBroker.findGroupFromJoinCode(tokenSearch);
         if (groupByToken != null) {
             model.addAttribute("group", groupByToken);
         } else {
-            List<Group> possibleGroups = groupBroker.findPublicGroups(searchTerm);
+            List<Group> possibleGroups = groupBroker.findPublicGroups(term);
             if (!possibleGroups.isEmpty())
                 model.addAttribute("groupCandidates", possibleGroups);
             else
@@ -137,10 +137,10 @@ public class GroupController extends BaseController {
 
     @RequestMapping(value = "join/request", method = RequestMethod.POST)
     public String requestToJoinGroup(Model model, @RequestParam(value="uid") String groupToJoinUid,
-                                     @RequestParam(value="request", required = false) String description,
+                                     @RequestParam(value="description", required = false) String description,
                                      HttpServletRequest request, RedirectAttributes attributes) {
         try {
-            groupJoinRequestService.open(getUserProfile().getUid(), groupToJoinUid, null);
+            groupJoinRequestService.open(getUserProfile().getUid(), groupToJoinUid, description);
             addMessage(attributes, MessageType.INFO, "group.join.request.done", request);
             return "redirect:/home";
         } catch (RequestorAlreadyPartOfGroupException e) {
@@ -160,10 +160,10 @@ public class GroupController extends BaseController {
     }
 
     @RequestMapping(value = "join/decline")
-    public String declineJoinRequest(Model model, @RequestParam String requestUid, HttpServletRequest request) {
+    public String declineJoinRequest(@RequestParam String requestUid, HttpServletRequest request, RedirectAttributes attributes) {
         groupJoinRequestService.decline(getUserProfile().getUid(), requestUid);
-        addMessage(model, MessageType.INFO, "group.join.request.declined", request);
-        return viewGroupIndex(model, groupJoinRequestService.loadRequest(requestUid).getGroup().getUid());
+        addMessage(attributes, MessageType.INFO, "group.join.request.declined", request);
+        return "redirect:/home"; // no point showing group if decline request, want to get on with life
     }
 
     @RequestMapping(value = "join/token", method = RequestMethod.POST)

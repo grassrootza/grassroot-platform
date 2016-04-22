@@ -1,0 +1,1 @@
+ALTER TABLE group_join_request DROP COLUMN description;

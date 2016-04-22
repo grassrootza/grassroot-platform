@@ -112,6 +112,7 @@ public class User implements UserDetails {
         this.languageCode = "en";
         this.messagingPreference = UserMessagingPreference.SMS; // as default
         this.createdDateTime = Timestamp.from(Instant.now());
+        this.alertPreference = AlertPreference.NOTIFY_ALL_EVENTS;
     }
 
     /**
@@ -408,8 +409,7 @@ public class User implements UserDetails {
         sb.append("id=").append(id);
         sb.append(", uid='").append(uid).append('\'');
         sb.append(", phoneNumber='").append(phoneNumber).append('\'');
-        sb.append(", firstName='").append(firstName).append('\'');
-        sb.append(", lastName='").append(lastName).append('\'');
+        sb.append(", displayName='").append(displayName).append('\'');
         sb.append(", username='").append(username).append('\'');
         sb.append(", enabled=").append(enabled);
         sb.append(", createdDateTime=").append(createdDateTime);

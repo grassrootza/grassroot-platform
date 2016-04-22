@@ -1,5 +1,5 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
-      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" xmlns:data="http://www.w3.org/1999/xhtml"
       layout:decorator="layout">
 <head>
     <title>Grassroot Platform</title>
@@ -55,7 +55,7 @@
     <div class="col-md-12">
       <h1 th:text="#{web.home.banner}" class="text-center">Meet, vote act</h1>
       <!-- Insert user's name -->
-      <h4 th:text="#{web.home.welcome(${currentUser.firstName})}" class="text-center">Welcome back to Grassroot, Luke</h4>
+      <h4 th:text="#{web.home.welcome(${currentUser.displayName})}" class="text-center">Welcome back to Grassroot, Luke</h4>
     </div>
   </div>
 
@@ -142,12 +142,38 @@
                   <button class="btn btn-default btn-sm" type="submit">Approve</button></a>
                 <a th:href="@{/group/join/decline(requestUid=${request.uid})}">
                   <button class="btn btn-default btn-sm" type="submit">Reject</button></a>
-                <a th:href="@{/group/join/details(requestUid=${request.uid})}">
-                  <button class="btn btn-default btn-sm" type="submit">See details</button></a>
+                <button type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#joinReqDetailsModal"
+                   data:description="${request.description}" data:uid="${request.uid}" data:name="${request.requestor.getName('')}">
+                  See details</button>
               </div>
             </div>
           </li>
         </ul>
+      </div>
+    </div>
+  </div>
+
+  <div th:if="${not #lists.isEmpty(joinRequestsPending)}" class="modal fade" id="joinReqDetailsModal"
+       tabindex="-1" role="dialog" aria-labelledby="joinModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="joinModalLabel">
+            Join request details
+          </h4>
+        </div>
+        <div class="modal-body">
+          <p><label>Name:</label> <span id="requestorName">Person</span></p>
+          <p><label>Date: </label> <span id="dateRequested">Some time</span></p>
+          <p><label>Message: </label> <span id="requestDescription">Description</span></p>
+        </div>
+        <div class="modal-footer">
+          <a th:href="@{/group/join/approve}" id="approveLink">
+            <button class="btn btn-default btn-sm" type="submit">Approve</button></a>
+          <a th:href="@{/group/join/decline}" id="declineLink">
+            <button class="btn btn-default btn-sm" type="submit">Reject</button></a>
+        </div>
       </div>
     </div>
   </div>
@@ -160,7 +186,7 @@
       <div class="col-md-8 col-md-offset-2">
         <form th:action="@{/group/search}" method="get" class="form-vertical">
           <div class="input-group">
-            <input type="text" name="searchTerm" class="form-control" id="searchTerm" placeholder="Enter join code or name to search" />
+            <input type="text" name="term" class="form-control" id="searchTerm" placeholder="Enter join code or name to search" />
             <span class="input-group-btn">
               <button type="submit" class="btn btn-primary">Search for groups</button>
             </span>
@@ -232,16 +258,28 @@
 
 </div>
 
-<!-- <div class="header-container" layout:fragment="script-container">
+<div class="header-container" layout:fragment="script-container">
+
   <script>
-    $('#unsubModal').on('show.bs.modal', function (event) {
+    $('#joinReqDetailsModal').on('show.bs.modal', function (event) {
       var button = $(event.relatedTarget); // Button that triggered the modal
-      var group = button.data('id'); // Extract info from data-* attributes
+
+      var group = button.data('uid');
+      var approveHref = "/group/join/approve?requestUid=" + group;
+      var declineHref = "/group/join/decline?requestUid=" + group;
+
+      var name = button.data('name')
+      var description = button.data('description')
+
       var modal = $(this);
-      modal.find('#groupId').val(group);
+      modal.find('#requestorName').text(name);
+      modal.find('#requestDescription').text(description);
+      modal.find('#approveLink').attr('href', approveHref);
+      modal.find('#declineLink').attr('href', declineHref);
     })
   </script>
-</div> -->
+
+</div>
 
 </body>
 </html>

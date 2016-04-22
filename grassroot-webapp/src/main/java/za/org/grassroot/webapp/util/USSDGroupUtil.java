@@ -322,10 +322,6 @@ public class USSDGroupUtil extends USSDUtil {
         if (permissionBroker.isGroupPermissionAvailable(sessionUser, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS))
             listMenu.addMenuOption(groupMenuWithId(renameGroupPrompt, groupUid), getMessage(menuKey + renameGroupPrompt, sessionUser));
 
-        // removing this for now until have 'advanced sub-menu', or the like
-        // if (group.getCreatedByUser().equals(sessionUser))
-        //    listMenu.addMenuOption(groupMenuWithId(mergeGroupMenu, groupId), getMessage(menuKey + mergeGroupMenu, sessionUser));
-
         if (groupBroker.isDeactivationAvailable(sessionUser, group, true))
             listMenu.addMenuOption(groupMenuWithId(inactiveMenu, groupUid), getMessage(menuKey + inactiveMenu, sessionUser));
 

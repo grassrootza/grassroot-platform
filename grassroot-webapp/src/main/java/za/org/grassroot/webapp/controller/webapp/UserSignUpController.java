@@ -56,6 +56,7 @@ public class UserSignUpController extends BaseController {
                                  BindingResult bindingResult, HttpServletRequest request, RedirectAttributes redirectAttributes) {
         try {
             if (bindingResult.hasErrors()) {
+                log.info("Error in sign up! Error output: {}", bindingResult.getAllErrors().toString());
                 model.addAttribute("userRegistration", userRegistration);
                 return new ModelAndView("signup", model.asMap());
             }
@@ -70,7 +71,7 @@ public class UserSignUpController extends BaseController {
 
         } catch (UserExistsException userException) {
             addMessage(model, MessageType.INFO, "user.creation.exception.userExists", request);
-            log.error("Error saving user. User exists.", userException);
+            log.error("Error saving user. User exists.");
             return new ModelAndView("signup", model.asMap());
         } catch (Exception e) {
             log.error("Error saving user.", e);
