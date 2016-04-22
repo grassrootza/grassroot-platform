@@ -18,6 +18,8 @@
 
     <properties>
         <java.version>1.8</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
 
 
@@ -26,6 +28,7 @@
         <module>grassroot-core</module>
         <module>grassroot-integration</module>
         <module>grassroot-services</module>
+        <module>grassroot-language</module>
     </modules>
     <dependencies>
         <dependency>

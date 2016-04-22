@@ -1,6 +1,5 @@
 package za.org.grassroot.integration.services;
 
-import edu.emory.mathcs.backport.java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,10 +16,7 @@ import za.org.grassroot.core.repository.LogBookRepository;
 import za.org.grassroot.core.repository.NotificationRepository;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -41,9 +37,6 @@ public class NotificationManager implements NotificationService{
 
     @Autowired
     private MessageSendingService messageSendingService;
-
-    @Autowired
-    private GcmService gcmService;
 
     private static final Set<EventLogType> eventLogTypesToIncludeInList =
             Collections.unmodifiableSet(Stream.of(EventLogType.EventNotification, EventLogType.EventChange,
