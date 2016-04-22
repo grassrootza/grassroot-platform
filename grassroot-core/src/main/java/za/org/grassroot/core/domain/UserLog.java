@@ -13,7 +13,7 @@ import java.time.Instant;
 @Entity
 @Table(name="user_log",
         uniqueConstraints = {@UniqueConstraint(name = "uk_user_log_request_uid", columnNames = "uid")})
-public class UserLog {
+public class UserLog implements ActionLog {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

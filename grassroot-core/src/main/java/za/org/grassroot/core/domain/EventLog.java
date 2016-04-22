@@ -22,7 +22,7 @@ import java.util.Objects;
 
 @Entity
 @Table(name="event_log")
-public class EventLog {
+public class EventLog implements ActionLog {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

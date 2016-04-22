@@ -203,15 +203,18 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
 
     public Set<User> getMembersWithChildrenIncluded() {
         Set<User> users = new HashSet<>();
-        addGroupMembers(users, Group::isActive);
+        collectGroupMembers(users, Group::isActive);
         return users;
     }
 
-    private void addGroupMembers(Set<User> users, Predicate<Group> childFilter) {
+	/**
+     * Adding group members to given set of users, and repeating it recursively for each child.
+     */
+    private void collectGroupMembers(Set<User> users, Predicate<Group> childFilter) {
         users.addAll(getMembers());
         for (Group child : children) {
             if (childFilter.test(child)) {
-                child.addGroupMembers(users, childFilter);
+                child.collectGroupMembers(users, childFilter);
             }
         }
     }
@@ -282,6 +285,15 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
             membership.getUser().removeMappedByMembership(membership);
         }
         return removed;
+    }
+
+    public void removeMemberships(Set<String> phoneNumbers) {
+        Objects.requireNonNull(phoneNumbers);
+        Set<Membership> memberships = this.memberships.stream()
+                .filter(membership -> phoneNumbers.contains(membership.getUser().getPhoneNumber()))
+                .collect(Collectors.toSet());
+
+        this.memberships.removeAll(memberships);
     }
 
     public Membership getMembership(User user) {

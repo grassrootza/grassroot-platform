@@ -10,7 +10,7 @@ import java.util.Date;
 @Table(name = "log_book_log",
         indexes = {@Index(name = "idx_log_book_log_logbook_id",  columnList="logbook_id", unique = false)})
 
-public class LogBookLog {
+public class LogBookLog implements ActionLog {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
