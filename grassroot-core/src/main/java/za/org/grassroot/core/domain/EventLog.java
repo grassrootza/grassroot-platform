@@ -12,7 +12,6 @@ package za.org.grassroot.core.domain;
  */
 
 import za.org.grassroot.core.enums.EventLogType;
-import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
@@ -46,13 +45,8 @@ public class EventLog {
     @Enumerated
     private EventLogType eventLogType;
 
-    @Basic
     @Column
     private String message;
-
-    @Basic
-    @Column(name = "message_default", insertable = true, nullable = false)
-    private UserMessagingPreference defaultMessageType;
 
     @PreUpdate
     @PrePersist
@@ -70,7 +64,7 @@ public class EventLog {
         // for JPA
     }
 
-    public EventLog(User user, Event event, EventLogType eventLogType, String message, UserMessagingPreference defaultMessageType) {
+    public EventLog(User user, Event event, EventLogType eventLogType, String message) {
         Objects.requireNonNull(user);
         Objects.requireNonNull(event);
         Objects.requireNonNull(eventLogType);
@@ -81,10 +75,6 @@ public class EventLog {
         this.eventLogType = eventLogType;
         this.message = message;
         this.createdDateTime = Timestamp.from(Instant.now());
-        if (defaultMessageType == null)
-            this.defaultMessageType = user.getMessagingPreference();
-        else
-            this.defaultMessageType = defaultMessageType;
     }
 
     public Long getId() {
@@ -101,37 +91,17 @@ public class EventLog {
         return user;
     }
 
-    public void setUser(User user) {
-        this.user = user;
-    }
-
     public Event getEvent() {
         return event;
-    }
-
-    public void setEvent(Event event) {
-        this.event = event;
     }
 
     public EventLogType getEventLogType() {
         return eventLogType;
     }
 
-    public void setEventLogType(EventLogType eventLogType) {
-        this.eventLogType = eventLogType;
-    }
-
     public String getMessage() {
         return message;
     }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public UserMessagingPreference getDefaultMessageType() { return defaultMessageType; }
-
-    public void setDefaultMessageType(UserMessagingPreference defaultMessageType) { this.defaultMessageType = defaultMessageType; }
 
     @Override
     public String toString() {
@@ -143,7 +113,6 @@ public class EventLog {
                 ", event=" + event +
                 ", eventLogType=" + eventLogType +
                 ", message='" + message + '\'' +
-                ", messageType=" + defaultMessageType +
                 '}';
     }
 }

@@ -23,8 +23,6 @@ public interface MessageAssemblingService {
 
     String createNewLogBookNotificationMessage(User user, Group group, LogBook logBook, boolean assigned);
 
-    String createChangeMeetingNotificationMessage(User user, EventDTO event);
-
     String createCancelMeetingNotificationMessage(User user, EventDTO event);
 
     String createMeetingReminderMessage(User user, EventDTO event);

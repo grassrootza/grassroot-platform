@@ -33,10 +33,7 @@ import za.org.grassroot.services.util.CacheUtilService;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * @author Lesetse Kimwaga
@@ -414,25 +411,13 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<User> fetchByGroup(String groupUid, boolean includeSubgroups) {
-        List<User> users;
-        if (!includeSubgroups) {
-            users = new ArrayList<>(groupRepository.findOneByUid(groupUid).getMembers());
+    public Set<User> fetchByGroup(String groupUid, boolean includeSubgroups) {
+        Group group = groupRepository.findOneByUid(groupUid);
+        if (includeSubgroups) {
+            return group.getMembersWithChildrenIncluded();
         } else {
-            Group group = groupRepository.findOneByUid(groupUid);
-            users = new ArrayList<>();
-            recursiveUserAdd(group, users);
+            return group.getMembers();
         }
-        return users;
-    }
-
-    private void recursiveUserAdd(Group parentGroup, List<User> userList ) {
-        for (Group childGroup : groupRepository.findByParentAndActiveTrue(parentGroup)) {
-            recursiveUserAdd(childGroup,userList);
-        }
-        // add all the users at this level
-        userList.addAll(groupRepository.findOne(parentGroup.getId()).getMembers());
-
     }
 
     @Override

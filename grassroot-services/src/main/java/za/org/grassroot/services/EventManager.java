@@ -357,8 +357,9 @@ public class EventManager implements EventManagementService {
     @Override
     public int getNumberInvitees(Event event) {
         // may make this more sophisticated once we have message relays in place, also, switch to using parent
-        return (!event.isIncludeSubGroups()) ? event.resolveGroup().getMembers().size() :
-                userManagementService.fetchByGroup(event.resolveGroup().getUid(), true).size();
+        return (!event.isIncludeSubGroups()) ?
+                event.resolveGroup().getMembers().size() :
+                event.resolveGroup().getMembersWithChildrenIncluded().size();
     }
 
     @Override

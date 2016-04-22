@@ -42,9 +42,6 @@ public class NotificationManager implements NotificationService{
     @Autowired
     private MessageSendingService messageSendingService;
 
-    @Autowired
-    private GcmService gcmService;
-
     private static final Set<EventLogType> eventLogTypesToIncludeInList =
             Collections.unmodifiableSet(Stream.of(EventLogType.EventNotification, EventLogType.EventChange,
                                                   EventLogType.EventNotification).collect(Collectors.toSet()));
@@ -62,7 +59,7 @@ public class NotificationManager implements NotificationService{
         Objects.nonNull(user);
         Objects.nonNull(eventLog);
         Objects.nonNull(notificationType);
-        Notification notification = new Notification(user, eventLog, false, false, notificationType);
+        Notification notification = new Notification(user, eventLog, notificationType);
         return notificationRepository.save(notification);
     }
 
@@ -97,8 +94,7 @@ public class NotificationManager implements NotificationService{
     public Notification createNotification(User user, LogBookLog logBookLog, NotificationType notificationType) {
         Objects.nonNull(user);
         Objects.nonNull(logBookLog);
-        Notification notification = new Notification(user,logBookLog, false,false, notificationType,
-                                                     logBookLog.getMessage());
+        Notification notification = new Notification(user,logBookLog, notificationType, logBookLog.getMessage());
         return notificationRepository.save(notification);
     }
 

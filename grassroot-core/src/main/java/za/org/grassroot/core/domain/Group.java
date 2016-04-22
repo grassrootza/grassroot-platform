@@ -9,6 +9,7 @@ import java.io.Serializable;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @Entity
@@ -96,6 +97,13 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
 
     @OneToMany(mappedBy = "group")
     private Set<LogBook> logBooks = new HashSet<>();
+
+	/**
+     * Children groups are not managed using this collections (use 'parent' field for that),
+     * just using it for reading
+     */
+    @OneToMany(mappedBy = "parent")
+    private Set<Group> children = new HashSet<>();
 
     private Group() {
         // for JPA
@@ -191,6 +199,21 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
         return getMemberships().stream()
                 .map(Membership::getUser)
                 .collect(Collectors.toSet());
+    }
+
+    public Set<User> getMembersWithChildrenIncluded() {
+        Set<User> users = new HashSet<>();
+        addGroupMembers(users, Group::isActive);
+        return users;
+    }
+
+    private void addGroupMembers(Set<User> users, Predicate<Group> childFilter) {
+        users.addAll(getMembers());
+        for (Group child : children) {
+            if (childFilter.test(child)) {
+                child.addGroupMembers(users, childFilter);
+            }
+        }
     }
 
     public Set<Membership> addMembers(Collection<User> newMembers) {

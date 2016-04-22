@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
-import org.springframework.messaging.MessageChannel;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
@@ -22,7 +21,6 @@ import za.org.grassroot.integration.services.NotificationService;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.util.CacheUtilService;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -87,58 +85,13 @@ public class EventNotificationConsumer {
     };
 
     @Transactional
-    @JmsListener(destination = "event-added", containerFactory = "messagingJmsContainerFactory",
-            concurrency = "5")
-    public void sendNewEventNotifications(String eventUid) {
-
-        Event event = eventBroker.load(eventUid);
-        EventDTO eventDTO = new EventDTO(event);
-
-        log.info("sendNewEventNotifications... <" + event.toString() + ">");
-        List<User> usersToNotify = getUsersForEvent(event);
-        log.info("sendNewEventNotifications, sending to: {} users", usersToNotify.size());
-
-        for (User user : getUsersForEvent(event)) {
-            cacheUtilService.clearRsvpCacheForUser(user,event.getEventType());
-            sendNewEventMessage(user, eventDTO);
-        }
-    }
-
-    @Transactional
-    @JmsListener(destination = "event-changed", containerFactory = "messagingJmsContainerFactory",
-            concurrency = "1")
-    public void sendChangedEventNotifications(EventChanged eventChanged) {
-        // note: have to reload entity instead of get from DTO, else get group members is going to throw errors
-        // but on other hand, the EventChanged entity contains important information, so not changing to UID as elsewhere
-        log.info("sendChangedEventNotifications... <" + eventChanged.toString() + ">");
-        Event event = eventBroker.load(eventChanged.getEvent().getEventUid());
-        for (User user : getUsersForEvent(event)) {
-            //generate message based on user language
-            log.info("sendChangedEventNotifications...user..." + user.getPhoneNumber() + "...event..." + eventChanged.getEvent().getId() + "...version..." + eventChanged.getEvent().getVersion() + "...start time changed..." + eventChanged.isStartTimeChanged() + "...starttime..." + eventChanged.getEvent().getEventStartDateTime());
-            String message = messageAssemblingService.createChangeMeetingNotificationMessage(user, eventChanged.getEvent());
-            if (!eventLogManagementService.changeNotificationSentToUser(eventChanged.getEvent().getEventUid(), user.getUid(), message)
-                    && (!eventLogManagementService.userRsvpNoForEvent(eventChanged.getEvent().getEventUid(), user.getUid())
-                    || eventChanged.isStartTimeChanged())) {
-                log.info("sendChangedEventNotifications...send message..." + message + "...to..." + user.getPhoneNumber());
-               EventLog eventLog = eventLogManagementService.createEventLog(EventLogType.EventChange, eventChanged.getEvent().getEventUid(),
-                        user.getUid(), message);
-               // messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
-                Notification notification = notificationService.createNotification(user,eventLog,NotificationType.EVENT);
-                messageSendingService.sendMessage(notification);
-
-            }
-        }
-
-    }
-
-    @Transactional
     @JmsListener(destination = "event-cancelled", containerFactory = "messagingJmsContainerFactory",
             concurrency = "1")
     public void sendCancelledEventNotifications(String eventUid) {
         Event event = eventBroker.load(eventUid);
         EventDTO eventDTO = (event.getEventType().equals(EventType.MEETING)) ? new EventDTO((Meeting) event) : new EventDTO(event);
         log.trace("sendCancelledEventNotifications... <" + event.toString() + ">");
-        for (User user : getUsersForEvent(event)) {
+        for (User user : (Set<User>) event.getAllMembers()) {
             //generate message based on user language
             String message = messageAssemblingService.createCancelMeetingNotificationMessage(user, eventDTO);
             if (!eventLogManagementService.cancelNotificationSentToUser(event.getUid(), user.getUid())
@@ -172,7 +125,7 @@ public class EventNotificationConsumer {
     public void sendEventReminder(String eventUid) {
         Event event = eventBroker.load(eventUid);
         log.info("sendEventReminder...event.id..." + event.getId());
-        for (User user : getUsersForEvent(event)) {
+        for (User user : (Set<User>) event.getAllMembers()) {
             sendMeetingReminderMessage(user, event);
         }
 
@@ -196,7 +149,7 @@ public class EventNotificationConsumer {
     @JmsListener(destination = "meeting-thankyou", containerFactory = "messagingJmsContainerFactory")
     public void sendMeetingThankYous(String meetingUid) {
         Event event = eventBroker.load(meetingUid);
-        for (User user : getUsersForEvent(event)) {
+        for (User user : (Set<User>) event.getAllMembers()) {
             String message = messageAssemblingService.createMeetingThankYouMessage(user, new EventDTO(event));
             if (eventLogManagementService.userRsvpYesForEvent(event, user) &&
                     !eventLogManagementService.eventLogRecorded(EventLogType.EventThankYouMessage, event, user)) {
@@ -245,7 +198,7 @@ public class EventNotificationConsumer {
             concurrency = "1")
     public void sendManualEventReminder(EventDTO event) {
         log.info("sendManualEventReminder...event.id..." + event.getId());
-        for (User user : getUsersForEvent(event.getEventObject())) {
+        for (User user : (Set<User>) event.getEventObject().getAllMembers()) {
             sendManualReminderMessage(user, event);
         }
     }
@@ -259,7 +212,7 @@ public class EventNotificationConsumer {
         ResponseTotalsDTO rsvpTotalsDTO = eventLogManagementService.getVoteResultsForEvent(vote);
         EventWithTotals eventWithTotals = new EventWithTotals(new EventDTO(vote), rsvpTotalsDTO);
 
-        for (User user : getUsersForEvent(vote)) {
+        for (User user : vote.getAllMembers()) {
             sendVoteResultsToUser(user, eventWithTotals);
         }
     }
@@ -379,17 +332,6 @@ public class EventNotificationConsumer {
 
     }
 
-    private List<User> getUsersForEvent(Event event) {
-        // todo: replace this with calling the parent and/or just using assigned members
-        if (event.isIncludeSubGroups()) {
-            return userManager.fetchByGroup(event.resolveGroup().getUid(), true);
-        } else if(event.isAllGroupMembersAssigned()) {
-            return new ArrayList<>(event.resolveGroup().getMembers());
-        } else {
-            return new ArrayList<>(event.getAssignedMembers());
-        }
-    }
-
     private void sendNewEventMessage(User user, EventDTO event) {
         //generate message based on user language
         String message = messageAssemblingService.createMeetingNotificationMessage(user, event);
@@ -401,7 +343,6 @@ public class EventNotificationConsumer {
 
             Notification notification = notificationService.createNotification(user,eventLog, NotificationType.EVENT);
             messageSendingService.sendMessage(notification);
-            // messageSendingService.sendMessage(message, user.getPhoneNumber(), MessageProtocol.SMS);
             }
         }
 

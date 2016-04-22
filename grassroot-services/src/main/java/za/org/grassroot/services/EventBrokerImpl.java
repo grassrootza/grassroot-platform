@@ -9,20 +9,22 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.notification.EventChangedNotification;
+import za.org.grassroot.core.domain.notification.EventNotification;
 import za.org.grassroot.core.dto.EventDTO;
+import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.*;
-import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.services.async.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.async.AsyncEventMessageSender;
+import za.org.grassroot.services.async.GenericJmsTemplateProducerService;
+import za.org.grassroot.services.util.CacheUtilService;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -56,6 +58,12 @@ public class EventBrokerImpl implements EventBroker {
     private ApplicationEventPublisher applicationEventPublisher;
     @Autowired
     private AsyncEventMessageSender asyncEventMessageSender;
+
+
+	@Autowired
+	private CacheUtilService cacheUtilService;
+	@Autowired
+	private NotificationRepository notificationRepository;
 
     @Override
 	public Event load(String eventUid) {
@@ -110,10 +118,20 @@ public class EventBrokerImpl implements EventBroker {
 
 		eventLogManagementService.rsvpForEvent(meeting, meeting.getCreatedByUser(), EventRSVPResponse.YES);
 
-        AfterTxCommitTask afterTxCommitTask = () -> asyncEventMessageSender.sendNewMeetingNotifications(meeting.getUid());
-        applicationEventPublisher.publishEvent(afterTxCommitTask);
+		// create history log
+		EventLog eventLog = new EventLog(user, meeting, EventLogType.MeetingCreated, null);
+
+		// create notifications
+		registerCreateEventNotifications(meeting, eventLog);
 
 		return meeting;
+	}
+
+	private void registerCreateEventNotifications(Event event, EventLog eventLog) {
+		for (User userToNotify : (Set<User>) event.getAllMembers()) {
+			cacheUtilService.clearRsvpCacheForUser(userToNotify, event.getEventType());
+			notificationRepository.save(new EventNotification(userToNotify, eventLog, event));
+		}
 	}
 
 	@Override
@@ -125,6 +143,7 @@ public class EventBrokerImpl implements EventBroker {
         Objects.requireNonNull(eventStartDateTime);
         Objects.requireNonNull(eventLocation);
 
+		User user = userRepository.findOneByUid(userUid);
         Meeting meeting = (Meeting) eventRepository.findOneByUid(meetingUid);
 
         if (meeting.isCanceled()) {
@@ -142,7 +161,9 @@ public class EventBrokerImpl implements EventBroker {
         meeting.setName(name);
         meeting.setEventLocation(eventLocation);
 
-        sendChangeNotifications(meeting.getUid(), EventType.MEETING, startTimeChanged);
+		EventLog eventLog = new EventLog(user, meeting, EventLogType.EventChange, null);
+
+		registerEventChangedNotifications(meeting, eventLog, startTimeChanged);
     }
 
 	@Override
@@ -158,12 +179,13 @@ public class EventBrokerImpl implements EventBroker {
 		Objects.requireNonNull(eventLocation);
 		Objects.requireNonNull(reminderType);
 
+		User user = userRepository.findOneByUid(userUid);
 		Meeting meeting = (Meeting) eventRepository.findOneByUid(meetingUid);
 
-        Instant convertedStartDateTime = convertToSystemTime(eventStartDateTime, getSAST());
 		if (meeting.isCanceled()) {
 			throw new IllegalStateException("Meeting is canceled: " + meeting);
 		}
+		Instant convertedStartDateTime = convertToSystemTime(eventStartDateTime, getSAST());
 		validateEventStartTime(convertedStartDateTime);
 		boolean startTimeChanged = !convertedStartDateTime.equals(meeting.getEventStartDateTime());
 
@@ -178,7 +200,20 @@ public class EventBrokerImpl implements EventBroker {
 
 		meeting.updateScheduledReminderTime();
 
-		sendChangeNotifications(meeting.getUid(), EventType.MEETING, startTimeChanged);
+		EventLog eventLog = new EventLog(user, meeting, EventLogType.EventChange, null);
+
+		registerEventChangedNotifications(meeting, eventLog, startTimeChanged);
+	}
+
+	private void registerEventChangedNotifications(Event event, EventLog eventLog, boolean startTimeChanged) {
+		for (User userToNotify : (Set<User>) event.getAllMembers()) {
+			boolean memberRepliedWithNo = eventLogManagementService.userRsvpNoForEvent(event.getUid(), userToNotify.getUid());
+			// todo: is this needed !?
+			boolean changeNotificationRegistered = eventLogManagementService.changeNotificationSentToUser(event.getUid(), userToNotify.getUid());
+			if (!changeNotificationRegistered && (!memberRepliedWithNo || startTimeChanged)) {
+				notificationRepository.save(new EventChangedNotification(userToNotify, eventLog));
+			}
+		}
 	}
 
 	@Override
@@ -202,8 +237,11 @@ public class EventBrokerImpl implements EventBroker {
 
 		voteRepository.save(vote);
 
-		AfterTxCommitTask afterTxCommitTask = () -> asyncEventMessageSender.sendNewVoteNotifications(vote.getUid());
-        applicationEventPublisher.publishEvent(afterTxCommitTask);
+		// create history log
+		EventLog eventLog = new EventLog(user, vote, EventLogType.VoteCreated, null);
+
+		// create notifications
+		registerCreateEventNotifications(vote, eventLog);
 
 		return vote;
 	}
@@ -233,7 +271,11 @@ public class EventBrokerImpl implements EventBroker {
 
 		// note: as of now, we don't need to send anything, hence just do an explicit call to repo and return the Vote
 
-		return voteRepository.save(vote);
+		Vote savedVote = voteRepository.save(vote);
+
+		EventLog eventLog = new EventLog(user, vote, EventLogType.EventChange, null);
+
+		return savedVote;
 	}
 
     @Override
@@ -283,12 +325,6 @@ public class EventBrokerImpl implements EventBroker {
 		event.setScheduledReminderActive(false);
 
 		AfterTxCommitTask afterTxCommitTask = () -> asyncEventMessageSender.sendCancelMeetingNotifications(eventUid);
-        applicationEventPublisher.publishEvent(afterTxCommitTask);
-	}
-
-	private void sendChangeNotifications(String eventUid, EventType eventType, boolean startTimeChanged) {
-		// todo: replace with just passing the UID around
-        AfterTxCommitTask afterTxCommitTask = () -> asyncEventMessageSender.sendChangedEventNotification(eventUid, eventType, startTimeChanged);
         applicationEventPublisher.publishEvent(afterTxCommitTask);
 	}
 

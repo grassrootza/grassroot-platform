@@ -1,12 +1,18 @@
 package za.org.grassroot.core.domain;
 
 
+import org.springframework.context.support.MessageSourceAccessor;
 import za.org.grassroot.core.enums.NotificationType;
 import za.org.grassroot.core.enums.UserMessagingPreference;
+import za.org.grassroot.core.util.FormatUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
+
+import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
 /**
  * Created by paballo on 2016/04/06.
@@ -65,12 +71,12 @@ public class Notification {
         // for JPA
     }
 
-    private Notification(User user, Boolean read, Boolean delivered, NotificationType notificationType, LogBookLog logBookLog,
-                         EventLog eventLog, String message) {
+    private Notification(User user, NotificationType notificationType, LogBookLog logBookLog, EventLog eventLog, String message) {
         this.uid = UIDGenerator.generateId();
+        this.read = false;
+        this.delivered = false;
+
         this.user = user;
-        this.read = read;
-        this.delivered = delivered;
         this.createdDateTime = Instant.now();
         this.notificationType = notificationType;
         this.userMessagingPreference = user.getMessagingPreference();
@@ -79,12 +85,12 @@ public class Notification {
         this.message = message;
     }
 
-    public Notification(User user, EventLog eventLog, Boolean read, Boolean delivered, NotificationType notificationType){
-        this(user, read, delivered, notificationType, null, eventLog, eventLog.getMessage());
+    public Notification(User user, EventLog eventLog, NotificationType notificationType){
+        this(user, notificationType, null, eventLog, eventLog.getMessage());
     }
 
-    public Notification(User user, LogBookLog logBookLog, Boolean read, Boolean delivered, NotificationType notificationType, String message){
-        this(user, read, delivered, notificationType, logBookLog, null, message);
+    public Notification(User user, LogBookLog logBookLog, NotificationType notificationType, String message){
+        this(user, notificationType, logBookLog, null, message);
     }
 
     public Long getId() {
@@ -175,6 +181,61 @@ public class Notification {
     public void setMessage(String message) {
         this.message = message;
     }
+
+	/**
+     * Locale utilities
+     */
+
+    protected Locale getUserLocale() {
+   		return getUserLocale(user.getLanguageCode());
+   	}
+
+   	protected Locale getUserLocale(String languageCode) {
+   		if (languageCode == null || languageCode.trim().equals("")) {
+   			return Locale.ENGLISH;
+   		} else {
+   			return new Locale(languageCode);
+   		}
+
+   	}
+
+    protected String constructMessageText(MessageSourceAccessor messageSourceAccessor) {
+        return null;
+    }
+
+    protected String[] populateEventFields(Event event) {
+   		return populateEventFields(event, 0D, 0D, 0D, 0D);
+   	}
+
+   	protected String[] populateEventFields(Event event, double yes, double no, double abstain, double noReply) {
+   		// todo: switch this to new name (may want a "hasName"/"getName" method defined on UidIdentifiable?
+   		String salutation = (((Group) event.getParent()).hasName()) ? ((Group) event.getParent()).getGroupName() : "Grassroot";
+   		DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
+   		String dateString = "no date specified";
+   		if (event.getEventStartDateTime() != null) {
+   			dateString = sdf.format(event.getEventStartDateTime().atZone(getSAST()));
+   		}
+
+   		String location = null;
+   		if (event instanceof Meeting) {
+   			Meeting meeting = (Meeting) event;
+   			location = meeting.getEventLocation();
+   		}
+
+   		String[] eventVariables = new String[]{
+   				salutation,
+   				event.getCreatedByUser().nameToDisplay(),
+   				event.getName(),
+   				location,
+   				dateString,
+   				FormatUtil.formatDoubleToString(yes),
+   				FormatUtil.formatDoubleToString(no),
+   				FormatUtil.formatDoubleToString(abstain),
+   				FormatUtil.formatDoubleToString(noReply)
+   		};
+
+   		return eventVariables;
+   	}
 
     @Override
     public String toString() {

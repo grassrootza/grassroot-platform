@@ -12,7 +12,6 @@ import za.org.grassroot.core.enums.EventType;
 
 import javax.persistence.*;
 import java.io.Serializable;
-import java.sql.Timestamp;
 import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
@@ -152,6 +151,18 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 			logBooks = new HashSet<>();
 		}
 		return logBooks;
+	}
+
+	// STRANGE: dunno why this <User> generics is not recognized by rest of code!?
+	public Set<User> getAllMembers() {
+		// todo: replace this with calling the parent and/or just using assigned members
+		if (isIncludeSubGroups()) {
+			return resolveGroup().getMembersWithChildrenIncluded();
+		} else if (isAllGroupMembersAssigned()) {
+			return resolveGroup().getMembers();
+		} else {
+			return getAssignedMembers();
+		}
 	}
 
 	@Override

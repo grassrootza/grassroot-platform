@@ -52,7 +52,7 @@ public class EventLogManager implements EventLogManagementService {
         Event event = eventRepository.findOneByUid(eventUid);
         log.info("Creating event log, with event={}", event);
         User user = userRepository.findOneByUid(userUid);
-        EventLog eventLog = new EventLog(user, event, eventLogType, message, null);
+        EventLog eventLog = new EventLog(user, event, eventLogType, message);
         return eventLogRepository.save(eventLog);
     }
 
@@ -75,11 +75,11 @@ public class EventLogManager implements EventLogManagementService {
     }
 
     @Override
-    public boolean changeNotificationSentToUser(String eventUid, String userUid, String message) {
+    public boolean changeNotificationSentToUser(String eventUid, String userUid) {
         Event event = eventRepository.findOneByUid(eventUid);
         User user = userRepository.findOneByUid(userUid);
-        boolean messageSent = eventLogRepository.changeNotificationSent(event, user, message);
-        log.info("changeNotificationSentToUser...user..." + user.getPhoneNumber() + "...event..." + event.getId() + "...version..." + event.getVersion() + "...message..." + message + "...returning..." + messageSent);
+        boolean messageSent = eventLogRepository.changeNotificationSent(event, user);
+        log.info("changeNotificationSentToUser...user..." + user.getPhoneNumber() + "...event..." + event.getId() + "...version..." + event.getVersion() + "...returning..." + messageSent);
         return messageSent;
     }
 

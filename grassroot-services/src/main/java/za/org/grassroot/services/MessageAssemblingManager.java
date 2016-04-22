@@ -80,18 +80,6 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         }
     }
 
-
-    @Override
-    public String createChangeMeetingNotificationMessage(User user, EventDTO event) {
-        // TODO think if there's a simple way to work out which variable has changed and only send that
-        Locale locale = getUserLocale(user);
-        String messageKey = "sms.mtg.send.change";
-        if (event.getEventType() == EventType.VOTE) messageKey = "sms.vote.send.change";
-        return messageSourceAccessor.getMessage(messageKey, populateFields(user, event), locale);
-    }
-
-
-
     @Override
     public String createCancelMeetingNotificationMessage(User user, EventDTO event) {
         Locale locale = getUserLocale(user);
