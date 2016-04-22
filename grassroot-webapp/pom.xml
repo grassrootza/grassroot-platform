@@ -37,6 +37,11 @@
             <artifactId>grassroot-integration</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>za.org.grassroot</groupId>
+            <artifactId>grassroot-language</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>

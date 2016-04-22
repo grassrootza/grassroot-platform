@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <parent>
+        <artifactId>grassroot</artifactId>
+        <groupId>za.org.grassroot</groupId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>grassroot-language</artifactId>
+    <name>Grassroot language</name>
+
+    <properties>
+        <grammar.dir>${basedir}/src/main/antlr3/za/org/grassroot/language/generated</grammar.dir>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>antlr-runtime</artifactId>
+            <version>3.5.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mnode.ical4j</groupId>
+            <artifactId>ical4j</artifactId>
+            <version>1.0.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.10</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>1.7.10</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>gunit</artifactId>
+            <version>3.5.2</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+
+            <!-- clean plugin, explicitly configured to ensure that java classes generated from the grammar are deleted -->
+            <plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <configuration>
+                    <filesets>
+                        <fileset>
+                            <directory>src/main/java/za/org/grassroot/language/generated</directory>
+                            <includes>
+                                <include>**/*.java</include>
+                            </includes>
+                            <followSymlinks>false</followSymlinks>
+                        </fileset>
+                    </filesets>
+                </configuration>
+            </plugin>
+
+            <!-- ANTLR code generation plugin -->
+            <plugin>
+                <groupId>org.antlr</groupId>
+                <artifactId>antlr3-maven-plugin</artifactId>
+                <version>3.5.2</version>
+                <executions>
+                    <execution>
+                        <id>debug</id>
+                        <goals>
+                            <goal>antlr</goal>
+                        </goals>
+                        <configuration>
+                            <debug>true</debug>
+                            <libDirectory>src/main/antlr3/za/org/grassroot/language/generated/imports</libDirectory>
+                            <outputDirectory>src/main/java</outputDirectory>
+                            <includes>
+                                <include>za/org/grassroot/language/generated/DateLexer.g</include>
+                                <include>za/org/grassroot/language/generated/DateParser.g</include>
+                            </includes>
+                            <excludes>
+                                <exclude>za/org/grassroot/language/generated/imports/NumericRules.g</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>non-debug</id>
+                        <goals>
+                            <goal>antlr</goal>
+                        </goals>
+                        <configuration>
+                            <debug>false</debug>
+                            <outputDirectory>src/main/java</outputDirectory>
+                            <libDirectory>src/main/antlr3/za/org/grassroot/language/generated/imports</libDirectory>
+                            <excludes>
+                                <exclude>za/org/grassroot/language/generated/DateLexer.g</exclude>
+                                <exclude>za/org/grassroot/language/generated/DateParser.g</exclude>
+                                <exclude>za/org/grassroot/language/generated/imports/NumericRules.g</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- gUnit plugin -->
+            <plugin>
+                <groupId>org.antlr</groupId>
+                <artifactId>maven-gunit-plugin</artifactId>
+                <version>3.5.2</version>
+                <executions>
+                    <execution>
+                        <id>maven-gunit-plugin</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>gunit</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+        </plugins>
+    </build>
+
+
+</project>

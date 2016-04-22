@@ -1,6 +1,5 @@
 package za.org.grassroot.core.repository;
 
-import edu.emory.mathcs.backport.java.util.Collections;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +11,6 @@ import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
@@ -20,6 +18,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
