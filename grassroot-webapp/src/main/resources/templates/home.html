@@ -85,45 +85,28 @@
   </div>
 
   <div th:if="${not #lists.isEmpty(votesToAnswer)}">
-
     <div class="well">
       <div class="row">
-        <div class="col-md-12">
-          <h3>These votes have been called. What is your vote?</h3>
-        </div>
-      </div>
-      <div class="row">
-        <div class="col-md-12">
-          <div th:each="event : ${votesToAnswer}" class="bs-component">
-            <form class="list-group" th:action="@{vote/answer}" method="post">
-              <input type="hidden" name="eventUid" th:value="${event.uid}" />
-              <div class="list-group-item">
-                <div class="row">
-                  <div class="col-md-4">
-                    <h4>
-                      <p class="list-group-item-heading">Group: <span th:text="${event.resolveGroup().getName('')}">group name</span></p>
-                      <p class="list-group-item-heading">Issue: <span th:text="${event.name}">Meeting subject</span><br/></p>
-                      <p class="list-group-item-heading">Closing date: <span th:text="${event.eventStartDateTime}">date and time</span></p>
-                    </h4>
-                    <div class="least-content">
-                      Vote called by <span th:text="${event.createdByUser.nameToDisplay()}">meeting caller</span>.
-                    </div>
-                  </div>
-                  <div class="col-md-4">
-                    <p class="list-group-item-heading">
-                      <button class="btn btn-primary" type="submit" name="answer" value="yes">Yes</button>
-                      <button class="btn btn-danger" type="submit" name="answer" value="no">No</button>
-                      <button class="btn btn-info" type="submit" name="answer" value="maybe">Abstain</button>
-                    </p>
-                  </div>
-                </div>
+        <div class="col-md-8 col-md-offset-2">
+          <h4><b>These votes have been called. What is your vote?</b></h4>
+          <li th:each="event : ${votesToAnswer}" class="list-group-item">
+            <div class="row">
+              <div class="col-md-9">
+                <b>Group: <span th:text="${event.resolveGroup().getName('')}">group name</span> |
+                Issue: <span th:text="${event.name}">Meeting subject</span></b> <br/>
+                Closes: <span th:text="${#temporals.format(event.getEventDateTimeAtSAST(),'hh:mm, dd MMMM')}">date and time</span> |
+                Vote called by <span th:text="${event.createdByUser.nameToDisplay()}">meeting caller</span>
               </div>
-            </form>
-          </div>
+              <div class="col-md-3 pull-right">
+                <a th:href="@{vote/answer(eventUid=${event.uid},answer=yes)}" class="btn btn-primary btn-sm">Yes</a>
+                <a th:href="@{vote/answer(eventUid=${event.uid},answer=no)}" class="btn btn-danger btn-sm">No</a>
+                <a th:href="@{vote/answer(eventUid=${event.uid},answer=maybe)}" class="btn btn-default btn-sm">Abstain</a>
+              </div>
+            </div>
+          </li>
         </div>
       </div>
     </div>
-
   </div>
 
   <div class="well" th:if="${not #lists.isEmpty(joinRequestsPending)}">
