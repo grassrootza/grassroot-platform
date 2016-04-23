@@ -13,7 +13,15 @@ public interface EventBroker {
 
 	Meeting loadMeeting(String meetingUid);
 
-	List<Event> loadEventsUserCanManage(String userUid, EventType eventType, int pageNumber, int pageSize);
+	/**
+	 * Returns a list of events which the user is participating in and/or a member of.
+	 * @param userUid The user being queried
+	 * @param eventType The event type to return (passing null returns any)
+	 * @param createdEventsOnly Whether to find only events which the user created, or all those where they are a member
+	 * @param futureEventsOnly Whether to fetch all events for the user or just those in the future
+     * @return
+     */
+	List<Event> loadUserEvents(String userUid, EventType eventType, boolean createdEventsOnly, boolean futureEventsOnly);
 
 	Meeting createMeeting(String userUid, String parentUid, JpaEntityType parentType, String name, LocalDateTime eventStartDateTime, String eventLocation,
 						  boolean includeSubGroups, boolean rsvpRequired, boolean relayable, EventReminderType reminderType,

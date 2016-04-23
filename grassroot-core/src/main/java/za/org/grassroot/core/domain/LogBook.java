@@ -3,7 +3,6 @@ package za.org.grassroot.core.domain;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
@@ -28,7 +27,7 @@ public class LogBook extends AbstractLogBookEntity implements AssignedMembersCon
     private User completedByUser;
 
     @Column(name="completed_date")
-    private Timestamp completedDate;
+    private Instant completedDate;
 
     @Column(name="number_of_reminders_left_to_send")
     private int numberOfRemindersLeftToSend;
@@ -48,11 +47,11 @@ public class LogBook extends AbstractLogBookEntity implements AssignedMembersCon
         // for JPA
     }
 
-    public LogBook(User createdByUser, LogBookContainer parent, String message, Timestamp actionByDate) {
+    public LogBook(User createdByUser, LogBookContainer parent, String message, Instant actionByDate) {
         this(createdByUser, parent, message, actionByDate, 60, null, 3);
     }
 
-    public LogBook(User createdByUser, LogBookContainer parent, String message, Timestamp actionByDate, int reminderMinutes,
+    public LogBook(User createdByUser, LogBookContainer parent, String message, Instant actionByDate, int reminderMinutes,
                    Group replicatedGroup, int numberOfRemindersLeftToSend) {
         super(createdByUser, parent, message, actionByDate, reminderMinutes);
         this.replicatedGroup = replicatedGroup;
@@ -85,11 +84,11 @@ public class LogBook extends AbstractLogBookEntity implements AssignedMembersCon
         this.completedByUser = completedByUser;
     }
 
-    public Timestamp getCompletedDate() {
+    public Instant getCompletedDate() {
         return completedDate;
     }
 
-    public void setCompletedDate(Timestamp completedDate) {
+    public void setCompletedDate(Instant completedDate) {
         this.completedDate = completedDate;
     }
 

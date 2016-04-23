@@ -1,13 +1,9 @@
 package za.org.grassroot.services;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import za.org.grassroot.core.domain.LogBook;
 
-import java.sql.Timestamp;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -55,11 +51,9 @@ public interface LogBookService {
 
     LogBook setCompleted(Long logBookId, Long completedByUserId);
 
-    LogBook setCompleted(Long logBookId, Long completedByUserId, String completedDate);
+    LogBook setCompletedWithDate(Long logBookId, Long completedByUserId, LocalDateTime completedDate);
 
-    LogBook setCompletedWithDate(Long logBookId, Long completedByUserId, Timestamp completedDate);
-
-    LogBook setCompleted(Long logBookId, Timestamp completedDate);
+    LogBook setCompleted(Long logBookId, LocalDateTime completedDate);
 
     LogBook setCompleted(Long logBookId);
 }

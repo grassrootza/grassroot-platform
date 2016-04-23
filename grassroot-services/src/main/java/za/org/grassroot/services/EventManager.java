@@ -247,25 +247,6 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
-    public List<Event> getUpcomingEvents(User requestingUser, EventType type) {
-        // todo: at some point we will need this to be efficient ... for now, doing a very slow kludge, and going to avoid using the method
-        if (type.equals(EventType.MEETING)) {
-            return (List) meetingRepository.findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceled
-                    (requestingUser, Instant.now(), false);
-        } else {
-            return (List) voteRepository.findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceled
-                    (requestingUser, Instant.now(), false);
-        }
-    }
-
-    @Override
-    public List<Event> getPaginatedEventsCreatedByUser(User sessionUser, int pageNumber, int pageSize) {
-        Page<Event> pageOfEvents = eventRepository.
-                findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(sessionUser, Instant.now(), false, new PageRequest(pageNumber, pageSize));
-        return pageOfEvents.getContent();
-    }
-
-    @Override
     public int userHasEventsToView(User user, EventType type) {
         // todo: this is three DB pings, less expensive than prior iterations over groups, but still expensive, replace with query
         log.info("Checking what events the user has to view ... ");

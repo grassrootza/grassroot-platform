@@ -30,6 +30,7 @@ public class DateTimeUtil {
     private static final DateTimeFormatter preferredRestFormat = DateTimeFormatter.ISO_DATE_TIME;
 
     private static final LocalDateTime veryLongTimeAway = LocalDateTime.of(2099, 12, 31, 23, 59);
+    private static final Instant earliestInstant = LocalDateTime.of(2015, 1, 1, 0 , 0).toInstant(ZoneOffset.UTC);
 
     public static DateTimeFormatter getPreferredDateFormat() { return preferredDateFormat; }
     public static DateTimeFormatter getPreferredTimeFormat() { return preferredTimeFormat; }
@@ -42,6 +43,7 @@ public class DateTimeUtil {
     public static Timestamp getVeryLongTimestamp() {
         return Timestamp.valueOf(veryLongTimeAway);
     }
+    public static Instant getEarliestInstant() { return earliestInstant; }
 
     private static final ZoneId zoneSAST = ZoneId.of("Africa/Johannesburg");
     private static final ZoneId zoneSystem = ZoneId.systemDefault();

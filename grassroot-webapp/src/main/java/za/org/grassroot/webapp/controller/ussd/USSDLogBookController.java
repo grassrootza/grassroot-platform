@@ -28,6 +28,8 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static za.org.grassroot.core.util.DateTimeUtil.convertToUserTimeZone;
+import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 import static za.org.grassroot.core.util.DateTimeUtil.reformatDateInput;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.encodeParameter;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.saveLogMenu;
@@ -169,7 +171,7 @@ public class USSDLogBookController extends USSDController {
         if (!interrupted) updateLogBookRequest(user.getUid(), logBookUid, priorMenu, userInput);
         LogBookRequest logBookRequest = logBookRequestBroker.load(logBookUid);
 
-        String formattedDueDate = dateFormat.format(logBookRequest.getActionByDate().toLocalDateTime());
+        String formattedDueDate = dateFormat.format(convertToUserTimeZone(logBookRequest.getActionByDate(), getSAST()));
 
         Group group = (Group) logBookRequest.getParent();
         String[] promptFields = new String[]{logBookRequest.getMessage(), group.getName(""),
@@ -290,12 +292,12 @@ public class USSDLogBookController extends USSDController {
 
         User user = userManager.findByInputNumber(inputNumber, null);
         LogBook logBook = logBookBroker.load(logBookUid);
-        String createdDate = dateFormat.format(logBook.getCreatedDateTime().toLocalDateTime());
-        String dueDate = dateFormat.format(logBook.getActionByDate().toLocalDateTime());
+        String createdDate = dateFormat.format(convertToUserTimeZone(logBook.getCreatedDateTime(), getSAST()));
+        String dueDate = dateFormat.format(convertToUserTimeZone(logBook.getActionByDate(), getSAST()));
 
         USSDMenu menu;
         if (logBook.isCompleted()) {
-            String completedDate = dateFormat.format(logBook.getCompletedDate().toLocalDateTime());
+            String completedDate = dateFormat.format(convertToUserTimeZone(logBook.getCompletedDate(), getSAST()));
             String userCompleted = logBook.getCompletedByUser() == null ? "" : "by " + logBook.getCompletedByUser().nameToDisplay();
             String[] fields = new String[]{createdDate, dueDate, completedDate, userCompleted};
             menu = new USSDMenu(getMessage(thisSection, viewEntryDates, promptKey + ".complete", fields, user));
@@ -322,10 +324,12 @@ public class USSDLogBookController extends USSDController {
         String assignedFragment, completedFragment;
 
         if (logBook.isCompleted()) {
-            completedFragment = getMessage(thisSection, viewAssignment, "complete", dateFormat.format(logBook.getCompletedDate().toLocalDateTime()), user);
+            completedFragment = getMessage(thisSection, viewAssignment, "complete",
+                                           dateFormat.format(convertToUserTimeZone(logBook.getCompletedDate(), getSAST())), user);
             assignedFragment = "";
         } else {
-            completedFragment = getMessage(thisSection, viewAssignment, "incomplete", dateFormat.format(logBook.getActionByDate().toLocalDateTime()), user);
+            completedFragment = getMessage(thisSection, viewAssignment, "incomplete",
+                                           dateFormat.format(convertToUserTimeZone(logBook.getActionByDate(), getSAST())), user);
             if (logBook.isAllGroupMembersAssigned()) {
                 assignedFragment = getMessage(thisSection, viewAssignment, "group", user);
             } else {

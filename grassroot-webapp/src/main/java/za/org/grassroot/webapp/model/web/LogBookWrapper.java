@@ -2,7 +2,7 @@ package za.org.grassroot.webapp.model.web;
 
 import za.org.grassroot.core.domain.JpaEntityType;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
@@ -17,10 +17,10 @@ public class LogBookWrapper {
     private String message;
     private String description;
 
-    private Timestamp actionByDate;
+    private LocalDateTime actionByDate;
 
     private int reminderMinutes;
-    private Timestamp scheduledReminderTime;
+    private LocalDateTime scheduledReminderTime;
 
     private String assignmentType;
     private MemberPicker memberPicker;
@@ -81,11 +81,11 @@ public class LogBookWrapper {
         this.description = description;
     }
 
-    public Timestamp getActionByDate() {
+    public LocalDateTime getActionByDate() {
         return actionByDate;
     }
 
-    public void setActionByDate(Timestamp actionByDate) {
+    public void setActionByDate(LocalDateTime actionByDate) {
         this.actionByDate = actionByDate;
     }
 
@@ -98,17 +98,17 @@ public class LogBookWrapper {
         if (actionByDate != null) calculateScheduledReminderTime();
     }
 
-    public Timestamp getScheduledReminderTime() {
+    public LocalDateTime getScheduledReminderTime() {
         if (scheduledReminderTime == null) calculateScheduledReminderTime();
         return scheduledReminderTime;
     }
 
     public void calculateScheduledReminderTime() {
         Objects.requireNonNull(actionByDate);
-        scheduledReminderTime = Timestamp.valueOf(actionByDate.toLocalDateTime().plusMinutes(reminderMinutes));
+        scheduledReminderTime = actionByDate.plusMinutes(reminderMinutes);
     }
 
-    public void setScheduledReminderTime(Timestamp scheduledReminderTime) {
+    public void setScheduledReminderTime(LocalDateTime scheduledReminderTime) {
         this.scheduledReminderTime = scheduledReminderTime;
     }
 

@@ -4,8 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
@@ -13,16 +11,11 @@ import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.*;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.async.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.async.AsyncEventMessageSender;
 
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.*;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -69,12 +62,36 @@ public class EventBrokerImpl implements EventBroker {
 	}
 
 	@Override
-	public List<Event> loadEventsUserCanManage(String userUid, EventType eventType, int pageNumber, int pageSize) {
+	@Transactional(readOnly = true)
+	public List<Event> loadUserEvents(String userUid, EventType type, boolean createdEventsOnly, boolean futureEventsOnly) {
+
+		// major todo: also check for membership in events which do not have link to group, i.e., set<member>
+
 		User user = userRepository.findOneByUid(userUid);
-		Page<Event> pageOfEvents = eventRepository.
-			findByCreatedByUserAndEventStartDateTimeGreaterThanAndEventTypeAndCanceledFalse(user, Instant.now(), EventType.MEETING,
-																							new PageRequest(pageNumber, pageSize));
-		return pageOfEvents.getContent();
+		List<Event> eventsToReturn;
+		final Instant start = futureEventsOnly ? Instant.now() : LocalDateTime.of(2015, 0, 0, 0, 0).toInstant(ZoneOffset.UTC);
+
+		if (createdEventsOnly) {
+			if (type == null) {
+				eventsToReturn = eventRepository.findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceledFalse(user, start);
+			} else {
+				if (type.equals(EventType.MEETING))
+					eventsToReturn = meetingRepository.findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceledFalse(user, start);
+				else
+					eventsToReturn = voteRepository.findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceledFalse(user, start);
+			}
+		} else {
+			if (type == null) {
+				eventsToReturn = eventRepository.
+						findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(user, start);
+			} else {
+				if (type.equals(EventType.MEETING))
+					eventsToReturn = meetingRepository.findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(user, start);
+				else
+					eventsToReturn = voteRepository.findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(user, start);
+			}
+		}
+		return eventsToReturn;
 	}
 
 	@Override

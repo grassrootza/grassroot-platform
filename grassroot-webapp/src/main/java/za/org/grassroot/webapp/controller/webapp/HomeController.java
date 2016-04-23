@@ -9,22 +9,20 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.ModelAndView;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.GroupJoinRequest;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.GroupTreeDTO;
+import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.AuthenticationUtil;
+import za.org.grassroot.services.*;
 import za.org.grassroot.services.async.AsyncUserLogger;
-import za.org.grassroot.services.EventManagementService;
-import za.org.grassroot.services.GroupBroker;
-import za.org.grassroot.services.GroupJoinRequestService;
+import za.org.grassroot.services.enums.LogBookStatus;
 import za.org.grassroot.webapp.controller.BaseController;
+import za.org.grassroot.webapp.model.rest.TaskDTO;
 import za.org.grassroot.webapp.model.web.GroupViewNodeSql;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author Lesetse Kimwaga
@@ -39,6 +37,15 @@ public class HomeController extends BaseController {
 
     @Autowired
     EventManagementService eventManagementService;
+
+    @Autowired
+    EventBroker eventBroker;
+
+    @Autowired
+    EventLogManagementService eventLogManagementService;
+
+    @Autowired
+    LogBookBroker logBookBroker;
 
     @Autowired
     GroupJoinRequestService groupJoinRequestService;
@@ -174,6 +181,8 @@ public class HomeController extends BaseController {
         Long endTime3 = System.currentTimeMillis();
         log.info(String.format("Retrieved %d events for the user ... took %d msecs", upcomingEvents, endTime3 - startTime3));
 
+        List<TaskDTO> userTasks = listOfUpcomingTasks(user); // todo: actually use this
+
         model.addAttribute("meetingRsvps", meetingsToRsvp);
         model.addAttribute("votesToAnswer", votesToAnswer);
 
@@ -213,6 +222,28 @@ public class HomeController extends BaseController {
         }
         return parentNode;
 
+    }
+
+    // todo: consider moving the TaskDTO to a superclass in core, so we can do this via a single service call
+    private List<TaskDTO> listOfUpcomingTasks(User user) {
+
+        Long startTime = System.currentTimeMillis();
+        Set<TaskDTO> upcomingTasks = new HashSet<>();
+        List<Event> upcomingEventsForUser = eventBroker.loadUserEvents(user.getUid(), null, false, true);
+        for (Event event : upcomingEventsForUser) {
+            EventLog response = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.EventRSVP);
+            upcomingTasks.add(new TaskDTO(event, response, user, response != null));
+        }
+
+        List<LogBook> logBooks = logBookBroker.loadUserLogBooks(user.getUid(), false, true, LogBookStatus.BOTH);
+        for (LogBook logBook : logBooks) {
+            upcomingTasks.add(new TaskDTO(logBook, user, logBook.getCreatedByUser()));
+        }
+
+        List<TaskDTO> tasks = new ArrayList<>(upcomingTasks);
+        Collections.sort(tasks);
+        log.info("Retrieved all the user's upcoming tasks, took {} msecs", System.currentTimeMillis() - startTime);
+        return tasks;
     }
 
 }

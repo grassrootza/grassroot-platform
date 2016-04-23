@@ -55,7 +55,7 @@ public class TaskDTO implements Comparable<TaskDTO>{
         this.name = creatingUser.getDisplayName();
         this.hasResponded = (logBook.isCompleted())?true:false;
         this.reply = getTodoStatus(logBook);
-        this.instant = logBook.getActionByDate().toInstant();
+        this.instant = logBook.getActionByDate();
         this.type = String.valueOf(TaskType.TODO);
         this.deadline = getLocalDateTime(instant);
         this.canAction = canAction(logBook, user, true);
@@ -102,7 +102,7 @@ public class TaskDTO implements Comparable<TaskDTO>{
 
         if (logBook.isCompleted()) {
             return String.valueOf(TodoStatus.COMPLETED);
-        } else if (logBook.getActionByDate().before(Timestamp.from(Instant.now()))) {
+        } else if (logBook.getActionByDate().isBefore(Instant.now())) {
             return String.valueOf(TodoStatus.OVERDUE);
         } else {
             return String.valueOf(TodoStatus.PENDING);

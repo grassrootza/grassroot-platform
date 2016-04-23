@@ -54,7 +54,7 @@ public class RestAbstractUnitTest
 
     protected final static Meeting meetingEvent = new Meeting(testEventTitle, testInstant, sessionTestUser, testGroup, testEventLocation, true, true, true, EventReminderType.DISABLED, 15, testEventDescription);
 
-    protected final static LogBook testLogBook = new LogBook(sessionTestUser, testGroup, "A test log book", Timestamp.from(testInstant));
+    protected final static LogBook testLogBook = new LogBook(sessionTestUser, testGroup, "A test log book", testInstant);
 
 
     @Mock

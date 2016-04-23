@@ -36,10 +36,6 @@ public interface EventManagementService {
 
     List<Event> getUpcomingEventsForGroupAndParentGroups(Group group);
 
-    List<Event> getUpcomingEvents(User requestingUser, EventType type);
-
-    List<Event> getPaginatedEventsCreatedByUser(User sessionUser, int pageNumber, int pageSize);
-
     // -1 : past events; 0: both directions; +1 : future events; -9 no events
     int userHasEventsToView(User user, EventType type);
 

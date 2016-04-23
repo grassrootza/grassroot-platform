@@ -2,6 +2,7 @@ package za.org.grassroot.services;
 
 import org.springframework.data.domain.Page;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.services.enums.LogBookStatus;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -11,7 +12,7 @@ import java.util.Set;
 public interface LogBookBroker {
 	LogBook load(String logBookUid);
 
-	LogBook create(String userUid, JpaEntityType parentType, String parentUid, String message, Timestamp actionByDate,
+	LogBook create(String userUid, JpaEntityType parentType, String parentUid, String message, LocalDateTime actionByDate,
 				   int reminderMinutes, boolean replicateToSubgroups, Set<String> assignedMemberUids);
 
 	void assignMembers(String userUid, String logBookUid, Set<String> assignMemberUids);
@@ -23,5 +24,7 @@ public interface LogBookBroker {
 	Page<LogBook> retrieveGroupLogBooks(String userUid, String groupUid, boolean entriesComplete, int pageNumber, int pageSize);
 
 	List<Group> retrieveGroupsFromLogBooks(List<LogBook> logBooks);
+
+	List<LogBook> loadUserLogBooks(String userUid, boolean assignedLogBooksOnly, boolean futureLogBooksOnly, LogBookStatus status);
 
 }

@@ -19,17 +19,20 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
 	Event findTopByAppliesToGroupAndEventStartDateTimeNotNullOrderByEventStartDateTimeDesc(Group group);
 
+	List<Event> findByAppliesToGroupAndEventStartDateTimeBetween(Group group, Instant start, Instant end, Sort sort);
+
 	List<Event> findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(Group group, Instant startTime, boolean cancelled);
-
-	Page<Event> findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceled(User user, Instant startTime, boolean cancelled, Pageable page);
-
-	Page<Event> findByCreatedByUserAndEventStartDateTimeGreaterThanAndEventTypeAndCanceledFalse(User user, Instant startTime, EventType eventType, Pageable page);
 
     int countByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThan(User user, Instant instant);
 
-    List<Event> findByAppliesToGroupMembershipsUser(User user);
+    /*
+    A set of queries to use in fetching events related to a user (different flavors exist)
+     */
+	List<Event> findByAppliesToGroupMembershipsUser(User user);
 
-    List<Event> findByAppliesToGroupAndEventStartDateTimeBetween(Group group, Instant start, Instant end, Sort sort);
+	List<Event> findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(User user, Instant start);
+
+	List<Event> findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceledFalse(User user, Instant startTime);
 
 	/*
 

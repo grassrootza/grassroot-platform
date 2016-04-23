@@ -5,8 +5,7 @@ import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.LogBookContainer;
 
 import java.io.Serializable;
-import java.sql.Timestamp;
-import java.util.Date;
+import java.time.Instant;
 
 /**
  * Created by aakilomar on 12/12/15.
@@ -19,10 +18,10 @@ public class LogBookDTO implements Serializable {
     private String parentUid;
     private boolean completed;
     private Long completedByUserId;
-    private Timestamp completedDate;
+    private Instant completedDate;
     private String message;
     private Long replicatedGroupId;
-    private Timestamp actionByDate;
+    private Instant actionByDate;
     private int reminderMinutes;
     private int numberOfRemindersLeftToSend;
 
@@ -77,11 +76,11 @@ public class LogBookDTO implements Serializable {
         this.completedByUserId = completedByUserId;
     }
 
-    public Date getCompletedDate() {
+    public Instant getCompletedDate() {
         return completedDate;
     }
 
-    public void setCompletedDate(Timestamp completedDate) {
+    public void setCompletedDate(Instant completedDate) {
         this.completedDate = completedDate;
     }
 
@@ -101,11 +100,11 @@ public class LogBookDTO implements Serializable {
         this.replicatedGroupId = replicatedGroupId;
     }
 
-    public Date getActionByDate() {
+    public Instant getActionByDate() {
         return actionByDate;
     }
 
-    public void setActionByDate(Timestamp actionByDate) {
+    public void setActionByDate(Instant actionByDate) {
         this.actionByDate = actionByDate;
     }
 

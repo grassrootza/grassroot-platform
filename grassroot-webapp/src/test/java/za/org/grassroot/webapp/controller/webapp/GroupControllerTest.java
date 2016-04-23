@@ -57,8 +57,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
         dummyGroup.addMember(sessionTestUser);
         Set<Group> subGroups = Collections.singleton(dummySubGroup);
-//        Event dummyMeeting = new Event();
-//        Event dummyVote = new Event();
         // todo: new design?
         Meeting dummyMeeting = null;
         Vote dummyVote = null;
@@ -513,8 +511,8 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         List<Event> dummyEvents = Arrays.asList(
                 new Meeting("someMeeting", Instant.now(), sessionTestUser, testGroup, "someLoc"),
                 new Vote("someMeeting", Instant.now(), sessionTestUser, testGroup));
-        List<LogBook> dummyLogbooks = Arrays.asList(new LogBook(sessionTestUser, testGroup, "Do stuff", Timestamp.valueOf(LocalDateTime.now().plusDays(2L))),
-                                                  new LogBook(sessionTestUser, testGroup, "Do more stuff", Timestamp.valueOf(LocalDateTime.now().plusDays(5L))));
+        List<LogBook> dummyLogbooks = Arrays.asList(new LogBook(sessionTestUser, testGroup, "Do stuff", Instant.now().plus(2, ChronoUnit.DAYS)),
+                                                  new LogBook(sessionTestUser, testGroup, "Do more stuff", Instant.now().plus(5, ChronoUnit.DAYS)));
         List<GroupLog> dummyGroupLogs = Arrays.asList(new GroupLog(dummyId, sessionTestUser.getId(), GroupLogType.GROUP_MEMBER_ADDED, 0L, "guy joined"),
                                                       new GroupLog(dummyId, sessionTestUser.getId(), GroupLogType.GROUP_MEMBER_REMOVED, 0L, "other guy left"));
         List<LocalDate> dummyMonths = Arrays.asList(LocalDate.now(), LocalDate.now().minusMonths(1L));
@@ -560,7 +558,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         testGroup.addMember(sessionTestUser);
 
         List<Event> dummyEvents = Collections.singletonList(new Meeting("someMeeting", Instant.now(), sessionTestUser, testGroup, "someLoc"));
-        List<LogBook> dummyLogBooks = Collections.singletonList(new LogBook(sessionTestUser, testGroup, "do stuff", Timestamp.valueOf(LocalDateTime.now())));
+        List<LogBook> dummyLogBooks = Collections.singletonList(new LogBook(sessionTestUser, testGroup, "do stuff", Instant.now()));
         List<GroupLog> dummyGroupLogs = Collections.singletonList(new GroupLog(dummyId, sessionTestUser.getId(), GroupLogType.GROUP_MEMBER_ADDED, 0L));
         List<LocalDate> dummyMonths = Arrays.asList(LocalDate.now(), LocalDate.now().minusMonths(1L));
 

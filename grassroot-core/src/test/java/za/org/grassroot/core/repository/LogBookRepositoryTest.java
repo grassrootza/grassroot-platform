@@ -16,6 +16,7 @@ import javax.transaction.Transactional;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,7 +41,7 @@ public class LogBookRepositoryTest {
     @Autowired
     UserRepository userRepository;
 
-    private Timestamp addHoursFromNow(int hours) { return Timestamp.from(Instant.now().plus(hours, ChronoUnit.HOURS)); }
+    private Instant addHoursFromNow(int hours) { return Instant.now().plus(hours, ChronoUnit.HOURS); }
 
     @Test
     public void shouldSaveAndRetrieveLogBookForGroup()  {
@@ -48,9 +49,9 @@ public class LogBookRepositoryTest {
         User user = userRepository.save(new User("001111141"));
         Group group = groupRepository.save(new Group("test logbook", user));
         Group groupUnrelated = groupRepository.save(new Group("not related logbook", user));
-        LogBook lb1 = logBookRepository.save(new LogBook(user, group,"just do it", addHoursFromNow(2)));
+        LogBook lb1 = logBookRepository.save(new LogBook(user, group, "just do it", addHoursFromNow(2)));
         LogBook lbUnrelated = logBookRepository.save(new LogBook(user, groupUnrelated, "just do it too", addHoursFromNow(2)));
-        List<LogBook> list = logBookRepository.findAllByGroupId(group.getId());
+        List<LogBook> list = logBookRepository.findByGroup(group);
         assertEquals(1,list.size());
         assertEquals(lb1.getId(),list.get(0).getId());
     }
@@ -130,8 +131,8 @@ public class LogBookRepositoryTest {
         assertThat(subGroups.size(), is(3));
 
         String message = "check replicating logbooks";
-        Timestamp dueDate1 = Timestamp.valueOf(LocalDateTime.now().plusHours(2));
-        Timestamp dueDate2 = Timestamp.valueOf(LocalDateTime.now().plusMonths(2));
+        Instant dueDate1 = LocalDateTime.now().plusHours(2).toInstant(ZoneOffset.UTC);
+        Instant dueDate2 = LocalDateTime.now().plusMonths(2).toInstant(ZoneOffset.UTC);
 
         LogBook lbParent = logBookRepository.save(new LogBook(user, groupParent, message, dueDate1));
 

@@ -11,6 +11,7 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.LogBookRequestRepository;
 import za.org.grassroot.core.repository.UidIdentifiableRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -18,6 +19,8 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static za.org.grassroot.core.util.DateTimeUtil.*;
 
 @Service
 public class LogBookRequestBrokerImpl implements LogBookRequestBroker {
@@ -74,7 +77,7 @@ public class LogBookRequestBrokerImpl implements LogBookRequestBroker {
 
 		LogBookRequest logBookRequest = LogBookRequest.makeEmpty(user, parent);
 		logBookRequest.setMessage(message);
-		logBookRequest.setActionByDate(Timestamp.valueOf(deadline));
+		logBookRequest.setActionByDate(convertToSystemTime(deadline, getSAST()));
 		logBookRequest.setReminderMinutes(reminderMinutes);
 		logBookRequest.setReplicateToSubgroups(replicateToSubGroups);
 
@@ -112,7 +115,7 @@ public class LogBookRequestBrokerImpl implements LogBookRequestBroker {
         if (!logBookRequest.getCreatedByUser().equals(user))
             throw new AccessDeniedException("You are not the creator of this logbook");
 
-        logBookRequest.setActionByDate(Timestamp.valueOf(dueDate));
+        logBookRequest.setActionByDate(convertToSystemTime(dueDate, getSAST()));
     }
 
     @Override
@@ -129,8 +132,9 @@ public class LogBookRequestBrokerImpl implements LogBookRequestBroker {
 		Set<String> assignedMemberUids = Collections.emptySet();
         LogBookContainer parent = logBookRequest.getParent();
 
+		LocalDateTime actionDate = LocalDateTime.from(logBookRequest.getActionByDate().atZone(getSAST()));
 		logBookBroker.create(logBookRequest.getCreatedByUser().getUid(), parent.getJpaEntityType(), parent.getUid(),
-				logBookRequest.getMessage(), logBookRequest.getActionByDate(), logBookRequest.getReminderMinutes(),
+				logBookRequest.getMessage(), actionDate, logBookRequest.getReminderMinutes(),
 				logBookRequest.isReplicateToSubgroups(), assignedMemberUids);
 
 		logBookRequestRepository.delete(logBookRequest);

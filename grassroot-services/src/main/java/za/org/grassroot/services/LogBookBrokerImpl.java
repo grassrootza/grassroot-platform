@@ -13,14 +13,19 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.LogBookRepository;
 import za.org.grassroot.core.repository.UidIdentifiableRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.async.GenericJmsTemplateProducerService;
+import za.org.grassroot.services.enums.LogBookStatus;
 
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static za.org.grassroot.core.util.DateTimeUtil.*;
 
 @Service
 public class LogBookBrokerImpl implements LogBookBroker {
@@ -47,7 +52,7 @@ public class LogBookBrokerImpl implements LogBookBroker {
 
 	@Override
 	@Transactional
-	public LogBook create(String userUid, JpaEntityType parentType, String parentUid, String message, Timestamp actionByDate, int reminderMinutes,
+	public LogBook create(String userUid, JpaEntityType parentType, String parentUid, String message, LocalDateTime actionByDate, int reminderMinutes,
 						  boolean replicateToSubgroups, Set<String> assignedMemberUids) {
 
 		Objects.requireNonNull(userUid);
@@ -105,14 +110,15 @@ public class LogBookBrokerImpl implements LogBookBroker {
 		logBook.removeAssignedMembers(memberUids);
 	}
 
-	private LogBook createNewLogBook(User user, LogBookContainer parent, String message, Timestamp actionByDate, int reminderMinutes,
+	private LogBook createNewLogBook(User user, LogBookContainer parent, String message, LocalDateTime actionByDate, int reminderMinutes,
 									 Group replicatedGroup) {
 		int numberOfRemindersLeftToSend = 0;
 		if (numberOfRemindersLeftToSend == 0) {
 			numberOfRemindersLeftToSend = 3; // todo: replace with a logic based on group paid / not paid
 		}
 
-		LogBook logBook = new LogBook(user, parent, message, actionByDate, reminderMinutes, replicatedGroup, numberOfRemindersLeftToSend);
+		Instant convertedActionByDate = convertToSystemTime(actionByDate, getSAST());
+		LogBook logBook = new LogBook(user, parent, message, convertedActionByDate, reminderMinutes, replicatedGroup, numberOfRemindersLeftToSend);
 		logBook = logBookRepository.save(logBook);
 		jmsTemplateProducerService.sendWithNoReply("new-logbook", new LogBookDTO(logBook));
 		return logBook;
@@ -134,7 +140,7 @@ public class LogBookBrokerImpl implements LogBookBroker {
 		}
 
 		logBook.setCompleted(true);
-		logBook.setCompletedDate(Timestamp.valueOf(completionTime));
+		logBook.setCompletedDate(convertToSystemTime(completionTime, getSAST()));
 		logBook.setCompletedByUser(completedByUser);
 	}
 
@@ -158,6 +164,44 @@ public class LogBookBrokerImpl implements LogBookBroker {
 				.filter(logBook -> logBook.getParent().getJpaEntityType().equals(JpaEntityType.GROUP))
 				.map(logBook -> (Group) logBook.getParent())
 				.collect(Collectors.toList());
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<LogBook> loadUserLogBooks(String userUid, boolean assignedLogBooksOnly, boolean futureLogBooksOnly, LogBookStatus status) {
+		User user = userRepository.findOneByUid(userUid);
+		Instant start = futureLogBooksOnly ? Instant.now() : DateTimeUtil.getEarliestInstant();
+		List<LogBook> logbooks;
+		if (!assignedLogBooksOnly) {
+			switch(status) {
+				case COMPLETE:
+					logbooks = logBookRepository.findByGroupMembershipsUserAndActionByDateGreaterThanAndCompleted(user, start, true);
+					break;
+				case INCOMPLETE:
+					logbooks = logBookRepository.findByGroupMembershipsUserAndActionByDateGreaterThanAndCompleted(user, start, false);
+					break;
+				case BOTH:
+					logbooks = logBookRepository.findByGroupMembershipsUserAndActionByDateGreaterThan(user, start);
+					break;
+				default:
+					logbooks = logBookRepository.findByGroupMembershipsUserAndActionByDateGreaterThan(user, start);
+			}
+		} else {
+			switch (status) {
+				case COMPLETE:
+					logbooks = logBookRepository.findByAssignedMembersAndActionByDateGreaterThanAndCompleted(user, start, true);
+					break;
+				case INCOMPLETE:
+					logbooks = logBookRepository.findByAssignedMembersAndActionByDateGreaterThanAndCompleted(user, start, false);
+					break;
+				case BOTH:
+					logbooks = logBookRepository.findByAssignedMembersAndActionByDateGreaterThan(user, start);
+					break;
+				default:
+					logbooks = logBookRepository.findByGroupMembershipsUserAndActionByDateGreaterThan(user, start);
+			}
+		}
+		return logbooks;
 	}
 
 	/*@Override
