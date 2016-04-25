@@ -181,10 +181,11 @@ public class HomeController extends BaseController {
         Long endTime3 = System.currentTimeMillis();
         log.info(String.format("Retrieved %d events for the user ... took %d msecs", upcomingEvents, endTime3 - startTime3));
 
-        List<TaskDTO> userTasks = listOfUpcomingTasks(user); // todo: actually use this
+        List<TaskDTO> userTasks = listOfUpcomingTasks(user);
 
         model.addAttribute("meetingRsvps", meetingsToRsvp);
         model.addAttribute("votesToAnswer", votesToAnswer);
+        model.addAttribute("upcomingTasks", userTasks);
 
         Long startTime4 = System.currentTimeMillis();
         List<GroupJoinRequest> joinRequests = groupJoinRequestService.getOpenRequestsForUser(user.getUid());

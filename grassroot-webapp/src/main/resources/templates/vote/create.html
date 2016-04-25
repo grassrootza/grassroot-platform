@@ -64,7 +64,8 @@
 
           <div class="form-group">
             <label for="name" class="control-label">Longer description of vote (optional)</label>
-            <textarea th:field="*{description}" class="form-control" rows="2" maxlength="250"></textarea>
+            <textarea th:field="*{description}" class="form-control" rows="1" maxlength="250"
+            placeholder="Add any additional information about the vote (only Internet or Android users can view)"></textarea>
           </div>
 
           <!-- note: removing this for now, and setting votes to "no reminder" ... wire up manual trigger later

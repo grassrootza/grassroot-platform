@@ -2,17 +2,14 @@ package za.org.grassroot.webapp.model.rest;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ComparisonChain;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.EventLog;
-import za.org.grassroot.core.domain.LogBook;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.webapp.enums.TodoStatus;
 
-import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 /**
@@ -31,8 +28,12 @@ public class TaskDTO implements Comparable<TaskDTO>{
     private String reply;
     @JsonIgnore
     private Instant instant;
-
-
+    @JsonIgnore
+    private LocalDateTime deadlineDateTime;
+    @JsonIgnore
+    private String parentName; // only use in Web at present, hence Json ignore, may change in future
+    @JsonIgnore
+    private String location; // only use in Web at present, hence Json ignore, may change in future
 
     public TaskDTO(){}
 
@@ -41,24 +42,31 @@ public class TaskDTO implements Comparable<TaskDTO>{
         this.title = event.getName();
         this.description =event.getDescription();
         this.name = event.getCreatedByUser().getDisplayName();
+        this.parentName = event.getParent().getName();
         this.hasResponded = hasResponded;
         this.type = String.valueOf(event.getEventType());
         this.instant = event.getEventStartDateTime();
-        this.deadline = getLocalDateTime(instant);
-        this.reply=(eventLog !=null && eventLog.getMessage().equals("Invalid RSVP"))?eventLog.getMessage():String.valueOf(TodoStatus.NO_RESPONSE);
+        this.deadlineDateTime = event.getEventDateTimeAtSAST();
+        this.deadline = formatAsLocalDateTime(instant);
+        this.reply= (eventLog !=null && !eventLog.getMessage().equals("Invalid RSVP")) ?
+                eventLog.getMessage() : String.valueOf(TodoStatus.NO_RESPONSE);
         this.canAction = canAction(event, user, hasResponded);
+        this.location = (event.getEventType().equals(EventType.MEETING)) ? ((Meeting) event).getEventLocation() : "";
     }
 
     public TaskDTO(LogBook logBook, User user, User creatingUser) {
         this.id = logBook.getUid();
         this.title = logBook.getMessage();
+        this.parentName = logBook.getParent().getName();
         this.name = creatingUser.getDisplayName();
         this.hasResponded = (logBook.isCompleted())?true:false;
         this.reply = getTodoStatus(logBook);
         this.instant = logBook.getActionByDate();
         this.type = String.valueOf(TaskType.TODO);
-        this.deadline = getLocalDateTime(instant);
+        this.deadlineDateTime = logBook.getActionByDateAtSAST();
+        this.deadline = formatAsLocalDateTime(instant);
         this.canAction = canAction(logBook, user, true);
+        this.location = "";
     }
 
     public String getId() {
@@ -72,6 +80,7 @@ public class TaskDTO implements Comparable<TaskDTO>{
         return name;
     }
 
+    public String getParentName() { return parentName; }
 
     public String getType() {
         return type;
@@ -80,6 +89,8 @@ public class TaskDTO implements Comparable<TaskDTO>{
     public String getDeadline() {
         return deadline;
     }
+
+    public LocalDateTime getDeadlineDateTime() { return deadlineDateTime; }
 
     public String getReply() {
         return reply;
@@ -97,6 +108,7 @@ public class TaskDTO implements Comparable<TaskDTO>{
         return title;
     }
 
+    public String getLocation() { return location; }
 
     private String getTodoStatus(LogBook logBook) {
 
@@ -134,7 +146,7 @@ public class TaskDTO implements Comparable<TaskDTO>{
     }
 
 
-    private String getLocalDateTime(Instant instant ) {
+    private String formatAsLocalDateTime(Instant instant) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
         return DateTimeUtil.convertToUserTimeZone(instant, DateTimeUtil.getSAST()).format(formatter);
     }

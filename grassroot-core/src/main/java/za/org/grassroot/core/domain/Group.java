@@ -412,6 +412,9 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
     }
 
     @Override
+    public String getName() { return getName(""); }
+
+    @Override
     public JpaEntityType getJpaEntityType() {
         return JpaEntityType.GROUP;
     }

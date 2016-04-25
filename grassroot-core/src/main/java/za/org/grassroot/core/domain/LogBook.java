@@ -105,6 +105,9 @@ public class LogBook extends AbstractLogBookEntity implements AssignedMembersCon
     }
 
     @Override
+    public String getName() { return message; }
+
+    @Override
     public JpaEntityType getJpaEntityType() {
         return JpaEntityType.LOGBOOK;
     }

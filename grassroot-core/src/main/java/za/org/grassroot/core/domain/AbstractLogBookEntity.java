@@ -1,10 +1,13 @@
 package za.org.grassroot.core.domain;
 
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.Objects;
 
 /**
@@ -91,6 +94,8 @@ public abstract class AbstractLogBookEntity {
 	public Instant getActionByDate() {
 		return actionByDate;
 	}
+
+	public LocalDateTime getActionByDateAtSAST() { return actionByDate.atZone(DateTimeUtil.getSAST()).toLocalDateTime(); }
 
 	public void setActionByDate(Instant actionByDate) {
 		this.actionByDate = actionByDate;
