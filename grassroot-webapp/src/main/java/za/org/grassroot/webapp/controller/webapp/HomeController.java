@@ -22,6 +22,7 @@ import za.org.grassroot.webapp.model.rest.TaskDTO;
 import za.org.grassroot.webapp.model.web.GroupViewNodeSql;
 
 import javax.servlet.http.HttpServletRequest;
+import java.time.Instant;
 import java.util.*;
 
 /**
@@ -236,6 +237,8 @@ public class HomeController extends BaseController {
             upcomingTasks.add(new TaskDTO(event, response, user, response != null));
         }
 
+        Instant start = Instant.now();
+        Instant end = Instant.MAX;
         List<LogBook> logBooks = logBookBroker.loadUserLogBooks(user.getUid(), false, true, LogBookStatus.BOTH);
         for (LogBook logBook : logBooks) {
             upcomingTasks.add(new TaskDTO(logBook, user, logBook.getCreatedByUser()));

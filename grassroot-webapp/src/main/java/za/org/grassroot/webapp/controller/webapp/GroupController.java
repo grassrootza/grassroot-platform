@@ -739,7 +739,7 @@ public class GroupController extends BaseController {
 
         Long startTime = System.currentTimeMillis();
         List<Event> eventsInPeriod = eventManagementService.getGroupEventsInPeriod(group, startDateTime, endDateTime);
-        List<LogBook> logBooksInPeriod = logBookService.getLogBookEntriesInPeriod(group.getId(), startDateTime, endDateTime);
+        List<LogBook> logBooksInPeriod = logBookService.getLogBookEntriesInPeriod(group, startDateTime, endDateTime);
         List<GroupLog> groupLogsInPeriod = groupBroker.getLogsForGroup(group, startDateTime, endDateTime);
         List<LocalDate> monthsActive = groupBroker.getMonthsGroupActive(groupUid);
         Long endTime = System.currentTimeMillis();

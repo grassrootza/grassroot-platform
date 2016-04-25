@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>grassroot-language</artifactId>
-    <name>Grassroot language</name>
+    <name>Grassroot Language</name>
 
     <properties>
         <grammar.dir>${basedir}/src/main/antlr3/za/org/grassroot/language/generated</grammar.dir>

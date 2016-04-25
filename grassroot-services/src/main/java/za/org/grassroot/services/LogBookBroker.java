@@ -1,10 +1,11 @@
 package za.org.grassroot.services;
 
 import org.springframework.data.domain.Page;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.JpaEntityType;
+import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.services.enums.LogBookStatus;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -26,5 +27,9 @@ public interface LogBookBroker {
 	List<Group> retrieveGroupsFromLogBooks(List<LogBook> logBooks);
 
 	List<LogBook> loadUserLogBooks(String userUid, boolean assignedLogBooksOnly, boolean futureLogBooksOnly, LogBookStatus status);
+
+	// todo: we need some sort of logic here for not showing users the same logbook over and over
+	LogBook fetchLogBookForUserResponse(String userUid, long daysInPast, boolean assignedLogBooksOnly);
+
 
 }

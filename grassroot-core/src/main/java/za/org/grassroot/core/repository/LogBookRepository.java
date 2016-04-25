@@ -19,33 +19,31 @@ public interface LogBookRepository extends JpaRepository<LogBook, Long> {
 
     LogBook findOneByUid(String uid);
 
-    List<LogBook> findByGroupUidOrEventUid(String groupUid, String eventUid);
-
-    List<LogBook> findByGroup(Group group);
+    /*
+    Retrieve all logbook entries for all the groups of a particular user
+     */
     List<LogBook> findByGroupMembershipsUserAndActionByDateGreaterThan(User user, Instant start);
-    List<LogBook> findByGroupMembershipsUserAndActionByDateGreaterThanAndCompleted(User user, Instant start, boolean completed);
+    List<LogBook> findByGroupMembershipsUserAndActionByDateBetweenAndCompleted(User user, Instant start, Instant end, boolean completed, Sort sort);
+    int countByGroupMembershipsUserAndActionByDateBetweenAndCompleted(User user, Instant start, Instant end, boolean completed);
 
-    List<LogBook> findAllByGroupId(Long groupId);
-    List<LogBook> findAllByGroupIdAndCreatedDateTimeBetween(Long groupId, Instant start, Instant end, Sort sort);
-    List<LogBook> findByGroupIdAndMessageAndCreatedDateTime(Long groupId, String message, Instant createdDateTime);
+    /*
+    Retrieve all logbook entries assigned to a particular user
+     */
+    List<LogBook> findByAssignedMembersAndActionByDateGreaterThan(User user, Instant start);
+    List<LogBook> findByAssignedMembersAndActionByDateBetweenAndCompleted(User user, Instant start, Instant end, boolean completed, Sort sort);
+    int countByAssignedMembersAndActionByDateBetweenAndCompleted(User user, Instant start, Instant end, boolean completed);
 
-    List<LogBook> findAllByGroupIdAndCompletedAndActionByDateGreaterThan(Long groupId, boolean completed, Instant dueDate);
-    Page<LogBook> findAllByGroupIdAndCompletedAndActionByDateGreaterThan(Long groupId, Pageable pageable, boolean completed, Instant dueDate);
+    /*
+    Retrieve logbook entries for a book (with variants)
+     */
+    List<LogBook> findByGroup(Group group);
+    List<LogBook> findByGroupAndCreatedDateTimeBetween(Group group, Instant start, Instant end, Sort sort);
+    List<LogBook> findByGroupAndMessageAndCreatedDateTime(Group group, String message, Instant createdDateTime);
 
+    List<LogBook> findByGroupAndCompletedAndActionByDateGreaterThan(Group group, boolean completed, Instant dueDate);
     Page<LogBook> findByGroupUidAndCompletedOrderByActionByDateDesc(String groupUid, boolean completed, Pageable pageable);
 
-    Page<LogBook> findAll(Pageable pageable);
-
-    List<LogBook> findAllByAssignedMembersId(Long assignToUserId);
-    List<LogBook> findAllByAssignedMembersIdAndCompleted(Long assignToUserId, boolean completed);
-
-    List<LogBook> findByAssignedMembersAndActionByDateGreaterThan(User user, Instant start);
-    List<LogBook> findByAssignedMembersAndActionByDateGreaterThanAndCompleted(User user, Instant start, boolean completed);
-
-    List<LogBook> findAllByReplicatedGroupId(Long replicatedGroupId);
-    List<LogBook> findAllByReplicatedGroupIdAndCompleted(Long replicatedGroupId, boolean completed);
-    List<LogBook> findAllByReplicatedGroupIdAndMessageOrderByGroupIdAsc(Long replicatedGroupId, String message);
-    List<LogBook> findAllByReplicatedGroupIdAndMessageAndActionByDateOrderByGroupIdAsc(Long replicatedGroupId, String message, Instant actionByDateTime);
+    List<LogBook> findByReplicatedGroupAndMessageAndActionByDateOrderByGroupIdAsc(Group replicatedGroup, String message, Instant actionByDateTime);
 
     // methods for analyzing logbooks (for admin)
     Long countByCreatedDateTimeBetween(Instant start, Instant end);

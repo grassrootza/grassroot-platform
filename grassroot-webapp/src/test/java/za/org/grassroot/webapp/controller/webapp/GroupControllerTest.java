@@ -523,7 +523,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
         when(eventManagementServiceMock.getGroupEventsInPeriod(testGroup, start, end)).thenReturn(dummyEvents);
-        when(logBookServiceMock.getLogBookEntriesInPeriod(dummyId, start, end)).thenReturn(dummyLogbooks);
+        when(logBookServiceMock.getLogBookEntriesInPeriod(testGroup, start, end)).thenReturn(dummyLogbooks);
         when(groupBrokerMock.getLogsForGroup(testGroup, start, end)).thenReturn(dummyGroupLogs);
         when(groupBrokerMock.getMonthsGroupActive(testGroup.getUid())).thenReturn(dummyMonths);
         when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, testGroup, null)).thenReturn(true);
@@ -544,7 +544,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventManagementServiceMock, times(1)).getGroupEventsInPeriod(testGroup, start, end);
         verifyNoMoreInteractions(eventManagementServiceMock);
-        verify(logBookServiceMock, times(1)).getLogBookEntriesInPeriod(dummyId, start, end);
+        verify(logBookServiceMock, times(1)).getLogBookEntriesInPeriod(testGroup, start, end);
         verifyNoMoreInteractions(logBookServiceMock);
 
     }
@@ -572,7 +572,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, testGroup, null)).thenReturn(true);
         when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
         when(eventManagementServiceMock.getGroupEventsInPeriod(testGroup, start, end)).thenReturn(dummyEvents);
-        when(logBookServiceMock.getLogBookEntriesInPeriod(dummyId, start, end)).thenReturn(dummyLogBooks);
+        when(logBookServiceMock.getLogBookEntriesInPeriod(testGroup, start, end)).thenReturn(dummyLogBooks);
         when(groupBrokerMock.getLogsForGroup(testGroup, start, end)).thenReturn(dummyGroupLogs);
         when(groupBrokerMock.getMonthsGroupActive(testGroup.getUid())).thenReturn(dummyMonths);
 
@@ -592,7 +592,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventManagementServiceMock, times(1)).getGroupEventsInPeriod(testGroup, start, end);
         verifyNoMoreInteractions(eventManagementServiceMock);
-        verify(logBookServiceMock, times(1)).getLogBookEntriesInPeriod(dummyId, start, end);
+        verify(logBookServiceMock, times(1)).getLogBookEntriesInPeriod(testGroup, start, end);
         verifyNoMoreInteractions(logBookServiceMock);
 
     }

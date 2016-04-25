@@ -37,8 +37,6 @@ public interface UserManagementService {
 
     boolean userExist(String phoneNumber);
 
-    boolean isFirstInitiatedSession(User user);
-
     User setInitiatedSession(User sessionUser);
 
     boolean isPartOfActiveGroups(User user);
@@ -76,10 +74,10 @@ public interface UserManagementService {
     boolean needsToVote(User sessionUser);
 
     boolean needsToVoteOrRSVP(User sessionUser);
+
+    boolean hasIncompleteLogBooks(String userUid, long daysInPast);
     
     User resetUserPassword(String username, String newPassword, String token);
-
-    User resetUserPassword(String username, String newPassword, User adminUser, String adminPassword);
 
     String getLastUssdMenu(String inputNumber);
 

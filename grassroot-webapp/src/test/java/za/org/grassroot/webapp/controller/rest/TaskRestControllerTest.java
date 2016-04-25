@@ -48,7 +48,7 @@ public class TaskRestControllerTest extends RestAbstractUnitTest {
         // when(eventManagementServiceMock.findByAppliesToGroup(testGroup)).thenReturn(eventList);
         when(eventLogManagementServiceMock.getEventLogOfUser(meetingEvent, sessionTestUser, EventLogType.EventRSVP)).thenReturn(eventLog);
         when(eventLogManagementServiceMock.userRsvpForEvent(meetingEvent, sessionTestUser)).thenReturn(true);
-        when(logBookServiceMock.getAllLogBookEntriesForGroup(testGroup.getId())).thenReturn(logBookList);
+        when(logBookServiceMock.getAllLogBookEntriesForGroup(testGroup)).thenReturn(logBookList);
         mockMvc.perform(get(path + "/list/{id}/{phoneNumber}/{code}", testGroup.getUid(), testUserPhone, testUserCode)).andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
         verify(groupBrokerMock).load(testGroup.getUid());

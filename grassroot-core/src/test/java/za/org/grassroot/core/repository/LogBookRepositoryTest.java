@@ -4,6 +4,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.TestContextConfiguration;
@@ -13,7 +14,6 @@ import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
 
 import javax.transaction.Transactional;
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -83,11 +83,11 @@ public class LogBookRepositoryTest {
         Group group = groupRepository.save(new Group("test logbook", user));
         LogBook lb1 = logBookRepository.save(new LogBook(user, group, "just do it", addHoursFromNow(2), 60, null, 3));
         LogBook lb2 = logBookRepository.save(new LogBook(user, group, "not assigned", addHoursFromNow(2)));
-        List<LogBook> list = logBookRepository.findAllByAssignedMembersId(user.getId());
+        List<LogBook> list = logBookRepository.findByAssignedMembersAndActionByDateGreaterThan(user, Instant.now());
         assertEquals(1,list.size());
 //        lb2.setAssignedToUser(user);
         lb2 = logBookRepository.save(lb2);
-        list = logBookRepository.findAllByAssignedMembersId(user.getId());
+        list = logBookRepository.findByAssignedMembersAndActionByDateGreaterThan(user, Instant.now());
         assertEquals(2,list.size());
     }
 
@@ -106,11 +106,12 @@ public class LogBookRepositoryTest {
         logBookRepository.save(lb1);
         logBookRepository.save(lb2);
 
-        List<LogBook> list = logBookRepository.findAllByAssignedMembersIdAndCompleted(user.getId(), true);
+        Sort sort = new Sort(Sort.Direction.DESC, "actionByDate");
+        List<LogBook> list = logBookRepository.findByAssignedMembersAndActionByDateBetweenAndCompleted(user, Instant.now(), Instant.MAX, true, sort);
         assertEquals(0, list.size());
         lb1.setCompleted(true);
         logBookRepository.save(lb1);
-        list = logBookRepository.findAllByAssignedMembersIdAndCompleted(user.getId(), true);
+        list = logBookRepository.findByAssignedMembersAndActionByDateBetweenAndCompleted(user, Instant.now(), Instant.MAX, true, sort);
         assertEquals(1,list.size());
     }
 
@@ -152,7 +153,7 @@ public class LogBookRepositoryTest {
             replicatedEntries2.add(logBookRepository.save(new LogBook(user, group, message, dueDate2, 60, groupParent, 3)));
 
         List<LogBook> entriesFromDb = logBookRepository.
-                findAllByReplicatedGroupIdAndMessageAndActionByDateOrderByGroupIdAsc(groupParent.getId(), message, dueDate1);
+                findByReplicatedGroupAndMessageAndActionByDateOrderByGroupIdAsc(groupParent, message, dueDate1);
 
         assertEquals(entriesFromDb.size(), replicatedEntries.size());
         for (int i = 0; i < entriesFromDb.size(); i++)
@@ -169,7 +170,7 @@ public class LogBookRepositoryTest {
         assertFalse(subGroupsFromEntries.contains(group5));
 
         List<LogBook> entriesFromDb2 = logBookRepository.
-                findAllByReplicatedGroupIdAndMessageAndActionByDateOrderByGroupIdAsc(groupParent.getId(), message, lbParent2.getActionByDate());
+                findByReplicatedGroupAndMessageAndActionByDateOrderByGroupIdAsc(groupParent, message, lbParent2.getActionByDate());
         assertEquals(entriesFromDb2, replicatedEntries2);
 
         int numberReplicatedEntries1 = logBookRepository.countReplicatedEntries(groupParent.getId(), message, lbParent.getActionByDate());

@@ -65,7 +65,6 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(interfaceType);
         if (!cacheUtilService.checkSessionStatus(userUid, interfaceType)) {
-            log.info("Recording user session, in thread: {}", Thread.currentThread());
             cacheUtilService.setSessionOpen(userUid, interfaceType);
             userLogRepository.save(new UserLog(userUid, UserLogType.USER_SESSION, "", interfaceType));
         } else {

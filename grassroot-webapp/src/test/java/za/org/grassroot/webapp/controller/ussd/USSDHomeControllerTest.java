@@ -116,7 +116,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests)).andExpect(status().isOk());
         testUser.setLanguageCode("ts");
         when(userManagementServiceMock.setUserLanguage(testUser, "ts")).thenReturn(testUser);
-        mockMvc.perform(get(openingMenu + "_language").param(phoneParameter, phoneForTests).param("language", "ts")).
+        mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests)).
                 andExpect(status().isOk());
 
         testUser.setDisplayName(testUserName);
@@ -184,13 +184,12 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
             when(userManagementServiceMock.loadOrSaveUser(user.getPhoneNumber())).thenReturn(user);
             when(userManagementServiceMock.findByInputNumber(user.getPhoneNumber())).thenReturn(user);
-            when(userManagementServiceMock.needsToVoteOrRSVP(user)).thenReturn(true);
             when(userManagementServiceMock.needsToVote(user)).thenReturn(true);
             when(eventManagementServiceMock.getOutstandingVotesForUser(user)).thenReturn(Collections.singletonList(vote));
             when(eventBrokerMock.load(vote.getUid())).thenReturn(vote);
 
             mockMvc.perform(get(openingMenu).param(phoneParameter, user.getPhoneNumber())).andExpect(status().isOk());
-            verify(userManagementServiceMock, times(1)).needsToVoteOrRSVP(user);
+            verify(userManagementServiceMock, times(1)).needsToVote(user);
             verify(eventManagementServiceMock, times(1)).getOutstandingVotesForUser(user);
 
             // note: the fact that message source accessor is not wired up may mean this is not actually testing
@@ -222,13 +221,11 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
             when(userManagementServiceMock.loadOrSaveUser(user.getPhoneNumber())).thenReturn(user);
             when(userManagementServiceMock.findByInputNumber(user.getPhoneNumber())).thenReturn(user);
-            when(userManagementServiceMock.needsToVoteOrRSVP(user)).thenReturn(true);
             when(userManagementServiceMock.needsToRSVP(user)).thenReturn(true);
             when(eventManagementServiceMock.getOutstandingRSVPForUser(user)).thenReturn(Collections.singletonList(meeting));
             when(eventBrokerMock.loadMeeting(meeting.getUid())).thenReturn(meeting);
 
             mockMvc.perform(get(openingMenu).param(phoneParameter, user.getPhoneNumber())).andExpect(status().isOk());
-            verify(userManagementServiceMock, times(1)).needsToVoteOrRSVP(user);
             verify(eventManagementServiceMock, times(1)).getOutstandingRSVPForUser(user);
 
             mockMvc.perform(get("/ussd/rsvp").param(phoneParameter, user.getPhoneNumber())
@@ -269,7 +266,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(1)).loadOrSaveUser(phoneForTests);
         verify(userManagementServiceMock, times(1)).findByInputNumber(phoneForTests);
         verify(groupBrokerMock, times(1)).updateName(testUser.getUid(), testGroup.getUid(), testGroupName);
-        verify(userManagementServiceMock, times(3)).fetchGroupUserMustRename(testUser);
+        verify(userManagementServiceMock, times(2)).fetchGroupUserMustRename(testUser);
     }
 
     /*

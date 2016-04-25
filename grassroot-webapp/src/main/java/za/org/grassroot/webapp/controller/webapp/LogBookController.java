@@ -181,9 +181,9 @@ public class LogBookController extends BaseController {
 
         Group group = groupBroker.load(groupUid);
         model.addAttribute("group", group);
-        model.addAttribute("incompleteEntries", logBookService.getAllLogBookEntriesForGroup(group.getId(), false));
+        model.addAttribute("incompleteEntries", logBookService.getAllLogBookEntriesForGroup(group, false));
 
-        List<LogBook> completedEntries = logBookService.getAllLogBookEntriesForGroup(group.getId(), true);
+        List<LogBook> completedEntries = logBookService.getAllLogBookEntriesForGroup(group, true);
         model.addAttribute("completedEntries", completedEntries);
         log.info("Got back this many complete entries ... " + completedEntries.size());
 

@@ -1,14 +1,10 @@
 package za.org.grassroot.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
-import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.LogBookRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.async.GenericJmsTemplateProducerService;
@@ -52,46 +48,23 @@ public class LogBookManager implements LogBookService {
     }
 
     @Override
-    public List<LogBook> getAllLogBookEntriesForGroup(Long groupId) {
-        return logBookRepository.findAllByGroupId(groupId);
+    public List<LogBook> getAllLogBookEntriesForGroup(Group group) {
+        return logBookRepository.findByGroup(group);
     }
 
     @Override
-    public List<LogBook> getLogBookEntriesInPeriod(Long groupId, LocalDateTime periodStart, LocalDateTime periodEnd) {
+    public List<LogBook> getLogBookEntriesInPeriod(Group group, LocalDateTime periodStart, LocalDateTime periodEnd) {
         Sort sort = new Sort(Sort.Direction.ASC, "CreatedDateTime");
         Instant start = convertToSystemTime(periodStart, getSAST());
         Instant end = convertToSystemTime(periodEnd, getSAST());
-        return logBookRepository.findAllByGroupIdAndCreatedDateTimeBetween(groupId, start, end, sort);
+        return logBookRepository.findByGroupAndCreatedDateTimeBetween(group, start, end, sort);
     }
 
     @Override
-    public List<LogBook> getAllLogBookEntriesForGroup(Long groupId, boolean completed) {
+    public List<LogBook> getAllLogBookEntriesForGroup(Group group, boolean completed) {
         // use an old timestamp both so we prune the really old entries, and to get around half-formed ("null due date") entries
-        log.info("Getting all logBook entries for groupId ... " + groupId + " ... and completed state: " + completed);
-        return logBookRepository.findAllByGroupIdAndCompletedAndActionByDateGreaterThan(
-                groupId, completed, LocalDateTime.now().minusYears(1L).toInstant(ZoneOffset.UTC));
-    }
-
-    @Override
-    public Page<LogBook> getAllLogBookEntriesForGroup(Long groupId, int pageNumber, int pageSize, boolean completed) {
-        return logBookRepository.findAllByGroupIdAndCompletedAndActionByDateGreaterThan(groupId,
-                new PageRequest(pageNumber,pageSize),completed, LocalDateTime.now().minusYears(1L).toInstant(ZoneOffset.UTC));
-    }
-
-
-    @Override
-    public List<LogBook> getAllReplicatedEntriesForGroup(Long groupId) {
-        return logBookRepository.findAllByReplicatedGroupId(groupId);
-    }
-
-    @Override
-    public List<LogBook> getAllReplicatedEntriesForGroup(Long groupId, boolean completed) {
-        return logBookRepository.findAllByReplicatedGroupIdAndCompleted(groupId, completed);
-    }
-
-    @Override
-    public List<LogBook> getAllReplicatedEntriesForGroupAndMessage(Long groupId, String message) {
-        return logBookRepository.findAllByReplicatedGroupIdAndMessageOrderByGroupIdAsc(groupId, message);
+        return logBookRepository.findByGroupAndCompletedAndActionByDateGreaterThan(
+                group, completed, LocalDateTime.now().minusYears(1L).toInstant(ZoneOffset.UTC));
     }
 
     @Override
@@ -101,38 +74,19 @@ public class LogBookManager implements LogBookService {
 
     @Override
     public List<LogBook> getAllReplicatedEntriesFromParentLogBook(LogBook logBook) {
-        return logBookRepository.findAllByReplicatedGroupIdAndMessageAndActionByDateOrderByGroupIdAsc(logBook.resolveGroup().getId(), logBook.getMessage(),
-                                                                                                      logBook.getActionByDate());
-    }
-
-    @Override
-    public boolean hasParentLogBookEntry(LogBook logBook) {
-        return logBook.getReplicatedGroup() != null;
+        return logBookRepository.findByReplicatedGroupAndMessageAndActionByDateOrderByGroupIdAsc(logBook.resolveGroup(), logBook.getMessage(),
+                                                                                                 logBook.getActionByDate());
     }
 
     @Override
     public LogBook getParentLogBookEntry(LogBook logBook) {
         // todo error handling just in case something went wrong on insert and the repository call comes back empty
-        Group parentLogBookGroupId = logBook.getReplicatedGroup();
-        if (parentLogBookGroupId == null) {
+        Group parentLogBookGroup = logBook.getReplicatedGroup();
+        if (parentLogBookGroup == null) {
             return null;
         }
-        else return logBookRepository.findByGroupIdAndMessageAndCreatedDateTime(parentLogBookGroupId.getId(), logBook.getMessage(),
-                                                                                logBook.getCreatedDateTime()).get(0);
-    }
-
-    @Override
-    public LogBook setDueDate(Long logBookId, LocalDateTime actionByDateTime) {
-        LogBook logBook = load(logBookId);
-        logBook.setActionByDate(convertToSystemTime(actionByDateTime, getSAST()));
-        return logBookRepository.save(logBook);
-    }
-
-    @Override
-    public LogBook setMessage(Long logBookId, String message) {
-        LogBook logBook = load(logBookId);
-        logBook.setMessage(message);
-        return logBookRepository.save(logBook);
+        else return logBookRepository.findByGroupAndMessageAndCreatedDateTime(parentLogBookGroup, logBook.getMessage(),
+                                                                              logBook.getCreatedDateTime()).get(0);
     }
 
     @Override
@@ -141,31 +95,9 @@ public class LogBookManager implements LogBookService {
         return logBookRepository.save(logBook);
     }
 
-    // todo: tidy these up on a refactor, there's quite a bit of redundancy
-    @Override
-    public LogBook setCompleted(Long logBookId, Long completedByUserId) {
-        return setCompletedWithDate(logBookId, completedByUserId, LocalDateTime.now());
-    }
-
-    /*@Override
-    public LogBook setCompleted(Long logBookId, Long completedByUserId, String completedDate) {
-        if (completedDate != null) {
-            LocalDate.parse(completedDate, getPreferredDateFormat()).atStartOfDay());
-            return (completedByUserId == null) ? setCompleted(logBookId, timestamp) :
-                    setCompletedWithDate(logBookId, completedByUserId, timestamp);
-        } else {
-            return (completedByUserId == null) ? setCompleted(logBookId) : setCompleted(logBookId, completedByUserId);
-        }
-    }*/
-
     @Override
     public LogBook setCompletedWithDate(Long logBookId, Long completedByUserId, LocalDateTime completedDate) {
         return setCompleted(logBookRepository.findOne(logBookId), completedByUserId, completedDate);
-    }
-
-    @Override
-    public LogBook setCompleted(Long logBookId) {
-        return setCompleted(logBookId, LocalDateTime.now());
     }
 
     @Override

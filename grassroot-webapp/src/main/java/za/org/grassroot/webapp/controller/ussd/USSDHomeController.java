@@ -13,6 +13,7 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.services.EventLogManagementService;
+import za.org.grassroot.services.LogBookBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDResponseTypes;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -47,15 +48,24 @@ public class USSDHomeController extends USSDController {
     @Autowired
     private USSDEventUtil eventUtil;
 
-    Logger log = LoggerFactory.getLogger(getClass());
+    @Autowired
+    private LogBookBroker logBookBroker;
+
+    private static final Logger log = LoggerFactory.getLogger(USSDHomeController.class);
+
     private static final String path = homePath;
     private static final USSDSection thisSection = HOME;
 
-    private static final String rsvpMenu = "rsvp", renameUserMenu = "rename-start", renameGroupAndStart = "group-start",
-            promptGroupRename = "group-rename-prompt", promptConfirmGroupInactive = "group-inactive-confirm";
+    private static final String rsvpMenu = "rsvp",
+            renameUserMenu = "rename-start",
+            renameGroupAndStart = "group-start",
+            promptGroupRename = "group-rename-prompt",
+            promptConfirmGroupInactive = "group-inactive-confirm";
+
     private static final int hashPosition = Integer.valueOf(System.getenv("USSD_CODE_LENGTH"));
 
     private static final String openingMenuKey = String.join(".", Arrays.asList(homeKey, startMenu, optionsKey));
+
     private static final Map<USSDSection, String[]> openingMenuOptions = Collections.unmodifiableMap(Stream.of(
             new SimpleEntry<>(MEETINGS, new String[] { meetingMenus + startMenu, openingMenuKey + mtgKey}),
             new SimpleEntry<>(VOTES, new String[] { voteMenus + startMenu, openingMenuKey + voteKey}),
@@ -64,22 +74,23 @@ public class USSDHomeController extends USSDController {
             new SimpleEntry<>(USER_PROFILE, new String[] { userMenus + startMenu, openingMenuKey + userKey})).
             collect(Collectors.toMap((e) -> e.getKey(), (e) -> e.getValue())));
 
-    private static final List<USSDSection> openingSequenceWithGroups = Arrays.asList(MEETINGS, VOTES, LOGBOOK, GROUP_MANAGER, USER_PROFILE);
-    private static final List<USSDSection> openingSequenceWithoutGroups = Arrays.asList(USER_PROFILE, GROUP_MANAGER, MEETINGS, VOTES, LOGBOOK);
+    private static final List<USSDSection> openingSequenceWithGroups = Arrays.asList(
+            MEETINGS, VOTES, LOGBOOK, GROUP_MANAGER, USER_PROFILE);
+    private static final List<USSDSection> openingSequenceWithoutGroups = Arrays.asList(
+            USER_PROFILE, GROUP_MANAGER, MEETINGS, VOTES, LOGBOOK);
 
-    public USSDMenu welcomeMenu(String opening, User user) throws URISyntaxException {
+    private static final long daysPastLogbooks = 5; // just check for logbooks that crossed deadline in last ~week
 
-        Long startTime = System.currentTimeMillis();
+    public USSDMenu welcomeMenu(String opening, User user) {
+
         USSDMenu homeMenu = new USSDMenu(opening);
-        Locale menuLang = new Locale(getLanguage(user));
-        List<USSDSection> menuSequence = userManager.isPartOfActiveGroups(user) ? openingSequenceWithGroups : openingSequenceWithoutGroups;
+        List<USSDSection> menuSequence = userManager.isPartOfActiveGroups(user) ?
+                openingSequenceWithGroups : openingSequenceWithoutGroups;
 
         for (USSDSection section : menuSequence) {
             homeMenu.addMenuOption(openingMenuOptions.get(section)[0],
                                    getMessage(openingMenuOptions.get(section)[1], user));
         }
-        Long endTime = System.currentTimeMillis();
-        log.info("Assembled USSD opening menu, took {} msecs", endTime - startTime);
 
         return homeMenu;
     }
@@ -92,69 +103,38 @@ public class USSDHomeController extends USSDController {
         Long startTime = System.currentTimeMillis();
 
         USSDMenu openingMenu;
-        // first off, check if there is a cache entry for an interrupted menu
+
+        // first off, check if there is a cache entry for an interrupted menu, and if so, just assemble without touching DB
         if (userInterrupted(inputNumber)) {
             return menuBuilder(interruptedPrompt(inputNumber));
         }
 
-        log.info("Hit home page, loading user, in thread: {}", Thread.currentThread());
         User sessionUser = userManager.loadOrSaveUser(inputNumber);
         userLogger.recordUserSession(sessionUser.getUid(), UserInterfaceType.USSD);
 
         /*
         Adding some complex logic here to check for one of these things:
         (1) The user has appended a joining code, so we need to add them to a group
-        (2) The user was in the middle of something (e.g., adding numbers), and might want to continue
-        (3) The user has an outstanding RSVP request for a meeting
-        (4) The user has not named themselves, or a prior group
-        These will be processed in order, as below
-        TODO: take a hard look at all this code to make it is as efficient as possible, given frequency of calling it
-        and the need to make it highly efficient
+        (2) The user has an outstanding RSVP request for a meeting
+        (3) The user has not named themselves, or a prior group
          */
 
         if (codeHasTrailingDigits(enteredUSSD)) {
             String trailingDigits = enteredUSSD.substring(hashPosition + 1, enteredUSSD.length() - 1);
             openingMenu = processTrailingDigits(trailingDigits, sessionUser);
-        } else if (userResponseNeeded(sessionUser)) {
-            openingMenu = requestUserResponse(sessionUser);
-        } else if (firstSession(sessionUser)) {
-            sessionUser = userManager.setInitiatedSession(sessionUser);
-            openingMenu = defaultStartMenu(sessionUser);
         } else {
-            openingMenu = defaultStartMenu(sessionUser);
+            if (!sessionUser.isHasInitiatedSession()) userManager.setInitiatedSession(sessionUser);
+            USSDResponseTypes neededResponse = neededResponse(sessionUser);
+
+            if (!neededResponse.equals(USSDResponseTypes.NONE)) {
+                openingMenu = requestUserResponse(sessionUser, neededResponse);
+            } else {
+                openingMenu = defaultStartMenu(sessionUser);
+            }
         }
         Long endTime = System.currentTimeMillis();
         log.info(String.format("Generating home menu, time taken: %d msecs", endTime - startTime));
         return menuBuilder(openingMenu, true);
-
-    }
-
-    private boolean firstSession(User sessionUser) {
-        return userManager.isFirstInitiatedSession(sessionUser);
-    }
-
-    private USSDMenu askForLanguage(User sessionUser) {
-
-        String prompt = getMessage(thisSection, startMenu, promptKey + "-language", sessionUser);
-        String nextUrl = "start_language";
-        USSDMenu promptMenu = new USSDMenu(prompt);
-
-        for (Map.Entry<String, String> entry : userManager.getImplementedLanguages().entrySet()) {
-            promptMenu.addMenuOption(nextUrl + "?language=" + entry.getKey(), entry.getValue());
-        }
-
-        return promptMenu;
-    }
-
-    @RequestMapping(value = path + startMenu + "_language")
-    @ResponseBody
-    public Request languageSetMenu(@RequestParam(value= phoneNumber) String inputNumber,
-                                   @RequestParam(value="language") String language) throws URISyntaxException {
-
-        User sessionUser = userManager.findByInputNumber(inputNumber);
-        sessionUser = userManager.setUserLanguage(sessionUser, language);
-
-        return menuBuilder(defaultStartMenu(sessionUser));
 
     }
 
@@ -191,25 +171,16 @@ public class USSDHomeController extends USSDController {
         return (userManager.getLastUssdMenu(inputNumber) != null);
     }
 
-    private boolean userResponseNeeded(User sessionUser) {
-        // todo: optimize this -- it is currently doing 2-4 DB calls on every start menu ... need to consolidate somehow to one
-        log.info("Checking if user needs to respond to anything, either a vote or an RSVP ...");
-        return userManager.needsToVoteOrRSVP(sessionUser) || sessionUser.needsToRenameSelf(5)
-            || (userManager.fetchGroupUserMustRename(sessionUser) != null);
-    }
+    /* Note: the sequence in which these are checked and returned sets the order of priority of responses */
+    /* Note: this involves around four DB pings on first menu -- somewhat expensive -- need to consolidate somehow */
 
-    private USSDResponseTypes neededResponse(User sessionUser) {
+    private USSDResponseTypes neededResponse(User user) {
 
-        /* Note: the sequence in which these are checked and returned sets the order of priority of responses */
-        /* Note: this involves around four DB pings on first menu -- extremely expensive -- need to consolidate somehow */
-
-        if (userManager.needsToVote(sessionUser)) {
-            log.info("User needs to vote!");
-            return USSDResponseTypes.VOTE;
-        }
-        if (userManager.needsToRSVP(sessionUser)) return USSDResponseTypes.MTG_RSVP;
-        if (userManager.needsToRenameSelf(sessionUser)) return USSDResponseTypes.RENAME_SELF;
-        if (userManager.fetchGroupUserMustRename(sessionUser) != null) return USSDResponseTypes.NAME_GROUP;
+        if (userManager.needsToVote(user)) return USSDResponseTypes.VOTE;
+        if (userManager.needsToRSVP(user)) return USSDResponseTypes.MTG_RSVP;
+        if (userManager.hasIncompleteLogBooks(user.getUid(), daysPastLogbooks)) return USSDResponseTypes.RESPOND_LOGBOOK;
+        if (userManager.needsToRenameSelf(user)) return USSDResponseTypes.RENAME_SELF;
+        if (userManager.fetchGroupUserMustRename(user) != null) return USSDResponseTypes.NAME_GROUP;
 
         return USSDResponseTypes.NONE;
 
@@ -254,30 +225,33 @@ public class USSDHomeController extends USSDController {
 
     }
 
-    private USSDMenu requestUserResponse(User sessionUser) throws URISyntaxException {
+    private USSDMenu requestUserResponse(User user, USSDResponseTypes response) throws URISyntaxException {
 
         USSDMenu openingMenu = new USSDMenu();
 
-        switch (neededResponse(sessionUser)) {
+        switch (response) {
             case VOTE:
-                openingMenu = assembleVoteMenu(sessionUser);
+                openingMenu = assembleVoteMenu(user);
                 break;
             case MTG_RSVP:
-                openingMenu = assembleRsvpMenu(sessionUser);
+                openingMenu = assembleRsvpMenu(user);
+                break;
+            case RESPOND_LOGBOOK:
+                openingMenu = assembleLogBookMenu(user);
                 break;
             case RENAME_SELF:
-                openingMenu.setPromptMessage(getMessage(thisSection, USSDController.startMenu, promptKey + "-rename", sessionUser));
+                openingMenu.setPromptMessage(getMessage(thisSection, USSDController.startMenu, promptKey + "-rename", user));
                 openingMenu.setFreeText(true);
                 openingMenu.setNextURI(renameUserMenu);
                 break;
             case NAME_GROUP:
-                Group group = userManager.fetchGroupUserMustRename(sessionUser);
-                openingMenu = (groupBroker.isDeactivationAvailable(sessionUser, group, true)) ?
-                        renameGroupAllowInactive(sessionUser, group.getUid(), dateFormat.format(group.getCreatedDateTime().toLocalDateTime())) :
-                        renameGroupNoInactiveOption(sessionUser, group.getUid(), dateFormat.format(group.getCreatedDateTime().toLocalDateTime()));
+                Group group = userManager.fetchGroupUserMustRename(user);
+                openingMenu = (groupBroker.isDeactivationAvailable(user, group, true)) ?
+                        renameGroupAllowInactive(user, group.getUid(), dateFormat.format(group.getCreatedDateTime().toLocalDateTime())) :
+                        renameGroupNoInactiveOption(user, group.getUid(), dateFormat.format(group.getCreatedDateTime().toLocalDateTime()));
                 break;
             case NONE:
-                openingMenu = defaultStartMenu(sessionUser);
+                openingMenu = defaultStartMenu(user);
                 break;
         }
 
@@ -319,14 +293,36 @@ public class USSDHomeController extends USSDController {
                 meeting.getEventDateTimeAtSAST().format(dateTimeFormat) };
 
         // if the composed message is longer than 120 characters, we are going to go over, so return a shortened message
-        String defaultPrompt = getMessage(thisSection, USSDController.startMenu, promptKey + "-" + rsvpMenu, meetingDetails, sessionUser);
+        String defaultPrompt = getMessage(thisSection, startMenu, promptKey + "-" + rsvpMenu, meetingDetails, sessionUser);
         if (defaultPrompt.length() > 120)
-            defaultPrompt = getMessage(thisSection, USSDController.startMenu, promptKey + "-" + rsvpMenu + ".short", meetingDetails, sessionUser);
+            defaultPrompt = getMessage(thisSection, startMenu, promptKey + "-" + rsvpMenu + ".short", meetingDetails, sessionUser);
 
         String optionUri = rsvpMenu + entityUidUrlSuffix + meeting.getUid();
         USSDMenu openingMenu = new USSDMenu(defaultPrompt);
         openingMenu.setMenuOptions(new LinkedHashMap<>(optionsYesNo(sessionUser, optionUri, optionUri)));
         return openingMenu;
+    }
+
+    private USSDMenu assembleLogBookMenu(User user) {
+        log.info("User has an incomplete logbook needing a response!");
+        LogBook logBook = logBookBroker.fetchLogBookForUserResponse(user.getUid(), daysPastLogbooks, false);
+
+        if (logBook == null) {
+            log.info("For some reason, should have found a logbook to respond to, but didnt, user = {}", user);
+            return welcomeMenu(getMessage(thisSection, startMenu, promptKey, user), user);
+        } else {
+            String[] promptFields = new String[]{
+                    logBook.getParent().getName(),
+                    logBook.getMessage(),
+                    logBook.getActionByDateAtSAST().format(dateFormat) };
+            String prompt = getMessage(thisSection, startMenu, promptKey + "-logbook", promptFields, user);
+            String completeUri = "log-complete" + entityUidUrlSuffix + logBook.getUid();
+            USSDMenu menu = new USSDMenu(prompt);
+            menu.addMenuOptions(new LinkedHashMap<>(optionsYesNo(user, completeUri, completeUri)));
+            menu.addMenuOption(completeUri + "&confirmed=unknown",
+                               getMessage(thisSection, startMenu, logKey + "." + optionsKey + ".unknown", user));
+            return menu;
+        }
     }
 
     private USSDMenu renameGroupNoInactiveOption(User user, String groupUid, String dateCreated) {
@@ -391,6 +387,14 @@ public class USSDHomeController extends USSDController {
 
         String prompt = getMessage(thisSection, startMenu, promptKey + ".vote-recorded", sessionUser);
         return menuBuilder(new USSDMenu(prompt, optionsHomeExit(sessionUser)));
+    }
+
+    @RequestMapping(value = path + "log-complete")
+    @ResponseBody
+    public Request logBookEntry(@RequestParam(value = phoneNumber) String inputNumber,
+                                @RequestParam(value = entityUidParam) String logBookUid,
+                                @RequestParam(value = yesOrNoParam) String response) throws URISyntaxException {
+        return notBuilt(inputNumber);
     }
 
     @RequestMapping(value = path + renameUserMenu)
