@@ -4,6 +4,7 @@ public interface UidIdentifiable {
 	JpaEntityType getJpaEntityType();
 	String getUid();
 	Long getId();
+	String getName();
 
 	/**
 	 * Returns group this entity belongs to, which can be this very entity if it is group itself.
@@ -29,4 +30,5 @@ public interface UidIdentifiable {
 		}
 		return (Group) currentEntity;
 	};
+
 }

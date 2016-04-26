@@ -15,9 +15,10 @@ import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.GroupPage;
 import za.org.grassroot.webapp.util.USSDUrlUtil;
 
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 
@@ -133,7 +134,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
         String message = "some message about meeting some other people to" +
                 " discuss something important about the community";
-        Timestamp now = Timestamp.valueOf(LocalDateTime.now());
+        Instant now = Instant.now();
         Group testGroup = new Group("somegroup", testUser);
         List<LogBook> testLogBooks = Arrays.asList(
                 new LogBook(testUser, testGroup, message, now),
@@ -268,7 +269,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         testUser.setDisplayName("Paballo");
 
         dummyLogBook.setMessage(dummyUserInput);
-        dummyLogBook.setActionByDate(Timestamp.from(Instant.now()));
+        dummyLogBook.setActionByDate(Instant.now());
 
         String urlToSave = saveLogMenu(confirmMenu, dummyLogBook.getUid(), subjectMenu, "revised message", true);
 
@@ -303,7 +304,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
             String urlToSave = USSDUrlUtil.saveLogMenu(confirmMenu, dummyLogBook.getUid(), dueDateMenu, date, true);
             String formattedDateString = reformatDateInput(date).trim();
-            dummyLogBook.setActionByDate(Timestamp.valueOf(convertDateStringToLocalDateTime(formattedDateString, 13, 0)));
+            dummyLogBook.setActionByDate(convertDateStringToLocalDateTime(formattedDateString, 13, 0).toInstant(ZoneOffset.UTC));
             when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
             when(logBookRequestBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
 
@@ -359,7 +360,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
     public void viewLogBookDatesWorksWhenActionInComplete() throws Exception {
 
         Group testGroup = new Group("tg1", testUser);
-        LogBook dummyLogBook = new LogBook(testUser, testGroup, "test logbook", Timestamp.valueOf(LocalDateTime.now().plusWeeks(1L)));
+        LogBook dummyLogBook = new LogBook(testUser, testGroup, "test logbook", Instant.now().plus(7, ChronoUnit.DAYS));
         dummyLogBook.setCompleted(false);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
@@ -380,9 +381,9 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
     public void viewLogBookDatesWorksWhenActionCompleted() throws Exception {
 
         Group testGroup = new Group("tg2", testUser);
-        LogBook dummyLogBook = new LogBook(testUser, testGroup, "test logbook", Timestamp.valueOf(LocalDateTime.now().minusWeeks(1L)));
+        LogBook dummyLogBook = new LogBook(testUser, testGroup, "test logbook", Instant.now().minus(7, ChronoUnit.DAYS));
         dummyLogBook.setCompleted(true);
-        dummyLogBook.setCompletedDate(Timestamp.from(Instant.now()));
+        dummyLogBook.setCompletedDate(Instant.now());
         dummyLogBook.setCompletedByUser(testUser);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
@@ -402,10 +403,10 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
         Group testGroup = new Group("tg2", testUser);
         testGroup.addMember(testUser);
-        LogBook dummyLogBook = new LogBook(testUser, testGroup, "test logbook", Timestamp.valueOf(LocalDateTime.now().minusWeeks(1L)));
+        LogBook dummyLogBook = new LogBook(testUser, testGroup, "test logbook", Instant.now().minus(7, ChronoUnit.DAYS));
 
         dummyLogBook.setCompleted(true);
-        dummyLogBook.setCompletedDate(Timestamp.from(Instant.now()));
+        dummyLogBook.setCompletedDate(Instant.now());
 
         dummyLogBook.setCompletedByUser(testUser);
         dummyLogBook.assignMembers(Collections.singleton(testUser.getUid()));
@@ -427,10 +428,10 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
         Group testGroup = new Group("tg2", testUser);
         testGroup.addMember(testUser);
-        LogBook dummyLogBook = new LogBook(testUser, testGroup, "test logbook", Timestamp.valueOf(LocalDateTime.now().minusWeeks(1L)));
+        LogBook dummyLogBook = new LogBook(testUser, testGroup, "test logbook", Instant.now().minus(7, ChronoUnit.DAYS));
 
         dummyLogBook.setCompleted(true);
-        dummyLogBook.setCompletedDate(Timestamp.from(Instant.now()));
+        dummyLogBook.setCompletedDate(Instant.now());
         dummyLogBook.setCompletedByUser(testUser);
         dummyLogBook.assignMembers(Collections.singleton(testUser.getUid()));
 
@@ -470,7 +471,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
         Group testGroup = new Group("tg2", testUser);
         testGroup.addMember(testUser);
-        LogBook dummyLogBook = new LogBook(testUser, testGroup, "test logbook", Timestamp.valueOf(LocalDateTime.now().minusWeeks(1L)));
+        LogBook dummyLogBook = new LogBook(testUser, testGroup, "test logbook", Instant.now().minus(7, ChronoUnit.DAYS));
 
         dummyLogBook.assignMembers(Collections.singleton(testUser.getUid()));
 
@@ -541,7 +542,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
         Group testGroup = new Group("tg2", testUser);
         testGroup.addMember(testUser);
-        LogBook dummyLogBook = new LogBook(testUser, testGroup, "test logbook", Timestamp.valueOf(LocalDateTime.now().plusDays(1L)));
+        LogBook dummyLogBook = new LogBook(testUser, testGroup, "test logbook", Instant.now().plus(1, ChronoUnit.DAYS));
 
         dummyLogBook.assignMembers(Collections.singleton(testUser.getUid()));
         dummyLogBook.setCompletedByUser(testUser);

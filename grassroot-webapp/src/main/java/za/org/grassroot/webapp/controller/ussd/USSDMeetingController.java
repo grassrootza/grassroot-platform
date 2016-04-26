@@ -8,11 +8,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Meeting;
-import za.org.grassroot.core.domain.MeetingRequest;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.EventLogType;
+import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.services.EventRequestBroker;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
@@ -48,6 +48,9 @@ public class USSDMeetingController extends USSDController {
 
     @Autowired
     private EventRequestBroker eventRequestBroker;
+
+    @Autowired
+    private EventLogManagementService eventLogManagementService;
 
     private Logger log = LoggerFactory.getLogger(getClass());
     private static final String path = homePath + meetingMenus;
@@ -346,19 +349,32 @@ public class USSDMeetingController extends USSDController {
     public Request meetingManage(@RequestParam(value = phoneNumber) String inputNumber,
                                  @RequestParam(value = entityUidParam) String eventUid) throws URISyntaxException {
 
-        User sessionUser = userManager.findByInputNumber(inputNumber);
+        USSDMenu menu;
+        User user = userManager.findByInputNumber(inputNumber);
+        Event event = eventBroker.load(eventUid);
 
-        // todo: check user's permissions on this group/event, once permissions structure in place and being used
-        String eventSuffix = entityUidUrlSuffix + eventUid + "&next_menu=" + changeDateAndTime; // next_menu param only used by date/time
-        USSDMenu promptMenu = new USSDMenu(getMessage(thisSection, manageMeetingMenu, promptKey, sessionUser));
+        // todo: have a fallback menu in case user is also not part of the meeting
+        if (user.equals(event.getCreatedByUser())) {
+            menu = meetingCallerMenu(user, eventUid);
+        } else {
+            menu = meetingAttendeeMenu(user, event);
+        }
 
-        promptMenu.addMenuOption(meetingMenus + viewMeetingDetails + eventSuffix, getMessage(thisSection, viewMeetingDetails, "option", sessionUser));
-        promptMenu.addMenuOption(meetingMenus + newTime + eventSuffix, getMessage(thisSection, "change_" + timeOnly, "option", sessionUser));
-        promptMenu.addMenuOption(meetingMenus + newDate + eventSuffix, getMessage(thisSection, "change_" + dateOnly, "option", sessionUser));
-        promptMenu.addMenuOption(meetingMenus + changeMeetingLocation + eventSuffix, getMessage(thisSection, changeMeetingLocation, "option", sessionUser));
-        promptMenu.addMenuOption(meetingMenus + cancelMeeting + eventSuffix, getMessage(thisSection, cancelMeeting, "option", sessionUser));
+        return menuBuilder(menu);
+    }
 
-        return menuBuilder(promptMenu);
+    private USSDMenu meetingCallerMenu(User user, String eventUid) {
+
+        final String eventSuffix = entityUidUrlSuffix + eventUid;
+        USSDMenu menu = new USSDMenu(getMessage(thisSection, manageMeetingMenu, promptKey, user));
+
+        menu.addMenuOption(meetingMenus + viewMeetingDetails + eventSuffix, getMessage(thisSection, viewMeetingDetails, "option", user));
+        menu.addMenuOption(meetingMenus + newTime + eventSuffix, getMessage(thisSection, "change_" + timeOnly, "option", user));
+        menu.addMenuOption(meetingMenus + newDate + eventSuffix, getMessage(thisSection, "change_" + dateOnly, "option", user));
+        menu.addMenuOption(meetingMenus + changeMeetingLocation + eventSuffix, getMessage(thisSection, changeMeetingLocation, "option", user));
+        menu.addMenuOption(meetingMenus + cancelMeeting + eventSuffix, getMessage(thisSection, cancelMeeting, "option", user));
+
+        return menu;
     }
 
     @RequestMapping(value = path + viewMeetingDetails)
@@ -530,6 +546,63 @@ public class USSDMeetingController extends USSDController {
         String menuPrompt = getMessage(thisSection, modifyConfirm, "cancel.done", sessionUser);
         eventBroker.cancel(sessionUser.getUid(), eventUid);
         return menuBuilder(new USSDMenu(menuPrompt, optionsHomeExit(sessionUser)));
+    }
+
+    /*
+    Method and menus for a non-creating user to view & change their attendance
+     */
+    private USSDMenu meetingAttendeeMenu(User user, Event event) {
+
+        final EventLog userResponse = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.EventRSVP);
+
+        final String attendeeKey = "attendee";
+        final String suffix = entityUidUrlSuffix + event.getUid();
+        final String basePath = meetingMenus + "change-response" + suffix + "&response=";
+        final String[] fields = new String[] { event.resolveGroup().getName(""),
+                event.getEventDateTimeAtSAST().format(dateTimeFormat)};
+
+        USSDMenu menu;
+        if (userResponse != null) {
+            if (("Yes").equalsIgnoreCase(userResponse.getMessage())) {
+                menu = new USSDMenu(getMessage(thisSection, attendeeKey, "rsvpyes." + promptKey, fields, user));
+                menu.addMenuOption(basePath + "no", getMessage(thisSection, attendeeKey, optionsKey + "rsvpno", user));
+            } else {
+                menu = new USSDMenu(getMessage(thisSection, attendeeKey, "rsvpno." + promptKey, fields, user));
+                menu.addMenuOption(basePath + "yes", getMessage(thisSection, attendeeKey, optionsKey + "rsvpyes", user));
+            }
+        } else {
+            menu = new USSDMenu(getMessage(thisSection, attendeeKey, "noreply" + promptKey, fields, user));
+            menu.addMenuOption(basePath + "yes", getMessage(thisSection, "attendee", optionsKey + "rsvpyes", user));
+            menu.addMenuOption(basePath + "no", getMessage(thisSection, "attendee", optionsKey + "rsvpno", user));
+        }
+
+        menu.addMenuOption(meetingMenus + viewMeetingDetails + suffix, getMessage(thisSection, viewMeetingDetails, "option", user));
+
+        return menu;
+    }
+
+    @RequestMapping(value = path + "change-response")
+    @ResponseBody
+    public Request changeAttendeeResponseDo(@RequestParam(value = phoneNumber) String inputNumber,
+                                            @RequestParam(value = entityUidParam) String eventUid,
+                                            @RequestParam(value = "response") String response) throws URISyntaxException {
+
+        // todo: should probably just make sure that this user is in fact part of the meeting (also might not want to default to "no")
+
+        final User user = userManager.findByInputNumber(inputNumber);
+        final Event event = eventBroker.load(eventUid);
+        final EventRSVPResponse userResponse = "yes".equalsIgnoreCase(response) ? EventRSVPResponse.YES : EventRSVPResponse.NO;
+
+        eventLogManagementService.rsvpForEvent(event.getId(), inputNumber, userResponse);
+
+        final String key = "att_changed";
+        final String suffix = entityUidUrlSuffix + eventUid;
+
+        USSDMenu menu = new USSDMenu(getMessage(thisSection, key, promptKey, user));
+        menu.addMenuOption(meetingMenus + manageMeetingMenu + suffix, getMessage(thisSection, key, optionsKey + "back", user));
+        menu.addMenuOptions(optionsHomeExit(user));
+
+        return menuBuilder(menu);
     }
 
     /*

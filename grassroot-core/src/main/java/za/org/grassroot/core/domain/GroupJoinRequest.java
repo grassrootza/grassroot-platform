@@ -6,8 +6,6 @@ import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -19,6 +17,7 @@ import java.util.Objects;
 @Table(name = "group_join_request",
         uniqueConstraints = @UniqueConstraint(name = "uk_group_join_request_uid", columnNames = "uid"))
 public class GroupJoinRequest {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
@@ -41,6 +40,9 @@ public class GroupJoinRequest {
     @Column(name = "processed_time")
     private Instant processedTime;
 
+    @Column(name = "description")
+    private String description;
+
     @Column(name = "status", nullable = false, length = 50)
     @Enumerated(EnumType.STRING)
     private GroupJoinRequestStatus status;
@@ -49,12 +51,13 @@ public class GroupJoinRequest {
         // for JPA
     }
 
-    public GroupJoinRequest(User requestor, Group group, Instant creationTime) {
+    public GroupJoinRequest(User requestor, Group group, Instant creationTime, String description) {
         this.uid = UIDGenerator.generateId();
         this.requestor = Objects.requireNonNull(requestor);
         this.group = Objects.requireNonNull(group);
         this.creationTime = Objects.requireNonNull(creationTime);
         this.status = GroupJoinRequestStatus.PENDING;
+        this.description = description;
     }
 
     public Long getId() {
@@ -92,6 +95,10 @@ public class GroupJoinRequest {
     public void setStatus(GroupJoinRequestStatus status) {
         this.status = status;
     }
+
+    public String getDescription() { return description; }
+
+    public void setDescription(String description) { this.description = description; }
 
     @Override
     public boolean equals(Object o) {

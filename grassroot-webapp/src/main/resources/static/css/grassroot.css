@@ -158,6 +158,21 @@
     color: #207A33;
 }
 
+.btn-primary {
+    font-family: 'Roboto', sans-serif;
+    background-color: #207A33;
+    border-radius: 1px;
+    border: 0 none;
+}
+
+.btn-danger {
+    font-family: 'Roboto', sans-serif;
+    background-color: white;
+    border-radius: 0;
+    color: #ff2a00;
+    border-color: #808080;
+}
+
 .label-light {
     font-family: 'Roboto', sans-serif;
     font-weight: 300;
@@ -191,6 +206,10 @@
 .white-text {
     color: #ffffff;
     font-family: 'Roboto', sans-serif;
+}
+
+.badge {
+    background-color: #207A33;
 }
 
 .brand-icon {

@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
@@ -12,13 +13,25 @@ import za.org.grassroot.core.domain.notification.LogBookNotification;
 import za.org.grassroot.core.domain.notification.LogBookReminderNotification;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.core.dto.LogBookDTO;
+import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.core.repository.LogBookRepository;
+import za.org.grassroot.core.repository.UidIdentifiableRepository;
+import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.services.async.GenericJmsTemplateProducerService;
+import za.org.grassroot.services.enums.LogBookStatus;
 
-import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
+import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
 @Service
 public class LogBookBrokerImpl implements LogBookBroker {
@@ -52,7 +65,7 @@ public class LogBookBrokerImpl implements LogBookBroker {
 
 	@Override
 	@Transactional
-	public LogBook create(String userUid, JpaEntityType parentType, String parentUid, String message, Timestamp actionByDate, int reminderMinutes,
+	public LogBook create(String userUid, JpaEntityType parentType, String parentUid, String message, LocalDateTime actionByDate, int reminderMinutes,
 						  boolean replicateToSubgroups, Set<String> assignedMemberUids) {
 
 		Objects.requireNonNull(userUid);
@@ -110,14 +123,15 @@ public class LogBookBrokerImpl implements LogBookBroker {
 		logBook.removeAssignedMembers(memberUids);
 	}
 
-	private LogBook createNewLogBook(User user, LogBookContainer parent, String message, Timestamp actionByDate, int reminderMinutes,
+	private LogBook createNewLogBook(User user, LogBookContainer parent, String message, LocalDateTime actionByDate, int reminderMinutes,
 									 Group replicatedGroup) {
 		int numberOfRemindersLeftToSend = 0;
 		if (numberOfRemindersLeftToSend == 0) {
 			numberOfRemindersLeftToSend = 3; // todo: replace with a logic based on group paid / not paid
 		}
 
-		LogBook logBook = new LogBook(user, parent, message, actionByDate, reminderMinutes, replicatedGroup, numberOfRemindersLeftToSend);
+		Instant convertedActionByDate = convertToSystemTime(actionByDate, getSAST());
+		LogBook logBook = new LogBook(user, parent, message, convertedActionByDate, reminderMinutes, replicatedGroup, numberOfRemindersLeftToSend);
 		logBook = logBookRepository.save(logBook);
 
 		Group group = logBook.resolveGroup();
@@ -163,7 +177,7 @@ public class LogBookBrokerImpl implements LogBookBroker {
 		}
 
 		logBook.setCompleted(true);
-		logBook.setCompletedDate(Timestamp.valueOf(completionTime));
+		logBook.setCompletedDate(convertToSystemTime(completionTime, getSAST()));
 		logBook.setCompletedByUser(completedByUser);
 	}
 
@@ -214,6 +228,66 @@ public class LogBookBrokerImpl implements LogBookBroker {
 				.filter(logBook -> logBook.getParent().getJpaEntityType().equals(JpaEntityType.GROUP))
 				.map(logBook -> (Group) logBook.getParent())
 				.collect(Collectors.toList());
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<LogBook> loadUserLogBooks(String userUid, boolean assignedLogBooksOnly, boolean futureLogBooksOnly, LogBookStatus status) {
+		User user = userRepository.findOneByUid(userUid);
+		Instant start = futureLogBooksOnly ? Instant.now() : DateTimeUtil.getEarliestInstant();
+		Sort sort = new Sort(Sort.Direction.DESC, "createdDateTime");
+		List<LogBook> logbooks;
+		if (!assignedLogBooksOnly) {
+			switch(status) {
+				case COMPLETE:
+					logbooks = logBookRepository.findByGroupMembershipsUserAndActionByDateBetweenAndCompleted(user, start, Instant.MAX, true, sort);
+					break;
+				case INCOMPLETE:
+					logbooks = logBookRepository.findByGroupMembershipsUserAndActionByDateBetweenAndCompleted(user, start, Instant.MAX, false, sort);
+					break;
+				case BOTH:
+					logbooks = logBookRepository.findByGroupMembershipsUserAndActionByDateGreaterThan(user, start);
+					break;
+				default:
+					logbooks = logBookRepository.findByGroupMembershipsUserAndActionByDateGreaterThan(user, start);
+			}
+		} else {
+			switch (status) {
+				case COMPLETE:
+					logbooks = logBookRepository.findByAssignedMembersAndActionByDateBetweenAndCompleted(user, start, Instant.MAX, true, sort);
+					break;
+				case INCOMPLETE:
+					logbooks = logBookRepository.findByAssignedMembersAndActionByDateBetweenAndCompleted(user, start, Instant.MAX, false, sort);
+					break;
+				case BOTH:
+					logbooks = logBookRepository.findByAssignedMembersAndActionByDateGreaterThan(user, start);
+					break;
+				default:
+					logbooks = logBookRepository.findByGroupMembershipsUserAndActionByDateGreaterThan(user, start);
+			}
+		}
+		return logbooks;
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public LogBook fetchLogBookForUserResponse(String userUid, long daysInPast, boolean assignedLogBooksOnly) {
+		LogBook lbToReturn;
+		User user = userRepository.findOneByUid(userUid);
+		Instant end = Instant.now();
+		Instant start = Instant.now().minus(daysInPast, ChronoUnit.DAYS);
+		Sort sort = new Sort(Sort.Direction.ASC, "actionByDate"); // so the most overdue come up first
+
+		if (!assignedLogBooksOnly) {
+			List<LogBook> userLbs = logBookRepository.
+					findByGroupMembershipsUserAndActionByDateBetweenAndCompleted(user, start, end, false, sort);
+			lbToReturn = (userLbs.isEmpty()) ? null : userLbs.get(0);
+		} else {
+			List<LogBook> userLbs = logBookRepository.
+					findByAssignedMembersAndActionByDateBetweenAndCompleted(user, start, end, false, sort);
+			lbToReturn = (userLbs.isEmpty()) ? null : userLbs.get(0);
+		}
+		return lbToReturn;
 	}
 
 	/*@Override

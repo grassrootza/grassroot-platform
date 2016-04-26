@@ -6,18 +6,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.dto.RSVPTotalsPerGroupDTO;
+import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.util.CacheUtilService;
 
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -72,30 +70,30 @@ public class EventLogManager implements EventLogManagementService {
     }
 
     @Override
+    @Transactional
     public void rsvpForEvent(Event event, User user, EventRSVPResponse rsvpResponse) {
-        log.trace("rsvpForEvent...event..." + event.getId() + "...user..." + user.getPhoneNumber() + "...rsvp..." + rsvpResponse.toString());
-        // dont allow the user to rsvp/vote twice
+        log.trace("rsvpForEvent...event..." + event.getId() + "...user..." + user.getPhoneNumber() +
+                          "...rsvp..." + rsvpResponse.toString());
+
         if (!userRsvpForEvent(event,user)) {
             createEventLog(EventLogType.EventRSVP, event.getUid(), user.getUid(), rsvpResponse.toString());
             // clear rsvp cache for user
             cacheUtilService.clearRsvpCacheForUser(user, event.getEventType());
 
+            // see if everyone voted, if they did expire the vote so that the results are sent out
             if (event.getEventType() == EventType.VOTE) {
-                // see if everyone voted, if they did expire the vote so that the results are sent out
                 ResponseTotalsDTO rsvpTotalsDTO = getVoteResultsForEvent(event);
-                log.trace("rsvpForEvent...after..." + rsvpTotalsDTO.toString());
+                log.info("rsvpForEvent...everyone has voted... sending out results for {}", event.getName());
                 if (rsvpTotalsDTO.getNumberNoRSVP() < 1) {
-                    Date now = new Date();
                     event.setEventStartDateTime(Instant.now());
-                    eventRepository.save(event);
                 }
             }
-//        } else {
-//            EventLog eventLog = new EventLog();
-//             put values in the fields so that rest method does not NPE
-//            eventLog.setId(0L);
-//            eventLog.setEvent(new Event());
-//            eventLog.setUser(User.makeEmpty());
+        } else if (event.getEventStartDateTime().isAfter(Instant.now())) {
+            // allow the user to change their rsvp / vote as long as meeting is open
+            EventLog eventLog = eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.EventRSVP);
+            eventLog.setMessage(rsvpResponse.toString());
+            log.info("rsvpForEvent... changing response to {} on eventLog {}", rsvpResponse.toString(), eventLog);
+            eventLogRepository.saveAndFlush(eventLog); // todo: shouldn't need this, but it's not persisting (cleaning needed)
         }
     }
 

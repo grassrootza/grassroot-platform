@@ -75,7 +75,7 @@ public class TaskRestController {
             }
         }
 
-        for (LogBook logBook : logBookService.getAllLogBookEntriesForGroup(group.getId())) {
+        for (LogBook logBook : logBookService.getAllLogBookEntriesForGroup(group)) {
             if (logBook.getCreatedByUser().equals(user)) {
                 taskSet.add(new TaskDTO(logBook, user, user));
             } else {

@@ -2,9 +2,10 @@ package za.org.grassroot.webapp.model.rest;
 
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.LogBook;
+import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /**
  * Created by aakilomar on 12/7/15.
@@ -17,7 +18,7 @@ public class LogBookDTO implements Serializable {
     private String parentUid;
     private String message;
     private Long replicatedGroupId;
-    private Date actionByDate;
+    private LocalDateTime actionByDate;
     private Long assignToUserId;
     private boolean completed;
 
@@ -32,7 +33,7 @@ public class LogBookDTO implements Serializable {
         this.parentUid = logBook.getUid();
         this.message = logBook.getMessage();
         this.replicatedGroupId = logBook.getReplicatedGroup().getId();
-        this.actionByDate = logBook.getActionByDate();
+        this.actionByDate = LocalDateTime.from(logBook.getActionByDate().atZone(DateTimeUtil.getSAST()));
         this.assignToUserId = null;
         this.completed = logBook.isCompleted();
 
@@ -87,11 +88,11 @@ public class LogBookDTO implements Serializable {
         this.replicatedGroupId = replicatedGroupId;
     }
 
-    public Date getActionByDate() {
+    public LocalDateTime getActionByDate() {
         return actionByDate;
     }
 
-    public void setActionByDate(Date actionByDate) {
+    public void setActionByDate(LocalDateTime actionByDate) {
         this.actionByDate = actionByDate;
     }
 

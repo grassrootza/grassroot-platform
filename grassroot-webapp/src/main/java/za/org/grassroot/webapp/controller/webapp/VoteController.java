@@ -153,7 +153,7 @@ public class VoteController extends BaseController {
         return viewVote(model, eventUid);
     }
 
-    @RequestMapping(value = "answer", method = RequestMethod.POST)
+    @RequestMapping(value = "answer", method = RequestMethod.GET)
     public String answerVote(Model model, @RequestParam String eventUid, @RequestParam String answer,
                              HttpServletRequest request, RedirectAttributes redirectAttributes) {
 

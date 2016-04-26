@@ -1,10 +1,13 @@
 package za.org.grassroot.core.domain;
 
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.Objects;
 
 /**
@@ -21,7 +24,7 @@ public abstract class AbstractLogBookEntity {
 	protected String uid;
 
 	@Column(name = "created_date_time", updatable = false)
-	protected Timestamp createdDateTime;
+	protected Instant createdDateTime;
 
 	@ManyToOne(cascade = CascadeType.ALL, optional = false)
 	@JoinColumn(name = "created_by_user_id", nullable = false)
@@ -43,7 +46,7 @@ public abstract class AbstractLogBookEntity {
 	// --------------------------------------------------------------
 
 	@Column(name = "action_by_date")
-	protected Timestamp actionByDate;
+	protected Instant actionByDate;
 
 	@Column(name = "message")
 	protected String message;
@@ -61,7 +64,7 @@ public abstract class AbstractLogBookEntity {
 		// for JPA
 	}
 
-	protected AbstractLogBookEntity(User createdByUser, LogBookContainer parent, String message, Timestamp actionByDate, int reminderMinutes) {
+	protected AbstractLogBookEntity(User createdByUser, LogBookContainer parent, String message, Instant actionByDate, int reminderMinutes) {
 		this.createdByUser = Objects.requireNonNull(createdByUser);
 		setParent(parent);
 		this.message = Objects.requireNonNull(message);
@@ -69,7 +72,7 @@ public abstract class AbstractLogBookEntity {
 		this.reminderMinutes = reminderMinutes == 0 ? DEFAULT_REMINDER_MINUTES : reminderMinutes;
 
 		this.uid = UIDGenerator.generateId();
-		this.createdDateTime = Timestamp.from(Instant.now());
+		this.createdDateTime = Instant.now();
 	}
 
 	public Long getId() {
@@ -80,7 +83,7 @@ public abstract class AbstractLogBookEntity {
 		return uid;
 	}
 
-	public Timestamp getCreatedDateTime() {
+	public Instant getCreatedDateTime() {
 		return createdDateTime;
 	}
 
@@ -88,11 +91,13 @@ public abstract class AbstractLogBookEntity {
 		return createdByUser;
 	}
 
-	public Timestamp getActionByDate() {
+	public Instant getActionByDate() {
 		return actionByDate;
 	}
 
-	public void setActionByDate(Timestamp actionByDate) {
+	public LocalDateTime getActionByDateAtSAST() { return actionByDate.atZone(DateTimeUtil.getSAST()).toLocalDateTime(); }
+
+	public void setActionByDate(Instant actionByDate) {
 		this.actionByDate = actionByDate;
 	}
 

@@ -15,6 +15,7 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -33,9 +34,6 @@ public class AnalyticalManager implements AnalyticalService {
 
     @Autowired
     private GroupRepository groupRepository;
-
-    @Autowired
-    private EventRepository eventRepository;
 
     @Autowired
     private MeetingRepository meetingRepository;
@@ -174,7 +172,8 @@ public class AnalyticalManager implements AnalyticalService {
 
     @Override
     public Long countLogBooksRecordedInInterval(LocalDateTime start, LocalDateTime end) {
-        return logBookRepository.countByCreatedDateTimeBetween(Timestamp.valueOf(start), Timestamp.valueOf(end));
+        return logBookRepository.countByCreatedDateTimeBetween(start.toInstant(ZoneOffset.UTC),
+                                                               end.toInstant(ZoneOffset.UTC));
     }
 
 

@@ -8,14 +8,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.EventRequest;
-import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.VoteRequest;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
+import za.org.grassroot.core.enums.EventLogType;
+import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.services.EventRequestBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -27,9 +27,12 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.backVoteUrl;
+import static za.org.grassroot.webapp.util.USSDUrlUtil.entityUidUrlSuffix;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.saveVoteMenu;
 
 /**
@@ -43,6 +46,9 @@ public class USSDVoteController extends USSDController {
 
     @Autowired
     EventRequestBroker eventRequestBroker;
+
+    @Autowired
+    EventLogManagementService eventLogManager;
 
     @Autowired
     private USSDEventUtil eventUtil;
@@ -270,15 +276,106 @@ public class USSDVoteController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber, saveVoteMenu("details", eventUid) + "&back=" + backMenu  );
         Event vote = eventBroker.load(eventUid);
         boolean futureEvent = vote.getEventStartDateTime().isAfter(Instant.now());
-
         ResponseTotalsDTO voteResults = eventManager.getVoteResultsDTO(vote);
-        String[] fields = new String[]{vote.resolveGroup().getName(""), vote.getName(), "" + voteResults.getYes(),
-                "" + voteResults.getNo(), "" + voteResults.getMaybe(), "" + voteResults.getNumberNoRSVP()};
-        USSDMenu menu = new USSDMenu(getMessage(thisSection, "details", promptKey, fields, user));
+
+        USSDMenu menu;
+
+        if (futureEvent) {
+            EventLog userResponse = eventLogManager.getEventLogOfUser(vote, user, EventLogType.EventRSVP);
+
+            List<String> otherResponses;
+            if  (userResponse == null) {
+                otherResponses = Arrays.asList("yes", "no", "abstain");
+            } else {
+                EventRSVPResponse response = EventRSVPResponse.fromString(userResponse.getMessage());
+                switch (response) {
+                    case YES:
+                        otherResponses = Arrays.asList("no", "abstain");
+                        break;
+                    case NO:
+                        otherResponses = Arrays.asList("yes", "abstain");
+                        break;
+                    case MAYBE:
+                        otherResponses = Arrays.asList("yes", "no");
+                        break;
+                    default:
+                        otherResponses = Arrays.asList("yes", "no", "abstain");
+                        break;
+                }
+            }
+
+            final String suffix = entityUidUrlSuffix + eventUid;
+            final String responseText = (userResponse != null) ? userResponse.getMessage().toLowerCase() : "not voted yet";
+            final String[] fields = new String[] { vote.resolveGroup().getName(""), vote.getName(),
+                    "" + (voteResults.getNumberOfUsers() - voteResults.getNumberNoRSVP()), responseText };
+
+            menu = new USSDMenu(getMessage(thisSection, "details", "future." + promptKey, fields, user));
+            for (String voteOption : otherResponses) {
+                menu.addMenuOption(voteMenus + "change-vote" + suffix + "&response=" + voteOption,
+                                   getMessage(thisSection, "details", optionsKey + "change", voteOption, user));
+            }
+            // todo: enable once a bit clearer about use etc
+            // menu.addMenuOption("reminder" + entityUidUrlSuffix + eventUid, getMessage(thisSection, "details", optionsKey + "reminder", user));
+        } else {
+            String[] fields = new String[]{vote.resolveGroup().getName(""), vote.getName(), "" + voteResults.getYes(),
+                    "" + voteResults.getNo(), "" + voteResults.getMaybe(), "" + voteResults.getNumberNoRSVP()};
+            menu = new USSDMenu(getMessage(thisSection, "details", promptKey, fields, user));
+        }
 
         menu.addMenuOption(voteMenus + backMenu, getMessage(thisSection, "details", optionsKey + "back", user));
-        if (futureEvent)
-            menu.addMenuOption("reminder" + entityUidUrlSuffix + eventUid, getMessage(thisSection, "details", optionsKey + "reminder", user));
+
+        return menuBuilder(menu);
+    }
+
+    /*@RequestMapping(value = path + "change-vote")
+    @ResponseBody
+    public Request changeVoteMenu(@RequestParam(value = phoneNumber) String inputNumber,
+                                  @RequestParam(value = entityUidParam) String eventUid) throws URISyntaxException {
+
+        final User user = userManager.findByInputNumber(inputNumber, saveVoteMenu("change-vote", eventUid));
+        final Event vote = eventBroker.load(eventUid);
+        final String suffix = entityUidUrlSuffix + eventUid;
+
+        USSDMenu menu;
+        if (vote.getEventStartDateTime().isAfter(Instant.now())) {
+            menu = new USSDMenu("Sorry! This vote is closed, you cannot change your vote");
+            menu.addMenuOption(voteMenus + "details" + suffix, "Back to view vote");
+            menu.addMenuOption(voteMenus + startMenu, "Back to votes menu");
+            menu.addMenuOptions(optionsHomeExit(user));
+        } else {
+            final EventLog eventLog = eventLogManager.getEventLogOfUser(vote, user, EventLogType.EventRSVP);
+            final String[] fields = { vote.getName(), eventLog.getMessage().toLowerCase() };
+            menu = new USSDMenu("You voted X. What do you want to do?");
+            menu.addMenuOption(voteMenus + "change-vote-do" + suffix, "Vote the other way");
+            menu.addMenuOption(voteMenus + "details" + suffix, "Go back");
+        }
+
+        return menuBuilder(menu);
+    }*/
+
+    @RequestMapping(value = path + "change-vote")
+    @ResponseBody
+    public Request changeVoteDo(@RequestParam(value = phoneNumber) String inputNumber,
+                                @RequestParam(value = entityUidParam) String eventUid,
+                                @RequestParam(value = "response") String response) throws  URISyntaxException {
+
+        final User user = userManager.findByInputNumber(inputNumber, null);
+        final Event vote = eventBroker.load(eventUid);
+
+        USSDMenu menu;
+        if (vote.getEventStartDateTime().isBefore(Instant.now())) {
+            menu = new USSDMenu(getMessage(thisSection, "change", "error", user));
+        } else {
+            // todo: replace this hack once responses are handled better
+            EventRSVPResponse voteResponse = (response.equals("abstain")) ? EventRSVPResponse.MAYBE :
+                    EventRSVPResponse.fromString(response);
+            eventLogManager.rsvpForEvent(vote, user, voteResponse);
+            menu = new USSDMenu(getMessage(thisSection, "change", "done", response, user));
+        }
+
+        menu.addMenuOption(voteMenus + "details" + entityUidUrlSuffix + eventUid + "&back=open",
+                           getMessage(thisSection, "change", optionsKey + "back", user));
+        menu.addMenuOptions(optionsHomeExit(user));
 
         return menuBuilder(menu);
     }
