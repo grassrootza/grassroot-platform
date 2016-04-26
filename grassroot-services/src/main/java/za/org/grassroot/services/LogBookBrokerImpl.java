@@ -13,13 +13,10 @@ import za.org.grassroot.core.domain.notification.LogBookNotification;
 import za.org.grassroot.core.domain.notification.LogBookReminderNotification;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.core.dto.LogBookDTO;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.LogBookRepository;
 import za.org.grassroot.core.repository.UidIdentifiableRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.services.async.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.enums.LogBookStatus;
 
 import java.time.Instant;

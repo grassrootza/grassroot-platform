@@ -32,8 +32,6 @@ public interface EventManagementService {
 
     List<Event> getOutstandingRSVPForUser(User user);
 
-    List<Event> getUpcomingEventsForGroupAndParentGroups(Group group);
-
     // -1 : past events; 0: both directions; +1 : future events; -9 no events
     int userHasEventsToView(User user, EventType type);
 

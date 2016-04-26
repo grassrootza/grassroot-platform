@@ -211,34 +211,6 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
-    public List<Event> getUpcomingEventsForGroupAndParentGroups(Group group) {
-        // check for events on this group level
-        List<Event> upComingEvents = getUpcomingEvents(group);
-        if (upComingEvents == null) {
-            upComingEvents = new ArrayList<Event>();
-        }
-
-        // climb the tree and check events at each level if subgroups are included
-        List<Group> parentGroups = groupBroker.parentChain(group.getUid());
-
-        if (parentGroups != null) {
-            for (Group parentGroup : parentGroups) {
-                log.debug("parentGroup..." + parentGroup.getId());
-                List<Event> parentEvents = getUpcomingEvents(parentGroup);
-                if (parentEvents != null) {
-                    for (Event upComingEvent : parentEvents) {
-                        if (upComingEvent.isIncludeSubGroups()) {
-                            upComingEvents.add(upComingEvent);
-                        }
-                    }
-                }
-
-            }
-        }
-        return upComingEvents;
-    }
-
-    @Override
     public int userHasEventsToView(User user, EventType type) {
         // todo: this is three DB pings, less expensive than prior iterations over groups, but still expensive, replace with query
         log.info("Checking what events the user has to view ... ");
