@@ -54,7 +54,7 @@ public class LogBookManager implements LogBookService {
 
     @Override
     public List<LogBook> getLogBookEntriesInPeriod(Group group, LocalDateTime periodStart, LocalDateTime periodEnd) {
-        Sort sort = new Sort(Sort.Direction.ASC, "CreatedDateTime");
+        Sort sort = new Sort(Sort.Direction.ASC, "createdDateTime");
         Instant start = convertToSystemTime(periodStart, getSAST());
         Instant end = convertToSystemTime(periodEnd, getSAST());
         return logBookRepository.findByGroupAndCreatedDateTimeBetween(group, start, end, sort);

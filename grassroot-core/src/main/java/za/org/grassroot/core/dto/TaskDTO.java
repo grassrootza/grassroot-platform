@@ -1,12 +1,14 @@
-package za.org.grassroot.webapp.model.rest;
+package za.org.grassroot.core.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ComparisonChain;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.webapp.enums.TodoStatus;
+import za.org.grassroot.core.enums.TodoStatus;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -35,7 +37,7 @@ public class TaskDTO implements Comparable<TaskDTO>{
     @JsonIgnore
     private String location; // only use in Web at present, hence Json ignore, may change in future
 
-    public TaskDTO(){}
+    private TaskDTO(){}
 
     public TaskDTO(Event event, EventLog eventLog, User user, boolean hasResponded) {
         this.id = event.getUid();

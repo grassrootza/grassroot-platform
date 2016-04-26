@@ -19,6 +19,7 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
+import za.org.grassroot.services.enums.LogBookStatus;
 import za.org.grassroot.services.exception.RequestorAlreadyPartOfGroupException;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
@@ -46,6 +47,9 @@ public class GroupController extends BaseController {
 
     @Autowired
     private GroupBroker groupBroker;
+
+    @Autowired
+    private TaskBroker taskBroker;
 
     @Autowired
     private EventManagementService eventManagementService;
@@ -194,8 +198,9 @@ public class GroupController extends BaseController {
         model.addAttribute("reminderOptions", reminderMinuteOptions(true));
         model.addAttribute("languages", userManagementService.getImplementedLanguages().entrySet());
         model.addAttribute("hasParent", (group.getParent() != null));
-        model.addAttribute("groupMeetings", eventManagementService.getUpcomingMeetings(group));
-        model.addAttribute("groupVotes", eventManagementService.getUpcomingVotes(group));
+
+        model.addAttribute("groupTasks", taskBroker.fetchGroupTasks(user.getUid(), groupUid, true, LogBookStatus.INCOMPLETE));
+
         model.addAttribute("subGroups", groupBroker.subGroups(groupUid));
         model.addAttribute("openToken", group.hasValidGroupTokenCode());
 

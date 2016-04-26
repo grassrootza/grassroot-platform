@@ -1,6 +1,6 @@
 package za.org.grassroot.webapp.model.rest.ResponseWrappers;
 
-import za.org.grassroot.webapp.model.rest.TaskDTO;
+import za.org.grassroot.core.dto.TaskDTO;
 
 import java.util.List;
 

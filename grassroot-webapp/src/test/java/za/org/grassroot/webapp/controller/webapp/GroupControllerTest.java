@@ -8,9 +8,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.web.servlet.MvcResult;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
+import za.org.grassroot.services.enums.LogBookStatus;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
 
@@ -57,20 +59,21 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
         dummyGroup.addMember(sessionTestUser);
         Set<Group> subGroups = Collections.singleton(dummySubGroup);
-        // todo: new design?
-        Meeting dummyMeeting = null;
-        Vote dummyVote = null;
-        List<Meeting> dummyMeetings = Collections.singletonList(dummyMeeting);
-        List<Vote> dummyVotes = Collections.singletonList(dummyVote);
 
+        // todo: new design?
+        TaskDTO dummyTask = null;
+        List<TaskDTO> dummyTasks = Collections.singletonList(dummyTask);
+
+        when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
         when(groupBrokerMock.load(dummyGroup.getUid())).thenReturn(dummyGroup);
         when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, dummyGroup,
                                                         Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)).thenReturn(true);
         when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, dummyGroup,
                                                         Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS)).thenReturn(true);
 
-        when(eventManagementServiceMock.getUpcomingMeetings(dummyGroup)).thenReturn(dummyMeetings);
-        when(eventManagementServiceMock.getUpcomingVotes(dummyGroup)).thenReturn(dummyVotes);
+        when(taskBrokerMock.fetchGroupTasks(sessionTestUser.getUid(), dummyGroup.getUid(), true, LogBookStatus.INCOMPLETE)).
+                thenReturn(dummyTasks);
+
         when(groupBrokerMock.subGroups(dummyGroup.getUid())).thenReturn(subGroups);
         when(groupBrokerMock.isDeactivationAvailable(sessionTestUser, dummyGroup, true)).thenReturn(true);
         when(groupBrokerMock.getLastTimeGroupActiveOrModified(dummyGroup.getUid())).thenReturn(LocalDateTime.now());
@@ -78,16 +81,15 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         mockMvc.perform(get("/group/view").param("groupUid", dummyGroup.getUid())).
                 andExpect(view().name("group/view")).
                 andExpect(model().attribute("group", hasProperty("id", is(dummyId)))).
-                andExpect(model().attribute("groupMeetings", hasItem(dummyMeeting))).
-                andExpect(model().attribute("groupVotes", hasItem(dummyVote))).
+                andExpect(model().attribute("groupTasks", hasItem(dummyTask))).
                 andExpect(model().attribute("subGroups", hasItem(dummySubGroup))).
                 andExpect(model().attribute("hasParent", is(false))).
                 andExpect(model().attribute("openToken", is(false)));
 
         // todo: verify sequence of permission checking calls
         verify(groupBrokerMock, times(1)).load(dummyGroup.getUid());
-        verify(eventManagementServiceMock, times(1)).getUpcomingMeetings(dummyGroup);
-        verify(eventManagementServiceMock, times(1)).getUpcomingVotes(dummyGroup);
+        verify(taskBrokerMock, times(1)).fetchGroupTasks(sessionTestUser.getUid(), dummyGroup.getUid(),
+                                                         true, LogBookStatus.INCOMPLETE);
         verify(groupBrokerMock, times(1)).subGroups(dummyGroup.getUid());
         verifyNoMoreInteractions(eventManagementServiceMock);
     }
@@ -258,8 +260,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         testGroup.setId(dummyId);
         testGroup.addMember(sessionTestUser);
 
-        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
-
+        when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, testGroup, null)).thenReturn(true);
 
@@ -278,6 +279,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         group.setGroupTokenCode("12345");
         group.setTokenExpiryDateTime(Timestamp.valueOf(LocalDateTime.now().plusYears(1L)));
 
+        when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
         when(groupBrokerMock.load(group.getUid())).thenReturn(group);
 
         mockMvc.perform(post("/group/token").param("groupUid", group.getUid()))
@@ -470,6 +472,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
         Group group = new Group("someGroupname", sessionTestUser);
 
+        when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
         when(groupBrokerMock.load(group.getUid())).thenReturn(group);
         when(groupBrokerMock.isDeactivationAvailable(sessionTestUser, group, true)).thenReturn(true);
 

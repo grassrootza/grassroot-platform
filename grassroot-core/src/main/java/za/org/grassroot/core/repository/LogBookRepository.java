@@ -40,6 +40,7 @@ public interface LogBookRepository extends JpaRepository<LogBook, Long> {
     List<LogBook> findByGroupAndCreatedDateTimeBetween(Group group, Instant start, Instant end, Sort sort);
     List<LogBook> findByGroupAndMessageAndCreatedDateTime(Group group, String message, Instant createdDateTime);
 
+    List<LogBook> findByGroupAndActionByDateGreaterThan(Group group, Instant dueDate);
     List<LogBook> findByGroupAndCompletedAndActionByDateGreaterThan(Group group, boolean completed, Instant dueDate);
     Page<LogBook> findByGroupUidAndCompletedOrderByActionByDateDesc(String groupUid, boolean completed, Pageable pageable);
 

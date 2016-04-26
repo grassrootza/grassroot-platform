@@ -19,7 +19,7 @@ public interface EventBroker {
 	 * @param eventType The event type to return (passing null returns any)
 	 * @param createdEventsOnly Whether to find only events which the user created, or all those where they are a member
 	 * @param futureEventsOnly Whether to fetch all events for the user or just those in the future
-     * @return
+     * @return The list of events which the user is part of
      */
 	List<Event> loadUserEvents(String userUid, EventType eventType, boolean createdEventsOnly, boolean futureEventsOnly);
 

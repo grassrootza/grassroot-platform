@@ -70,7 +70,7 @@
               <li sec:authorize="isFullyAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/group/create}"><span class="white-text">Start Group</span></a></li>
               <li sec:authorize="isFullyAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/meeting/create}"><span class="white-text">Call Meeting</span></a></li>
               <li sec:authorize="isFullyAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/vote/create}"><span class="white-text">Take Vote</span></a></li>
-              <li sec:authorize="isFullyAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/log/create}"><span class="white-text">Record Action</span></a></li>
+              <li sec:authorize="isFullyAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/log/create}"><span class="white-text">Create to-do</span></a></li>
               <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active"><a href="javascript:void(0)" th:href="@{/meeting/free}"><span class="white-text">Send Message</span></a></li>
               <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active"><a href="javascript:void(0)" th:href="@{/paid_account/index}"><span class="white-text">Manage account</span></a></li>
               <li sec:authorize="hasRole('ROLE_SYSTEM_ADMIN')" class="active white-text"><a href="javascript:void(0)" th:href="@{/admin/home}"><span class="white-text">System admin</span></a></li>

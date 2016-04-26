@@ -18,7 +18,7 @@ import za.org.grassroot.services.*;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.enums.LogBookStatus;
 import za.org.grassroot.webapp.controller.BaseController;
-import za.org.grassroot.webapp.model.rest.TaskDTO;
+import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.webapp.model.web.GroupViewNodeSql;
 
 import javax.servlet.http.HttpServletRequest;
@@ -34,41 +34,19 @@ public class HomeController extends BaseController {
     private static final Logger log = LoggerFactory.getLogger(HomeController.class);
 
     @Autowired
-    GroupBroker groupBroker;
+    private TaskBroker taskBroker;
 
     @Autowired
-    EventManagementService eventManagementService;
+    private GroupJoinRequestService groupJoinRequestService;
 
     @Autowired
-    EventBroker eventBroker;
+    private AsyncUserLogger userLogger;
 
     @Autowired
-    EventLogManagementService eventLogManagementService;
+    private AuthenticationUtil authenticationUtil;
 
     @Autowired
-    LogBookBroker logBookBroker;
-
-    @Autowired
-    GroupJoinRequestService groupJoinRequestService;
-
-    @Autowired
-    AsyncUserLogger userLogger;
-
-    @Autowired
-    AuthenticationUtil authenticationUtil;
-
-    @Autowired
-    SigninController signinController;
-
-    private long prevRoot = 0;
-    private int level = 0;
-    private GroupViewNodeSql nodeSql = new GroupViewNodeSql();
-    private GroupViewNodeSql subNodeSql = new GroupViewNodeSql();
-    private int nodeCount = 0;
-    private int idx = 0;
-    private GroupTreeDTO node = null;
-    private List<GroupTreeDTO> treeList = null;
-
+    private SigninController signinController;
 
     @RequestMapping(value={"/", "/home"})
     public ModelAndView getRootPage(Model model, @ModelAttribute("currentUser") UserDetails userDetails,
@@ -88,11 +66,6 @@ public class HomeController extends BaseController {
         return new ModelAndView("index", model.asMap());
     }
 
-    /*@RequestMapping("/home")
-    public ModelAndView getHomePage(Model model, @ModelAttribute("currentUser") UserDetails userDetails) {
-        return generateHomePage(model);
-    }*/
-
     public ModelAndView generateHomePage(Model model) {
 
         Long startTime = System.currentTimeMillis();
@@ -108,7 +81,7 @@ public class HomeController extends BaseController {
             log.info(String.format("Counting user groups took ... %d msecs", System.currentTimeMillis() - startTimeCountGroups));
             homePageModelAndView = getHomePageUserHasGroups(model, user);
         } else {
-            homePageModelAndView = getHomePageUserHasNoGroups(model, user);
+            homePageModelAndView = getHomePageUserHasNoGroups(model);
         }
 
         Long endTime = System.currentTimeMillis();
@@ -118,87 +91,82 @@ public class HomeController extends BaseController {
 
     }
 
-    private ModelAndView getHomePageUserHasNoGroups(Model model, User user) {
+    private ModelAndView getHomePageUserHasNoGroups(Model model) {
         return new ModelAndView("home_new", model.asMap());
     }
 
     private ModelAndView getHomePageUserHasGroups(Model model, User user) {
 
-        Long startTime = System.currentTimeMillis();
-        log.info("getHomePage...NEW tree starting...");
-        treeList = groupBroker.groupTree(user.getUid());
-
-        /*
-         Recursive construction in the view node will turn each of these into a tree with a root node as the top level
-         group. This is done through a recursive SQL query rather than via the group list
-        */
-
-        List<GroupViewNodeSql> groupViewNodeSqls = new ArrayList<>();
-        nodeCount = treeList.size();
-        idx = 0;
-
-        while (idx < nodeCount) {
-
-            node = treeList.get(idx++);
-            //log.info("getHomePage..." + idx + "...group..." + node.getGroupName());
-
-            if (node.getRoot() != prevRoot) { // finish of last root and start a new one
-                if (prevRoot != 0) { // not the first record
-                    groupViewNodeSqls.add(nodeSql);
-                }
-                level = 0;
-                nodeSql = new GroupViewNodeSql(node.getGroupName(), level, node.getParentId());
-                prevRoot = node.getRoot();
-                continue;
-            }
-            // recursive call for subnodes - not root
-            subNodeSql = recursiveTreeSubnodes(new GroupViewNodeSql(node.getGroupName(), ++level, node.getParentId()));
-            nodeSql.getSubgroups().add(subNodeSql);
-        }
-        // add the last record
-        groupViewNodeSqls.add(nodeSql);
-
-        Long endTime = System.currentTimeMillis();
-        log.info(String.format("getHomePage...NEW tree ending... took %d msec", endTime - startTime));
-
-        // end of SQL tree
+        Long startTime1 = System.currentTimeMillis();
+        model.addAttribute("userGroups", permissionBroker.getActiveGroupDTOs(user, null));
+        log.info(String.format("Retrieved the active groups for the user ... took %d msecs", System.currentTimeMillis() - startTime1));
 
         Long startTime2 = System.currentTimeMillis();
-        model.addAttribute("userGroups", permissionBroker.getActiveGroupDTOs(user, null));
-        Long endTime2 = System.currentTimeMillis();
-        log.info(String.format("Retrieved the active groups for the user ... took %d msecs", endTime2 - startTime2));
+        model.addAttribute("upcomingTasks", taskBroker.fetchUserTasks(user.getUid(), true));
+        log.info(String.format("Retrieved the user's upcoming tasks ... took %d msecs", System.currentTimeMillis() - startTime2));
 
-        // get lists of outstanding RSVPs and votes
         Long startTime3 = System.currentTimeMillis();
-        List<Event> meetingsToRsvp = new ArrayList<>();
-        List<Event> votesToAnswer = new ArrayList<>();
-        int upcomingEvents = eventManagementService.countUpcomingEvents(user);
-
-        if (upcomingEvents > 0) {
-            meetingsToRsvp = eventManagementService.getOutstandingRSVPForUser(user);
-            votesToAnswer = eventManagementService.getOutstandingVotesForUser(user);
-        }
-
-        Long endTime3 = System.currentTimeMillis();
-        log.info(String.format("Retrieved %d events for the user ... took %d msecs", upcomingEvents, endTime3 - startTime3));
-
-        List<TaskDTO> userTasks = listOfUpcomingTasks(user);
-
-        model.addAttribute("meetingRsvps", meetingsToRsvp);
-        model.addAttribute("votesToAnswer", votesToAnswer);
-        model.addAttribute("upcomingTasks", userTasks);
-
-        Long startTime4 = System.currentTimeMillis();
-        List<GroupJoinRequest> joinRequests = groupJoinRequestService.getOpenRequestsForUser(user.getUid());
-        if (joinRequests != null && !joinRequests.isEmpty()) {
-            model.addAttribute("joinRequestsPending", joinRequests);
-            log.info("Found join requests pending ... " + joinRequests);
-        }
-        log.info(String.format("Checking join requests took %d msecs", System.currentTimeMillis() - startTime4));
+        model.addAttribute("joinRequestsPending", groupJoinRequestService.getOpenRequestsForUser(user.getUid()));
+        log.info(String.format("Checking join requests took %d msecs", System.currentTimeMillis() - startTime3));
 
         return new ModelAndView("home", model.asMap());
 
     }
+
+    /*
+
+    Code to generate a recursive tree of groups & sub-groups. Since we have de-prioritized, am taking out, but as this
+    is fairly complex & non-trivial to reconstruct, have left in here, in comments
+
+     Recursive construction in the view node will turn each of these into a tree with a root node as the top level
+     group. This is done through a recursive SQL query rather than via the group list
+     */
+
+    /*
+
+    Class construction:
+    private long prevRoot = 0;
+    private int level = 0;
+    private GroupViewNodeSql nodeSql = new GroupViewNodeSql();
+    private GroupViewNodeSql subNodeSql = new GroupViewNodeSql();
+    private int nodeCount = 0;
+    private int idx = 0;
+    private GroupTreeDTO node = null;
+    private List<GroupTreeDTO> treeList = null;
+
+    Within method:
+
+    treeList = groupBroker.groupTree(user.getUid());
+
+    List<GroupViewNodeSql> groupViewNodeSqls = new ArrayList<>();
+    nodeCount = treeList.size();
+    idx = 0;
+
+    while (idx < nodeCount) {
+
+        node = treeList.get(idx++);
+        //log.info("getHomePage..." + idx + "...group..." + node.getGroupName());
+
+        if (node.getRoot() != prevRoot) { // finish of last root and start a new one
+            if (prevRoot != 0) { // not the first record
+                groupViewNodeSqls.add(nodeSql);
+            }
+            level = 0;
+            nodeSql = new GroupViewNodeSql(node.getGroupName(), level, node.getParentId());
+            prevRoot = node.getRoot();
+            continue;
+        }
+        // recursive call for subnodes - not root
+        subNodeSql = recursiveTreeSubnodes(new GroupViewNodeSql(node.getGroupName(), ++level, node.getParentId()));
+        nodeSql.getSubgroups().add(subNodeSql);
+    }
+    // add the last record
+    groupViewNodeSqls.add(nodeSql);
+
+    Long endTime = System.currentTimeMillis();
+    log.info(String.format("getHomePage...NEW tree ending... took %d msec", endTime - startTime));
+
+    // end of SQL tree
 
     private GroupViewNodeSql recursiveTreeSubnodes(GroupViewNodeSql parentNode) {
 
@@ -226,28 +194,6 @@ public class HomeController extends BaseController {
 
     }
 
-    // todo: consider moving the TaskDTO to a superclass in core, so we can do this via a single service call
-    private List<TaskDTO> listOfUpcomingTasks(User user) {
-
-        Long startTime = System.currentTimeMillis();
-        Set<TaskDTO> upcomingTasks = new HashSet<>();
-        List<Event> upcomingEventsForUser = eventBroker.loadUserEvents(user.getUid(), null, false, true);
-        for (Event event : upcomingEventsForUser) {
-            EventLog response = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.EventRSVP);
-            upcomingTasks.add(new TaskDTO(event, response, user, response != null));
-        }
-
-        Instant start = Instant.now();
-        Instant end = Instant.MAX;
-        List<LogBook> logBooks = logBookBroker.loadUserLogBooks(user.getUid(), false, true, LogBookStatus.BOTH);
-        for (LogBook logBook : logBooks) {
-            upcomingTasks.add(new TaskDTO(logBook, user, logBook.getCreatedByUser()));
-        }
-
-        List<TaskDTO> tasks = new ArrayList<>(upcomingTasks);
-        Collections.sort(tasks);
-        log.info("Retrieved all the user's upcoming tasks, took {} msecs", System.currentTimeMillis() - startTime);
-        return tasks;
-    }
+    */
 
 }

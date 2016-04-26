@@ -172,8 +172,35 @@ public class LogBookBrokerImpl implements LogBookBroker {
 	}
 
 	@Override
+	public List<LogBook> loadGroupLogBooks(String groupUid, boolean futureLogBooksOnly, LogBookStatus status) {
+		Objects.requireNonNull(groupUid);
+
+		Group group = groupRepository.findOneByUid(groupUid);
+		Instant start = futureLogBooksOnly ? Instant.now() : DateTimeUtil.getEarliestInstant();
+		List<LogBook> logBooks;
+
+		switch (status) {
+			case COMPLETE:
+				logBooks = logBookRepository.findByGroupAndCompletedAndActionByDateGreaterThan(group, true, start);
+				break;
+			case INCOMPLETE:
+				logBooks = logBookRepository.findByGroupAndCompletedAndActionByDateGreaterThan(group, false, start);
+				break;
+			case BOTH:
+				logBooks = logBookRepository.findByGroupAndActionByDateGreaterThan(group, start);
+				break;
+			default:
+				logBooks = logBookRepository.findByGroupAndActionByDateGreaterThan(group, start);
+		}
+
+		return logBooks;
+	}
+
+	@Override
 	@Transactional(readOnly = true)
 	public List<LogBook> loadUserLogBooks(String userUid, boolean assignedLogBooksOnly, boolean futureLogBooksOnly, LogBookStatus status) {
+		Objects.requireNonNull(userUid);
+
 		User user = userRepository.findOneByUid(userUid);
 		Instant start = futureLogBooksOnly ? Instant.now() : DateTimeUtil.getEarliestInstant();
 		Sort sort = new Sort(Sort.Direction.DESC, "createdDateTime");

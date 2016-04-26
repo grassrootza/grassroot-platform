@@ -62,7 +62,7 @@
   <div class="well" th:if="${not #lists.isEmpty(joinRequestsPending)}">
     <div class="row">
       <div class="col-md-8 col-md-offset-2">
-        <h4><b>People have asked to join some of your groups:</b></h4>
+        <h5><b>People have asked to join some of your groups:</b></h5>
         <ul class="list-group">
           <li th:each="request : ${joinRequestsPending}" class="list-group-item" >
             <div class="row">
@@ -115,10 +115,12 @@
     <div class="well">
       <div class="row">
         <div class="col-md-8 col-md-offset-2">
+          <h5><b>You have events and to-dos coming up:</b></h5>
           <li th:each="task : ${upcomingTasks}" class="list-group-item">
             <div class="row">
-
               <!-- todo: use ajax to get the entity, instead of all these data attributes -->
+
+              <!-- LHS: Description of task -->
               <div class="col-md-8">
                 <p class="list-group-item-text">
                   <a href="#" data-toggle="modal" data-target="#taskModal" data:title="${task.title}" data:uid="${task.id}"
@@ -131,16 +133,18 @@
                   ${#temporals.format(task.getDeadlineDateTime(),'h:mm a, dd MMMM')})}">Description</small>
                 </p>
               </div>
-              <div class="col-md-4 pull-right text-right" th:if="${task.canAction}">
+
+              <!-- RHS: Actions on task -->
+              <div class="col-md-4 pull-right text-right">
 
                 <div th:unless="${task.hasResponded}">
                   <div th:switch="${task.type}">
                     <div th:case="MEETING">
                       <a th:href="@{meeting/rsvp(eventUid=${task.id},answer=yes)}">
-                        <button class="btn btn-primary btn-sm" type="submit" name="yes">I'll attend</button>
+                        <button class="btn btn-primary btn-sm">I'll attend</button>
                       </a>
                       <a th:href="@{meeting/rsvp(eventUid=${task.id},answer=no)}">
-                        <button class="btn btn-danger btn-sm" type="submit" name="no">I can't make it</button>
+                        <button class="btn btn-danger btn-sm">I can't make it</button>
                       </a>
                     </div>
                     <div th:case="VOTE">
@@ -149,24 +153,24 @@
                       <a th:href="@{vote/answer(eventUid=${task.id},answer=maybe)}" class="btn btn-default btn-sm">Abstain</a>
                     </div>
                     <div th:case="TODO">
-                      <a th:href="@{logbook/complete(logBookUid=${task.id})}" class="btn btn-primary btn-sm">Mark complete</a>
+                      <a th:href="@{log/complete(logBookUid=${task.id})}" class="btn btn-default btn-sm">Mark complete</a>
                     </div>
                   </div>
                 </div>
 
                 <div th:if="${task.hasResponded}">
                   <div th:switch="${task.type}">
-                    <a href="#" data-toggle="modal" data-target="#taskModal" data:title="${task.title}" data:parent="${task.parentName}"
-                       data:type="${task.type}" data:description="${task.description}" data:deadline="${#temporals.format(task.getDeadlineDateTime(),'h:mm a, dd MMMM')}"
-                       data:uid="${task.id}" data:reply="${task.reply}" data:location="${task.location}">
                       <div th:case="MEETING">
-                        <span class="badge" th:if="${#strings.equalsIgnoreCase(task.reply, 'Yes')}">You're attending</span>
-                        <span class="badge" th:if="${#strings.equalsIgnoreCase(task.reply, 'No')}">You're not attending</span>
+                        <a href="#" data-toggle="modal" data-target="#taskModal" data:title="${task.title}" data:parent="${task.parentName}"
+                           data:type="${task.type}" data:description="${task.description}" data:deadline="${#temporals.format(task.getDeadlineDateTime(),'h:mm a, dd MMMM')}"
+                           data:uid="${task.id}" data:reply="${task.reply}" data:location="${task.location}">
+                          <span class="badge" th:if="${#strings.equalsIgnoreCase(task.reply, 'Yes')}">You're attending</span>
+                          <span class="badge" th:if="${#strings.equalsIgnoreCase(task.reply, 'No')}">You're not attending</span>
+                        </a>
                       </div>
                       <div th:case="VOTE">
-                        <span class="badge" th:text="#{web.home.vote.answer(${#strings.toLowerCase(task.reply)})}"></span>
+                        <span class="badge" th:text="#{web.home.vote.answer(${#strings.toLowerCase(task.reply)})}">ABC</span>
                       </div>
-                    </a>
                     <!-- completed logbooks do not show up here, so only need above two cases -->
                   </div>
                 </div>
@@ -201,7 +205,7 @@
     <div class="col-md-8 col-md-offset-2">
       <div class="row">
         <div class="col-md-3">
-          <h4><b>Your groups</b></h4>
+          <h5><b>Your groups</b></h5>
         </div>
         <div class="col-md-2 pull-right">
           <a th:href="@{/group/create}" role="button" class="btn btn-default">
@@ -299,10 +303,10 @@
         // todo: generally fix this up
         info = "To-do for " + parent + ", closing at " + link.data('deadline');
         noReplyText = "Is this action complete yet?";
-        formAction = "logbook/complete";
+        formAction = "log/complete";
         yesButton = "Mark completed";
-        noButton = "logbook/view";
-        viewLink = "logbook/view?logBookUid=" + uid;
+        noButton = "Close";
+        viewLink = "log/details?logBookUid=" + uid;
       }
 
       modal.find("#taskModalTitle").html(title);

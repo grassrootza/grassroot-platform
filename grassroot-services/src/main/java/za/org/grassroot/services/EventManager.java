@@ -383,7 +383,7 @@ public class EventManager implements EventManagementService {
         Sort sort = new Sort(Sort.Direction.ASC, "EventStartDateTime");
         Instant start = convertToSystemTime(periodStart, DateTimeUtil.getSAST());
         Instant end = convertToSystemTime(periodEnd, DateTimeUtil.getSAST());
-        return eventRepository.findByAppliesToGroupAndEventStartDateTimeBetween(group, start, end, sort);
+        return eventRepository.findByAppliesToGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, start, end, sort);
     }
 
     /**
@@ -396,9 +396,9 @@ public class EventManager implements EventManagementService {
         Instant start = convertToSystemTime(periodStart, DateTimeUtil.getSAST());
         Instant end = convertToSystemTime(periodEnd, DateTimeUtil.getSAST());
         if (eventType.equals(EventType.MEETING)) {
-            return (List) meetingRepository.findByAppliesToGroupAndEventStartDateTimeBetween(group, start, end);
+            return (List) meetingRepository.findByAppliesToGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, start, end);
         } else {
-            return (List) voteRepository.findByAppliesToGroupAndEventStartDateTimeBetween(group, start, end);
+            return (List) voteRepository.findByAppliesToGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, start, end);
         }
     }
 

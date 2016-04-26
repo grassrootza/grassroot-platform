@@ -820,7 +820,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Event> retrieveGroupEvents(Group group, EventType eventType, LocalDateTime periodStart, LocalDateTime periodEnd) {
+    public List<Event> retrieveGroupEvents(Group group, EventType eventType, Instant periodStart, Instant periodEnd) {
         List<Event> events;
         Sort sort = new Sort(Sort.Direction.ASC, "EventStartDateTime");
         Instant beginning, end;
@@ -829,23 +829,23 @@ public class GroupBrokerImpl implements GroupBroker {
             end = convertToSystemTime(getVeryLongTimeAway(), getSAST());
         } else if (periodStart == null) { // since first condition is false, means period end is not null
             beginning = group.getCreatedDateTime().toInstant();
-            end = convertToSystemTime(periodEnd, getSAST());
+            end = periodEnd;
         } else if (periodEnd == null) { // since first & second conditions false, means period start is not null
-            beginning = convertToSystemTime(periodStart, getSAST());
+            beginning = periodStart;
             end = getVeryLongTimeAway().toInstant(ZoneOffset.UTC);
         } else {
-            beginning = convertToSystemTime(periodStart, getSAST());
-            end = convertToSystemTime(periodEnd, getSAST());
+            beginning = periodStart;
+            end = periodEnd;
         }
 
         if (eventType == null) {
-            events = eventRepository.findByAppliesToGroupAndEventStartDateTimeBetween(group, beginning, end, sort);
+            events = eventRepository.findByAppliesToGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, beginning, end, sort);
         } else if (eventType.equals(EventType.MEETING)) {
-            events = (List) meetingRepository.findByAppliesToGroupAndEventStartDateTimeBetween(group, beginning, end);
+            events = (List) meetingRepository.findByAppliesToGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, beginning, end);
         } else if (eventType.equals(EventType.VOTE)) {
-            events = (List) voteRepository.findByAppliesToGroupAndEventStartDateTimeBetween(group, beginning, end);
+            events = (List) voteRepository.findByAppliesToGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, beginning, end);
         } else {
-            events = eventRepository.findByAppliesToGroupAndEventStartDateTimeBetween(group, beginning, end, sort);
+            events = eventRepository.findByAppliesToGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, beginning, end, sort);
         }
 
         return events;

@@ -3,6 +3,7 @@ package za.org.grassroot.webapp.controller.webapp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -159,12 +160,21 @@ public class VoteController extends BaseController {
 
         Event vote = eventBroker.load(eventUid);
         User sessionUser = getUserProfile();
+        String priorUrl = request.getHeader(HttpHeaders.REFERER);
 
         eventLogManagementService.rsvpForEvent(vote, sessionUser, EventRSVPResponse.fromString(answer));
 
         addMessage(redirectAttributes, MessageType.INFO, "vote.recorded", request);
-        redirectAttributes.addAttribute("eventUid", vote.getUid());
-        return "redirect:/vote/view";
+
+        if (priorUrl.contains("group")) {
+            redirectAttributes.addAttribute("groupUid", vote.resolveGroup().getUid());
+            return "redirect:/group/view";
+        } else if (priorUrl.contains("vote")) {
+            redirectAttributes.addAttribute("eventUid", eventUid);
+            return "redirect:/vote/view";
+        } else {
+            return "redirect:/home";
+        }
 
     }
 

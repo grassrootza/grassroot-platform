@@ -23,8 +23,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-
-
 /*
  * Paballo Ditshego 06/01/2016
  */
@@ -41,7 +39,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         setUp(meetingController);
     }
 
-     @Test
+    @Test
     public void shouldShowMeetingDetails() throws Exception {
 
         Group dummyGroup = new Group("Dummy Group3", new User("234345345"));
@@ -192,7 +190,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
         when(eventBrokerMock.loadMeeting(dummyMeeting.getUid())).thenReturn(dummyMeeting);
 
-        mockMvc.perform(post("/meeting/rsvp").param("eventUid", dummyMeeting.getUid()).param("answer", "no"))
+        mockMvc.perform(post("/meeting/rsvp").header("referer", "/home").param("eventUid", dummyMeeting.getUid()).param("answer", "no"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(view().name("redirect:/home"))
                 .andExpect(redirectedUrl("/home"));
@@ -223,18 +221,13 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         when(eventLogManagementServiceMock.getResponseCountForEvent(dummyMeeting)).thenReturn(testCount);
         when(eventManagementServiceMock.getRSVPResponses(dummyMeeting)).thenReturn(dummyResponsesMap);
 
-        mockMvc.perform(post("/meeting/rsvp").param("eventUid", dummyMeeting.getUid()).param("answer", "yes"))
-                .andExpect(view().name("meeting/view"))
-                .andExpect(model().attribute("meeting", hasProperty("entityUid", is(dummyMeeting.getUid()))))
-                .andExpect(model().attribute("responseTotals", hasProperty("yes", is(2))))
-                .andExpect(model().attribute("rsvpResponses", hasItems(dummyResponsesMap.entrySet().toArray())));
+        mockMvc.perform(post("/meeting/rsvp").header("referer", "/home").param("eventUid", dummyMeeting.getUid()).param("answer", "yes"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(view().name("redirect:/home"))
+                .andExpect(redirectedUrl("/home"));
 
-        verify(eventBrokerMock, times(2)).loadMeeting(dummyMeeting.getUid());
+        verify(eventBrokerMock, times(1)).loadMeeting(dummyMeeting.getUid());
         verify(eventLogManagementServiceMock, times(1)).rsvpForEvent(dummyMeeting, sessionTestUser, EventRSVPResponse.YES);
-        verify(permissionBrokerMock, times(1)).isGroupPermissionAvailable(sessionTestUser, testGroup,
-                                                                          Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS);
-        verify(eventLogManagementServiceMock, times(1)).getResponseCountForEvent(dummyMeeting);
-        verify(eventManagementServiceMock, times(1)).getRSVPResponses(dummyMeeting);
         verifyNoMoreInteractions(eventBrokerMock);
         verifyNoMoreInteractions(permissionBrokerMock);
         verifyNoMoreInteractions(eventManagementServiceMock);

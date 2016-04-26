@@ -3,7 +3,7 @@ package za.org.grassroot.webapp.model.rest.ResponseWrappers;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.webapp.model.rest.TaskDTO;
+import za.org.grassroot.core.dto.TaskDTO;
 
 import java.time.Instant;
 

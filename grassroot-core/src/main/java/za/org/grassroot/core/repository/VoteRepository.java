@@ -30,7 +30,7 @@ public interface VoteRepository extends JpaRepository<Vote, Long> {
 	Page<Vote> findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledOrderByEventStartDateTimeDesc(User user, Instant startTime, boolean cancelled, Pageable page);
 	Page<Vote> findByAppliesToGroupMembershipsUserAndEventStartDateTimeLessThanAndCanceledOrderByEventStartDateTimeDesc(User user, Instant startTime, boolean cancelled, Pageable page);
 
-	List<Vote> findByAppliesToGroupAndEventStartDateTimeBetween(Group group, Instant startDateTime, Instant endDateTime);
+	List<Vote> findByAppliesToGroupAndEventStartDateTimeBetweenAndCanceledFalse(Group group, Instant startDateTime, Instant endDateTime);
 
 	List<Vote> findByAppliesToGroupMembershipsUserAndCanceledOrderByEventStartDateTimeDesc(User user, boolean canceled);
 	List<Vote> findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceled(User user, Instant startTime, boolean cancelled);
