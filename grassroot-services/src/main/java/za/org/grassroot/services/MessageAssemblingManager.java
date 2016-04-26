@@ -223,11 +223,10 @@ public class MessageAssemblingManager implements MessageAssemblingService {
 
     private String[] populateLogBookFields(User user, Group group, LogBook logBook) {
         String salutation = (group.hasName()) ? group.getGroupName() : "GrassRoot";
-        SimpleDateFormat sdf = new SimpleDateFormat("EEE d MMM, h:mm a");
-        String dateString = "no date specified";
-        if (logBook.getActionByDate() != null) {
-            dateString = sdf.format(logBook.getActionByDate());
-        }
+        DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
+        String dateString = (logBook.getActionByDate() == null) ? "no date specified" :
+                sdf.format(logBook.getActionByDateAtSAST());
+
         String[] variables = new String[]{
                 salutation,
                 logBook.getMessage(),

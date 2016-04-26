@@ -128,22 +128,25 @@ public class LogBookBrokerImpl implements LogBookBroker {
 
 	@Override
 	@Transactional
-	public void complete(String logBookUid, LocalDateTime completionTime, String completedByUserUid) {
+	public boolean complete(String userUid, String logBookUid, LocalDateTime completionTime, String completedByUserUid) {
 		Objects.requireNonNull(logBookUid);
 
 		User completedByUser = completedByUserUid == null ? null : userRepository.findOneByUid(completedByUserUid);
+		Instant completionInstant = completionTime == null ? Instant.now() : convertToSystemTime(completionTime, getSAST());
 
 		LogBook logBook = logBookRepository.findOneByUid(logBookUid);
 
-		logger.info("Completing logbook: " + logBook);
+		logger.info("Completing logbook={}, with completion time={}", logBook.getMessage(), completionInstant);
 
 		if (logBook.isCompleted()) {
-			throw new IllegalStateException("Logbook already completed: " + logBook);
+			return false;
 		}
 
+		// todo : create a logbook log, once safe to do so (i.e., after refactor
 		logBook.setCompleted(true);
-		logBook.setCompletedDate(convertToSystemTime(completionTime, getSAST()));
+		logBook.setCompletedDate(completionInstant);
 		logBook.setCompletedByUser(completedByUser);
+		return true;
 	}
 
 	@Override

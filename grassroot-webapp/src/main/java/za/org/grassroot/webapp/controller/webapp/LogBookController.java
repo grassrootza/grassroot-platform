@@ -265,22 +265,23 @@ public class LogBookController extends BaseController {
 
         LocalDateTime completedDate = (setCompletedDate) ? completedOnDate.toLocalDateTime() : LocalDateTime.now();
 
+        String sessionUserUid = getUserProfile().getUid();
         LogBook logBook = logBookBroker.load(logBookUid);
         User completedByUser = userManagementService.load(completedByUserUid);
 
         if (completedByAssigned || !designateCompletor) {
             log.info("No user assigned, so either setting as complete today or specifying a completion date");
             if (setCompletedDate) {
-                logBookBroker.complete(logBook.getUid(), completedDate, null);
+                logBookBroker.complete(sessionUserUid, logBook.getUid(), completedDate, null);
             } else {
-                logBookBroker.complete(logBook.getUid(), LocalDateTime.now(), null);
+                logBookBroker.complete(sessionUserUid, logBook.getUid(), LocalDateTime.now(), null);
             }
         } else {
             log.info("User assigned, so marking it accordingly, with completing user uid: {}", completedByUserUid);
             if (setCompletedDate) {
-                logBookBroker.complete(logBook.getUid(), completedDate, completedByUser.getUid());
+                logBookBroker.complete(sessionUserUid, logBook.getUid(), completedDate, completedByUser.getUid());
             } else {
-                logBookBroker.complete(logBook.getUid(), LocalDateTime.now(), completedByUser.getUid());
+                logBookBroker.complete(sessionUserUid, logBook.getUid(), LocalDateTime.now(), completedByUser.getUid());
             }
         }
 

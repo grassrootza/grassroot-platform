@@ -556,7 +556,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
                 param(assignUserID, testUser.getUid())).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
-        verify(logBookBrokerMock, times(1)).complete(dummyLogBook.getUid(), correctDateTime, testUser.getUid());
+        verify(logBookBrokerMock, times(1)).complete(testUser.getUid(), dummyLogBook.getUid(), correctDateTime, testUser.getUid());
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(logBookBrokerMock);
 

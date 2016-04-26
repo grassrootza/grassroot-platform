@@ -18,6 +18,7 @@ import za.org.grassroot.services.LogBookRequestBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
+import za.org.grassroot.webapp.util.USSDEventUtil;
 import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.net.URISyntaxException;
@@ -433,7 +434,7 @@ public class USSDLogBookController extends USSDController {
         LocalDateTime completedDateTime = (completedDate != null) ?
                 DateTimeUtil.convertDateStringToLocalDateTime(reformatDateInput(completedDate), stdHour, stdMinute) : LocalDateTime.now();
         userLogger.recordUserInputtedDateTime(user.getUid(), completedDate, "logbook-completion", UserInterfaceType.USSD);
-        logBookBroker.complete(logBookUid, completedDateTime, completedByUserUid);
+        logBookBroker.complete(user.getUid(), logBookUid, completedDateTime, completedByUserUid);
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, setCompleteMenu, promptKey, user));
         // todo: consider adding option to go back to either section start or group logbook start
@@ -448,8 +449,13 @@ public class USSDLogBookController extends USSDController {
                 break;
             case dueDateMenu:
                 String formattedDateString =  reformatDateInput(value);
-                logBookRequestBroker.updateDueDate(userUid, logBookRequestUid, DateTimeUtil.convertDateStringToLocalDateTime(
-                        formattedDateString, stdHour, stdMinute));
+                LocalDateTime dueDateTime;
+                try {
+                    dueDateTime = DateTimeUtil.convertDateStringToLocalDateTime(formattedDateString, stdHour, stdMinute);
+                } catch (Exception e) {
+                    dueDateTime = USSDEventUtil.parseDateTime(formattedDateString);
+                }
+                logBookRequestBroker.updateDueDate(userUid, logBookRequestUid, dueDateTime);
                 break;
         }
     }
