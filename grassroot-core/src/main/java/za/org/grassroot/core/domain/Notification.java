@@ -34,13 +34,20 @@ public class Notification {
     private Instant createdDateTime;
 
     @ManyToOne
+	@JoinColumn(name = "user_id")
     private User user;
 
     @ManyToOne
+	@JoinColumn(name = "event_log_id")
     private EventLog eventLog;
 
     @ManyToOne
+	@JoinColumn(name = "log_book_log_id")
     private LogBookLog logBookLog;
+
+    @ManyToOne
+	@JoinColumn(name = "group_log_id", foreignKey = @ForeignKey(name = "fk_notification_group_log"))
+    private GroupLog groupLog;
 
     @Basic
     @Column(name ="read")
@@ -57,7 +64,7 @@ public class Notification {
     private NotificationType notificationType;
 
     @Column(name = "message")
-    private String message;
+    protected String message;
 
     @PreUpdate
     @PrePersist
@@ -71,7 +78,7 @@ public class Notification {
         // for JPA
     }
 
-    private Notification(User user, NotificationType notificationType, LogBookLog logBookLog, EventLog eventLog, String message) {
+    private Notification(User user, NotificationType notificationType, LogBookLog logBookLog, EventLog eventLog, GroupLog groupLog, String message) {
         this.uid = UIDGenerator.generateId();
         this.read = false;
         this.delivered = false;
@@ -80,17 +87,23 @@ public class Notification {
         this.createdDateTime = Instant.now();
         this.notificationType = notificationType;
         this.userMessagingPreference = user.getMessagingPreference();
+
         this.logBookLog = logBookLog;
         this.eventLog = eventLog;
+        this.groupLog = groupLog;
         this.message = message;
     }
 
     public Notification(User user, EventLog eventLog, NotificationType notificationType){
-        this(user, notificationType, null, eventLog, eventLog.getMessage());
+        this(user, notificationType, null, eventLog, null, eventLog.getMessage());
     }
 
-    public Notification(User user, LogBookLog logBookLog, NotificationType notificationType, String message){
-        this(user, notificationType, logBookLog, null, message);
+    public Notification(User user, GroupLog groupLog, NotificationType notificationType){
+        this(user, notificationType, null, null, groupLog, null);
+    }
+
+    public Notification(User user, LogBookLog logBookLog, NotificationType notificationType){
+        this(user, notificationType, logBookLog, null, null, logBookLog.getMessage());
     }
 
     public Long getId() {
@@ -145,18 +158,13 @@ public class Notification {
         return eventLog;
     }
 
-    public void setEventLog(EventLog eventLog) {
-        this.eventLog = eventLog;
-    }
-
     public LogBookLog getLogBookLog() {
         return logBookLog;
     }
 
-
-    public void setLogBookLog(LogBookLog logBookLog) {
-        this.logBookLog = logBookLog;
-    }
+	public GroupLog getGroupLog() {
+		return groupLog;
+	}
 
     public UserMessagingPreference getUserMessagingPreference() {
         return userMessagingPreference;
@@ -168,10 +176,6 @@ public class Notification {
 
     public NotificationType getNotificationType() {
         return notificationType;
-    }
-
-    public void setNotificationType(NotificationType notificationType) {
-        this.notificationType = notificationType;
     }
 
     public String getMessage() {

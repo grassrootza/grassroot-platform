@@ -20,8 +20,9 @@ public interface LogBookBroker {
 
 	void complete(String logBookUid, LocalDateTime completionTime, String completedByUserUid);
 
+	void sendScheduledReminder(String logBookUid);
+
 	Page<LogBook> retrieveGroupLogBooks(String userUid, String groupUid, boolean entriesComplete, int pageNumber, int pageSize);
 
 	List<Group> retrieveGroupsFromLogBooks(List<LogBook> logBooks);
-
 }

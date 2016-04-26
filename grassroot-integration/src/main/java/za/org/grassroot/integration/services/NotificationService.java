@@ -21,10 +21,6 @@ public interface NotificationService {
 
     List<NotificationDTO> fetchNotificationDTOs(List<String> notificationUids);
 
-    Notification createNotification(User user, EventLog eventLog, NotificationType notificationType);
-
-    Notification createNotification(User user, LogBookLog logBookLog, NotificationType notificationType);
-
     void updateNotificationReadStatus(String notificationUid, boolean read);
 
     void updateNotificationDeliveryStatus(String notificationUid, boolean delivered);

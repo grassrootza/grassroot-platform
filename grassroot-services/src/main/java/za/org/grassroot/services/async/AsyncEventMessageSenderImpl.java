@@ -8,13 +8,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.dto.EventChanged;
-import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.enums.AccountLogType;
-import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.AccountLogRepository;
-import za.org.grassroot.core.repository.EventRepository;
-import za.org.grassroot.core.repository.MeetingRepository;
 import za.org.grassroot.core.repository.UserRepository;
 
 import java.util.HashMap;
@@ -30,22 +25,10 @@ public class AsyncEventMessageSenderImpl implements AsyncEventMessageSender {
     private UserRepository userRepository;
 
     @Autowired
-    private MeetingRepository meetingRepository;
-
-    @Autowired
     private AccountLogRepository accountLogRepository;
 
     @Autowired
     private GenericJmsTemplateProducerService jmsTemplateProducerService;
-
-    @Override
-    @Async
-    public void sendCancelMeetingNotifications(String meetingUid) {
-        Meeting meeting = meetingRepository.findOneByUid(meetingUid);
-        logger.info("About to cancel the meeting ..." + meeting.getUid());
-        jmsTemplateProducerService.sendWithNoReply("event-cancelled", meetingUid);
-        logger.info("Queued to event-cancelled..." + meeting.getId() + "...version..." + meeting.getVersion());
-    }
 
     @Override
     @Transactional

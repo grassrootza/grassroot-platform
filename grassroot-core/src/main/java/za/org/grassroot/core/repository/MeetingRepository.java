@@ -34,9 +34,6 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
 	List<Vote> findUnsentVoteResults();
      */
 
-	// todo: consider cleaning these up (seems like possible duplication)
-	List<Meeting> findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(Group group, Instant startTime, boolean cancelled);
-
 	Page<Meeting> findByAppliesToGroupMembershipsUserAndCanceledOrderByEventStartDateTimeDesc(User user, boolean canceled, Pageable page);
 
 	Page<Meeting> findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledOrderByEventStartDateTimeDesc(User user, Instant startTime, boolean cancelled, Pageable page);

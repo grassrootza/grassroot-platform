@@ -5,6 +5,8 @@ import za.org.grassroot.core.domain.GroupLog;
 
 import java.util.Set;
 
-public interface AsyncActionLogger {
-    void logGroupEvents(Set<ActionLog> actionLogs);
+public interface ActionLogger {
+    void asyncLogActions(Set<ActionLog> actionLogs);
+
+    void logActions(Set<ActionLog> actionLogs);
 }

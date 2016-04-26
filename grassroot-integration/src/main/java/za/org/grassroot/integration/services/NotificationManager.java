@@ -1,13 +1,14 @@
 package za.org.grassroot.integration.services;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.EventLog;
+import za.org.grassroot.core.domain.LogBook;
+import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.NotificationDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.NotificationType;
@@ -26,8 +27,6 @@ import java.util.stream.Stream;
 
 @Service
 public class NotificationManager implements NotificationService{
-
-    private static final Logger log = LoggerFactory.getLogger(NotificationManager.class);
 
     @Autowired
     private NotificationRepository notificationRepository;
@@ -50,16 +49,6 @@ public class NotificationManager implements NotificationService{
     }
 
     @Override
-    @Transactional
-    public Notification createNotification(User user, EventLog eventLog, NotificationType notificationType) {
-        Objects.nonNull(user);
-        Objects.nonNull(eventLog);
-        Objects.nonNull(notificationType);
-        Notification notification = new Notification(user, eventLog, notificationType);
-        return notificationRepository.save(notification);
-    }
-
-    @Override
     @Transactional(readOnly = true)
     public Page<Notification> getUserNotifications(User user, int pageNumber, int pageSize) {
         return notificationRepository.findByUser(user, new PageRequest(pageNumber,pageSize));
@@ -76,24 +65,13 @@ public class NotificationManager implements NotificationService{
                 if (eventLog.getEvent() != null && eventLogTypesToIncludeInList.contains(eventLog.getEventLogType()))
                     notificationDTOs.add(new NotificationDTO(notification, eventLog.getEvent()));
             } else if(notification.getNotificationType().equals(NotificationType.LOGBOOK)){
-                LogBook logBook = logBookRepository.findOne(notification.getLogBookLog().getLogBookId());
+                LogBook logBook = logBookRepository.findOne(notification.getLogBookLog().getLogBook().getId());
                 notificationDTOs.add(new NotificationDTO(notification,logBook));
             }
         }
 
         return notificationDTOs;
     }
-
-
-    @Override
-    @Transactional
-    public Notification createNotification(User user, LogBookLog logBookLog, NotificationType notificationType) {
-        Objects.nonNull(user);
-        Objects.nonNull(logBookLog);
-        Notification notification = new Notification(user,logBookLog, notificationType, logBookLog.getMessage());
-        return notificationRepository.save(notification);
-    }
-
 
     @Override
     @Transactional

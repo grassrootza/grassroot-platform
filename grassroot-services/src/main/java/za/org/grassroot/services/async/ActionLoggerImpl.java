@@ -16,8 +16,8 @@ import java.util.Objects;
 import java.util.Set;
 
 @Service
-public class AsyncActionLoggerImpl implements AsyncActionLogger {
-	private final Logger logger = LoggerFactory.getLogger(AsyncActionLoggerImpl.class);
+public class ActionLoggerImpl implements ActionLogger {
+	private final Logger logger = LoggerFactory.getLogger(ActionLoggerImpl.class);
 
 	@Autowired
 	private GroupLogRepository groupLogRepository;
@@ -34,7 +34,13 @@ public class AsyncActionLoggerImpl implements AsyncActionLogger {
 	@Override
 	@Transactional
 	@Async
-	public void logGroupEvents(Set<ActionLog> actionLogs) {
+	public void asyncLogActions(Set<ActionLog> actionLogs) {
+		logActions(actionLogs);
+	}
+
+	@Override
+	@Transactional
+	public void logActions(Set<ActionLog> actionLogs) {
 		Objects.requireNonNull(actionLogs);
 
 		logger.info("Saving {} action logs", actionLogs.size());

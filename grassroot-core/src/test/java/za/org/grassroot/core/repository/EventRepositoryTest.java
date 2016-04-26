@@ -94,12 +94,12 @@ public class EventRepositoryTest {
         futureEvent = eventRepository.save(futureEvent);
         Event futureEventCan = eventRepository.save(new Meeting("future event cancelled", futureDate, user, group, "someLocation"));
         futureEventCan.setCanceled(true);
+
         futureEventCan = eventRepository.save(futureEventCan);
 
-        //
-        List<Event> list = eventRepository.findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(group, Instant.now(), false);
+        Set<Event> list = group.getUpcomingEvents(event -> true);
         assertEquals(1, list.size());
-        assertEquals("future event", list.get(0).getName());
+        assertEquals("future event", list.iterator().next().getName());
     }
 
     @Test

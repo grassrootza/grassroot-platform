@@ -8,7 +8,7 @@ import javax.jms.Message;
  */
 public interface GenericJmsTemplateProducerService {
 
-    public void sendWithNoReply(String destination, Object message);
+    void sendWithNoReply(String destination, Object message);
 
     Message receiveMessage(String destination);
 }

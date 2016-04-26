@@ -8,12 +8,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.dto.LogBookDTO;
-import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.repository.LogBookRepository;
-import za.org.grassroot.core.repository.UidIdentifiableRepository;
-import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.services.async.GenericJmsTemplateProducerService;
+import za.org.grassroot.core.domain.notification.LogBookNotification;
+import za.org.grassroot.core.domain.notification.LogBookReminderNotification;
+import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -35,7 +33,14 @@ public class LogBookBrokerImpl implements LogBookBroker {
 	@Autowired
 	private LogBookRepository logBookRepository;
 	@Autowired
-	private GenericJmsTemplateProducerService jmsTemplateProducerService;
+	private LogBookLogRepository logBookLogRepository;
+	@Autowired
+	private NotificationRepository notificationRepository;
+	@Autowired
+	private MessageAssemblingService messageAssemblingService;
+
+	@Autowired
+	private AccountManagementService accountManagementService;
 
 	@Autowired
 	PermissionBroker permissionBroker;
@@ -114,7 +119,31 @@ public class LogBookBrokerImpl implements LogBookBroker {
 
 		LogBook logBook = new LogBook(user, parent, message, actionByDate, reminderMinutes, replicatedGroup, numberOfRemindersLeftToSend);
 		logBook = logBookRepository.save(logBook);
-		jmsTemplateProducerService.sendWithNoReply("new-logbook", new LogBookDTO(logBook));
+
+		Group group = logBook.resolveGroup();
+		Account account = accountManagementService.findAccountForGroup(group);
+
+		if (account != null && account.isLogbookExtraMessages()) {
+			//send messages to paid for groups using the same logic as the reminders - sendLogBookReminder method
+			//so if you make changes here also make the changes there
+
+			Set<User> members = logBook.isAllGroupMembersAssigned() ? group.getMembers() : logBook.getAssignedMembers();
+			boolean assigned = logBook.isAllGroupMembersAssigned() ? false : true;
+
+			LogBookLog logBookLog = new LogBookLog(user, logBook, null);
+			logBookLogRepository.save(logBookLog);
+
+			for (User member : members) {
+				String notificationMessage = messageAssemblingService.createNewLogBookNotificationMessage(member, group, logBook, assigned);
+
+				Notification notification = new LogBookNotification(member, logBookLog, notificationMessage);
+				notificationRepository.save(notification);
+			}
+
+		} else {
+			logger.info("LogBook " + logBook + "...NOT a paid for group..." + group);
+		}
+
 		return logBook;
 	}
 
@@ -136,6 +165,33 @@ public class LogBookBrokerImpl implements LogBookBroker {
 		logBook.setCompleted(true);
 		logBook.setCompletedDate(Timestamp.valueOf(completionTime));
 		logBook.setCompletedByUser(completedByUser);
+	}
+
+	@Override
+	@Transactional
+	public void sendScheduledReminder(String logBookUid) {
+		Objects.requireNonNull(logBookUid);
+
+		LogBook logBook = logBookLogRepository.findOneByUid(logBookUid);
+		Group group = logBook.resolveGroup();
+
+		LogBookLog logBookLog = new LogBookLog(null, logBook, null);
+		logBookLogRepository.save(logBookLog);
+
+		Set<User> members = logBook.isAllGroupMembersAssigned() ? group.getMembers() : logBook.getAssignedMembers();
+		for (User member : members) {
+			String message = messageAssemblingService.createLogBookReminderMessage(member, group, logBook);
+			Notification notification = new LogBookReminderNotification(member, logBookLog, message);
+			notificationRepository.save(notification);
+		}
+
+		// reduce number of reminders to send and calculate new reminder minutes
+		logBook.setNumberOfRemindersLeftToSend(logBook.getNumberOfRemindersLeftToSend() - 1);
+		if (logBook.getReminderMinutes() < 0) {
+			logBook.setReminderMinutes(DateTimeUtil.numberOfMinutesForDays(7));
+		} else {
+			logBook.setReminderMinutes(logBook.getReminderMinutes() + DateTimeUtil.numberOfMinutesForDays(7));
+		}
 	}
 
 	@Override

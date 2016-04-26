@@ -57,45 +57,6 @@ public class EventLogManager implements EventLogManagementService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public boolean eventLogRecorded(EventLogType eventLogType, Event event, User user) {
-        return (eventLogRepository.findByEventAndUserAndEventLogType(event, user, eventLogType) != null);
-    }
-
-    @Override
-    public boolean notificationSentToUser(Event event, User user) {
-        return eventLogRepository.notificationSent(event, user);
-    }
-
-    @Override
-    public boolean voteResultSentToUser(String voteUid, String userUid) {
-        Vote vote = voteRepository.findOneByUid(voteUid);
-        User user = userRepository.findOneByUid(userUid);
-        return eventLogRepository.voteResultSent(vote, user);
-    }
-
-    @Override
-    public boolean changeNotificationSentToUser(String eventUid, String userUid) {
-        Event event = eventRepository.findOneByUid(eventUid);
-        User user = userRepository.findOneByUid(userUid);
-        boolean messageSent = eventLogRepository.changeNotificationSent(event, user);
-        log.info("changeNotificationSentToUser...user..." + user.getPhoneNumber() + "...event..." + event.getId() + "...version..." + event.getVersion() + "...returning..." + messageSent);
-        return messageSent;
-    }
-
-    @Override
-    public boolean cancelNotificationSentToUser(String eventUid, String userUid) {
-        Event event = eventRepository.findOneByUid(eventUid);
-        User user = userRepository.findOneByUid(userUid);
-        return eventLogRepository.cancelNotificationSent(event, user);
-    }
-
-    @Override
-    public boolean reminderSentToUser(Event event, User user) {
-        return eventLogRepository.reminderSent(event, user);
-    }
-
-    @Override
     public void rsvpForEvent(Long eventId, Long userId, String strRsvpResponse) {
         rsvpForEvent(eventId, userId, EventRSVPResponse.fromString(strRsvpResponse));
     }
@@ -145,22 +106,6 @@ public class EventLogManager implements EventLogManagementService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public boolean userRsvpYesForEvent(Event event, User user) {
-        return eventLogRepository.rsvpYesForEvent(event, user);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean userRsvpNoForEvent(String eventUid, String userUid) {
-        Event event = eventRepository.findOneByUid(eventUid);
-        User user = userRepository.findOneByUid(userUid);
-        boolean rsvpNoForEvent = eventLogRepository.rsvpNoForEvent(event, user);
-        log.info("userRsvpNoForEvent...returning..." + rsvpNoForEvent + " for event..." + event.getId() + "...user..." + user.getPhoneNumber());
-        return rsvpNoForEvent;
-    }
-
-    @Override
     public boolean userRsvpForEvent(Event event, User user) {
         return eventLogRepository.userRsvpForEvent(event, user);
     }
@@ -170,11 +115,13 @@ public class EventLogManager implements EventLogManagementService {
     public ResponseTotalsDTO getResponseCountForEvent(Event event) {
         if (!event.isIncludeSubGroups()) {
             log.info("Assembling count with eventId: {}, groupId: {}", event.getId(), event.resolveGroup().getId());
-            return new ResponseTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), event.resolveGroup().getId()));
+            List<Object[]> groupTotals = eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), event.resolveGroup().getId());
+            return new ResponseTotalsDTO(groupTotals);
         }
         ResponseTotalsDTO totals = new ResponseTotalsDTO();
         for (Group group : groupRepository.findGroupAndSubGroupsById(event.resolveGroup().getId())) {
-            totals.add(new ResponseTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), group.getId())));
+            List<Object[]> groupTotals = eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), group.getId());
+            totals.add(new ResponseTotalsDTO(groupTotals));
         }
         log.info("getRSVPTotalsForEvent...returning..." + totals.toString());
         return totals;
@@ -183,36 +130,16 @@ public class EventLogManager implements EventLogManagementService {
     @Override
     public ResponseTotalsDTO getVoteResultsForEvent(Event event) {
         if (!event.isIncludeSubGroups()) {
-            final ResponseTotalsDTO rsvpTotalsDTO = new ResponseTotalsDTO(eventLogRepository.voteTotalsForEventAndGroup(event.getId(), event.resolveGroup().getId()));
-            return rsvpTotalsDTO;
+            List<Object[]> groupVotes = eventLogRepository.voteTotalsForEventAndGroup(event.getId(), event.resolveGroup().getId());
+            return new ResponseTotalsDTO(groupVotes);
         }
         ResponseTotalsDTO totals = new ResponseTotalsDTO();
         for (Group group : groupRepository.findGroupAndSubGroupsById(event.resolveGroup().getId())) {
-            totals.add(new ResponseTotalsDTO(eventLogRepository.voteTotalsForEventAndGroup(event.getId(), group.getId())));
+            ResponseTotalsDTO groupVotes = new ResponseTotalsDTO(eventLogRepository.voteTotalsForEventAndGroup(event.getId(), group.getId()));
+            totals.add(groupVotes);
         }
         log.info("getVoteResultsForEvent...returning..." + totals.toString());
         return totals;
-    }
-
-    @Override
-    public List<RSVPTotalsPerGroupDTO> getVoteTotalsPerGroup(Long startingGroup, Long event) {
-        List<RSVPTotalsPerGroupDTO> list = new ArrayList<>();
-        for (Object[] objArray : eventLogRepository.voteTotalsPerGroupAndSubGroup(startingGroup,event)) {
-            list.add(new RSVPTotalsPerGroupDTO(objArray));
-        }
-
-        return list;
-    }
-
-    @Override
-    public List<EventLog> getNonRSVPEventLogsForEvent(Event event) {
-        return eventLogRepository.findByEventAndEventLogTypeNot(event, EventLogType.EventRSVP);
-    }
-
-    @Override
-    public int countNonRSVPEventLogsForEvent(Event event) {
-        // todo: might want to make this a count query
-        return getNonRSVPEventLogsForEvent(event).size();
     }
 
 //    private void recursiveTotalsAdd(Event event, Group parentGroup, ResponseTotalsDTO rsvpTotalsDTO ) {

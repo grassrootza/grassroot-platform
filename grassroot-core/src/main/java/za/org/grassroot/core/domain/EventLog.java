@@ -37,6 +37,7 @@ public class EventLog implements ActionLog {
     private Timestamp createdDateTime;
 
     @ManyToOne
+    @JoinColumn(name = "user_id")
     private User user;
 
     @ManyToOne
