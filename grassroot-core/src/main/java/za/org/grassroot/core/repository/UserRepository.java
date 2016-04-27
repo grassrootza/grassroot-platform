@@ -9,7 +9,9 @@ import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.notification.EventNotification;
 import za.org.grassroot.core.dto.UserDTO;
+import za.org.grassroot.core.enums.EventLogType;
 
 import java.sql.Timestamp;
 import java.util.Collection;
@@ -86,10 +88,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("select u from User u, EventLog el, Event e where e = ?1 and el.event = e and u = el.user and el.eventLogType = za.org.grassroot.core.enums.EventLogType.EventRSVP")
     List<User> findUsersThatRSVPForEvent(Event event);
 
-    @Query("select u from Notification n " +
-            "inner join n.user u inner join n.eventLog el inner join el.event e " +
+    @Query("select u from EventNotification n " +
+            "inner join n.user u inner join n.event e " +
             "where e = ?1 and type(n) = ?2")
-    List<User> findUsersWithNotificationSentForEvent(Event event, Class<? extends Notification> notificationClass);
+    List<User> findNotificationDestinationsForEvent(Event event, Class<? extends EventNotification> notificationClass);
 
     List<User> findByPhoneNumberIn(Collection<String> phoneNumbers);
 }

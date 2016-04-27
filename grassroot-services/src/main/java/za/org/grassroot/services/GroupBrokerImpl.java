@@ -10,6 +10,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.notification.EventInfoNotification;
 import za.org.grassroot.core.domain.notification.EventNotification;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.enums.EventType;
@@ -319,7 +320,7 @@ public class GroupBrokerImpl implements GroupBroker {
             for (Meeting meeting : meetings) {
                 Group meetingGroup = meeting.resolveGroup();
                 if (meetingGroup.equals(group) || !meetingGroup.hasMember(member)) {
-                    notifications.add(new EventNotification(member, meeting, groupLog));
+                    notifications.add(new EventInfoNotification(member, groupLog, meeting));
                 }
             }
         }

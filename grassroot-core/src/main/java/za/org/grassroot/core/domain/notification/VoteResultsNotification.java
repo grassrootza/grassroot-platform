@@ -6,9 +6,18 @@ import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.NotificationType;
 
-public class VoteResultsNotification extends Notification {
+import javax.persistence.DiscriminatorValue;
+import javax.persistence.Entity;
+
+@Entity
+@DiscriminatorValue("VOTE_RESULTS")
+public class VoteResultsNotification extends EventNotification {
+	private VoteResultsNotification() {
+		// for JPA
+	}
+
 	public VoteResultsNotification(User user, EventLog eventLog) {
-		super(user, eventLog, NotificationType.EVENT);
+		super(user, null, eventLog);
 	}
 
 	@Override

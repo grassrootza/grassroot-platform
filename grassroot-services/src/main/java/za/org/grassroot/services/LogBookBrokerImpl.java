@@ -9,7 +9,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.notification.LogBookNotification;
+import za.org.grassroot.core.domain.notification.LogBookInfoNotification;
 import za.org.grassroot.core.domain.notification.LogBookReminderNotification;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -147,7 +147,7 @@ public class LogBookBrokerImpl implements LogBookBroker {
 			for (User member : members) {
 				String notificationMessage = messageAssemblingService.createNewLogBookNotificationMessage(member, group, logBook, assigned);
 
-				Notification notification = new LogBookNotification(member, logBookLog, notificationMessage);
+				Notification notification = new LogBookInfoNotification(member, notificationMessage, logBookLog);
 				notificationRepository.save(notification);
 			}
 
@@ -192,7 +192,7 @@ public class LogBookBrokerImpl implements LogBookBroker {
 		Set<User> members = logBook.isAllGroupMembersAssigned() ? group.getMembers() : logBook.getAssignedMembers();
 		for (User member : members) {
 			String message = messageAssemblingService.createLogBookReminderMessage(member, group, logBook);
-			Notification notification = new LogBookReminderNotification(member, logBookLog, message);
+			Notification notification = new LogBookReminderNotification(member, null, logBookLog);
 			notificationRepository.save(notification);
 		}
 

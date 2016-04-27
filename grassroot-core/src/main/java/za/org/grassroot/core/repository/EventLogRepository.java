@@ -11,8 +11,6 @@ import java.util.List;
 
 public interface EventLogRepository extends JpaRepository<EventLog, Long> {
 
-    List<EventLog> findByEventLogTypeAndEventAndUser(EventLogType eventLogType, Event event, User user);
-
     EventLog findByEventAndUserAndEventLogType(Event event, User user, EventLogType eventLogType);
 
     EventLog findOneByUid(String uid);

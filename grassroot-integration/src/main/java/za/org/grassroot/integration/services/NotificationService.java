@@ -26,4 +26,6 @@ public interface NotificationService {
     void updateNotificationDeliveryStatus(String notificationUid, boolean delivered);
 
     void resendNotDelivered();
+
+    void storeNotifiction(Notification notification);
 }

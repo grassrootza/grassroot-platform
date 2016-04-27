@@ -9,6 +9,7 @@ import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.notification.EventCancelledNotification;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.NotificationType;
@@ -45,9 +46,9 @@ public class OutboundRouterTest {
 
         EventLog eventLog = new EventLog(new User(""), Meeting.makeEmpty(new User("")), EventLogType.EventTest,"message");
 
-        Notification payload = new Notification(new User("42342342"), eventLog, NotificationType.GENERAL);
+        Notification payload = new EventCancelledNotification(new User("42342342"), eventLog);
         Message<Notification> message = MessageBuilder.withPayload(payload)
-                .setHeader("route",UserMessagingPreference.SMS.toString()).build();
+                .setHeader("route", UserMessagingPreference.SMS.toString()).build();
          assertEquals("smsOutboundChannel", outboundMessageRouter.route(message));
 
     }
@@ -61,7 +62,7 @@ public class OutboundRouterTest {
           //      EventLogType.EventTest, "message",
              //   UserMessagingPreference.ANDROID_APP);
 
-        Notification payload = new Notification(new User("42342342"), eventLog, NotificationType.GENERAL);
+        Notification payload = new EventCancelledNotification(new User("42342342"), eventLog);
         Message<Notification> message = MessageBuilder.withPayload(payload)
                 .setHeader("route",UserMessagingPreference.ANDROID_APP.toString()).build();
         assertEquals("gcmOutboundChannel", outboundMessageRouter.route(message));
@@ -72,7 +73,7 @@ public class OutboundRouterTest {
     public void routingToSmsShouldWorkWhenRouteIsNull() throws Exception{
         EventLog eventLog = new EventLog(new User(""), Meeting.makeEmpty(new User("")), EventLogType.EventTest,"message");
 
-        Notification payload = new Notification(new User("42342342"), eventLog, NotificationType.GENERAL);
+        Notification payload = new EventCancelledNotification(new User("42342342"), eventLog);
         Message<Notification> message = MessageBuilder.withPayload(payload).build();
         assertEquals("smsOutboundChannel",outboundMessageRouter.route(message));
 

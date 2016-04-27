@@ -4,13 +4,21 @@ import org.springframework.context.support.MessageSourceAccessor;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.NotificationType;
 
+import javax.persistence.DiscriminatorValue;
+import javax.persistence.Entity;
 import java.time.format.DateTimeFormatter;
 
-public class MeetingThankYouNotification extends Notification {
+@Entity
+@DiscriminatorValue("MEETING_THANKYOU")
+public class MeetingThankYouNotification extends EventNotification {
 	private static final DateTimeFormatter shortDateFormatter = DateTimeFormatter.ofPattern("EEE, d/M");
 
+	private MeetingThankYouNotification() {
+		// for JPA
+	}
+
 	public MeetingThankYouNotification(User user, EventLog eventLog) {
-		super(user, eventLog, NotificationType.EVENT);
+		super(user, null, eventLog);
 	}
 
 	@Override

@@ -8,10 +8,7 @@ N.B. please always add new types at the end as this is an ordinal position based
 and therefore adding new one in the middle will mess up your data
  */
 public enum EventLogType {
-    MeetingCreated,
-    VoteCreated,
-
-    EventNotification,
+    EventCreated,
     EventReminder,
     EventChange,
     EventCancelled,

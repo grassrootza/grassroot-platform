@@ -5,6 +5,7 @@ import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.dto.UserDTO;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Created by aakilomar on 8/24/15.
@@ -33,4 +34,7 @@ public interface MessageAssemblingService {
      */
     String createGroupJoinCodeUseMessage(User user, String groupName, int numberJoined, List<String> namesJoined);
 
+    Locale getUserLocale(User user);
+
+    String[] populateEventFields(Event event, double yes, double no, double abstain, double noReply);
 }

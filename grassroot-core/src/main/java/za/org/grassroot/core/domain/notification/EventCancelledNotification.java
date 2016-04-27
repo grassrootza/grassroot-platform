@@ -7,11 +7,19 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.NotificationType;
 
+import javax.persistence.DiscriminatorValue;
+import javax.persistence.Entity;
 import java.util.Locale;
 
-public class EventCancelledNotification extends Notification {
+@Entity
+@DiscriminatorValue("EVENT_CANCELLED")
+public class EventCancelledNotification extends EventNotification {
+	private EventCancelledNotification() {
+		// for JPA
+	}
+
 	public EventCancelledNotification(User user, EventLog eventLog) {
-		super(user, eventLog, NotificationType.EVENT);
+		super(user, null, eventLog);
 	}
 
 	@Override

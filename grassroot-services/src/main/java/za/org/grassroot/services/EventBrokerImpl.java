@@ -8,25 +8,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.*;
-import za.org.grassroot.core.dto.EventDTO;
-import za.org.grassroot.core.dto.EventWithTotals;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.util.CacheUtilService;
-import za.org.grassroot.services.async.GenericJmsTemplateProducerService;
-import za.org.grassroot.services.async.AsyncEventMessageSender;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.*;
-import java.time.temporal.ChronoUnit;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.time.ZoneOffset;
+import java.util.*;
 import java.util.function.Function;
 
 import static za.org.grassroot.core.domain.EventReminderType.CUSTOM;
@@ -143,13 +135,13 @@ public class EventBrokerImpl implements EventBroker {
 		eventLogManagementService.rsvpForEvent(meeting, meeting.getCreatedByUser(), EventRSVPResponse.YES);
 
 		// create history log
-		EventLog eventLog = new EventLog(user, meeting, EventLogType.MeetingCreated, null);
+		EventLog eventLog = new EventLog(user, meeting, EventLogType.EventCreated, null);
 		eventLogRepository.save(eventLog);
 
 		// create notifications
 		registerNotificationsForEventMembers(meeting, destination -> {
 			cacheUtilService.clearRsvpCacheForUser(destination, meeting.getEventType());
-			return new EventNotification(destination, meeting, eventLog);
+			return new EventInfoNotification(destination, eventLog);
 		});
 
 		return meeting;
@@ -269,13 +261,13 @@ public class EventBrokerImpl implements EventBroker {
 		voteRepository.save(vote);
 
 		// create history log
-		EventLog eventLog = new EventLog(user, vote, EventLogType.VoteCreated, null);
+		EventLog eventLog = new EventLog(user, vote, EventLogType.EventCreated, null);
 		eventLogRepository.save(eventLog);
 
 		// create notifications
 		registerNotificationsForEventMembers(vote, destination -> {
 			cacheUtilService.clearRsvpCacheForUser(destination, vote.getEventType());
-			return new EventNotification(destination, vote, eventLog);
+			return new EventInfoNotification(destination, eventLog);
 		});
 
 		return vote;
@@ -395,7 +387,7 @@ public class EventBrokerImpl implements EventBroker {
 		eventLogRepository.save(eventLog);
 
 		Set<User> excludedMembers = findEventReminderExcludedMembers(event);
-		List<User> eventReminderNotificationSentMembers = userRepository.findUsersWithNotificationSentForEvent(
+		List<User> eventReminderNotificationSentMembers = userRepository.findNotificationDestinationsForEvent(
 				event, EventReminderNotification.class);
 		excludedMembers.addAll(eventReminderNotificationSentMembers);
 
@@ -500,7 +492,7 @@ public class EventBrokerImpl implements EventBroker {
 		eventLogRepository.save(eventLog);
 
 		Set<User> tankYouNotificationSentMembers = new HashSet<>(
-				userRepository.findUsersWithNotificationSentForEvent(meeting, MeetingThankYouNotification.class));
+				userRepository.findNotificationDestinationsForEvent(meeting, MeetingThankYouNotification.class));
 
 		List<User> rsvpWithYesMembers = userRepository.findUsersThatRSVPYesForEvent(meeting);
 		for (User destination : rsvpWithYesMembers) {
@@ -519,18 +511,19 @@ public class EventBrokerImpl implements EventBroker {
 
 		logger.info("Sending vote results for vote", vote);
 
-		ResponseTotalsDTO rsvpTotalsDTO = eventLogManagementService.getVoteResultsForEvent(vote);
-		EventWithTotals eventWithTotals = new EventWithTotals(new EventDTO(vote), rsvpTotalsDTO);
-
-		ResponseTotalsDTO totalsDTO = eventWithTotals.getResponseTotalsDTO();
+		ResponseTotalsDTO responseTotalsDTO = eventLogManagementService.getVoteResultsForEvent(vote);
 		EventLog eventLog = new EventLog(null, vote, EventLogType.EventResult, null);
 		eventLogRepository.save(eventLog);
 
-		Set<User> voteResultsNotificationSentMembers = new HashSet<>(userRepository.findUsersWithNotificationSentForEvent(vote, VoteResultsNotification.class));
+		Set<User> voteResultsNotificationSentMembers = new HashSet<>(userRepository.findNotificationDestinationsForEvent(
+				vote, VoteResultsNotification.class));
 		registerNotificationsForEventMembers(vote, destination -> {
 			if (!voteResultsNotificationSentMembers.contains(destination)) {
 				String message = messageAssemblingService.createVoteResultsMessage(destination, vote,
-						totalsDTO.getYes(), totalsDTO.getNo(), totalsDTO.getMaybe(), totalsDTO.getNumberNoRSVP());
+						responseTotalsDTO.getYes(),
+						responseTotalsDTO.getNo(),
+						responseTotalsDTO.getMaybe(),
+						responseTotalsDTO.getNumberNoRSVP());
 
 				logger.info("sendVoteResultsToUser...send message..." + message + "...to..." + destination.getPhoneNumber());
 				return new VoteResultsNotification(destination, eventLog);

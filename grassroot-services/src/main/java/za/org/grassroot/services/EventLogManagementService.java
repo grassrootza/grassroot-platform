@@ -4,7 +4,6 @@ import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
-import za.org.grassroot.core.dto.RSVPTotalsPerGroupDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 

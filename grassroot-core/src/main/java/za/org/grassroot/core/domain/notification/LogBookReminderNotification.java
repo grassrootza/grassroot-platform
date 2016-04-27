@@ -2,14 +2,20 @@ package za.org.grassroot.core.domain.notification;
 
 import org.springframework.context.support.MessageSourceAccessor;
 import za.org.grassroot.core.domain.LogBookLog;
-import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.enums.NotificationType;
 
-public class LogBookReminderNotification extends Notification {
-	public LogBookReminderNotification(User user, LogBookLog logBookLog, String message) {
-		super(user, logBookLog, NotificationType.LOGBOOK);
-		this.message = message;
+import javax.persistence.DiscriminatorValue;
+import javax.persistence.Entity;
+
+@Entity
+@DiscriminatorValue("LOG_BOOK_REMINDER")
+public class LogBookReminderNotification extends LogBookNotification {
+	private LogBookReminderNotification() {
+		// for JPA
+	}
+
+	public LogBookReminderNotification(User user, String message, LogBookLog logBookLog) {
+		super(user, message, logBookLog);
 	}
 
 	@Override

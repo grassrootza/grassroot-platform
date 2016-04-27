@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.dto.UserDTO;
+import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.FormatUtil;
 
 import java.text.SimpleDateFormat;
@@ -57,7 +58,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     public String createVoteResultsMessage(User user, Vote event, double yes, double no, double abstain, double noReply) {
         Locale locale = getUserLocale(user);
         String messageKey = "sms.vote.send.results";
-        return messageSourceAccessor.getMessage(messageKey, populateFields(event, yes, no, abstain, noReply), locale);
+        return messageSourceAccessor.getMessage(messageKey, populateEventFields(event, yes, no, abstain, noReply), locale);
     }
 
     @Override
@@ -99,7 +100,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     }
 
 
-    private Locale getUserLocale(User user) {
+    public Locale getUserLocale(User user) {
         return getUserLocale(user.getLanguageCode());
     }
 
@@ -112,10 +113,14 @@ public class MessageAssemblingManager implements MessageAssemblingService {
 
     }
 
-    private String[] populateFields(Event event, double yes, double no, double abstain, double noReply) {
+    public String[] populateEventFields(Event event) {
+   		return populateEventFields(event, 0D, 0D, 0D, 0D);
+   	}
+
+    public String[] populateEventFields(Event event, double yes, double no, double abstain, double noReply) {
         // todo: switch this to new name (may want a "hasName"/"getName" method defined on UidIdentifiable?
         String salutation = (((Group) event.getParent()).hasName()) ? ((Group) event.getParent()).getGroupName() : "Grassroot";
-        log.info("populateFields...event..." + event.getId() + "...version..." + event.getVersion());
+        log.info("populateEventFields...event..." + event.getId() + "...version..." + event.getVersion());
         DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
         String dateString = "no date specified";
         if (event.getEventStartDateTime() != null) {
@@ -169,8 +174,23 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         };
     }
 
-    private String getLocaleProperty(String channel, String field){
-        StringBuilder sb = new StringBuilder();
-        return sb.append(channel).append(field).toString();
-    }
+    public String constructEventcancelledMessage(User user, Event event) {
+   		Locale locale = getUserLocale(user);
+   		String messageKey = "sms.mtg.send.cancel";
+   		if (event.getEventType() == EventType.VOTE) {
+   			messageKey = "sms.vote.send.cancel";
+   		}
+   		return messageSourceAccessor.getMessage(messageKey, populateEventFields(event), locale);
+   	}
+
+    public String constructEventChangedMessage(User user, Event event) {
+   		Locale locale = getUserLocale(user);
+
+   		String messageKey = "sms.mtg.send.change";
+   		if (event.getEventType() == EventType.VOTE) {
+   			messageKey = "sms.vote.send.change";
+   		}
+   		return messageSourceAccessor.getMessage(messageKey, populateEventFields(event), locale);
+   	}
+
 }

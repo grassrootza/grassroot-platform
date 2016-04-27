@@ -8,12 +8,20 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.NotificationType;
 
+import javax.persistence.DiscriminatorValue;
+import javax.persistence.Entity;
 import java.util.Locale;
 
-public class EventReminderNotification extends Notification {
+@Entity
+@DiscriminatorValue("EVENT_REMINDER")
+public class EventReminderNotification extends EventNotification {
+
+	private EventReminderNotification() {
+		// for JPA
+	}
 
 	public EventReminderNotification(User user, EventLog eventLog) {
-		super(user, eventLog, NotificationType.EVENT);
+		super(user, null, eventLog);
 	}
 
 	@Override

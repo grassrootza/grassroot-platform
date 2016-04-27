@@ -8,11 +8,19 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.NotificationType;
 
+import javax.persistence.DiscriminatorValue;
+import javax.persistence.Entity;
 import java.util.Locale;
 
-public class EventChangedNotification extends Notification {
+@Entity
+@DiscriminatorValue("EVENT_CHANGED")
+public class EventChangedNotification extends EventNotification {
+	private EventChangedNotification() {
+		// for JPA
+	}
+
 	public EventChangedNotification(User user, EventLog eventLog) {
-		super(user, eventLog, NotificationType.EVENT);
+		super(user, null, eventLog);
 	}
 
 	@Override

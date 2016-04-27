@@ -3,250 +3,250 @@ package za.org.grassroot.core.domain;
 
 import org.springframework.context.support.MessageSourceAccessor;
 import za.org.grassroot.core.enums.NotificationType;
-import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.util.FormatUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import java.util.Objects;
 
 import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
-/**
- * Created by paballo on 2016/04/06.
- */
 @Entity
-@Table(name ="notification")
-public class Notification {
+@Table(name = "notification")
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "type", discriminatorType = DiscriminatorType.STRING)
+public abstract class Notification implements Serializable {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="id", nullable = false)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "id", nullable = false)
+	private Long id;
 
-    @Column(name = "uid", nullable = false, unique = true)
-    private String uid;
+	@Column(name = "uid", nullable = false, unique = true)
+	private String uid;
 
-    @Basic
-    @Column(name="creation_time", insertable = true, updatable = false)
-    private Instant createdDateTime;
+	@Column(name = "creation_time", insertable = true, updatable = false)
+	private Instant createdDateTime;
 
-    @ManyToOne
+	@ManyToOne
 	@JoinColumn(name = "user_id")
-    private User user;
+	private User user;
 
-    @ManyToOne
+	@ManyToOne
 	@JoinColumn(name = "event_log_id")
-    private EventLog eventLog;
+	private EventLog eventLog;
 
-    @ManyToOne
+	@ManyToOne
 	@JoinColumn(name = "log_book_log_id")
-    private LogBookLog logBookLog;
+	private LogBookLog logBookLog;
 
-    @ManyToOne
+	@ManyToOne
 	@JoinColumn(name = "group_log_id", foreignKey = @ForeignKey(name = "fk_notification_group_log"))
-    private GroupLog groupLog;
+	private GroupLog groupLog;
 
-    @Basic
-    @Column(name ="read")
-    private boolean read =false;
+	@Column(name = "read")
+	private boolean read = false;
 
-    @Basic
-    @Column(name ="delivered")
-    private boolean delivered =false;
+	@Column(name = "delivered")
+	private boolean delivered = false;
 
-    @Enumerated
-    private UserMessagingPreference userMessagingPreference;
+	@Column(name = "message")
+	protected String message;
 
-    @Enumerated
-    private NotificationType notificationType;
+	@PreUpdate
+	@PrePersist
+	public void updateTimeStamps() {
+		if (createdDateTime == null) {
+			createdDateTime = Instant.now();
+		}
+	}
 
-    @Column(name = "message")
-    protected String message;
+	public abstract NotificationType getNotificationType();
 
-    @PreUpdate
-    @PrePersist
-    public void updateTimeStamps() {
-        if (createdDateTime == null) {
-            createdDateTime = Instant.now();
-        }
-    }
 
-    private Notification(){
-        // for JPA
-    }
+	protected Notification() {
+		// for JPA
+	}
 
-    private Notification(User user, NotificationType notificationType, LogBookLog logBookLog, EventLog eventLog, GroupLog groupLog, String message) {
-        this.uid = UIDGenerator.generateId();
-        this.read = false;
-        this.delivered = false;
+	protected Notification(User user, String message, ActionLog actionLog) {
+		this.uid = UIDGenerator.generateId();
+		this.read = false;
+		this.delivered = false;
 
-        this.user = user;
-        this.createdDateTime = Instant.now();
-        this.notificationType = notificationType;
-        this.userMessagingPreference = user.getMessagingPreference();
+		this.user = Objects.requireNonNull(user); // at least for now, Notifications are always targeted to a user
+		this.createdDateTime = Instant.now();
+		this.message = Objects.requireNonNull(message);
 
-        this.logBookLog = logBookLog;
-        this.eventLog = eventLog;
-        this.groupLog = groupLog;
-        this.message = message;
-    }
+		if (actionLog instanceof EventLog) {
+			eventLog = (EventLog) actionLog;
+		} else if (actionLog instanceof GroupLog) {
+			groupLog = (GroupLog) actionLog;
+		} else if (actionLog instanceof LogBookLog) {
+			logBookLog = (LogBookLog) actionLog;
+		} else {
+			throw new IllegalArgumentException("Unsupported action log: " + actionLog);
+		}
+	}
 
-    public Notification(User user, EventLog eventLog, NotificationType notificationType){
-        this(user, notificationType, null, eventLog, null, eventLog.getMessage());
-    }
+	public Long getId() {
+		return id;
+	}
 
-    public Notification(User user, GroupLog groupLog, NotificationType notificationType){
-        this(user, notificationType, null, null, groupLog, null);
-    }
+	public void setId(Long id) {
+		this.id = id;
+	}
 
-    public Notification(User user, LogBookLog logBookLog, NotificationType notificationType){
-        this(user, notificationType, logBookLog, null, null, logBookLog.getMessage());
-    }
+	public String getUid() {
+		return uid;
+	}
 
-    public Long getId() {
-        return id;
-    }
+	public void setUid(String uid) {
+		this.uid = uid;
+	}
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+	public Instant getCreatedDateTime() {
+		return createdDateTime;
+	}
 
-    public String getUid() {
-        return uid;
-    }
+	public void setCreatedDateTime(Instant createdDateTime) {
+		this.createdDateTime = createdDateTime;
+	}
 
-    public void setUid(String uid) {
-        this.uid = uid;
-    }
+	public User getUser() {
+		return user;
+	}
 
-    public Instant getCreatedDateTime() {
-        return createdDateTime;
-    }
+	public void setUser(User user) {
+		this.user = user;
+	}
 
-    public void setCreatedDateTime(Instant createdDateTime) {
-        this.createdDateTime = createdDateTime;
-    }
+	public boolean isRead() {
+		return read;
+	}
 
-    public User getUser() {
-        return user;
-    }
+	public void setRead(boolean read) {
+		this.read = read;
+	}
 
-    public void setUser(User user) {
-        this.user = user;
-    }
+	public boolean isDelivered() {
+		return delivered;
+	}
 
-    public boolean isRead() {
-        return read;
-    }
+	public void setDelivered(boolean delivered) {
+		this.delivered = delivered;
+	}
 
-    public void setRead(boolean read) {
-        this.read = read;
-    }
+	public EventLog getEventLog() {
+		return eventLog;
+	}
 
-    public boolean isDelivered() {
-        return delivered;
-    }
-
-    public void setDelivered(boolean delivered) {
-        this.delivered = delivered;
-    }
-
-    public EventLog getEventLog() {
-        return eventLog;
-    }
-
-    public LogBookLog getLogBookLog() {
-        return logBookLog;
-    }
+	public LogBookLog getLogBookLog() {
+		return logBookLog;
+	}
 
 	public GroupLog getGroupLog() {
 		return groupLog;
 	}
 
-    public UserMessagingPreference getUserMessagingPreference() {
-        return userMessagingPreference;
-    }
+	public String getMessage() {
+		return message;
+	}
 
-    public void setUserMessagingPreference(UserMessagingPreference userMessagingPreference) {
-        this.userMessagingPreference = userMessagingPreference;
-    }
-
-    public NotificationType getNotificationType() {
-        return notificationType;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
+	public void setMessage(String message) {
+		this.message = message;
+	}
 
 	/**
-     * Locale utilities
-     */
+	 * Locale utilities
+	 */
 
-    protected Locale getUserLocale() {
-   		return getUserLocale(user.getLanguageCode());
-   	}
+	protected Locale getUserLocale() {
+		return getUserLocale(user.getLanguageCode());
+	}
 
-   	protected Locale getUserLocale(String languageCode) {
-   		if (languageCode == null || languageCode.trim().equals("")) {
-   			return Locale.ENGLISH;
-   		} else {
-   			return new Locale(languageCode);
-   		}
+	protected Locale getUserLocale(String languageCode) {
+		if (languageCode == null || languageCode.trim().equals("")) {
+			return Locale.ENGLISH;
+		} else {
+			return new Locale(languageCode);
+		}
 
-   	}
+	}
 
-    protected String constructMessageText(MessageSourceAccessor messageSourceAccessor) {
-        return null;
-    }
+	protected String constructMessageText(MessageSourceAccessor messageSourceAccessor) {
+		return null;
+	}
 
-    protected String[] populateEventFields(Event event) {
-   		return populateEventFields(event, 0D, 0D, 0D, 0D);
-   	}
+	protected String[] populateEventFields(Event event) {
+		return populateEventFields(event, 0D, 0D, 0D, 0D);
+	}
 
-   	protected String[] populateEventFields(Event event, double yes, double no, double abstain, double noReply) {
-   		// todo: switch this to new name (may want a "hasName"/"getName" method defined on UidIdentifiable?
-   		String salutation = (((Group) event.getParent()).hasName()) ? ((Group) event.getParent()).getGroupName() : "Grassroot";
-   		DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
-   		String dateString = "no date specified";
-   		if (event.getEventStartDateTime() != null) {
-   			dateString = sdf.format(event.getEventStartDateTime().atZone(getSAST()));
-   		}
+	protected String[] populateEventFields(Event event, double yes, double no, double abstain, double noReply) {
+		// todo: switch this to new name (may want a "hasName"/"getName" method defined on UidIdentifiable?
+		String salutation = (((Group) event.getParent()).hasName()) ? ((Group) event.getParent()).getGroupName() : "Grassroot";
+		DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
+		String dateString = "no date specified";
+		if (event.getEventStartDateTime() != null) {
+			dateString = sdf.format(event.getEventStartDateTime().atZone(getSAST()));
+		}
 
-   		String location = null;
-   		if (event instanceof Meeting) {
-   			Meeting meeting = (Meeting) event;
-   			location = meeting.getEventLocation();
-   		}
+		String location = null;
+		if (event instanceof Meeting) {
+			Meeting meeting = (Meeting) event;
+			location = meeting.getEventLocation();
+		}
 
-   		String[] eventVariables = new String[]{
-   				salutation,
-   				event.getCreatedByUser().nameToDisplay(),
-   				event.getName(),
-   				location,
-   				dateString,
-   				FormatUtil.formatDoubleToString(yes),
-   				FormatUtil.formatDoubleToString(no),
-   				FormatUtil.formatDoubleToString(abstain),
-   				FormatUtil.formatDoubleToString(noReply)
-   		};
+		String[] eventVariables = new String[]{
+				salutation,
+				event.getCreatedByUser().nameToDisplay(),
+				event.getName(),
+				location,
+				dateString,
+				FormatUtil.formatDoubleToString(yes),
+				FormatUtil.formatDoubleToString(no),
+				FormatUtil.formatDoubleToString(abstain),
+				FormatUtil.formatDoubleToString(noReply)
+		};
 
-   		return eventVariables;
-   	}
+		return eventVariables;
+	}
 
-    @Override
-    public String toString() {
-        return "Notification{" +
-                "uid='" + uid + '\'' +
-                ", createdDateTime=" + createdDateTime +
-                ", user=" + user +
-                '}';
-    }
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+
+		Notification that = (Notification) o;
+
+		if (uid != null ? !uid.equals(that.uid) : that.uid != null) {
+			return false;
+		}
+
+		return true;
+	}
+
+	@Override
+	public int hashCode() {
+		return uid != null ? uid.hashCode() : 0;
+	}
+
+	@Override
+	public String toString() {
+		final StringBuilder sb = new StringBuilder(getClass().getSimpleName());
+		sb.append("{id=").append(id);
+		sb.append(", uid='").append(uid).append('\'');
+		sb.append(", createdDateTime=").append(createdDateTime);
+		sb.append(", read=").append(read);
+		sb.append(", delivered=").append(delivered);
+		sb.append('}');
+		return sb.toString();
+	}
 }
