@@ -113,7 +113,7 @@ public class InboundGcmMessageHandler {
         String messageId = (String) input.get("message_id");
         Notification notification = notificationService.loadNotification(messageId);
         log.info("Push Notification delivery failed, now sending SMS");
-        log.info("Sending SMS to " + notification.getUser().getPhoneNumber());
+        log.info("Sending SMS to " + notification.getTarget().getPhoneNumber());
         messageSendingService.sendMessage(UserMessagingPreference.SMS.name(),notification);
     }
 

@@ -30,7 +30,7 @@ public class OutboundSmsHandler {
     public void handleMessage(Message<Notification> message) throws Exception {
         log.info("SMS outbound channel received message={}", message.getPayload().toString());
         Notification notification = message.getPayload();
-        String destination =notification.getUser().getPhoneNumber();
+        String destination =notification.getTarget().getPhoneNumber();
         log.info("Sms outbound channel sending forwarding message to ={}", destination);
         String msg = notification.getMessage();
         log.info("Sms outbound channel sending forwarding message  ={}", msg);

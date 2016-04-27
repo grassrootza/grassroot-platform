@@ -5,9 +5,8 @@ import org.springframework.integration.support.MessageBuilder;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.stereotype.Service;
-import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.MessageProtocol;
-import za.org.grassroot.core.enums.UserMessagingPreference;
+import za.org.grassroot.core.domain.Notification;
 
 /**
  * Created by luke on 2015/09/09.
@@ -46,9 +45,7 @@ public class MessageSendingManager implements MessageSendingService {
 
     @Override
     public void sendMessage(Notification notification) {
-
-        String route =(notification.getUser() !=null)?
-                notification.getUser().getMessagingPreference().name():UserMessagingPreference.ANDROID_APP.toString();
+        String route = notification.getTarget().getMessagingPreference().name();
         requestChannel.send( createMessage(notification,route));
 
     }
@@ -58,18 +55,13 @@ public class MessageSendingManager implements MessageSendingService {
        requestChannel.send(createMessage(notification,destination));
     }
 
-
-    private Message<Notification> createMessage(Notification notification, String route){
-        if(route.equals(null) && notification.getUser() !=null){route = notification.getUser().getMessagingPreference().name();}
+    private Message<Notification> createMessage(Notification notification, String route) {
+        if (route == null) {
+            route = notification.getTarget().getMessagingPreference().name();
+        }
         Message<Notification> message = MessageBuilder.withPayload(notification)
-                .setHeader("route",route).
-                        build();
-
+                .setHeader("route", route)
+                .build();
         return message;
-
     }
-
-
-
-
 }

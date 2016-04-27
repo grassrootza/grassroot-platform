@@ -387,7 +387,7 @@ public class EventBrokerImpl implements EventBroker {
 		eventLogRepository.save(eventLog);
 
 		Set<User> excludedMembers = findEventReminderExcludedMembers(event);
-		List<User> eventReminderNotificationSentMembers = userRepository.findNotificationDestinationsForEvent(
+		List<User> eventReminderNotificationSentMembers = userRepository.findNotificationTargetsForEvent(
 				event, EventReminderNotification.class);
 		excludedMembers.addAll(eventReminderNotificationSentMembers);
 
@@ -492,7 +492,7 @@ public class EventBrokerImpl implements EventBroker {
 		eventLogRepository.save(eventLog);
 
 		Set<User> tankYouNotificationSentMembers = new HashSet<>(
-				userRepository.findNotificationDestinationsForEvent(meeting, MeetingThankYouNotification.class));
+				userRepository.findNotificationTargetsForEvent(meeting, MeetingThankYouNotification.class));
 
 		List<User> rsvpWithYesMembers = userRepository.findUsersThatRSVPYesForEvent(meeting);
 		for (User destination : rsvpWithYesMembers) {
@@ -515,7 +515,7 @@ public class EventBrokerImpl implements EventBroker {
 		EventLog eventLog = new EventLog(null, vote, EventLogType.EventResult, null);
 		eventLogRepository.save(eventLog);
 
-		Set<User> voteResultsNotificationSentMembers = new HashSet<>(userRepository.findNotificationDestinationsForEvent(
+		Set<User> voteResultsNotificationSentMembers = new HashSet<>(userRepository.findNotificationTargetsForEvent(
 				vote, VoteResultsNotification.class));
 		registerNotificationsForEventMembers(vote, destination -> {
 			if (!voteResultsNotificationSentMembers.contains(destination)) {

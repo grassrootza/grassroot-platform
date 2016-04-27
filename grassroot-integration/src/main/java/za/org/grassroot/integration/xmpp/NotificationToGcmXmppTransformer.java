@@ -37,7 +37,7 @@ public class NotificationToGcmXmppTransformer {
 	}
 
 	private Message<org.jivesoftware.smack.packet.Message> constructGcmMessage(Notification notification) throws JsonProcessingException {
-		GcmRegistration gcmRegistration = gcmRegistrationRepository.findByUser(notification.getUser());
+		GcmRegistration gcmRegistration = gcmRegistrationRepository.findByUser(notification.getTarget());
 		String registrationID = gcmRegistration.getRegistrationId();
 
 		String messageId = notification.getUid();

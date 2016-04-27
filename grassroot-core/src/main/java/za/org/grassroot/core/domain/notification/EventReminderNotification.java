@@ -20,11 +20,10 @@ public class EventReminderNotification extends EventNotification {
 		// for JPA
 	}
 
-	public EventReminderNotification(User user, EventLog eventLog) {
-		super(user, null, eventLog);
+	public EventReminderNotification(User target, EventLog eventLog) {
+		super(target, null, eventLog);
 	}
 
-	@Override
 	protected String constructMessageText(MessageSourceAccessor messageSourceAccessor) {
 		// if there is 'message' set in EventLog, it is treated as manually set content,
 		// otherwise we construct it automatically

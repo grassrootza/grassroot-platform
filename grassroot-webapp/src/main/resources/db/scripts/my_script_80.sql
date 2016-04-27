@@ -3,6 +3,7 @@ delete from notification;
 alter table notification drop column gcm_registration_id;
 alter table notification drop column user_messaging_preference;
 alter table notification drop column notification_type;
+alter table notification rename column user_id to target_id;
 alter table notification add column type varchar(50) NOT NULL;
 alter table notification add column group_log_id bigint;
 alter table notification add column event_id bigint;

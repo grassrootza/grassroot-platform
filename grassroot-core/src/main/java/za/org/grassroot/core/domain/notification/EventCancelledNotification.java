@@ -18,11 +18,10 @@ public class EventCancelledNotification extends EventNotification {
 		// for JPA
 	}
 
-	public EventCancelledNotification(User user, EventLog eventLog) {
-		super(user, null, eventLog);
+	public EventCancelledNotification(User target, EventLog eventLog) {
+		super(target, null, eventLog);
 	}
 
-	@Override
 	protected String constructMessageText(MessageSourceAccessor messageSourceAccessor) {
 		Locale locale = getUserLocale();
 		String messageKey = "sms.mtg.send.cancel";

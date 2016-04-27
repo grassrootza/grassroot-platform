@@ -88,10 +88,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("select u from User u, EventLog el, Event e where e = ?1 and el.event = e and u = el.user and el.eventLogType = za.org.grassroot.core.enums.EventLogType.EventRSVP")
     List<User> findUsersThatRSVPForEvent(Event event);
 
-    @Query("select u from EventNotification n " +
-            "inner join n.user u inner join n.event e " +
+    @Query("select t from EventNotification n " +
+            "inner join n.target t inner join n.event e " +
             "where e = ?1 and type(n) = ?2")
-    List<User> findNotificationDestinationsForEvent(Event event, Class<? extends EventNotification> notificationClass);
+    List<User> findNotificationTargetsForEvent(Event event, Class<? extends EventNotification> notificationClass);
 
     List<User> findByPhoneNumberIn(Collection<String> phoneNumbers);
 }

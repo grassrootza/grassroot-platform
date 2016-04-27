@@ -13,7 +13,7 @@ public class LogBookInfoNotification extends LogBookNotification {
 		// for JPA
 	}
 
-	public LogBookInfoNotification(User user, String message, LogBookLog logBookLog) {
-		super(user, message, logBookLog);
+	public LogBookInfoNotification(User target, String message, LogBookLog logBookLog) {
+		super(target, message, logBookLog);
 	}
 }

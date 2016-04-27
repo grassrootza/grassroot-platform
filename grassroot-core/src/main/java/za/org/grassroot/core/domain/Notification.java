@@ -33,8 +33,8 @@ public abstract class Notification implements Serializable {
 	private Instant createdDateTime;
 
 	@ManyToOne
-	@JoinColumn(name = "user_id")
-	private User user;
+	@JoinColumn(name = "target_id")
+	private User target;
 
 	@ManyToOne
 	@JoinColumn(name = "event_log_id")
@@ -72,12 +72,12 @@ public abstract class Notification implements Serializable {
 		// for JPA
 	}
 
-	protected Notification(User user, String message, ActionLog actionLog) {
+	protected Notification(User target, String message, ActionLog actionLog) {
 		this.uid = UIDGenerator.generateId();
 		this.read = false;
 		this.delivered = false;
 
-		this.user = Objects.requireNonNull(user); // at least for now, Notifications are always targeted to a user
+		this.target = Objects.requireNonNull(target); // at least for now, Notifications are always targeted to a user
 		this.createdDateTime = Instant.now();
 		this.message = Objects.requireNonNull(message);
 
@@ -96,32 +96,16 @@ public abstract class Notification implements Serializable {
 		return id;
 	}
 
-	public void setId(Long id) {
-		this.id = id;
-	}
-
 	public String getUid() {
 		return uid;
-	}
-
-	public void setUid(String uid) {
-		this.uid = uid;
 	}
 
 	public Instant getCreatedDateTime() {
 		return createdDateTime;
 	}
 
-	public void setCreatedDateTime(Instant createdDateTime) {
-		this.createdDateTime = createdDateTime;
-	}
-
-	public User getUser() {
-		return user;
-	}
-
-	public void setUser(User user) {
-		this.user = user;
+	public User getTarget() {
+		return target;
 	}
 
 	public boolean isRead() {
@@ -156,16 +140,12 @@ public abstract class Notification implements Serializable {
 		return message;
 	}
 
-	public void setMessage(String message) {
-		this.message = message;
-	}
-
 	/**
 	 * Locale utilities
 	 */
 
 	protected Locale getUserLocale() {
-		return getUserLocale(user.getLanguageCode());
+		return getUserLocale(target.getLanguageCode());
 	}
 
 	protected Locale getUserLocale(String languageCode) {
@@ -175,10 +155,6 @@ public abstract class Notification implements Serializable {
 			return new Locale(languageCode);
 		}
 
-	}
-
-	protected String constructMessageText(MessageSourceAccessor messageSourceAccessor) {
-		return null;
 	}
 
 	protected String[] populateEventFields(Event event) {

@@ -19,11 +19,10 @@ public class EventChangedNotification extends EventNotification {
 		// for JPA
 	}
 
-	public EventChangedNotification(User user, EventLog eventLog) {
-		super(user, null, eventLog);
+	public EventChangedNotification(User target, EventLog eventLog) {
+		super(target, null, eventLog);
 	}
 
-	@Override
 	protected String constructMessageText(MessageSourceAccessor messageSourceAccessor) {
 		Locale locale = getUserLocale();
 		Event event = getEventLog().getEvent();

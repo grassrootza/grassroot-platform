@@ -16,11 +16,10 @@ public class VoteResultsNotification extends EventNotification {
 		// for JPA
 	}
 
-	public VoteResultsNotification(User user, EventLog eventLog) {
-		super(user, null, eventLog);
+	public VoteResultsNotification(User target, EventLog eventLog) {
+		super(target, null, eventLog);
 	}
 
-	@Override
 	protected String constructMessageText(MessageSourceAccessor messageSourceAccessor) {
 		return null;
 	}

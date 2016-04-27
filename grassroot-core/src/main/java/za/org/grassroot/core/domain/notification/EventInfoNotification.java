@@ -27,7 +27,6 @@ public class EventInfoNotification extends EventNotification {
 		super(destination, null, eventLog);
 	}
 
-	@Override
 	protected String constructMessageText(MessageSourceAccessor messageSourceAccessor) {
 		//TODO fix the locale resolver in config
 		String messageKey = "";

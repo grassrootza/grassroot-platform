@@ -23,12 +23,12 @@ public abstract class LogBookNotification extends Notification {
 		// for JPA
 	}
 
-	protected LogBookNotification(User user, String message, LogBookLog logBookLog) {
-		this(user, message, logBookLog, logBookLog.getLogBook());
+	protected LogBookNotification(User target, String message, LogBookLog logBookLog) {
+		this(target, message, logBookLog, logBookLog.getLogBook());
 	}
 
-	protected LogBookNotification(User user, String message, ActionLog actionLog, LogBook logBook) {
-		super(user, message, actionLog);
+	protected LogBookNotification(User target, String message, ActionLog actionLog, LogBook logBook) {
+		super(target, message, actionLog);
 		this.logBook = logBook;
 	}
 
@@ -36,7 +36,6 @@ public abstract class LogBookNotification extends Notification {
 		return logBook;
 	}
 
-	@Override
 	protected String constructMessageText(MessageSourceAccessor messageSourceAccessor) {
 		return message;
 	}

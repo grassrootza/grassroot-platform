@@ -14,11 +14,10 @@ public class LogBookReminderNotification extends LogBookNotification {
 		// for JPA
 	}
 
-	public LogBookReminderNotification(User user, String message, LogBookLog logBookLog) {
-		super(user, message, logBookLog);
+	public LogBookReminderNotification(User target, String message, LogBookLog logBookLog) {
+		super(target, message, logBookLog);
 	}
 
-	@Override
 	protected String constructMessageText(MessageSourceAccessor messageSourceAccessor) {
 		return message;
 	}

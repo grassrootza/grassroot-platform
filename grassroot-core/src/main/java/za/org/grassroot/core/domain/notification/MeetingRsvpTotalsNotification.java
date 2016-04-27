@@ -17,11 +17,10 @@ public class MeetingRsvpTotalsNotification extends EventNotification {
 		// for JPA
 	}
 
-	public MeetingRsvpTotalsNotification(User user, EventLog eventLog, String message) {
-		super(user, message, eventLog);
+	public MeetingRsvpTotalsNotification(User target, EventLog eventLog, String message) {
+		super(target, message, eventLog);
 	}
 
-	@Override
 	protected String constructMessageText(MessageSourceAccessor messageSourceAccessor) {
 		return message;
 	}
