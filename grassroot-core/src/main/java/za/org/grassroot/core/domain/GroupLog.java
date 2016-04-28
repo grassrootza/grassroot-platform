@@ -19,14 +19,15 @@ public class GroupLog implements Serializable, ActionLog {
     @Column(name="id", nullable = false)
     private Long id;
 
-    @Basic
     @Column(name="created_date_time", insertable = true, updatable = false)
     private Instant createdDateTime;
 
-    @Column(name="group_id", nullable = false)
+    @ManyToOne
+    @JoinColumn(name="group_id", nullable = false)
     private Group group;
 
-    @Column(name="user_id", nullable = false)
+    @ManyToOne
+    @JoinColumn(name="user_id")
     private User user;
 
     @Column(name="group_log_type", nullable = false)
@@ -64,10 +65,6 @@ public class GroupLog implements Serializable, ActionLog {
 
     public Long getId() {
         return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public Instant getCreatedDateTime() {
@@ -110,14 +107,15 @@ public class GroupLog implements Serializable, ActionLog {
         this.description = description;
     }
 
+
     @Override
     public String toString() {
         return "GroupLog{" +
                 "id=" + id +
-                ", createdDateTime=" + createdDateTime +
                 ", groupLogType=" + groupLogType +
                 ", userOrSubGroupId=" + userOrSubGroupId +
                 ", description='" + description + '\'' +
+                ", createdDateTime=" + createdDateTime +
                 '}';
     }
 }

@@ -100,17 +100,6 @@ public class UserLog implements ActionLog {
     public UserInterfaceType getUserInterface() { return userInterface; }
 
     @Override
-    public String toString() {
-        return "UserLog{" +
-                "id=" + id +
-                ", creationTime =" + creationTime +
-                ", userUid=" + userUid +
-                ", userLogType=" + userLogType +
-                ", description='" + description + '\'' +
-                '}';
-    }
-
-    @Override
     public int hashCode() {
         return (getUid() != null) ? getUid().hashCode() : 0;
     }
@@ -126,5 +115,16 @@ public class UserLog implements ActionLog {
 
         return true;
 
+    }
+
+    @Override
+    public String toString() {
+        return "UserLog{" +
+                "id=" + id +
+                ", userLogType=" + userLogType +
+                ", userUid=" + userUid +
+                ", description='" + description + '\'' +
+                ", creationTime =" + creationTime +
+                '}';
     }
 }
