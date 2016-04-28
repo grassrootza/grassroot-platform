@@ -92,6 +92,6 @@ public interface GroupBroker {
 
     // pass null to eventType to get all events
     // pass null to either of the timestamps to leave unlimited (i.e., all the way to future, or all the way to past
-    List<Event> retrieveGroupEvents(Group group, EventType eventType, LocalDateTime periodStart, LocalDateTime periodEnd);
+    List<Event> retrieveGroupEvents(Group group, EventType eventType, Instant periodStart, Instant periodEnd);
 
 }

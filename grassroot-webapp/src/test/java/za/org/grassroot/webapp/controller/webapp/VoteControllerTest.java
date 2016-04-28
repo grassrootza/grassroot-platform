@@ -138,7 +138,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
 
         when(eventBrokerMock.load(testVote.getUid())).thenReturn(testVote);
 
-        mockMvc.perform(get("/vote/answer").param("eventUid", testVote.getUid()).param("answer", "yes"))
+        mockMvc.perform(get("/vote/answer").header("referer", "vote").param("eventUid", testVote.getUid()).param("answer", "yes"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(view().name("redirect:/vote/view"))
                 .andExpect(flash().attributeExists(BaseController.MessageType.INFO.getMessageKey()))

@@ -315,12 +315,12 @@ public class USSDHomeController extends USSDController {
                     logBook.getParent().getName(),
                     logBook.getMessage(),
                     logBook.getActionByDateAtSAST().format(dateFormat) };
-            String prompt = getMessage(thisSection, startMenu, promptKey + "-logbook", promptFields, user);
+            String prompt = getMessage(thisSection, startMenu, promptKey + ".logbook", promptFields, user);
             String completeUri = "log-complete" + entityUidUrlSuffix + logBook.getUid();
             USSDMenu menu = new USSDMenu(prompt);
             menu.addMenuOptions(new LinkedHashMap<>(optionsYesNo(user, completeUri, completeUri)));
             menu.addMenuOption(completeUri + "&confirmed=unknown",
-                               getMessage(thisSection, startMenu, logKey + "." + optionsKey + ".unknown", user));
+                               getMessage(thisSection, startMenu, logKey + "." + optionsKey + "unknown", user));
             return menu;
         }
     }
@@ -394,7 +394,19 @@ public class USSDHomeController extends USSDController {
     public Request logBookEntry(@RequestParam(value = phoneNumber) String inputNumber,
                                 @RequestParam(value = entityUidParam) String logBookUid,
                                 @RequestParam(value = yesOrNoParam) String response) throws URISyntaxException {
-        return notBuilt(inputNumber);
+
+        User user = userManager.findByInputNumber(inputNumber);
+
+        String prompt;
+        if (response.equalsIgnoreCase("yes")) {
+            boolean stateChanged = logBookBroker.complete(user.getUid(), logBookUid, null, null);
+            prompt = stateChanged ? getMessage(thisSection, startMenu, promptKey + ".logbook-completed", user) :
+                    getMessage(thisSection, startMenu, promptKey + ".logbook-unchanged", user);
+        } else {
+            prompt = getMessage(thisSection, startMenu, promptKey + ".logbook-marked-no", user);
+        }
+
+        return menuBuilder(welcomeMenu(prompt, user));
     }
 
     @RequestMapping(value = path + renameUserMenu)

@@ -173,10 +173,10 @@ public class LogBookRepositoryTest {
                 findByReplicatedGroupAndMessageAndActionByDateOrderByGroupIdAsc(groupParent, message, lbParent2.getActionByDate());
         assertEquals(entriesFromDb2, replicatedEntries2);
 
-        int numberReplicatedEntries1 = logBookRepository.countReplicatedEntries(groupParent.getId(), message, lbParent.getActionByDate());
+        int numberReplicatedEntries1 = logBookRepository.countReplicatedEntries(groupParent, message, lbParent.getActionByDate());
         assertEquals(numberReplicatedEntries1, entriesFromDb.size());
 
-        int numberReplicatedEntries2 = logBookRepository.countReplicatedEntries(groupParent.getId(), message, lbParent2.getActionByDate());
+        int numberReplicatedEntries2 = logBookRepository.countReplicatedEntries(groupParent, message, lbParent2.getActionByDate());
         assertEquals(numberReplicatedEntries2, entriesFromDb2.size());
     }
 }

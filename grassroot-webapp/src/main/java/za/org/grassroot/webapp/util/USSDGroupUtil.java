@@ -266,7 +266,7 @@ public class USSDGroupUtil extends USSDUtil {
                 String requestUid = voteRequest.getUid();
                 cacheManager.putUssdMenuForUser(user.getPhoneNumber(), saveVoteMenu("issue", requestUid));
                 nextUrl = "vote/time" + USSDUrlUtil.entityUidUrlSuffix + requestUid;
-                menu = new USSDMenu(getMessage(section, "issue", promptKey, user), nextUrl);
+                menu = new USSDMenu(getMessage(section, "issue", promptKey + ".skipped", group.getDisplayName(""), user), nextUrl);
                 break;
             case LOGBOOK:
                 String logBookUid = logBookRequestBroker.create(user.getUid(), group.getUid()).getUid();

@@ -36,12 +36,12 @@
           </div>
           <div class="row form-group">
             <label class="control-label col-md-3">Due date:</label>
-            <p class="col-md-6"><span th:text="${#calendars.format(entry.actionByDate, 'EEE d MMM, dd:MM')}"></span></p>
+            <p class="col-md-6"><span th:text="${#temporals.format(entry.getActionByDate(), 'EEE d MMM')}"></span></p>
             <input type="hidden" th:field="*{actionByDate}" />
           </div>
           <div class="row form-group">
             <label class="control-label col-md-3">Reminder:</label>
-            <p class="col-md-6"><span th:text="*{scheduledReminderTime}">Reminder date</span></p>
+            <p class="col-md-6"><span th:text="${#temporals.format(entry.getScheduledReminderTime(), 'EEE d MMM')}">Reminder date</span></p>
           </div>
         </div>
       </div>

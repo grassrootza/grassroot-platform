@@ -4,6 +4,7 @@ import edu.emory.mathcs.backport.java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -303,19 +304,34 @@ public class MeetingController extends BaseController {
         Meeting meeting = eventBroker.loadMeeting(eventUid);
         User user = getUserProfile();
 
+        String priorUrl = request.getHeader(HttpHeaders.REFERER);
+        String redirect;
+
+        if (priorUrl.contains("group")) {
+            attributes.addAttribute("groupUid", meeting.resolveGroup().getUid());
+            redirect = "/group/view";
+        } else if (priorUrl.contains("meeting")) {
+            attributes.addAttribute("eventUid", eventUid);
+            redirect = "/meeting/view";
+        } else {
+            redirect = "/home";
+        }
+
         switch (answer) {
             case "yes":
                 eventLogManagementService.rsvpForEvent(meeting, user, EventRSVPResponse.YES);
-                addMessage(model, MessageType.SUCCESS, "meeting.rsvp.yes", request);
-                return viewMeetingDetails(model, meeting.getUid());
+                addMessage(attributes, MessageType.SUCCESS, "meeting.rsvp.yes", request);
+                break;
             case "no":
                 eventLogManagementService.rsvpForEvent(meeting, user, EventRSVPResponse.NO);
                 addMessage(attributes, MessageType.ERROR, "meeting.rsvp.no", request);
-                return "redirect:/home";
+                break;
             default:
                 addMessage(attributes, MessageType.ERROR, "meeting.rsvp.no", request);
-                return "redirect:/home";
+                break;
         }
+
+        return "redirect:" + redirect;
     }
 
 }
