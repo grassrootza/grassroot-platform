@@ -294,7 +294,6 @@ public class GroupBrokerImpl implements GroupBroker {
             bundle.addLog(new UserLog(createdUser.getUid(), UserLogType.CREATED_IN_DB, String.format("Created by being added to group with ID: %s", group.getUid()), UNKNOWN));
         }
 
-        Set<Notification> notifications = new HashSet<>();
         Set<Meeting> meetings = (Set) group.getUpcomingEventsIncludingParents(event -> event.getEventType().equals(EventType.MEETING));
 
         for (Membership membership : memberships) {
@@ -308,11 +307,13 @@ public class GroupBrokerImpl implements GroupBroker {
             // is not already contained in it (otherwise, it already got the notification for such meetings)
             for (Meeting meeting : meetings) {
                 Group meetingGroup = meeting.resolveGroup();
+                // todo: fix this because we want to iterate from current group and stop on first parent
+                // following works just by coincidence
                 if (meetingGroup.equals(group) || !meetingGroup.hasMember(member)) {
                     boolean appliesToMember = meeting.isAllGroupMembersAssigned() || meeting.getAssignedMembers().contains(member);
                     if (appliesToMember) {
                         String message = messageAssemblingService.createEventInfoMessage(member, meeting);
-                        notifications.add(new EventInfoNotification(member, message, groupLog, meeting));
+                        bundle.addNotification(new EventInfoNotification(member, message, groupLog, meeting));
                     }
                 }
             }

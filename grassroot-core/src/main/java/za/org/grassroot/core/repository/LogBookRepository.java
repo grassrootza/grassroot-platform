@@ -31,7 +31,6 @@ public interface LogBookRepository extends JpaRepository<LogBook, Long> {
      */
     List<LogBook> findByAssignedMembersAndActionByDateGreaterThan(User user, Instant start);
     List<LogBook> findByAssignedMembersAndActionByDateBetweenAndCompleted(User user, Instant start, Instant end, boolean completed, Sort sort);
-    int countByAssignedMembersAndActionByDateBetweenAndCompleted(User user, Instant start, Instant end, boolean completed);
 
     /*
     Retrieve logbook entries for a book (with variants)
