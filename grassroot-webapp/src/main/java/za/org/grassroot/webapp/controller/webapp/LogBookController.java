@@ -54,68 +54,59 @@ public class LogBookController extends BaseController {
      */
 
     @RequestMapping("create")
-    public String createLogBook(Model model, @RequestParam(value="groupUid", required=false) String groupUid) {
+    public String createLogBook(Model model, @RequestParam(value="groupUid", required=false) String parentUid,
+                                @RequestParam(value="parentType", required=false) JpaEntityType parentType) {
 
-        // Thymeleaf insists on messing everything up if we try to set groupId, or just in general create the entity
-        // on the next page instead of here, so we have to do some redundant & silly entity creation
         LogBookWrapper entryWrapper;
         User user = getUserProfile();
 
-        if (groupUid == null || groupUid.trim().equals("")) {
-            model.addAttribute("groupSpecified", false);
-            model.addAttribute("possibleGroups", permissionBroker.
-                    getActiveGroups(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY));
-            entryWrapper = new LogBookWrapper(JpaEntityType.GROUP);
+        // todo: clean this up / consolidate it
+        if (JpaEntityType.MEETING.equals(parentType)) {
+
+            Meeting parent = eventBroker.loadMeeting(parentUid);
+            LogBookWrapper wrapper = new LogBookWrapper(JpaEntityType.MEETING, parentUid, parent.getName());
+
+            model.addAttribute("parent", parent);
+            model.addAttribute("logBook", wrapper);
+
+            return "log/create_meeting";
+
         } else {
-            model.addAttribute("groupSpecified", true);
-            Group group = groupBroker.load(groupUid);
-            model.addAttribute("group", group);
-            entryWrapper = new LogBookWrapper(JpaEntityType.GROUP, group.getUid(), group.getName(""));
+
+            if (parentUid == null || parentUid.trim().equals("")) {
+
+                model.addAttribute("groupSpecified", false);
+                model.addAttribute("userUid", getUserProfile().getUid());
+                model.addAttribute("possibleGroups", permissionBroker.
+                        getActiveGroups(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY));
+                entryWrapper = new LogBookWrapper(JpaEntityType.GROUP);
+
+            } else {
+
+                model.addAttribute("groupSpecified", true);
+                Group group = groupBroker.load(parentUid);
+                model.addAttribute("group", group);
+                entryWrapper = new LogBookWrapper(JpaEntityType.GROUP, group.getUid(), group.getName(""));
+                entryWrapper.setMemberPicker(new MemberPicker(group, false));
+            }
+
+            entryWrapper.setAssignmentType("group");
+            entryWrapper.setReminderType(EventReminderType.GROUP_CONFIGURED);
+            entryWrapper.setReminderMinutes(-60);
+
+            model.addAttribute("entry", entryWrapper);
+            return "log/create";
+
         }
 
-        model.addAttribute("entry", entryWrapper);
-        return "log/create";
     }
 
-    /*
-    Okay, trying to implement new, meeting-as-parent-model
-    todo: consolidate with above, once comfortable in how it works
-     */
-
-    @RequestMapping("create/meeting")
-    public String createLogBookWithMeetingParent(Model model, @RequestParam String meetingUid) {
-
-        Meeting parent = eventBroker.loadMeeting(meetingUid);
-        LogBookWrapper wrapper = new LogBookWrapper(JpaEntityType.MEETING, meetingUid, parent.getName());
-
-        model.addAttribute("parent", parent);
-        model.addAttribute("logBook", wrapper);
-
-        return "log/create_meeting";
-    }
-
-    @RequestMapping(value = "confirm", method = RequestMethod.POST)
+    /*@RequestMapping(value = "confirm", method = RequestMethod.POST)
     public String confirmLogBookEntry(Model model, @ModelAttribute("entry") LogBookWrapper logBookEntry,
                                       @RequestParam(value="selectedGroupUid", required = false) String selectedGroupUid,
                                       @RequestParam(value="subGroups", required=false) boolean subGroups, HttpServletRequest request) {
 
-        log.info("The potential logBookEntry passed back to us ... " + logBookEntry);
-
-        Group group;
-        if (selectedGroupUid != null) {
-            group = groupBroker.load(selectedGroupUid);
-            logBookEntry.setParentEntityType(group.getJpaEntityType());
-            logBookEntry.setParentUid(group.getUid());
-            logBookEntry.setParentName(group.getName(""));
-        } else {
-            group = groupBroker.load(logBookEntry.getParentUid()); // todo: do we even need this?
-        }
-
-        model.addAttribute("group", group);
-        model.addAttribute("replicatingToSubGroups", subGroups);
-
         if (subGroups) {
-            // todo: use the tree methods to make this more coherent
             // todo: restrict this to paid groups, and add in message numbers / cost estimates
             model.addAttribute("numberSubGroups", groupBroker.subGroups(group.getUid()).size());
             model.addAttribute("numberMembers", userManagementService.fetchByGroup(group.getUid(), true).size());
@@ -128,11 +119,18 @@ public class LogBookController extends BaseController {
 
         return "log/confirm";
 
-    }
+    }*/
 
     @RequestMapping(value = "record", method = RequestMethod.POST)
     public String recordLogBookEntry(Model model, @ModelAttribute("entry") LogBookWrapper logBookEntry,
                                      HttpServletRequest request, RedirectAttributes redirectAttributes) {
+
+        log.info("LogBookWrapper received, looks like: {}", logBookEntry.toString());
+
+        if (logBookEntry.getReminderType().equals(EventReminderType.GROUP_CONFIGURED)) {
+            int convertedMinutes = -(groupBroker.load(logBookEntry.getParentUid()).getReminderMinutes());
+            logBookEntry.setReminderMinutes(convertedMinutes);
+        }
 
         Set<String> assignedUids;
         if ("members".equals(logBookEntry.getAssignmentType())) {
@@ -143,16 +141,14 @@ public class LogBookController extends BaseController {
             assignedUids = Collections.emptySet();
         }
 
-        User user = getUserProfile();
-
-        LogBook created = logBookBroker.create(user.getUid(), logBookEntry.getParentEntityType(), logBookEntry.getParentUid(),
+        /*LogBook created = logBookBroker.create(getUserProfile().getUid(), logBookEntry.getParentEntityType(), logBookEntry.getParentUid(),
                                                logBookEntry.getMessage(), logBookEntry.getActionByDate(), logBookEntry.getReminderMinutes(),
-                                               logBookEntry.isReplicateToSubGroups(), assignedUids);
+                                               logBookEntry.isReplicateToSubGroups(), assignedUids);*/
 
         addMessage(redirectAttributes, MessageType.SUCCESS, "log.creation.success", request);
-        redirectAttributes.addAttribute("logBookUid", created.getUid());
+        // redirectAttributes.addAttribute("logBookUid", created.getUid());
 
-        return "redirect:/log/details";
+        return "redirect:/home";
     }
 
     @RequestMapping(value = "record/meeting", method = RequestMethod.POST)

@@ -5,6 +5,10 @@
   <title>Grassroot - Record an action</title>
   <!-- todo: fix whatever is causing on-server glyphicons to not load; this is a temp fix -->
   <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css" rel="stylesheet" />
+
+  <!-- need these for ajax, though there may be a more elegant way to do it (maybe just call the Thymeleaf in the CSRF -->
+  <meta name="_csrf" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
 <script>
 
 
@@ -32,27 +36,36 @@
     <div class="row">
       <div class="col-md-6 col-md-offset-3">
 
-        <form th:object="${entry}" th:action="@{/log/confirm}" method="post" class="form-vertical">
+        <form th:object="${entry}" th:action="@{/log/record}" method="post" class="form-vertical">
+
+          <input type="hidden" th:field="*{parentEntityType}" />
 
           <div class="form-group">
             <label for="group" class="control-label">Group:</label>
-            <select th:unless="${groupSpecified}" name="selectedGroupUid" id="selectedgroup" class="form-control">
-              <option th:each="group: ${possibleGroups}"
-                      th:value="${group.Uid}"
-                      th:text="${group.getName('')}">Groupname</option>
-            </select>
-            <input th:if="${groupSpecified}" class="form-control" readonly="true" th:placeholder="${group.groupName}" id="group" />
+            <div th:unless="${groupSpecified}">
+              <select th:unless="${groupSpecified}" th:field="*{parentUid}" id="groupSelector" class="form-control">
+                <option th:each="group: ${possibleGroups}"
+                        th:value="${group.Uid}"
+                        th:text="${group.getName('')}">Groupname</option>
+              </select>
+              <input type="hidden" th:value="${userUid}" id="userUid" />
+            </div>
+            <div th:if="${groupSpecified}">
+              <input th:if="${groupSpecified}" class="form-control" readonly="true" th:placeholder="${group.groupName}" id="group" />
+              <input type="hidden" th:if="${groupSpecified}" th:field="*{parentUid}" th:value="${group.uid}" />
+            </div>
           </div>
 
           <div class="form-group">
-            <label for="name" class="control-label">Entry to be recorded</label>
+            <label for="name" class="control-label">Title:</label>
             <input th:field="*{message}" type="text" class="form-control" maxlength="35" data-toggle="tooltip"
-                     title="Description may not be longer than 35 characters." id="name" placeholder="The action or decision to record" />
+                     title="Description may not be longer than 35 characters." id="name"
+                   placeholder="A short summary of the action or decision to record" />
           </div>
 
           <div class="form-group">
             <div th:fragment="date-picker">
-              <label for="datepicker" class="control-label">Deadline for action to be completed:</label>
+              <label for="datepicker" class="control-label">Deadline:</label>
               <div class="input-group date" id="datepicker">
                 <input th:field="*{actionByDate}" type="text" class="form-control" />
                     <span class="input-group-addon">
@@ -63,8 +76,29 @@
           </div>
 
           <div class="form-group">
+            <b>Who has responsibility for completing the action?</b>
+            <div class="radio">
+              <label class="radio-inline"><input type="radio" th:field="*{assignmentType}" value="group" id="wholeGroup" />The whole group</label>
+              <label class="radio-inline"><input type="radio" th:field="*{assignmentType}" value="members" id="pickMembers" />Pick members</label>
+              <h5 id="pickedMemberCount">Number of members picked</h5>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Notes? Please enter any further description:</label>
+            <textarea class="form-control" rows="1" maxlength="250"
+                      placeholder="This will not be sent with the SMS, but will be seen by app and web users"></textarea>
+          </div>
+
+          <div class="form-group">
             <label class="control-label">Send a reminder:</label>
-            <div class="radio" id="remindertime">
+            <select th:field="*{reminderType}" class="form-control" id="reminderType">
+              <option th:if="${groupSpecified}" value="GROUP_CONFIGURED" selected="true">
+                Group default (<span th:text="#{web.meeting.reminder.group.__${group.reminderMinutes}__}">X</span> ahead)
+              </option>
+              <option value="CUSTOM">Set custom</option>
+            </select>
+            <div class="radio" id="customReminder">
               <label class="radio-inline"><input type="radio" th:field="*{reminderMinutes}" value="-60"/>On due date</label>
               <label class="radio-inline"><input type="radio" th:field="*{reminderMinutes}" value="-1440"/>One day before</label>
               <label class="radio-inline"><input type="radio" th:field="*{reminderMinutes}" value="-2880"/>Two days before</label>
@@ -79,10 +113,38 @@
             </label>
             <div class="btn-container pull-right">
               <a th:if="${groupSpecified}"
-                 th:href="@{/group/view(groupUId=${group.Uid})}" role="button" class="btn btn-default horizontal-padding">Cancel</a>
+                 th:href="@{/group/view(groupUid=${group.Uid})}" role="button" class="btn btn-default horizontal-padding">Cancel</a>
               <a th:if="${not groupSpecified}"
                  th:href="@{/home}" role="button" class="btn btn-default">Cancel</a>
-              <button type="submit" class="btn btn-primary horizontal-padding">Confirm</button>
+              <button type="submit" class="btn btn-primary horizontal-padding">Record</button>
+            </div>
+          </div>
+
+          <div class="modal fade" id="memberModal" tabindex="-1" role="dialog" aria-labelledby="memberModalLabel">
+            <div class="modal-dialog" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                  <h4 class="modal-title" id="memberModalLabel">Assign members to action</h4>
+                </div>
+                <div class="modal-body">
+                  <div th:if="${groupSpecified}" class="list-group checked-list-box">
+                    <li class="list-group-item checkbox"
+                        th:each="member, iterStat: *{memberPicker.getListOfMembers()}">
+                      <label>
+                        <input type="checkbox" th:field="*{memberPicker.listOfMembers[__${iterStat.index}__].selected}" class="pull-right"/>
+                        <input type="hidden" th:field="*{memberPicker.listOfMembers[__${iterStat.index}__].userUid}" />
+                        <span th:text="${member.nameToDisplay}">Name</span>
+                      </label>
+                    </li>
+                  </div>
+                  <div th:unless="${groupSpecified}" id="dynamicMemberPicker" class="list-group checked-list-box">
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-default" data-dismiss="modal">Done</button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -95,12 +157,24 @@
 </div>
 
 <div class="header-container" layout:fragment="script-container">
-  <script>
+  <script th:inline="javascript">
 
+    /*<![CDATA[*/
     $(document).ready(function() {
 
       var defTime = new Date();
       defTime.setTime(defTime.getTime() + 5*60*1000);
+
+      // if the group selector exists, do the ajax call to populate the member picker & bind refresh to its change function
+      if ($("#groupSelector").length > 0) {
+
+        ajaxGetList(true);
+        $('#groupSelector').change(function() {
+          $('#wholeGroup').prop("checked", true);
+          $('#pickedMemberCount').hide();
+          ajaxGetList(true);
+        });
+      }
 
       $('#datepicker').datetimepicker({
         format: 'DD/MM/YYYY h:mm A',
@@ -111,7 +185,104 @@
         minDate: defTime
       });
 
+      $('#pickMembers').click(function(){
+        $('#memberModal').modal({
+            show: true
+        });
+      });
+
+      $('#pickedMemberCount').hide();
+      $('#wholeGroup').click(function() {
+        $('#pickedMemberCount').hide();
+      })
+
+      $('#memberModal').on('hidden.bs.modal', function() {
+        // should do a count of how many members are selected, and display it
+        var membersSelected = $('#memberModal').find('input[type="checkbox"]:checked').length;
+        var countText = "You've assigned " + membersSelected + ((membersSelected == 1) ? " member" : " members") + " to this task";
+        $('#pickedMemberCount').text(countText);
+        $('#pickedMemberCount').show();
+      });
+
+      $("#customReminder").hide();
+      $('#reminderType').change(function() {
+        var selected = $("#reminderType option:selected").val();
+        console.log("Selected option: " + selected);
+        if (selected == "CUSTOM") {
+          $("#customReminder").show();
+        } else {
+          $("#customReminder").hide();
+        }
+      });
+
     });
+
+    function ajaxGetList(selectedByDefault) {
+
+      var token = $("meta[name='_csrf']").attr("content");
+      var header = $("meta[name='_csrf_header']").attr("content");
+
+      var data = {};
+      data["parentEntityType"] = "GROUP"; // todo: reconsider this ...
+      data["selectedByDefault"] = selectedByDefault;
+      data["parentUid"] = $("#groupSelector").val();
+      data["userUid"] = $("#userUid").val();
+
+      console.log("Assembled data object = " + JSON.stringify(data));
+
+      $.ajax({
+        type : "POST",
+        contentType : "application/json",
+        url : "/ajax/members/list",
+        dataType : "json",
+        data : JSON.stringify(data),
+        timeout : 100000,
+        beforeSend : function(xhr) {
+          xhr.setRequestHeader(header, token);
+        },
+        success : function(data) {
+          addMembersToModal(data);
+        },
+        error : function(xhr, textStatus, errorThrown) {
+          console.log("ERROR! : " + errorThrown);
+          console.log("Status : " + textStatus);
+          console.log("xhr: " + xhr.status);
+          // display(errorThrown);
+        },
+        done : function(e) {
+          console.log("DONE");
+        }
+      });
+
+    }
+
+    function addMembersToModal(returnedObject) {
+      // console.log("Returned object: " + JSON.stringify(returnedObject, null, 4));
+      $("#dynamicMemberPicker").empty();
+      var memberList = returnedObject.data.listOfMembers;
+      for (var i = 0; i < memberList.length; i++) {
+        $("#dynamicMemberPicker").append(constructItem(memberList[i], i));
+      };
+
+      function constructItem(member, index) {
+        // this is a bit of a hack to engineer the list to look like Thymeleaf when it creates an entity
+        var listFieldName = "memberPicker.listOfMembers";
+        var selectedField = listFieldName + "[" + index + "].selected";
+        var userUidField = listFieldName + "[" + index + "].userUid";
+
+        var tickbox = JSON.parse(member.selected) ? "checked" : "";
+
+        var string = "<li class=\"list-group-item checkbox\">" +
+                "<label>" +
+                "<input type=\"checkbox\" class='pull-right' " + tickbox + " name='" + selectedField + "'/>" +
+                "<input type='hidden' name='" + userUidField + "' value='" + member.userUid + "'/>" +
+                member.nameToDisplay + "</label>";
+        return string;
+      }
+    }
+
+    /*]]>*/
+
   </script>
 
 </div>
