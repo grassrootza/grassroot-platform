@@ -11,15 +11,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.EventInfoNotification;
-import za.org.grassroot.core.domain.notification.EventNotification;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.*;
-import za.org.grassroot.services.async.ActionLogger;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
+import za.org.grassroot.services.util.LogsAndNotificationsBroker;
+import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import za.org.grassroot.services.util.TokenGeneratorService;
 
 import java.sql.Timestamp;
@@ -54,14 +54,11 @@ public class GroupBrokerImpl implements GroupBroker {
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
     @Autowired
-    private ActionLogger actionLogger;
+    private LogsAndNotificationsBroker logsAndNotificationsBroker;
     @Autowired
     private TokenGeneratorService tokenGeneratorService;
     @Autowired
     private MessageAssemblingService messageAssemblingService;
-
-    @Autowired
-    private NotificationRepository notificationRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -102,33 +99,26 @@ public class GroupBrokerImpl implements GroupBroker {
             groupAddedEventLog = new GroupLog(parent, user, GroupLogType.GROUP_ADDED, group.getId());
         }
 
-        AddMembershipsResult addMembershipsResult = addMemberships(user, group, membershipInfos);
+        LogsAndNotificationsBundle bundle = addMemberships(user, group, membershipInfos);
+        bundle.addLog(groupAddedEventLog);
 
         permissionBroker.setRolePermissionsFromTemplate(group, groupPermissionTemplate);
-
         group = groupRepository.save(group);
 
         logger.info("Group created under UID {}", group.getUid());
 
-        Set<ActionLog> actionLogs = new HashSet<>();
-        actionLogs.add(groupAddedEventLog);
-        actionLogs.addAll(addMembershipsResult.getActionLogs());
-
-        logActionsAndStoreNotifications(actionLogs, addMembershipsResult.getNotifications());
+        logsAndNotificationsBroker.storeBundle(bundle);
 
         return group;
     }
 
-    private void logActionsAndStoreNotifications(Set<ActionLog> actionLogs, Set<Notification> notifications) {
-        // this is synchronous actions for now...
-        actionLogger.logActions(actionLogs);
-        notificationRepository.save(notifications);
-    }
-
     private void logActionLogsAfterCommit(Set<ActionLog> actionLogs) {
         if (!actionLogs.isEmpty()) {
+            LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+            bundle.addLogs(actionLogs);
+
             // we want to log group events after transaction has committed
-            AfterTxCommitTask afterTxCommitTask = () -> actionLogger.asyncLogActions(actionLogs);
+            AfterTxCommitTask afterTxCommitTask = () -> logsAndNotificationsBroker.asyncStoreBundle(bundle);
             applicationEventPublisher.publishEvent(afterTxCommitTask);
         }
     }
@@ -216,9 +206,9 @@ public class GroupBrokerImpl implements GroupBroker {
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
 
         logger.info("Adding members: group={}, memberships={}, user={}", group, membershipInfos, user);
-        AddMembershipsResult addMembershipsResult = addMemberships(user, group, membershipInfos);
+        LogsAndNotificationsBundle bundle = addMemberships(user, group, membershipInfos);
 
-        logActionsAndStoreNotifications(addMembershipsResult.getActionLogs(), addMembershipsResult.getNotifications());
+        logsAndNotificationsBroker.storeBundle(bundle);
     }
 
     @Override
@@ -245,7 +235,7 @@ public class GroupBrokerImpl implements GroupBroker {
             logger.info("People joined groupds today via a join code! Processing for {} groups", groupsWhereJoinCodeUsed.size());
             for (Group group : groupsWhereJoinCodeUsed) {
                 List<String> joinedUserDescriptions;
-                List<GroupLog> groupLogs = groupLogRepository.findByGroupIdAndGroupLogTypeAndCreatedDateTimeBetween(group.getId(),
+                List<GroupLog> groupLogs = groupLogRepository.findByGroupAndGroupLogTypeAndCreatedDateTimeBetween(group,
                                                                               GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE,
                                                                               periodStart, periodEnd);
                 Set<User> organizers = group.getMemberships().stream() // consider adding a getOrganizers method to group
@@ -271,7 +261,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
     }
 
-    private AddMembershipsResult addMemberships(User initiator, Group group, Set<MembershipInfo> membershipInfos) {
+    private LogsAndNotificationsBundle addMemberships(User initiator, Group group, Set<MembershipInfo> membershipInfos) {
         // note: User objects should only ever store phone numbers in the msisdn format (i.e, with country code at front, no '+')
         Set<String> memberPhoneNumbers = membershipInfos.stream().map(MembershipInfo::getPhoneNumberWithCCode).collect(Collectors.toSet());
         logger.info("phoneNumbers returned: ...." + memberPhoneNumbers);
@@ -298,11 +288,10 @@ public class GroupBrokerImpl implements GroupBroker {
         }
 
         // adding action logs and event notifications ...
-
-        Set<ActionLog> actionLogs = new HashSet<>();
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
         for (User createdUser : createdUsers) {
-            actionLogs.add(new UserLog(createdUser.getUid(), UserLogType.CREATED_IN_DB, String.format("Created by being added to group with ID: %s", group.getUid()), UNKNOWN));
+            bundle.addLog(new UserLog(createdUser.getUid(), UserLogType.CREATED_IN_DB, String.format("Created by being added to group with ID: %s", group.getUid()), UNKNOWN));
         }
 
         Set<Notification> notifications = new HashSet<>();
@@ -312,7 +301,7 @@ public class GroupBrokerImpl implements GroupBroker {
             User member = membership.getUser();
 
             GroupLog groupLog = new GroupLog(group, initiator, GroupLogType.GROUP_MEMBER_ADDED, member.getId());
-            actionLogs.add(groupLog);
+            bundle.addLog(groupLog);
 
             // for each meeting that belongs to this group, or it belongs to one of parent groups and apply to subgroups,
             // we create event notification for new member, but in case when meeting belongs to parent group, then only if member
@@ -320,12 +309,16 @@ public class GroupBrokerImpl implements GroupBroker {
             for (Meeting meeting : meetings) {
                 Group meetingGroup = meeting.resolveGroup();
                 if (meetingGroup.equals(group) || !meetingGroup.hasMember(member)) {
-                    notifications.add(new EventInfoNotification(member, groupLog, meeting));
+                    boolean appliesToMember = meeting.isAllGroupMembersAssigned() || meeting.getAssignedMembers().contains(member);
+                    if (appliesToMember) {
+                        String message = messageAssemblingService.createEventInfoMessage(member, meeting);
+                        notifications.add(new EventInfoNotification(member, message, groupLog, meeting));
+                    }
                 }
             }
         }
 
-        return new AddMembershipsResult(actionLogs, notifications);
+        return bundle;
     }
 
     private Set<ActionLog> removeMemberships(User initiator, Group group, Set<Membership> memberships) {
@@ -434,24 +427,21 @@ public class GroupBrokerImpl implements GroupBroker {
             }
         }
 
-        Set<ActionLog> actionLogs = new HashSet<>();
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
         if (!membershipsToRemove.isEmpty()) {
             // note: only call if non-empty to avoid throwing no permission error if user hasn't removed anyone
             Set<ActionLog> removeMembershipsLogs = removeMemberships(user, group, membershipsToRemove);
-            actionLogs.addAll(removeMembershipsLogs);
+            bundle.addLogs(removeMembershipsLogs);
         }
 
-        Set<Notification> notifications = new HashSet<>();
         if (!membersToAdd.isEmpty()) {
             // note: as above, only call if non-empty so permission check only happens
-            AddMembershipsResult addMembershipsResult = addMemberships(user, group, membersToAdd);
-
-            actionLogs.addAll(addMembershipsResult.getActionLogs());
-            notifications.addAll(addMembershipsResult.getNotifications());
+            LogsAndNotificationsBundle addMembershipsBundle = addMemberships(user, group, membersToAdd);
+            bundle.addBundle(addMembershipsBundle);
         }
 
-        logActionsAndStoreNotifications(actionLogs, notifications);
+        logsAndNotificationsBroker.storeBundle(bundle);
     }
 
     public Group merge(String userUid, String firstGroupUid, String secondGroupUid,
@@ -490,13 +480,13 @@ public class GroupBrokerImpl implements GroupBroker {
         } else {
 
             Set<MembershipInfo> membershipInfos = MembershipInfo.createFromMembers(groupFrom.getMemberships());
-            AddMembershipsResult addMembershipsResult = addMemberships(user, groupInto, membershipInfos);
+            LogsAndNotificationsBundle bundle = addMemberships(user, groupInto, membershipInfos);
             resultGroup = groupInto;
             if (!leaveActive) {
                 deactivate(user.getUid(), groupFrom.getUid(), false);
             }
 
-            logActionsAndStoreNotifications(addMembershipsResult.getActionLogs(), addMembershipsResult.getNotifications());
+            logsAndNotificationsBroker.storeBundle(bundle);
         }
 
         logger.info("Group from active status is now : {}", groupFrom.isActive());
@@ -806,7 +796,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
     @Override
     public GroupLog getMostRecentLog(Group group) {
-        return groupLogRepository.findFirstByGroupIdOrderByCreatedDateTimeDesc(group.getId());
+        return groupLogRepository.findFirstByGroupOrderByCreatedDateTimeDesc(group);
     }
 
     private LocalDateTime getLastTimeGroupActive(String groupUid) {
@@ -819,7 +809,7 @@ public class GroupBrokerImpl implements GroupBroker {
     private LocalDateTime getLastTimeGroupModified(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
         // todo: change groupLog to use localdatetime
-        GroupLog latestGroupLog = groupLogRepository.findFirstByGroupIdOrderByCreatedDateTimeDesc(group.getId());
+        GroupLog latestGroupLog = groupLogRepository.findFirstByGroupOrderByCreatedDateTimeDesc(group);
         return (latestGroupLog != null) ? LocalDateTime.ofInstant(latestGroupLog.getCreatedDateTime(), getSAST()) :
                 group.getCreatedDateTime().toLocalDateTime();
     }
@@ -842,7 +832,7 @@ public class GroupBrokerImpl implements GroupBroker {
     @Override
     public List<GroupLog> getLogsForGroup(Group group, LocalDateTime periodStart, LocalDateTime periodEnd) {
         Sort sort = new Sort(Sort.Direction.ASC, "CreatedDateTime");
-        return groupLogRepository.findByGroupIdAndCreatedDateTimeBetween(group.getId(), convertToSystemTime(periodStart, getSAST()),
+        return groupLogRepository.findByGroupAndCreatedDateTimeBetween(group, convertToSystemTime(periodStart, getSAST()),
                                                                          convertToSystemTime(periodEnd, getSAST()), sort);
     }
 
@@ -877,32 +867,5 @@ public class GroupBrokerImpl implements GroupBroker {
         }
 
         return events;
-    }
-
-    private static class AddMembershipsResult {
-        private final Set<ActionLog> actionLogs;
-        private final Set<Notification> notifications;
-
-        public AddMembershipsResult(Set<ActionLog> actionLogs, Set<Notification> notifications) {
-            this.actionLogs = actionLogs;
-            this.notifications = notifications;
-        }
-
-        public Set<ActionLog> getActionLogs() {
-            return actionLogs;
-        }
-
-        public Set<Notification> getNotifications() {
-            return notifications;
-        }
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("AddMembershipsResult{");
-            sb.append("actionLogs=").append(actionLogs);
-            sb.append(", notifications=").append(notifications);
-            sb.append('}');
-            return sb.toString();
-        }
     }
 }

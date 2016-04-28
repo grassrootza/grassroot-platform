@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.MessageSource;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.*;
@@ -29,36 +28,76 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     private Logger log = LoggerFactory.getLogger(MessageAssemblingManager.class);
 
     @Autowired
-    @Qualifier("servicesMessageSource")
-    MessageSource messageSource;
-
-    @Autowired
     @Qualifier("servicesMessageSourceAccessor")
     MessageSourceAccessor messageSourceAccessor;
 
     private static final DateTimeFormatter shortDateFormatter = DateTimeFormatter.ofPattern("EEE, d/M");
 
     @Override
-    public String createLogBookReminderMessage(User user, Group group, LogBook logBook) {
+    public String createEventInfoMessage(User user, Event event) {
+        //TODO fix the locale resolver in config
+        String messageKey = "";
+        if (event.getEventType() == EventType.VOTE) {
+            messageKey = "sms.vote.send.new";
+        } else {
+            messageKey = event.isRsvpRequired() ? "sms.mtg.send.new.rsvp" : "sms.mtg.send.new";
+
+        }
         Locale locale = getUserLocale(user);
-        return messageSourceAccessor.getMessage("sms.logbook.reminder", populateLogBookFields(user, group, logBook), locale);
+        return messageSourceAccessor.getMessage(messageKey, populateEventFields(event), locale);
     }
 
     @Override
-    public String createNewLogBookNotificationMessage(User user, Group group, LogBook logBook, boolean assigned) {
+    public String createEventChangedMessage(User user, Event event) {
         Locale locale = getUserLocale(user);
-        if (assigned) {
-            return messageSourceAccessor.getMessage("sms.logbook.new.assigned", populateLogBookFields(user, group, logBook), locale);
-        } else {
-            return messageSourceAccessor.getMessage("sms.logbook.new.notassigned", populateLogBookFields(user, group, logBook), locale);
+        String messageKey = "sms.mtg.send.change";
+        if (event.getEventType() == EventType.VOTE) {
+            messageKey = "sms.vote.send.change";
         }
+        return messageSourceAccessor.getMessage(messageKey, populateEventFields(event), locale);
+    }
+
+    @Override
+    public String createEventCancelledMessage(User user, Event event) {
+        Locale locale = getUserLocale(user);
+        String messageKey = "sms.mtg.send.cancel";
+        if (event.getEventType() == EventType.VOTE) {
+            messageKey = "sms.vote.send.cancel";
+        }
+        return messageSourceAccessor.getMessage(messageKey, populateEventFields(event), locale);
+    }
+
+    @Override
+    public String createLogBookReminderMessage(User user, LogBook logBook) {
+        Locale locale = getUserLocale(user);
+        String[] args = populateLogBookFields(user, logBook);
+        return messageSourceAccessor.getMessage("sms.logbook.reminder", args, locale);
+    }
+
+    @Override
+    public String createLogBookInfoNotificationMessage(User target, LogBook logBook) {
+        Locale locale = getUserLocale(target);
+        String[] args = populateLogBookFields(target, logBook);
+        String messageKey = logBook.isAllGroupMembersAssigned() ? "sms.logbook.new.assigned" : "sms.logbook.new.notassigned";
+        return messageSourceAccessor.getMessage(messageKey, args, locale);
     }
 
     @Override
     public String createVoteResultsMessage(User user, Vote event, double yes, double no, double abstain, double noReply) {
         Locale locale = getUserLocale(user);
         String messageKey = "sms.vote.send.results";
-        return messageSourceAccessor.getMessage(messageKey, populateEventFields(event, yes, no, abstain, noReply), locale);
+        String[] args = populateEventFields(event, yes, no, abstain, noReply);
+        return messageSourceAccessor.getMessage(messageKey, args, locale);
+    }
+
+    @Override
+    public String createScheduledEventReminderMessage(User destination, Event event) {
+        Locale locale = getUserLocale(destination);
+        String messageKey = "sms.mtg.send.reminder";
+        if (event.getEventType() == EventType.VOTE) {
+            messageKey = "sms.vote.send.reminder";
+        }
+        return messageSourceAccessor.getMessage(messageKey, populateEventFields(event), locale);
     }
 
     @Override
@@ -71,6 +110,16 @@ public class MessageAssemblingManager implements MessageAssemblingService {
                 String.valueOf(responses.getNumberNoRSVP()),
                 String.valueOf(responses.getNumberOfUsers()) };
         return messageSourceAccessor.getMessage("sms.meeting.rsvp.totals", fields, getUserLocale(user));
+    }
+
+    @Override
+    public String createMeetingThankYourMessage(User target, Meeting meeting) {
+        // sms.meeting.thankyou = {0}: Thank you for attending the meeting about {1} on {2}. Dial *134*1994# to create and join groups or call meetings.
+        MeetingContainer parent = meeting.getParent();
+        String prefix = (parent.getJpaEntityType().equals(JpaEntityType.GROUP) && ((Group) parent).hasName()) ?
+                ((Group) parent).getGroupName() : "Grassroot";
+        String[] fields = new String[]{prefix, meeting.getName(), meeting.getEventDateTimeAtSAST().format(shortDateFormatter)};
+        return messageSourceAccessor.getMessage("sms.meeting.thankyou", fields, getUserLocale(target));
     }
 
     @Override
@@ -120,11 +169,10 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     public String[] populateEventFields(Event event, double yes, double no, double abstain, double noReply) {
         // todo: switch this to new name (may want a "hasName"/"getName" method defined on UidIdentifiable?
         String salutation = (((Group) event.getParent()).hasName()) ? ((Group) event.getParent()).getGroupName() : "Grassroot";
-        log.info("populateEventFields...event..." + event.getId() + "...version..." + event.getVersion());
         DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
         String dateString = "no date specified";
         if (event.getEventStartDateTime() != null) {
-            dateString = sdf.format(event.getEventStartDateTime().atZone(getSAST()));
+            dateString = sdf.format(event.getEventDateTimeAtSAST());
         }
 
         String location = null;
@@ -149,18 +197,19 @@ public class MessageAssemblingManager implements MessageAssemblingService {
 
     }
 
-    private String[] populateLogBookFields(User user, Group group, LogBook logBook) {
+    private String[] populateLogBookFields(User target, LogBook logBook) {
+        Group group = logBook.resolveGroup();
         String salutation = (group.hasName()) ? group.getGroupName() : "GrassRoot";
-        SimpleDateFormat sdf = new SimpleDateFormat("EEE d MMM, h:mm a");
+        DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
         String dateString = "no date specified";
         if (logBook.getActionByDate() != null) {
-            dateString = sdf.format(logBook.getActionByDate());
+            dateString = sdf.format(logBook.getActionByDateAtSAST());
         }
         String[] variables = new String[]{
                 salutation,
                 logBook.getMessage(),
                 dateString,
-                user.getDisplayName()
+                target.getDisplayName()
         };
         return variables;
     }

@@ -58,8 +58,8 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         // todo: new design?
         Meeting dummyMeeting = null;
         Vote dummyVote = null;
-        List<Meeting> dummyMeetings = Collections.singletonList(dummyMeeting);
-        List<Vote> dummyVotes = Collections.singletonList(dummyVote);
+        Set<Meeting> dummyMeetings = Collections.singleton(dummyMeeting);
+        Set<Vote> dummyVotes = Collections.singleton(dummyVote);
 
         when(groupBrokerMock.load(dummyGroup.getUid())).thenReturn(dummyGroup);
         when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, dummyGroup,

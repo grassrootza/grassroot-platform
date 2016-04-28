@@ -8,14 +8,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.LogBook;
+import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.notification.EventChangedNotification;
 import za.org.grassroot.core.domain.notification.EventInfoNotification;
 import za.org.grassroot.core.domain.notification.EventNotification;
 import za.org.grassroot.core.domain.notification.LogBookNotification;
 import za.org.grassroot.core.dto.NotificationDTO;
-import za.org.grassroot.core.enums.EventLogType;
-import za.org.grassroot.core.enums.NotificationType;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.repository.NotificationRepository;
 
@@ -49,7 +50,7 @@ public class NotificationManager implements NotificationService{
     @Override
     @Transactional(readOnly = true)
     public Page<Notification> getUserNotifications(User user, int pageNumber, int pageSize) {
-        return notificationRepository.findByUser(user, new PageRequest(pageNumber,pageSize));
+        return notificationRepository.findByTarget(user, new PageRequest(pageNumber,pageSize));
     }
 
     @Override
@@ -100,15 +101,5 @@ public class NotificationManager implements NotificationService{
             notificationRepository.save(notification);
             messageSendingService.sendMessage(UserMessagingPreference.SMS.name(),notification);
         }
-    }
-
-    @Override
-    @Transactional
-    public void storeNotifiction(Notification notification) {
-        Objects.requireNonNull(notification);
-
-        logger.info("Storing notification: {}", notification);
-
-        notificationRepository.save(notification);
     }
 }

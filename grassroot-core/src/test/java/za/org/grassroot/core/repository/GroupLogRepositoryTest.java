@@ -57,7 +57,7 @@ public class GroupLogRepositoryTest {
         groupLogRepository.save(groupLog);
 
         assertThat(groupLogRepository.count(), is(1l));
-        GroupLog groupLogFromDb = groupLogRepository.findByGroupId(groupToCreate.getId()).iterator().next();
+        GroupLog groupLogFromDb = groupLogRepository.findByGroup(groupToCreate).iterator().next();
         assertNotNull(groupLogFromDb.getId());
         assertNotNull(groupLogFromDb.getCreatedDateTime());
         assertThat(groupLogFromDb.getGroup(), is(groupToCreate.getId()));
@@ -83,7 +83,7 @@ public class GroupLogRepositoryTest {
         groupLogRepository.save(groupLog2);
 
         assertThat(groupLogRepository.count(), is(2l));
-        GroupLog groupLogFromDb = groupLogRepository.findFirstByGroupIdOrderByCreatedDateTimeDesc(groupToCreate.getId());
+        GroupLog groupLogFromDb = groupLogRepository.findFirstByGroupOrderByCreatedDateTimeDesc(groupToCreate);
         assertNotNull(groupLogFromDb.getId());
         assertNotNull(groupLogFromDb.getCreatedDateTime());
         assertThat(groupLogFromDb.getGroup(), is(groupToCreate.getId()));

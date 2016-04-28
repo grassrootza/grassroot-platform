@@ -141,7 +141,6 @@ public class ScheduledTasks {
                 logger.error("Error while sending reminder for logger book " + logBook + ": " + th.getMessage(), th);
             }
         }
-        logger.info("sendLogBookReminders..." + logBooks.size() + "...queued to logbook-reminders");
     }
 
 

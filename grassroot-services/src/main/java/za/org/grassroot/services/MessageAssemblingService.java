@@ -12,13 +12,23 @@ import java.util.Locale;
  */
 public interface MessageAssemblingService {
 
-    String createLogBookReminderMessage(User user, Group group, LogBook logBook);
+    String createEventInfoMessage(User user, Event event);
 
-    String createNewLogBookNotificationMessage(User user, Group group, LogBook logBook, boolean assigned);
+    String createEventChangedMessage(User user, Event event);
+
+    String createEventCancelledMessage(User user, Event event);
+
+    String createLogBookReminderMessage(User user, LogBook logBook);
+
+    String createLogBookInfoNotificationMessage(User target, LogBook logBook);
 
     String createVoteResultsMessage(User user, Vote event, double yes, double no, double abstain, double noReply);
 
+    String createScheduledEventReminderMessage(User destination, Event event);
+
     String createMeetingRsvpTotalMessage(User user, Meeting meeting, ResponseTotalsDTO responses);
+
+    String createMeetingThankYourMessage(User target, Meeting meeting);
 
     String createWelcomeMessage(String messageId, UserDTO userDTO);
 

@@ -12,7 +12,6 @@ import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.EventCancelledNotification;
 import za.org.grassroot.core.enums.EventLogType;
-import za.org.grassroot.core.enums.NotificationType;
 
 import javax.transaction.Transactional;
 import java.time.Instant;
@@ -58,7 +57,7 @@ public class NotificationRepositoryTest {
         Event event = eventRepository.save(new Meeting("test meeting",Instant.now(),  user, group, "someLoc"));
         EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.EventCreated, "you are hereby invited to the test meeting"));
         GcmRegistration gcmRegistration = gcmRegistrationRepository.save(new GcmRegistration(user, "33433", Instant.now()));
-        notificationRepository.save(new EventCancelledNotification(user, eventLog));
+        notificationRepository.save(new EventCancelledNotification(user, "blah", eventLog));
         List<Notification> notifications = notificationRepository.findAll();
         assertEquals(1, notifications.size());
         assertEquals(notifications.get(0).getEventLog(), eventLog);
@@ -72,8 +71,8 @@ public class NotificationRepositoryTest {
         Event event = eventRepository.save(new Meeting("test meeting",Instant.now(),  user, group, "someLoc"));
         EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.EventCreated, "you are hereby invited to the test meeting"));
         GcmRegistration gcmRegistration = gcmRegistrationRepository.save(new GcmRegistration(user, "33433", Instant.now()));
-        notificationRepository.save(new EventCancelledNotification(user, eventLog));
-        List<Notification> notifications = notificationRepository.findByUser(user);
+        notificationRepository.save(new EventCancelledNotification(user, "blah", eventLog));
+        List<Notification> notifications = notificationRepository.findByTarget(user);
         Assert.assertThat(notifications.size(), is(1));
 
     }

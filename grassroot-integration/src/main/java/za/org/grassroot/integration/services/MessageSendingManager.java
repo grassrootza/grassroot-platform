@@ -45,14 +45,15 @@ public class MessageSendingManager implements MessageSendingService {
 
     @Override
     public void sendMessage(Notification notification) {
-        String route = notification.getTarget().getMessagingPreference().name();
-        requestChannel.send( createMessage(notification,route));
+        Message<Notification> message = createMessage(notification, null);
+        requestChannel.send(message);
 
     }
 
     @Override
     public void sendMessage(String destination, Notification notification) {
-       requestChannel.send(createMessage(notification,destination));
+        Message<Notification> message = createMessage(notification, destination);
+        requestChannel.send(message);
     }
 
     private Message<Notification> createMessage(Notification notification, String route) {

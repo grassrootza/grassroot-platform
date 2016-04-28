@@ -11,13 +11,14 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.LogBookInfoNotification;
 import za.org.grassroot.core.domain.notification.LogBookReminderNotification;
-import za.org.grassroot.core.repository.*;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.LogBookRepository;
 import za.org.grassroot.core.repository.UidIdentifiableRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.enums.LogBookStatus;
+import za.org.grassroot.services.util.LogsAndNotificationsBroker;
+import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -43,17 +44,13 @@ public class LogBookBrokerImpl implements LogBookBroker {
 	@Autowired
 	private LogBookRepository logBookRepository;
 	@Autowired
-	private LogBookLogRepository logBookLogRepository;
-	@Autowired
-	private NotificationRepository notificationRepository;
-	@Autowired
 	private MessageAssemblingService messageAssemblingService;
-
 	@Autowired
 	private AccountManagementService accountManagementService;
-
 	@Autowired
-	PermissionBroker permissionBroker;
+	private LogsAndNotificationsBroker logsAndNotificationsBroker;
+	@Autowired
+	private PermissionBroker permissionBroker;
 
 	@Override
 	public LogBook load(String logBookUid) {
@@ -138,18 +135,20 @@ public class LogBookBrokerImpl implements LogBookBroker {
 			//send messages to paid for groups using the same logic as the reminders - sendLogBookReminder method
 			//so if you make changes here also make the changes there
 
-			Set<User> members = logBook.isAllGroupMembersAssigned() ? group.getMembers() : logBook.getAssignedMembers();
-			boolean assigned = logBook.isAllGroupMembersAssigned() ? false : true;
+			LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
 			LogBookLog logBookLog = new LogBookLog(user, logBook, null);
-			logBookLogRepository.save(logBookLog);
+			bundle.addLog(logBookLog);
 
+			Set<User> members = logBook.isAllGroupMembersAssigned() ? group.getMembers() : logBook.getAssignedMembers();
 			for (User member : members) {
-				String notificationMessage = messageAssemblingService.createNewLogBookNotificationMessage(member, group, logBook, assigned);
+				String notificationMessage = messageAssemblingService.createLogBookInfoNotificationMessage(member, logBook);
 
 				Notification notification = new LogBookInfoNotification(member, notificationMessage, logBookLog);
-				notificationRepository.save(notification);
+				bundle.addNotification(notification);
 			}
+
+			logsAndNotificationsBroker.storeBundle(bundle);
 
 		} else {
 			logger.info("LogBook " + logBook + "...NOT a paid for group..." + group);
@@ -183,17 +182,22 @@ public class LogBookBrokerImpl implements LogBookBroker {
 	public void sendScheduledReminder(String logBookUid) {
 		Objects.requireNonNull(logBookUid);
 
-		LogBook logBook = logBookLogRepository.findOneByUid(logBookUid);
-		Group group = logBook.resolveGroup();
+		LogBook logBook = logBookRepository.findOneByUid(logBookUid);
+
+		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
 		LogBookLog logBookLog = new LogBookLog(null, logBook, null);
-		logBookLogRepository.save(logBookLog);
 
-		Set<User> members = logBook.isAllGroupMembersAssigned() ? group.getMembers() : logBook.getAssignedMembers();
+		Set<User> members = logBook.isAllGroupMembersAssigned() ? logBook.resolveGroup().getMembers() : logBook.getAssignedMembers();
 		for (User member : members) {
-			String message = messageAssemblingService.createLogBookReminderMessage(member, group, logBook);
-			Notification notification = new LogBookReminderNotification(member, null, logBookLog);
-			notificationRepository.save(notification);
+			String message = messageAssemblingService.createLogBookReminderMessage(member, logBook);
+			Notification notification = new LogBookReminderNotification(member, message, logBookLog);
+			bundle.addNotification(notification);
+		}
+
+		// we only want to include log if there are some notifications
+		if (!bundle.getNotifications().isEmpty()) {
+			bundle.addLog(logBookLog);
 		}
 
 		// reduce number of reminders to send and calculate new reminder minutes
@@ -203,6 +207,8 @@ public class LogBookBrokerImpl implements LogBookBroker {
 		} else {
 			logBook.setReminderMinutes(logBook.getReminderMinutes() + DateTimeUtil.numberOfMinutesForDays(7));
 		}
+
+		logsAndNotificationsBroker.storeBundle(bundle);
 	}
 
 	@Override

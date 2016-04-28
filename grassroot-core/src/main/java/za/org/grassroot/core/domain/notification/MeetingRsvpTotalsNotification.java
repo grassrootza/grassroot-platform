@@ -1,14 +1,10 @@
 package za.org.grassroot.core.domain.notification;
 
-import org.springframework.context.support.MessageSourceAccessor;
 import za.org.grassroot.core.domain.EventLog;
-import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.enums.NotificationType;
 
 import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
-import java.util.Objects;
 
 @Entity
 @DiscriminatorValue("MEETING_RSVP_TOTALS")
@@ -17,11 +13,7 @@ public class MeetingRsvpTotalsNotification extends EventNotification {
 		// for JPA
 	}
 
-	public MeetingRsvpTotalsNotification(User target, EventLog eventLog, String message) {
+	public MeetingRsvpTotalsNotification(User target, String message, EventLog eventLog) {
 		super(target, message, eventLog);
-	}
-
-	protected String constructMessageText(MessageSourceAccessor messageSourceAccessor) {
-		return message;
 	}
 }

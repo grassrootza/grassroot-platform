@@ -16,11 +16,7 @@ public class VoteResultsNotification extends EventNotification {
 		// for JPA
 	}
 
-	public VoteResultsNotification(User target, EventLog eventLog) {
-		super(target, null, eventLog);
-	}
-
-	protected String constructMessageText(MessageSourceAccessor messageSourceAccessor) {
-		return null;
+	public VoteResultsNotification(User target, String message, EventLog eventLog) {
+		super(target, message, eventLog);
 	}
 }

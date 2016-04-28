@@ -49,11 +49,11 @@ public interface EventBroker {
 
 	void sendManualReminder(String userUid, String eventUid, String message);
 
-	void sendMeetingRSVPsToDate(String uid);
+	void sendMeetingRSVPsToDate(String meetingUid);
 
-	void sendMeetingAcknowledgements(String uid);
+	void sendMeetingAcknowledgements(String meetingUid);
 
-	void sendVoteResults(String uid);
+	void sendVoteResults(String voteUid);
 
 	void assignMembers(String userUid, String eventUid, Set<String> assignMemberUids);
 

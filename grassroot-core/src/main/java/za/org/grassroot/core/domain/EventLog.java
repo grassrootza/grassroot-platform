@@ -109,11 +109,11 @@ public class EventLog implements ActionLog {
         return "EventLog{" +
                 "id=" + id +
                 ", uid=" + uid +
-                ", createdDateTime=" + createdDateTime +
+                ", rype=" + eventLogType +
                 ", user=" + user +
                 ", event=" + event +
-                ", eventLogType=" + eventLogType +
                 ", message='" + message + '\'' +
+                ", createdDateTime=" + createdDateTime +
                 '}';
     }
 

@@ -1,6 +1,5 @@
 package za.org.grassroot.core.domain.notification;
 
-import org.springframework.context.support.MessageSourceAccessor;
 import za.org.grassroot.core.domain.LogBookLog;
 import za.org.grassroot.core.domain.User;
 
@@ -16,9 +15,5 @@ public class LogBookReminderNotification extends LogBookNotification {
 
 	public LogBookReminderNotification(User target, String message, LogBookLog logBookLog) {
 		super(target, message, logBookLog);
-	}
-
-	protected String constructMessageText(MessageSourceAccessor messageSourceAccessor) {
-		return message;
 	}
 }

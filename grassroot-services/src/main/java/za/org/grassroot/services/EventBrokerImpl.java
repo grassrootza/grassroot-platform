@@ -14,12 +14,17 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.util.CacheUtilService;
+import za.org.grassroot.services.util.LogsAndNotificationsBroker;
+import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.*;
-import java.util.function.Function;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.domain.EventReminderType.CUSTOM;
 import static za.org.grassroot.core.domain.EventReminderType.DISABLED;
@@ -47,13 +52,10 @@ public class EventBrokerImpl implements EventBroker {
 	@Autowired
     private ApplicationEventPublisher applicationEventPublisher;
 
-
+	@Autowired
+	private LogsAndNotificationsBroker logsAndNotificationsBroker;
 	@Autowired
 	private CacheUtilService cacheUtilService;
-	@Autowired
-	private NotificationRepository notificationRepository;
-	@Autowired
-	private EventLogRepository eventLogRepository;
 	@Autowired
 	private MessageAssemblingService messageAssemblingService;
 
@@ -134,26 +136,32 @@ public class EventBrokerImpl implements EventBroker {
 
 		eventLogManagementService.rsvpForEvent(meeting, meeting.getCreatedByUser(), EventRSVPResponse.YES);
 
-		// create history log
-		EventLog eventLog = new EventLog(user, meeting, EventLogType.EventCreated, null);
-		eventLogRepository.save(eventLog);
+		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		// create notifications
-		registerNotificationsForEventMembers(meeting, destination -> {
-			cacheUtilService.clearRsvpCacheForUser(destination, meeting.getEventType());
-			return new EventInfoNotification(destination, eventLog);
-		});
+		EventLog eventLog = new EventLog(user, meeting, EventLogType.EventCreated, null);
+		bundle.addLog(eventLog);
+
+		Set<Notification> notifications = constructEventInfoNotifications(meeting, eventLog);
+		bundle.addNotifications(notifications);
+
+		logsAndNotificationsBroker.storeBundle(bundle);
 
 		return meeting;
 	}
 
-	private void registerNotificationsForEventMembers(Event event, Function<User, Notification> notificationConstructor) {
-		for (User destination : (Set<User>) event.getAllMembers()) {
-			Notification notification = notificationConstructor.apply(destination);
-			if (notification != null) {
-				notificationRepository.save(notification);
-			}
+	private Set<Notification> constructEventInfoNotifications(Event event, EventLog eventLog) {
+		Set<Notification> notifications = new HashSet<>();
+		for (User member : getAllEventMembers(event)) {
+			cacheUtilService.clearRsvpCacheForUser(member, event.getEventType());
+			String message = messageAssemblingService.createEventInfoMessage(member, event);
+			Notification notification = new EventInfoNotification(member, message, eventLog);
+			notifications.add(notification);
 		}
+		return notifications;
+	}
+
+	private Set<User> getAllEventMembers(Event event) {
+		return (Set<User>) event.getAllMembers();
 	}
 
 	@Override
@@ -183,11 +191,16 @@ public class EventBrokerImpl implements EventBroker {
         meeting.setName(name);
         meeting.setEventLocation(eventLocation);
 
-		EventLog eventLog = new EventLog(user, meeting, EventLogType.EventChange, null);
-		eventLogRepository.save(eventLog);
+		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		registerEventChangedNotifications(meeting, eventLog, startTimeChanged);
-    }
+		EventLog eventLog = new EventLog(user, meeting, EventLogType.EventChange, null);
+		bundle.addLog(eventLog);
+
+		Set<Notification> notifications = constructEventChangedNotifications(meeting, eventLog, startTimeChanged);
+		bundle.addNotifications(notifications);
+
+		logsAndNotificationsBroker.storeBundle(bundle);
+	}
 
 	@Override
 	@Transactional
@@ -223,20 +236,26 @@ public class EventBrokerImpl implements EventBroker {
 
 		meeting.updateScheduledReminderTime();
 
-		EventLog eventLog = new EventLog(user, meeting, EventLogType.EventChange, null);
-		eventLogRepository.save(eventLog);
+		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		registerEventChangedNotifications(meeting, eventLog, startTimeChanged);
+		EventLog eventLog = new EventLog(user, meeting, EventLogType.EventChange, null);
+		bundle.addLog(eventLog);
+
+		Set<Notification> notifications = constructEventChangedNotifications(meeting, eventLog, startTimeChanged);
+		bundle.addNotifications(notifications);
+
+		logsAndNotificationsBroker.storeBundle(bundle);
 	}
 
-	private void registerEventChangedNotifications(Event event, EventLog eventLog, boolean startTimeChanged) {
-		List<User> rsvpWithNoMembers = userRepository.findUsersThatRSVPNoForEvent(event);
-		registerNotificationsForEventMembers(event, destination -> {
-			if (startTimeChanged || !rsvpWithNoMembers.contains(destination)) {
-				return new EventChangedNotification(destination, eventLog);
-			}
-			return null;
-		});
+	private Set<Notification> constructEventChangedNotifications(Event event, EventLog eventLog, boolean startTimeChanged) {
+		Set<User> rsvpWithNoMembers = new HashSet<>(userRepository.findUsersThatRSVPNoForEvent(event));
+		return getAllEventMembers(event).stream()
+				.filter(member -> startTimeChanged || !rsvpWithNoMembers.contains(member))
+				.map(member -> {
+					String message = messageAssemblingService.createEventChangedMessage(member, event);
+					return new EventChangedNotification(member, message, eventLog);
+				})
+				.collect(Collectors.toSet());
 	}
 
 	@Override
@@ -260,15 +279,15 @@ public class EventBrokerImpl implements EventBroker {
 
 		voteRepository.save(vote);
 
-		// create history log
-		EventLog eventLog = new EventLog(user, vote, EventLogType.EventCreated, null);
-		eventLogRepository.save(eventLog);
+		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		// create notifications
-		registerNotificationsForEventMembers(vote, destination -> {
-			cacheUtilService.clearRsvpCacheForUser(destination, vote.getEventType());
-			return new EventInfoNotification(destination, eventLog);
-		});
+		EventLog eventLog = new EventLog(user, vote, EventLogType.EventCreated, null);
+		bundle.addLog(eventLog);
+
+		Set<Notification> notifications = constructEventInfoNotifications(vote, eventLog);
+		bundle.addNotifications(notifications);
+
+		logsAndNotificationsBroker.storeBundle(bundle);
 
 		return vote;
 	}
@@ -300,8 +319,12 @@ public class EventBrokerImpl implements EventBroker {
 
 		Vote savedVote = voteRepository.save(vote);
 
+		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
 		EventLog eventLog = new EventLog(user, vote, EventLogType.EventChange, null);
-		eventLogRepository.save(eventLog);
+		bundle.addLog(eventLog);
+
+		logsAndNotificationsBroker.storeBundle(bundle);
 
 		return savedVote;
 	}
@@ -352,16 +375,21 @@ public class EventBrokerImpl implements EventBroker {
 		event.setCanceled(true);
 		event.setScheduledReminderActive(false);
 
+		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
 		EventLog eventLog = new EventLog(user, event, EventLogType.EventCancelled, null);
-		eventLogRepository.save(eventLog);
+		bundle.addLog(eventLog);
 
 		List<User> rsvpWithNoMembers = userRepository.findUsersThatRSVPNoForEvent(event);
-		registerNotificationsForEventMembers(event, destination -> {
-			if (!rsvpWithNoMembers.contains(destination)) {
-				return new EventCancelledNotification(destination, eventLog);
+		for (User member : getAllEventMembers(event)) {
+			if (rsvpWithNoMembers.contains(member)) {
+				String message = messageAssemblingService.createEventCancelledMessage(member, event);
+				Notification notification = new EventCancelledNotification(member, message, eventLog);
+				bundle.addNotification(notification);
 			}
-			return null;
-		});
+		}
+
+		logsAndNotificationsBroker.storeBundle(bundle);
 	}
 
 	@Override
@@ -383,27 +411,38 @@ public class EventBrokerImpl implements EventBroker {
 
 		// todo: figure out how to get and handle errors from here (i.e., so don't set reminders false if an error)
 		// we set null here, because initiator is the app itself!
+
+		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
 		EventLog eventLog = new EventLog(null, event, EventLogType.EventReminder, null);
-		eventLogRepository.save(eventLog);
 
 		Set<User> excludedMembers = findEventReminderExcludedMembers(event);
 		List<User> eventReminderNotificationSentMembers = userRepository.findNotificationTargetsForEvent(
 				event, EventReminderNotification.class);
 		excludedMembers.addAll(eventReminderNotificationSentMembers);
 
-		registerNotificationsForEventMembers(event, destination -> {
-			if (!excludedMembers.contains(destination)) {
-				return new EventReminderNotification(destination, eventLog);
+		for (User member : getAllEventMembers(event)) {
+			if (!excludedMembers.contains(member)) {
+				String notificationMessage = messageAssemblingService.createScheduledEventReminderMessage(member, event);
+				Notification notification = new EventReminderNotification(member, notificationMessage, eventLog);
+				bundle.addNotification(notification);
 			}
-			return null;
-		});
+		}
+
+		// we only want to include event log if there are some notifications
+		if (!bundle.getNotifications().isEmpty()) {
+			bundle.addLog(eventLog);
+		}
 
 		// for meeting calls, send out RSVPs to date to meeting's creator
 		if (event.getEventType().equals(EventType.MEETING) && event.isRsvpRequired()) {
 			Meeting meeting = (Meeting) event;
 
-			registerMeetingResponsesLogAndNotification(meeting);
+			LogsAndNotificationsBundle meetingRsvpTotalsBundle = constructMeetingRsvpTotalsBundle(meeting);
+			bundle.addBundle(meetingRsvpTotalsBundle);
 		}
+
+		logsAndNotificationsBroker.storeBundle(bundle);
 	}
 
 	private Set<User> findEventReminderExcludedMembers(Event event) {
@@ -419,15 +458,20 @@ public class EventBrokerImpl implements EventBroker {
 		return excludedMembers;
 	}
 
-	private void registerMeetingResponsesLogAndNotification(Meeting meeting) {
+	private LogsAndNotificationsBundle constructMeetingRsvpTotalsBundle(Meeting meeting) {
+		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
 		EventLog eventLog = new EventLog(null, meeting, EventLogType.EventRsvpTotalMessage, null);
-		eventLogRepository.save(eventLog);
+		bundle.addLog(eventLog);
 
 		ResponseTotalsDTO responseTotalsDTO = eventLogManagementService.getResponseCountForEvent(meeting);
 
 		User destination = meeting.getCreatedByUser();
 		String message = messageAssemblingService.createMeetingRsvpTotalMessage(destination, meeting, responseTotalsDTO);
-		notificationRepository.save(new MeetingRsvpTotalsNotification(destination, eventLog, message));
+		Notification notification = new MeetingRsvpTotalsNotification(destination, message, eventLog);
+		bundle.addNotification(notification);
+
+		return bundle;
 	}
 
 	@Override
@@ -445,24 +489,28 @@ public class EventBrokerImpl implements EventBroker {
 		logger.info("Sending manual reminder for event {} with message {}", event, message);
 		event.setNoRemindersSent(event.getNoRemindersSent() + 1);
 
+		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
 		EventLog eventLog = new EventLog(user, event, EventLogType.EventManualReminder, message);
-		eventLogRepository.save(eventLog);
+		bundle.addLog(eventLog);
 
 		Set<User> excludedMembers = findEventReminderExcludedMembers(event);
-		registerNotificationsForEventMembers(event, destination -> {
-			if (!excludedMembers.contains(destination)) {
-				return new EventReminderNotification(destination, eventLog);
+		for (User member : getAllEventMembers(event)) {
+			if (!excludedMembers.contains(member)) {
+				Notification notification = new EventReminderNotification(member, message, eventLog);
+				bundle.addNotification(notification);
 			}
-			return null;
-		});
+		}
+
+		logsAndNotificationsBroker.storeBundle(bundle);
 	}
 
 	@Override
 	@Transactional
-	public void sendMeetingRSVPsToDate(String uid) {
-		Objects.requireNonNull(uid);
+	public void sendMeetingRSVPsToDate(String meetingUid) {
+		Objects.requireNonNull(meetingUid);
 
-		Meeting meeting = meetingRepository.findOneByUid(uid);
+		Meeting meeting = meetingRepository.findOneByUid(meetingUid);
 
 		if (meeting.isCanceled()) {
 			throw new IllegalStateException("Meeting is cancelled: " + meeting);
@@ -471,15 +519,16 @@ public class EventBrokerImpl implements EventBroker {
 			throw new IllegalStateException("Meeting does not require RSVPs" + meeting);
 		}
 
-		registerMeetingResponsesLogAndNotification(meeting);
+		LogsAndNotificationsBundle bundle = constructMeetingRsvpTotalsBundle(meeting);
+		logsAndNotificationsBroker.storeBundle(bundle);
 	}
 
 	@Override
 	@Transactional
-	public void sendMeetingAcknowledgements(String uid) {
-		Objects.requireNonNull(uid);
+	public void sendMeetingAcknowledgements(String meetingUid) {
+		Objects.requireNonNull(meetingUid);
 
-		Meeting meeting = meetingRepository.findOneByUid(uid);
+		Meeting meeting = meetingRepository.findOneByUid(meetingUid);
 
 		if (meeting.isCanceled()) {
 			throw new IllegalStateException("Meeting is cancelled: " + meeting);
@@ -488,48 +537,63 @@ public class EventBrokerImpl implements EventBroker {
 			throw new IllegalStateException("Meeting did not require RSVPs" + meeting);
 		}
 
+		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
 		EventLog eventLog = new EventLog(null, meeting, EventLogType.EventThankYouMessage, null);
-		eventLogRepository.save(eventLog);
 
 		Set<User> tankYouNotificationSentMembers = new HashSet<>(
 				userRepository.findNotificationTargetsForEvent(meeting, MeetingThankYouNotification.class));
 
 		List<User> rsvpWithYesMembers = userRepository.findUsersThatRSVPYesForEvent(meeting);
-		for (User destination : rsvpWithYesMembers) {
-			if (!tankYouNotificationSentMembers.contains(destination)) {
-				Notification notification = new MeetingThankYouNotification(destination, eventLog);
-				notificationRepository.save(notification);
+		for (User members : rsvpWithYesMembers) {
+			if (!tankYouNotificationSentMembers.contains(members)) {
+				String message = messageAssemblingService.createMeetingThankYourMessage(members, meeting);
+				Notification notification = new MeetingThankYouNotification(members, message, eventLog);
+				bundle.addNotification(notification);
 			}
 		}
+
+		// we only want to include log if there are some notifications
+		if (!bundle.getNotifications().isEmpty()) {
+			bundle.addLog(eventLog);
+		}
+
+		logsAndNotificationsBroker.storeBundle(bundle);
 	}
 
 	@Override
 	@Transactional
-	public void sendVoteResults(String uid) {
-		Objects.requireNonNull(uid);
-		Vote vote = voteRepository.findOneByUid(uid);
+	public void sendVoteResults(String voteUid) {
+		Objects.requireNonNull(voteUid);
+		Vote vote = voteRepository.findOneByUid(voteUid);
 
 		logger.info("Sending vote results for vote", vote);
 
-		ResponseTotalsDTO responseTotalsDTO = eventLogManagementService.getVoteResultsForEvent(vote);
-		EventLog eventLog = new EventLog(null, vote, EventLogType.EventResult, null);
-		eventLogRepository.save(eventLog);
+		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
+		EventLog eventLog = new EventLog(null, vote, EventLogType.EventResult, null);
+
+		ResponseTotalsDTO responseTotalsDTO = eventLogManagementService.getVoteResultsForEvent(vote);
 		Set<User> voteResultsNotificationSentMembers = new HashSet<>(userRepository.findNotificationTargetsForEvent(
 				vote, VoteResultsNotification.class));
-		registerNotificationsForEventMembers(vote, destination -> {
-			if (!voteResultsNotificationSentMembers.contains(destination)) {
-				String message = messageAssemblingService.createVoteResultsMessage(destination, vote,
+		for (User member : getAllEventMembers(vote)) {
+			if (!voteResultsNotificationSentMembers.contains(member)) {
+				String message = messageAssemblingService.createVoteResultsMessage(member, vote,
 						responseTotalsDTO.getYes(),
 						responseTotalsDTO.getNo(),
 						responseTotalsDTO.getMaybe(),
 						responseTotalsDTO.getNumberNoRSVP());
-
-				logger.info("sendVoteResultsToUser...send message..." + message + "...to..." + destination.getPhoneNumber());
-				return new VoteResultsNotification(destination, eventLog);
+				Notification notification = new VoteResultsNotification(member, message, eventLog);
+				bundle.addNotification(notification);
 			}
-			return null;
-		});
+		}
+
+		// we only want to include log if there are some notifications
+		if (!bundle.getNotifications().isEmpty()) {
+			bundle.addLog(eventLog);
+		}
+
+		logsAndNotificationsBroker.storeBundle(bundle);
 	}
 
 	@Override

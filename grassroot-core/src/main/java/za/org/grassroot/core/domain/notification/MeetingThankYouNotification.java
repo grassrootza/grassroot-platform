@@ -17,17 +17,7 @@ public class MeetingThankYouNotification extends EventNotification {
 		// for JPA
 	}
 
-	public MeetingThankYouNotification(User target, EventLog eventLog) {
-		super(target, null, eventLog);
-	}
-
-	protected String constructMessageText(MessageSourceAccessor messageSourceAccessor) {
-		Meeting meeting = (Meeting) getEventLog().getEvent();
-		// sms.meeting.thankyou = {0}: Thank you for attending the meeting about {1} on {2}. Dial *134*1994# to create and join groups or call meetings.
-		MeetingContainer parent = meeting.getParent();
-		String prefix = (parent.getJpaEntityType().equals(JpaEntityType.GROUP) &&
-				((Group) parent).hasName()) ? ((Group) parent).getGroupName() : "Grassroot";
-		String[] fields = new String[]{prefix, meeting.getName(), meeting.getEventDateTimeAtSAST().format(shortDateFormatter)};
-		return messageSourceAccessor.getMessage("sms.meeting.thankyou", fields, getUserLocale());
+	public MeetingThankYouNotification(User target, String message, EventLog eventLog) {
+		super(target, message, eventLog);
 	}
 }

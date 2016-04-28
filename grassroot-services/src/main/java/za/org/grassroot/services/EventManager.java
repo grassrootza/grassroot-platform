@@ -93,14 +93,14 @@ public class EventManager implements EventManagementService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Meeting> getUpcomingMeetings(Group group) {
-        return (List) group.getUpcomingEvents(event -> event.getEventType().equals(EventType.MEETING));
+    public Set<Meeting> getUpcomingMeetings(Group group) {
+        return (Set) group.getUpcomingEvents(event -> event.getEventType().equals(EventType.MEETING));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Vote> getUpcomingVotes(Group group) {
-        return (List) group.getUpcomingEvents(event -> event.getEventType().equals(EventType.VOTE));
+    public Set<Vote> getUpcomingVotes(Group group) {
+        return (Set) group.getUpcomingEvents(event -> event.getEventType().equals(EventType.VOTE));
     }
 
     @Override

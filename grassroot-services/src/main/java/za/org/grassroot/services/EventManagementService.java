@@ -9,6 +9,7 @@ import za.org.grassroot.core.enums.EventType;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Lesetse Kimwaga
@@ -20,9 +21,9 @@ public interface EventManagementService {
     Methods to find and load events, first by group
      */
 
-    List<Meeting> getUpcomingMeetings(Group group);
+    Set<Meeting> getUpcomingMeetings(Group group);
 
-    List<Vote> getUpcomingVotes(Group group);
+    Set<Vote> getUpcomingVotes(Group group);
 
     /*
     Methods to get upcoming or prior events which user can view or manage
