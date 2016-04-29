@@ -50,7 +50,7 @@ public class NotificationRestController {
         size = (size == null) ? pageLength : size;
 
         log.info("getNotifications ... trying to retrieve pageable");
-        Page<Notification> pageable = notificationService.getUserNotifications(user, page, size);
+        Page<Notification> pageable = notificationService.getNotificationsByTarget(user, page, size);
         log.info("getNotifications ... user has {} notifications in total", pageable.getTotalElements());
 
         ResponseWrapper responseWrapper;

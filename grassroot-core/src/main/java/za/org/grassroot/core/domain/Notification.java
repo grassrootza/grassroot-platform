@@ -166,11 +166,18 @@ public abstract class Notification implements Serializable {
 		final StringBuilder sb = new StringBuilder(getClass().getSimpleName());
 		sb.append("{id=").append(id);
 		sb.append(", uid='").append(uid).append('\'');
+		sb.append(", target=").append(target);
+		appendToString(sb);
 		sb.append(", read=").append(read);
 		sb.append(", delivered=").append(delivered);
-		sb.append(", target=").append(target);
 		sb.append(", createdDateTime=").append(createdDateTime);
 		sb.append('}');
 		return sb.toString();
 	}
+
+	/**
+	 * This is a way for subclass to add its own specific toString information
+	 * @param sb StringBuilder
+	 */
+	protected abstract void appendToString(StringBuilder sb);
 }

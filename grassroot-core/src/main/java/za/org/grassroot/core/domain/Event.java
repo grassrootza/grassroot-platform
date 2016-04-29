@@ -167,13 +167,14 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 
 	@Override
 	public String toString() {
-		final StringBuilder sb = new StringBuilder("Event{");
-		sb.append("id=").append(id);
+		final StringBuilder sb = new StringBuilder(getClass().getSimpleName());
+		sb.append("{id=").append(id);
 		sb.append(", uid='").append(uid).append('\'');
-		sb.append(", createdDateTime=").append(createdDateTime);
+		sb.append(", name='").append(name).append('\'');
+		sb.append(", eventStartDateTime='").append(eventStartDateTime).append('\'');
 		sb.append(", canceled=").append(canceled);
-		sb.append(", version=").append(version);
-		sb.append(", noRemindersSent=").append(noRemindersSent);
+		sb.append(", includeSubGroups=").append(includeSubGroups);
+		sb.append(", parent=").append(getParent());
 		sb.append('}');
 		return sb.toString();
 	}

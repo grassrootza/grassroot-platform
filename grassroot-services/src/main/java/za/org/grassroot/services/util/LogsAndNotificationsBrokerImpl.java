@@ -48,14 +48,18 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 		Objects.requireNonNull(bundle);
 
 		Set<ActionLog> logs = bundle.getLogs();
-		logger.info("Storing {} logs", logs.size());
+		if (!logs.isEmpty()) {
+			logger.info("Storing {} logs", logs.size());
+		}
 		for (ActionLog log : logs) {
 			logger.info("Saving log {}", log);
 			saveLog(log);
 		}
 
 		Set<Notification> notifications = bundle.getNotifications();
-		logger.info("Storing {} notifications", notifications.size());
+		if (!notifications.isEmpty()) {
+			logger.info("Storing {} notifications", notifications.size());
+		}
 		for (Notification notification : notifications) {
 			logger.info("Saving notification: {}", notification);
 			notificationRepository.save(notification);

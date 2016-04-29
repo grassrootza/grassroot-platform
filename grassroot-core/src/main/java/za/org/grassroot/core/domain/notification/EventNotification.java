@@ -23,6 +23,11 @@ public abstract class EventNotification extends Notification {
 		// for JPA
 	}
 
+	@Override
+	protected void appendToString(StringBuilder sb) {
+		sb.append(", event=").append(event);
+	}
+
 	protected EventNotification(User destination, String message, EventLog eventLog) {
 		this(destination, message, eventLog, eventLog.getEvent());
 	}

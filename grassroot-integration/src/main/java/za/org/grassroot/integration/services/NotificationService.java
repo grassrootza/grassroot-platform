@@ -14,7 +14,7 @@ public interface NotificationService {
 
 	Notification loadNotification(String uid);
 
-	Page<Notification> getUserNotifications(User user, int pageNumber, int pageSize);
+	Page<Notification> getNotificationsByTarget(User target, int pageNumber, int pageSize);
 
 	List<NotificationDTO> fetchNotificationDTOs(List<String> notificationUids);
 

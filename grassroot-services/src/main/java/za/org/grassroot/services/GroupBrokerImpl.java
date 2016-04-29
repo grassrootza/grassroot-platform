@@ -304,12 +304,11 @@ public class GroupBrokerImpl implements GroupBroker {
 
             // for each meeting that belongs to this group, or it belongs to one of parent groups and apply to subgroups,
             // we create event notification for new member, but in case when meeting belongs to parent group, then only if member
-            // is not already contained in it (otherwise, it already got the notification for such meetings)
+            // is not already contained in this ancestor group (otherwise, it already got the notification for such meetings)
             for (Meeting meeting : meetings) {
                 Group meetingGroup = meeting.resolveGroup();
-                // todo: fix this because we want to iterate from current group and stop on first parent
-                // following works just by coincidence
                 if (meetingGroup.equals(group) || !meetingGroup.hasMember(member)) {
+                    // meeting doesn't have to always apply to every member of its group ...
                     boolean appliesToMember = meeting.isAllGroupMembersAssigned() || meeting.getAssignedMembers().contains(member);
                     if (appliesToMember) {
                         String message = messageAssemblingService.createEventInfoMessage(member, meeting);
