@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.model.web;
 
+import za.org.grassroot.core.domain.EventReminderType;
 import za.org.grassroot.core.domain.JpaEntityType;
 
 import java.time.LocalDateTime;
@@ -19,6 +20,7 @@ public class LogBookWrapper {
 
     private LocalDateTime actionByDate;
 
+    private EventReminderType reminderType;
     private int reminderMinutes;
     private LocalDateTime scheduledReminderTime;
 
@@ -89,6 +91,10 @@ public class LogBookWrapper {
         this.actionByDate = actionByDate;
     }
 
+    public EventReminderType getReminderType() { return reminderType; }
+
+    public void setReminderType(EventReminderType reminderType) { this.reminderType = reminderType; }
+
     public int getReminderMinutes() {
         return reminderMinutes;
     }
@@ -134,5 +140,16 @@ public class LogBookWrapper {
 
     public void setMemberPicker(MemberPicker memberPicker) {
         this.memberPicker = memberPicker;
+    }
+
+    @Override
+    public String toString() {
+        return "LogBookWrapper{" +
+                "parentEntityType=" + parentEntityType +
+                ", parentName='" + parentName + '\'' +
+                ", message='" + message + '\'' +
+                ", reminderType=" + reminderType +
+                ", memberPickerUids=" + memberPicker.getSelectedUids() +
+                '}';
     }
 }

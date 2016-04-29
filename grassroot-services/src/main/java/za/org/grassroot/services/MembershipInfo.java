@@ -71,6 +71,8 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
 
     public String getPhoneNumberWithoutCCode() { return PhoneNumberUtil.invertPhoneNumber(phoneNumber); }
 
+    public String getNationalFormattedNumber() { return PhoneNumberUtil.formattedNumber(phoneNumber); }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {

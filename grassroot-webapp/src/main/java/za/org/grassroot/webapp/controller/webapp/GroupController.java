@@ -222,6 +222,8 @@ public class GroupController extends BaseController {
 
         model.addAttribute("canCallMeeting", userPermissions.contains(Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING));
         model.addAttribute("canCallVote", userPermissions.contains(Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE));
+        model.addAttribute("canRecordAction", userPermissions.contains(Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY));
+
         model.addAttribute("canCreateSubGroup", userPermissions.contains(Permission.GROUP_PERMISSION_CREATE_SUBGROUP));
 
         return "group/view";

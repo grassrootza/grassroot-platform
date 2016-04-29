@@ -1,6 +1,7 @@
 package za.org.grassroot.webapp.controller.rest;
 
 import org.apache.http.client.utils.URIBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -8,6 +9,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.client.RestTemplate;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
@@ -18,21 +21,26 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
  * Created by paballo on 2016/01/27.
+ * todo: make this only load in local pg, not staging/production
  */
 
 @Controller
 @RequestMapping("/emulator/")
 public class USSDEmulatorController extends BaseController {
 
+    @Autowired
+    private PermissionBroker permissionBroker;
+
     private static final String BASE = "https://localhost:8443/";
     private static final String phoneNumberParam = "msisdn";
     private static final String inputStringParam = "request";
     private static final String linkParam = "link";
- 
 
     @RequestMapping(value = "view", method = RequestMethod.GET)
     public String emulateUSSD(Model model, @RequestParam(value = linkParam, required = false) String link,
@@ -62,6 +70,15 @@ public class USSDEmulatorController extends BaseController {
         }
     }
 
+    @RequestMapping(value = "ajax/list", method = RequestMethod.GET)
+    public String ajaxListMembersView(Model model) {
+
+        model.addAttribute("groups", new ArrayList<>(permissionBroker.getActiveGroups(getUserProfile(), null)));
+        model.addAttribute("userUid", getUserProfile().getUid());
+
+        return "emulator/ajax_list";
+
+    }
 
     private Request getRequestObject(URI url) {
 
