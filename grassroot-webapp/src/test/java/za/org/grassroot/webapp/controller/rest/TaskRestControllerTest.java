@@ -4,11 +4,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.EventLog;
-import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.dto.TaskDTO;
-import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.services.enums.LogBookStatus;
 
 import java.util.ArrayList;
@@ -37,7 +33,7 @@ public class TaskRestControllerTest extends RestAbstractUnitTest {
         mockMvc = MockMvcBuilders.standaloneSetup(taskRestController).build();
         // eventLog = new EventLog(sessionTestUser, meetingEvent, EventLogType.EventRSVP, testEventDescription);
         taskList = new ArrayList<>();
-        taskList.add(new TaskDTO(testLogBook, sessionTestUser, sessionTestUser));
+        taskList.add(new TaskDTO(testLogBook, sessionTestUser));
     }
 
     @Test

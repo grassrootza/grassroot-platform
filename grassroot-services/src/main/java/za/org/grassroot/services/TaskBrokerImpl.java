@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.EventLogType;
+import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.enums.LogBookStatus;
 
@@ -39,6 +40,29 @@ public class TaskBrokerImpl implements TaskBroker {
 
     @Override
     @Transactional(readOnly = true)
+    public TaskDTO load(String userUid, String taskUid, TaskType type) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(taskUid);
+        Objects.requireNonNull(type);
+
+        User user = userRepository.findOneByUid(userUid);
+
+        switch (type) {
+            case MEETING:
+            case VOTE:
+                Event event = eventBroker.load(taskUid);
+                EventLog eventLog = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.EventRSVP);
+                return new TaskDTO(event, eventLog, user, eventLog != null);
+            case TODO:
+                LogBook logBook = logBookBroker.load(taskUid);
+                return new TaskDTO(logBook, user);
+        }
+
+        return null;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<TaskDTO> fetchGroupTasks(String userUid, String groupUid, boolean futureOnly, LogBookStatus logBookStatus) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
@@ -59,10 +83,10 @@ public class TaskBrokerImpl implements TaskBroker {
 
         for (LogBook logBook : logBookBroker.loadGroupLogBooks(group.getUid(), futureOnly, logBookStatus)) {
             if (logBook.getCreatedByUser().equals(user)) {
-                taskSet.add(new TaskDTO(logBook, user, user));
+                taskSet.add(new TaskDTO(logBook, user));
             } else {
                 User creatingUser = logBook.getCreatedByUser();
-                taskSet.add(new TaskDTO(logBook, user, creatingUser));
+                taskSet.add(new TaskDTO(logBook, user));
             }
         }
 
@@ -89,7 +113,7 @@ public class TaskBrokerImpl implements TaskBroker {
 
         List<LogBook> logBooks = logBookBroker.loadUserLogBooks(user.getUid(), false, futureOnly, LogBookStatus.BOTH);
         for (LogBook logBook : logBooks) {
-            upcomingTasks.add(new TaskDTO(logBook, user, logBook.getCreatedByUser()));
+            upcomingTasks.add(new TaskDTO(logBook, user));
         }
 
         List<TaskDTO> tasks = new ArrayList<>(upcomingTasks);

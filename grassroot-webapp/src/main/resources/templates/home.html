@@ -4,41 +4,14 @@
 <head>
     <title>Grassroot Platform</title>
 
-    <meta property="og:title" content="grassroot.org.za"/>
-    <meta property="og:image" content="/img/grass.png"/>
-    <meta property="og:description" content="The GrassRoot Platform."/>
+  <meta property="og:title" content="grassroot.org.za"/>
+  <meta property="og:image" content="/img/grass.png"/>
+  <meta property="og:description" content="The Grassroot Platform."/>
 
-  <style>
-    .just-padding {
-    padding: 15px;
-    }
+  <!-- need these for ajax, though there may be a more elegant way to do it (maybe just call the Thymeleaf in the CSRF -->
+  <meta name="_csrf" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
 
-    .list-group.list-group-root {
-    padding: 0;
-    overflow: hidden;
-    }
-
-    .list-group.list-group-root .list-group {
-    margin-bottom: 0;
-    }
-
-    .list-group.list-group-root .list-group-item {
-    border-radius: 0;
-    border-width: 1px 0 0 0;
-    }
-
-    .list-group.list-group-root > .list-group-item:first-child {
-    border-top-width: 0;
-    }
-
-    .list-group.list-group-root > .list-group > .list-group-item {
-    padding-left: 30px;
-    }
-
-    .list-group.list-group-root > .list-group > .list-group > .list-group-item {
-    padding-left: 45px;
-    }
-  </style>
 </head>
 
 <body>
@@ -118,14 +91,10 @@
           <h5><b>You have events and to-dos coming up:</b></h5>
           <li th:each="task : ${upcomingTasks}" class="list-group-item">
             <div class="row">
-              <!-- todo: use ajax to get the entity, instead of all these data attributes -->
-
               <!-- LHS: Description of task -->
               <div class="col-md-8">
                 <p class="list-group-item-text">
-                  <a href="#" data-toggle="modal" data-target="#taskModal" data:title="${task.title}" data:uid="${task.id}"
-                    data:description="${task.description}" data:type="${task.type}" data:deadline="${#temporals.format(task.getDeadlineDateTime(),'h:mm a, dd MMMM')}"
-                    data:parent="${task.parentName}" data:location="${task.location}" data:reply="${task.reply}">
+                  <a href="#" th:href="'javascript:fetchTaskDescription(\'' + ${task.id} + '\', \'' + ${task.type} + '\')'">
                     <strong th:text="${task.type}">Meeting</strong>: <span th:text="${task.title}">Title</span>
                   </a>
                   <br/>
@@ -161,17 +130,21 @@
                 <div th:if="${task.hasResponded}">
                   <div th:switch="${task.type}">
                       <div th:case="MEETING">
-                        <a href="#" data-toggle="modal" data-target="#taskModal" data:title="${task.title}" data:parent="${task.parentName}"
-                           data:type="${task.type}" data:description="${task.description}" data:deadline="${#temporals.format(task.getDeadlineDateTime(),'h:mm a, dd MMMM')}"
-                           data:uid="${task.id}" data:reply="${task.reply}" data:location="${task.location}">
+                        <a href="#" th:href="'javascript:fetchTaskDescription(\'' + ${task.id} + '\', \'' + ${task.type} + '\')'">
                           <span class="badge" th:if="${#strings.equalsIgnoreCase(task.reply, 'Yes')}">You're attending</span>
                           <span class="badge" th:if="${#strings.equalsIgnoreCase(task.reply, 'No')}">You're not attending</span>
                         </a>
                       </div>
                       <div th:case="VOTE">
-                        <span class="badge" th:text="#{web.home.vote.answer(${#strings.toLowerCase(task.reply)})}">ABC</span>
+                        <a href="#" th:href="'javascript:fetchTaskDescription(\'' + ${task.id} + '\', \'' + ${task.type} + '\')'">
+                          <span class="badge" th:text="#{web.home.vote.answer(${#strings.toLowerCase(task.reply)})}">ABC</span>
+                        </a>
                       </div>
-                    <!-- completed logbooks do not show up here, so only need above two cases -->
+                      <div th:case="TODO">
+                        <a href="#" th:href="'javascript:fetchTaskDescription(\'' + ${task.id} + '\', \'' + ${task.type} + '\')'">
+                          <span class="badge">Action complete</span>
+                        </a>
+                      </div>
                   </div>
                 </div>
 
@@ -233,6 +206,7 @@
     </div>
   </div>
 
+  <!-- Skeleton of modal for displaying upcoming task (content filled by ajax method below) -->
   <div th:if="${not #lists.isEmpty(upcomingTasks)}" class="modal fade" id="taskModal"
        tabindex="-1" role="dialog" aria-labelledby="taskModalTitle">
     <div class="modal-dialog" role="document">
@@ -243,19 +217,16 @@
         </div>
         <div class="modal-body">
           <p><strong>Summary: </strong><span id="taskModalInfo">Core info</span></p>
-          <p id="taskDescHolder"><strong>Notes:</strong>
-            <span id="taskModalDescription">Add some descriptions and stuff</span></p>
+          <p id="taskDescHolder"><strong>Additional notes:</strong>
+            <span id="taskModalDescription"></span></p>
         </div>
         <div class="modal-footer">
-          <form id="taskModalNotRespondedForm" action="" method="get"> <!-- todo:consider changing to "post", all round-->
-            <input type="hidden" name="eventUid" id="taskUid" /> <!-- should be logbookUid for those -->
-            <button type="close" class="btn btn-default btn-sm" data-dismiss="modal" >Close</button>
+          <form id="taskModalNotRespondedForm" action="" method="get"> <!--todo: switch to post -->
+            <input type="hidden" name="eventUid" id="taskUid" />
+            <button type="close" data-dismiss="modal" class="btn btn-default btn-sm">Close</button>
+            <a href="#" id="taskModalViewDetails" class="btn btn-default btn-sm">View details</a>
             <button id="taskModalNoButton" type="submit" class="btn btn-danger btn-sm" name="answer" value="no">No</button>
             <button id="taskModalYesButton" type="submit" class="btn btn-primary btn-sm" name="answer" value="yes">Yes</button>
-          </form>
-          <form id="taskModalRespondedForm">
-            <button type="close" data-dismiss="modal" class="btn btn-default btn-sm">Close</button>
-            <a href="#" id="taskModalViewDetails" class="btn btn-primary btn-sm">View details</a>
           </form>
         </div>
       </div>
@@ -266,81 +237,115 @@
 
 <div class="header-container" layout:fragment="script-container">
 
-  <script>
+  <script th:inline="javascript">
 
-    $('#taskModal').on('show.bs.modal', function(event) {
-      var link = $(event.relatedTarget);
+    /*<![CDATA[*/
 
-      var uid = link.data('uid');
-      var type = link.data('type');
-      var title = link.data('title') + " (" + '<em>' + type.toLowerCase() + '</em>' + ")";
-      var description = link.data('description');
-      var parent = link.data('parent');
-      var location = link.data('location');
-      var reply = link.data('reply');
+    function fetchTaskDescription(taskUid, taskType) {
 
-      var modal = $(this);
+      var token = $("meta[name='_csrf']").attr("content");
+      var header = $("meta[name='_csrf_header']").attr("content");
 
-      var info, noReplyText, repliedText, formAction, yesButton, noButton, viewLink;
+      var param = {};
+      param["taskUid"] = taskUid;
+      param["taskType"] = taskType;
+
+      $.ajax({
+        type : "GET",
+        url : "/ajax/tasks/fetch",
+        data :  param,
+        dataType : "json",
+        beforeSend : function(xhr) {
+          xhr.setRequestHeader(header, token);
+        },
+        success : function(response) {
+          populateAndDisplayTaskModal(response.data);
+        },
+        error : function(xhr, textStatus, errorThrown) {
+          console.log("Error! : " + errorThrown);
+          console.log("Status : " + xhr.status);
+        }
+      });
+
+    }
+
+    function populateAndDisplayTaskModal(task) {
+
+      var uid = task.id;
+      var type = task.type;
+      var deadline = formatDeadline(new Date(task.deadlineISO), task.type);
+      var replied = task.hasResponded;
+      var wholeGroup = task.wholeGroupAssigned;
+      var descriptionExists = task.description != undefined && task.description != "";
+
+      var modal = $('#taskModal');
+      var summary = modal.find("#taskModalInfo");
+      var replyForm = modal.find("#taskModalNotRespondedForm");
+      var detailsButton = modal.find("#taskModalViewDetails");
 
       if (type == 'MEETING') {
-        info = "Meeting of " + parent + ", taking place at " + location + " on " + link.data('deadline');
-        noReplyText = "Will you attend the meeting?";
-        repliedText = "You responded that you will " + (reply === 'No' ? "not" : "") + " attend the meeting.";
-        formAction = "meeting/rsvp";
-        yesButton = "I'll attend";
-        noButton = "I can't attend";
-        viewLink = "meeting/view?eventUid=" + uid;
+        var suffix = replied ?
+                "You responded that you will " + (task.reply === 'No' ? "not" : "") + " attend the meeting." :
+                "Will you attend the meeting?";
+        var invited = wholeGroup ? "the whole group is invited to the meeting" : task.memberCount + " members are invited";
+        summary.html("Meeting of " + task.parentName + ", taking place at " + task.location + ". Meeting will be held at "
+                + deadline + ", and " + invited + ". "  + suffix);
+        replyForm.attr("action", "meeting/rsvp");
+        replyForm.find("#taskModalYesButton").text("I'll attend").toggle(!replied);
+        replyForm.find("#taskModalNoButton").text("I can't attend").toggle(!replied);
+        detailsButton.attr('href', "meeting/view?eventUid=" + uid).toggle(replied);
+
       } else if (type == 'VOTE') {
-        info = "Vote of " + parent + ", closing at " + link.data('deadline');
-        noReplyText = "What's your vote?";
-        repliedText = "You voted " + ((typeof reply != 'undefined') ? reply.toLowerCase() : "");
-        formAction = "vote/answer";
-        yesButton = "Vote yes";
-        noButton = "Vote no";
-        viewLink = "vote/view?eventUid=" + uid;
+        var suffix = replied ? "You voted " + ((typeof task.reply != 'undefined') ? task.reply.toLowerCase() : "") : "What's your vote?";
+        summary.html("Vote of " + task.parentName + ", closing at " + deadline + ". " + suffix);
+        replyForm.attr("action", "vote/answer");
+        replyForm.find("#taskModalYesButton").text("Vote yes").toggle(!replied);
+        replyForm.find("#taskModalNoButton").text("Vote no").toggle(!replied);
+        detailsButton.attr('href', "vote/view?eventUid=" + uid).toggle(replied);
       } else if (type == 'TODO') {
-        // todo: generally fix this up
-        info = "To-do for " + parent + ", closing at " + link.data('deadline');
-        noReplyText = "Is this action complete yet?";
-        formAction = "log/complete";
-        yesButton = "Mark completed";
-        noButton = "Close";
-        viewLink = "log/details?logBookUid=" + uid;
+        var suffix = replied ? ", and has been completed." : ". Is the action complete yet?";
+        var assigned = wholeGroup ? "The action is assigned to the whole group" :
+          "The action is assigned to " + task.memberCount + " members";
+        summary.html("To-do for " + task.parentName + ", due by " + deadline + ". " + assigned + suffix);
+        replyForm.attr("action", "log/complete");
+        replyForm.find("#taskUid").attr("name", "logBookUid");
+        replyForm.find("#taskModalYesButton").text("Mark completed").toggle(!replied);
+        replyForm.find("#taskModalNoButton").hide();
+        detailsButton.attr("href", "log/details?logBookUid=" + uid).show();
       }
 
-      modal.find("#taskModalTitle").html(title);
+      modal.find("#taskModalTitle").html(type + ": " + task.title);
+      replyForm.find("#taskUid").val(uid);
+      modal.find("#taskDescHolder").toggle(descriptionExists);
+      if (descriptionExists) modal.find("#taskModalDescription").text(task.description);
 
-      if (description != "") {
-        modal.find("#taskDescHolder").show();
-        modal.find("#taskModalDescription").text(description);
-      } else {
-        modal.find("#taskDescHolder").hide();
+      modal.modal();
+    }
+
+    // required due to javascript's incredibly limited date functionality ... replace once/if using jquery UI or other library
+    function formatDeadline(date, type) {
+
+      var weekday = new Array(7), months = new Array(12);
+      weekday[0]="Sunday",weekday[1]="Monday",weekday[2]="Tuesday",weekday[3]="Wednesday",weekday[4]="Thursday",weekday[5]="Friday",weekday[6]="Saturday";
+      months[0]="January",months[1]="February",months[2]="March",months[3]="April",months[4]="May",months[5]="June",months[6]="July",
+              months[7]="August",months[8]="September",months[9]="October",months[10]="November",months[11]="December";
+
+      if (type == "MEETING") {
+        return pad(date.getHours()) + "h" + pad(date.getMinutes()) + " on " + weekday[date.getDay()] + ", " + pad(date.getDate()) + " "
+                + months[date.getMonth()];
+      } else if (type == "VOTE") {
+        return pad(date.getHours()) + "h" + pad(date.getMinutes()) + ", " + pad(date.getDate()) + "-" + pad(date.getMonth() + 1) + "-" + date.getFullYear();
+      } else if(type == "TODO") {
+        return weekday[date.getDay()] + ", " + pad(date.getDate()) + " " + months[date.getMonth()];
       }
+    }
 
-      console.log("reply = " + reply);
-      if (typeof reply === 'undefined' || reply === 'NO_RESPONSE') {
-        info += ". " + noReplyText;
-        var form = modal.find("#taskModalNotRespondedForm");
-        form.show();
-        form.attr('action', formAction);
-        form.find("#taskUid").val(uid);
-        form.find("#taskModalYesButton").text(yesButton);
-        form.find("#taskModalNoButton").text(noButton);
-        modal.find("#taskModalRespondedForm").hide();
-      } else {
-        info += ". " + repliedText;
-        modal.find("#taskModalRespondedForm").show();
-        modal.find("#taskModalViewDetails").attr('href', viewLink);
-        modal.find("#taskModalNotRespondedForm").hide();
-      }
+    // again, insane language that doesn't even have a string format method, so have to hand write this ...
+    function pad(str) { return ("00" + str).slice(-2); }
 
-      modal.find("#taskModalInfo").html(info);
-
-    });
 
     $('#joinReqDetailsModal').on('show.bs.modal', function (event) {
-      var button = $(event.relatedTarget); // Button that triggered the modal
+      var button = $(event.relatedTarget);
 
       var group = button.data('uid');
       var approveHref = "/group/join/approve?requestUid=" + group;
@@ -355,6 +360,8 @@
       modal.find('#approveLink').attr('href', approveHref);
       modal.find('#declineLink').attr('href', declineHref);
     });
+
+    /*]]>*/
 
 
   </script>

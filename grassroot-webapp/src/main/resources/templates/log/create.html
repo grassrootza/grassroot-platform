@@ -9,16 +9,8 @@
   <!-- need these for ajax, though there may be a more elegant way to do it (maybe just call the Thymeleaf in the CSRF -->
   <meta name="_csrf" th:content="${_csrf.token}"/>
   <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
-<script>
 
-
-
-</script>
 </head>
-
-<!-- TODO: Figure out if there is a way to do user assignment on this same page, using a dynamic option box
-      that fills in from the group selected above ... For now, doing that on confirm page -->
-
 <body>
 
 <div layout:fragment="header">
@@ -172,7 +164,7 @@
         $('#groupSelector').change(function() {
           $('#wholeGroup').prop("checked", true);
           $('#pickedMemberCount').hide();
-          ajaxGetList(true);
+          ajaxGetList(false);
         });
       }
 
@@ -197,7 +189,6 @@
       })
 
       $('#memberModal').on('hidden.bs.modal', function() {
-        // should do a count of how many members are selected, and display it
         var membersSelected = $('#memberModal').find('input[type="checkbox"]:checked').length;
         var countText = "You've assigned " + membersSelected + ((membersSelected == 1) ? " member" : " members") + " to this task";
         $('#pickedMemberCount').text(countText);
@@ -227,8 +218,6 @@
       data["selectedByDefault"] = selectedByDefault;
       data["parentUid"] = $("#groupSelector").val();
       data["userUid"] = $("#userUid").val();
-
-      console.log("Assembled data object = " + JSON.stringify(data));
 
       $.ajax({
         type : "POST",

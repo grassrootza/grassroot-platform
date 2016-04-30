@@ -141,9 +141,9 @@ public class LogBookController extends BaseController {
             assignedUids = Collections.emptySet();
         }
 
-        /*LogBook created = logBookBroker.create(getUserProfile().getUid(), logBookEntry.getParentEntityType(), logBookEntry.getParentUid(),
+        LogBook created = logBookBroker.create(getUserProfile().getUid(), logBookEntry.getParentEntityType(), logBookEntry.getParentUid(),
                                                logBookEntry.getMessage(), logBookEntry.getActionByDate(), logBookEntry.getReminderMinutes(),
-                                               logBookEntry.isReplicateToSubGroups(), assignedUids);*/
+                                               logBookEntry.isReplicateToSubGroups(), assignedUids);
 
         addMessage(redirectAttributes, MessageType.SUCCESS, "log.creation.success", request);
         // redirectAttributes.addAttribute("logBookUid", created.getUid());

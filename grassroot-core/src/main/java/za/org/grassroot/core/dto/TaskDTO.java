@@ -2,8 +2,6 @@ package za.org.grassroot.core.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ComparisonChain;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
@@ -24,24 +22,33 @@ public class TaskDTO implements Comparable<TaskDTO>{
     private String description;
     private String name;
     private String type;
+    private String parentName;
     private String deadline;
+    private String deadlineISO;
     private boolean hasResponded;
     private boolean canAction;
     private String reply;
+    private boolean wholeGroupAssigned;
+    private int memberCount;
     @JsonIgnore
     private Instant instant;
     @JsonIgnore
     private LocalDateTime deadlineDateTime;
     @JsonIgnore
-    private String parentName; // only use in Web at present, hence Json ignore, may change in future
-    @JsonIgnore
     private String location; // only use in Web at present, hence Json ignore, may change in future
 
     private TaskDTO(){}
 
+    // todo: try move more stuff into this constructor
+    private TaskDTO(AssignedMembersContainer entity) {
+        this.id = entity.getUid();
+        this.title = entity.getName();
+        this.wholeGroupAssigned = entity.isAllGroupMembersAssigned();
+        this.memberCount = entity.countAssignedMembers();
+    }
+
     public TaskDTO(Event event, EventLog eventLog, User user, boolean hasResponded) {
-        this.id = event.getUid();
-        this.title = event.getName();
+        this(event);
         this.description =event.getDescription();
         this.name = event.getCreatedByUser().getDisplayName();
         this.parentName = event.getParent().getName();
@@ -50,23 +57,24 @@ public class TaskDTO implements Comparable<TaskDTO>{
         this.instant = event.getEventStartDateTime();
         this.deadlineDateTime = event.getEventDateTimeAtSAST();
         this.deadline = formatAsLocalDateTime(instant);
+        this.deadlineISO = this.deadlineDateTime.format(DateTimeFormatter.ISO_DATE_TIME);
         this.reply= (eventLog !=null && !eventLog.getMessage().equals("Invalid RSVP")) ?
                 eventLog.getMessage() : String.valueOf(TodoStatus.NO_RESPONSE);
         this.canAction = canAction(event, user, hasResponded);
         this.location = (event.getEventType().equals(EventType.MEETING)) ? ((Meeting) event).getEventLocation() : "";
     }
 
-    public TaskDTO(LogBook logBook, User user, User creatingUser) {
-        this.id = logBook.getUid();
-        this.title = logBook.getMessage();
+    public TaskDTO(LogBook logBook, User user) {
+        this(logBook);
         this.parentName = logBook.getParent().getName();
-        this.name = creatingUser.getDisplayName();
+        this.name = logBook.getCreatedByUser().getDisplayName();
         this.hasResponded = (logBook.isCompleted())?true:false;
         this.reply = getTodoStatus(logBook);
         this.instant = logBook.getActionByDate();
         this.type = String.valueOf(TaskType.TODO);
         this.deadlineDateTime = logBook.getActionByDateAtSAST();
         this.deadline = formatAsLocalDateTime(instant);
+        this.deadlineISO = this.deadlineDateTime.format(DateTimeFormatter.ISO_DATE_TIME);
         this.canAction = canAction(logBook, user, true);
         this.location = "";
     }
@@ -94,6 +102,8 @@ public class TaskDTO implements Comparable<TaskDTO>{
 
     public LocalDateTime getDeadlineDateTime() { return deadlineDateTime; }
 
+    public String getDeadlineISO() { return deadlineISO; }
+
     public String getReply() {
         return reply;
     }
@@ -111,6 +121,10 @@ public class TaskDTO implements Comparable<TaskDTO>{
     }
 
     public String getLocation() { return location; }
+
+    public boolean isWholeGroupAssigned() { return wholeGroupAssigned; }
+
+    public int getMemberCount() { return memberCount; }
 
     private String getTodoStatus(LogBook logBook) {
 
