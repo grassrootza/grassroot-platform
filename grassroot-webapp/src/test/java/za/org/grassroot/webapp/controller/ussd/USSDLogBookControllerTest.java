@@ -139,8 +139,6 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         List<LogBook> testLogBooks = Arrays.asList(
                 new LogBook(testUser, testGroup, message, now),
                 new LogBook(testUser, testGroup, message, now),
-                new LogBook(testUser, testGroup, message, now),
-                new LogBook(testUser, testGroup, message, now),
                 new LogBook(testUser, testGroup, message, now));
 
         Page<LogBook> dummyPage = new PageImpl<>(testLogBooks);

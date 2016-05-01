@@ -92,4 +92,15 @@ public interface AssignedMembersContainer extends UidIdentifiable {
 
 		return removedMembers;
 	}
+
+	/**
+	 * Helpful auxiliary method to count members
+	 */
+	default int countAssignedMembers() {
+		if (getAssignedMembers().isEmpty()) {
+			return resolveGroup().getMemberships().size();
+		} else {
+			return getAssignedMembers().size();
+		}
+	}
 }

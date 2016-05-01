@@ -9,16 +9,8 @@
   <!-- need these for ajax, though there may be a more elegant way to do it (maybe just call the Thymeleaf in the CSRF -->
   <meta name="_csrf" th:content="${_csrf.token}"/>
   <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
-<script>
 
-
-
-</script>
 </head>
-
-<!-- TODO: Figure out if there is a way to do user assignment on this same page, using a dynamic option box
-      that fills in from the group selected above ... For now, doing that on confirm page -->
-
 <body>
 
 <div layout:fragment="header">
@@ -46,7 +38,8 @@
               <select th:unless="${groupSpecified}" th:field="*{parentUid}" id="groupSelector" class="form-control">
                 <option th:each="group: ${possibleGroups}"
                         th:value="${group.Uid}"
-                        th:text="${group.getName('')}">Groupname</option>
+                        th:text="${group.getName('')}"
+                        th:attr="data-mins=#{web.meeting.reminder.group.__${group.reminderMinutes}__}">Groupname</option>
               </select>
               <input type="hidden" th:value="${userUid}" id="userUid" />
             </div>
@@ -95,6 +88,9 @@
             <select th:field="*{reminderType}" class="form-control" id="reminderType">
               <option th:if="${groupSpecified}" value="GROUP_CONFIGURED" selected="true">
                 Group default (<span th:text="#{web.meeting.reminder.group.__${group.reminderMinutes}__}">X</span> ahead)
+              </option>
+              <option th:unless="${groupSpecified}" value="GROUP_CONFIGURED" id="groupOption">
+                Group default (<span id="groupReminderTime">X ahead</span>)
               </option>
               <option value="CUSTOM">Set custom</option>
             </select>
@@ -169,10 +165,13 @@
       if ($("#groupSelector").length > 0) {
 
         ajaxGetList(true);
+        $("#reminderType").changeGroupMinutes();
+
         $('#groupSelector').change(function() {
           $('#wholeGroup').prop("checked", true);
+          $("#reminderType").changeGroupMinutes();
           $('#pickedMemberCount').hide();
-          ajaxGetList(true);
+          ajaxGetList(false);
         });
       }
 
@@ -197,7 +196,6 @@
       })
 
       $('#memberModal').on('hidden.bs.modal', function() {
-        // should do a count of how many members are selected, and display it
         var membersSelected = $('#memberModal').find('input[type="checkbox"]:checked').length;
         var countText = "You've assigned " + membersSelected + ((membersSelected == 1) ? " member" : " members") + " to this task";
         $('#pickedMemberCount').text(countText);
@@ -217,6 +215,14 @@
 
     });
 
+    jQuery.fn.extend({
+      changeGroupMinutes: function() {
+        var groupSelected = $("#groupSelector option:selected").data("mins");
+        var text = "Group default (" + groupSelected + ")"; // todo: i18n at some point
+        $(this).find("#groupOption").text(text);
+      }
+    });
+
     function ajaxGetList(selectedByDefault) {
 
       var token = $("meta[name='_csrf']").attr("content");
@@ -227,8 +233,6 @@
       data["selectedByDefault"] = selectedByDefault;
       data["parentUid"] = $("#groupSelector").val();
       data["userUid"] = $("#userUid").val();
-
-      console.log("Assembled data object = " + JSON.stringify(data));
 
       $.ajax({
         type : "POST",

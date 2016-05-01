@@ -34,6 +34,15 @@ public interface LogBookBroker {
 
 	void sendScheduledReminder(String logBookUid);
 
+	/**
+	 * Return a page of logbooks, for a given group or for all groups that a user is part of
+	 * @param userUid The user initiating the query
+	 * @param groupUid The group whose logbooks to return. If null, returns across all user's groups.
+	 * @param entriesComplete Whether to return complete or incomplete entries
+	 * @param pageNumber The page number
+	 * @param pageSize The page size
+     * @return
+     */
 	Page<LogBook> retrieveGroupLogBooks(String userUid, String groupUid, boolean entriesComplete, int pageNumber, int pageSize);
 
 	List<Group> retrieveGroupsFromLogBooks(List<LogBook> logBooks);

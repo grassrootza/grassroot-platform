@@ -24,6 +24,7 @@ public interface LogBookRepository extends JpaRepository<LogBook, Long> {
      */
     List<LogBook> findByGroupMembershipsUserAndActionByDateGreaterThan(User user, Instant start);
     List<LogBook> findByGroupMembershipsUserAndActionByDateBetweenAndCompleted(User user, Instant start, Instant end, boolean completed, Sort sort);
+    Page<LogBook> findByGroupMembershipsUserAndCompletedOrderByActionByDateDesc(User user, boolean completed, Pageable pageable);
     int countByGroupMembershipsUserAndActionByDateBetweenAndCompleted(User user, Instant start, Instant end, boolean completed);
 
     /*
@@ -41,7 +42,7 @@ public interface LogBookRepository extends JpaRepository<LogBook, Long> {
 
     List<LogBook> findByGroupAndActionByDateGreaterThan(Group group, Instant dueDate);
     List<LogBook> findByGroupAndCompletedAndActionByDateGreaterThan(Group group, boolean completed, Instant dueDate);
-    Page<LogBook> findByGroupUidAndCompletedOrderByActionByDateDesc(String groupUid, boolean completed, Pageable pageable);
+    Page<LogBook> findByGroupAndCompletedOrderByActionByDateDesc(Group group, boolean completed, Pageable pageable);
 
     List<LogBook> findByReplicatedGroupAndMessageAndActionByDateOrderByGroupIdAsc(Group replicatedGroup, String message, Instant actionByDateTime);
 

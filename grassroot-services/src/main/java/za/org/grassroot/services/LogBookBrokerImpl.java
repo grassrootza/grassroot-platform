@@ -218,14 +218,20 @@ public class LogBookBrokerImpl implements LogBookBroker {
 	@Transactional(readOnly = true)
 	public Page<LogBook> retrieveGroupLogBooks(String userUid, String groupUid, boolean entriesComplete, int pageNumber, int pageSize) {
 		Objects.requireNonNull(userUid);
-		Objects.requireNonNull(groupUid);
 
+		Page<LogBook> page;
+		PageRequest pgr = new PageRequest(pageNumber, pageSize);
 		User user = userRepository.findOneByUid(userUid);
-		Group group = groupRepository.findOneByUid(groupUid);
 
-		permissionBroker.validateGroupPermission(user, group, null); // make sure user is part of group
+		if (groupUid != null) {
+			Group group = groupRepository.findOneByUid(groupUid);
+			permissionBroker.validateGroupPermission(user, group, null); // make sure user is part of group
+			page = logBookRepository.findByGroupAndCompletedOrderByActionByDateDesc(group, entriesComplete, pgr);
+		} else {
+			page = logBookRepository.findByGroupMembershipsUserAndCompletedOrderByActionByDateDesc(user, entriesComplete, pgr);
+		}
 
-		return logBookRepository.findByGroupUidAndCompletedOrderByActionByDateDesc(groupUid, entriesComplete, new PageRequest(pageNumber, pageSize));
+		return page;
 	}
 
 	@Override

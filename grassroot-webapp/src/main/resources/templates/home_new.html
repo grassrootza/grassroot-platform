@@ -2,7 +2,7 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorator="layout">
 <head>
-    <title>GrassRoot Platform</title>
+    <title>Grassroot -- New user</title>
     <meta property="og:title" content="grassroot.org.za"/>
     <meta property="og:image" content="/img/grass.png"/>
     <meta property="og:description" content="The GrassRoot Platform."/>
@@ -10,39 +10,79 @@
 
 <body>
 
-<div layout:fragment="header">
-    <!--<h2 th:text="#{home.welcome.message}">welcome headline</h2>-->
-</div>
-<div layout:fragment="overview"></div>
+<!-- legacy issues mean deleting this leads to fragments on screen -->
+<div layout:fragment="header"></div>
 
 <div layout:fragment="content">
-    <!-- Central text header -->
-  <div class="well">
+
+  <!-- Weirdness in Thymeleaf/Bootstrap set up means proper style/class definitions are just overriden, hence bad-practice
+   but necessary style inlining-->
+  <div class="container-fluid jumbotron">
     <div class="row">
       <h1 th:text="#{web.home.banner}" class="text-center">Meet, vote, act</h1>
-      <!-- Insert user's name -->
-      <h3 th:text="#{web.home.welcome(${currentUser.displayName})}" class="text-center">Welcome to GrassRoot, Luke</h3>
+      <p th:text="#{web.home.welcome.new(${currentUser.displayName})}" class="lead text-center">
+        Welcome to Grassroot, Luke
+      </p>
+    </div>
+    <div class="row row-padding">
+      <div class="col-md-4 col-md-offset-4">
+        <a th:href="@{/group/create}" class="btn btn-primary btn-block" style="border-radius: 10px">
+          <span class="lead">Create a group</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top: 10px">
+      <div class="col-md-4 col-md-offset-4">
+      <div style="width: 100%; height: 12px; border-bottom: 1px solid black; text-align: center">
+        <span style="font-size: 15px; background-color: white; padding: 0 10px;">
+          or
+        </span>
+      </div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top: 20px">
+      <div class="col-md-4 col-md-offset-4">
+        <button id="#searchGroup" data-toggle="modal" data-target="#joiningModal" class="btn btn-primary btn-block" style="border-radius:10px">
+          <span class="lead">Join a group</span></button>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top: 20px">
+      <h5 class="text-center">Get started by creating or joining a group</h5>
+    </div>
+
+  </div>
+
+  <div class="well">
+    <div class="row row-centered">
+      <div class="col-md-6 col-md-offset-3 ">
+
+      </div>
     </div>
   </div>
 
-  <!-- This page only exists if the user has no groups, so just tell them how to create or join a group -->
-
-  <div class="well">
-    <div class="row row-centered">
-      <div class="col-md-8 col-md-offset-2">
-        <h4 class="text-center">Get started by creating or joining a group</h4>
-        <h4 class="text-center"><a th:href="@{/group/create}">Create a new group</a>, or search
-          for one by name (if it is public) or joining code:</h4>
-      </div>
-    </div>
-    <div class="row row-centered">
-      <div class="col-md-6 col-md-offset-3 ">
+  <div class="modal fade" id="joiningModal" tabindex="-1" role="dialog" aria-labelledby="groupJoinModal">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="joiningModalLabel">Search for a group</h4>
+        </div>
         <form th:action="@{/group/search}" method="get">
-          <div class="input-group">
-            <input type="text" name="term" class="form-control" id="searchTerm" placeholder="Enter join code or name to search" />
-            <span class="input-group-btn">
-              <button type="submit" class="btn btn-primary">Search for groups</button>
-            </span>
+          <div class="modal-body">
+            <div class="form-group">
+              Search for a group by entering a join code (if the group has given it to you), or searching public
+              groups by name.
+            </div>
+            <div class="form-group">
+              <input type="text" name="term" class="form-control" id="searchTerm" placeholder="Enter join code or name to search" />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Search</button>
           </div>
         </form>
       </div>
@@ -50,6 +90,12 @@
   </div>
 
 
+
+
 </div>
+
+
+
+
 </body>
 </html>

@@ -118,7 +118,7 @@ public class MeetingController extends BaseController {
         User user = getUserProfile();
 
         ResponseTotalsDTO meetingResponses = eventLogManagementService.getResponseCountForEvent(meeting);
-        boolean canViewRsvps = permissionBroker.isGroupPermissionAvailable(
+        boolean canViewRsvps = meeting.getCreatedByUser().equals(user) || permissionBroker.isGroupPermissionAvailable(
                 user, meeting.resolveGroup(), Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS);
         boolean canAlterDetails = meeting.getCreatedByUser().equals(user);
 

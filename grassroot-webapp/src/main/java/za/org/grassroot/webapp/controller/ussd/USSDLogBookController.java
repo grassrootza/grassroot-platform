@@ -7,14 +7,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.LogBook;
-import za.org.grassroot.core.domain.LogBookRequest;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.LogBookBroker;
 import za.org.grassroot.services.LogBookRequestBroker;
+import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -45,6 +44,9 @@ public class USSDLogBookController extends USSDController {
     private static final Logger log = LoggerFactory.getLogger(USSDLogBookController.class);
 
     @Autowired
+    private PermissionBroker permissionBroker;
+
+    @Autowired
     private LogBookBroker logBookBroker;
 
     @Autowired
@@ -62,8 +64,7 @@ public class USSDLogBookController extends USSDController {
             confirmMenu = "confirm",
             send = "send";
 
-    private static final String entryTypeMenu = "type",
-            listEntriesMenu = "list",
+    private static final String listEntriesMenu = "list",
             viewEntryMenu = "view",
             viewEntryDates = "view_dates",
             viewAssignment = "view_assigned",
@@ -102,21 +103,37 @@ public class USSDLogBookController extends USSDController {
     @ResponseBody
     public Request askNewOld(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
-        USSDMenu thisMenu = new USSDMenu(getMessage(thisSection, startMenu, promptKey, user));
-        thisMenu.addMenuOption(logMenus + groupMenu + "?new=1", getMessage(thisSection, startMenu, optionsKey + "new", user));
-        thisMenu.addMenuOption(logMenus + groupMenu + "?new=0", getMessage(thisSection, startMenu, optionsKey + "old", user));
+        USSDMenu thisMenu;
+        if (permissionBroker.getActiveGroups(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY).isEmpty()) {
+            thisMenu = new USSDMenu(getMessage(thisSection, startMenu, promptKey + ".nocreate", user));
+        } else {
+            thisMenu = new USSDMenu(getMessage(thisSection, startMenu, promptKey, user));
+            thisMenu.addMenuOption(logMenus + groupMenu + "?new=true", getMessage(thisSection, startMenu, optionsKey + "new", user));
+        }
+        thisMenu.addMenuOption(logMenus + listEntriesMenu + "?done=false", getMessage(thisSection, startMenu, optionsKey + "incomplete", user));
+        thisMenu.addMenuOption(logMenus + groupMenu + "?new=false&completed=true", getMessage(thisSection, startMenu, optionsKey + "old", user));
         return menuBuilder(thisMenu);
     }
 
     @RequestMapping(path + groupMenu)
     @ResponseBody
     public Request groupList(@RequestParam(value = phoneNumber) String inputNumber,
-                             @RequestParam(value = "new") boolean newEntry) throws URISyntaxException {
+                             @RequestParam(value = "new") boolean newEntry,
+                             @RequestParam(value = "completed", required=false) boolean completed) throws URISyntaxException {
+
         User user = userManager.findByInputNumber(inputNumber);
-        USSDMenu thisMenu = newEntry ? ussdGroupUtil.askForGroupNoInlineNew(user, thisSection, subjectMenu) :
-                ussdGroupUtil.askForGroupNoInlineNew(user, thisSection, entryTypeMenu,
-                        getMessage(thisSection, groupMenu, promptKey + ".existing", user));
-        return menuBuilder(thisMenu);
+
+        if (newEntry) {
+            return menuBuilder(ussdGroupUtil.askForGroupNoInlineNew(user, thisSection, subjectMenu));
+        } else {
+            List<GroupDTO> groups = permissionBroker.getActiveGroupDTOs(user, null);
+            if (groups.size() == 1) {
+                return listEntriesMenu(user.getPhoneNumber(), groups.get(0).getUid(), completed, 0);
+            } else {
+                return menuBuilder(ussdGroupUtil.askForGroupNoInlineNew(user, thisSection, listEntriesMenu + "?done=" + completed,
+                                                                getMessage(thisSection, groupMenu, promptKey + ".existing", user)));
+            }
+        }
     }
 
     @RequestMapping(path + subjectMenu)
@@ -182,7 +199,7 @@ public class USSDLogBookController extends USSDController {
         menu.addMenuOption(returnUrl(send, logBookUid), getMessage(thisSection, confirmMenu, optionsKey + "send", user));
         menu.addMenuOption(backUrl(subjectMenu, logBookUid), getMessage(thisSection, confirmMenu, optionsKey + "subject", user));
         menu.addMenuOption(backUrl(dueDateMenu, logBookUid), getMessage(thisSection, confirmMenu, optionsKey + "duedate", user));
-        menu.addMenuOption(backUrl(assignMenu, logBookUid), getMessage(thisSection, confirmMenu, optionsKey + "assign", user));
+        // menu.addMenuOption(backUrl(assignMenu, logBookUid), getMessage(thisSection, confirmMenu, optionsKey + "assign", user));
 
         return menuBuilder(menu);
     }
@@ -200,46 +217,35 @@ public class USSDLogBookController extends USSDController {
     /**
      * SECTION: Select and view prior logbook entries
      */
-    @RequestMapping(path + entryTypeMenu)
-    @ResponseBody
-    public Request pickLogBookEntryType(@RequestParam(value = phoneNumber) String inputNumber,
-                                        @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
-
-        // todo: if either complete or incomplete is empty, skip this menu
-        // todo: consider intermediate option of past due date but not yet done
-        User user = userManager.findByInputNumber(inputNumber);
-        USSDMenu menu = new USSDMenu(getMessage(thisSection, entryTypeMenu, promptKey, user));
-        String urlBase = logMenus + listEntriesMenu + groupUidUrlSuffix + groupUid + "&done=";
-        menu.addMenuOption(urlBase + "0", getMessage(thisSection, entryTypeMenu, optionsKey + "notdone", user));
-        menu.addMenuOption(urlBase + "1", getMessage(thisSection, entryTypeMenu, optionsKey + "done", user));
-        return menuBuilder(menu);
-    }
 
     @RequestMapping(path + listEntriesMenu)
     @ResponseBody
     public Request listEntriesMenu(@RequestParam(value = phoneNumber) String inputNumber,
-                                   @RequestParam(value = groupUidParam) String groupUid,
-                                   @RequestParam(value = "done") boolean doneEntries,
+                                   @RequestParam(value = groupUidParam, required= false) String groupUid,
+                                   @RequestParam(value = "done") boolean done,
                                    @RequestParam(value = "pageNumber", required = false) Integer pageNumber) throws URISyntaxException {
 
 
         pageNumber = (pageNumber == null) ? 0 : pageNumber;
         User user = userManager.findByInputNumber(inputNumber,
-                USSDUrlUtil.logViewExistingUrl(listEntriesMenu,groupUid,doneEntries,pageNumber));
-        String urlBase = logMenus + viewEntryMenu + logBookUrlSuffix;
-        Page<LogBook> entries = logBookBroker.retrieveGroupLogBooks(user.getUid(), groupUid, doneEntries, pageNumber, PAGE_LENGTH);
+                USSDUrlUtil.logViewExistingUrl(listEntriesMenu, groupUid, done, pageNumber));
 
-        //todo: check sorting on this
+        String urlBase = logMenus + viewEntryMenu + logBookUrlSuffix;
+        Page<LogBook> entries = logBookBroker.retrieveGroupLogBooks(user.getUid(), groupUid, done, pageNumber, PAGE_LENGTH);
+        boolean canCreateToDos = permissionBroker.getActiveGroupDTOs(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY).isEmpty();
+        boolean hasMultipleGroups = permissionBroker.getActiveGroupDTOs(user, null).size() > 1;
+
+        String backUrl = (groupUid == null) ? logMenus + startMenu :
+                (hasMultipleGroups ? logMenus + groupMenu + "?new=false&completed=" + done : logMenus + startMenu);
+
         USSDMenu menu;
         if (!entries.hasContent()) {
-            if (doneEntries) {
-                menu = new USSDMenu(getMessage(thisSection, listEntriesMenu, "complete.noentry", user));
-            } else {
-                menu = new USSDMenu(getMessage(thisSection, listEntriesMenu, "incomplete.noentry", user));
-            }
-            menu.addMenuOption(logMenus + entryTypeMenu + groupUidUrlSuffix + groupUid, getMessage("options.back", user));
+            menu = done ? new USSDMenu(getMessage(thisSection, listEntriesMenu, "complete.noentry", user)) :
+                    new USSDMenu(getMessage(thisSection, listEntriesMenu, "incomplete.noentry", user));
+            if (canCreateToDos)
+                menu.addMenuOption(logMenus + groupMenu + "?new=true", getMessage(thisSection, listEntriesMenu, optionsKey + "create", user));
+            menu.addMenuOption(backUrl, getMessage(thisSection, listEntriesMenu, optionsKey + "back", user));
             menu.addMenuOptions(optionsHomeExit(user));
-
         } else {
             menu = new USSDMenu(getMessage(thisSection, listEntriesMenu, promptKey, user));
             for (LogBook entry : entries) {
@@ -247,12 +253,16 @@ public class USSDLogBookController extends USSDController {
                 menu.addMenuOption(urlBase + entry.getUid(), description);
             }
             if (entries.hasNext()) {
-                String nextPageUri = logMenus + listEntriesMenu + groupUidUrlSuffix + groupUid + "&done=" + doneEntries + "&pageNumber=" + (pageNumber + 1);
+                String nextPageUri = logMenus + listEntriesMenu + groupUidUrlSuffix + groupUid + "&done=" + done + "&pageNumber=" + (pageNumber + 1);
                 menu.addMenuOption(nextPageUri, getMessage(thisSection, listEntriesMenu, "more", user));
             }
             if (entries.hasPrevious()) {
-                String previousPageUri = logMenus + listEntriesMenu + groupUidUrlSuffix + groupUid + "&done=" + doneEntries + "&pageNumber=" + (pageNumber - 1);
+                String previousPageUri = logMenus + listEntriesMenu + groupUidUrlSuffix + groupUid + "&done=" + done + "&pageNumber=" + (pageNumber - 1);
                 menu.addMenuOption(previousPageUri, getMessage(thisSection, listEntriesMenu, "previous", user));
+            } else {
+                if (canCreateToDos)
+                    menu.addMenuOption(logMenus + groupMenu + "?new=true", getMessage(thisSection, listEntriesMenu, optionsKey + "create", user));
+                menu.addMenuOption(backUrl, getMessage(thisSection, listEntriesMenu, optionsKey + "back", user));
             }
         }
         return menuBuilder(menu);
@@ -268,14 +278,15 @@ public class USSDLogBookController extends USSDController {
         USSDMenu menu = new USSDMenu(getMessage(thisSection, viewEntryMenu, promptKey, logBook.getMessage(), user));
 
         // todo: check permissions before deciding what options to display
-        menu.addMenuOption(returnUrl(viewEntryDates, logBookUid),
-                getMessage(thisSection, viewEntryMenu, optionsKey + "dates", user));
+        menu.addMenuOption(returnUrl(viewEntryDates, logBookUid), getMessage(thisSection, viewEntryMenu, optionsKey + "dates", user));
 
         if (logBook.isCompleted()) {
             menu.addMenuOption(returnUrl(viewAssignment, logBookUid),
                     getMessage(thisSection, viewEntryMenu, optionsKey + "viewcomplete", user));
         } else {
             if (logBook.isAllGroupMembersAssigned()) {
+                menu.addMenuOption(returnUrl(setCompleteMenu, logBookUid), getMessage(thisSection.toKey() + optionsKey + setCompleteMenu, user));
+            } else if (logBook.getAssignedMembers().contains(user)) {
                 menu.addMenuOption(returnUrl(setCompleteMenu, logBookUid), getMessage(thisSection.toKey() + optionsKey + setCompleteMenu, user));
             } else {
                 menu.addMenuOption(returnUrl(viewAssignment, logBookUid), getMessage(thisSection, viewEntryMenu, optionsKey + "assigned", user));

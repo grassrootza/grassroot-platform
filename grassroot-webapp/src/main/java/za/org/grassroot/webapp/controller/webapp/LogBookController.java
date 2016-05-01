@@ -75,10 +75,12 @@ public class LogBookController extends BaseController {
 
             if (parentUid == null || parentUid.trim().equals("")) {
 
+                // reload user entity in case things have changed during session (else bug w/ list of possible groups)
+                User userFromDb = userManagementService.load(getUserProfile().getUid());
                 model.addAttribute("groupSpecified", false);
-                model.addAttribute("userUid", getUserProfile().getUid());
+                model.addAttribute("userUid", userFromDb.getUid());
                 model.addAttribute("possibleGroups", permissionBroker.
-                        getActiveGroups(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY));
+                        getActiveGroups(userFromDb, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY));
                 entryWrapper = new LogBookWrapper(JpaEntityType.GROUP);
 
             } else {
@@ -141,9 +143,9 @@ public class LogBookController extends BaseController {
             assignedUids = Collections.emptySet();
         }
 
-        /*LogBook created = logBookBroker.create(getUserProfile().getUid(), logBookEntry.getParentEntityType(), logBookEntry.getParentUid(),
+        LogBook created = logBookBroker.create(getUserProfile().getUid(), logBookEntry.getParentEntityType(), logBookEntry.getParentUid(),
                                                logBookEntry.getMessage(), logBookEntry.getActionByDate(), logBookEntry.getReminderMinutes(),
-                                               logBookEntry.isReplicateToSubGroups(), assignedUids);*/
+                                               logBookEntry.isReplicateToSubGroups(), assignedUids);
 
         addMessage(redirectAttributes, MessageType.SUCCESS, "log.creation.success", request);
         // redirectAttributes.addAttribute("logBookUid", created.getUid());

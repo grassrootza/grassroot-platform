@@ -65,7 +65,8 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(model().attribute("responseTotals", hasProperty("yes", is(1))))
                 .andExpect(model().attribute("rsvpResponses", hasItems(dummyResponsesMap.entrySet().toArray())));
 
-        verify(permissionBrokerMock, times(1)).isGroupPermissionAvailable(sessionTestUser, dummyGroup, Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS);
+        // don't need first one anymore as checks for meeting creator
+        //verify(permissionBrokerMock, times(1)).isGroupPermissionAvailable(sessionTestUser, dummyGroup, Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS);
         verify(eventBrokerMock, times(1)).loadMeeting(dummyMeeting.getUid());
         verify(eventLogManagementServiceMock, times(1)).getResponseCountForEvent(dummyMeeting);
         verify(eventManagementServiceMock, times(1)).getRSVPResponses(dummyMeeting);
