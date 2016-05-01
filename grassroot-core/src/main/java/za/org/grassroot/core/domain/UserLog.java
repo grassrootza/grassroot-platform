@@ -13,7 +13,7 @@ import java.time.Instant;
 @Entity
 @Table(name="user_log",
         uniqueConstraints = {@UniqueConstraint(name = "uk_user_log_request_uid", columnNames = "uid")})
-public class UserLog {
+public class UserLog implements ActionLog {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -100,17 +100,6 @@ public class UserLog {
     public UserInterfaceType getUserInterface() { return userInterface; }
 
     @Override
-    public String toString() {
-        return "UserLog{" +
-                "id=" + id +
-                ", creationTime =" + creationTime +
-                ", userUid=" + userUid +
-                ", userLogType=" + userLogType +
-                ", description='" + description + '\'' +
-                '}';
-    }
-
-    @Override
     public int hashCode() {
         return (getUid() != null) ? getUid().hashCode() : 0;
     }
@@ -126,5 +115,16 @@ public class UserLog {
 
         return true;
 
+    }
+
+    @Override
+    public String toString() {
+        return "UserLog{" +
+                "id=" + id +
+                ", userLogType=" + userLogType +
+                ", userUid=" + userUid +
+                ", description='" + description + '\'' +
+                ", creationTime =" + creationTime +
+                '}';
     }
 }

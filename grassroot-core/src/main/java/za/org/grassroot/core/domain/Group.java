@@ -9,7 +9,9 @@ import java.io.Serializable;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Entity
 @Table(name = "group_profile") // quoting table name in case "group" is a reserved keyword
@@ -96,6 +98,16 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
 
     @OneToMany(mappedBy = "group")
     private Set<LogBook> logBooks = new HashSet<>();
+
+    @OneToMany(mappedBy = "appliesToGroup")
+    private Set<Event> events = new HashSet<>();
+
+	/**
+     * Children groups are not managed using this collections (use 'parent' field for that),
+     * just using it for reading
+     */
+    @OneToMany(mappedBy = "parent")
+    private Set<Group> children = new HashSet<>();
 
     private Group() {
         // for JPA
@@ -193,6 +205,24 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
                 .collect(Collectors.toSet());
     }
 
+    public Set<User> getMembersWithChildrenIncluded() {
+        Set<User> users = new HashSet<>();
+        collectGroupMembers(users, Group::isActive);
+        return users;
+    }
+
+	/**
+     * Adding group members to given set of users, and repeating it recursively for each child.
+     */
+    private void collectGroupMembers(Set<User> users, Predicate<Group> childFilter) {
+        users.addAll(getMembers());
+        for (Group child : children) {
+            if (childFilter.test(child)) {
+                child.collectGroupMembers(users, childFilter);
+            }
+        }
+    }
+
     public Set<Membership> addMembers(Collection<User> newMembers) {
         return addMembers(newMembers, BaseRoles.ROLE_ORDINARY_MEMBER);
     }
@@ -261,6 +291,15 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
         return removed;
     }
 
+    public void removeMemberships(Set<String> phoneNumbers) {
+        Objects.requireNonNull(phoneNumbers);
+        Set<Membership> memberships = this.memberships.stream()
+                .filter(membership -> phoneNumbers.contains(membership.getUser().getPhoneNumber()))
+                .collect(Collectors.toSet());
+
+        this.memberships.removeAll(memberships);
+    }
+
     public Membership getMembership(User user) {
         Objects.requireNonNull(user);
 
@@ -321,6 +360,42 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
     public boolean hasValidGroupTokenCode() {
         return (groupTokenCode != null && groupTokenCode.trim() != "") &&
                 (tokenExpiryDateTime != null && tokenExpiryDateTime.toInstant().isAfter(Instant.now()));
+    }
+
+    private Set<Event> getEvents() {
+        if (events == null) {
+            events = new HashSet<>();
+        }
+        return new HashSet<>(events);
+    }
+
+    public Set<Event> getUpcomingEventsIncludingParents(Predicate<Event> filter) {
+        Set<Event> events = new HashSet<>();
+
+        Instant time = Instant.now();
+        Group group = this;
+        do {
+            boolean parentGroup = !group.equals(this);
+            events.addAll(group.getUpcomingEventsInternal(filter, time, parentGroup));
+            group = group.getParent();
+        } while (group != null);
+
+        return events;
+    }
+
+    public Set<Event> getUpcomingEvents(Predicate<Event> filter) {
+        Instant time = Instant.now();
+        return getUpcomingEventsInternal(filter, time, false);
+    }
+
+    private Set<Event> getUpcomingEventsInternal(Predicate<Event> filter, Instant time, boolean onlyIncludingSubgroups) {
+        return getEvents().stream()
+                .filter(event ->
+                        filter.test(event) &&
+                        !event.isCanceled() &&
+                        event.getEventStartDateTime().isAfter(time) &&
+                        (!onlyIncludingSubgroups || event.isIncludeSubGroups()))
+                .collect(Collectors.toSet());
     }
 
     public Integer getVersion() {

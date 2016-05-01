@@ -21,8 +21,6 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
 	List<Event> findByAppliesToGroupAndEventStartDateTimeBetweenAndCanceledFalse(Group group, Instant start, Instant end, Sort sort);
 
-	List<Event> findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(Group group, Instant startTime, boolean cancelled);
-
     int countByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThan(User user, Instant instant);
 
     /*

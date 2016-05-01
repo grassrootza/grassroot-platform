@@ -9,6 +9,7 @@ import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.notification.EventCancelledNotification;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.NotificationType;
@@ -43,11 +44,11 @@ public class OutboundRouterTest {
     public void routingToSmsShouldWork() throws Exception{
       //  EventLog eventLog = new EventLog(new User(""), new Meeting("Dummy Meeting", Instant.now(), new User("433"), null, "johannesburg"), EventLogType.EventTest, "message", UserMessagingPreference.SMS);
 
-        EventLog eventLog = new EventLog(new User(""), Meeting.makeEmpty(new User("")), EventLogType.EventTest,"message" ,UserMessagingPreference.SMS);
+        EventLog eventLog = new EventLog(new User(""), Meeting.makeEmpty(new User("")), EventLogType.EventTest,"message");
 
-        Notification payload = new Notification(new User("42342342"), eventLog, true, true, NotificationType.GENERAL);
+        Notification payload = new EventCancelledNotification(new User("42342342"), "blah", eventLog);
         Message<Notification> message = MessageBuilder.withPayload(payload)
-                .setHeader("route",UserMessagingPreference.SMS.toString()).build();
+                .setHeader("route", UserMessagingPreference.SMS.toString()).build();
          assertEquals("smsOutboundChannel", outboundMessageRouter.route(message));
 
     }
@@ -55,13 +56,13 @@ public class OutboundRouterTest {
     @Test
     public void routingToGcmShouldWork() throws Exception{
 
-        EventLog eventLog = new EventLog(new User(""), Meeting.makeEmpty(new User("")), EventLogType.EventTest,"message" ,UserMessagingPreference.ANDROID_APP);
+        EventLog eventLog = new EventLog(new User(""), Meeting.makeEmpty(new User("")), EventLogType.EventTest,"message");
 
      //   EventLog eventLog = new EventLog(new User(""), new Meeting("Dummy Meeting", Instant.now(), new User("433"), null, "johannesburg"),
           //      EventLogType.EventTest, "message",
              //   UserMessagingPreference.ANDROID_APP);
 
-        Notification payload = new Notification(new User("42342342"), eventLog, true, true, NotificationType.GENERAL);
+        Notification payload = new EventCancelledNotification(new User("42342342"), "blah", eventLog);
         Message<Notification> message = MessageBuilder.withPayload(payload)
                 .setHeader("route",UserMessagingPreference.ANDROID_APP.toString()).build();
         assertEquals("gcmOutboundChannel", outboundMessageRouter.route(message));
@@ -70,9 +71,9 @@ public class OutboundRouterTest {
 
     @Test
     public void routingToSmsShouldWorkWhenRouteIsNull() throws Exception{
-        EventLog eventLog = new EventLog(new User(""), Meeting.makeEmpty(new User("")), EventLogType.EventTest,"message" ,null);
+        EventLog eventLog = new EventLog(new User(""), Meeting.makeEmpty(new User("")), EventLogType.EventTest,"message");
 
-        Notification payload = new Notification(new User("42342342"), eventLog, true, true, NotificationType.GENERAL);
+        Notification payload = new EventCancelledNotification(new User("42342342"), "blah", eventLog);
         Message<Notification> message = MessageBuilder.withPayload(payload).build();
         assertEquals("smsOutboundChannel",outboundMessageRouter.route(message));
 

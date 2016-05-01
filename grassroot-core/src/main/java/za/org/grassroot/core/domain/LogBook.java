@@ -127,7 +127,6 @@ public class LogBook extends AbstractLogBookEntity implements AssignedMembersCon
         return "LogBook{" +
                 "id=" + id +
                 ", uid=" + uid +
-                ", createdDateTime=" + createdDateTime +
                 ", completed=" + completed +
                 ", completedDate=" + completedDate +
                 ", message='" + message + '\'' +

@@ -11,6 +11,7 @@ import za.org.grassroot.services.exception.UserExistsException;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Lesetse Kimwaga
@@ -57,7 +58,7 @@ public interface UserManagementService {
     Methods to return lists of users
      */
 
-    List<User> fetchByGroup(String groupUid, boolean includeSubgroups);
+    Set<User> fetchByGroup(String groupUid, boolean includeSubgroups);
 
     List<User> searchByGroupAndNameNumber(String groupUid, String nameOrNumber);
 

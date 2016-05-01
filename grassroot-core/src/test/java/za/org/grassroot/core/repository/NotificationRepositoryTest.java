@@ -10,8 +10,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.notification.EventCancelledNotification;
 import za.org.grassroot.core.enums.EventLogType;
-import za.org.grassroot.core.enums.NotificationType;
 
 import javax.transaction.Transactional;
 import java.time.Instant;
@@ -55,9 +55,9 @@ public class NotificationRepositoryTest {
         User user = userRepository.save(new User("08488754097"));
         Group group = groupRepository.save(new Group("test eventlog", user));
         Event event = eventRepository.save(new Meeting("test meeting",Instant.now(),  user, group, "someLoc"));
-        EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.EventNotification, "you are hereby invited to the test meeting", null));
+        EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.EventCreated, "you are hereby invited to the test meeting"));
         GcmRegistration gcmRegistration = gcmRegistrationRepository.save(new GcmRegistration(user, "33433", Instant.now()));
-        notificationRepository.save(new Notification(user,eventLog, false,false,NotificationType.EVENT));
+        notificationRepository.save(new EventCancelledNotification(user, "blah", eventLog));
         List<Notification> notifications = notificationRepository.findAll();
         assertEquals(1, notifications.size());
         assertEquals(notifications.get(0).getEventLog(), eventLog);
@@ -69,10 +69,10 @@ public class NotificationRepositoryTest {
         User user = userRepository.save(new User("0848835097"));
         Group group = groupRepository.save(new Group("test eventlog", user));
         Event event = eventRepository.save(new Meeting("test meeting",Instant.now(),  user, group, "someLoc"));
-        EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.EventNotification, "you are hereby invited to the test meeting", null));
+        EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.EventCreated, "you are hereby invited to the test meeting"));
         GcmRegistration gcmRegistration = gcmRegistrationRepository.save(new GcmRegistration(user, "33433", Instant.now()));
-        notificationRepository.save(new Notification(user,eventLog, false,false, NotificationType.EVENT));
-        List<Notification> notifications = notificationRepository.findByUser(user);
+        notificationRepository.save(new EventCancelledNotification(user, "blah", eventLog));
+        List<Notification> notifications = notificationRepository.findByTarget(user);
         Assert.assertThat(notifications.size(), is(1));
 
     }

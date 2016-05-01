@@ -50,7 +50,7 @@ public interface LogBookRepository extends JpaRepository<LogBook, Long> {
     Long countByCreatedDateTimeBetween(Instant start, Instant end);
 
     @Query(value = "select * from log_book l where l.action_by_date is not null and l.completed = false and l.number_of_reminders_left_to_send > 0 and (l.action_by_date + l.reminder_minutes * INTERVAL '1 minute') < current_timestamp", nativeQuery = true)
-    List<LogBook> findLogBookReminders();
+    List<LogBook> findAllLogBooksForReminding();
 
     @Query(value = "select count(l) from LogBook l where l.replicatedGroup=?1 and l.message=?2 and l.actionByDate=?3")
     int countReplicatedEntries(Group group, String message, Instant actionByDate);

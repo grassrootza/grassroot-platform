@@ -18,8 +18,8 @@ public interface NotificationRepository extends JpaRepository<Notification,Long>
 
     List<Notification> findByCreatedDateTimeLessThanAndDelivered(Instant instant, boolean delivered);
 
-    List<Notification> findByUser(User user);
+    List<Notification> findByTarget(User target);
 
-    Page<Notification> findByUser(User user, Pageable pageable);
+    Page<Notification> findByTarget(User target, Pageable pageable);
 
 }

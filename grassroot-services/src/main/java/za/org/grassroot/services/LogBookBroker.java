@@ -32,6 +32,8 @@ public interface LogBookBroker {
      */
 	boolean complete(String userUid, String logBookUid, LocalDateTime completionTime, String completedByUserUid);
 
+	void sendScheduledReminder(String logBookUid);
+
 	/**
 	 * Return a page of logbooks, for a given group or for all groups that a user is part of
 	 * @param userUid The user initiating the query

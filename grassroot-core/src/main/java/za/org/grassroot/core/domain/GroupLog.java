@@ -12,53 +12,47 @@ import java.util.Date;
 @Table(name = "group_log",
         indexes = {@Index(name = "idx_group_log_group_id",  columnList="group_id", unique = false),
         @Index(name = "idx_group_log_grouplogtype", columnList = "group_log_type", unique = false)})
-public class GroupLog implements Serializable {
+public class GroupLog implements Serializable, ActionLog {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="id", nullable = false)
     private Long id;
 
-    @Basic
     @Column(name="created_date_time", insertable = true, updatable = false)
     private Instant createdDateTime;
 
-    @Basic
-    @Column(name="group_id")
-    private Long groupId;
+    @ManyToOne
+    @JoinColumn(name="group_id", nullable = false)
+    private Group group;
 
-    @Basic
-    @Column(name="user_id")
-    private Long userId;
+    @ManyToOne
+    @JoinColumn(name="user_id")
+    private User user;
 
-    @Basic
-    @Column(name="group_log_type")
+    @Column(name="group_log_type", nullable = false)
     private GroupLogType groupLogType;
 
-    @Basic
     @Column
     private Long userOrSubGroupId;
 
-    @Basic
     @Column
     private String description;
 
-    public GroupLog() {
+    private GroupLog() {
+        // for JPA
     }
 
-    public GroupLog(Long groupId, Long userId, GroupLogType groupLogType, Long userOrSubGroupId) {
-        this.groupId = groupId;
-        this.userId = userId;
-        this.groupLogType = groupLogType;
-        this.userOrSubGroupId = userOrSubGroupId;
-    }
-
-    public GroupLog(Long groupId, Long userId, GroupLogType groupLogType, Long userOrSubGroupId, String description) {
-        this.groupId = groupId;
-        this.userId = userId;
+    public GroupLog(Group group, User user, GroupLogType groupLogType, Long userOrSubGroupId, String description) {
+        this.group = group;
+        this.user = user;
         this.groupLogType = groupLogType;
         this.userOrSubGroupId = userOrSubGroupId;
         this.description = description;
+    }
+
+    public GroupLog(Group group, User user, GroupLogType groupLogType, Long userOrSubGroupId) {
+        this(group, user, groupLogType, userOrSubGroupId, null);
     }
 
     @PreUpdate
@@ -73,10 +67,6 @@ public class GroupLog implements Serializable {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
     public Instant getCreatedDateTime() {
         return createdDateTime;
     }
@@ -85,20 +75,12 @@ public class GroupLog implements Serializable {
         this.createdDateTime = createdDateTime;
     }
 
-    public Long getGroupId() {
-        return groupId;
+    public Group getGroup() {
+        return group;
     }
 
-    public void setGroupId(Long groupId) {
-        this.groupId = groupId;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public User getUser() {
+        return user;
     }
 
     public GroupLogType getGroupLogType() {
@@ -125,16 +107,15 @@ public class GroupLog implements Serializable {
         this.description = description;
     }
 
+
     @Override
     public String toString() {
         return "GroupLog{" +
                 "id=" + id +
-                ", createdDateTime=" + createdDateTime +
-                ", groupId=" + groupId +
-                ", userId=" + userId +
                 ", groupLogType=" + groupLogType +
                 ", userOrSubGroupId=" + userOrSubGroupId +
                 ", description='" + description + '\'' +
+                ", createdDateTime=" + createdDateTime +
                 '}';
     }
 }

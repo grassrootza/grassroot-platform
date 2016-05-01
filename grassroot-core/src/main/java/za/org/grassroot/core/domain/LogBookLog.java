@@ -8,140 +8,82 @@ import java.util.Date;
  */
 @Entity
 @Table(name = "log_book_log",
-        indexes = {@Index(name = "idx_log_book_log_logbook_id",  columnList="logbook_id", unique = false)})
+		indexes = {@Index(name = "idx_log_book_log_logbook_id", columnList = "logbook_id", unique = false)})
 
-public class LogBookLog {
+public class LogBookLog implements ActionLog {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="id", nullable = false)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "id", nullable = false)
+	private Long id;
 
-    @Basic
-    @Column(name="created_date_time", insertable = true, updatable = false)
-    private Date createdDateTime;
+	@Basic
+	@Column(name = "created_date_time", insertable = true, updatable = false)
+	private Date createdDateTime;
 
-    @Basic
-    @Column(name="logbook_id")
-    private Long logBookId;
+	@ManyToOne
+	@JoinColumn(name = "logbook_id", nullable = false)
+	private LogBook logBook;
 
-    // @ManyToOne
-    // private LogBook logBook;
+	@Column(name = "message")
+	private String message;
 
-    @Basic
-    @Column
-    private String message;
-    @Basic
-    @Column(name="user_id")
-    private Long userId;
-    @Basic
-    @Column(name="group_id")
-    private Long groupId;
-    @Basic
-    /*
-    Phonenumber or email address, or any other future identifier
-     */
-    @Column(name="message_to")
-    private String messageTo;
+	@ManyToOne
+	@JoinColumn(name = "user_id")
+	private User user;
 
-    @PreUpdate
-    @PrePersist
-    public void updateTimeStamps() {
-        if (createdDateTime == null) {
-            createdDateTime = new Date();
-        }
-    }
+	@PreUpdate
+	@PrePersist
+	public void updateTimeStamps() {
+		if (createdDateTime == null) {
+			createdDateTime = new Date();
+		}
+	}
 
-    // Constructors
+	private LogBookLog() {
+		// for JPA only
+	}
 
+	public LogBookLog(User user, LogBook logBook, String message) {
+		this.logBook = logBook;
+		this.message = message;
+		this.user = user;
+	}
 
-    public LogBookLog() {
-    }
+	public Long getId() {
+		return id;
+	}
 
-    public LogBookLog(Long logBookId, String message, Long userId, Long groupId, String messageTo) {
-        this.logBookId = logBookId;
-        this.message = message;
-        this.userId = userId;
-        this.groupId = groupId;
-        this.messageTo = messageTo;
-    }
+	public void setId(Long id) {
+		this.id = id;
+	}
 
-    public Long getId() {
-        return id;
-    }
+	public Date getCreatedDateTime() {
+		return createdDateTime;
+	}
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+	public void setCreatedDateTime(Date createdDateTime) {
+		this.createdDateTime = createdDateTime;
+	}
 
-    public Date getCreatedDateTime() {
-        return createdDateTime;
-    }
+	public LogBook getLogBook() {
+		return logBook;
+	}
 
-    public void setCreatedDateTime(Date createdDateTime) {
-        this.createdDateTime = createdDateTime;
-    }
+	public User getUser() {
+		return user;
+	}
 
+	public String getMessage() {
+		return message;
+	}
 
-    public Long getGroupId() {
-        return groupId;
-    }
-
-    public void setGroupId(Long groupId) {
-        this.groupId = groupId;
-    }
-
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public Long getLogBookId() {
-        return logBookId;
-    }
-
-    public void setLogBookId(Long logBookId) {
-        this.logBookId = logBookId;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-    public String getMessageTo() {
-        return messageTo;
-    }
-
-    public void setMessageTo(String messageTo) {
-        this.messageTo = messageTo;
-    }
-
-    @Override
-    public String toString() {
-        return "LogBookLog{" +
-                "id=" + id +
-                ", createdDateTime=" + createdDateTime +
-                ", logBookId=" + logBookId +
-                ", message='" + message + '\'' +
-                ", userId=" + userId +
-                ", groupId=" + groupId +
-                ", messageTo='" + messageTo + '\'' +
-                '}';
-    }
-
-    /*public LogBook getLogBook() {
-        return logBook;
-    }
-
-    public void setLogBook(LogBook logBook) {
-        this.logBook = logBook;
-    }*/
+	@Override
+	public String toString() {
+		return "LogBookLog{" +
+				"id=" + id +
+				", createdDateTime=" + createdDateTime +
+				", message='" + message + '\'' +
+				'}';
+	}
 }

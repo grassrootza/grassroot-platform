@@ -48,19 +48,6 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
     @Async
     @Override
     @Transactional
-    public void logUserCreation(Set<String> userUids, String description) {
-        Objects.requireNonNull(userUids);
-        log.info("Saving this many user logs: {}", userUids.size());
-        Set<UserLog> logs = new HashSet<>();
-        for (String uid : userUids) {
-            logs.add(new UserLog(uid, UserLogType.CREATED_IN_DB, description, UNKNOWN));
-        }
-        userLogRepository.save(logs);
-    }
-
-    @Async
-    @Override
-    @Transactional
     public void recordUserSession(String userUid, UserInterfaceType interfaceType) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(interfaceType);

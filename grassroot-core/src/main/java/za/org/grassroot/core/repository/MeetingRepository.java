@@ -19,7 +19,6 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
     int countByCreatedDateTimeBetween(Instant start, Instant end);
 	List<Meeting> findByEventStartDateTimeBetweenAndCanceledFalseAndRsvpRequiredTrue(Instant startTimeAfter, Instant startTimeBefore);
 
-	List<Meeting> findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(Group group, Instant startTime, boolean cancelled);
 	List<Meeting> findByAppliesToGroupAndEventStartDateTimeBetweenAndCanceledFalse(Group group, Instant startDateTime, Instant endDateTime);
 
 	List<Event> findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(User user, Instant start);

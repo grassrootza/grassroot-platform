@@ -2,7 +2,6 @@ package za.org.grassroot.services.util;
 
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 
@@ -27,15 +26,7 @@ public interface CacheUtilService {
 
     String fetchUssdMenuForUser(String phoneNumber);
 
-    User fetchUser(String phoneNumber);
-
-    void cacheUser(User user);
-
     void putUserLanguage(String phoneNumber, String language);
-
-    String getUserLanguage(String phoneNumber);
-
-    void clearUserLanguage(String phoneNumber);
 
     /**
      * Returns whether an entry is stored in the cache indicating the user has accessed the given interface type in the last hour

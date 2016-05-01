@@ -2,186 +2,182 @@ package za.org.grassroot.core.domain;
 
 
 import za.org.grassroot.core.enums.NotificationType;
-import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.time.Instant;
+import java.util.Objects;
 
-/**
- * Created by paballo on 2016/04/06.
- */
 @Entity
-@Table(name ="notification")
-public class Notification {
+@Table(name = "notification")
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "type", discriminatorType = DiscriminatorType.STRING)
+public abstract class Notification implements Serializable {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="id", nullable = false)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "id", nullable = false)
+	private Long id;
 
-    @Column(name = "uid", nullable = false, unique = true)
-    private String uid;
+	@Column(name = "uid", nullable = false, unique = true)
+	private String uid;
 
-    @Basic
-    @Column(name="creation_time", insertable = true, updatable = false)
-    private Instant createdDateTime;
+	@Column(name = "creation_time", insertable = true, updatable = false)
+	private Instant createdDateTime;
 
-    @ManyToOne
-    private User user;
+	@ManyToOne
+	@JoinColumn(name = "target_id")
+	private User target;
 
-    @ManyToOne
-    private EventLog eventLog;
+	@ManyToOne
+	@JoinColumn(name = "event_log_id")
+	private EventLog eventLog;
 
-    @ManyToOne
-    private LogBookLog logBookLog;
+	@ManyToOne
+	@JoinColumn(name = "log_book_log_id")
+	private LogBookLog logBookLog;
 
-    @Basic
-    @Column(name ="read")
-    private boolean read =false;
+	@ManyToOne
+	@JoinColumn(name = "group_log_id", foreignKey = @ForeignKey(name = "fk_notification_group_log"))
+	private GroupLog groupLog;
 
-    @Basic
-    @Column(name ="delivered")
-    private boolean delivered =false;
+	@Column(name = "read")
+	private boolean read = false;
 
-    @Enumerated
-    private UserMessagingPreference userMessagingPreference;
+	@Column(name = "delivered")
+	private boolean delivered = false;
 
-    @Enumerated
-    private NotificationType notificationType;
+	@Column(name = "message")
+	protected String message;
 
-    @Column(name = "message")
-    private String message;
+	@PreUpdate
+	@PrePersist
+	public void updateTimeStamps() {
+		if (createdDateTime == null) {
+			createdDateTime = Instant.now();
+		}
+	}
 
-    @PreUpdate
-    @PrePersist
-    public void updateTimeStamps() {
-        if (createdDateTime == null) {
-            createdDateTime = Instant.now();
-        }
-    }
-
-    private Notification(){
-        // for JPA
-    }
-
-    private Notification(User user, Boolean read, Boolean delivered, NotificationType notificationType, LogBookLog logBookLog,
-                         EventLog eventLog, String message) {
-        this.uid = UIDGenerator.generateId();
-        this.user = user;
-        this.read = read;
-        this.delivered = delivered;
-        this.createdDateTime = Instant.now();
-        this.notificationType = notificationType;
-        this.userMessagingPreference = user.getMessagingPreference();
-        this.logBookLog = logBookLog;
-        this.eventLog = eventLog;
-        this.message = message;
-    }
-
-    public Notification(User user, EventLog eventLog, Boolean read, Boolean delivered, NotificationType notificationType){
-        this(user, read, delivered, notificationType, null, eventLog, eventLog.getMessage());
-    }
-
-    public Notification(User user, LogBookLog logBookLog, Boolean read, Boolean delivered, NotificationType notificationType, String message){
-        this(user, read, delivered, notificationType, logBookLog, null, message);
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getUid() {
-        return uid;
-    }
-
-    public void setUid(String uid) {
-        this.uid = uid;
-    }
-
-    public Instant getCreatedDateTime() {
-        return createdDateTime;
-    }
-
-    public void setCreatedDateTime(Instant createdDateTime) {
-        this.createdDateTime = createdDateTime;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
-
-    public boolean isRead() {
-        return read;
-    }
-
-    public void setRead(boolean read) {
-        this.read = read;
-    }
-
-    public boolean isDelivered() {
-        return delivered;
-    }
-
-    public void setDelivered(boolean delivered) {
-        this.delivered = delivered;
-    }
-
-    public EventLog getEventLog() {
-        return eventLog;
-    }
-
-    public void setEventLog(EventLog eventLog) {
-        this.eventLog = eventLog;
-    }
-
-    public LogBookLog getLogBookLog() {
-        return logBookLog;
-    }
+	public abstract NotificationType getNotificationType();
 
 
-    public void setLogBookLog(LogBookLog logBookLog) {
-        this.logBookLog = logBookLog;
-    }
+	protected Notification() {
+		// for JPA
+	}
 
-    public UserMessagingPreference getUserMessagingPreference() {
-        return userMessagingPreference;
-    }
+	protected Notification(User target, String message, ActionLog actionLog) {
+		this.uid = UIDGenerator.generateId();
+		this.read = false;
+		this.delivered = false;
 
-    public void setUserMessagingPreference(UserMessagingPreference userMessagingPreference) {
-        this.userMessagingPreference = userMessagingPreference;
-    }
+		this.target = Objects.requireNonNull(target); // at least for now, Notifications are always targeted to a user
+		this.createdDateTime = Instant.now();
+		this.message = Objects.requireNonNull(message);
 
-    public NotificationType getNotificationType() {
-        return notificationType;
-    }
+		if (actionLog instanceof EventLog) {
+			eventLog = (EventLog) actionLog;
+		} else if (actionLog instanceof GroupLog) {
+			groupLog = (GroupLog) actionLog;
+		} else if (actionLog instanceof LogBookLog) {
+			logBookLog = (LogBookLog) actionLog;
+		} else {
+			throw new IllegalArgumentException("Unsupported action log: " + actionLog);
+		}
+	}
 
-    public void setNotificationType(NotificationType notificationType) {
-        this.notificationType = notificationType;
-    }
+	public Long getId() {
+		return id;
+	}
 
-    public String getMessage() {
-        return message;
-    }
+	public String getUid() {
+		return uid;
+	}
 
-    public void setMessage(String message) {
-        this.message = message;
-    }
+	public Instant getCreatedDateTime() {
+		return createdDateTime;
+	}
 
-    @Override
-    public String toString() {
-        return "Notification{" +
-                "uid='" + uid + '\'' +
-                ", createdDateTime=" + createdDateTime +
-                ", user=" + user +
-                '}';
-    }
+	public User getTarget() {
+		return target;
+	}
+
+	public boolean isRead() {
+		return read;
+	}
+
+	public void setRead(boolean read) {
+		this.read = read;
+	}
+
+	public boolean isDelivered() {
+		return delivered;
+	}
+
+	public void setDelivered(boolean delivered) {
+		this.delivered = delivered;
+	}
+
+	public EventLog getEventLog() {
+		return eventLog;
+	}
+
+	public LogBookLog getLogBookLog() {
+		return logBookLog;
+	}
+
+	public GroupLog getGroupLog() {
+		return groupLog;
+	}
+
+	public String getMessage() {
+		return message;
+	}
+
+	/**
+	 * Locale utilities
+	 */
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+
+		Notification that = (Notification) o;
+
+		if (uid != null ? !uid.equals(that.uid) : that.uid != null) {
+			return false;
+		}
+
+		return true;
+	}
+
+	@Override
+	public int hashCode() {
+		return uid != null ? uid.hashCode() : 0;
+	}
+
+	@Override
+	public String toString() {
+		final StringBuilder sb = new StringBuilder(getClass().getSimpleName());
+		sb.append("{id=").append(id);
+		sb.append(", uid='").append(uid).append('\'');
+		sb.append(", target=").append(target);
+		appendToString(sb);
+		sb.append(", read=").append(read);
+		sb.append(", delivered=").append(delivered);
+		sb.append(", createdDateTime=").append(createdDateTime);
+		sb.append('}');
+		return sb.toString();
+	}
+
+	/**
+	 * This is a way for subclass to add its own specific toString information
+	 * @param sb StringBuilder
+	 */
+	protected abstract void appendToString(StringBuilder sb);
 }

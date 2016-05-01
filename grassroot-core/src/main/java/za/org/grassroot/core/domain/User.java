@@ -409,10 +409,8 @@ public class User implements UserDetails {
         sb.append("id=").append(id);
         sb.append(", uid='").append(uid).append('\'');
         sb.append(", phoneNumber='").append(phoneNumber).append('\'');
-        sb.append(", displayName='").append(displayName).append('\'');
         sb.append(", username='").append(username).append('\'');
         sb.append(", enabled=").append(enabled);
-        sb.append(", createdDateTime=").append(createdDateTime);
         sb.append('}');
         return sb.toString();
     }

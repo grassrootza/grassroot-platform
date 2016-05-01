@@ -9,7 +9,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
@@ -21,6 +20,7 @@ import za.org.grassroot.services.util.CacheUtilService;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Predicate;
 
 import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
 
@@ -92,18 +92,15 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
-    public List<Meeting> getUpcomingMeetings(Group group) {
-        return meetingRepository.findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(group, Instant.now(), false);
+    @Transactional(readOnly = true)
+    public Set<Meeting> getUpcomingMeetings(Group group) {
+        return (Set) group.getUpcomingEvents(event -> event.getEventType().equals(EventType.MEETING));
     }
 
     @Override
-    public List<Vote> getUpcomingVotes(Group group) {
-        return voteRepository.findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(group, Instant.now(), false);
-    }
-
-    @Override
-    public List<Event> getUpcomingEvents(Group group) {
-        return eventRepository.findByAppliesToGroupAndEventStartDateTimeGreaterThanAndCanceled(group, Instant.now(), false);
+    @Transactional(readOnly = true)
+    public Set<Vote> getUpcomingVotes(Group group) {
+        return (Set) group.getUpcomingEvents(event -> event.getEventType().equals(EventType.VOTE));
     }
 
     @Override
@@ -167,45 +164,40 @@ public class EventManager implements EventManagementService {
                 log.debug("getOutstandingResponseForUser...number of groups..." + groups.size());
                 for (Group group : groups) {
                     log.debug("getOutstandingResponseForUser...before...getUpcomingEventsForGroupAndParentGroups..." + group.getId());
-                    List<Event> upcomingEvents = getUpcomingEventsForGroupAndParentGroups(group);
+
+                    Predicate<Event> filter = event ->
+                            event.isRsvpRequired() && event.getEventType() == eventType &&
+                                    ((eventType == EventType.MEETING && event.getCreatedByUser().getId() != user.getId()) ||
+                                            eventType != EventType.MEETING);
+
+                    Set<Event> upcomingEvents = group.getUpcomingEventsIncludingParents(filter);
                     log.debug("getOutstandingResponseForUser...after...getUpcomingEventsForGroupAndParentGroups..." + group.getId());
 
-                    if (upcomingEvents != null) {
-                        for (Event event : upcomingEvents) {
-                            log.debug("getOutstandingResponseForUser...start...event check..." + event.getId());
+                    for (Event event : upcomingEvents) {
+                        log.debug("getOutstandingResponseForUser...start...event check..." + event.getId());
 
-                            if (event.isRsvpRequired() && event.getEventType() == eventType) {
-                                if ((eventType == EventType.MEETING && event.getCreatedByUser().getId() != user.getId())
-                                        || eventType != EventType.MEETING) {
-
-                                    //N.B. remove this if statement if you want to allow votes for people that joined the group late
-                                    if (eventType == EventType.VOTE) {
-                                        Membership membership = group.getMembership(user);
-                                        if (membership != null && membership.getJoinTime().isAfter(event.getCreatedDateTime())) {
-                                            log.info(String.format("Excluding vote %s for %s as the user joined group %s after the vote was called", event.getName(), user.getPhoneNumber(), group.getId()));
-                                            continue;
-                                        }
-                                    }
-                                    if (!eventLogManagementService.userRsvpForEvent(event, user)) {
-                                        //see if we added it already as the user can be in multiple groups in a group structure
-                                        if (eventMap.get(event.getId()) == null) {
-                                            outstandingRSVPs.add(event);
-                                            eventMap.put(event.getId(), event.getId());
-                                        }
-                                        log.info("getOutstandingResponseForUser..." + eventType.toString() + " Required..." + user.getPhoneNumber() + "...event..." + event.getId());
-                                    } else {
-                                        log.info("getOutstandingResponseForUser..." + eventType.toString() + " NOT Required..." + user.getPhoneNumber() + "...event..." + event.getId());
-
-                                    }
-                                }
-                            } else {
-                                log.debug("getOutstandingResponseForUser...start...event check..." + event.getId() + "...NOT matching on eventtype..." + event.getEventType().toString() + "... or RSVP required..." + event.isRsvpRequired());
-
+                        //N.B. remove this if statement if you want to allow votes for people that joined the group late
+                        if (eventType == EventType.VOTE) {
+                            Membership membership = group.getMembership(user);
+                            if (membership != null && membership.getJoinTime().isAfter(event.getCreatedDateTime())) {
+                                log.info(String.format("Excluding vote %s for %s as the user joined group %s after the vote was called", event.getName(), user.getPhoneNumber(), group.getId()));
+                                continue;
                             }
-
-                            log.debug("getOutstandingResponseForUser...end...event check..." + event.getId());
+                        }
+                        if (!eventLogManagementService.userRsvpForEvent(event, user)) {
+                            //see if we added it already as the user can be in multiple groups in a group structure
+                            if (eventMap.get(event.getId()) == null) {
+                                outstandingRSVPs.add(event);
+                                eventMap.put(event.getId(), event.getId());
+                            }
+                            log.info("getOutstandingResponseForUser..." + eventType.toString() + " Required..." + user.getPhoneNumber() + "...event..." + event.getId());
+                        } else {
+                            log.info("getOutstandingResponseForUser..." + eventType.toString() + " NOT Required..." + user.getPhoneNumber() + "...event..." + event.getId());
 
                         }
+
+                        log.debug("getOutstandingResponseForUser...end...event check..." + event.getId());
+
                     }
 
                 }
@@ -216,34 +208,6 @@ public class EventManager implements EventManagementService {
         log.info("getOutstandingResponseForUser..." + user.getPhoneNumber() + "...type..." + eventType.toString() + "...returning..." + outstandingRSVPs.size());
 
         return outstandingRSVPs;
-    }
-
-    @Override
-    public List<Event> getUpcomingEventsForGroupAndParentGroups(Group group) {
-        // check for events on this group level
-        List<Event> upComingEvents = getUpcomingEvents(group);
-        if (upComingEvents == null) {
-            upComingEvents = new ArrayList<Event>();
-        }
-
-        // climb the tree and check events at each level if subgroups are included
-        List<Group> parentGroups = groupBroker.parentChain(group.getUid());
-
-        if (parentGroups != null) {
-            for (Group parentGroup : parentGroups) {
-                log.debug("parentGroup..." + parentGroup.getId());
-                List<Event> parentEvents = getUpcomingEvents(parentGroup);
-                if (parentEvents != null) {
-                    for (Event upComingEvent : parentEvents) {
-                        if (upComingEvent.isIncludeSubGroups()) {
-                            upComingEvents.add(upComingEvent);
-                        }
-                    }
-                }
-
-            }
-        }
-        return upComingEvents;
     }
 
     @Override
@@ -338,8 +302,9 @@ public class EventManager implements EventManagementService {
     @Override
     public int getNumberInvitees(Event event) {
         // may make this more sophisticated once we have message relays in place, also, switch to using parent
-        return (!event.isIncludeSubGroups()) ? event.resolveGroup().getMembers().size() :
-                userManagementService.fetchByGroup(event.resolveGroup().getUid(), true).size();
+        return (!event.isIncludeSubGroups()) ?
+                event.resolveGroup().getMembers().size() :
+                event.resolveGroup().getMembersWithChildrenIncluded().size();
     }
 
     @Override
@@ -351,31 +316,6 @@ public class EventManager implements EventManagementService {
     @Override
     public ResponseTotalsDTO getVoteResultsDTO(Event vote) {
         return eventLogManagementService.getVoteResultsForEvent(vote);
-    }
-
-    /*
-    If message is blank then the reminder generated by the template will be used
-     */
-    @Override
-    public boolean sendManualReminder(Event event, String message) {
-
-        EventDTO eventDTO = new EventDTO(event);
-        eventDTO.setMessage(message);
-        jmsTemplateProducerService.sendWithNoReply("manual-reminder", eventDTO);
-        log.info("sendManualReminder...queued..." + eventDTO.toString());
-        return true;
-    }
-
-    @Override
-    public String getReminderMessageForConfirmation(String locale, User user, Event event) {
-        log.info("Composing reminder message ... with locale ... " + locale);
-        EventDTO eventDTO = new EventDTO(event);
-        return messageAssemblingService.createMeetingReminderMessage(locale, user, eventDTO);
-    }
-
-    @Override
-    public String getDefaultLocaleReminderMessage(User user, Event event) {
-        return getReminderMessageForConfirmation("en", user, event);
     }
 
     @Override
@@ -400,16 +340,6 @@ public class EventManager implements EventManagementService {
         } else {
             return (List) voteRepository.findByAppliesToGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, start, end);
         }
-    }
-
-    @Override
-    public double getCostOfMessagesForEvent(Event event, double costPerMessage) {
-        return eventLogManagementService.countNonRSVPEventLogsForEvent(event) * costPerMessage;
-    }
-
-    @Override
-    public double getCostOfMessagesDefault(Event event) {
-        return getCostOfMessagesForEvent(event, SMS_COST);
     }
 
     /*@Override

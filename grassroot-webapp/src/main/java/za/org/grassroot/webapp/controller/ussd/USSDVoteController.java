@@ -401,7 +401,7 @@ public class USSDVoteController extends USSDController {
                                       @RequestParam(value = entityUidParam) String eventUid) throws URISyntaxException {
         // use meeting reminder functions
         User user = userManager.findByInputNumber(inputNumber, null);
-        eventManager.sendManualReminder(eventBroker.load(eventUid), "");
+        eventBroker.sendManualReminder(user.getUid(), eventUid, "");
         return menuBuilder(new USSDMenu(getMessage(thisSection, "reminder-do", promptKey, user), optionsHomeExit(user)));
     }
 

@@ -6,20 +6,13 @@ import net.sf.ehcache.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.dto.EventDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.services.UserManagementService;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Created by aakilomar on 11/2/15.
@@ -142,29 +135,6 @@ public class CacheUtilManager implements CacheUtilService {
     }
 
     @Override
-    public User fetchUser(String phoneNumber) {
-        User user;
-        Cache cache = cacheManager.getCache("user");
-        try{
-            user = (User)cache.get(phoneNumber).getObjectValue();
-        }catch (Exception e){
-            user = null;
-        }
-        return user;
-    }
-
-    @Override
-    public void cacheUser(User user) {
-        try {
-            Cache cache = cacheManager.getCache("user");
-            cache.put(new Element(user.getPhoneNumber(), user));
-        } catch (Exception e) {
-            log.error(e.toString());
-        }
-
-    }
-
-    @Override
     public void putUserLanguage(String inputNumber, String language) {
         try {
             Cache cache = cacheManager.getCache("user_language");
@@ -172,30 +142,6 @@ public class CacheUtilManager implements CacheUtilService {
         } catch (Exception e) {
             log.error(e.toString());
         }
-    }
-
-    @Override
-    public String getUserLanguage(String inputNumber) {
-        String language = null;
-        try {
-            Cache cache = cacheManager.getCache("user_language");
-            language = String.valueOf(cache.get(inputNumber).getObjectValue());
-        } catch (Exception e) {
-            log.error(e.toString());
-        }
-        return language;
-
-    }
-
-    @Override
-    public void clearUserLanguage(String phoneNumber) {
-        try {
-            Cache cache = cacheManager.getCache("user_language");
-            cache.remove(phoneNumber);
-        } catch (Exception e) {
-            log.error(e.toString());
-        }
-
     }
 
     @Override

@@ -7,18 +7,24 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.dto.EventDTO;
+import za.org.grassroot.core.domain.notification.*;
+import za.org.grassroot.core.dto.ResponseTotalsDTO;
+import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.*;
-import za.org.grassroot.services.async.GenericJmsTemplateProducerService;
-import za.org.grassroot.services.async.AsyncEventMessageSender;
+import za.org.grassroot.services.util.CacheUtilService;
+import za.org.grassroot.services.util.LogsAndNotificationsBroker;
+import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
-import java.time.*;
-import java.time.temporal.ChronoUnit;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.domain.EventReminderType.CUSTOM;
 import static za.org.grassroot.core.domain.EventReminderType.DISABLED;
@@ -44,11 +50,14 @@ public class EventBrokerImpl implements EventBroker {
 	@Autowired
 	private PermissionBroker permissionBroker;
 	@Autowired
-	private GenericJmsTemplateProducerService jmsTemplateProducerService;
-	@Autowired
     private ApplicationEventPublisher applicationEventPublisher;
-    @Autowired
-    private AsyncEventMessageSender asyncEventMessageSender;
+
+	@Autowired
+	private LogsAndNotificationsBroker logsAndNotificationsBroker;
+	@Autowired
+	private CacheUtilService cacheUtilService;
+	@Autowired
+	private MessageAssemblingService messageAssemblingService;
 
     @Override
 	public Event load(String eventUid) {
@@ -97,8 +106,8 @@ public class EventBrokerImpl implements EventBroker {
 	@Override
 	@Transactional
 	public Meeting createMeeting(String userUid, String parentUid, JpaEntityType parentType, String name, LocalDateTime eventStartDateTime, String eventLocation,
-								 boolean includeSubGroups, boolean rsvpRequired, boolean relayable, EventReminderType reminderType,
-								 int customReminderMinutes, String description, Set<String> assignMemberUids) {
+															  boolean includeSubGroups, boolean rsvpRequired, boolean relayable, EventReminderType reminderType,
+															  int customReminderMinutes, String description, Set<String> assignMemberUids) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(parentUid);
 		Objects.requireNonNull(parentType);
@@ -127,10 +136,32 @@ public class EventBrokerImpl implements EventBroker {
 
 		eventLogManagementService.rsvpForEvent(meeting, meeting.getCreatedByUser(), EventRSVPResponse.YES);
 
-        AfterTxCommitTask afterTxCommitTask = () -> asyncEventMessageSender.sendNewMeetingNotifications(meeting.getUid());
-        applicationEventPublisher.publishEvent(afterTxCommitTask);
+		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
+		EventLog eventLog = new EventLog(user, meeting, EventLogType.EventCreated, null);
+		bundle.addLog(eventLog);
+
+		Set<Notification> notifications = constructEventInfoNotifications(meeting, eventLog);
+		bundle.addNotifications(notifications);
+
+		logsAndNotificationsBroker.storeBundle(bundle);
 
 		return meeting;
+	}
+
+	private Set<Notification> constructEventInfoNotifications(Event event, EventLog eventLog) {
+		Set<Notification> notifications = new HashSet<>();
+		for (User member : getAllEventMembers(event)) {
+			cacheUtilService.clearRsvpCacheForUser(member, event.getEventType());
+			String message = messageAssemblingService.createEventInfoMessage(member, event);
+			Notification notification = new EventInfoNotification(member, message, eventLog);
+			notifications.add(notification);
+		}
+		return notifications;
+	}
+
+	private Set<User> getAllEventMembers(Event event) {
+		return (Set<User>) event.getAllMembers();
 	}
 
 	@Override
@@ -142,6 +173,7 @@ public class EventBrokerImpl implements EventBroker {
         Objects.requireNonNull(eventStartDateTime);
         Objects.requireNonNull(eventLocation);
 
+		User user = userRepository.findOneByUid(userUid);
         Meeting meeting = (Meeting) eventRepository.findOneByUid(meetingUid);
 
         if (meeting.isCanceled()) {
@@ -159,8 +191,16 @@ public class EventBrokerImpl implements EventBroker {
         meeting.setName(name);
         meeting.setEventLocation(eventLocation);
 
-        sendChangeNotifications(meeting.getUid(), EventType.MEETING, startTimeChanged);
-    }
+		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
+		EventLog eventLog = new EventLog(user, meeting, EventLogType.EventChange, null);
+		bundle.addLog(eventLog);
+
+		Set<Notification> notifications = constructEventChangedNotifications(meeting, eventLog, startTimeChanged);
+		bundle.addNotifications(notifications);
+
+		logsAndNotificationsBroker.storeBundle(bundle);
+	}
 
 	@Override
 	@Transactional
@@ -175,12 +215,13 @@ public class EventBrokerImpl implements EventBroker {
 		Objects.requireNonNull(eventLocation);
 		Objects.requireNonNull(reminderType);
 
+		User user = userRepository.findOneByUid(userUid);
 		Meeting meeting = (Meeting) eventRepository.findOneByUid(meetingUid);
 
-        Instant convertedStartDateTime = convertToSystemTime(eventStartDateTime, getSAST());
 		if (meeting.isCanceled()) {
 			throw new IllegalStateException("Meeting is canceled: " + meeting);
 		}
+		Instant convertedStartDateTime = convertToSystemTime(eventStartDateTime, getSAST());
 		validateEventStartTime(convertedStartDateTime);
 		boolean startTimeChanged = !convertedStartDateTime.equals(meeting.getEventStartDateTime());
 
@@ -195,7 +236,26 @@ public class EventBrokerImpl implements EventBroker {
 
 		meeting.updateScheduledReminderTime();
 
-		sendChangeNotifications(meeting.getUid(), EventType.MEETING, startTimeChanged);
+		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
+		EventLog eventLog = new EventLog(user, meeting, EventLogType.EventChange, null);
+		bundle.addLog(eventLog);
+
+		Set<Notification> notifications = constructEventChangedNotifications(meeting, eventLog, startTimeChanged);
+		bundle.addNotifications(notifications);
+
+		logsAndNotificationsBroker.storeBundle(bundle);
+	}
+
+	private Set<Notification> constructEventChangedNotifications(Event event, EventLog eventLog, boolean startTimeChanged) {
+		Set<User> rsvpWithNoMembers = new HashSet<>(userRepository.findUsersThatRSVPNoForEvent(event));
+		return getAllEventMembers(event).stream()
+				.filter(member -> startTimeChanged || !rsvpWithNoMembers.contains(member))
+				.map(member -> {
+					String message = messageAssemblingService.createEventChangedMessage(member, event);
+					return new EventChangedNotification(member, message, eventLog);
+				})
+				.collect(Collectors.toSet());
 	}
 
 	@Override
@@ -219,8 +279,15 @@ public class EventBrokerImpl implements EventBroker {
 
 		voteRepository.save(vote);
 
-		AfterTxCommitTask afterTxCommitTask = () -> asyncEventMessageSender.sendNewVoteNotifications(vote.getUid());
-        applicationEventPublisher.publishEvent(afterTxCommitTask);
+		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
+		EventLog eventLog = new EventLog(user, vote, EventLogType.EventCreated, null);
+		bundle.addLog(eventLog);
+
+		Set<Notification> notifications = constructEventInfoNotifications(vote, eventLog);
+		bundle.addNotifications(notifications);
+
+		logsAndNotificationsBroker.storeBundle(bundle);
 
 		return vote;
 	}
@@ -250,7 +317,16 @@ public class EventBrokerImpl implements EventBroker {
 
 		// note: as of now, we don't need to send anything, hence just do an explicit call to repo and return the Vote
 
-		return voteRepository.save(vote);
+		Vote savedVote = voteRepository.save(vote);
+
+		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
+		EventLog eventLog = new EventLog(user, vote, EventLogType.EventChange, null);
+		bundle.addLog(eventLog);
+
+		logsAndNotificationsBroker.storeBundle(bundle);
+
+		return savedVote;
 	}
 
     @Override
@@ -299,49 +375,103 @@ public class EventBrokerImpl implements EventBroker {
 		event.setCanceled(true);
 		event.setScheduledReminderActive(false);
 
-		AfterTxCommitTask afterTxCommitTask = () -> asyncEventMessageSender.sendCancelMeetingNotifications(eventUid);
-        applicationEventPublisher.publishEvent(afterTxCommitTask);
-	}
+		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-	private void sendChangeNotifications(String eventUid, EventType eventType, boolean startTimeChanged) {
-		// todo: replace with just passing the UID around
-        AfterTxCommitTask afterTxCommitTask = () -> asyncEventMessageSender.sendChangedEventNotification(eventUid, eventType, startTimeChanged);
-        applicationEventPublisher.publishEvent(afterTxCommitTask);
+		EventLog eventLog = new EventLog(user, event, EventLogType.EventCancelled, null);
+		bundle.addLog(eventLog);
+
+		List<User> rsvpWithNoMembers = userRepository.findUsersThatRSVPNoForEvent(event);
+		for (User member : getAllEventMembers(event)) {
+			if (rsvpWithNoMembers.contains(member)) {
+				String message = messageAssemblingService.createEventCancelledMessage(member, event);
+				Notification notification = new EventCancelledNotification(member, message, eventLog);
+				bundle.addNotification(notification);
+			}
+		}
+
+		logsAndNotificationsBroker.storeBundle(bundle);
 	}
 
 	@Override
 	@Transactional
-	public void sendScheduledReminders() {
-		Instant now = Instant.now();
-		List<Event> events = eventRepository.findEventsForReminders(Instant.now());
-		logger.info("Sending scheduled reminders for {} event(s)", events.size());
+	public void sendScheduledReminder(String uid) {
+		Objects.requireNonNull(uid);
 
-		for (Event event : events) {
-			try {
-				if (event.isCanceled()) {
-					throw new IllegalStateException("Event is canceled: " + event);
-				}
-				if (!event.isScheduledReminderActive()) {
-					throw new IllegalStateException("Event is not scheduled for reminder: " + event);
-				}
+		Event event = eventRepository.findOneByUid(uid);
 
-				// todo: figure out how to get and handle errors from here (i.e., so don't set reminders false if an error)
-                jmsTemplateProducerService.sendWithNoReply("event-reminder", event.getUid());
+		if (event.isCanceled()) {
+			throw new IllegalStateException("Event is canceled: " + event);
+		}
+		if (!event.isScheduledReminderActive()) {
+			throw new IllegalStateException("Event is not scheduled for reminder: " + event);
+		}
 
-				// for meeting calls, send out RSVPs to date
-				if (event.getEventType().equals(EventType.MEETING) && event.isRsvpRequired()) {
-					jmsTemplateProducerService.sendWithNoReply("meeting-responses", event.getUid());
-				}
+		event.setNoRemindersSent(event.getNoRemindersSent() + 1);
+		event.setScheduledReminderActive(false);
 
-				event.setNoRemindersSent(event.getNoRemindersSent() + 1);
-				event.setScheduledReminderActive(false);
+		// todo: figure out how to get and handle errors from here (i.e., so don't set reminders false if an error)
+		// we set null here, because initiator is the app itself!
 
-			} catch (Exception e) {
-				logger.error("Error while sending scheduled reminder of event " + event + ": " + e.getMessage(), e);
+		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
+		EventLog eventLog = new EventLog(null, event, EventLogType.EventReminder, null);
+
+		Set<User> excludedMembers = findEventReminderExcludedMembers(event);
+		List<User> eventReminderNotificationSentMembers = userRepository.findNotificationTargetsForEvent(
+				event, EventReminderNotification.class);
+		excludedMembers.addAll(eventReminderNotificationSentMembers);
+
+		for (User member : getAllEventMembers(event)) {
+			if (!excludedMembers.contains(member)) {
+				String notificationMessage = messageAssemblingService.createScheduledEventReminderMessage(member, event);
+				Notification notification = new EventReminderNotification(member, notificationMessage, eventLog);
+				bundle.addNotification(notification);
 			}
 		}
 
-		logger.info("Sending scheduled reminders...done");
+		// we only want to include event log if there are some notifications
+		if (!bundle.getNotifications().isEmpty()) {
+			bundle.addLog(eventLog);
+		}
+
+		// for meeting calls, send out RSVPs to date to meeting's creator
+		if (event.getEventType().equals(EventType.MEETING) && event.isRsvpRequired()) {
+			Meeting meeting = (Meeting) event;
+
+			LogsAndNotificationsBundle meetingRsvpTotalsBundle = constructMeetingRsvpTotalsBundle(meeting);
+			bundle.addBundle(meetingRsvpTotalsBundle);
+		}
+
+		logsAndNotificationsBroker.storeBundle(bundle);
+	}
+
+	private Set<User> findEventReminderExcludedMembers(Event event) {
+		Set<User> excludedMembers = new HashSet<>();
+		if (event.getEventType().equals(EventType.VOTE)) {
+			List<User> votedMembers = userRepository.findUsersThatRSVPForEvent(event);
+			excludedMembers.addAll(votedMembers);
+		}
+		if (event.getEventType().equals(EventType.MEETING)) {
+			List<User> meetingDeclinedMembers = userRepository.findUsersThatRSVPNoForEvent(event);
+			excludedMembers.addAll(meetingDeclinedMembers);
+		}
+		return excludedMembers;
+	}
+
+	private LogsAndNotificationsBundle constructMeetingRsvpTotalsBundle(Meeting meeting) {
+		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
+		EventLog eventLog = new EventLog(null, meeting, EventLogType.EventRsvpTotalMessage, null);
+		bundle.addLog(eventLog);
+
+		ResponseTotalsDTO responseTotalsDTO = eventLogManagementService.getResponseCountForEvent(meeting);
+
+		User destination = meeting.getCreatedByUser();
+		String message = messageAssemblingService.createMeetingRsvpTotalMessage(destination, meeting, responseTotalsDTO);
+		Notification notification = new MeetingRsvpTotalsNotification(destination, message, eventLog);
+		bundle.addNotification(notification);
+
+		return bundle;
 	}
 
 	@Override
@@ -349,82 +479,121 @@ public class EventBrokerImpl implements EventBroker {
 	public void sendManualReminder(String userUid, String eventUid, String message) {
 		Objects.requireNonNull(eventUid);
 
+		User user = userRepository.findOneByUid(userUid);
+
 		Event event = eventRepository.findOneByUid(eventUid);
 		if (event.isCanceled()) {
 			throw new IllegalStateException("Event is canceled: " + event);
 		}
 
 		logger.info("Sending manual reminder for event {} with message {}", event, message);
-
-		EventDTO eventDTO = new EventDTO(event);
-		eventDTO.setMessage(message);
-		jmsTemplateProducerService.sendWithNoReply("manual-reminder", eventDTO);
-
 		event.setNoRemindersSent(event.getNoRemindersSent() + 1);
+
+		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
+		EventLog eventLog = new EventLog(user, event, EventLogType.EventManualReminder, message);
+		bundle.addLog(eventLog);
+
+		Set<User> excludedMembers = findEventReminderExcludedMembers(event);
+		for (User member : getAllEventMembers(event)) {
+			if (!excludedMembers.contains(member)) {
+				Notification notification = new EventReminderNotification(member, message, eventLog);
+				bundle.addNotification(notification);
+			}
+		}
+
+		logsAndNotificationsBroker.storeBundle(bundle);
 	}
 
 	@Override
-	@Transactional(readOnly = true)
-	public void sendMeetingRSVPsToDate() {
+	@Transactional
+	public void sendMeetingRSVPsToDate(String meetingUid) {
+		Objects.requireNonNull(meetingUid);
 
-        // since the scheduled job runs once an hour, check for meetings created two days ago, in an hour interval
-        Instant start = Instant.now().minus(48, ChronoUnit.HOURS);
-		Instant end = start.minus(1, ChronoUnit.HOURS);
-        List<Meeting> meetings = meetingRepository.meetingsForResponseTotals(Instant.now(), start, end);
+		Meeting meeting = meetingRepository.findOneByUid(meetingUid);
 
-		logger.info("Sending out RSVP totals for {} meetings", meetings.size());
-        for (Meeting meeting : meetings) {
-            if (meeting.isCanceled()) {
-				throw new IllegalStateException("Meeting is cancelled: " + meeting);
-			}
-			if (!meeting.isRsvpRequired()) {
-				throw new IllegalStateException("Meeting does not require RSVPs" + meeting);
-			}
+		if (meeting.isCanceled()) {
+			throw new IllegalStateException("Meeting is cancelled: " + meeting);
+		}
+		if (!meeting.isRsvpRequired()) {
+			throw new IllegalStateException("Meeting does not require RSVPs" + meeting);
+		}
 
-			jmsTemplateProducerService.sendWithNoReply("meeting-responses", meeting.getUid());
-        }
+		LogsAndNotificationsBundle bundle = constructMeetingRsvpTotalsBundle(meeting);
+		logsAndNotificationsBroker.storeBundle(bundle);
 	}
 
-    @Override
-    public void sendMeetingAcknowledgements() {
+	@Override
+	@Transactional
+	public void sendMeetingAcknowledgements(String meetingUid) {
+		Objects.requireNonNull(meetingUid);
 
-        /*
-         First, get the list of meetings that happened yesterday; if across multiple timezones, probably want to change
-         this to be, say, T-12 hours to T-36 hours
-        */
-        LocalDate yesterday = LocalDate.now().minus(1, ChronoUnit.DAYS);
-        Instant start = convertToSystemTime(LocalDateTime.of(yesterday, LocalTime.MIN), getSAST());
-        Instant end = convertToSystemTime(LocalDateTime.of(yesterday, LocalTime.MAX), getSAST());
+		Meeting meeting = meetingRepository.findOneByUid(meetingUid);
 
-        List<Meeting> meetings = meetingRepository.findByEventStartDateTimeBetweenAndCanceledFalseAndRsvpRequiredTrue(start, end);
-        logger.info("Sending out meeting thank you for {} meetings", meetings.size());
+		if (meeting.isCanceled()) {
+			throw new IllegalStateException("Meeting is cancelled: " + meeting);
+		}
+		if (!meeting.isRsvpRequired()) {
+			throw new IllegalStateException("Meeting did not require RSVPs" + meeting);
+		}
 
-        for (Meeting meeting : meetings) {
-            if (meeting.isCanceled()) {
-                throw new IllegalStateException("Meeting is cancelled: " + meeting);
-            }
-            if (!meeting.isRsvpRequired()) {
-                throw new IllegalStateException("Meeting did not require RSVPs" + meeting);
-            }
+		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-            jmsTemplateProducerService.sendWithNoReply("meeting-thankyou", meeting.getUid());
-        }
+		EventLog eventLog = new EventLog(null, meeting, EventLogType.EventThankYouMessage, null);
 
-    }
+		Set<User> tankYouNotificationSentMembers = new HashSet<>(
+				userRepository.findNotificationTargetsForEvent(meeting, MeetingThankYouNotification.class));
 
-    @Override
-	@Transactional(readOnly = true)
-	public void sendVoteResults() {
-		List<Vote> votes = voteRepository.findUnsentVoteResults();
-		logger.info("Sending vote results for {} votes...", votes.size());
-		for (Vote vote : votes) {
-			try {
-				logger.info("Sending vote results for vote", vote);
-				jmsTemplateProducerService.sendWithNoReply("vote-results", vote.getUid());
-			} catch (Exception e) {
-				logger.error("Error while sending vote results for vote: " + vote);
+		List<User> rsvpWithYesMembers = userRepository.findUsersThatRSVPYesForEvent(meeting);
+		for (User members : rsvpWithYesMembers) {
+			if (!tankYouNotificationSentMembers.contains(members)) {
+				String message = messageAssemblingService.createMeetingThankYourMessage(members, meeting);
+				Notification notification = new MeetingThankYouNotification(members, message, eventLog);
+				bundle.addNotification(notification);
 			}
 		}
+
+		// we only want to include log if there are some notifications
+		if (!bundle.getNotifications().isEmpty()) {
+			bundle.addLog(eventLog);
+		}
+
+		logsAndNotificationsBroker.storeBundle(bundle);
+	}
+
+	@Override
+	@Transactional
+	public void sendVoteResults(String voteUid) {
+		Objects.requireNonNull(voteUid);
+		Vote vote = voteRepository.findOneByUid(voteUid);
+
+		logger.info("Sending vote results for vote", vote);
+
+		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
+		EventLog eventLog = new EventLog(null, vote, EventLogType.EventResult, null);
+
+		ResponseTotalsDTO responseTotalsDTO = eventLogManagementService.getVoteResultsForEvent(vote);
+		Set<User> voteResultsNotificationSentMembers = new HashSet<>(userRepository.findNotificationTargetsForEvent(
+				vote, VoteResultsNotification.class));
+		for (User member : getAllEventMembers(vote)) {
+			if (!voteResultsNotificationSentMembers.contains(member)) {
+				String message = messageAssemblingService.createVoteResultsMessage(member, vote,
+						responseTotalsDTO.getYes(),
+						responseTotalsDTO.getNo(),
+						responseTotalsDTO.getMaybe(),
+						responseTotalsDTO.getNumberNoRSVP());
+				Notification notification = new VoteResultsNotification(member, message, eventLog);
+				bundle.addNotification(notification);
+			}
+		}
+
+		// we only want to include log if there are some notifications
+		if (!bundle.getNotifications().isEmpty()) {
+			bundle.addLog(eventLog);
+		}
+
+		logsAndNotificationsBroker.storeBundle(bundle);
 	}
 
 	@Override

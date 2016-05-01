@@ -324,7 +324,7 @@ public class GroupRepositoryTest {
         User user2 = userRepository.save(new User("0801110001"));
         Group tg1 = groupRepository.save(new Group("tg1", user));
         Group tg2 = groupRepository.save(new Group("tg2", user));
-        groupLogRepository.save(new GroupLog(tg1.getId(), user2.getId(), GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE,
+        groupLogRepository.save(new GroupLog(tg1, user2, GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE,
                                              0L, "test"));
         List<Group> groups = groupRepository.findGroupsWhereJoinCodeUsedBetween(Instant.now().minus(1, ChronoUnit.MINUTES),
                                                                                 Instant.now());

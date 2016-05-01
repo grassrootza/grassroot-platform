@@ -7,8 +7,11 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.notification.EventNotification;
 import za.org.grassroot.core.dto.UserDTO;
+import za.org.grassroot.core.enums.EventLogType;
 
 import java.sql.Timestamp;
 import java.util.Collection;
@@ -33,12 +36,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByPhoneNumberContaining(String phoneNumber);
     List<User> findByDisplayNameContaining(String displayName);
     List<User> findByDisplayNameContainingOrPhoneNumberContaining(String userInput, String phoneNumber);
-
-    @Query("select u from Membership m " +
-            "inner join m.user u " +
-            "inner join m.group g " +
-            "where g = :group order by u.id asc")
-    List<User> findByGroupsPartOfOrderByIdAsc(@Param("group") Group group);
 
     @Query("select u from Membership m " +
             "inner join m.user u " +
@@ -69,15 +66,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
     User findByUsername(String username);
 
     int countByCreatedDateTimeBetween(Timestamp start, Timestamp end);
-    List<User> findByCreatedDateTimeBetweenOrderByCreatedDateTimeDesc(Timestamp start, Timestamp end);
 
     int countByHasInitiatedSession(boolean hasInitiatedSession);
     int countByCreatedDateTimeBetweenAndHasInitiatedSession(Timestamp start, Timestamp end, boolean hasInitiatedSession);
-    List<User> findByCreatedDateTimeBetweenAndHasInitiatedSession(Timestamp start, Timestamp end, boolean hasInitiatedSession);
 
     int countByHasWebProfile(boolean webProfile);
     int countByCreatedDateTimeBetweenAndHasWebProfile(Timestamp start, Timestamp end, boolean webProfile);
-    List<User> findByCreatedDateTimeBetweenAndHasWebProfile(Timestamp start, Timestamp end, boolean hasWebProfile);
 
     /*
     See if the phone number exists, before adding it
@@ -91,14 +85,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("select u from User u, EventLog el, Event e where e = ?1 and el.event = e and u = el.user and el.eventLogType = za.org.grassroot.core.enums.EventLogType.EventRSVP and el.message = 'No'")
     List<User> findUsersThatRSVPNoForEvent(Event event);
 
-    @Query(value = "select u from User u where u.phoneNumber IN :phone_numbers")
-    List<User> findExistingUsers(@Param("phone_numbers") List<String> numbers);
+    @Query("select u from User u, EventLog el, Event e where e = ?1 and el.event = e and u = el.user and el.eventLogType = za.org.grassroot.core.enums.EventLogType.EventRSVP")
+    List<User> findUsersThatRSVPForEvent(Event event);
 
-
-    @Query(value = "select id, display_name,phone_number,language_code from user_profile where user_profile.phone_number =?1", nativeQuery = true)
-    Object[] findByNumber(String phoneNumber);
-
-
+    @Query("select t from Notification n " +
+            "inner join n.target t inner join n.event e " +
+            "where e = ?1 and type(n) = ?2")
+    List<User> findNotificationTargetsForEvent(Event event, Class<? extends EventNotification> notificationClass);
 
     List<User> findByPhoneNumberIn(Collection<String> phoneNumbers);
 }

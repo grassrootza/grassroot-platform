@@ -20,13 +20,6 @@ public interface AsyncUserLogger {
     void recordUserLog(String userUid, UserLogType userLogType, String description);
 
     /**
-     * Log the creation of user entities in the DB, typically from a group add where user did not exist prior
-     * @param userUids The uids of the users that have been created
-     * @param description Optional description field (e.g., "created via add to group")
-     */
-    void logUserCreation(Set<String> userUids, String description);
-
-    /**
      * Records a user logging on to the system, to be used for reporting & analysis
      * @param userUid The uid of the user that has initiated the session
      * @param interfaceType The interface used; must be non-null

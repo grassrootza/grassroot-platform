@@ -11,7 +11,6 @@ import za.org.grassroot.core.domain.GcmRegistration;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.repository.GcmRegistrationRepository;
-import za.org.grassroot.core.repository.LogBookRepository;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -26,9 +25,6 @@ public class NotificationToGcmXmppTransformer {
 	private static Logger log = LoggerFactory.getLogger(NotificationToGcmXmppTransformer.class);
 
 	@Autowired
-	private LogBookRepository logBookRepository; //very unfortunate -will have to be remedy later
-
-	@Autowired
 	private GcmRegistrationRepository gcmRegistrationRepository;
 
 	@Transformer(inputChannel = "gcmOutboundChannel", outputChannel = "gcmXmppOutboundChannel")
@@ -41,7 +37,7 @@ public class NotificationToGcmXmppTransformer {
 	}
 
 	private Message<org.jivesoftware.smack.packet.Message> constructGcmMessage(Notification notification) throws JsonProcessingException {
-		GcmRegistration gcmRegistration = gcmRegistrationRepository.findByUser(notification.getUser());
+		GcmRegistration gcmRegistration = gcmRegistrationRepository.findByUser(notification.getTarget());
 		String registrationID = gcmRegistration.getRegistrationId();
 
 		String messageId = notification.getUid();
@@ -61,8 +57,7 @@ public class NotificationToGcmXmppTransformer {
 				break;
 
 			case LOGBOOK:
-				//todo: refactor LogBookLog to hold reference to the LogBook Entity
-				LogBook logBook = logBookRepository.findOne(notification.getLogBookLog().getLogBookId());
+				LogBook logBook = notification.getLogBookLog().getLogBook();
 				title = logBook.resolveGroup().getGroupName();
 				body = notification.getLogBookLog().getMessage();
 				break;
@@ -104,14 +99,13 @@ public class NotificationToGcmXmppTransformer {
 				);
 
 			case LOGBOOK:
-				//todo: refactor LogBookLog to hold reference to the LogBook Entity
-				LogBook logBook = logBookRepository.findOne(notification.getLogBookLog().getLogBookId());
+				LogBook logBook = notification.getLogBookLog().getLogBook();
 
 				return GcmXmppMessageCodec.createDataPart(
 						logBook.resolveGroup().getGroupName(),
 						null,
 						notification.getLogBookLog().getMessage(),
-						notification.getLogBookLog().getLogBookId(),
+						notification.getLogBookLog().getLogBook().getId(),
 						notification.getCreatedDateTime(),
 						notification.getNotificationType(),
 						notification.getEventLog().getEvent().getEventType()
