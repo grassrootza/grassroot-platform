@@ -242,10 +242,11 @@ public class GroupBrokerImpl implements GroupBroker {
     @Override
     @Transactional(readOnly = true)
     public void notifyOrganizersOfJoinCodeUse(Instant periodStart, Instant periodEnd) {
+        logger.info("Checking whether we need to notify any organizers of join code use ...");
         List<Group> groupsWhereJoinCodeUsed = groupRepository.findGroupsWhereJoinCodeUsedBetween(periodStart, periodEnd);
         // what follows is somewhat expensive, but is fortunately going to be called quite rarely
         if (groupsWhereJoinCodeUsed != null && !groupsWhereJoinCodeUsed.isEmpty()) {
-            logger.info("People joined groupds today via a join code! Processing for {} groups", groupsWhereJoinCodeUsed.size());
+            logger.info("People joined groups today via a join code! Processing for {} groups", groupsWhereJoinCodeUsed.size());
             for (Group group : groupsWhereJoinCodeUsed) {
                 List<String> joinedUserDescriptions;
                 List<GroupLog> groupLogs = groupLogRepository.findByGroupIdAndGroupLogTypeAndCreatedDateTimeBetween(group.getId(),

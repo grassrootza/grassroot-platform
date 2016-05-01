@@ -38,7 +38,8 @@
               <select th:unless="${groupSpecified}" th:field="*{parentUid}" id="groupSelector" class="form-control">
                 <option th:each="group: ${possibleGroups}"
                         th:value="${group.Uid}"
-                        th:text="${group.getName('')}">Groupname</option>
+                        th:text="${group.getName('')}"
+                        th:attr="data-mins=#{web.meeting.reminder.group.__${group.reminderMinutes}__}">Groupname</option>
               </select>
               <input type="hidden" th:value="${userUid}" id="userUid" />
             </div>
@@ -87,6 +88,9 @@
             <select th:field="*{reminderType}" class="form-control" id="reminderType">
               <option th:if="${groupSpecified}" value="GROUP_CONFIGURED" selected="true">
                 Group default (<span th:text="#{web.meeting.reminder.group.__${group.reminderMinutes}__}">X</span> ahead)
+              </option>
+              <option th:unless="${groupSpecified}" value="GROUP_CONFIGURED" id="groupOption">
+                Group default (<span id="groupReminderTime">X ahead</span>)
               </option>
               <option value="CUSTOM">Set custom</option>
             </select>
@@ -161,8 +165,11 @@
       if ($("#groupSelector").length > 0) {
 
         ajaxGetList(true);
+        $("#reminderType").changeGroupMinutes();
+
         $('#groupSelector').change(function() {
           $('#wholeGroup').prop("checked", true);
+          $("#reminderType").changeGroupMinutes();
           $('#pickedMemberCount').hide();
           ajaxGetList(false);
         });
@@ -206,6 +213,14 @@
         }
       });
 
+    });
+
+    jQuery.fn.extend({
+      changeGroupMinutes: function() {
+        var groupSelected = $("#groupSelector option:selected").data("mins");
+        var text = "Group default (" + groupSelected + ")"; // todo: i18n at some point
+        $(this).find("#groupOption").text(text);
+      }
     });
 
     function ajaxGetList(selectedByDefault) {

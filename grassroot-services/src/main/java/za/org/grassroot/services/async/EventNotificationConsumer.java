@@ -273,10 +273,8 @@ public class EventNotificationConsumer {
         for (User user : members) {
             // todo: record this for paid group / account ...
             messageSendingService.sendMessage(messageText, user.getPhoneNumber(), MessageProtocol.SMS);
-            eventLogManagementService.createEventLog(EventLogType.FreeFormMessage, null, user.getUid(), messageText);
-
+            // eventLogManagementService.createEventLog(EventLogType.FreeFormMessage, null, user.getUid(), messageText);
         }
-
     }
 
     /*

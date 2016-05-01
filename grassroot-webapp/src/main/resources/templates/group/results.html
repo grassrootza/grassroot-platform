@@ -28,21 +28,19 @@
   <!-- So far, only access this page from the -->
 
   <div class="well" th:if="${noCandidates}">
-    Sorry, we didn't find anything. Try searching again:
-    <div class="row row-centered">
-      <form th:action="@{search}" method="post">
-        <div class="form-group">
-          <div class="col-md-4 col-centered">
-            <input name="searchTerm" type="text" class="form-control" id="name" placeholder="Enter join code or name to search" />
+    <div class="row">
+      <div class="col-md-6 col-md-offset-3">
+        <p>Sorry, we couldn't find any public groups matching that name or join code. Try again?</p>
+        <form th:action="@{search}" method="get" class="form-vertical">
+          <div class="form-group">
+            <input name="term" type="text" class="form-control" id="name" placeholder="" />
           </div>
-          <div class="col-md-4 col-centered">
-            <button type="submit" class="btn btn-primary">Search by name or code</button>
+          <div class="form-group pull-right">
+            <a th:href="@{/home}"><button class="btn btn-default">Back home</button></a>
+            <button type="submit" class="btn btn-primary">Search again</button>
           </div>
-          <div class="col-md-4 col-centered">
-            <a th:href="@{/group/create}"><button class="btn btn-primary">Create a new group</button></a>
-          </div>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   </div>
 
