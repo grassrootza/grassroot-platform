@@ -27,7 +27,6 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     Find all the groups created by a specific user
      */
     List<Group> findByCreatedByUser(User createdByUser);
-    List<Group> findByCreatedByUserAndActiveOrderByCreatedDateTimeDesc(User createdByUser, boolean active);
     /*
     Find the last group created by a specific user
      */
@@ -93,9 +92,6 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
 
     @Query(value = "with distinct_root as (select distinct q1.root, q1.id as member from (select g.id, getroot(g.id) as root from group_profile g, group_user_membership gu where gu.user_id = ?1 and gu.group_id = g.id  ) as q1) select distinct (getchildren(root)).*, root  from distinct_root order by root,parent", nativeQuery = true)
     List<Object[]> getGroupMemberTree(Long userId);
-
-    @Query(value = "select id, created_date_time, name from getusergroups(?1) where active=true order by maximum_time desc NULLS LAST",nativeQuery = true)
-    List<Group> findActiveUserGroupsOrderedByRecentActivity(Long userId);
 
     @Query(value = "Select * from getusergroupswithsize(?1) where active = true", nativeQuery = true)
     List<Object[]> findActiveUserGroupsOrderedByRecentEvent(Long userId);

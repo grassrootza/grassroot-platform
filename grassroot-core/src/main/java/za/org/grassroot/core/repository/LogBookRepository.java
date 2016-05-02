@@ -22,10 +22,10 @@ public interface LogBookRepository extends JpaRepository<LogBook, Long> {
     /*
     Retrieve all logbook entries for all the groups of a particular user
      */
-    List<LogBook> findByGroupMembershipsUserAndActionByDateGreaterThan(User user, Instant start);
-    List<LogBook> findByGroupMembershipsUserAndActionByDateBetweenAndCompleted(User user, Instant start, Instant end, boolean completed, Sort sort);
-    Page<LogBook> findByGroupMembershipsUserAndCompletedOrderByActionByDateDesc(User user, boolean completed, Pageable pageable);
-    int countByGroupMembershipsUserAndActionByDateBetweenAndCompleted(User user, Instant start, Instant end, boolean completed);
+    List<LogBook> findByParentGroupMembershipsUserAndActionByDateGreaterThan(User user, Instant start);
+    List<LogBook> findByParentGroupMembershipsUserAndActionByDateBetweenAndCompleted(User user, Instant start, Instant end, boolean completed, Sort sort);
+    Page<LogBook> findByParentGroupMembershipsUserAndCompletedOrderByActionByDateDesc(User user, boolean completed, Pageable pageable);
+    int countByParentGroupMembershipsUserAndActionByDateBetweenAndCompleted(User user, Instant start, Instant end, boolean completed);
 
     /*
     Retrieve all logbook entries assigned to a particular user
@@ -34,17 +34,17 @@ public interface LogBookRepository extends JpaRepository<LogBook, Long> {
     List<LogBook> findByAssignedMembersAndActionByDateBetweenAndCompleted(User user, Instant start, Instant end, boolean completed, Sort sort);
 
     /*
-    Retrieve logbook entries for a book (with variants)
+    Retrieve logbook entries for a group (with variants)
      */
-    List<LogBook> findByGroup(Group group);
-    List<LogBook> findByGroupAndCreatedDateTimeBetween(Group group, Instant start, Instant end, Sort sort);
-    List<LogBook> findByGroupAndMessageAndCreatedDateTime(Group group, String message, Instant createdDateTime);
+    List<LogBook> findByParentGroup(Group group);
+    List<LogBook> findByParentGroupAndCreatedDateTimeBetween(Group group, Instant start, Instant end, Sort sort);
+    List<LogBook> findByParentGroupAndMessageAndCreatedDateTime(Group group, String message, Instant createdDateTime);
 
-    List<LogBook> findByGroupAndActionByDateGreaterThan(Group group, Instant dueDate);
-    List<LogBook> findByGroupAndCompletedAndActionByDateGreaterThan(Group group, boolean completed, Instant dueDate);
-    Page<LogBook> findByGroupAndCompletedOrderByActionByDateDesc(Group group, boolean completed, Pageable pageable);
+    List<LogBook> findByParentGroupAndActionByDateGreaterThan(Group group, Instant dueDate);
+    List<LogBook> findByParentGroupAndCompletedAndActionByDateGreaterThan(Group group, boolean completed, Instant dueDate);
+    Page<LogBook> findByParentGroupAndCompletedOrderByActionByDateDesc(Group group, boolean completed, Pageable pageable);
 
-    List<LogBook> findByReplicatedGroupAndMessageAndActionByDateOrderByGroupIdAsc(Group replicatedGroup, String message, Instant actionByDateTime);
+    List<LogBook> findByReplicatedGroupAndMessageAndActionByDateOrderByParentGroupIdAsc(Group replicatedGroup, String message, Instant actionByDateTime);
 
     // methods for analyzing logbooks (for admin)
     Long countByCreatedDateTimeBetween(Instant start, Instant end);

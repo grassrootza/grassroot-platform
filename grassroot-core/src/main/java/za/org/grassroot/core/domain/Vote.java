@@ -6,7 +6,6 @@ import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import java.sql.Timestamp;
 import java.time.Instant;
 
 @Entity
@@ -44,10 +43,10 @@ public class Vote extends Event<VoteContainer> {
 	}
 
 	public VoteContainer getParent() {
-		if (appliesToGroup != null) {
-			return appliesToGroup;
-		} else if (logBook != null) {
-			return logBook;
+		if (parentGroup != null) {
+			return parentGroup;
+		} else if (parentLogBook != null) {
+			return parentLogBook;
 		} else if (meeting != null) {
 			return meeting;
 		} else {
@@ -57,9 +56,9 @@ public class Vote extends Event<VoteContainer> {
 
 	public void setParent(VoteContainer parent) {
 		if (parent instanceof Group) {
-			this.appliesToGroup = (Group) parent;
+			this.parentGroup = (Group) parent;
 		} else if (parent instanceof LogBook) {
-			this.logBook = (LogBook) parent;
+			this.parentLogBook = (LogBook) parent;
 		} else if (parent instanceof Meeting) {
 			this.meeting = (Meeting) parent;
 		} else {

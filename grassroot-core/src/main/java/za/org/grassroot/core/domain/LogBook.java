@@ -13,7 +13,7 @@ import java.util.Set;
 @Entity
 @Table(name = "log_book",
         indexes = {
-                @Index(name = "idx_log_book_group_id", columnList = "group_id"),
+                @Index(name = "idx_log_book_group_id", columnList = "parent_group_id"),
                 @Index(name = "idx_log_book_completed", columnList = "completed"),
                 @Index(name = "idx_log_book_retries_left", columnList = "number_of_reminders_left_to_send"),
                 @Index(name = "idx_log_book_replicated_group_id", columnList = "replicated_group_id")})

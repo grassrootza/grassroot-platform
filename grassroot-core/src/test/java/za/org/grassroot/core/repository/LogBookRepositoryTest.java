@@ -51,7 +51,7 @@ public class LogBookRepositoryTest {
         Group groupUnrelated = groupRepository.save(new Group("not related logbook", user));
         LogBook lb1 = logBookRepository.save(new LogBook(user, group, "just do it", addHoursFromNow(2)));
         LogBook lbUnrelated = logBookRepository.save(new LogBook(user, groupUnrelated, "just do it too", addHoursFromNow(2)));
-        List<LogBook> list = logBookRepository.findByGroup(group);
+        List<LogBook> list = logBookRepository.findByParentGroup(group);
         assertEquals(1,list.size());
         assertEquals(lb1.getId(),list.get(0).getId());
     }
@@ -153,7 +153,7 @@ public class LogBookRepositoryTest {
             replicatedEntries2.add(logBookRepository.save(new LogBook(user, group, message, dueDate2, 60, groupParent, 3)));
 
         List<LogBook> entriesFromDb = logBookRepository.
-                findByReplicatedGroupAndMessageAndActionByDateOrderByGroupIdAsc(groupParent, message, dueDate1);
+                findByReplicatedGroupAndMessageAndActionByDateOrderByParentGroupIdAsc(groupParent, message, dueDate1);
 
         assertEquals(entriesFromDb.size(), replicatedEntries.size());
         for (int i = 0; i < entriesFromDb.size(); i++)
@@ -170,7 +170,7 @@ public class LogBookRepositoryTest {
         assertFalse(subGroupsFromEntries.contains(group5));
 
         List<LogBook> entriesFromDb2 = logBookRepository.
-                findByReplicatedGroupAndMessageAndActionByDateOrderByGroupIdAsc(groupParent, message, lbParent2.getActionByDate());
+                findByReplicatedGroupAndMessageAndActionByDateOrderByParentGroupIdAsc(groupParent, message, lbParent2.getActionByDate());
         assertEquals(entriesFromDb2, replicatedEntries2);
 
         int numberReplicatedEntries1 = logBookRepository.countReplicatedEntries(groupParent, message, lbParent.getActionByDate());

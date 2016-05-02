@@ -76,7 +76,7 @@ public class EventManager implements EventManagementService {
 
     @Override
     public Event getMostRecentEvent(Group group) {
-        return eventRepository.findTopByAppliesToGroupAndEventStartDateTimeNotNullOrderByEventStartDateTimeDesc(group);
+        return eventRepository.findTopByParentGroupAndEventStartDateTimeNotNullOrderByEventStartDateTimeDesc(group);
     }
 
     @Override
@@ -132,7 +132,7 @@ public class EventManager implements EventManagementService {
 
     @Override
     public int countUpcomingEvents(User user) {
-        return eventRepository.countByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThan(user, Instant.now());
+        return eventRepository.countByParentGroupMembershipsUserAndEventStartDateTimeGreaterThan(user, Instant.now());
     }
 
 
@@ -230,10 +230,10 @@ public class EventManager implements EventManagementService {
             return userHasFutureEventsToView(user, type);
         } else {
             if (type.equals(EventType.MEETING)) {
-                return !meetingRepository.findByAppliesToGroupMembershipsUserAndCanceledOrderByEventStartDateTimeDesc(user, false).isEmpty();
+                return !meetingRepository.findByParentGroupMembershipsUserAndCanceledOrderByEventStartDateTimeDesc(user, false).isEmpty();
             } else {
                 log.info("Looking on vote repository, for this user: {}", user);
-                return !voteRepository.findByAppliesToGroupMembershipsUserAndCanceledOrderByEventStartDateTimeDesc(user, false).isEmpty();
+                return !voteRepository.findByParentGroupMembershipsUserAndCanceledOrderByEventStartDateTimeDesc(user, false).isEmpty();
             }
         }
     }
@@ -243,11 +243,11 @@ public class EventManager implements EventManagementService {
         // todo: in future performance tweaking, may turn this into a direct count query
         if (type.equals(EventType.MEETING)) {
             return !meetingRepository.
-                    findByAppliesToGroupMembershipsUserAndEventStartDateTimeLessThanAndCanceled(user, Instant.now(), false).
+                    findByParentGroupMembershipsUserAndEventStartDateTimeLessThanAndCanceled(user, Instant.now(), false).
                     isEmpty();
         } else {
             return !voteRepository.
-                    findByAppliesToGroupMembershipsUserAndEventStartDateTimeLessThanAndCanceled(user, Instant.now(), false).
+                    findByParentGroupMembershipsUserAndEventStartDateTimeLessThanAndCanceled(user, Instant.now(), false).
                     isEmpty();
         }
     }
@@ -256,12 +256,12 @@ public class EventManager implements EventManagementService {
     public boolean userHasFutureEventsToView(User user, EventType type) {
         log.info("Checking if user has future events to view, of type: {}", type);
         if (type.equals(EventType.MEETING)) {
-            List<Meeting> events = meetingRepository.findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceled(user, Instant.now(), false);
+            List<Meeting> events = meetingRepository.findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceled(user, Instant.now(), false);
             log.info("List of events returned, with size={}, hence returning={}", events.size(), !events.isEmpty());
             return !events.isEmpty();
         } else {
             return !voteRepository.
-                    findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceled(user, Instant.now(), false).
+                    findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceled(user, Instant.now(), false).
                     isEmpty();
         }
     }
@@ -271,29 +271,29 @@ public class EventManager implements EventManagementService {
         // todo: filter for permissions, maybe
         if (pastPresentOrBoth == -1) {
             if (type.equals(EventType.MEETING)) {
-                return (Page) meetingRepository.findByAppliesToGroupMembershipsUserAndEventStartDateTimeLessThanAndCanceledOrderByEventStartDateTimeDesc(
+                return (Page) meetingRepository.findByParentGroupMembershipsUserAndEventStartDateTimeLessThanAndCanceledOrderByEventStartDateTimeDesc(
                         user, Instant.now(), false, new PageRequest(pageNumber, pageSize));
             } else {
-                return (Page) voteRepository.findByAppliesToGroupMembershipsUserAndEventStartDateTimeLessThanAndCanceledOrderByEventStartDateTimeDesc(
+                return (Page) voteRepository.findByParentGroupMembershipsUserAndEventStartDateTimeLessThanAndCanceledOrderByEventStartDateTimeDesc(
                         user, Instant.now(), false, new PageRequest(pageNumber, pageSize));
             }
 
         } else if (pastPresentOrBoth == 1) {
             if (type.equals(EventType.MEETING)) {
-                return (Page) meetingRepository.findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledOrderByEventStartDateTimeDesc(
+                return (Page) meetingRepository.findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledOrderByEventStartDateTimeDesc(
                         user, Instant.now(), false, new PageRequest(pageNumber, pageSize));
             } else {
-                return (Page) voteRepository.findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledOrderByEventStartDateTimeDesc(
+                return (Page) voteRepository.findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledOrderByEventStartDateTimeDesc(
                         user, Instant.now(), false, new PageRequest(pageNumber, pageSize));
             }
 
         } else {
             // todo: think about setting a lower bound (e.g., one year ago)
             if (type.equals(EventType.MEETING)) {
-                return (Page) meetingRepository.findByAppliesToGroupMembershipsUserAndCanceledOrderByEventStartDateTimeDesc(
+                return (Page) meetingRepository.findByParentGroupMembershipsUserAndCanceledOrderByEventStartDateTimeDesc(
                         user, false, new PageRequest(pageNumber, pageSize));
             } else {
-                return (Page) voteRepository.findByAppliesToGroupMembershipsUserAndCanceledOrderByEventStartDateTimeDesc(
+                return (Page) voteRepository.findByParentGroupMembershipsUserAndCanceledOrderByEventStartDateTimeDesc(
                         user, false, new PageRequest(pageNumber, pageSize));
             }
         }
@@ -323,7 +323,7 @@ public class EventManager implements EventManagementService {
         Sort sort = new Sort(Sort.Direction.ASC, "EventStartDateTime");
         Instant start = convertToSystemTime(periodStart, DateTimeUtil.getSAST());
         Instant end = convertToSystemTime(periodEnd, DateTimeUtil.getSAST());
-        return eventRepository.findByAppliesToGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, start, end, sort);
+        return eventRepository.findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, start, end, sort);
     }
 
     /**
@@ -336,9 +336,9 @@ public class EventManager implements EventManagementService {
         Instant start = convertToSystemTime(periodStart, DateTimeUtil.getSAST());
         Instant end = convertToSystemTime(periodEnd, DateTimeUtil.getSAST());
         if (eventType.equals(EventType.MEETING)) {
-            return (List) meetingRepository.findByAppliesToGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, start, end);
+            return (List) meetingRepository.findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, start, end);
         } else {
-            return (List) voteRepository.findByAppliesToGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, start, end);
+            return (List) voteRepository.findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, start, end);
         }
     }
 
@@ -346,7 +346,7 @@ public class EventManager implements EventManagementService {
     public double getTotalCostGroupInPeriod(Group group, LocalDateTime periodStart, LocalDateTime periodEnd) {
         // todo: a repository method that doesn't bother with event type ...
         Sort sort = new Sort(Sort.Direction.ASC, "EventStartDateTime");
-        List<Event> events = eventRepository.findByAppliesToGroupAndEventStartDateTimeBetween(group, Timestamp.valueOf(periodStart),
+        List<Event> events = eventRepository.findByParentGroupAndEventStartDateTimeBetween(group, Timestamp.valueOf(periodStart),
                 Timestamp.valueOf(periodEnd), sort);
         double costCounter = 0;
         for (Event event : events)

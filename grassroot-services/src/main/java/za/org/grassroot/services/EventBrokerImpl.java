@@ -92,12 +92,12 @@ public class EventBrokerImpl implements EventBroker {
 		} else {
 			if (type == null) {
 				eventsToReturn = eventRepository.
-						findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(user, start);
+						findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(user, start);
 			} else {
 				if (type.equals(EventType.MEETING))
-					eventsToReturn = meetingRepository.findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(user, start);
+					eventsToReturn = meetingRepository.findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(user, start);
 				else
-					eventsToReturn = voteRepository.findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(user, start);
+					eventsToReturn = voteRepository.findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(user, start);
 			}
 		}
 		return eventsToReturn;

@@ -802,7 +802,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
     private LocalDateTime getLastTimeGroupActive(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
-        Event latestEvent = eventRepository.findTopByAppliesToGroupAndEventStartDateTimeNotNullOrderByEventStartDateTimeDesc(group);
+        Event latestEvent = eventRepository.findTopByParentGroupAndEventStartDateTimeNotNullOrderByEventStartDateTimeDesc(group);
         return (latestEvent != null) ? latestEvent.getEventDateTimeAtSAST() :
                 group.getCreatedDateTime().toLocalDateTime();
     }
@@ -858,13 +858,13 @@ public class GroupBrokerImpl implements GroupBroker {
         }
 
         if (eventType == null) {
-            events = eventRepository.findByAppliesToGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, beginning, end, sort);
+            events = eventRepository.findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, beginning, end, sort);
         } else if (eventType.equals(EventType.MEETING)) {
-            events = (List) meetingRepository.findByAppliesToGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, beginning, end);
+            events = (List) meetingRepository.findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, beginning, end);
         } else if (eventType.equals(EventType.VOTE)) {
-            events = (List) voteRepository.findByAppliesToGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, beginning, end);
+            events = (List) voteRepository.findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, beginning, end);
         } else {
-            events = eventRepository.findByAppliesToGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, beginning, end, sort);
+            events = eventRepository.findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, beginning, end, sort);
         }
 
         return events;

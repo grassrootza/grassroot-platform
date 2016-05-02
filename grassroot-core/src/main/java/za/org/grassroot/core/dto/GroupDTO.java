@@ -18,16 +18,14 @@ public class GroupDTO {
     private String groupName;
     private int group_size;
 
-    private List<String> phoneNumbers;
-
     public GroupDTO(Group group){
         this.id = group.getId();
         this.uid = group.getUid();
         this.active = group.isActive();
         this.created_date_time = group.getCreatedDateTime();
-        this.description = group.getDescription();
         this.groupName = group.getGroupName();
         this.group_size = -1;
+        this.description = group.getDescription();
         // we leave out group size as, if we need it, then use the query
     }
 
@@ -38,9 +36,9 @@ public class GroupDTO {
     public GroupDTO(Object[] objArray) {
         id = Long.parseLong(objArray[0].toString());
         uid = objArray[1].toString();
+        active = (Boolean) objArray[4];
         created_date_time = (Timestamp) objArray[2];
         groupName = objArray[3].toString();
-        active = (Boolean) objArray[4];
         group_size = (Integer) objArray[5];
     }
 
@@ -78,18 +76,12 @@ public class GroupDTO {
         }
     }
 
-    public List<String> getPhoneNumbers() {
-        return phoneNumbers;
-    }
-
     public String getDescription() {
         return description;
     }
 
     @Override
     public String toString() {
-        if (phoneNumbers == null) return groupName;
-        return phoneNumbers.toString();
+        return groupName;
     }
-
 }

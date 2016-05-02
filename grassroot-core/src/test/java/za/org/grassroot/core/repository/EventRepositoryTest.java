@@ -76,7 +76,7 @@ public class EventRepositoryTest {
         assertNotNull(eventFromDb.getId());
         assertNotNull(eventFromDb.getCreatedDateTime());
 
-//        assertThat(eventFromDb.getParentAppliesToGroup().getGroupName(), is("Test Group"));
+//        assertThat(eventFromDb.getParentParentGroup().getGroupName(), is("Test Group"));
         assertThat(eventFromDb.getCreatedByUser().getPhoneNumber(), is("55555"));
         assertThat(eventFromDb.getEventStartDateTime(), is(meetingStartDateTime));
     }
@@ -173,8 +173,8 @@ public class EventRepositoryTest {
         group2 = groupRepository.save(group2);
         Event event2 = eventRepository.save(new Meeting("test2", Instant.now(), user2, group2, "someLoc"));
 
-        List<Event> events = eventRepository.findByAppliesToGroupMembershipsUser(user1);
-        List<Event> events2 = eventRepository.findByAppliesToGroupMembershipsUser(user2);
+        List<Event> events = eventRepository.findByParentGroupMembershipsUser(user1);
+        List<Event> events2 = eventRepository.findByParentGroupMembershipsUser(user2);
 
         assertThat(userRepository.count(), is(2L));
         assertThat(groupRepository.count(), is(2L));
@@ -235,9 +235,9 @@ public class EventRepositoryTest {
         event1 = eventRepository.save(event1);
         event2 = eventRepository.save(event2);
 
-        int numberUpcomingEvents1 = eventRepository.countByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThan(user, Instant.now());
+        int numberUpcomingEvents1 = eventRepository.countByParentGroupMembershipsUserAndEventStartDateTimeGreaterThan(user, Instant.now());
         assertThat(numberUpcomingEvents1, is(1));
-        int numberUpcomingEvents2 = eventRepository.countByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThan(user2, Instant.now());
+        int numberUpcomingEvents2 = eventRepository.countByParentGroupMembershipsUserAndEventStartDateTimeGreaterThan(user2, Instant.now());
         assertThat(numberUpcomingEvents2, is(0));
 
     }

@@ -59,7 +59,7 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 	)
 	private Set<User> assignedMembers = new HashSet<>();
 
-	@OneToMany(mappedBy = "event")
+	@OneToMany(mappedBy = "parentEvent")
 	private Set<LogBook> logBooks = new HashSet<>();
 
 	public abstract EventType getEventType();

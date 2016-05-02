@@ -1,6 +1,5 @@
 package za.org.grassroot.core.domain;
 
-import org.springframework.format.annotation.DateTimeFormat;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
@@ -42,14 +41,6 @@ public abstract class AbstractEventEntity<P extends UidIdentifiable> {
 	@JoinColumn(name = "created_by_user")
 	protected User createdByUser;
 
-	@ManyToOne
-	@JoinColumn(name = "applies_to_group")
-	protected Group appliesToGroup;
-
-	@ManyToOne
-	@JoinColumn(name = "log_book_id")
-	protected LogBook logBook;
-
 	/*
 	used to determine if notifications should be sent only to the group linked to the event, or any subgroups as well
 	 */
@@ -75,6 +66,19 @@ public abstract class AbstractEventEntity<P extends UidIdentifiable> {
 
 	@Column(name = "custom_reminder_minutes")
 	protected int customReminderMinutes;
+
+	// -------------------------------------------------------------
+	// THESE SHOULD BE OF PRIVATE VISIBILITY; BECAUSE EVERYONE ELSE
+	// SHOULD READ/WRITE THEM VIA getParent()/setParent() !!!
+	// ONLY DIECT JPQL/SQL QUERIES SHOULD USE THIS IF NECESSARY!
+	// -------------------------------------------------------------
+	@ManyToOne
+	@JoinColumn(name = "parent_group_id")
+	protected Group parentGroup;
+
+	@ManyToOne
+	@JoinColumn(name = "parent_log_book_id")
+	protected LogBook parentLogBook;
 
 	public abstract void setParent(P parent);
 
@@ -102,9 +106,9 @@ public abstract class AbstractEventEntity<P extends UidIdentifiable> {
 
 
 		if (parent instanceof Group) {
-			this.appliesToGroup = (Group) parent;
+			this.parentGroup = (Group) parent;
 		} else if (parent instanceof LogBook) {
-			this.logBook = (LogBook) parent;
+			this.parentLogBook = (LogBook) parent;
 		} else {
 			throw new UnsupportedOperationException("Unsupported parent: " + parent);
 		}

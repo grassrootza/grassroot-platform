@@ -4,10 +4,8 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
 import java.util.Objects;
 
 /**
@@ -33,15 +31,16 @@ public abstract class AbstractLogBookEntity {
 	// -------------------------------------------------------------
 	// THESE SHOULD BE OF PRIVATE VISIBILITY; BECAUSE EVERYONE ELSE
 	// SHOULD READ/WRITE THEM VIA getParent()/setParent() !!!
+	// ONLY DIECT JPQL/SQL QUERIES SHOULD USE THIS IF NECESSARY!
 	// -------------------------------------------------------------
 
 	@ManyToOne(cascade = CascadeType.ALL)
-	@JoinColumn(name = "group_id")
-	private Group group;
+	@JoinColumn(name = "parent_group_id")
+	private Group parentGroup;
 
 	@ManyToOne(cascade = CascadeType.ALL)
-	@JoinColumn(name = "event_id")
-	private Event event;
+	@JoinColumn(name = "parent_event_id")
+	private Event parentEvent;
 
 	// --------------------------------------------------------------
 
@@ -118,10 +117,10 @@ public abstract class AbstractLogBookEntity {
 	}
 
 	public LogBookContainer getParent() {
-		if (group != null) {
-			return group;
-		} else if (event != null) {
-			return event;
+		if (parentGroup != null) {
+			return parentGroup;
+		} else if (parentEvent != null) {
+			return parentEvent;
 		} else {
 			throw new IllegalStateException("There is no " + LogBookContainer.class.getSimpleName() + " parent defined for " + this);
 		}
@@ -130,9 +129,9 @@ public abstract class AbstractLogBookEntity {
 	public void setParent(LogBookContainer parent) {
 		Objects.requireNonNull(parent);
 		if (parent instanceof Group) {
-			this.group = (Group) parent;
+			this.parentGroup = (Group) parent;
 		} else if (parent instanceof Event) {
-			this.event = (Event) parent;
+			this.parentEvent = (Event) parent;
 		} else {
 			throw new UnsupportedOperationException("Unsupported parent: " + parent);
 		}

@@ -55,7 +55,7 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
 
     /*
      used to calculate when a reminder must be sent, before the eventStartTime
-     when the event is created and if appliestoGroup is set it will default to a value in group
+     when the event is created and if parentGroup is set it will default to a value in group
      if group = null or group.reminderminutes = 0, then it will use the site value in properties file
       */
     @Column(name = "reminderminutes")
@@ -96,10 +96,10 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
     @Column(name = "description", nullable = false)
     private String description;
 
-    @OneToMany(mappedBy = "group")
+    @OneToMany(mappedBy = "parentGroup")
     private Set<LogBook> logBooks = new HashSet<>();
 
-    @OneToMany(mappedBy = "appliesToGroup")
+    @OneToMany(mappedBy = "parentGroup")
     private Set<Event> events = new HashSet<>();
 
 	/**

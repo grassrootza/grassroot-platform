@@ -17,18 +17,18 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
 	Event findOneByUid(String uid);
 
-	Event findTopByAppliesToGroupAndEventStartDateTimeNotNullOrderByEventStartDateTimeDesc(Group group);
+	Event findTopByParentGroupAndEventStartDateTimeNotNullOrderByEventStartDateTimeDesc(Group group);
 
-	List<Event> findByAppliesToGroupAndEventStartDateTimeBetweenAndCanceledFalse(Group group, Instant start, Instant end, Sort sort);
+	List<Event> findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(Group group, Instant start, Instant end, Sort sort);
 
-    int countByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThan(User user, Instant instant);
+    int countByParentGroupMembershipsUserAndEventStartDateTimeGreaterThan(User user, Instant instant);
 
     /*
     A set of queries to use in fetching events related to a user (different flavors exist)
      */
-	List<Event> findByAppliesToGroupMembershipsUser(User user);
+	List<Event> findByParentGroupMembershipsUser(User user);
 
-	List<Event> findByAppliesToGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(User user, Instant start);
+	List<Event> findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(User user, Instant start);
 
 	List<Event> findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceledFalse(User user, Instant startTime);
 
@@ -54,16 +54,14 @@ where e.canceled = FALSE
 
     /* (Some old queries, leaving in, just in case SQL statements come in handy in the future)
 
-    @Query(value = "SELECT * FROM event e WHERE applies_to_group IN (SELECT group_id FROM group_user_membership ")
+	@Query(value = "select e from Event e where e.parentGroup.memberships.user = :user and e.class = :eventClass and e.canceled = :canceled order by e.EventStartDateTime desc")
+	List<Event> findByParentGroupMembershipsUserAndEventTypeAndCanceledOrderByEventStartDateTimeDesc(User user, Class<? extends Event> eventClass, boolean canceled);
 
-	@Query(value = "select e from Event e where e.appliesToGroup.memberships.user = :user and e.class = :eventClass and e.canceled = :canceled order by e.EventStartDateTime desc")
-	List<Event> findByAppliesToGroupMembershipsUserAndEventTypeAndCanceledOrderByEventStartDateTimeDesc(User user, Class<? extends Event> eventClass, boolean canceled);
+	@Query(value = "select e from Event e where e.parentGroup.memberships.user = :user and e.class = :eventClass and e.eventStartDateTime > :startTime and e.canceled = :canceled")
+	List<Event> findByParentGroupMembershipsUserAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled(User user, Class<? extends Event> eventClass, Date startTime, boolean cancelled);
 
-	@Query(value = "select e from Event e where e.appliesToGroup.memberships.user = :user and e.class = :eventClass and e.eventStartDateTime > :startTime and e.canceled = :canceled")
-	List<Event> findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled(User user, Class<? extends Event> eventClass, Date startTime, boolean cancelled);
-
-	@Query(value = "select e from Event e where e.appliesToGroup.memberships.user = :user and e.class = :eventClass and e.eventStartDateTime < :startTime and e.canceled = :canceled")
-	List<Event> findByAppliesToGroupMembershipsUserAndEventTypeAndEventStartDateTimeLessThanAndCanceled(User user, Class<? extends Event> eventClass, Date startTime, boolean cancelled);
+	@Query(value = "select e from Event e where e.parentGroup.memberships.user = :user and e.class = :eventClass and e.eventStartDateTime < :startTime and e.canceled = :canceled")
+	List<Event> findByParentGroupMembershipsUserAndEventTypeAndEventStartDateTimeLessThanAndCanceled(User user, Class<? extends Event> eventClass, Date startTime, boolean cancelled);
 
     @Query(value = "select count(e) from Event e where e.class = :eventClass and e.eventStartDateTime is not null")
 	Long countByEventTypeAndEventStartDateTimeNotNull(Class<? extends Event> eventClass);

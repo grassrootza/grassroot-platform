@@ -76,15 +76,15 @@ public class MeetingRepositoryTest {
         Instant twoMonthsBack = LocalDateTime.now().minusMonths(2L).toInstant(ZoneOffset.UTC);
 
         List<Meeting> test1 = meetingRepository.
-                findByAppliesToGroupAndEventStartDateTimeBetweenAndCanceledFalse(group1, oneMonthBack, now);
+                findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(group1, oneMonthBack, now);
         List<Meeting> test2 = meetingRepository.
-                findByAppliesToGroupAndEventStartDateTimeBetweenAndCanceledFalse(group1, twoMonthsBack, oneMonthBack);
+                findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(group1, twoMonthsBack, oneMonthBack);
         List<Vote> test3 = voteRepository.
-                findByAppliesToGroupAndEventStartDateTimeBetweenAndCanceledFalse(group1, oneMonthBack, now);
+                findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(group1, oneMonthBack, now);
         List<Meeting> test4 = meetingRepository.
-                findByAppliesToGroupAndEventStartDateTimeBetweenAndCanceledFalse(group2, oneMonthBack, now);
+                findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(group2, oneMonthBack, now);
         List<Event> test5 = eventRepository.
-                findByAppliesToGroupAndEventStartDateTimeBetweenAndCanceledFalse(group1, oneMonthBack, now, new Sort(Sort.Direction.ASC, "EventStartDateTime"));
+                findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(group1, oneMonthBack, now, new Sort(Sort.Direction.ASC, "EventStartDateTime"));
 
         assertNotNull(test1);
         assertEquals(test1, Collections.singletonList(event1));

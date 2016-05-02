@@ -63,7 +63,7 @@ public class EventManagementServiceTest {
         Event event = eventManagementService.createEvent("Drink till you drop", userProfile, group);
         assertEquals("Drink till you drop", event.getGroupName());
         assertEquals(userProfile.getId(), event.getCreatedByUser().getId());
-        assertEquals(group.getId(), event.getAppliesToGroup().getId());*/
+        assertEquals(group.getId(), event.getParentGroup().getId());*/
 
     }
 
@@ -159,12 +159,12 @@ public class EventManagementServiceTest {
         Event event = new Event();
         event.setEventType(EventType.Vote);
         event.setRsvpRequired(true);
-        event.setAppliesToGroup(group1);
+        event.setParentGroup(group1);
         event.setName("Does voting work?");
         event.setEventStartDateTime(new Timestamp(DateTimeUtil.addMinutesToDate(new Date(), 5).getTime()));
         event = eventManagementService.createVote(event);
         assertNotSame(0, event.getId());
-        assertThat(event.getAppliesToGroup(), is(group1));*/
+        assertThat(event.getParentGroup(), is(group1));*/
         // assertTrue(eventManagementService.countFutureEvents(user)); // fails because getUpcomingEventsQuery is PSQL-dependent
 
         // todo: make method in send message save to cache -- so that we can check -- this fails because of async and various other issues

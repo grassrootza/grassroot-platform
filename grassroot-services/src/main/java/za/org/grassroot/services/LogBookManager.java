@@ -49,7 +49,7 @@ public class LogBookManager implements LogBookService {
 
     @Override
     public List<LogBook> getAllLogBookEntriesForGroup(Group group) {
-        return logBookRepository.findByGroup(group);
+        return logBookRepository.findByParentGroup(group);
     }
 
     @Override
@@ -57,13 +57,13 @@ public class LogBookManager implements LogBookService {
         Sort sort = new Sort(Sort.Direction.ASC, "createdDateTime");
         Instant start = convertToSystemTime(periodStart, getSAST());
         Instant end = convertToSystemTime(periodEnd, getSAST());
-        return logBookRepository.findByGroupAndCreatedDateTimeBetween(group, start, end, sort);
+        return logBookRepository.findByParentGroupAndCreatedDateTimeBetween(group, start, end, sort);
     }
 
     @Override
     public List<LogBook> getAllLogBookEntriesForGroup(Group group, boolean completed) {
         // use an old timestamp both so we prune the really old entries, and to get around half-formed ("null due date") entries
-        return logBookRepository.findByGroupAndCompletedAndActionByDateGreaterThan(
+        return logBookRepository.findByParentGroupAndCompletedAndActionByDateGreaterThan(
                 group, completed, LocalDateTime.now().minusYears(1L).toInstant(ZoneOffset.UTC));
     }
 
@@ -74,7 +74,7 @@ public class LogBookManager implements LogBookService {
 
     @Override
     public List<LogBook> getAllReplicatedEntriesFromParentLogBook(LogBook logBook) {
-        return logBookRepository.findByReplicatedGroupAndMessageAndActionByDateOrderByGroupIdAsc(logBook.resolveGroup(), logBook.getMessage(),
+        return logBookRepository.findByReplicatedGroupAndMessageAndActionByDateOrderByParentGroupIdAsc(logBook.resolveGroup(), logBook.getMessage(),
                                                                                                  logBook.getActionByDate());
     }
 
@@ -85,7 +85,7 @@ public class LogBookManager implements LogBookService {
         if (parentLogBookGroup == null) {
             return null;
         }
-        else return logBookRepository.findByGroupAndMessageAndCreatedDateTime(parentLogBookGroup, logBook.getMessage(),
+        else return logBookRepository.findByParentGroupAndMessageAndCreatedDateTime(parentLogBookGroup, logBook.getMessage(),
                                                                               logBook.getCreatedDateTime()).get(0);
     }
 

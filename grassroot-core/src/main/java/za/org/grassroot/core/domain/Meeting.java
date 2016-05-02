@@ -4,7 +4,6 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Objects;
 
@@ -60,10 +59,10 @@ public class Meeting extends Event<MeetingContainer> implements VoteContainer {
 	}
 
 	public MeetingContainer getParent() {
-		if (appliesToGroup != null) {
-			return appliesToGroup;
-		} else if (logBook != null) {
-			return logBook;
+		if (parentGroup != null) {
+			return parentGroup;
+		} else if (parentLogBook != null) {
+			return parentLogBook;
 		} else {
 			throw new IllegalStateException("There is no " + MeetingContainer.class.getSimpleName() + " parent defined for " + this);
 		}
@@ -71,9 +70,9 @@ public class Meeting extends Event<MeetingContainer> implements VoteContainer {
 
 	public void setParent(MeetingContainer parent) {
 		if (parent instanceof Group) {
-			this.appliesToGroup = (Group) parent;
+			this.parentGroup = (Group) parent;
 		} else if (parent instanceof LogBook) {
-			this.logBook = (LogBook) parent;
+			this.parentLogBook = (LogBook) parent;
 		} else {
 			throw new UnsupportedOperationException("Unsupported parent: " + parent);
 		}
