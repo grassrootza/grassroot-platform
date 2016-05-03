@@ -11,7 +11,6 @@ import java.time.Instant;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Entity
 @Table(name = "group_profile") // quoting table name in case "group" is a reserved keyword
@@ -99,8 +98,22 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
     @OneToMany(mappedBy = "parentGroup")
     private Set<LogBook> logBooks = new HashSet<>();
 
+	/**
+     * These are all descendant logbooks contained maybe in other non-group entities beneath this group.
+     * This does not include logbooks under subgroups!!!
+     */
+    @OneToMany(mappedBy = "ancestorGroup")
+    private Set<LogBook> descendantLogBooks = new HashSet<>();
+
     @OneToMany(mappedBy = "parentGroup")
     private Set<Event> events = new HashSet<>();
+
+    /**
+     * These are all descendant events contained maybe in other non-group entities beneath this group.
+     * This does not include events under subgroups!!!
+     */
+    @OneToMany(mappedBy = "ancestorGroup")
+    private Set<Event> descendantEvents = new HashSet<>();
 
 	/**
      * Children groups are not managed using this collections (use 'parent' field for that),

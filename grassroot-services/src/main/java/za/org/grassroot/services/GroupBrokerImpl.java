@@ -307,7 +307,7 @@ public class GroupBrokerImpl implements GroupBroker {
             // we create event notification for new member, but in case when meeting belongs to parent group, then only if member
             // is not already contained in this ancestor group (otherwise, it already got the notification for such meetings)
             for (Meeting meeting : meetings) {
-                Group meetingGroup = meeting.resolveGroup();
+                Group meetingGroup = meeting.getAncestorGroup();
                 if (meetingGroup.equals(group) || !meetingGroup.hasMember(member)) {
                     // meeting doesn't have to always apply to every member of its group ...
                     boolean appliesToMember = meeting.isAllGroupMembersAssigned() || meeting.getAssignedMembers().contains(member);

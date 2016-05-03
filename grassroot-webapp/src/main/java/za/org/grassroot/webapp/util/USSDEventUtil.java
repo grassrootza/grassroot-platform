@@ -104,7 +104,7 @@ public class USSDEventUtil extends USSDUtil {
         final String formedUrl = section.toPath() + nextMenuUrl + ((nextMenuUrl.contains("?")) ? entityUidLaterParam : entityUidFirstParam);
         for (Event event : events) {
             String suffix = (section.equals(MEETINGS)) ? mtgFormat.format(event.getEventDateTimeAtSAST()) : event.getName();
-            String descriptor = (includeGroupName ? event.resolveGroup().getName("") + ": " : "Subject: ") + suffix;
+            String descriptor = (includeGroupName ? event.getAncestorGroup().getName("") + ": " : "Subject: ") + suffix;
             menu.addMenuOption(formedUrl + event.getUid(), checkAndTruncateMenuOption(descriptor));
         }
         return menu;

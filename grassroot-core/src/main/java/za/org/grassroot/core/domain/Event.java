@@ -22,7 +22,7 @@ import java.util.Set;
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "type", discriminatorType = DiscriminatorType.STRING)
 public abstract class Event<P extends UidIdentifiable> extends AbstractEventEntity<P>
-		implements LogBookContainer, AssignedMembersContainer, Serializable {
+		implements LogBookContainer, AssignedMembersContainer, GroupDescendant, Serializable {
 
 	@Column(name = "canceled")
 	private boolean canceled;
@@ -62,6 +62,10 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 	@OneToMany(mappedBy = "parentEvent")
 	private Set<LogBook> logBooks = new HashSet<>();
 
+	@ManyToOne
+	@JoinColumn(name = "ancestor_group_id", nullable = false)
+	private Group ancestorGroup;
+
 	public abstract EventType getEventType();
 
 	protected Event() {
@@ -73,6 +77,7 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 		super(name, eventStartDateTime, user, parent, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes, description);
 		this.canceled = false;
 		this.noRemindersSent = 0;
+		this.ancestorGroup = parent.getThisOrAncestorGroup();
 		updateScheduledReminderTime();
 	}
 
@@ -113,7 +118,7 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 	}
 
 	public void updateScheduledReminderTime() {
-		Group group = resolveGroup();
+		Group group = getAncestorGroup();
 		if (getReminderType().equals(EventReminderType.CUSTOM)) {
 			this.scheduledReminderTime = getEventStartDateTime().minus(getCustomReminderMinutes(), ChronoUnit.MINUTES);
 		} else if (getReminderType().equals(EventReminderType.GROUP_CONFIGURED) && group.getReminderMinutes() > 0) {
@@ -157,12 +162,17 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 	public Set<User> getAllMembers() {
 		// todo: replace this with calling the parent and/or just using assigned members
 		if (isIncludeSubGroups()) {
-			return resolveGroup().getMembersWithChildrenIncluded();
+			return getAncestorGroup().getMembersWithChildrenIncluded();
 		} else if (isAllGroupMembersAssigned()) {
-			return resolveGroup().getMembers();
+			return getAncestorGroup().getMembers();
 		} else {
 			return getAssignedMembers();
 		}
+	}
+
+	@Override
+	public Group getAncestorGroup() {
+		return ancestorGroup;
 	}
 
 	@Override

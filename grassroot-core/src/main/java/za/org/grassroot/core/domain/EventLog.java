@@ -15,7 +15,6 @@ import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Calendar;
 import java.util.Objects;
@@ -32,15 +31,15 @@ public class EventLog implements ActionLog {
     @Column(name = "uid", nullable = false, unique = true)
     private String uid;
 
-    @Basic
-    @Column(name="created_date_time", insertable = true, updatable = false)
-    private Timestamp createdDateTime;
+    @Column(name="created_date_time", nullable = false, updatable = false)
+    private Instant createdDateTime;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
-    private User user;
+    private User user; // user can be null to represent the app itself as initiator (eg. scheduled action)
 
     @ManyToOne
+    @JoinColumn(name = "event_id", nullable = false)
     private Event event;
 
     @Enumerated
@@ -48,14 +47,6 @@ public class EventLog implements ActionLog {
 
     @Column
     private String message;
-
-    @PreUpdate
-    @PrePersist
-    public void updateTimeStamps() {
-        if (createdDateTime == null) {
-            createdDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis());
-        }
-    }
 
     /*
     Constructors
@@ -65,17 +56,17 @@ public class EventLog implements ActionLog {
         // for JPA
     }
 
-    public EventLog(User user, Event event, EventLogType eventLogType, String message) {
-        Objects.requireNonNull(user);
-        Objects.requireNonNull(event);
-        Objects.requireNonNull(eventLogType);
+    public EventLog(User user, Event event, EventLogType eventLogType) {
+        this(user, event, eventLogType, null);
+    }
 
+    public EventLog(User user, Event event, EventLogType eventLogType, String message) {
         this.uid = UIDGenerator.generateId();
+        this.createdDateTime = Instant.now();
         this.user = user;
-        this.event = event;
-        this.eventLogType = eventLogType;
+        this.event = Objects.requireNonNull(event);
+        this.eventLogType = Objects.requireNonNull(eventLogType);
         this.message = message;
-        this.createdDateTime = Timestamp.from(Instant.now());
     }
 
     public Long getId() {
@@ -84,7 +75,7 @@ public class EventLog implements ActionLog {
 
     public String getUid() { return uid; }
 
-    public Timestamp getCreatedDateTime() {
+    public Instant getCreatedDateTime() {
         return createdDateTime;
     }
 

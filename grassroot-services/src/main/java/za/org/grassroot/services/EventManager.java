@@ -32,9 +32,6 @@ public class EventManager implements EventManagementService {
 
     private Logger log = LoggerFactory.getLogger(EventManager.class);
 
-    //TODO aakil move this to the properties file as soon as you get the property injection to work
-    private final int SITE_REMINDERMINUTES = 1440; // 24hours
-
     @Autowired
     private EventRepository eventRepository;
 
@@ -71,8 +68,6 @@ public class EventManager implements EventManagementService {
 
     @Autowired
     GroupLogRepository groupLogRepository;
-
-    private final static double SMS_COST = 0.2; // might move to message services
 
     @Override
     public Event getMostRecentEvent(Group group) {
@@ -118,7 +113,7 @@ public class EventManager implements EventManagementService {
         // todo: there is almost certainly a faster/better way to do this
         Map<User, EventRSVPResponse> rsvpResponses = new LinkedHashMap<>();
 
-        for (User user : event.resolveGroup().getMembers())
+        for (User user : event.getAncestorGroup().getMembers())
             rsvpResponses.put(user, EventRSVPResponse.NO_RESPONSE);
 
         for (User user : getListOfUsersThatRSVPYesForEvent(event))
@@ -303,8 +298,8 @@ public class EventManager implements EventManagementService {
     public int getNumberInvitees(Event event) {
         // may make this more sophisticated once we have message relays in place, also, switch to using parent
         return (!event.isIncludeSubGroups()) ?
-                event.resolveGroup().getMembers().size() :
-                event.resolveGroup().getMembersWithChildrenIncluded().size();
+                event.getAncestorGroup().getMembers().size() :
+                event.getAncestorGroup().getMembersWithChildrenIncluded().size();
     }
 
     @Override

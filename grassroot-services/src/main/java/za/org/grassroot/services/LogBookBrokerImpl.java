@@ -49,8 +49,6 @@ public class LogBookBrokerImpl implements LogBookBroker {
 	@Autowired
 	private MessageAssemblingService messageAssemblingService;
 	@Autowired
-	private AccountManagementService accountManagementService;
-	@Autowired
 	private LogsAndNotificationsBroker logsAndNotificationsBroker;
 	@Autowired
 	private PermissionBroker permissionBroker;
@@ -112,7 +110,7 @@ public class LogBookBrokerImpl implements LogBookBroker {
 	}
 
 	private void replicateLogBookToSubgroups(User user, LogBook logBook, LocalDateTime actionByDate) {
-		Group group = logBook.resolveGroup();
+		Group group = logBook.getAncestorGroup();
 		// note: getGroupAndSubGroups is a much faster method (a recursive query) than getSubGroups, hence use it and just skip parent
 		List<Group> groupAndSubGroups = groupRepository.findGroupAndSubGroupsById(group.getId());
 		for (Group subGroup : groupAndSubGroups) {
@@ -144,7 +142,6 @@ public class LogBookBrokerImpl implements LogBookBroker {
 
 		logBook.removeAssignedMembers(memberUids);
 	}
-
 
 	@Override
 	@Transactional
@@ -178,8 +175,7 @@ public class LogBookBrokerImpl implements LogBookBroker {
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 		LogBookLog logBookLog = new LogBookLog(null, logBook, null);
 
-		Set<User> members = logBook.isAllGroupMembersAssigned() ?
-				logBook.resolveGroup().getMembers() : logBook.getAssignedMembers();
+		Set<User> members = logBook.isAllGroupMembersAssigned() ? logBook.getAncestorGroup().getMembers() : logBook.getAssignedMembers();
 		for (User member : members) {
 			String message = messageAssemblingService.createLogBookReminderMessage(member, logBook);
 			Notification notification = new LogBookReminderNotification(member, message, logBookLog);

@@ -48,12 +48,12 @@ public class UserLogRepositoryTest {
     public void shouldSaveAndRetrieveUserLogs() {
         assertThat(userLogRepository.count(), is(0L));
         User testUser = userRepository.save(new User("0605551111"));
-        UserLog createLog = userLogRepository.save(new UserLog(testUser.getUid(), CREATED_IN_DB));
+        UserLog createLog = userLogRepository.save(new UserLog(testUser.getUid(), CREATED_IN_DB, null, UNKNOWN));
         testUser.setHasInitiatedSession(true);
         testUser.setHasWebProfile(true);
         testUser = userRepository.save(testUser);
-        UserLog ussdLog = userLogRepository.save(new UserLog(testUser.getUid(), INITIATED_USSD));
-        UserLog webLog = userLogRepository.save(new UserLog(testUser.getUid(), CREATED_WEB));
+        UserLog ussdLog = userLogRepository.save(new UserLog(testUser.getUid(), INITIATED_USSD, null, UNKNOWN));
+        UserLog webLog = userLogRepository.save(new UserLog(testUser.getUid(), CREATED_WEB, null, UNKNOWN));
 
         List<UserLog> logsForUser = userLogRepository.findByUserUid(testUser.getUid());
         assertNotNull(logsForUser);

@@ -8,7 +8,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public interface AssignedMembersContainer extends UidIdentifiable {
+public interface AssignedMembersContainer extends GroupDescendant, UidIdentifiable {
 	/**
 	 * This is just a way to get handle of internal JPA/Hibernate assigned member collection.
 	 * It should not be of public visibility, but unfortunately, java interfaces cannot specify
@@ -33,7 +33,7 @@ public interface AssignedMembersContainer extends UidIdentifiable {
 	}
 
 	default Set<User> getMembers() {
-		return isAllGroupMembersAssigned() ? resolveGroup().getMembers() : getAssignedMembers();
+		return isAllGroupMembersAssigned() ? getAncestorGroup().getMembers() : getAssignedMembers();
 	}
 
 	/**
@@ -55,7 +55,7 @@ public interface AssignedMembersContainer extends UidIdentifiable {
 	default Set<User> assignMembers(Set<String> memberUids) {
 		Objects.requireNonNull(memberUids);
 
-		Group group = resolveGroup();
+		Group group = getAncestorGroup();
 
 		Map<String, User> membersByUid = group.getMembers().stream()
 				.collect(Collectors.toMap(User::getUid, member -> member));
@@ -102,7 +102,7 @@ public interface AssignedMembersContainer extends UidIdentifiable {
 	 */
 	default int countAssignedMembers() {
 		if (getAssignedMembers().isEmpty()) {
-			return resolveGroup().getMemberships().size();
+			return getAncestorGroup().getMemberships().size();
 		} else {
 			return getAssignedMembers().size();
 		}

@@ -267,7 +267,7 @@ public class USSDHomeController extends USSDController {
         log.info("Asking for a vote ... from user " + sessionUser);
         Vote vote = (Vote) eventManager.getOutstandingVotesForUser(sessionUser).get(0);
 
-        final String[] promptFields = new String[]{ vote.resolveGroup().getName(""),
+        final String[] promptFields = new String[]{ vote.getAncestorGroup().getName(""),
                 vote.getCreatedByUser().nameToDisplay(),
                 vote.getName()};
 
@@ -287,7 +287,7 @@ public class USSDHomeController extends USSDController {
         log.info("Asking for rsvp!");
         Event meeting = eventManager.getOutstandingRSVPForUser(sessionUser).get(0);
 
-        String[] meetingDetails = new String[] { meeting.resolveGroup().getName(""),
+        String[] meetingDetails = new String[] { meeting.getAncestorGroup().getName(""),
                 meeting.getCreatedByUser().nameToDisplay(),
                 meeting.getName(),
                 meeting.getEventDateTimeAtSAST().format(dateTimeFormat) };

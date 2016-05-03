@@ -1,7 +1,9 @@
 package za.org.grassroot.core.domain;
 
 import javax.persistence.*;
+import java.time.Instant;
 import java.util.Date;
+import java.util.Objects;
 
 /**
  * Created by aakilomar on 12/3/15.
@@ -18,8 +20,8 @@ public class LogBookLog implements ActionLog {
 	private Long id;
 
 	@Basic
-	@Column(name = "created_date_time", insertable = true, updatable = false)
-	private Date createdDateTime;
+	@Column(name = "created_date_time", nullable = false, updatable = false)
+	private Instant createdDateTime;
 
 	@ManyToOne
 	@JoinColumn(name = "logbook_id", nullable = false)
@@ -32,22 +34,15 @@ public class LogBookLog implements ActionLog {
 	@JoinColumn(name = "user_id")
 	private User user;
 
-	@PreUpdate
-	@PrePersist
-	public void updateTimeStamps() {
-		if (createdDateTime == null) {
-			createdDateTime = new Date();
-		}
-	}
-
 	private LogBookLog() {
 		// for JPA only
 	}
 
 	public LogBookLog(User user, LogBook logBook, String message) {
-		this.logBook = logBook;
+		this.logBook = Objects.requireNonNull(logBook);
 		this.message = message;
 		this.user = user;
+		this.createdDateTime = Instant.now();
 	}
 
 	public Long getId() {
@@ -58,12 +53,8 @@ public class LogBookLog implements ActionLog {
 		this.id = id;
 	}
 
-	public Date getCreatedDateTime() {
+	public Instant getCreatedDateTime() {
 		return createdDateTime;
-	}
-
-	public void setCreatedDateTime(Date createdDateTime) {
-		this.createdDateTime = createdDateTime;
 	}
 
 	public LogBook getLogBook() {

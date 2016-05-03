@@ -199,7 +199,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     }
 
     private String[] populateLogBookFields(LogBook logBook) {
-        Group group = logBook.resolveGroup();
+        Group group = logBook.getAncestorGroup();
         String salutation = (group.hasName()) ? group.getGroupName() : "Grassroot";
         DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
         String dateString = sdf.format(logBook.getActionByDateAtSAST());
@@ -223,24 +223,4 @@ public class MessageAssemblingManager implements MessageAssemblingService {
                 userDTO.getPhoneNumber()
         };
     }
-
-    public String constructEventcancelledMessage(User user, Event event) {
-   		Locale locale = getUserLocale(user);
-   		String messageKey = "sms.mtg.send.cancel";
-   		if (event.getEventType() == EventType.VOTE) {
-   			messageKey = "sms.vote.send.cancel";
-   		}
-   		return messageSourceAccessor.getMessage(messageKey, populateEventFields(event), locale);
-   	}
-
-    public String constructEventChangedMessage(User user, Event event) {
-   		Locale locale = getUserLocale(user);
-
-   		String messageKey = "sms.mtg.send.change";
-   		if (event.getEventType() == EventType.VOTE) {
-   			messageKey = "sms.vote.send.change";
-   		}
-   		return messageSourceAccessor.getMessage(messageKey, populateEventFields(event), locale);
-   	}
-
 }

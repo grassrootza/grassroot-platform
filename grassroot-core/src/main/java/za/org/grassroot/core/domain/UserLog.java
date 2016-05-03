@@ -6,6 +6,7 @@ import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
+import java.util.Objects;
 
 /**
  * Created by luke on 2016/02/22.
@@ -47,26 +48,13 @@ public class UserLog implements ActionLog {
         // for JPA
     }
 
-    public UserLog(String userUid, UserLogType userLogType) {
+    public UserLog(String userUid, UserLogType userLogType, String description, UserInterfaceType userInterfaceType) {
         this.uid = UIDGenerator.generateId();
         this.creationTime = Instant.now();
         this.userUid = userUid;
-        this.userLogType = userLogType;
-        this.userInterface = UserInterfaceType.UNKNOWN; // to avoid null errors (gets reset subsequently, if necessary)
-    }
-
-    public UserLog(String userUid, UserLogType userLogType, String description, UserInterfaceType userInterfaceType) {
-        this(userUid, userLogType);
+        this.userLogType = Objects.requireNonNull(userLogType);
         this.description = description;
         this.userInterface = userInterfaceType;
-    }
-
-    @PreUpdate
-    @PrePersist
-    public void updateTimeStamps() {
-        if (creationTime == null) {
-            creationTime = Instant.now();
-        }
     }
 
     public Long getId() {

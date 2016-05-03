@@ -52,13 +52,13 @@ public class NotificationToGcmXmppTransformer {
 		String body = null;
 		switch (notification.getNotificationType()) {
 			case EVENT:
-				title = notification.getEventLog().getEvent().resolveGroup().getGroupName();
+				title = notification.getEventLog().getEvent().getAncestorGroup().getGroupName();
 				body = notification.getEventLog().getMessage();
 				break;
 
 			case LOGBOOK:
 				LogBook logBook = notification.getLogBookLog().getLogBook();
-				title = logBook.resolveGroup().getGroupName();
+				title = logBook.getAncestorGroup().getGroupName();
 				body = notification.getLogBookLog().getMessage();
 				break;
 		}
@@ -70,15 +70,12 @@ public class NotificationToGcmXmppTransformer {
 		StringBuilder sb = new StringBuilder();
 		switch (notification.getNotificationType()) {
 			case EVENT:
-				String groupName = notification.getEventLog().getEvent().resolveGroup().getGroupName();
-				String eventLogUid = notification.getEventLog().getUid();
-				return sb.append(eventLogUid).append("_").append(groupName).toString();
+				String groupName = notification.getEventLog().getEvent().getAncestorGroup().getGroupName();
+				return sb.append(notification.getUid()).append("_").append(groupName).toString();
 
 			case LOGBOOK:
-				//todo:  add uid field to logbooklog entity
-				Long logBookLogId = notification.getLogBookLog().getId();
-				Instant logBookLogCreatedTime = notification.getLogBookLog().getCreatedDateTime().toInstant();
-				return sb.append(logBookLogId).append("_").append(logBookLogCreatedTime).toString();
+				Instant logBookLogCreatedTime = notification.getLogBookLog().getCreatedDateTime();
+				return sb.append(notification.getUid()).append("_").append(logBookLogCreatedTime).toString();
 		}
 		return null;
 	}
@@ -90,7 +87,7 @@ public class NotificationToGcmXmppTransformer {
 			case EVENT:
 				return GcmXmppMessageCodec.createDataPart(
 						notification.getEventLog().getEvent().getName(),
-						notification.getEventLog().getEvent().resolveGroup().getGroupName(),
+						notification.getEventLog().getEvent().getAncestorGroup().getGroupName(),
 						notification.getEventLog().getMessage(),
 						notification.getEventLog().getEvent().getUid(),
 						notification.getCreatedDateTime(),
@@ -102,7 +99,7 @@ public class NotificationToGcmXmppTransformer {
 				LogBook logBook = notification.getLogBookLog().getLogBook();
 
 				return GcmXmppMessageCodec.createDataPart(
-						logBook.resolveGroup().getGroupName(),
+						logBook.getAncestorGroup().getGroupName(),
 						null,
 						notification.getLogBookLog().getMessage(),
 						notification.getLogBookLog().getLogBook().getId(),
