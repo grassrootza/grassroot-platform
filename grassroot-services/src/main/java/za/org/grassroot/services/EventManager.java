@@ -32,9 +32,6 @@ public class EventManager implements EventManagementService {
 
     private Logger log = LoggerFactory.getLogger(EventManager.class);
 
-    //TODO aakil move this to the properties file as soon as you get the property injection to work
-    private final int SITE_REMINDERMINUTES = 1440; // 24hours
-
     @Autowired
     private EventRepository eventRepository;
 
@@ -71,8 +68,6 @@ public class EventManager implements EventManagementService {
 
     @Autowired
     GroupLogRepository groupLogRepository;
-
-    private final static double SMS_COST = 0.2; // might move to message services
 
     @Override
     public Event getMostRecentEvent(Group group) {

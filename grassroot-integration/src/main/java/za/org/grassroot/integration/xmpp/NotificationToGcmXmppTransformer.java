@@ -71,14 +71,11 @@ public class NotificationToGcmXmppTransformer {
 		switch (notification.getNotificationType()) {
 			case EVENT:
 				String groupName = notification.getEventLog().getEvent().getAncestorGroup().getGroupName();
-				String eventLogUid = notification.getEventLog().getUid();
-				return sb.append(eventLogUid).append("_").append(groupName).toString();
+				return sb.append(notification.getUid()).append("_").append(groupName).toString();
 
 			case LOGBOOK:
-				//todo:  add uid field to logbooklog entity
-				Long logBookLogId = notification.getLogBookLog().getId();
 				Instant logBookLogCreatedTime = notification.getLogBookLog().getCreatedDateTime();
-				return sb.append(logBookLogId).append("_").append(logBookLogCreatedTime).toString();
+				return sb.append(notification.getUid()).append("_").append(logBookLogCreatedTime).toString();
 		}
 		return null;
 	}
