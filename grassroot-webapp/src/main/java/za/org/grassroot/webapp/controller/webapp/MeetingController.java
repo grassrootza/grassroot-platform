@@ -119,7 +119,7 @@ public class MeetingController extends BaseController {
 
         ResponseTotalsDTO meetingResponses = eventLogManagementService.getResponseCountForEvent(meeting);
         boolean canViewRsvps = meeting.getCreatedByUser().equals(user) || permissionBroker.isGroupPermissionAvailable(
-                user, meeting.resolveGroup(), Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS);
+                user, meeting.getAncestorGroup(), Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS);
         boolean canAlterDetails = meeting.getCreatedByUser().equals(user);
 
         model.addAttribute("meeting", new MeetingWrapper(meeting));
@@ -308,7 +308,7 @@ public class MeetingController extends BaseController {
         String redirect;
 
         if (priorUrl.contains("group")) {
-            attributes.addAttribute("groupUid", meeting.resolveGroup().getUid());
+            attributes.addAttribute("groupUid", meeting.getAncestorGroup().getUid());
             redirect = "/group/view";
         } else if (priorUrl.contains("meeting")) {
             attributes.addAttribute("eventUid", eventUid);

@@ -306,7 +306,7 @@ public class USSDVoteController extends USSDController {
 
             final String suffix = entityUidUrlSuffix + eventUid;
             final String responseText = (userResponse != null) ? userResponse.getMessage().toLowerCase() : "not voted yet";
-            final String[] fields = new String[] { vote.resolveGroup().getName(""), vote.getName(),
+            final String[] fields = new String[] { vote.getAncestorGroup().getName(""), vote.getName(),
                     "" + (voteResults.getNumberOfUsers() - voteResults.getNumberNoRSVP()), responseText };
 
             menu = new USSDMenu(getMessage(thisSection, "details", "future." + promptKey, fields, user));
@@ -317,7 +317,7 @@ public class USSDVoteController extends USSDController {
             // todo: enable once a bit clearer about use etc
             // menu.addMenuOption("reminder" + entityUidUrlSuffix + eventUid, getMessage(thisSection, "details", optionsKey + "reminder", user));
         } else {
-            String[] fields = new String[]{vote.resolveGroup().getName(""), vote.getName(), "" + voteResults.getYes(),
+            String[] fields = new String[]{vote.getAncestorGroup().getName(""), vote.getName(), "" + voteResults.getYes(),
                     "" + voteResults.getNo(), "" + voteResults.getMaybe(), "" + voteResults.getNumberNoRSVP()};
             menu = new USSDMenu(getMessage(thisSection, "details", promptKey, fields, user));
         }

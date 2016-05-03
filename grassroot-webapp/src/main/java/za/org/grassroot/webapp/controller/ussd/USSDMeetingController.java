@@ -558,7 +558,7 @@ public class USSDMeetingController extends USSDController {
         final String attendeeKey = "attendee";
         final String suffix = entityUidUrlSuffix + event.getUid();
         final String basePath = meetingMenus + "change-response" + suffix + "&response=";
-        final String[] fields = new String[] { event.resolveGroup().getName(""),
+        final String[] fields = new String[] { event.getAncestorGroup().getName(""),
                 event.getEventDateTimeAtSAST().format(dateTimeFormat)};
 
         USSDMenu menu;

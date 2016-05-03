@@ -27,7 +27,7 @@ public class NotificationDTO {
     public NotificationDTO(Notification notification, Event event) {
         this.uid = notification.getUid();
         this.entityUid = event.getUid();
-        this.title = event.resolveGroup().getGroupName();
+        this.title = event.getAncestorGroup().getGroupName();
         this.message = (notification.getMessage() != null) ? notification.getMessage() : notification.getEventLog().getMessage();
         this.delivered = notification.isDelivered();
         this.read = notification.isRead();
@@ -39,7 +39,7 @@ public class NotificationDTO {
     public NotificationDTO(Notification notification, LogBook logBook){
         this.uid = notification.getUid();
         this.entityUid = logBook.getUid();
-        this.title = logBook.resolveGroup().getGroupName();
+        this.title = logBook.getAncestorGroup().getGroupName();
         this.message = (notification.getMessage() != null) ? notification.getMessage() : notification.getLogBookLog().getMessage();
         this.delivered=notification.isDelivered();
         this.read =notification.isRead();

@@ -245,14 +245,14 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         List<User> dummyPossibleUsers = Arrays.asList(testUser);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(logBookServiceMock.load(dummyId)).thenReturn(dummyLogBook);
-        when(userManagementServiceMock.searchByGroupAndNameNumber(dummyLogBook.resolveGroup().getUid(), testUserPhone))
+        when(userManagementServiceMock.searchByGroupAndNameNumber(dummyLogBook.getThisOrAncestorGroup().getUid(), testUserPhone))
                 .thenReturn(dummyPossibleUsers);
         mockMvc.perform(get(path + pickUserMenu).param(logBookIdParam,
                 String.valueOf(dummyId)).param("prior_input", testUserPhone).param(phoneParam, testUserPhone)
                 .param("interrupted", String.valueOf(true)).param("request", "1")).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
         verify(logBookServiceMock, times(1)).load(dummyId);
-        verify(userManagementServiceMock, times(1)).searchByGroupAndNameNumber(dummyLogBook.resolveGroup().getUid(), testUserPhone);
+        verify(userManagementServiceMock, times(1)).searchByGroupAndNameNumber(dummyLogBook.getThisOrAncestorGroup().getUid(), testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(logBookServiceMock);
     }*/
@@ -477,7 +477,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         String urlToSave = saveLogMenu(pickCompletor, dummyLogBook.getUid(), testUserPhone);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        when(userManagementServiceMock.searchByGroupAndNameNumber(dummyLogBook.resolveGroup().getUid(), testUserPhone))
+        when(userManagementServiceMock.searchByGroupAndNameNumber(dummyLogBook.getAncestorGroup().getUid(), testUserPhone))
                 .thenReturn(testPossibleUsers);
         when(logBookBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
 
@@ -488,7 +488,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone,
                 saveLogMenu(pickCompletor, dummyLogBook.getUid(), testUserPhone));
-        verify(userManagementServiceMock, times(2)).searchByGroupAndNameNumber(dummyLogBook.resolveGroup().getUid(), testUserPhone);
+        verify(userManagementServiceMock, times(2)).searchByGroupAndNameNumber(dummyLogBook.getAncestorGroup().getUid(), testUserPhone);
         verify(logBookBrokerMock, times(2)).load(dummyLogBook.getUid());
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(logBookBrokerMock);

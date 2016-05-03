@@ -17,7 +17,7 @@ import java.util.Set;
                 @Index(name = "idx_log_book_completed", columnList = "completed"),
                 @Index(name = "idx_log_book_retries_left", columnList = "number_of_reminders_left_to_send"),
                 @Index(name = "idx_log_book_replicated_group_id", columnList = "replicated_group_id")})
-public class LogBook extends AbstractLogBookEntity implements AssignedMembersContainer, VoteContainer, MeetingContainer {
+public class LogBook extends AbstractLogBookEntity implements AssignedMembersContainer, VoteContainer, MeetingContainer, GroupDescendant {
 
     @Column(name = "completed")
     private boolean completed;
@@ -43,6 +43,10 @@ public class LogBook extends AbstractLogBookEntity implements AssignedMembersCon
     )
     private Set<User> assignedMembers = new HashSet<>();
 
+    @ManyToOne
+   	@JoinColumn(name = "ancestor_group_id", nullable = false)
+   	private Group ancestorGroup;
+
     private LogBook() {
         // for JPA
     }
@@ -54,6 +58,7 @@ public class LogBook extends AbstractLogBookEntity implements AssignedMembersCon
     public LogBook(User createdByUser, LogBookContainer parent, String message, Instant actionByDate, int reminderMinutes,
                    Group replicatedGroup, int numberOfRemindersLeftToSend) {
         super(createdByUser, parent, message, actionByDate, reminderMinutes);
+        this.ancestorGroup = parent.getThisOrAncestorGroup();
         this.replicatedGroup = replicatedGroup;
         this.numberOfRemindersLeftToSend = numberOfRemindersLeftToSend;
     }
@@ -102,6 +107,11 @@ public class LogBook extends AbstractLogBookEntity implements AssignedMembersCon
 
     public Group getReplicatedGroup() {
         return replicatedGroup;
+    }
+
+    @Override
+    public Group getAncestorGroup() {
+        return ancestorGroup;
     }
 
     @Override

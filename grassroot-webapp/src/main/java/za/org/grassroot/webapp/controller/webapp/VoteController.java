@@ -167,7 +167,7 @@ public class VoteController extends BaseController {
         addMessage(redirectAttributes, MessageType.INFO, "vote.recorded", request);
 
         if (priorUrl.contains("group")) {
-            redirectAttributes.addAttribute("groupUid", vote.resolveGroup().getUid());
+            redirectAttributes.addAttribute("groupUid", vote.getAncestorGroup().getUid());
             return "redirect:/group/view";
         } else if (priorUrl.contains("vote")) {
             redirectAttributes.addAttribute("eventUid", eventUid);

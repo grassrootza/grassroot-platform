@@ -60,8 +60,6 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
 
         sessionTestUser.setId(2L);
         GroupLog groupLog = new GroupLog(testGroup, sessionTestUser, GroupLogType.GROUP_ADDED, sessionTestUser.getId());
-        groupLog.setCreatedDateTime(Instant.now());
-        groupLog.setCreatedDateTime(Instant.now().plus(1, ChronoUnit.HOURS));
         testGroup.addMember(sessionTestUser, "ROLE_GROUP_ORGANIZER");
         groupSet.add(testGroup);
 

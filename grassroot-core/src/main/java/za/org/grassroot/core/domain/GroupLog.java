@@ -7,6 +7,7 @@ import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Objects;
 
 @Entity
 @Table(name = "group_log",
@@ -19,7 +20,7 @@ public class GroupLog implements Serializable, ActionLog {
     @Column(name="id", nullable = false)
     private Long id;
 
-    @Column(name="created_date_time", insertable = true, updatable = false)
+    @Column(name="created_date_time", nullable = false, updatable = false)
     private Instant createdDateTime;
 
     @ManyToOne
@@ -43,24 +44,17 @@ public class GroupLog implements Serializable, ActionLog {
         // for JPA
     }
 
-    public GroupLog(Group group, User user, GroupLogType groupLogType, Long userOrSubGroupId, String description) {
-        this.group = group;
-        this.user = user;
-        this.groupLogType = groupLogType;
-        this.userOrSubGroupId = userOrSubGroupId;
-        this.description = description;
-    }
-
     public GroupLog(Group group, User user, GroupLogType groupLogType, Long userOrSubGroupId) {
         this(group, user, groupLogType, userOrSubGroupId, null);
     }
 
-    @PreUpdate
-    @PrePersist
-    public void updateTimeStamps() {
-        if (createdDateTime == null) {
-            createdDateTime = Instant.now();
-        }
+    public GroupLog(Group group, User user, GroupLogType groupLogType, Long userOrSubGroupId, String description) {
+        this.group = Objects.requireNonNull(group);
+        this.user = user;
+        this.groupLogType =  Objects.requireNonNull(groupLogType);
+        this.userOrSubGroupId = userOrSubGroupId;
+        this.description = description;
+        this.createdDateTime = Instant.now();
     }
 
     public Long getId() {
@@ -69,10 +63,6 @@ public class GroupLog implements Serializable, ActionLog {
 
     public Instant getCreatedDateTime() {
         return createdDateTime;
-    }
-
-    public void setCreatedDateTime(Instant createdDateTime) {
-        this.createdDateTime = createdDateTime;
     }
 
     public Group getGroup() {
@@ -87,16 +77,8 @@ public class GroupLog implements Serializable, ActionLog {
         return groupLogType;
     }
 
-    public void setGroupLogType(GroupLogType groupLogType) {
-        this.groupLogType = groupLogType;
-    }
-
     public Long getUserOrSubGroupId() {
         return userOrSubGroupId;
-    }
-
-    public void setUserOrSubGroupId(Long userOrSubGroupId) {
-        this.userOrSubGroupId = userOrSubGroupId;
     }
 
     public String getDescription() {
@@ -106,7 +88,6 @@ public class GroupLog implements Serializable, ActionLog {
     public void setDescription(String description) {
         this.description = description;
     }
-
 
     @Override
     public String toString() {

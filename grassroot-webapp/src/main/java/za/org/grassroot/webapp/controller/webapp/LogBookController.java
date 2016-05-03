@@ -242,7 +242,7 @@ public class LogBookController extends BaseController {
         LogBook logBookEntry = logBookBroker.load(logBookUid);
         model.addAttribute("entry", logBookEntry);
         Set<User> assignedMembers = (logBookEntry.isAllGroupMembersAssigned()) ?
-                logBookEntry.resolveGroup().getMembers() : logBookEntry.getAssignedMembers();
+                logBookEntry.getAncestorGroup().getMembers() : logBookEntry.getAssignedMembers();
         model.addAttribute("assignedMembers", assignedMembers);
 
         return "log/complete";
