@@ -175,7 +175,6 @@ public class BaseController {
         redirectAttributes.addFlashAttribute(messageType.getMessageKey(), getText(messageKey, arguments, request.getLocale()));
     }
 
-
     /**
      * Convenience method for getting a i18n key's value.  Calling
      * getMessageSourceAccessor() is used because the RequestContext variable

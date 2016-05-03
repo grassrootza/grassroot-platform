@@ -32,6 +32,10 @@ public interface AssignedMembersContainer extends UidIdentifiable {
 		return new HashSet<>(fetchAssignedMembersCollection());
 	}
 
+	default Set<User> getMembers() {
+		return isAllGroupMembersAssigned() ? resolveGroup().getMembers() : getAssignedMembers();
+	}
+
 	/**
 	 * Method that returns whether all group members are assigned to the entity or only a subset
 	 * @return true if all group members are assigned

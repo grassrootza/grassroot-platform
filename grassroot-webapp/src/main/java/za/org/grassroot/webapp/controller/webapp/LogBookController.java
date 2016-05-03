@@ -103,28 +103,8 @@ public class LogBookController extends BaseController {
 
     }
 
-    /*@RequestMapping(value = "confirm", method = RequestMethod.POST)
-    public String confirmLogBookEntry(Model model, @ModelAttribute("entry") LogBookWrapper logBookEntry,
-                                      @RequestParam(value="selectedGroupUid", required = false) String selectedGroupUid,
-                                      @RequestParam(value="subGroups", required=false) boolean subGroups, HttpServletRequest request) {
-
-        if (subGroups) {
-            // todo: restrict this to paid groups, and add in message numbers / cost estimates
-            model.addAttribute("numberSubGroups", groupBroker.subGroups(group.getUid()).size());
-            model.addAttribute("numberMembers", userManagementService.fetchByGroup(group.getUid(), true).size());
-        } else {
-            logBookEntry.setMemberPicker(new MemberPicker(group, false));
-        }
-
-        model.addAttribute("reminderTime", logBookEntry.getScheduledReminderTime());
-        model.addAttribute("entry", logBookEntry);
-
-        return "log/confirm";
-
-    }*/
-
     @RequestMapping(value = "record", method = RequestMethod.POST)
-    public String recordLogBookEntry(Model model, @ModelAttribute("entry") LogBookWrapper logBookEntry,
+    public String recordLogBookEntry(@ModelAttribute("entry") LogBookWrapper logBookEntry,
                                      HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
         log.info("LogBookWrapper received, looks like: {}", logBookEntry.toString());
@@ -143,9 +123,11 @@ public class LogBookController extends BaseController {
             assignedUids = Collections.emptySet();
         }
 
+        Long startTime = System.currentTimeMillis();
         LogBook created = logBookBroker.create(getUserProfile().getUid(), logBookEntry.getParentEntityType(), logBookEntry.getParentUid(),
                                                logBookEntry.getMessage(), logBookEntry.getActionByDate(), logBookEntry.getReminderMinutes(),
                                                logBookEntry.isReplicateToSubGroups(), assignedUids);
+        log.info("Time to create, store, logbooks: {} msecs", System.currentTimeMillis() - startTime);
 
         addMessage(redirectAttributes, MessageType.SUCCESS, "log.creation.success", request);
         // redirectAttributes.addAttribute("logBookUid", created.getUid());

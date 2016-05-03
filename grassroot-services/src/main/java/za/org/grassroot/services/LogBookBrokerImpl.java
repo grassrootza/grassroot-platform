@@ -23,6 +23,7 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -33,7 +34,9 @@ import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
 @Service
 public class LogBookBrokerImpl implements LogBookBroker {
+
 	private final Logger logger = LoggerFactory.getLogger(LogBookBrokerImpl.class);
+	private static final int defaultReminders = 2; // todo: externalize this / base it on some logic
 
 	@Autowired
 	private UserRepository userRepository;
@@ -70,29 +73,54 @@ public class LogBookBrokerImpl implements LogBookBroker {
 		Objects.requireNonNull(assignedMemberUids);
 
 		User user = userRepository.findOneByUid(userUid);
-
 		LogBookContainer parent = uidIdentifiableRepository.findOneByUid(LogBookContainer.class, parentType, parentUid);
 
 		logger.info("Creating new log book: userUid={}, parentType={}, parentUid={}, message={}, actionByDate={}, reminderMinutes={}, assignedMemberUids={}, replicateToSubgroups={}",
 				userUid, parentType, parentUid, message, actionByDate, reminderMinutes, assignedMemberUids, replicateToSubgroups);
 
-		LogBook logBook = createNewLogBook(user, parent, message, actionByDate, reminderMinutes, null);
+		Instant convertedActionByDate = convertToSystemTime(actionByDate, getSAST());
+		LogBook logBook = new LogBook(user, parent, message, convertedActionByDate, reminderMinutes, null, defaultReminders);
 		logBook.assignMembers(assignedMemberUids);
+		logBook = logBookRepository.save(logBook);
 
+		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+		LogBookLog logBookLog = new LogBookLog(user, logBook, null);
+		bundle.addLog(logBookLog);
+
+		Set<Notification> notifications = constructLogBookRecordedNotifications(logBook, logBookLog);
+		bundle.addNotifications(notifications);
+
+		logsAndNotificationsBroker.storeBundle(bundle);
+
+		// replication means this could get _very_ expensive, so we probably want to move this to async once it starts being used
 		if (replicateToSubgroups && parent.getJpaEntityType().equals(JpaEntityType.GROUP)) {
-			Group group = logBook.resolveGroup();
-			// note: getGroupAndSubGroups is a much faster method (a recursive query) than getSubGroups, hence use it and just skip parent
-			List<Group> groupAndSubGroups = groupRepository.findGroupAndSubGroupsById(group.getId());
-			for (Group subGroup : groupAndSubGroups) {
-				if (!group.equals(subGroup)) {
-					createNewLogBook(user, subGroup, message, actionByDate, reminderMinutes, group);
-				}
-			}
+			replicateLogBookToSubgroups(user, logBook, actionByDate);
 		}
 
-		// todo: rethink sending out (tell group that to-do is recorded ... make it one reminder)
-
 		return logBook;
+	}
+
+	private Set<Notification> constructLogBookRecordedNotifications(LogBook logBook, LogBookLog logBookLog) {
+		Set<Notification> notifications = new HashSet<>();
+		// the "recorded" notification gets sent to all users in parent, not just assigned (to re-evaluate in future)
+		for (User member : logBook.getParent().getMembers()) {
+			String message = messageAssemblingService.createLogBookInfoNotificationMessage(member, logBook);
+			Notification notification = new LogBookInfoNotification(member, message, logBookLog);
+			notifications.add(notification);
+		}
+		return notifications;
+	}
+
+	private void replicateLogBookToSubgroups(User user, LogBook logBook, LocalDateTime actionByDate) {
+		Group group = logBook.resolveGroup();
+		// note: getGroupAndSubGroups is a much faster method (a recursive query) than getSubGroups, hence use it and just skip parent
+		List<Group> groupAndSubGroups = groupRepository.findGroupAndSubGroupsById(group.getId());
+		for (Group subGroup : groupAndSubGroups) {
+			if (!group.equals(subGroup)) {
+				create(user.getUid(), JpaEntityType.GROUP, subGroup.getUid(), logBook.getMessage(), actionByDate,
+					   logBook.getReminderMinutes(), true, new HashSet<>());
+			}
+		}
 	}
 
 	@Override
@@ -117,45 +145,6 @@ public class LogBookBrokerImpl implements LogBookBroker {
 		logBook.removeAssignedMembers(memberUids);
 	}
 
-	private LogBook createNewLogBook(User user, LogBookContainer parent, String message, LocalDateTime actionByDate, int reminderMinutes,
-									 Group replicatedGroup) {
-		int numberOfRemindersLeftToSend = 0;
-		if (numberOfRemindersLeftToSend == 0) {
-			numberOfRemindersLeftToSend = 3; // todo: replace with a logic based on group paid / not paid
-		}
-
-		Instant convertedActionByDate = convertToSystemTime(actionByDate, getSAST());
-		LogBook logBook = new LogBook(user, parent, message, convertedActionByDate, reminderMinutes, replicatedGroup, numberOfRemindersLeftToSend);
-		logBook = logBookRepository.save(logBook);
-
-		Group group = logBook.resolveGroup();
-		Account account = accountManagementService.findAccountForGroup(group);
-
-		if (account != null && account.isLogbookExtraMessages()) {
-			//send messages to paid for groups using the same logic as the reminders - sendLogBookReminder method
-			//so if you make changes here also make the changes there
-
-			LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-
-			LogBookLog logBookLog = new LogBookLog(user, logBook, null);
-			bundle.addLog(logBookLog);
-
-			Set<User> members = logBook.isAllGroupMembersAssigned() ? group.getMembers() : logBook.getAssignedMembers();
-			for (User member : members) {
-				String notificationMessage = messageAssemblingService.createLogBookInfoNotificationMessage(member, logBook);
-
-				Notification notification = new LogBookInfoNotification(member, notificationMessage, logBookLog);
-				bundle.addNotification(notification);
-			}
-
-			logsAndNotificationsBroker.storeBundle(bundle);
-
-		} else {
-			logger.info("LogBook " + logBook + "...NOT a paid for group..." + group);
-		}
-
-		return logBook;
-	}
 
 	@Override
 	@Transactional
@@ -186,12 +175,11 @@ public class LogBookBrokerImpl implements LogBookBroker {
 		Objects.requireNonNull(logBookUid);
 
 		LogBook logBook = logBookRepository.findOneByUid(logBookUid);
-
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-
 		LogBookLog logBookLog = new LogBookLog(null, logBook, null);
 
-		Set<User> members = logBook.isAllGroupMembersAssigned() ? logBook.resolveGroup().getMembers() : logBook.getAssignedMembers();
+		Set<User> members = logBook.isAllGroupMembersAssigned() ?
+				logBook.resolveGroup().getMembers() : logBook.getAssignedMembers();
 		for (User member : members) {
 			String message = messageAssemblingService.createLogBookReminderMessage(member, logBook);
 			Notification notification = new LogBookReminderNotification(member, message, logBookLog);

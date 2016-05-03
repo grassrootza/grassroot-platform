@@ -70,15 +70,16 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     @Override
     public String createLogBookReminderMessage(User user, LogBook logBook) {
         Locale locale = getUserLocale(user);
-        String[] args = populateLogBookFields(user, logBook);
+        String[] args = populateLogBookFields(logBook);
         return messageSourceAccessor.getMessage("sms.logbook.reminder", args, locale);
     }
 
     @Override
     public String createLogBookInfoNotificationMessage(User target, LogBook logBook) {
         Locale locale = getUserLocale(target);
-        String[] args = populateLogBookFields(target, logBook);
-        String messageKey = logBook.isAllGroupMembersAssigned() ? "sms.logbook.new.assigned" : "sms.logbook.new.notassigned";
+        String[] args = populateLogBookFields(logBook);
+        String messageKey = logBook.isAllGroupMembersAssigned() ? "sms.logbook.new.notassigned" :
+                (logBook.getAssignedMembers().size()) == 1 ? "sms.logbook.new.assigned.one" : "sms.logbook.new.assigned.many";
         return messageSourceAccessor.getMessage(messageKey, args, locale);
     }
 
@@ -197,19 +198,19 @@ public class MessageAssemblingManager implements MessageAssemblingService {
 
     }
 
-    private String[] populateLogBookFields(User target, LogBook logBook) {
+    private String[] populateLogBookFields(LogBook logBook) {
         Group group = logBook.resolveGroup();
-        String salutation = (group.hasName()) ? group.getGroupName() : "GrassRoot";
+        String salutation = (group.hasName()) ? group.getGroupName() : "Grassroot";
         DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
-        String dateString = "no date specified";
-        if (logBook.getActionByDate() != null) {
-            dateString = sdf.format(logBook.getActionByDateAtSAST());
-        }
+        String dateString = sdf.format(logBook.getActionByDateAtSAST());
+        String assignment = (logBook.getAssignedMembers().size() == 1) ?
+                logBook.getAssignedMembers().iterator().next().getDisplayName() : String.valueOf(logBook.getAssignedMembers().size());
+
         String[] variables = new String[]{
                 salutation,
                 logBook.getMessage(),
                 dateString,
-                target.getDisplayName()
+                assignment
         };
         return variables;
     }

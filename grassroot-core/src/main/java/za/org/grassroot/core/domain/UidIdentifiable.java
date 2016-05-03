@@ -1,10 +1,13 @@
 package za.org.grassroot.core.domain;
 
+import java.util.Set;
+
 public interface UidIdentifiable {
 	JpaEntityType getJpaEntityType();
 	String getUid();
 	Long getId();
 	String getName();
+	Set<User> getMembers();
 
 	/**
 	 * Returns group this entity belongs to, which can be this very entity if it is group itself.
