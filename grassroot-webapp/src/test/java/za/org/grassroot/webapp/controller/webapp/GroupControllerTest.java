@@ -282,6 +282,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         group.setTokenExpiryDateTime(Timestamp.valueOf(LocalDateTime.now().plusYears(1L)));
 
         when(groupBrokerMock.load(group.getUid())).thenReturn(group);
+        when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
 
         mockMvc.perform(post("/group/token").param("groupUid", group.getUid()))
                 .andExpect(status().isOk()).andExpect(view().name("group/view"))
@@ -475,6 +476,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
         when(groupBrokerMock.load(group.getUid())).thenReturn(group);
         when(groupBrokerMock.isDeactivationAvailable(sessionTestUser, group, true)).thenReturn(true);
+        when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
 
         mockMvc.perform(post("/group/inactive").param("groupUid", group.getUid()).param("confirm_field", "d"))
                 .andExpect(status().isOk()).andExpect(view().name("group/view"))

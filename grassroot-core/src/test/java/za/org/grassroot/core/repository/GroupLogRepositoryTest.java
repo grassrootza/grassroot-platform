@@ -53,15 +53,14 @@ public class GroupLogRepositoryTest {
 
         GroupLog groupLog = new GroupLog(groupToCreate, userToDoTests, GroupLogType.GROUP_ADDED, 0L);
         assertNull(groupLog.getId());
-        assertNull(groupLog.getCreatedDateTime());
         groupLogRepository.save(groupLog);
 
         assertThat(groupLogRepository.count(), is(1l));
         GroupLog groupLogFromDb = groupLogRepository.findByGroup(groupToCreate).iterator().next();
         assertNotNull(groupLogFromDb.getId());
         assertNotNull(groupLogFromDb.getCreatedDateTime());
-        assertThat(groupLogFromDb.getGroup(), is(groupToCreate.getId()));
-        assertThat(groupLogFromDb.getUser(), is(userToDoTests.getId()));
+        assertThat(groupLogFromDb.getGroup(), is(groupToCreate));
+        assertThat(groupLogFromDb.getUser(), is(userToDoTests));
     }
 
     @Test
@@ -74,20 +73,18 @@ public class GroupLogRepositoryTest {
 
         GroupLog groupLog1 = new GroupLog(groupToCreate, userToDoTests, GroupLogType.GROUP_ADDED, 0L);
         assertNull(groupLog1.getId());
-        assertNull(groupLog1.getCreatedDateTime());
         groupLogRepository.save(groupLog1);
 
         GroupLog groupLog2 = new GroupLog(groupToCreate, userToDoTests, GroupLogType.GROUP_MEMBER_ADDED, 0L);
         assertNull(groupLog2.getId());
-        assertNull(groupLog2.getCreatedDateTime());
         groupLogRepository.save(groupLog2);
 
         assertThat(groupLogRepository.count(), is(2l));
         GroupLog groupLogFromDb = groupLogRepository.findFirstByGroupOrderByCreatedDateTimeDesc(groupToCreate);
         assertNotNull(groupLogFromDb.getId());
         assertNotNull(groupLogFromDb.getCreatedDateTime());
-        assertThat(groupLogFromDb.getGroup(), is(groupToCreate.getId()));
-        assertThat(groupLogFromDb.getUser(), is(userToDoTests.getId()));
+        assertThat(groupLogFromDb.getGroup(), is(groupToCreate));
+        assertThat(groupLogFromDb.getUser(), is(userToDoTests));
 
     }
 

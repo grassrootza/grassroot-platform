@@ -21,12 +21,8 @@ public class GroupResponseWrapper {
     private Integer groupMemberCount;
     private LocalDateTime dateTime;
     private Set<Permission> permissions;
-    private static final String filterString ="CREATE";
-
-    public GroupResponseWrapper(){}
 
     public GroupResponseWrapper(Group group, Event event, Role role){
-
         this.id = group.getUid();
         this.groupName = group.getGroupName();
         this.description = event.getName();
@@ -34,8 +30,7 @@ public class GroupResponseWrapper {
         this.groupCreator = group.getCreatedByUser().getDisplayName();
         this.role = (role!=null)?role.getName():null;
         this.groupMemberCount = group.getMemberships().size();
-        this.permissions = RestUtil.filterPermissions(role.getPermissions(),filterString);
-
+        this.permissions = RestUtil.filterPermissions(role.getPermissions());
     }
 
     public GroupResponseWrapper(Group group, GroupLog groupLog, Role role){
@@ -46,7 +41,7 @@ public class GroupResponseWrapper {
         this.groupCreator = group.getCreatedByUser().getDisplayName();
         this.role = (role!=null)?role.getName():null;
         this.groupMemberCount = group.getMemberships().size();
-        this.permissions = RestUtil.filterPermissions(role.getPermissions(),filterString);
+        this.permissions = RestUtil.filterPermissions(role.getPermissions());
 
 
     }
@@ -58,7 +53,7 @@ public class GroupResponseWrapper {
         this.groupCreator = group.getCreatedByUser().getDisplayName();
         this.role = (role!=null)?role.getName():null;
         this.groupMemberCount = group.getMemberships().size();
-        this.permissions = RestUtil.filterPermissions(role.getPermissions(), filterString);
+        this.permissions = RestUtil.filterPermissions(role.getPermissions());
 
     }
 

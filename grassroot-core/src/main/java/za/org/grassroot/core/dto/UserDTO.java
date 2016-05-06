@@ -22,11 +22,9 @@ public class UserDTO implements Serializable {
     private String lastName;
     @JsonIgnore
     private String firstName;
+
     private String displayName;
-    @JsonIgnore
     private String phoneNumber;
-
-
 
     public UserDTO() {
     }
