@@ -31,6 +31,7 @@ public class Meeting extends Event<MeetingContainer> implements VoteContainer {
 		super(startDateTime, user, parent, name, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes, description);
 		this.eventLocation = Objects.requireNonNull(eventLocation);
 		setScheduledReminderActive(true);
+		setParent(parent);
 	}
 
 	public static Meeting makeEmpty(User user) {

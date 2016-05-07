@@ -13,8 +13,8 @@ import java.time.Instant;
 public class Vote extends Event<VoteContainer> {
 
 	@ManyToOne
-	@JoinColumn(name = "meeting_id")
-	protected Meeting meeting;
+	@JoinColumn(name = "parent_meeting_id")
+	protected Meeting parentMeeting;
 
 	private Vote() {
 		// for JPA
@@ -30,6 +30,7 @@ public class Vote extends Event<VoteContainer> {
 
 	public Vote(String name, Instant startDateTime, User user, VoteContainer parent, boolean includeSubGroups, boolean relayable, String description) {
 		super(startDateTime, user, parent, name, includeSubGroups, true, relayable, EventReminderType.DISABLED, 0, description);
+		setParent(parent);
 	}
 
 	@Override
@@ -47,8 +48,8 @@ public class Vote extends Event<VoteContainer> {
 			return parentGroup;
 		} else if (parentLogBook != null) {
 			return parentLogBook;
-		} else if (meeting != null) {
-			return meeting;
+		} else if (parentMeeting != null) {
+			return parentMeeting;
 		} else {
 			throw new IllegalStateException("There is no " + VoteContainer.class.getSimpleName() + " parent defined for " + this);
 		}
@@ -60,7 +61,7 @@ public class Vote extends Event<VoteContainer> {
 		} else if (parent instanceof LogBook) {
 			this.parentLogBook = (LogBook) parent;
 		} else if (parent instanceof Meeting) {
-			this.meeting = (Meeting) parent;
+			this.parentMeeting = (Meeting) parent;
 		} else {
 			throw new UnsupportedOperationException("Unsupported parent: " + parent);
 		}

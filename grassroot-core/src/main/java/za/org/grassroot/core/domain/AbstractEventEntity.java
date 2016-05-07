@@ -88,7 +88,7 @@ public abstract class AbstractEventEntity<P extends UidIdentifiable> {
 		// for JPA
 	}
 
-	protected AbstractEventEntity(String name, Instant eventStartDateTime, User createdByUser, UidIdentifiable parent,
+	protected AbstractEventEntity(String name, Instant eventStartDateTime, User createdByUser,
 								  boolean includeSubGroups, boolean rsvpRequired, boolean relayable,
 								  EventReminderType reminderType, int customReminderMinutes, String description) {
 		this.uid = UIDGenerator.generateId();
@@ -103,15 +103,6 @@ public abstract class AbstractEventEntity<P extends UidIdentifiable> {
 		this.reminderType = Objects.requireNonNull(reminderType);
 		this.customReminderMinutes = customReminderMinutes;
 		this.description = (description == null) ? "" : description;
-
-
-		if (parent instanceof Group) {
-			this.parentGroup = (Group) parent;
-		} else if (parent instanceof LogBook) {
-			this.parentLogBook = (LogBook) parent;
-		} else {
-			throw new UnsupportedOperationException("Unsupported parent: " + parent);
-		}
 	}
 
 	public Long getId() {

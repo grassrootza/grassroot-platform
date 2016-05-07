@@ -1,0 +1,42 @@
+package za.org.grassroot.services.geo;
+
+import za.org.grassroot.core.domain.geo.GeoLocation;
+
+import java.util.List;
+
+public class GeoLocationUtils {
+	private GeoLocationUtils() {
+		// utility
+	}
+
+	public static GeoLocation centralLocation(List<GeoLocation> geoLocations) {
+		int locationCount = geoLocations.size();
+
+		if (locationCount == 1) {
+			return geoLocations.iterator().next();
+		}
+
+		double x = 0;
+		double y = 0;
+		double z = 0;
+
+		for (GeoLocation geoLocation : geoLocations) {
+			double latitude = geoLocation.getLatitude() * Math.PI / 180;
+			double longitude = geoLocation.getLongitude() * Math.PI / 180;
+
+			x += Math.cos(latitude) * Math.cos(longitude);
+			y += Math.cos(latitude) * Math.sin(longitude);
+			z += Math.sin(latitude);
+		}
+
+		x = x / locationCount;
+		y = y / locationCount;
+		z = z / locationCount;
+
+		double centralLongitude = Math.atan2(y, x);
+		double centralSquareRoot = Math.sqrt(x * x + y * y);
+		double centralLatitude = Math.atan2(z, centralSquareRoot);
+
+		return new GeoLocation(centralLatitude * 180 / Math.PI, centralLongitude * 180 / Math.PI);
+	}
+}

@@ -13,8 +13,8 @@ import javax.persistence.ManyToOne;
 public class VoteRequest extends EventRequest<VoteContainer> {
 
 	@ManyToOne
-	@JoinColumn(name = "meeting_id")
-	protected Meeting meeting;
+	@JoinColumn(name = "parent_meeting_id")
+	protected Meeting parentMeeting;
 
 	@Override
 	public EventType getEventType() {
@@ -51,8 +51,8 @@ public class VoteRequest extends EventRequest<VoteContainer> {
 			return parentGroup;
 		} else if (parentLogBook != null) {
 			return parentLogBook;
-		} else if (meeting != null) {
-			return meeting;
+		} else if (parentMeeting != null) {
+			return parentMeeting;
 		} else {
 			throw new IllegalStateException("There is no " + VoteContainer.class.getSimpleName() + " parent defined for " + this);
 		}
@@ -64,7 +64,7 @@ public class VoteRequest extends EventRequest<VoteContainer> {
 		} else if (parent instanceof LogBook) {
 			this.parentLogBook = (LogBook) parent;
 		} else if (parent instanceof Meeting) {
-			this.meeting = (Meeting) parent;
+			this.parentMeeting = (Meeting) parent;
 		} else {
 			throw new UnsupportedOperationException("Unsupported parent: " + parent);
 		}
