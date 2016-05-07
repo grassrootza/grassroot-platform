@@ -102,8 +102,14 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
 
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
+        when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, testGroup,
+                                                             Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)).thenReturn(true);
+
         when(userManagementServiceMock.getGroupMembers(testGroup, 0, 5)).thenReturn(userPage);
-        mockMvc.perform(get(path + "/members/{id}/{phoneNumber}/{code}", testGroup.getUid(), testUserPhone, testUserCode).param("page", String.valueOf(1)).param("size", String.valueOf(5))).andExpect(status().is2xxSuccessful());
+        mockMvc.perform(get(path + "/members/{phoneNumber}/{code}/{groupUid}/", testUserPhone, testUserCode, testGroup.getUid())
+                                .param("page", String.valueOf(0))
+                                .param("size", String.valueOf(5)))
+                .andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
         verify(groupBrokerMock).load(testGroup.getUid());
         verify(userManagementServiceMock).getGroupMembers(testGroup, 0, 5);

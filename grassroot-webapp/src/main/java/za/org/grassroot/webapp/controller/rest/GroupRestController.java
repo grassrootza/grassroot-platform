@@ -30,6 +30,7 @@ import java.util.Set;
 public class GroupRestController {
 
     private Logger log = LoggerFactory.getLogger(GroupRestController.class);
+    private static final int groupMemberListPageSizeDefault = 20;
 
     @Autowired
     EventManagementService eventManagementService;
@@ -94,9 +95,7 @@ public class GroupRestController {
                 RestStatus.FAILURE);
         return new ResponseEntity<>(responseWrapper,HttpStatus.valueOf(responseWrapper.getCode()));
 
-
     }
-
 
     @RequestMapping(value = "/search", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> searchForGroup(@RequestParam("searchTerm") String searchTerm) {
@@ -122,7 +121,6 @@ public class GroupRestController {
                 responseWrapper = new ResponseWrapperImpl(HttpStatus.NOT_FOUND, RestMessage.NO_GROUP_MATCHING_TERM_FOUND, RestStatus.FAILURE);
             }
         }
-
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
     }
 
@@ -145,26 +143,37 @@ public class GroupRestController {
 
     }
 
-    @RequestMapping(value="/members/{id}/{phoneNumber}/{code}", method=RequestMethod.GET)
+    @RequestMapping(value="/members/{phoneNumber}/{code}/{groupUid}", method=RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> getGroupMember(@PathVariable("phoneNumber") String phoneNumber,
-                                                           @PathVariable("code") String code, @PathVariable("id") String groupUid,
-                                                          @RequestParam(value = "page", required = false) Integer page,@RequestParam(value = "size",required = false) Integer size){
+                                                          @PathVariable("code") String code, @PathVariable("groupUid") String groupUid,
+                                                          @RequestParam(value = "page", required = false) Integer requestPage,
+                                                          @RequestParam(value = "size",required = false) Integer requestPageSize){
+
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         Group group = groupBroker.load(groupUid);
-        page = (page == null)?1:page;
-        size=(size == null)?5:size;
-        Page<User> pageable = userManagementService.getGroupMembers(group,page-1,size);
+
+        // todo: really need a utility method like "return request failure" or something similar
+        if (!permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
+            return new ResponseEntity<>(
+                    new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.GROUP_ACTIVITIES,RestStatus.FAILURE), HttpStatus.BAD_REQUEST);
+        }
+
+        int page = (requestPage != null) ? requestPage : 0;
+        int size = (requestPageSize != null)? requestPageSize : groupMemberListPageSizeDefault;
+        Page<User> pageable = userManagementService.getGroupMembers(group, page, size);
         ResponseWrapper responseWrapper;
-        if(page >pageable.getTotalPages()){
+        if(page > pageable.getTotalPages()){
             responseWrapper = new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.GROUP_ACTIVITIES,RestStatus.FAILURE);
-        }else {
-            UsersWrapper usersWrapper = new UsersWrapper(pageable);
-            responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.GROUP_MEMBERS, RestStatus.SUCCESS, usersWrapper);
+        } else {
+            List<MembershipResponseWrapper> members = new ArrayList<>();
+            List<User> usersFromPage = pageable.getContent();
+            for (User u : usersFromPage) {
+                members.add(new MembershipResponseWrapper(group, u, group.getMembership(user).getRole()));
+            }
+            responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.GROUP_MEMBERS, RestStatus.SUCCESS, members);
         }
         return new ResponseEntity<>(responseWrapper,HttpStatus.valueOf(responseWrapper.getCode()));
     }
-
-
 
     private Set<MembershipInfo> addMembersToGroup(List<String> phoneNumbers, Set<MembershipInfo> members) {
         if (phoneNumbers != null) {
