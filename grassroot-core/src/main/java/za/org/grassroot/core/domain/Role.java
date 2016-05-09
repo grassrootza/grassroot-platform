@@ -157,11 +157,24 @@ public class Role extends BaseEntity implements GrantedAuthority, Comparable<Rol
     @Override
     public int compareTo(Role r) {
         String thatName = r.getName();
-        if (name.equals(thatName)) {
+        return compareRoleNames(this.name, thatName);
+    }
+
+    /* Logic here:
+    If the role names are the same, they are equal
+    If they are not, and this one is ordinary member, then it is always "less than" the other
+    If it is not ordinary member, and they are not equal, the only case where it is "less than" is when it is committee
+    member and the other is organizer
+     */
+
+    public static int compareRoleNames(String roleFirst, String roleSecond) {
+        Objects.requireNonNull(roleFirst);
+        Objects.requireNonNull(roleSecond);
+        if (roleFirst.equals(roleSecond)) {
             return 0;
-        } else if (name.equals(BaseRoles.ROLE_ORDINARY_MEMBER)) {
+        } else if (roleFirst.equals(BaseRoles.ROLE_ORDINARY_MEMBER)) {
             return -1;
-        } else if (name.equals(BaseRoles.ROLE_COMMITTEE_MEMBER) && thatName.equals(BaseRoles.ROLE_GROUP_ORGANIZER)) {
+        } else if (roleFirst.equals(BaseRoles.ROLE_COMMITTEE_MEMBER) && roleSecond.equals(BaseRoles.ROLE_GROUP_ORGANIZER)) {
             return -1;
         } else {
             return 1;

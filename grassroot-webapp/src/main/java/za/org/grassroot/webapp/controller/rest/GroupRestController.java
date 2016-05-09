@@ -19,6 +19,7 @@ import za.org.grassroot.webapp.model.rest.ResponseWrappers.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -87,6 +88,7 @@ public class GroupRestController {
                 Role role = group.getMembership(user).getRole();
                 groups.add(createWrapper(group,role));
             }
+            Collections.sort(groups, Collections.reverseOrder()); // i.e., "descending"
             responseWrapper =  new GenericResponseWrapper(HttpStatus.OK, RestMessage.USER_GROUPS,
                     RestStatus.SUCCESS, groups);
             return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));

@@ -11,7 +11,7 @@ import java.util.Set;
 /**
  * Created by paballo on 2016/03/01.
  */
-public class GroupResponseWrapper {
+public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
 
     private String id;
     private String groupName;
@@ -46,17 +46,6 @@ public class GroupResponseWrapper {
 
     }
 
-
-    public GroupResponseWrapper(Group group, Role role){
-        this.id = group.getUid();
-        this.groupName = group.getGroupName();
-        this.groupCreator = group.getCreatedByUser().getDisplayName();
-        this.role = (role!=null)?role.getName():null;
-        this.groupMemberCount = group.getMemberships().size();
-        this.permissions = RestUtil.filterPermissions(role.getPermissions());
-
-    }
-
     public String getId() {
         return id;
     }
@@ -69,10 +58,10 @@ public class GroupResponseWrapper {
         return groupName;
     }
 
-
     public String getGroupCreator() {
         return groupCreator;
     }
+
     public String getRole() {
         return role;
     }
@@ -80,11 +69,33 @@ public class GroupResponseWrapper {
     public Integer getGroupMemberCount() {
         return groupMemberCount;
     }
+
     public Set<Permission> getPermissions() {
         return permissions;
     }
+
     public LocalDateTime getDateTime(){return dateTime;}
 
+    @Override
+    public int compareTo(GroupResponseWrapper g) {
+
+        String otherGroupUid = g.getId();
+
+        if (id == null) throw new UnsupportedOperationException("Error! Comparing group wrappers with null IDs");
+
+        if (id.equals(otherGroupUid)) {
+            return 0;
+        } else {
+            LocalDateTime otherDateTime = g.getDateTime();
+            if (dateTime.compareTo(otherDateTime) != 0) {
+                return dateTime.compareTo(otherDateTime);
+            } else {
+                // this is very low probability, as date time is to the second, but ...
+                return Role.compareRoleNames(this.getRole(), g.getRole());
+            }
+        }
+
+    }
 
 
 
