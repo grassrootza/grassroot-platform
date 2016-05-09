@@ -10,36 +10,36 @@ import za.org.grassroot.core.domain.User;
 public class MembershipResponseWrapper {
 
     private String memberUid;
-    private String memberDisplayName;
+    private String displayName;
     private String groupUid;
-    private String memberPhoneNumber;
-    private String memberRoleName;
+    private String phoneNumber;
+    private String roleName;
 
     public MembershipResponseWrapper(Group group, User user, Role role) {
         this.memberUid = user.getUid();
-        this.memberDisplayName = user.nameToDisplay();
+        this.displayName = user.nameToDisplay();
         this.groupUid = group.getUid();
-        this.memberPhoneNumber = user.getPhoneNumber();
-        this.memberRoleName = role.getName();
+        this.phoneNumber = user.getPhoneNumber();
+        this.roleName = role.getName();
     }
 
     public String getMemberUid() {
         return memberUid;
     }
 
-    public String getMemberDisplayName() {
-        return memberDisplayName;
+    public String getDisplayName() {
+        return displayName;
     }
 
     public String getGroupUid() {
         return groupUid;
     }
 
-    public String getMemberPhoneNumber() {
-        return memberPhoneNumber;
+    public String getPhoneNumber() {
+        return phoneNumber;
     }
 
-    public String getMemberRoleName() {
-        return memberRoleName;
+    public String getRoleName() {
+        return roleName;
     }
 }

@@ -143,7 +143,7 @@ public class GroupRestController {
 
     }
 
-    @RequestMapping(value="/members/{phoneNumber}/{code}/{groupUid}", method=RequestMethod.GET)
+    @RequestMapping(value="/members/list/{phoneNumber}/{code}/{groupUid}", method=RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> getGroupMember(@PathVariable("phoneNumber") String phoneNumber,
                                                           @PathVariable("code") String code, @PathVariable("groupUid") String groupUid,
                                                           @RequestParam(value = "page", required = false) Integer requestPage,
@@ -173,6 +173,24 @@ public class GroupRestController {
             responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.GROUP_MEMBERS, RestStatus.SUCCESS, members);
         }
         return new ResponseEntity<>(responseWrapper,HttpStatus.valueOf(responseWrapper.getCode()));
+    }
+
+    @RequestMapping(value = "/members/add/{phoneNumber}/{code}/{uid}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> addMembersToGroup(@PathVariable String phoneNumber, @PathVariable String code,
+                                                             @PathVariable("uid") String groupUid,
+                                                             @RequestBody Set<MembershipInfo> membersToAdd) {
+
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        Group group = groupBroker.load(groupUid);
+        log.info("membersReceived = {}", membersToAdd != null ? membersToAdd.toString() : "null");
+
+        // todo : handle error
+        if (membersToAdd != null && !membersToAdd.isEmpty()) {
+            groupBroker.addMembers(user.getUid(), group.getUid(), membersToAdd);
+        }
+
+        return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.OK, RestMessage.MEMBERS_ADDED, RestStatus.SUCCESS),
+                                    HttpStatus.CREATED);
     }
 
     private Set<MembershipInfo> addMembersToGroup(List<String> phoneNumbers, Set<MembershipInfo> members) {

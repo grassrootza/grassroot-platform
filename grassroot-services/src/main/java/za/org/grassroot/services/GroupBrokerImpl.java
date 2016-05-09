@@ -796,6 +796,7 @@ public class GroupBrokerImpl implements GroupBroker {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public GroupLog getMostRecentLog(Group group) {
         return groupLogRepository.findFirstByGroupOrderByCreatedDateTimeDesc(group);
     }

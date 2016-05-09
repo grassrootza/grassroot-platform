@@ -16,9 +16,6 @@ public enum RestMessage {
     USER_PROFILE,
     USER_GROUPS,
 
-    GROUP_MEMBERS, // assuming this is not an error, moving here
-    PARENT_MEMBERS,
-
     GROUP_CREATED,
     GROUP_NOT_CREATED,
     GROUP_JOIN_REQUEST_SENT,
@@ -30,6 +27,10 @@ public enum RestMessage {
     GROUP_ACTIVITIES,
     NO_GROUP_ACTIVITIES,
     USER_ALREADY_PART_OF_GROUP,
+
+    GROUP_MEMBERS, // assuming this is not an error, moving here
+    PARENT_MEMBERS,
+    MEMBERS_ADDED,
 
     USER_HAS_ALREADY_VOTED,
     VOTE_CLOSED,
