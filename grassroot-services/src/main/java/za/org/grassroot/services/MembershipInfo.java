@@ -1,5 +1,7 @@
 package za.org.grassroot.services;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.User;
@@ -20,7 +22,9 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
     private String roleName; // optional
     private String displayName; // optional
 
-    public MembershipInfo(String phoneNumber, String roleName, String displayName) {
+    @JsonCreator
+    public MembershipInfo(@JsonProperty("phoneNumber") String phoneNumber, @JsonProperty("roleName") String roleName,
+                          @JsonProperty("displayName") String displayName) {
         this.phoneNumber = Objects.requireNonNull(phoneNumber);
         this.roleName = roleName;
         this.displayName = displayName;

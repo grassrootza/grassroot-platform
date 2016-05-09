@@ -61,6 +61,9 @@ public class GrassRootWebApplicationConfig {
     @Bean
     @Profile({ "staging", "production" })
     public EmbeddedServletContainerFactory servletContainer() {
+        int httpPort = Integer.parseInt(environment.getProperty("HTTP_PORT"));
+        int httpsPort = Integer.parseInt(environment.getProperty("HTTPS_PORT"));
+
         TomcatEmbeddedServletContainerFactory tomcat = new TomcatEmbeddedServletContainerFactory(){
             @Override
             protected void postProcessContext(Context context) {
@@ -74,22 +77,22 @@ public class GrassRootWebApplicationConfig {
                 }
             }
         };
-        Connector nonSSLConnector = environment.acceptsProfiles("staging") ? createNonSSLConnectorWithoutRedirect() :
-                createNonSSLConnectorWithRedirect();
+        Connector nonSSLConnector = environment.acceptsProfiles("staging") ? createNonSSLConnectorWithoutRedirect(httpPort) :
+                createNonSSLConnectorWithRedirect(httpPort, httpsPort);
         tomcat.addAdditionalTomcatConnectors(nonSSLConnector);
         return tomcat;
     }
 
-    private Connector createNonSSLConnectorWithRedirect() {
+    private Connector createNonSSLConnectorWithRedirect(int httpPort, int httpsPort) {
         Connector connector = new Connector("org.apache.coyote.http11.Http11NioProtocol");
-        connector.setPort(80);
-        connector.setRedirectPort(443);
+        connector.setPort(httpPort);
+        connector.setRedirectPort(httpsPort);
         return connector;
     }
 
-    private Connector createNonSSLConnectorWithoutRedirect() {
+    private Connector createNonSSLConnectorWithoutRedirect(int httpPort) {
         Connector connector = new Connector("org.apache.coyote.http11.Http11NioProtocol");
-        connector.setPort(80);
+        connector.setPort(httpPort);
         return connector;
     }
 

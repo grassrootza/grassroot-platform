@@ -178,14 +178,14 @@ public class GroupRestController {
     @RequestMapping(value = "/members/add/{phoneNumber}/{code}/{uid}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> addMembersToGroup(@PathVariable String phoneNumber, @PathVariable String code,
                                                              @PathVariable("uid") String groupUid,
-                                                             @RequestParam(value = "membersToAdd", required = false) Set<MembershipInfo> membersToAdd) {
+                                                             @RequestBody Set<MembershipInfo> membersToAdd) {
 
         User user = userManagementService.findByInputNumber(phoneNumber);
         Group group = groupBroker.load(groupUid);
-        log.info("membersReceived = {}", membersToAdd.toString());
+        log.info("membersReceived = {}", membersToAdd != null ? membersToAdd.toString() : "null");
 
         // todo : handle error
-        if (!membersToAdd.isEmpty()) {
+        if (membersToAdd != null && !membersToAdd.isEmpty()) {
             groupBroker.addMembers(user.getUid(), group.getUid(), membersToAdd);
         }
 
