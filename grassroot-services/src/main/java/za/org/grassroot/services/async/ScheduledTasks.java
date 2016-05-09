@@ -15,6 +15,7 @@ import za.org.grassroot.integration.services.NotificationService;
 import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.LogBookBroker;
+import za.org.grassroot.services.geo.GeoLocationBroker;
 
 import javax.jms.Message;
 import javax.jms.ObjectMessage;
@@ -62,7 +63,10 @@ public class ScheduledTasks {
     private LogBookRepository logBookRepository;
 
     @Autowired
-    NotificationService notificationService;
+    private NotificationService notificationService;
+
+    @Autowired
+    private GeoLocationBroker geoLocationBroker;
 
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendReminders() {
@@ -171,6 +175,12 @@ public class ScheduledTasks {
             e.printStackTrace();
         }
         logger.info("queueWelcomeMessages..." + count + "...queued to generic-async");
+    }
+
+//    @Scheduled(cron = "0 0 3 * * *") // runs at 3am every day
+    public void calculatePreviousPeriodUserLocations() {
+        LocalDate today = LocalDate.now();
+        geoLocationBroker.calculatePreviousPeriodUserLocations(today);
     }
 
     @Scheduled(cron = "0 0 15 * * *") // runs at 3pm (= 5pm SAST) every day

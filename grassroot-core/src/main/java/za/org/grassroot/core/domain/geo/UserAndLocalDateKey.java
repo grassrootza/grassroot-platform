@@ -3,6 +3,7 @@ package za.org.grassroot.core.domain.geo;
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
@@ -10,28 +11,28 @@ import java.util.Objects;
  * This serves the purpose of natural composite primary key.
  */
 @Embeddable
-public class UserAndLocalTimeKey implements Serializable {
+public class UserAndLocalDateKey implements Serializable {
 	@Column(name = "user_uid", length = 50)
 	private String userUid;
 
-	@Column(name = "local_time")
-	private LocalDateTime localTime;
+	@Column(name = "local_date")
+	private LocalDate localDate;
 
-	protected UserAndLocalTimeKey() {
+	protected UserAndLocalDateKey() {
 		// fo JPA
 	}
 
-	public UserAndLocalTimeKey(String userUid, LocalDateTime localTime) {
+	public UserAndLocalDateKey(String userUid, LocalDate localDate) {
 		this.userUid = Objects.requireNonNull(userUid);
-		this.localTime = Objects.requireNonNull(localTime);
+		this.localDate = Objects.requireNonNull(localDate);
 	}
 
 	public String getUserUid() {
 		return userUid;
 	}
 
-	public LocalDateTime getLocalTime() {
-		return localTime;
+	public LocalDate getLocalDate() {
+		return localDate;
 	}
 
 	@Override
@@ -43,12 +44,12 @@ public class UserAndLocalTimeKey implements Serializable {
 			return false;
 		}
 
-		UserAndLocalTimeKey that = (UserAndLocalTimeKey) o;
+		UserAndLocalDateKey that = (UserAndLocalDateKey) o;
 
 		if (!userUid.equals(that.userUid)) {
 			return false;
 		}
-		if (!localTime.equals(that.localTime)) {
+		if (!localDate.equals(that.localDate)) {
 			return false;
 		}
 
@@ -58,7 +59,7 @@ public class UserAndLocalTimeKey implements Serializable {
 	@Override
 	public int hashCode() {
 		int result = userUid.hashCode();
-		result = 31 * result + localTime.hashCode();
+		result = 31 * result + localDate.hashCode();
 		return result;
 	}
 
@@ -66,7 +67,7 @@ public class UserAndLocalTimeKey implements Serializable {
 	public String toString() {
 		final StringBuilder sb = new StringBuilder("{");
 		sb.append("userUid='").append(userUid).append('\'');
-		sb.append(", localTime=").append(localTime);
+		sb.append(", localDate=").append(localDate);
 		sb.append('}');
 		return sb.toString();
 	}

@@ -9,7 +9,7 @@ import java.util.Objects;
 @Table(name = "prev_period_user_location")
 public class PreviousPeriodUserLocation {
 	@EmbeddedId
-	private UserAndLocalTimeKey key;
+	private UserAndLocalDateKey key;
 
 	private GeoLocation location;
 
@@ -17,12 +17,12 @@ public class PreviousPeriodUserLocation {
 		// for JPA
 	}
 
-	public PreviousPeriodUserLocation(UserAndLocalTimeKey key, GeoLocation location) {
+	public PreviousPeriodUserLocation(UserAndLocalDateKey key, GeoLocation location) {
 		this.key = Objects.requireNonNull(key);
 		this.location = Objects.requireNonNull(location);
 	}
 
-	public UserAndLocalTimeKey getKey() {
+	public UserAndLocalDateKey getKey() {
 		return key;
 	}
 
