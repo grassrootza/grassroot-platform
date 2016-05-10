@@ -20,6 +20,7 @@ import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.enums.UserLogType;
+import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.LogBookRepository;
 import za.org.grassroot.core.repository.UserRepository;
@@ -147,6 +148,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
             userToUpdate.setUsername(phoneNumber);
             userToUpdate.setHasAndroidProfile(true);
+            userProfile.setMessagingPreference(UserMessagingPreference.ANDROID_APP);
             userProfile.setAlertPreference(AlertPreference.NOTIFY_ALL_EVENTS);
             userToUpdate.setHasInitiatedSession(true);
             userToSave = userToUpdate;
@@ -157,6 +159,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             userProfile.setUsername(phoneNumber);
             userProfile.setDisplayName(userDTO.getDisplayName());
             userProfile.setHasAndroidProfile(true);
+            userProfile.setMessagingPreference(UserMessagingPreference.ANDROID_APP);
             userProfile.setAlertPreference(AlertPreference.NOTIFY_ALL_EVENTS);
             userToSave = userProfile;
         }

@@ -102,6 +102,9 @@ public class UserRestController {
         if (passwordTokenService.isVerificationCodeValid(phoneNumber, token)) {
             log.info("User authentication successful for user with phoneNumber={}", phoneNumber);
             User user = userManagementService.loadOrSaveUser(phoneNumber);
+            if(!user.hasAndroidProfile()){
+                userManagementService.createAndroidUserProfile(new UserDTO(user));
+            }
             VerificationTokenCode longLivedToken = passwordTokenService.generateLongLivedCode(user);
             boolean hasGroups = userManagementService.isPartOfActiveGroups(user);
             return new ResponseEntity<>(new AuthenticationResponseWrapper(HttpStatus.OK, RestMessage.LOGIN_SUCCESS,

@@ -14,6 +14,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
+import za.org.grassroot.integration.domain.GcmUpstreamMessage;
 import za.org.grassroot.integration.services.GcmService;
 import za.org.grassroot.integration.services.MessageSendingService;
 import za.org.grassroot.integration.services.NotificationService;
@@ -45,32 +46,26 @@ public class InboundGcmMessageHandler {
     private UserRepository userRepository;
 
     @ServiceActivator(inputChannel = "gcmInboundChannel")
-    public void handleUpstreamMessage(Message message) throws Exception {
+    public void handleUpstreamMessage(GcmUpstreamMessage message) throws Exception {
 
-        GcmPacketExtension gcmPacket =
-                (GcmPacketExtension) message.
-                        getExtension(GcmPacketExtension.GCM_NAMESPACE);
-        String json = gcmPacket.getJson();
-        log.info("Parsed to json = {}", json);
-        ObjectMapper mapper = new ObjectMapper();
-        Map<String,Object> response = mapper.readValue(json, new TypeReference<Map<String, Object>>(){});
-        String message_type = (String) response.get("message_type");
-        log.info(response.toString());
+
+
+        String message_type = message.getMessage_type();
+        log.info(message.toString());
         if(message_type == null){
-            handleOrdinaryMessage(response);
+            handleOrdinaryMessage(message);
         }else{
             switch(message_type){
             case "ack":
-                handleAcknowledgementReceipt(response);
+                handleAcknowledgementReceipt(message);
                 break;
             case "nack":
-                handleNotAcknowledged(response);
+                handleNotAcknowledged(message);
                 break;
             case "receipt":
-                handleDeliveryReceipts(response);
+                handleDeliveryReceipts(message);
                 break;
             case "control":
-                handleControlMessage(response);
                 break;
             default:
                 break;
@@ -78,27 +73,28 @@ public class InboundGcmMessageHandler {
 
     }}
 
-    private void handleAcknowledgementReceipt(Map<String, Object> input) {
-        String messageId = (String) input.get("message_id");
-        String data = String.valueOf(input.get("data"));
+    private void handleAcknowledgementReceipt(GcmUpstreamMessage input) {
+        String messageId = input.getMessage_id();
+        String data = String.valueOf(input.getData());
         log.info("Gcm acknowledges receipt of message " + messageId+ " with payload "+data);
 
     }
 
-    private void handleOrdinaryMessage(Map<String, Object> input){
+    private void handleOrdinaryMessage(GcmUpstreamMessage input){
        log.info("Ordinary message received");
-        String messageId = (String) input.get("message_id");
-        String from = String.valueOf(input.get("from"));
-        HashMap<String, Object> data = (HashMap)input.get("data");
-        String action = String.valueOf(data.get("action"));
+        String messageId = input.getMessage_id();
+        String from = input.getFrom();
+
+
+        String action = String.valueOf(input.getData().get("action"));
         if(action != null) {
             switch (action) {
                 case "REGISTER":
-                    String phoneNumber = (String) data.get("phoneNumber");
+                    String phoneNumber = (String) input.getData().get("phoneNumber");
                     registerUser(from, phoneNumber);
                     break;
                 case "UPDATE_READ":
-                    String notificationId = (String) data.get("notificationId");
+                    String notificationId = (String) input.getData().get("notificationId");
                     updateReadStatus(notificationId);
                     break;
                 default: //acton unknown ignore
@@ -109,27 +105,21 @@ public class InboundGcmMessageHandler {
         sendAcknowledment(from, messageId);
     }
 
-    private void handleNotAcknowledged(Map<String, Object> input) {
-        String messageId = (String) input.get("message_id");
+    private void handleNotAcknowledged(GcmUpstreamMessage input) {
+        String messageId = input.getMessage_id();
         Notification notification = notificationService.loadNotification(messageId);
         log.info("Push Notification delivery failed, now sending SMS");
         log.info("Sending SMS to " + notification.getTarget().getPhoneNumber());
         messageSendingService.sendMessage(UserMessagingPreference.SMS.name(),notification);
     }
 
-    private void handleDeliveryReceipts(Map<String,Object> input){
-        String messageId = String.valueOf(input.get("messageId"));
+    private void handleDeliveryReceipts(GcmUpstreamMessage input){
+        String messageId = input.getMessage_id();
         log.info("Message " + messageId + " delivery successful, updating notification to read status.");
         notificationService.updateNotificationDeliveryStatus(messageId,true);
 
     }
 
-    private void handleControlMessage(Map<String, Object> input) {
-        String controlType = (String) input.get("control_type");
-        if ("CONNECTION_DRAINING".equals(controlType)) {
-          //todo: open a new connection
-        }
-    }
 
     private void sendAcknowledment(String registrationId, String messageId){
         org.springframework.messaging.Message<Message> gcmMessage = GcmXmppMessageCodec.encode(registrationId, messageId, "ack");
