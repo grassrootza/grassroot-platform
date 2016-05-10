@@ -13,11 +13,13 @@ import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.PasswordTokenService;
-import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.*;
+
+import java.time.Instant;
 
 /**
  * Created by paballo.
@@ -33,11 +35,10 @@ public class UserRestController {
     @Autowired
     private PasswordTokenService passwordTokenService;
 
+    @Autowired
+    private GeoLocationBroker geoLocationBroker;
+
     private Logger log = LoggerFactory.getLogger(UserRestController.class);
-
-
-
-
 
     @RequestMapping(value = "/add/{phoneNumber}/{displayName}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> add(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("displayName") String displayName) {
@@ -151,6 +152,7 @@ public class UserRestController {
         return new ResponseEntity<>(responseWrapper,HttpStatus.valueOf(responseWrapper.getCode()));
 
     }
+
     @RequestMapping(value="/profile/settings/{phoneNumber}/{code}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> getProfileSettings(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code){
         User user = userManagementService.loadOrSaveUser(phoneNumber);
@@ -159,6 +161,20 @@ public class UserRestController {
 
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
 
+    }
+
+    @RequestMapping(value= "/location/{phoneNumber}/{code}/{latitude}/{longitude}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> logUserLocation(@PathVariable String phoneNumber, @PathVariable String code,
+                                                           @PathVariable double latitude, @PathVariable double longitude) {
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        log.info("Recording a location! With longitude = {} and lattitude = {}", longitude, latitude);
+        geoLocationBroker.logUserLocation(user.getUid(), latitude, longitude, Instant.now());
+        return returnOkay(RestMessage.LOCATION_RECORDED);
+    }
+
+    private ResponseEntity<ResponseWrapper> returnOkay(RestMessage message) {
+        ResponseWrapper responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, message, RestStatus.SUCCESS);
+        return new ResponseEntity<>(responseWrapper, HttpStatus.OK);
     }
 
 

@@ -15,6 +15,7 @@ public enum RestMessage {
     USER_HAS_NO_GROUPS,
     USER_PROFILE,
     USER_GROUPS,
+    LOCATION_RECORDED,
 
     GROUP_CREATED,
     GROUP_NOT_CREATED,
