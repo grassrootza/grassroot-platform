@@ -1,6 +1,8 @@
 package za.org.grassroot.language;
 
-import org.antlr.runtime.tree.Tree;
+import org.antlr.v4.runtime.tree.Tree;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -22,9 +24,9 @@ public class DateGroup {
   private Date _recurringUntil;
   private Map<String, List<ParseLocation>> _parseLocations;
   private Tree _syntaxTree;
-
+  private Logger logger = LoggerFactory.getLogger(DateGroup.class.getCanonicalName());
   public DateGroup() {
-    _dates = new ArrayList<Date>();
+    _dates = new ArrayList<>();
     _isDateInferred = true;
     _isTimeInferred = true;
   }
@@ -102,6 +104,7 @@ public class DateGroup {
    * @return The immediate prefix within fullText to this group's text within the fullText
    */
   public String getPrefix(int length) {
+    logger.info("Inside getPrefix. The length is {}", length);
     return _fullText.substring(Math.max(0, getAbsolutePosition() - length), getAbsolutePosition());
   }
 

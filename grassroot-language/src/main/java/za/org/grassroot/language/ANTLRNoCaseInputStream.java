@@ -1,7 +1,7 @@
 package za.org.grassroot.language;
 
-import org.antlr.runtime.ANTLRInputStream;
-import org.antlr.runtime.CharStream;
+import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CharStream;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,7 +13,7 @@ import java.io.InputStream;
  */
 public class ANTLRNoCaseInputStream extends ANTLRInputStream {
   public ANTLRNoCaseInputStream(InputStream inputStream) throws IOException {
-    super(inputStream, null);
+    super(inputStream, 0);
   }
 
   @Override

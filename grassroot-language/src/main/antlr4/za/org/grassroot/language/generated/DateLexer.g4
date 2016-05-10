@@ -1,17 +1,14 @@
 lexer grammar DateLexer;
-
-@header { package za.org.grassroot.language.generated; }
-
 @members {
   private org.slf4j.Logger _logger =
     org.slf4j.LoggerFactory.getLogger(za.org.grassroot.language.generated.DateLexer.class);
 
-  @Override
+ /* @Override
   public void displayRecognitionError(String[] tokenNames, RecognitionException re) {
     String message = getErrorHeader(re);
     try { message += getErrorMessage(re, tokenNames); } catch(Exception e) {}
     _logger.debug(message);
-  }
+  }*/
 }
 
 // ********** date rules **********
@@ -78,6 +75,7 @@ CST  : 'cst'  | 'cdt'  | 'ct'  | 'central';
 MST  : 'mst'  | 'mdt'  | 'mt'  | 'mountain';
 AKST : 'akst' | 'akdt' | 'akt' | 'alaska';
 HAST : 'hast' | 'hadt' | 'hat' | 'hst' | 'hawaii';
+SAST : 'SAST' | 'SAT';
 
 // ********* numeric rules **********
 
@@ -324,13 +322,8 @@ SPRING : 'spring' 's'?;
 SUMMER : 'summer' 's'?;
   
 UNKNOWN
-  : UNKNOWN_CHAR
-  ;
-  
-fragment UNKNOWN_CHAR
-  : ~(SPACE | DOT)
-  ;
-  
+  : ~( ' ' | '\t' | '\n' | '\r' | '\u00A0' | '.');
+
+fragment SPACE : ' ' | '\t' | '\n' | '\r' | '\u00A0' ;
 fragment DIGIT : '0'..'9';
-  
-fragment SPACE : ' ' | '\t' | '\n' | '\r' | '\u00A0';
+

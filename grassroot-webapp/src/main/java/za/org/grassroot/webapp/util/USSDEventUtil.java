@@ -179,7 +179,7 @@ public class USSDEventUtil extends USSDUtil {
     public static LocalDateTime parseDateTime(String passedValue) {
 
         LocalDateTime parsedDateTime;
-
+        log.debug("In parseDateTime, about to instantiate and call the parsing method.");
         Parser parser = new Parser();
         DateGroup firstDateGroup = parser.parse(passedValue).iterator().next();
         if (firstDateGroup != null) {

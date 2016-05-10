@@ -1,5 +1,6 @@
 package za.org.grassroot.language;
 
+import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -8,7 +9,7 @@ import java.util.*;
 /**
  * @author Joe Stelmach
  */
-public class WalkerState {
+public class WalkerState extends ParseTreeWalker {
   
   private static final Logger log = LoggerFactory.getLogger(WalkerState.class);
 
@@ -54,18 +55,18 @@ public class WalkerState {
   }
 
   public WalkerState(Date referenceDate) {
-      log.debug("Constructing walker, reference date={}", referenceDate);
+      log.info("Constructing walker, reference date={}", referenceDate);
 	calendarSource = new CalendarSource(referenceDate);
 	resetCalendar();
 	_dateGroup = new DateGroup();
-      log.debug("After constructor, calendar year={}", _calendar.get(Calendar.YEAR));
+      log.info("After constructor, calendar year={}", _calendar.get(Calendar.YEAR));
   }
   
   public void setDefaultTimeZone(final TimeZone zone) {
 	_defaultTimeZone = zone;
 	resetCalendar();
   }
-  
+
   /**
    * seeks to a specified day of the week in the past or future.
    * 
@@ -295,7 +296,7 @@ public class WalkerState {
    */
   public void setExplicitDate(String month, String dayOfMonth, String dayOfWeek, String year) {
 	log.debug("Inside explicit date, month={}, dayOfMonth={}, dayOfWeek={}, year={}", month, dayOfMonth, dayOfWeek, year);
-	log.debug("Inside explicit date, at start, calendar default year={}", _calendar.get(Calendar.YEAR));
+	log.info("Inside explicit date, at start, calendar default year={}", _calendar.get(Calendar.YEAR));
 
 	int monthInt = Integer.parseInt(month);
 	assert(monthInt > 0 && monthInt <= 12);
@@ -322,7 +323,7 @@ public class WalkerState {
 	  }
 	}
 
-	  log.debug("Inside explicit date, at end, calendar default year={}", _calendar.get(Calendar.YEAR));
+	  log.info("Inside explicit date, at end, calendar default year={}", _calendar.get(Calendar.YEAR));
   }
   
   /**
@@ -344,8 +345,8 @@ public class WalkerState {
    *     - GMT offset (+05:00, -0500, +5, etc)
    */
   public void setExplicitTime(String hours, String minutes, String seconds, String amPm, String zoneString) {
-	log.debug("Inside set explicit time, hours={}, minutes={}, zoneString={}", hours, minutes, zoneString);
-	log.debug("At start of explicit time, stored calendar year={}", _calendar.get(Calendar.YEAR));
+	log.info("Inside set explicit time, hours={}, minutes={}, zoneString={}", hours, minutes, zoneString);
+	log.info("At start of explicit time, stored calendar year={}", _calendar.get(Calendar.YEAR));
 
 	int hoursInt = Integer.parseInt(hours);
 	int minutesInt = minutes != null ? Integer.parseInt(minutes) : 0;
@@ -393,7 +394,7 @@ public class WalkerState {
 
 	_calendar.set(Calendar.MINUTE, minutesInt);
 
-	log.debug("Exiting set explicit time, calendar year={}", _calendar.get(Calendar.YEAR));
+	log.info("Exiting set explicit time, calendar year={}", _calendar.get(Calendar.YEAR));
   }
   
   /**

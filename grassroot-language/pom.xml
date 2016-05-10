@@ -14,14 +14,14 @@
     <name>Grassroot Language</name>
 
     <properties>
-        <grammar.dir>${basedir}/src/main/antlr3/za/org/grassroot/language/generated</grammar.dir>
+        <grammar.dir>${basedir}/src/main/antlr4/za/org/grassroot/language/generated</grammar.dir>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.antlr</groupId>
-            <artifactId>antlr-runtime</artifactId>
-            <version>3.5.2</version>
+            <artifactId>antlr4-runtime</artifactId>
+            <version>4.5</version>
         </dependency>
         <dependency>
             <groupId>org.mnode.ical4j</groupId>
@@ -50,6 +50,11 @@
             <version>3.5.2</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>antlr4-runtime</artifactId>
+            <version>4.5.3</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -75,40 +80,40 @@
             <!-- ANTLR code generation plugin -->
             <plugin>
                 <groupId>org.antlr</groupId>
-                <artifactId>antlr3-maven-plugin</artifactId>
-                <version>3.5.2</version>
+                <artifactId>antlr4-maven-plugin</artifactId>
+                <version>4.5</version>
                 <executions>
                     <execution>
                         <id>debug</id>
                         <goals>
-                            <goal>antlr</goal>
+                           <goal>antlr4</goal>
                         </goals>
                         <configuration>
-                            <debug>true</debug>
-                            <libDirectory>src/main/antlr3/za/org/grassroot/language/generated/imports</libDirectory>
+                            <libDirectory>src/main/antlr4/za/org/grassroot/language/generated</libDirectory>
+                            <libDirectory>src/main/antlr4/za/org/grassroot/language/generated/imports</libDirectory>
                             <outputDirectory>src/main/java</outputDirectory>
                             <includes>
-                                <include>za/org/grassroot/language/generated/DateLexer.g</include>
-                                <include>za/org/grassroot/language/generated/DateParser.g</include>
+                                <include>za/org/grassroot/language/generated/DateLexer.g4</include>
+                                <include>za/org/grassroot/language/generated/DateParser.g4</include>
                             </includes>
-                            <excludes>
-                                <exclude>za/org/grassroot/language/generated/imports/NumericRules.g</exclude>
+                             <excludes>
+                                <exclude>za/org/grassroot/language/generated/imports/NumericRules.g4</exclude>
                             </excludes>
                         </configuration>
                     </execution>
                     <execution>
                         <id>non-debug</id>
                         <goals>
-                            <goal>antlr</goal>
+                           <goal>antlr4</goal>
                         </goals>
                         <configuration>
-                            <debug>false</debug>
                             <outputDirectory>src/main/java</outputDirectory>
-                            <libDirectory>src/main/antlr3/za/org/grassroot/language/generated/imports</libDirectory>
+                            <libDirectory>src/main/antlr4/za/org/grassroot/language/generated</libDirectory>
+                            <libDirectory>src/main/antlr4/za/org/grassroot/language/imports/generated</libDirectory>
                             <excludes>
-                                <exclude>za/org/grassroot/language/generated/DateLexer.g</exclude>
-                                <exclude>za/org/grassroot/language/generated/DateParser.g</exclude>
-                                <exclude>za/org/grassroot/language/generated/imports/NumericRules.g</exclude>
+                                <exclude>za/org/grassroot/language/generated/DateLexer.g4</exclude>
+                                <exclude>za/org/grassroot/language/generated/DateParser.g4</exclude>
+                                <exclude>za/org/grassroot/language/generated/imports/NumericRules.g4</exclude>
                             </excludes>
                         </configuration>
                     </execution>
@@ -120,10 +125,6 @@
                 <groupId>org.antlr</groupId>
                 <artifactId>maven-gunit-plugin</artifactId>
                 <version>3.5.2</version>
-                <configuration>
-                    <skip>${maven.test.skip}</skip>
-                    <skip>${skipTests}</skip>
-                </configuration>
                 <executions>
                     <execution>
                         <id>maven-gunit-plugin</id>

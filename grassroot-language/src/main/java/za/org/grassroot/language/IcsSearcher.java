@@ -54,7 +54,7 @@ public class IcsSearcher {
     Period period = null;
     try {
       DateTime from = new DateTime(startYear + "0101T000000Z");
-      DateTime to = new DateTime(endYear + "1231T000000Z");;
+      DateTime to = new DateTime(endYear + "1231T000000Z");
       period = new Period(from, to);
       
     } catch (ParseException e) {
