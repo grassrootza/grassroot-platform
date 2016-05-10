@@ -8,9 +8,9 @@
 
     <changeSet id="change_86" author="Paballo Ditshego">
         <comment>Altered gcm_registration, increased registration_id length to 255</comment>
-        <sqlFile path="db/scripts/script_85.sql" splitStatements="false"/>
+        <sqlFile path="db/scripts/script_86.sql" splitStatements="false"/>
         <rollback>
-            <sqlFile path="db/scripts/script_85_rollback.sql"/>
+            <sqlFile path="db/scripts/script_86_rollback.sql"/>
         </rollback>
     </changeSet>
 </databaseChangeLog>
