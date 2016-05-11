@@ -93,7 +93,7 @@ public class InboundGcmMessageHandler {
                     String notificationId = (String) input.getData().get("notificationId");
                     updateReadStatus(notificationId);
                     break;
-                default: //acton unknown ignore
+                default: //action unknown ignore
                     break;
 
             }
