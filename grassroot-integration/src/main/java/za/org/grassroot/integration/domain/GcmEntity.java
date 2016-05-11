@@ -1,6 +1,7 @@
 package za.org.grassroot.integration.domain;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Map;
 
@@ -11,27 +12,33 @@ import java.util.Map;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class GcmEntity {
 
-    private String message_id;
+    @JsonProperty("message_id")
+    private String messageId;
     private String to;
+    @JsonProperty("collapse_key")
     private String collapseKey;
-    private Long time_to_live = 300L; //5 minutes
-    private static final boolean delayWhileIdle = false;
-    private static final boolean deliveryReceiptRequested =true;
+    @JsonProperty("time_to_live")
+    private Long timeToLive = 300L; //5 minutes
+    @JsonProperty("delay_while_idle")
+    private boolean delayWhileIdle = false;
+    @JsonProperty("delivery_receipt_requested")
+    private boolean deliveryReceiptRequested =true;
     private Map<String,Object> notification;
     private Map<String,Object> data;
-    private String message_type;
+    @JsonProperty("message_type")
+    private String messageType;
 
     public GcmEntity() {
     }
 
     public GcmEntity(String messageId, String to, String messageType){
-        this.message_id = messageId;
+        this.messageId = messageId;
         this.to = to;
-        this.message_type = messageType;
+        this.messageType = messageType;
     }
 
     public GcmEntity(String messageId, String to, String collapseKey, Map<String,Object> data, Map<String,Object> notification){
-        this.message_id = messageId;
+        this.messageId = messageId;
         this.to = to;
         this.collapseKey = collapseKey;
         this.data =data;
@@ -39,8 +46,8 @@ public class GcmEntity {
     }
 
 
-    public String getMessage_id() {
-        return message_id;
+    public String getMessageId() {
+        return messageId;
     }
 
     public Map<String,Object> getNotification() {
@@ -55,15 +62,15 @@ public class GcmEntity {
         return collapseKey;
     }
 
-    public Long getTime_to_live() {
-        return time_to_live;
+    public Long getTimeToLive() {
+        return timeToLive;
     }
 
-    public static boolean isDelayWhileIdle() {
+    public boolean isDelayWhileIdle() {
         return delayWhileIdle;
     }
 
-    public static boolean isDeliveryReceiptRequested() {
+    public boolean isDeliveryReceiptRequested() {
         return deliveryReceiptRequested;
     }
 
@@ -71,7 +78,7 @@ public class GcmEntity {
         return data;
     }
 
-    public String getMessage_type() {
-        return message_type;
+    public String getMessageType() {
+        return messageType;
     }
 }

@@ -13,7 +13,6 @@ import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.repository.GcmRegistrationRepository;
 
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -72,11 +71,11 @@ public class NotificationToGcmXmppTransformer {
 		switch (notification.getNotificationType()) {
 			case EVENT:
 				String groupName = notification.getEventLog().getEvent().getAncestorGroup().getGroupName();
-				return sb.append(notification.getUid()).append("_").append(groupName).toString();
+				return sb.append(notification.getEventLog().getEvent().getUid()).append("_").append(groupName).toString();
 
 			case LOGBOOK:
-				Instant logBookLogCreatedTime = notification.getLogBookLog().getCreatedDateTime();
-				return sb.append(notification.getUid()).append("_").append(logBookLogCreatedTime).toString();
+				return sb.append(notification.getLogBookLog().getLogBook().getUid()).append("_").
+						append(notification.getGroupLog().getGroup().getGroupName()).toString();
 		}
 		return null;
 	}
