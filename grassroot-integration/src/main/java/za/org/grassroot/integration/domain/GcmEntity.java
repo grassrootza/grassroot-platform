@@ -17,8 +17,8 @@ public class GcmEntity {
     private Long time_to_live = 300L; //5 minutes
     private static final boolean delayWhileIdle = false;
     private static final boolean deliveryReceiptRequested =true;
-    private Map<String,Object> data;
     private Map<String,Object> notification;
+    private Map<String,Object> data;
     private String message_type;
 
     public GcmEntity() {

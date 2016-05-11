@@ -63,7 +63,7 @@ public class XMPPConfiguration {
     }
 
     @Bean
-    @ServiceActivator(inputChannel = "gcmXmppOutBoundChannel")
+    @ServiceActivator(inputChannel = "gcmXmppOutboundChannel")
     public ChatMessageSendingMessageHandler chatMessageSendingMessageHandler(XMPPConnection connection){
         ChatMessageSendingMessageHandler adapter = new ChatMessageSendingMessageHandler(connection);
         return adapter;

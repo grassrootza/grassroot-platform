@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.GcmRegistration;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.repository.GcmRegistrationRepository;
 
 import java.time.Instant;
@@ -86,13 +87,13 @@ public class NotificationToGcmXmppTransformer {
 		switch (notification.getNotificationType()) {
 			case EVENT:
 				return GcmXmppMessageCodec.createDataPart(
-						notification.getEventLog().getEvent().getName(),
+						notification.getEventLog().getEvent().getAncestorGroup().getGroupName(),
 						notification.getEventLog().getEvent().getAncestorGroup().getGroupName(),
 						notification.getMessage(),
 						notification.getEventLog().getEvent().getUid(),
 						notification.getCreatedDateTime(),
 						notification.getNotificationType(),
-						notification.getEventLog().getEvent().getEventType()
+						notification.getEventLog().getEvent().getEventType().name()
 				);
 
 			case LOGBOOK:
@@ -104,8 +105,7 @@ public class NotificationToGcmXmppTransformer {
 						notification.getMessage(),
 						notification.getLogBookLog().getLogBook().getId(),
 						notification.getCreatedDateTime(),
-						notification.getNotificationType(),
-						notification.getEventLog().getEvent().getEventType()
+						notification.getNotificationType(),TaskType.TODO.name()
 				);
 		}
 		return data;
