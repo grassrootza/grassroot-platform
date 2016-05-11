@@ -70,7 +70,7 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 			String userUid = entry.getKey();
 			List<GeoLocation> locations = entry.getValue();
 			GeoLocation center = GeoLocationUtils.centralLocation(locations);
-			PreviousPeriodUserLocation userLocation = new PreviousPeriodUserLocation(new UserAndLocalDateKey(userUid, localDate), center);
+			PreviousPeriodUserLocation userLocation = new PreviousPeriodUserLocation(new UserAndLocalDateKey(userUid, localDate), center, locations.size());
 			userLocations.add(userLocation);
 		}
 
@@ -82,13 +82,14 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 	}
 
 	@Override
-	public CenterCalculationResult calculateCenter(Set<String> userUids, LocalDateTime time) {
+	public CenterCalculationResult calculateCenter(Set<String> userUids, LocalDate date) {
 		Objects.requireNonNull(userUids);
-		Objects.requireNonNull(time);
+		Objects.requireNonNull(date);
 
-		logger.info("calculating geo center from user locations: number of users={}, local time={}", userUids.size(), time);
+		logger.info("calculating geo center from user locations: number of users={}, local date={}", userUids.size(), date);
 
-		LocalDate previousPeriodLocationLocalDate = findFirstLocalDateInPreviousPeriodLocationsAfterTime(time.toLocalDate());
+//		LocalDate previousPeriodLocationLocalDate = findFirstLocalDateInPreviousPeriodLocationsAfterOrEqualsDate(date);
+		LocalDate previousPeriodLocationLocalDate = date; // todo: maybe this is sufficient (to search only for exact date)?
 		List<PreviousPeriodUserLocation> previousPeriodLocations = previousPeriodUserLocationRepository.findByKeyLocalDateAndKeyUserUidIn(previousPeriodLocationLocalDate, userUids);
 
 		List<GeoLocation> locations = previousPeriodLocations.stream().map(PreviousPeriodUserLocation::getLocation).collect(Collectors.toList());
@@ -98,13 +99,13 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 		return new CenterCalculationResult(userCount, center);
 	}
 
-	private LocalDate findFirstLocalDateInPreviousPeriodLocationsAfterTime(LocalDate localDate) {
-		List list = entityManager.createQuery("select l.key.localDate from PreviousPeriodUserLocation l where l.key.localDate > :time order by l.key.localDate desc")
-				.setParameter("time", localDate)
+	private LocalDate findFirstLocalDateInPreviousPeriodLocationsAfterOrEqualsDate(LocalDate date) {
+		List list = entityManager.createQuery("select l.key.localDate from PreviousPeriodUserLocation l where l.key.localDate >= :date order by l.key.localDate desc")
+				.setParameter("date", date)
 				.setMaxResults(1) // limit to first only
 				.getResultList();
 		if (list.isEmpty()) {
-			throw new IllegalStateException("There are no previous period locations calculated for dates after " + localDate);
+			throw new IllegalStateException("There are no previous period locations calculated for dates after " + date);
 		}
 		return (LocalDate) list.get(0);
 	}

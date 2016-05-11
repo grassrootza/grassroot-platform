@@ -94,4 +94,5 @@ public interface GroupBroker {
     // pass null to either of the timestamps to leave unlimited (i.e., all the way to future, or all the way to past
     List<Event> retrieveGroupEvents(Group group, EventType eventType, Instant periodStart, Instant periodEnd);
 
+    void calculateGroupLocation(String groupUid, LocalDate localDate);
 }

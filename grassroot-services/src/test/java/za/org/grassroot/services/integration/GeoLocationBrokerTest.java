@@ -53,20 +53,22 @@ public class GeoLocationBrokerTest {
 
 		List<PreviousPeriodUserLocation> list1 = previousPeriodUserLocationRepository.findByKeyLocalDateAndKeyUserUidIn(localDate1, userUids);
 		Assert.assertEquals(list1.size(), 2);
-		GeoLocation user111Location = findPreviousPeriodUserLocationByUserUid(list1, "111").getLocation();
-		Assert.assertEquals((int) user111Location.getLatitude(), 55);
-		Assert.assertEquals((int) user111Location.getLongitude(), 39);
+		PreviousPeriodUserLocation previousLocationForUser111 = findPreviousPeriodUserLocationByUserUid(list1, "111");
+		Assert.assertEquals((int) previousLocationForUser111.getLocation().getLatitude(), 55);
+		Assert.assertEquals((int) previousLocationForUser111.getLocation().getLongitude(), 39);
+		Assert.assertEquals(previousLocationForUser111.getLogCount(), 2);
 
 		List<PreviousPeriodUserLocation> list2 = previousPeriodUserLocationRepository.findByKeyLocalDateAndKeyUserUidIn(localDate2, userUids);
 		Assert.assertEquals(list2.size(), 2);
-		user111Location = findPreviousPeriodUserLocationByUserUid(list2, "111").getLocation();
-		Assert.assertEquals((int) user111Location.getLatitude(), 60);
-		Assert.assertEquals((int) user111Location.getLongitude(), 40);
+		previousLocationForUser111 = findPreviousPeriodUserLocationByUserUid(list2, "111");
+		Assert.assertEquals((int) previousLocationForUser111.getLocation().getLatitude(), 60);
+		Assert.assertEquals((int) previousLocationForUser111.getLocation().getLongitude(), 40);
+		Assert.assertEquals((int) previousLocationForUser111.getLogCount(), 1);
 
 		List<PreviousPeriodUserLocation> list3 = previousPeriodUserLocationRepository.findByKeyLocalDateAndKeyUserUidIn(localDate3, userUids);
 		Assert.assertEquals(list3.size(), 0);
 
-		CenterCalculationResult result1 = geoLocationBroker.calculateCenter(userUids, LocalDateTime.of(2016, 4, 5, 2, 15));
+		CenterCalculationResult result1 = geoLocationBroker.calculateCenter(userUids, LocalDate.of(2016, 4, 6));
 		Assert.assertEquals(result1.getUserCount(), 2);
 		GeoLocation center1 = result1.getCenter();
 		Assert.assertEquals((int) center1.getLatitude(), 55);

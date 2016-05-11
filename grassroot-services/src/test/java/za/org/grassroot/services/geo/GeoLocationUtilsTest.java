@@ -5,8 +5,10 @@ import org.junit.Test;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertNull;
 
 public class GeoLocationUtilsTest {
 
@@ -20,5 +22,11 @@ public class GeoLocationUtilsTest {
 		GeoLocation centralLocation = GeoLocationUtils.centralLocation(locations);
 		assertEquals(63, (int) centralLocation.getLatitude());
 		assertEquals(39, (int) centralLocation.getLongitude());
+	}
+
+	@Test
+	public void testCenterCalculationWithEmptyInput() {
+		GeoLocation centralLocation = GeoLocationUtils.centralLocation(Collections.emptyList());
+		assertNull(centralLocation);
 	}
 }

@@ -87,7 +87,9 @@ public class ScheduledTasks {
     @Scheduled(fixedRate = 60000) //runs every 1 minutes
     public void sendUnsentVoteResults() {
         List<Vote> votes = voteRepository.findUnsentVoteResults();
-        logger.info("Sending vote results for {} unsent votes...", votes.size());
+        if (!votes.isEmpty()) {
+            logger.info("Sending vote results for {} unsent votes...", votes.size());
+        }
         for (Vote vote : votes) {
             try {
                 eventBroker.sendVoteResults(vote.getUid());
@@ -136,7 +138,9 @@ public class ScheduledTasks {
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendLogBookReminders() {
         List<LogBook> logBooks = logBookRepository.findAllLogBooksForReminding();
-        logger.info("Sending scheduled reminders for {} logbooks", logBooks.size());
+        if (!logBooks.isEmpty()) {
+            logger.info("Sending scheduled reminders for {} logbooks", logBooks.size());
+        }
 
         for (LogBook logBook : logBooks) {
             try {

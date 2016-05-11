@@ -10,7 +10,10 @@ public class CenterCalculationResult {
 
 	public CenterCalculationResult(int userCount, GeoLocation center) {
 		this.userCount = userCount;
-		this.center = Objects.requireNonNull(center);
+		if (isDefined() && center == null) {
+			throw new IllegalArgumentException("Center is null although user count is " + userCount);
+		}
+		this.center = center;
 	}
 
 	public int getUserCount() {
@@ -19,6 +22,10 @@ public class CenterCalculationResult {
 
 	public GeoLocation getCenter() {
 		return center;
+	}
+
+	public boolean isDefined() {
+		return userCount > 0;
 	}
 
 	@Override

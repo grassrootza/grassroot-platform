@@ -10,6 +10,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.notification.EventInfoNotification;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.enums.EventType;
@@ -18,6 +19,8 @@ import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
+import za.org.grassroot.services.geo.CenterCalculationResult;
+import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import za.org.grassroot.services.util.TokenGeneratorService;
@@ -59,6 +62,10 @@ public class GroupBrokerImpl implements GroupBroker {
     private TokenGeneratorService tokenGeneratorService;
     @Autowired
     private MessageAssemblingService messageAssemblingService;
+    @Autowired
+    private GeoLocationBroker geoLocationBroker;
+    @Autowired
+    private GroupLocationRepository groupLocationRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -869,5 +876,25 @@ public class GroupBrokerImpl implements GroupBroker {
         }
 
         return events;
+    }
+
+    @Override
+    @Transactional
+    public void calculateGroupLocation(String groupUid, LocalDate localDate) {
+        Objects.requireNonNull(groupUid);
+        Objects.requireNonNull(localDate);
+
+        logger.info("Calculating location for group under UID {} and local date {}", groupUid, localDate);
+        Group group = groupRepository.findOneByUid(groupUid);
+        Set<String> memberUids = group.getMembers().stream().map(User::getUid).collect(Collectors.toSet());
+        CenterCalculationResult result = geoLocationBroker.calculateCenter(memberUids, localDate);
+        if (result.isDefined()) {
+            // for now, score is simply ratio of found member locations to total member count
+            float score = result.getUserCount() / (float) memberUids.size();
+            GroupLocation groupLocation = new GroupLocation(group, localDate, result.getCenter(), score);
+            groupLocationRepository.save(groupLocation);
+        } else {
+            logger.info("No member location data found for group {} for local date {}", group, localDate);
+        }
     }
 }

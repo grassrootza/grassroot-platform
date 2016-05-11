@@ -3,6 +3,7 @@ package za.org.grassroot.services.geo;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 
 import java.util.List;
+import java.util.Objects;
 
 public class GeoLocationUtils {
 	private GeoLocationUtils() {
@@ -10,6 +11,10 @@ public class GeoLocationUtils {
 	}
 
 	public static GeoLocation centralLocation(List<GeoLocation> geoLocations) {
+		Objects.requireNonNull(geoLocations);
+		if (geoLocations.isEmpty()) {
+			return null;
+		}
 		int locationCount = geoLocations.size();
 
 		if (locationCount == 1) {
