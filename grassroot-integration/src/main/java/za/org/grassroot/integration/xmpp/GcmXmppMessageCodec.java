@@ -64,17 +64,17 @@ public class GcmXmppMessageCodec {
 	}
 
 	public static Map<String, Object> createDataPart(String title, String group, String description, Object id,
-															Instant createdDateTime, NotificationType alertType, EventType entityType) {
+															Instant createdDateTime, NotificationType alertType, String entityType) {
 		Map<String, Object> data = new HashMap<>();
 		data.put("title", title);
 		if (group != null) {
 			data.put("group", group);
 		}
-		data.put("description", description);
+		data.put("body", description);
 		data.put("id", id);
 		data.put("created_date_time", createdDateTime);
 		data.put("alert_type", alertType);
-		data.put("entity_type", entityType.name());
+		data.put("entity_type", entityType);
 		return data;
 	}
 }

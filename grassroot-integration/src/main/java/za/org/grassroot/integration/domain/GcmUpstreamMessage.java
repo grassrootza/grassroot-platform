@@ -21,10 +21,12 @@ public class GcmUpstreamMessage {
 
     private String to;
 
-    private String message_id;
+    @JsonProperty("message_id")
+    private String messageId;
 
 
-    private String message_type;
+    @JsonProperty("message_type")
+    private String messageType;
 
 
     public String getFrom() {
@@ -43,11 +45,11 @@ public class GcmUpstreamMessage {
         return to;
     }
 
-    public String getMessage_id() {
-        return message_id;
+    public String getMessageId() {
+        return messageId;
     }
 
-    public String getMessage_type() {
-        return message_type;
+    public String getMessageType() {
+        return messageType;
     }
 }

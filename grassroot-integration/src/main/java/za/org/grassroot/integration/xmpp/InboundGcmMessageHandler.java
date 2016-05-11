@@ -1,7 +1,5 @@
 package za.org.grassroot.integration.xmpp;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jivesoftware.smack.packet.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,9 +16,6 @@ import za.org.grassroot.integration.domain.GcmUpstreamMessage;
 import za.org.grassroot.integration.services.GcmService;
 import za.org.grassroot.integration.services.MessageSendingService;
 import za.org.grassroot.integration.services.NotificationService;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Created by paballo on 2016/04/04.
@@ -45,12 +40,13 @@ public class InboundGcmMessageHandler {
     @Autowired
     private UserRepository userRepository;
 
+    private static final String ORIGINAL_MESSAGE_ID = "original_message_id";
+
+
     @ServiceActivator(inputChannel = "gcmInboundChannel")
     public void handleUpstreamMessage(GcmUpstreamMessage message) throws Exception {
 
-
-
-        String message_type = message.getMessage_type();
+        String message_type = message.getMessageType();
         log.info(message.toString());
         if(message_type == null){
             handleOrdinaryMessage(message);
@@ -74,7 +70,7 @@ public class InboundGcmMessageHandler {
     }}
 
     private void handleAcknowledgementReceipt(GcmUpstreamMessage input) {
-        String messageId = input.getMessage_id();
+        String messageId = input.getMessageId();
         String data = String.valueOf(input.getData());
         log.info("Gcm acknowledges receipt of message " + messageId+ " with payload "+data);
 
@@ -82,7 +78,7 @@ public class InboundGcmMessageHandler {
 
     private void handleOrdinaryMessage(GcmUpstreamMessage input){
        log.info("Ordinary message received");
-        String messageId = input.getMessage_id();
+        String messageId = input.getMessageId();
         String from = input.getFrom();
 
 
@@ -97,7 +93,7 @@ public class InboundGcmMessageHandler {
                     String notificationId = (String) input.getData().get("notificationId");
                     updateReadStatus(notificationId);
                     break;
-                default: //acton unknown ignore
+                default: //action unknown ignore
                     break;
 
             }
@@ -106,7 +102,7 @@ public class InboundGcmMessageHandler {
     }
 
     private void handleNotAcknowledged(GcmUpstreamMessage input) {
-        String messageId = input.getMessage_id();
+        String messageId = input.getMessageId();
         Notification notification = notificationService.loadNotification(messageId);
         log.info("Push Notification delivery failed, now sending SMS");
         log.info("Sending SMS to " + notification.getTarget().getPhoneNumber());
@@ -114,8 +110,8 @@ public class InboundGcmMessageHandler {
     }
 
     private void handleDeliveryReceipts(GcmUpstreamMessage input){
-        String messageId = input.getMessage_id();
-        log.info("Message " + messageId + " delivery successful, updating notification to read status.");
+        String messageId = String.valueOf(input.getData().get(ORIGINAL_MESSAGE_ID));
+        log.info("Message " + messageId + " delivery successful, updating notification to delivered status.");
         notificationService.updateNotificationDeliveryStatus(messageId,true);
 
     }
