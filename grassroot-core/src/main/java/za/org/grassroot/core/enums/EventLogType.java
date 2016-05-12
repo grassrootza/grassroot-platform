@@ -17,7 +17,7 @@ public enum EventLogType {
     EventTest,
     EventResult,
     EventManualReminder,
-    FreeFormMessage,
+    FreeFormMessage, // obsolete now, but keeping it to not mess with enum indices until its JPA storage is converted from default ORDINAL to STRING
     EventRsvpTotalMessage,
     EventThankYouMessage
 }

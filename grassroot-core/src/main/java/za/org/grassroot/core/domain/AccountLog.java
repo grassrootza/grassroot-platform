@@ -14,7 +14,7 @@ import java.time.Instant;
 @Entity
 @Table(name="account_log",
         uniqueConstraints = {@UniqueConstraint(name = "uk_account_log_uid", columnNames = "uid")})
-public class AccountLog {
+public class AccountLog implements ActionLog {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -79,8 +79,6 @@ public class AccountLog {
         return creationTime;
     }
 
-    public void setCreationTime(Instant creationTime) { this.creationTime = creationTime; }
-
     public AccountLogType getAccountLogType() {
         return accountLogType;
     }
@@ -95,22 +93,6 @@ public class AccountLog {
 
     public String getDescription() {
         return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    @Override
-    public String toString() {
-        return "AccountLog{" +
-                "id=" + id +
-                ", creationTime =" + creationTime +
-                ", userUid=" + userUid +
-                ", groupUid=" + groupUid +
-                ", accountLogType=" + accountLogType +
-                ", description='" + description + '\'' +
-                '}';
     }
 
     @Override
@@ -128,6 +110,17 @@ public class AccountLog {
         if (getUid() != null ? !getUid().equals(that.getUid()) : that.getUid() != null) { return false; }
 
         return true;
+    }
 
+    @Override
+    public String toString() {
+        return "AccountLog{" +
+                "id=" + id +
+                ", creationTime =" + creationTime +
+                ", userUid=" + userUid +
+                ", groupUid=" + groupUid +
+                ", accountLogType=" + accountLogType +
+                ", description='" + description + '\'' +
+                '}';
     }
 }

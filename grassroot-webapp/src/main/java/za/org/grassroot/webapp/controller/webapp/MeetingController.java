@@ -16,7 +16,6 @@ import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.*;
-import za.org.grassroot.services.async.AsyncEventMessageSender;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.MeetingWrapper;
 
@@ -56,7 +55,7 @@ public class MeetingController extends BaseController {
     private EventLogManagementService eventLogManagementService;
 
     @Autowired
-    private AsyncEventMessageSender messageSender;
+    private AccountManagementService accountManagementService;
 
     /**
      * Meeting creation
@@ -286,7 +285,7 @@ public class MeetingController extends BaseController {
         // todo: check that this group is paid for (and filter on previous page)
 
         log.info("Sending free form message: {}, to this group: {}", message, groupUid);
-        messageSender.sendFreeFormMessage(getUserProfile().getUid(), groupUid, message);
+        accountManagementService.sendFreeFormMessage(getUserProfile().getUid(), groupUid, message);
 
         redirectAttributes.addAttribute("groupUid", groupUid);
         addMessage(redirectAttributes, MessageType.SUCCESS, "sms.message.sent", request);

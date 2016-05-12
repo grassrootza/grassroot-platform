@@ -1,0 +1,36 @@
+package za.org.grassroot.core.domain.notification;
+
+import za.org.grassroot.core.domain.Account;
+import za.org.grassroot.core.domain.AccountLog;
+import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.NotificationType;
+
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.MappedSuperclass;
+
+@MappedSuperclass
+public abstract class AccountNotification extends Notification {
+	@ManyToOne
+	@JoinColumn(name = "account_id")
+	private Account account;
+
+	protected AccountNotification() {
+		// for JPA
+	}
+
+	public AccountNotification(User destination, String message, AccountLog accountLog) {
+		super(destination, message, accountLog);
+		this.account = accountLog.getAccount();
+	}
+
+	@Override
+	public NotificationType getNotificationType() {
+		return NotificationType.ACCOUNT;
+	}
+
+	public Account getAccount() {
+		return account;
+	}
+}

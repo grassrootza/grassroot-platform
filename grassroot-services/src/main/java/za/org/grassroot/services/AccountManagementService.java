@@ -24,8 +24,6 @@ public interface AccountManagementService {
 
     Account addAdministrator(Account account, User administrator);
 
-    Account removeAdministrator(Account account, User administrator);
-
     Account setBillingEmail(Account account, String billingEmail);
 
     Account adjustSettings(Account changedAccount);
@@ -62,4 +60,5 @@ public interface AccountManagementService {
     Methods to handle billing for institutional accounts
      */
 
+    void sendFreeFormMessage(String userUid, String groupUid, String message);
 }

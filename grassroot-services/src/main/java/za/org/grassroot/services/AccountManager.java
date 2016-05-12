@@ -3,19 +3,25 @@ package za.org.grassroot.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
-import za.org.grassroot.core.domain.Account;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.PaidGroup;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.notification.FreeFormMessageNotification;
+import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.repository.AccountRepository;
+import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.PaidGroupRepository;
+import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.exception.GroupAlreadyPaidForException;
+import za.org.grassroot.services.util.LogsAndNotificationsBroker;
+import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Created by luke on 2015/11/12.
@@ -39,6 +45,15 @@ public class AccountManager implements AccountManagementService {
 
     @Autowired
     private RoleManagementService roleManagementService;
+
+    @Autowired
+   	private UserRepository userRepository;
+
+   	@Autowired
+   	private GroupRepository groupRepository;
+
+   	@Autowired
+   	private LogsAndNotificationsBroker logsAndNotificationsBroker;
 
     private String accountAdminRole = "ROLE_ACCOUNT_ADMIN";
 
@@ -69,15 +84,6 @@ public class AccountManager implements AccountManagementService {
     public Account addAdministrator(Account account, User administrator) {
         account.addAdministrator(administrator);
         addAdminToUser(administrator, account);
-        return accountRepository.save(account);
-    }
-
-    @Override
-    public Account removeAdministrator(Account account, User administrator) {
-        /* account.removeAdministrator(administrator);
-        administrator.setAccountAdministered(null);
-        userManagementService.save(administrator); */
-        roleManagementService.removeStandardRoleFromUser(accountAdminRole, administrator);
         return accountRepository.save(account);
     }
 
@@ -175,4 +181,36 @@ public class AccountManager implements AccountManagementService {
         return paidGroupRepository.findOne(paidGroupId);
     }
 
+    @Override
+   	@org.springframework.transaction.annotation.Transactional
+   	public void sendFreeFormMessage(String userUid, String groupUid, String message) {
+   		// todo: move most of this to AccountManager
+   		// for now, just let the notification async handle the group loading etc., here just check the user
+   		// has permission (is account admin--later, account admin and it's a paid group, with enough credit
+
+   		User user = userRepository.findOneByUid(userUid);
+   		Group group = groupRepository.findOneByUid(groupUid);
+   		Account account = user.getAccountAdministered();
+
+   		authorizeFreeFormMessageSending(user, account);
+
+   		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
+   		AccountLog accountLog = new AccountLog(userUid, account, AccountLogType.MESSAGE_SENT, groupUid, null,
+   				"Sent free form message: " + message);
+   		bundle.addLog(accountLog);
+
+   		for (User member : group.getMembers()) {
+   			bundle.addNotification(new FreeFormMessageNotification(member, message, accountLog));
+   		}
+
+   		logsAndNotificationsBroker.storeBundle(bundle);
+   	}
+
+   	private void authorizeFreeFormMessageSending(User user, Account account) {
+   		Set<String> standardRoleNames = user.getStandardRoles().stream().map(Role::getName).collect(Collectors.toSet());
+   		if (account == null || !standardRoleNames.contains(BaseRoles.ROLE_ACCOUNT_ADMIN)) {
+   			throw new AccessDeniedException("User not account admin!");
+   		}
+   	}
 }

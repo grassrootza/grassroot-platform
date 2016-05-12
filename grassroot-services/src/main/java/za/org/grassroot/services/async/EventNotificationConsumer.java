@@ -83,24 +83,6 @@ public class EventNotificationConsumer {
     };
 
     /*
-    N.B.
-    If logic changes here also see method sendNewLogbookNotification if it must change there as well
-     */
-
-    @Transactional
-    @JmsListener(destination = "free-form", containerFactory = "messagingJmsContainerFactory", concurrency = "1")
-    public void sendFreeFormMessage(Map<String, String> message) {
-        log.info("sendFreeFormMessage... groupUid={}, message={}", message.get("group-uid"), message.get("message"));
-        Set<User> members = groupBroker.load(message.get("group-uid")).getMembers();
-        String messageText = message.get("message");
-        for (User user : members) {
-            // todo: record this for paid group / account ...
-            messageSendingService.sendMessage(messageText, user.getPhoneNumber(), MessageProtocol.SMS);
-            // eventLogManagementService.createEventLog(EventLogType.FreeFormMessage, null, user.getUid(), messageText);
-        }
-    }
-
-    /*
     As far as I can tell, this isn't used anywhere (instead the methods loop in here and clear the cache themselves.
     Since it's the only reason for cache manager wiring user manager, am going to comment out until / unless needed again.
      */

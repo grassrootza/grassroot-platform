@@ -5,8 +5,9 @@ package za.org.grassroot.core.enums;
  */
 public enum NotificationType {
 
-    EVENT,
-    LOGBOOK,
-    CHAT,
-    GENERAL
+	EVENT,
+	LOGBOOK,
+	CHAT,
+	ACCOUNT,
+	GENERAL
 }
