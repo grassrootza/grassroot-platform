@@ -17,6 +17,8 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.geo.CenterCalculationResult;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -52,27 +54,27 @@ public class GeoLocationBrokerTest {
 		HashSet<String> userUids = Sets.newHashSet("111", "222", "333");
 
 		List<PreviousPeriodUserLocation> list1 = previousPeriodUserLocationRepository.findByKeyLocalDateAndKeyUserUidIn(localDate1, userUids);
-		Assert.assertEquals(list1.size(), 2);
+		Assert.assertEquals(2, list1.size());
 		PreviousPeriodUserLocation previousLocationForUser111 = findPreviousPeriodUserLocationByUserUid(list1, "111");
-		Assert.assertEquals((int) previousLocationForUser111.getLocation().getLatitude(), 55);
-		Assert.assertEquals((int) previousLocationForUser111.getLocation().getLongitude(), 39);
-		Assert.assertEquals(previousLocationForUser111.getLogCount(), 2);
+		Assert.assertEquals(55, previousLocationForUser111.getLocation().getLatitude(), 0.001);
+		Assert.assertEquals(40, previousLocationForUser111.getLocation().getLongitude(), 0.001);
+		Assert.assertEquals(2, previousLocationForUser111.getLogCount());
 
 		List<PreviousPeriodUserLocation> list2 = previousPeriodUserLocationRepository.findByKeyLocalDateAndKeyUserUidIn(localDate2, userUids);
-		Assert.assertEquals(list2.size(), 2);
+		Assert.assertEquals(2, list2.size());
 		previousLocationForUser111 = findPreviousPeriodUserLocationByUserUid(list2, "111");
-		Assert.assertEquals((int) previousLocationForUser111.getLocation().getLatitude(), 60);
-		Assert.assertEquals((int) previousLocationForUser111.getLocation().getLongitude(), 40);
-		Assert.assertEquals((int) previousLocationForUser111.getLogCount(), 1);
+		Assert.assertEquals(60, previousLocationForUser111.getLocation().getLatitude(), 0.001);
+		Assert.assertEquals(40, previousLocationForUser111.getLocation().getLongitude(), 0.001);
+		Assert.assertEquals(1, previousLocationForUser111.getLogCount());
 
 		List<PreviousPeriodUserLocation> list3 = previousPeriodUserLocationRepository.findByKeyLocalDateAndKeyUserUidIn(localDate3, userUids);
-		Assert.assertEquals(list3.size(), 0);
+		Assert.assertEquals(0, list3.size());
 
 		CenterCalculationResult result1 = geoLocationBroker.calculateCenter(userUids, LocalDate.of(2016, 4, 6));
-		Assert.assertEquals(result1.getUserCount(), 2);
+		Assert.assertEquals(2, result1.getUserCount());
 		GeoLocation center1 = result1.getCenter();
-		Assert.assertEquals((int) center1.getLatitude(), 55);
-		Assert.assertEquals((int) center1.getLongitude(), 39);
+		Assert.assertEquals(55, center1.getLatitude(), 0.001);
+		Assert.assertEquals(40, center1.getLongitude(), 0.001);
 	}
 
 	private PreviousPeriodUserLocation findPreviousPeriodUserLocationByUserUid(List<PreviousPeriodUserLocation> result1, String userUid) {

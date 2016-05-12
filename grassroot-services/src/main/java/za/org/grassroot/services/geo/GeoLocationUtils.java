@@ -26,8 +26,8 @@ public class GeoLocationUtils {
 		double z = 0;
 
 		for (GeoLocation geoLocation : geoLocations) {
-			double latitude = geoLocation.getLatitude() * Math.PI / 180;
-			double longitude = geoLocation.getLongitude() * Math.PI / 180;
+			double latitude = Math.toRadians(geoLocation.getLatitude()) * Math.PI / 180;
+			double longitude = Math.toRadians(geoLocation.getLongitude()) * Math.PI / 180;
 
 			x += Math.cos(latitude) * Math.cos(longitude);
 			y += Math.cos(latitude) * Math.sin(longitude);
@@ -42,6 +42,8 @@ public class GeoLocationUtils {
 		double centralSquareRoot = Math.sqrt(x * x + y * y);
 		double centralLatitude = Math.atan2(z, centralSquareRoot);
 
-		return new GeoLocation(centralLatitude * 180 / Math.PI, centralLongitude * 180 / Math.PI);
+		double midPointLatitude = Math.toDegrees(centralLatitude * 180 / Math.PI);
+		double midPointLongitude = Math.toDegrees(centralLongitude * 180 / Math.PI);
+		return new GeoLocation(midPointLatitude, midPointLongitude);
 	}
 }
