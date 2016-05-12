@@ -163,11 +163,12 @@ public class UserRestController {
 
     }
 
-    @RequestMapping(value= "/location/{phoneNumber}/{code}/{latitude}/{longitude}", method = RequestMethod.GET)
+    @RequestMapping(value= "/location/{phoneNumber}/{code}/{latitude}/{longitude:.+}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> logUserLocation(@PathVariable String phoneNumber, @PathVariable String code,
                                                            @PathVariable double latitude, @PathVariable double longitude) {
+
         User user = userManagementService.findByInputNumber(phoneNumber);
-        log.info("Recording a location! With longitude = {} and lattitude = {}", longitude, latitude);
+        log.info("Recording a location! With longitude = {} and lattitude = {}, from path string", longitude, latitude);
         geoLocationBroker.logUserLocation(user.getUid(), latitude, longitude, Instant.now());
         return returnOkay(RestMessage.LOCATION_RECORDED);
     }

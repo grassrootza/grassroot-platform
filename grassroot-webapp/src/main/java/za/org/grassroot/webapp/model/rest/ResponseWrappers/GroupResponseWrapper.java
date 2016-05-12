@@ -24,7 +24,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
 
     public GroupResponseWrapper(Group group, Event event, Role role){
         this.id = group.getUid();
-        this.groupName = group.getGroupName();
+        this.groupName = group.getName("");
         this.description = event.getName();
         this.dateTime = event.getEventDateTimeAtSAST();
         this.groupCreator = group.getCreatedByUser().getDisplayName();
@@ -35,15 +35,13 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
 
     public GroupResponseWrapper(Group group, GroupLog groupLog, Role role){
         this.id = group.getUid();
-        this.groupName = group.getGroupName();
+        this.groupName = group.getName("");
         this.description = groupLog.getDescription();
         this.dateTime = groupLog.getCreatedDateTime().atZone(DateTimeUtil.getSAST()).toLocalDateTime();
         this.groupCreator = group.getCreatedByUser().getDisplayName();
         this.role = (role!=null)?role.getName():null;
         this.groupMemberCount = group.getMemberships().size();
         this.permissions = RestUtil.filterPermissions(role.getPermissions());
-
-
     }
 
     public String getId() {

@@ -31,7 +31,7 @@ import java.util.List;
  */
 
 @Controller
-@RequestMapping("/emulator/")
+@RequestMapping("/emulator/ussd/")
 public class USSDEmulatorController extends BaseController {
 
     @Autowired
@@ -68,16 +68,6 @@ public class USSDEmulatorController extends BaseController {
         } catch (Exception e) {
             return "emulator/error";
         }
-    }
-
-    @RequestMapping(value = "ajax/list", method = RequestMethod.GET)
-    public String ajaxListMembersView(Model model) {
-
-        model.addAttribute("groups", new ArrayList<>(permissionBroker.getActiveGroups(getUserProfile(), null)));
-        model.addAttribute("userUid", getUserProfile().getUid());
-
-        return "emulator/ajax_list";
-
     }
 
     private Request getRequestObject(URI url) {

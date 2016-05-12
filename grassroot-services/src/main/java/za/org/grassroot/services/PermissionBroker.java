@@ -44,7 +44,7 @@ public interface PermissionBroker {
      * Return the set of groups on which the user has a requisite permission, and which have not been deactivated.
      * @param user The user for whom the list of groups is required
      * @param requiredPermission The permission being checked. Passing null returns all active groups the user is in.
-     * @return The requisite set of groups (returns full group entities)
+     * @return The requisite set of groups
      */
     Set<Group> getActiveGroups(User user, Permission requiredPermission);
 

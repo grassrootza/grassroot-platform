@@ -5,12 +5,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.geo.GeoLocation;
-import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
-import za.org.grassroot.core.domain.geo.UserAndLocalDateKey;
-import za.org.grassroot.core.domain.geo.UserLocationLog;
-import za.org.grassroot.core.repository.PreviousPeriodUserLocationRepository;
-import za.org.grassroot.core.repository.UserLocationLogRepository;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.geo.*;
+import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.persistence.EntityManager;
@@ -29,6 +27,15 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 
 	@Autowired
 	private PreviousPeriodUserLocationRepository previousPeriodUserLocationRepository;
+
+	@Autowired
+	private UserRepository userRepository;
+
+	@Autowired
+	private GroupRepository groupRepository;
+
+	@Autowired
+	private GroupLocationRepository groupLocationRepository;
 
 	@Autowired
 	private EntityManager entityManager;
@@ -103,14 +110,77 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 		return new CenterCalculationResult(userCount, center);
 	}
 
-	private LocalDate findFirstLocalDateInPreviousPeriodLocationsAfterOrEqualsDate(LocalDate date) {
-		List list = entityManager.createQuery("select l.key.localDate from PreviousPeriodUserLocation l where l.key.localDate >= :date order by l.key.localDate desc")
+	@Override
+	public PreviousPeriodUserLocation fetchUserLocation(String userUid, LocalDate localDate) {
+		LocalDate mostRecentRecordedAverage = findFirstDateWithAvgLocationForUserBefore(localDate, userUid);
+		if (mostRecentRecordedAverage == null) {
+			return null;
+		} else {
+			return previousPeriodUserLocationRepository.
+					findByKeyLocalDateAndKeyUserUidIn(localDate, Collections.singleton(userUid)).get(0);
+		}
+	}
+
+	@Override
+	public List<User> fetchUsersWithRecordedAverageLocations(LocalDate localDate) {
+		return findUsersWithAverageLocationBefore(localDate);
+	}
+
+	@Override
+	public GroupLocation fetchGroupLocationWithScoreAbove(String groupUid, LocalDate localDate, float score) {
+		Group group = groupRepository.findOneByUid(groupUid);
+		LocalDate mostRecentMatchingDate = findFirstDateWithGroupLocationHavingScoreAbove(localDate, group, score);
+		if (mostRecentMatchingDate == null) {
+			return null;
+		} else {
+			return groupLocationRepository.findOneByGroupAndLocalDate(group, mostRecentMatchingDate);
+		}
+	}
+
+	private LocalDate findFirstDateWithAvgLocationBefore(LocalDate date) {
+
+		List list = entityManager.createQuery("select l.key.localDate from PreviousPeriodUserLocation l where l.key.localDate <= :date order by l.key.localDate desc")
 				.setParameter("date", date)
 				.setMaxResults(1) // limit to first only
 				.getResultList();
+
+		return (list.isEmpty()) ? null : (LocalDate) list.get(0);
+	}
+
+	private LocalDate findFirstDateWithAvgLocationForUserBefore(LocalDate date, String userUid) {
+		List list = entityManager.createQuery("select l.key.localDate from PreviousPeriodUserLocation l " +
+													  "where l.key.localDate <= :date and l.key.userUid = :user_uid " +
+													  "order by l.key.localDate desc")
+				.setParameter("date", date)
+				.setParameter("user_uid", userUid)
+				.setMaxResults(1) // limit to first only
+				.getResultList();
+
+		return (list.isEmpty()) ? null : (LocalDate) list.get(0);
+	}
+
+	private LocalDate findFirstDateWithGroupLocationHavingScoreAbove(LocalDate date, Group group, float score) {
+
+		List list = entityManager.createQuery("select l.localDate from GroupLocation l " +
+													  "where l.localDate <= :date and l.group = :group_sought and l.score >= :score " +
+													  "order by l.localDate desc")
+				.setParameter("date", date)
+				.setParameter("group_sought", group)
+				.setParameter("score", score)
+				.getResultList();
+
+		return (list.isEmpty()) ? null : (LocalDate) list.get(0);
+	}
+
+	private List<User> findUsersWithAverageLocationBefore(LocalDate date) {
+		List list = entityManager.createQuery("select l.key.userUid from PreviousPeriodUserLocation l where " +
+															 "l.key.localDate <= :date")
+				.setParameter("date", date).getResultList();
 		if (list.isEmpty()) {
-			throw new IllegalStateException("There are no previous period locations calculated for dates after " + date);
+			return new ArrayList<>();
+		} else {
+			Set<String> uids = new HashSet<>(list);
+			return userRepository.findByUidIn(uids);
 		}
-		return (LocalDate) list.get(0);
 	}
 }

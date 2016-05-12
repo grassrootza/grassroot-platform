@@ -28,6 +28,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     User findOneByUid(String uid);
 
+    List<User> findByUidIn(Set<String> uids);
+
     /*
     Used in admin pages to find users who can then be designated, modified, etc. Probably want a better search method
     than to use 'containing', but will do for now.

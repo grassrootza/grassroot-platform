@@ -1,0 +1,35 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Glassroot Geo Data Test and View</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+</head>
+
+<body>
+
+  <h1>Here is some data</h1>
+
+  <table>
+
+    <thead>
+      <th>User UID</th>
+      <th>User name</th>
+      <th>Longitude</th>
+      <th>Latitude</th>
+      <th>Number of logs</th>
+    </thead>
+
+    <tbody>
+      <tr th:each="userLoc : ${userLocations}">
+        <td><span th:text="${userLoc.key.uid}">User UID</span></td>
+        <td><span th:text="${userLoc.key.nameToDisplay()}">User name</span></td>
+        <td><span th:text="${userLoc.value.location.longitude}">Longitude</span></td>
+        <td><span th:text="${userLoc.value.location.latitude}">Latitude</span></td>
+        <td><span th:text="${userLoc.value.logCount}">Log count</span></td>
+      </tr>
+    </tbody>
+
+  </table>
+
+</body>
+</html>

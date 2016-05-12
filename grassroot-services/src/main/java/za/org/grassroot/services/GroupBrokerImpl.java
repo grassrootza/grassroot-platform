@@ -74,6 +74,11 @@ public class GroupBrokerImpl implements GroupBroker {
     }
 
     @Override
+    public List<Group> loadAll() {
+        return groupRepository.findAll();
+    }
+
+    @Override
     @Transactional
     public Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos,
                         GroupPermissionTemplate groupPermissionTemplate, String description, Integer reminderMinutes) {

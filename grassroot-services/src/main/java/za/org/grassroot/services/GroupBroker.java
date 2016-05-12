@@ -16,6 +16,8 @@ public interface GroupBroker {
 
     Group load(String groupUid);
 
+    List<Group> loadAll();
+
     /** METHODS FOR CREATING AND EDITING GROUPS **/
 
     Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos,
