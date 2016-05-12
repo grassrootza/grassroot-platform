@@ -7,10 +7,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.GenericAsyncDTO;
-import za.org.grassroot.core.repository.EventRepository;
-import za.org.grassroot.core.repository.LogBookRepository;
-import za.org.grassroot.core.repository.MeetingRepository;
-import za.org.grassroot.core.repository.VoteRepository;
+import za.org.grassroot.core.repository.*;
 import za.org.grassroot.integration.services.NotificationService;
 import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.GroupBroker;
@@ -67,6 +64,9 @@ public class ScheduledTasks {
 
     @Autowired
     private GeoLocationBroker geoLocationBroker;
+
+    @Autowired
+    private GroupRepository groupRepository;
 
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendReminders() {
@@ -181,10 +181,21 @@ public class ScheduledTasks {
         logger.info("queueWelcomeMessages..." + count + "...queued to generic-async");
     }
 
-//    @Scheduled(cron = "0 0 3 * * *") // runs at 3am every day
-    public void calculatePreviousPeriodUserLocations() {
+    @Scheduled(cron = "0 0 3 * * *") // runs at 3am every day
+    public void calculateAggregateLocations() {
+        // we had put few types of calculations here in sequence because one depends on
+        // other being executed in order...
+
         LocalDate today = LocalDate.now();
         geoLocationBroker.calculatePreviousPeriodUserLocations(today);
+
+        logger.info("Calculating group locations for date {}", today);
+        List<Group> groups = groupRepository.findAll();
+        for (Group group : groups) {
+            // we don't want one big TX for all groups, so we separate each group location
+            // calculation into its own transaction
+            groupBroker.calculateGroupLocation(group.getUid(), today);
+        }
     }
 
     @Scheduled(cron = "0 0 15 * * *") // runs at 3pm (= 5pm SAST) every day

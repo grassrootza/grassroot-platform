@@ -39,6 +39,9 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(time);
 
+		// WARNING: this can potentially become non-performant, so some kind of table partitioning should be employed,
+		// or even better, some kind of specialized db storage for that (not sql db)
+
 		UserLocationLog userLocationLog = new UserLocationLog(time, userUid, new GeoLocation(latitude, longitude));
 		logger.info("Logging user location: {}", userLocationLog);
 		userLocationLogRepository.save(userLocationLog);
@@ -88,6 +91,7 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 
 		logger.info("calculating geo center from user locations: number of users={}, local date={}", userUids.size(), date);
 
+		// should we ask for exact date, or be good with accepting future dates if current one does not exist?
 //		LocalDate previousPeriodLocationLocalDate = findFirstLocalDateInPreviousPeriodLocationsAfterOrEqualsDate(date);
 		LocalDate previousPeriodLocationLocalDate = date; // todo: maybe this is sufficient (to search only for exact date)?
 		List<PreviousPeriodUserLocation> previousPeriodLocations = previousPeriodUserLocationRepository.findByKeyLocalDateAndKeyUserUidIn(previousPeriodLocationLocalDate, userUids);

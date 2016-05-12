@@ -884,8 +884,11 @@ public class GroupBrokerImpl implements GroupBroker {
         Objects.requireNonNull(groupUid);
         Objects.requireNonNull(localDate);
 
-        logger.info("Calculating location for group under UID {} and local date {}", groupUid, localDate);
         Group group = groupRepository.findOneByUid(groupUid);
+
+        // delete so we can recalculate
+        groupLocationRepository.deleteByGroupAndLocalDate(group, localDate);
+
         Set<String> memberUids = group.getMembers().stream().map(User::getUid).collect(Collectors.toSet());
         CenterCalculationResult result = geoLocationBroker.calculateCenter(memberUids, localDate);
         if (result.isDefined()) {
@@ -894,7 +897,7 @@ public class GroupBrokerImpl implements GroupBroker {
             GroupLocation groupLocation = new GroupLocation(group, localDate, result.getCenter(), score);
             groupLocationRepository.save(groupLocation);
         } else {
-            logger.info("No member location data found for group {} for local date {}", group, localDate);
+            logger.debug("No member location data found for group {} for local date {}", group, localDate);
         }
     }
 }
