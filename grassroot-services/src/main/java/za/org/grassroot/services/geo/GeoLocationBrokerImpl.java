@@ -127,6 +127,7 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public GroupLocation fetchGroupLocationWithScoreAbove(String groupUid, LocalDate localDate, float score) {
 		Group group = groupRepository.findOneByUid(groupUid);
 		LocalDate mostRecentMatchingDate = findFirstDateWithGroupLocationHavingScoreAbove(localDate, group, score);
@@ -135,6 +136,29 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 		} else {
 			return groupLocationRepository.findOneByGroupAndLocalDate(group, mostRecentMatchingDate);
 		}
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<double[]> fetchUserLatitudeLongitudeInAvgPeriod(String userUid, LocalDate localDate) {
+
+		List<double[]> returnList = new ArrayList<>();
+		PreviousPeriodUserLocation avg = fetchUserLocation(userUid, localDate);
+		returnList.add(new double[]{ avg.getLocation().getLatitude(), avg.getLocation().getLongitude() });
+
+		LocalDate localPeriodStart = localDate.minusMonths(1);
+
+		Instant intervalStart = convertLocalDateToSASTInstant(localPeriodStart);
+		Instant intervalEnd = convertLocalDateToSASTInstant(localDate);
+
+		List<UserLocationLog> logs = userLocationLogRepository.
+				findByUserUidAndTimestampBetweenAndTimestampNot(userUid, intervalStart, intervalEnd, intervalEnd);
+
+		for (UserLocationLog log : logs) {
+			returnList.add(new double[]{ log.getLocation().getLatitude(), log.getLocation().getLongitude() });
+		}
+
+		return returnList;
 	}
 
 	private LocalDate findFirstDateWithAvgLocationBefore(LocalDate date) {

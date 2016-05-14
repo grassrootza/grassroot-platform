@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.dto.TaskDTO;
@@ -13,6 +14,7 @@ import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.LogBookBroker;
 import za.org.grassroot.services.TaskBroker;
+import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
@@ -23,6 +25,8 @@ import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
 import za.org.grassroot.webapp.model.web.MemberPicker;
 
 import javax.servlet.http.HttpServletRequest;
+import java.time.LocalDate;
+import java.util.List;
 
 /**
  * Created by luke on 2016/04/28.
@@ -44,6 +48,9 @@ public class AjaxController extends BaseController {
 
     @Autowired
     private TaskBroker taskBroker;
+
+    @Autowired
+    private GeoLocationBroker geoLocationBroker;
 
     @RequestMapping(value = "/members/list", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> retrieveParentMembers(@RequestBody MemberListRequest listRequest) {
@@ -87,6 +94,15 @@ public class AjaxController extends BaseController {
         log.info("Received a request! It's this: {}", listRequest.toString());
         return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.FOUND, RestMessage.PARENT_MEMBERS, RestStatus.SUCCESS),
                                     HttpStatus.OK);
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/locations/list", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> retrieveLocationLogs(@RequestParam String userUid) {
+        log.info("Retrieving raw location logs for = {}", userUid);
+        List<double[]> listLatLongs = geoLocationBroker.fetchUserLatitudeLongitudeInAvgPeriod(userUid, LocalDate.now());
+        ResponseWrapper body = new GenericResponseWrapper(HttpStatus.FOUND, RestMessage.TASK_FOUND, RestStatus.SUCCESS, listLatLongs);
+        return new ResponseEntity<>(body, HttpStatus.OK);
     }
 
     private ResponseEntity<ResponseWrapper> errorResponse() {

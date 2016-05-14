@@ -20,7 +20,6 @@ public class LogBookRestControllerTest extends RestAbstractUnitTest {
 
     @Before
     public void setUp() {
-
         mockMvc = MockMvcBuilders.standaloneSetup(logBookRestController).build();
     }
 
