@@ -25,6 +25,7 @@ public class TaskDTO implements Comparable<TaskDTO>{
     private String parentName;
     private String deadline;
     private String deadlineISO;
+    private Long deadlineMillis;
     private boolean hasResponded;
     private boolean canAction;
     private String reply;
@@ -58,6 +59,7 @@ public class TaskDTO implements Comparable<TaskDTO>{
         this.deadlineDateTime = event.getEventDateTimeAtSAST();
         this.deadline = formatAsLocalDateTime(instant);
         this.deadlineISO = this.deadlineDateTime.format(DateTimeFormatter.ISO_DATE_TIME);
+        this.deadlineMillis = instant.toEpochMilli();
         this.reply= (eventLog !=null && !eventLog.getMessage().equals("Invalid RSVP")) ?
                 eventLog.getMessage() : String.valueOf(TodoStatus.NO_RESPONSE);
         this.canAction = canAction(event, user, hasResponded);
@@ -75,6 +77,7 @@ public class TaskDTO implements Comparable<TaskDTO>{
         this.deadlineDateTime = logBook.getActionByDateAtSAST();
         this.deadline = formatAsLocalDateTime(instant);
         this.deadlineISO = this.deadlineDateTime.format(DateTimeFormatter.ISO_DATE_TIME);
+        this.deadlineMillis = instant.toEpochMilli();
         this.canAction = canAction(logBook, user, true);
         this.location = "";
     }
@@ -103,6 +106,8 @@ public class TaskDTO implements Comparable<TaskDTO>{
     public LocalDateTime getDeadlineDateTime() { return deadlineDateTime; }
 
     public String getDeadlineISO() { return deadlineISO; }
+
+    public long getDeadlineMillis() { return deadlineMillis; }
 
     public String getReply() {
         return reply;
@@ -203,9 +208,10 @@ public class TaskDTO implements Comparable<TaskDTO>{
 
     @Override
     public int compareTo(TaskDTO o) {
-        return ComparisonChain.start().compareFalseFirst(hasResponded,o.hasResponded)
+        return ComparisonChain.start()
+                .compare(instant,o.instant)
+                .compareFalseFirst(hasResponded,o.hasResponded)
                 .compareTrueFirst(canAction,o.canAction)
-                .compare(deadline,o.deadline)
                 .result();
     }
 

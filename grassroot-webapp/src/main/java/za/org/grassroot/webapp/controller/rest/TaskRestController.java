@@ -17,6 +17,7 @@ import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
 import za.org.grassroot.core.dto.TaskDTO;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -40,12 +41,11 @@ public class TaskRestController {
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         List<TaskDTO> tasks = taskBroker.fetchGroupTasks(user.getUid(), groupUid, false, LogBookStatus.BOTH);
+        Collections.sort(tasks, Collections.reverseOrder()); // todo: double check this is right ordering
         ResponseWrapper responseWrapper;
-        if (tasks.isEmpty()) {
-            responseWrapper = new ResponseWrapperImpl(HttpStatus.NOT_FOUND, RestMessage.NO_GROUP_ACTIVITIES, RestStatus.FAILURE);
-        } else {
-            responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.GROUP_ACTIVITIES, RestStatus.SUCCESS, tasks);
-        }
+        RestMessage message = (tasks.isEmpty()) ? RestMessage.NO_GROUP_ACTIVITIES : RestMessage.GROUP_ACTIVITIES;
+        // note: should not return a failure or 404 on this if task list empty, should instead use the rest message to differentiate
+        responseWrapper = new GenericResponseWrapper(HttpStatus.OK, message, RestStatus.SUCCESS, tasks);
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
 
     }

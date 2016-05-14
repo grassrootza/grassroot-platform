@@ -93,6 +93,7 @@ public class GroupRestController {
                     RestStatus.SUCCESS, groups);
             return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
         }
+        // todo: should not use 404 code for this
         responseWrapper =  new ResponseWrapperImpl(HttpStatus.NOT_FOUND, RestMessage.USER_HAS_NO_GROUPS,
                 RestStatus.FAILURE);
         return new ResponseEntity<>(responseWrapper,HttpStatus.valueOf(responseWrapper.getCode()));

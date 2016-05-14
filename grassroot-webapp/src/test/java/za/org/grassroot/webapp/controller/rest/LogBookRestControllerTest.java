@@ -29,9 +29,9 @@ public class LogBookRestControllerTest extends RestAbstractUnitTest {
 
         testLogBook.setId(6L);
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
-        when(logBookServiceMock.load(testLogBook.getId())).thenReturn(testLogBook);
-        mockMvc.perform(get(path + "/complete/do/{id}/{phoneNumber}/{code}", testLogBook.getId(), testUserPhone, testUserCode)).andExpect(status().is2xxSuccessful());
+        when(logBookBrokerMock.load(testLogBook.getUid())).thenReturn(testLogBook);
+        mockMvc.perform(get(path + "/complete/{phoneNumber}/{code}/{id}", testUserPhone, testUserCode, testLogBook.getUid())).andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
-        verify(logBookServiceMock).load(testLogBook.getId());
+        verify(logBookBrokerMock).load(testLogBook.getUid());
     }
 }
