@@ -14,7 +14,6 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import javax.persistence.EntityManager;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -59,12 +58,11 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 	public void calculatePreviousPeriodUserLocations(LocalDate localDate) {
 		Objects.requireNonNull(localDate);
 
-		logger.info("calculating user location for period of one month ending on date {}", localDate);
-		LocalDate localPeriodStart = localDate.minusMonths(1);
-
-		Instant intervalStart = convertLocalDateToSASTInstant(localPeriodStart);
-		Instant intervalEnd = convertLocalDateToSASTInstant(localDate);
-		List<UserLocationLog> locationLogs = userLocationLogRepository.findByTimestampBetweenAndTimestampNot(intervalStart, intervalEnd, intervalEnd);
+		logger.info("calculating user location for period of one month ending on date {} (inclusive)", localDate);
+		int periodDurationInMonths = 1;
+		Instant intervalStart = convertStartOfDayToSASTInstant(localDate.plusDays(1).minusMonths(periodDurationInMonths));
+		Instant intervalEnd = convertStartOfDayToSASTInstant(localDate.plusDays(1)); // since we want period date end to be inclusive...
+		List<UserLocationLog> locationLogs = userLocationLogRepository.findByTimestampBetween(intervalStart, intervalEnd);
 
 		logger.debug("Deleting all previous period user locations for date: {}", localDate);
 		previousPeriodUserLocationRepository.deleteByKeyLocalDate(localDate);
@@ -87,8 +85,8 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 		previousPeriodUserLocationRepository.save(userLocations);
 	}
 
-	private Instant convertLocalDateToSASTInstant(LocalDate localDate) {
-		return localDate.atStartOfDay().atZone(DateTimeUtil.getSAST()).toInstant();
+	private Instant convertStartOfDayToSASTInstant(LocalDate date) {
+		return date.atStartOfDay().atZone(DateTimeUtil.getSAST()).toInstant();
 	}
 
 	@Override
@@ -148,8 +146,8 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 
 		LocalDate localPeriodStart = localDate.minusMonths(1);
 
-		Instant intervalStart = convertLocalDateToSASTInstant(localPeriodStart);
-		Instant intervalEnd = convertLocalDateToSASTInstant(localDate);
+		Instant intervalStart = convertStartOfDayToSASTInstant(localPeriodStart);
+		Instant intervalEnd = convertStartOfDayToSASTInstant(localDate);
 
 		List<UserLocationLog> logs = userLocationLogRepository.
 				findByUserUidAndTimestampBetweenAndTimestampNot(userUid, intervalStart, intervalEnd, intervalEnd);
