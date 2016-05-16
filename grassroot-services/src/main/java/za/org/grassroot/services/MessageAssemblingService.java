@@ -30,7 +30,7 @@ public interface MessageAssemblingService {
 
     String createMeetingThankYourMessage(User target, Meeting meeting);
 
-    String createWelcomeMessage(String messageId, UserDTO userDTO);
+    String createWelcomeMessage(String messageId, User user);
 
     String createReplyFailureMessage(User user);
 

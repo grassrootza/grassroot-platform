@@ -21,10 +21,4 @@ public class GenericJmsTemplateProducerManager implements GenericJmsTemplateProd
         jmsTemplate.setDeliveryPersistent(true);
         jmsTemplate.convertAndSend(destination, message);
     }
-
-    @Override
-    public Message receiveMessage(String destination) {
-        jmsTemplate.setReceiveTimeout(100); //wait 100ms before returning, no point hanging about
-        return jmsTemplate.receive(destination);
-    }
 }

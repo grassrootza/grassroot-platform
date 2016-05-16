@@ -9,5 +9,6 @@ public enum NotificationType {
 	LOGBOOK,
 	CHAT,
 	ACCOUNT,
+	USER,
 	GENERAL
 }

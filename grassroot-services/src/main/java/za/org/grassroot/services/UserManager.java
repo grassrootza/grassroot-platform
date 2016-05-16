@@ -13,12 +13,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.UserCreateRequest;
-import za.org.grassroot.core.domain.VerificationTokenCode;
+import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.notification.WelcomeNotification;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.AlertPreference;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.repository.GroupRepository;
@@ -31,10 +30,15 @@ import za.org.grassroot.services.async.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.exception.UserExistsException;
 import za.org.grassroot.services.util.CacheUtilService;
+import za.org.grassroot.services.util.LogsAndNotificationsBroker;
+import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * @author Lesetse Kimwaga
@@ -66,6 +70,10 @@ public class UserManager implements UserManagementService, UserDetailsService {
     private UserRequestRepository userCreateRequestRepository;
     @Autowired
     private LogBookRepository logBookRepository;
+    @Autowired
+    private LogsAndNotificationsBroker logsAndNotificationsBroker;
+    @Autowired
+    private MessageAssemblingService messageAssemblingService;
 
 
     @Override
@@ -367,11 +375,29 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public User setInitiatedSession(User sessionUser) {
+    @Transactional
+    public void setInitiatedSession(User sessionUser) {
         sessionUser.setHasInitiatedSession(true);
-        jmsTemplateProducerService.sendWithNoReply("welcome-messages", new UserDTO(sessionUser));
-        asyncUserService.recordUserLog(sessionUser.getUid(), UserLogType.INITIATED_USSD, "First USSD active session");
-        return userRepository.save(sessionUser);
+
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
+        UserLog userLog = new UserLog(sessionUser.getUid(), UserLogType.INITIATED_USSD, "First USSD active session", UserInterfaceType.UNKNOWN);
+        bundle.addLog(userLog);
+
+        String[] welcomeMessageIds = new String[] {
+                "sms.welcome.1",
+                "sms.welcome.2",
+                "sms.welcome.3"
+        };
+        for (String welcomeMessageId : welcomeMessageIds) {
+            String message = messageAssemblingService.createWelcomeMessage(welcomeMessageId, sessionUser);
+            WelcomeNotification notification = new WelcomeNotification(sessionUser, message, userLog);
+            // notification sending delay of 15 mins
+            notification.setNextAttemptTime(Instant.now().plusSeconds(60 * 15));
+            bundle.addNotification(notification);
+        }
+
+        logsAndNotificationsBroker.storeBundle(bundle);
     }
 
     @Override
@@ -443,9 +469,5 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public UserDTO loadUserCreateRequest(String phoneNumber) {
         UserCreateRequest userCreateRequest = userCreateRequestRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
         return (new UserDTO(userCreateRequest));
-    }
-
-    public void setPasswordEncoder(final PasswordEncoder passwordEncoder) {
-        this.passwordEncoder = passwordEncoder;
     }
 }

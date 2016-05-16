@@ -112,7 +112,7 @@ public class InboundGcmMessageHandler {
     private void handleDeliveryReceipts(GcmUpstreamMessage input){
         String messageId = String.valueOf(input.getData().get(ORIGINAL_MESSAGE_ID));
         log.info("Message " + messageId + " delivery successful, updating notification to delivered status.");
-        notificationService.updateNotificationDeliveryStatus(messageId,true);
+        notificationService.markNotificationAsDelivered(messageId);
 
     }
 

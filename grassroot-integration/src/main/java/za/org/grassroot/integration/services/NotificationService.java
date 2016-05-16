@@ -20,7 +20,7 @@ public interface NotificationService {
 
 	void updateNotificationReadStatus(String notificationUid, boolean read);
 
-	void updateNotificationDeliveryStatus(String notificationUid, boolean delivered);
+	void markNotificationAsDelivered(String notificationUid);
 
-	void resendNotDelivered();
+	void sendNotification(String notificationUid);
 }

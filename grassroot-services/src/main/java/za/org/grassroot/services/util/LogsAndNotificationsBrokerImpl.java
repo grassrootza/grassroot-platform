@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.*;
-import za.org.grassroot.integration.services.MessageSendingService;
 
 import java.util.Objects;
 import java.util.Set;
@@ -33,7 +32,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 	private LogBookLogRepository logBookLogRepository;
 
 	@Autowired
-	private MessageSendingService messageSendingService;
+	private AccountLogRepository accountLogRepository;
 
 	@Override
 	@Transactional
@@ -64,26 +63,26 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 			logger.info("Saving notification: {}", notification);
 			notificationRepository.save(notification);
 		}
-
-		// todo: this should be removed eventually - better for some scheduled job(s) to
-		// frequently take unprocessed notifications and send them to destinations
-		for (Notification notification : notifications) {
-			messageSendingService.sendMessage(notification);
-		}
 	}
 
 	private void saveLog(ActionLog actionLog) {
 		if (actionLog instanceof GroupLog) {
 			groupLogRepository.save((GroupLog) actionLog);
-		}
-		if (actionLog instanceof UserLog) {
+
+		} else if (actionLog instanceof UserLog) {
 			userLogRepository.save((UserLog) actionLog);
-		}
-		if (actionLog instanceof EventLog) {
+
+		} else if (actionLog instanceof EventLog) {
 			eventLogRepository.save((EventLog) actionLog);
-		}
-		if (actionLog instanceof LogBookLog) {
+
+		} else if (actionLog instanceof LogBookLog) {
 			logBookLogRepository.save((LogBookLog) actionLog);
+
+		} else if (actionLog instanceof AccountLog) {
+			accountLogRepository.save((AccountLog) actionLog);
+
+		} else {
+			throw new UnsupportedOperationException("Unsupported log: " + actionLog);
 		}
 	}
 }

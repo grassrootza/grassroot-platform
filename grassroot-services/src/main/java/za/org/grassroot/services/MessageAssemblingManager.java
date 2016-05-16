@@ -124,8 +124,14 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     }
 
     @Override
-    public String createWelcomeMessage(String messageId, UserDTO userDTO) {
-        return messageSourceAccessor.getMessage(messageId, populateWelcomeFields(userDTO), getUserLocale(userDTO.getLanguageCode()));
+    public String createWelcomeMessage(String messageId, User user) {
+        String[] welcomeFields = {
+                user.getDisplayName(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getPhoneNumber()
+        };
+        return messageSourceAccessor.getMessage(messageId, welcomeFields, getUserLocale(user.getLanguageCode()));
     }
 
     @Override
@@ -213,14 +219,5 @@ public class MessageAssemblingManager implements MessageAssemblingService {
                 assignment
         };
         return variables;
-    }
-
-    private String[] populateWelcomeFields(UserDTO userDTO) {
-        return new String[] {
-                userDTO.getDisplayName(),
-                userDTO.getFirstName(),
-                userDTO.getLastName(),
-                userDTO.getPhoneNumber()
-        };
     }
 }

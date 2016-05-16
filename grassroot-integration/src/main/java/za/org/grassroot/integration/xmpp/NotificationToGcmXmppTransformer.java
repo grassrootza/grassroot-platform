@@ -61,6 +61,9 @@ public class NotificationToGcmXmppTransformer {
 				title = logBook.getAncestorGroup().getGroupName();
 				body = notification.getMessage();
 				break;
+
+			default:
+				throw new UnsupportedOperationException("Have to add support for notification type: " + notification.getNotificationType());
 		}
 
 		return GcmXmppMessageCodec.encode(registrationID, messageId, collapseKey, title, body, dataPart);

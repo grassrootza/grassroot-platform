@@ -78,28 +78,45 @@ public class NotificationManager implements NotificationService{
     public void updateNotificationReadStatus(String notificationUid, boolean read) {
         Notification notification = notificationRepository.findByUid(notificationUid);
         notification.setRead(read);
-        notificationRepository.save(notification);
-
     }
 
     @Override
     @Transactional
-    public void updateNotificationDeliveryStatus(String notificationUid, boolean delivered) {
+    public void markNotificationAsDelivered(String notificationUid) {
         Notification notification = notificationRepository.findByUid(notificationUid);
-        notification.setDelivered(delivered);
-        notificationRepository.save(notification);
+        if (notification == null) {
+            throw new IllegalStateException("No notification under UID " + notificationUid);
+        }
+        notification.markAsDelivered();
     }
 
     @Override
     @Transactional
-    public void resendNotDelivered() {
-        Instant fiveMinutesAgo = Instant.now().minusSeconds(301L);
-        List<Notification> notifications = notificationRepository.findByCreatedDateTimeLessThanAndDelivered(fiveMinutesAgo,false);
+    public void sendNotification(String notificationUid) {
+        Objects.requireNonNull(notificationUid);
 
-        for(Notification notification: notifications){
-            notification.setDelivered(true);
-            notificationRepository.save(notification);
-            messageSendingService.sendMessage(UserMessagingPreference.SMS.name(),notification);
+        Instant now = Instant.now();
+
+        Notification notification = notificationRepository.findByUid(notificationUid);
+        logger.info("Sending notification: {}", notification);
+
+        notification.incrementAttemptCount();
+        notification.setLastAttemptTime(now);
+
+        try {
+            boolean redelivery = notification.getAttemptCount() > 1;
+            if (redelivery) {
+                notification.setNextAttemptTime(null); // this practically means we try to redeliver only once
+                messageSendingService.sendMessage(UserMessagingPreference.SMS.name(), notification);
+            } else {
+                // we set next attempt (redelivery) time which will get erased in case delivery gets confirmed in the mean time
+                notification.setNextAttemptTime(now.plusSeconds(60 * 15));
+
+                messageSendingService.sendMessage(notification);
+            }
+
+        } catch (Exception e) {
+            logger.error("Failed to send notification " + notification + ": " + e.getMessage(), e);
         }
     }
 }

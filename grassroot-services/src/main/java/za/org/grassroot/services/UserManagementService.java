@@ -38,7 +38,7 @@ public interface UserManagementService {
 
     boolean userExist(String phoneNumber);
 
-    User setInitiatedSession(User sessionUser);
+    void setInitiatedSession(User sessionUser);
 
     boolean isPartOfActiveGroups(User user);
 

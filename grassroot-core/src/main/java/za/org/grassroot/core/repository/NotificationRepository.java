@@ -16,10 +16,9 @@ public interface NotificationRepository extends JpaRepository<Notification,Long>
 
     Notification findByUid(String uid);
 
-    List<Notification> findByCreatedDateTimeLessThanAndDelivered(Instant instant, boolean delivered);
-
     List<Notification> findByTarget(User target);
 
     Page<Notification> findByTarget(User target, Pageable pageable);
 
+    List<Notification> findFirst30ByNextAttemptTimeBeforeOrderByNextAttemptTimeAsc(Instant time);
 }

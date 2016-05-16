@@ -6,16 +6,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.dto.GenericAsyncDTO;
 import za.org.grassroot.core.repository.*;
-import za.org.grassroot.integration.services.NotificationService;
 import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.LogBookBroker;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 
-import javax.jms.Message;
-import javax.jms.ObjectMessage;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -58,9 +54,6 @@ public class ScheduledTasks {
 
     @Autowired
     private LogBookRepository logBookRepository;
-
-    @Autowired
-    private NotificationService notificationService;
 
     @Autowired
     private GeoLocationBroker geoLocationBroker;
@@ -151,35 +144,6 @@ public class ScheduledTasks {
         }
     }
 
-
-    @Scheduled(fixedRate = 300000) //runs every 5 minutes
-    public void resendFailedDeliveries() {
-        logger.info("sending messages via sms that were not delivered by gcm");
-        notificationService.resendNotDelivered();
-    }
-
-    /*
-    The reason for the bit of queue indirection is to create a bit of a delay, after the user setup is complete
-    and before we start sending the welcome messages
-     */
-    @Scheduled(fixedRate = 900000) //runs every 15 minutes
-    public void queueWelcomeMessages() {
-        logger.info("queueWelcomeMessages...starting");
-        int count = 0;
-        // wrap in try catch so that the scheduled thread does not die with any error
-        try {
-            // fetch all the messages from the "welcome-messages" queue and queue it for processing
-            Message message;
-            while ((message = jmsTemplateProducerService.receiveMessage("welcome-messages")) != null) {
-                ObjectMessage objMessage = (ObjectMessage) message;
-                jmsTemplateProducerService.sendWithNoReply("generic-async",new GenericAsyncDTO("welcome-messages",objMessage.getObject()));
-                count++;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        logger.info("queueWelcomeMessages..." + count + "...queued to generic-async");
-    }
 
     @Scheduled(cron = "0 0 3 * * *") // runs at 3am every day
     public void calculateAggregateLocations() {

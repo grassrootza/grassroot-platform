@@ -33,4 +33,9 @@ public abstract class AccountNotification extends Notification {
 	public Account getAccount() {
 		return account;
 	}
+
+	@Override
+	protected void appendToString(StringBuilder sb) {
+		sb.append(", account=").append(account);
+	}
 }

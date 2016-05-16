@@ -9,6 +9,10 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.util.Objects;
 
+/**
+ * Next attempt time signifies when this notification has to be sent. When it gets delivered,
+ * this timestamp is set as null.
+ */
 @Entity
 @Table(name = "notification")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
@@ -25,6 +29,15 @@ public abstract class Notification implements Serializable {
 
 	@Column(name = "creation_time", insertable = true, updatable = false)
 	private Instant createdDateTime;
+
+	@Column(name = "next_attempt_time")
+	private Instant nextAttemptTime;
+
+	@Column(name = "last_attempt_time")
+	private Instant lastAttemptTime;
+
+	@Column(name = "attempt_count", nullable = false)
+	private int attemptCount = 0;
 
 	@ManyToOne
 	@JoinColumn(name = "target_id")
@@ -46,6 +59,10 @@ public abstract class Notification implements Serializable {
 	@JoinColumn(name = "account_log_id", foreignKey = @ForeignKey(name = "fk_notification_account_log"))
 	private AccountLog accountLog;
 
+	@ManyToOne
+	@JoinColumn(name = "user_log_id", foreignKey = @ForeignKey(name = "fk_notification_user_log"))
+	private UserLog userLog;
+
 	@Column(name = "read")
 	private boolean read = false;
 
@@ -55,16 +72,7 @@ public abstract class Notification implements Serializable {
 	@Column(name = "message")
 	protected String message;
 
-	@PreUpdate
-	@PrePersist
-	public void updateTimeStamps() {
-		if (createdDateTime == null) {
-			createdDateTime = Instant.now();
-		}
-	}
-
 	public abstract NotificationType getNotificationType();
-
 
 	protected Notification() {
 		// for JPA
@@ -73,10 +81,10 @@ public abstract class Notification implements Serializable {
 	protected Notification(User target, String message, ActionLog actionLog) {
 		this.uid = UIDGenerator.generateId();
 		this.read = false;
-		this.delivered = false;
 
 		this.target = Objects.requireNonNull(target); // at least for now, Notifications are always targeted to a user
 		this.createdDateTime = Instant.now();
+		this.nextAttemptTime = createdDateTime; // default is to be sent immediately
 		this.message = Objects.requireNonNull(message);
 
 		if (actionLog instanceof EventLog) {
@@ -87,6 +95,8 @@ public abstract class Notification implements Serializable {
 			logBookLog = (LogBookLog) actionLog;
 		} else if (actionLog instanceof AccountLog) {
 			accountLog = (AccountLog) actionLog;
+		} else if (actionLog instanceof AccountLog) {
+			userLog = (UserLog) actionLog;
 		} else {
 			throw new IllegalArgumentException("Unsupported action log: " + actionLog);
 		}
@@ -117,11 +127,7 @@ public abstract class Notification implements Serializable {
 	}
 
 	public boolean isDelivered() {
-		return delivered;
-	}
-
-	public void setDelivered(boolean delivered) {
-		this.delivered = delivered;
+		return nextAttemptTime == null;
 	}
 
 	public EventLog getEventLog() {
@@ -136,9 +142,45 @@ public abstract class Notification implements Serializable {
 		return groupLog;
 	}
 
+	public AccountLog getAccountLog() {
+		return accountLog;
+	}
+
+	public UserLog getUserLog() {
+		return userLog;
+	}
 
 	public String getMessage() {
 		return message;
+	}
+
+	public Instant getNextAttemptTime() {
+		return nextAttemptTime;
+	}
+
+	public void setNextAttemptTime(Instant nextAttemptTime) {
+		this.nextAttemptTime = nextAttemptTime;
+	}
+
+	public void markAsDelivered() {
+		this.delivered = true;
+		this.nextAttemptTime = null;
+	}
+
+	public int getAttemptCount() {
+		return attemptCount;
+	}
+
+	public void incrementAttemptCount() {
+		this.attemptCount++;
+	}
+
+	public Instant getLastAttemptTime() {
+		return lastAttemptTime;
+	}
+
+	public void setLastAttemptTime(Instant lastAttemptTime) {
+		this.lastAttemptTime = lastAttemptTime;
 	}
 
 	/**
@@ -175,9 +217,12 @@ public abstract class Notification implements Serializable {
 		sb.append(", uid='").append(uid).append('\'');
 		sb.append(", target=").append(target);
 		appendToString(sb);
-		sb.append(", read=").append(read);
+		sb.append(", attemptCount=").append(attemptCount);
 		sb.append(", delivered=").append(delivered);
+		sb.append(", read=").append(read);
 		sb.append(", createdDateTime=").append(createdDateTime);
+		sb.append(", nextAttemptTime=").append(nextAttemptTime);
+		sb.append(", lastAttemptTime=").append(lastAttemptTime);
 		sb.append('}');
 		return sb.toString();
 	}

@@ -14,11 +14,6 @@ public class FreeFormMessageNotification extends AccountNotification {
 	protected FreeFormMessageNotification() {
 	}
 
-	@Override
-	protected void appendToString(StringBuilder sb) {
-
-	}
-
 	public FreeFormMessageNotification(User destination, String message, AccountLog accountLog) {
 		super(destination, message, accountLog);
 	}

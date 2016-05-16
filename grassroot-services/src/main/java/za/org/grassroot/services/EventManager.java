@@ -337,18 +337,6 @@ public class EventManager implements EventManagementService {
         }
     }
 
-    /*@Override
-    public double getTotalCostGroupInPeriod(Group group, LocalDateTime periodStart, LocalDateTime periodEnd) {
-        // todo: a repository method that doesn't bother with event type ...
-        Sort sort = new Sort(Sort.Direction.ASC, "EventStartDateTime");
-        List<Event> events = eventRepository.findByParentGroupAndEventStartDateTimeBetween(group, Timestamp.valueOf(periodStart),
-                Timestamp.valueOf(periodEnd), sort);
-        double costCounter = 0;
-        for (Event event : events)
-            costCounter += getCostOfMessagesDefault(event);
-        return costCounter;
-    }*/
-
     @Override
     public int notifyUnableToProcessEventReply(User user) {
         jmsTemplateProducerService.sendWithNoReply("processing-failure", user);

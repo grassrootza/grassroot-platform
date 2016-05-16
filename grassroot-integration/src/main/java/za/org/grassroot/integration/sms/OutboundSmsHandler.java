@@ -35,8 +35,7 @@ public class OutboundSmsHandler {
         String msg = notification.getMessage();
         log.info("Sms outbound channel sending forwarding message  ={}", msg);
         smsSendingService.sendSMS(msg,destination);
-        notificationService.updateNotificationDeliveryStatus(notification.getUid(),true);
+        notificationService.markNotificationAsDelivered(notification.getUid());
         notificationService.updateNotificationReadStatus(notification.getUid(),true);
     }
-
-    }
+}
