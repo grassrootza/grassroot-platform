@@ -38,7 +38,6 @@ public class MessageSendingManager implements MessageSendingService {
         } else {
             messageResponse = smsSender.sendSMS(message, destination);
         }
-
         return messageResponse;
 
     }

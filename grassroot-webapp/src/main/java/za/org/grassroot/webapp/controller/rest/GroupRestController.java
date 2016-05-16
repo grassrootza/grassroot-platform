@@ -18,10 +18,7 @@ import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.*;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by paballo.
@@ -74,6 +71,30 @@ public class GroupRestController {
         return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.CREATED, RestMessage.GROUP_CREATED, RestStatus.SUCCESS),
                 HttpStatus.CREATED);
 
+    }
+
+    @RequestMapping(value = "/create/new/{phoneNumber}/{code}/{groupName}/{description}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> createGroupNew(@PathVariable String phoneNumber, @PathVariable String code,
+                                                          @PathVariable String groupName, @PathVariable String description,
+                                                          @RequestBody Set<MembershipInfo> membersToAdd) {
+
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        log.info("membersReceived = {}", membersToAdd != null ? membersToAdd.toString() : "null");
+        log.info("groupName processed = {}, group description = {}", groupName, description);
+
+        Set<MembershipInfo> groupMembers = new HashSet<>(membersToAdd);
+        MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
+        groupMembers.add(creator);
+
+        try {
+            groupBroker.create(user.getUid(), groupName, null, groupMembers, GroupPermissionTemplate.DEFAULT_GROUP, description, null);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.GROUP_NOT_CREATED, RestStatus.FAILURE),
+                                        HttpStatus.BAD_REQUEST);
+        }
+
+        return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.CREATED, RestMessage.GROUP_CREATED, RestStatus.SUCCESS),
+                                    HttpStatus.CREATED);
     }
 
     @RequestMapping(value = "/list/{phoneNumber}/{code}", method = RequestMethod.GET)
