@@ -8,16 +8,15 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.EventLog;
+import za.org.grassroot.core.domain.Meeting;
+import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.notification.EventCancelledNotification;
 import za.org.grassroot.core.enums.EventLogType;
-import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.enums.NotificationType;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.integration.config.InfrastructureConfiguration;
 import za.org.grassroot.integration.router.OutboundMessageRouter;
-
-import java.time.Instant;
 
 import static org.junit.Assert.assertEquals;
 

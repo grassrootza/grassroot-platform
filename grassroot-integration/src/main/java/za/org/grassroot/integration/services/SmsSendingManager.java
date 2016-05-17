@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -32,31 +33,17 @@ public class SmsSendingManager implements SmsSendingService {
     private Logger log = LoggerFactory.getLogger(SmsSendingManager.class);
 
     @Autowired
-    Environment environment;
-
-    /*
-     Would have preferred eventLogManagement than the repository, but that creates circular dependency. Note that we
-      only use this, at present, for the tests.
-      */
-    @Autowired
-    EventLogRepository eventLogRepository;
+    private Environment environment;
 
     @Autowired
-    UserRepository userRepository;
-
-    @Autowired
-    EventRepository eventRepository;
+    private RestTemplate restTemplate;
 
     private String smsGatewayHost = "xml2sms.gsm.co.za";
     private String smsGatewayUsername = System.getenv("SMSUSER");
     private String smsGatewayPassword = System.getenv("SMSPASS");
 
-    private String testMessagePhone = "27701110000";
-
     @Override
     public String sendSMS(String message, String destinationNumber) {
-
-        RestTemplate restTemplate = new RestTemplate();
 
         UriComponentsBuilder gatewayURI = UriComponentsBuilder.newInstance().scheme("https").host(smsGatewayHost);
 
@@ -71,21 +58,9 @@ public class SmsSendingManager implements SmsSendingService {
             String messageResult = restTemplate.getForObject(gatewayURI.build().toUri(), String.class);
             log.info("SMS...result..." + messageResult);
             return messageResult;
-        } else {
-            // todo: store this result somewhere in the cache so an integrated test can check it
-            User testMessageUser = (userRepository.existsByPhoneNumber(testMessagePhone)) ?
-                    userRepository.findByPhoneNumber(testMessagePhone) :
-                    userRepository.save(new User(testMessagePhone));
-
-//            Event messageEvent = eventRepository.save(new Meeting("smsDummy", Timestamp.from(Instant.now()), testMessageUser,  EventType.MEETING, "someLoc"));
-
-//            EventLog messageRecord = new EventLog(testMessageUser, messageEvent, EventLogType.EventTest, message);
-//            log.info("Saving a dummy EventLog ... " + messageRecord);
-//            messageRecord = eventLogRepository.save(messageRecord);
-//            log.info("EventLog saved with message: " + messageRecord.getMessage());
-//            return messageRecord.toString();
-            return null;
         }
+
+        return null;
     }
 
 }

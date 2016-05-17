@@ -37,6 +37,16 @@
             <version>4.2.4.RELEASE</version>
         </dependency>
         <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpasyncclient</artifactId>
+            <version>4.1.1</version>
+        </dependency>
+        <dependency>
             <groupId>org.igniterealtime.smack</groupId>
             <artifactId>smack-core</artifactId>
             <version>4.0.6</version>
