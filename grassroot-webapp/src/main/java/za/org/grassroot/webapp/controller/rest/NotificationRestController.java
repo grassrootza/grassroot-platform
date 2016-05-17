@@ -12,6 +12,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.NotificationDTO;
 import za.org.grassroot.integration.services.NotificationService;
 import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.services.exception.NotificationAlreadyUpdatedException;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrapper;
@@ -65,6 +66,30 @@ public class NotificationRestController {
             responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.NOTIFICATIONS, RestStatus.SUCCESS, notificationWrapper);
         }
         return new ResponseEntity<>(responseWrapper,HttpStatus.valueOf(responseWrapper.getCode()));
+
+    }
+
+    @RequestMapping(value = "/update/read/{phoneNumber}/{code}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> updateReadStatus(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
+                                                            @RequestParam("uid") String uid) throws Exception{
+
+        Notification notification = notificationService.loadNotification(uid);
+        if(notification.isRead()){
+            throw new NotificationAlreadyUpdatedException();
+        }
+        else{
+            notificationService.updateNotificationReadStatus(uid,true);
+            ResponseWrapper responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.NOTIFICATION_UPDATED, RestStatus.SUCCESS);
+            return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
+        }
+
+    }
+
+    @ExceptionHandler(NotificationAlreadyUpdatedException.class)
+    public ResponseEntity<ResponseWrapper> handleException(){
+
+        ResponseWrapper responseWrapper = new ResponseWrapperImpl(HttpStatus.CONFLICT, RestMessage.ALREADY_UPDATED, RestStatus.FAILURE);
+        return  new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
 
     }
 }

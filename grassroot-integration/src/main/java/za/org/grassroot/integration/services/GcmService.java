@@ -14,5 +14,6 @@ public interface GcmService {
     GcmRegistration loadByRegistrationId(String registrationId);
     String getGcmKey(User user);
     GcmRegistration registerUser(User user,String registrationId);
+    void  unregisterUser(User user);
 
 }
