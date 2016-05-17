@@ -67,7 +67,14 @@ public class UserManager implements UserManagementService, UserDetailsService {
     private AsyncUserLogger asyncUserService;
     @Autowired
     private UserRequestRepository userCreateRequestRepository;
-
+    @Autowired
+    private LogBookRepository logBookRepository;
+    @Autowired
+    private LogsAndNotificationsBroker logsAndNotificationsBroker;
+    @Autowired
+    private MessageAssemblingService messageAssemblingService;
+    @Autowired
+    private GcmService gcmService;
 
     @Override
     public User load(String userUid) {
@@ -79,14 +86,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
         return userRepository.save(userProfile);
     }
 
-    @Autowired
-    private LogBookRepository logBookRepository;
-    @Autowired
-    private LogsAndNotificationsBroker logsAndNotificationsBroker;
-    @Autowired
-    private MessageAssemblingService messageAssemblingService;
-    @Autowired
-    private GcmService gcmService;
     @Override
     @Transactional
     public User createUserWebProfile(User userProfile) throws UserExistsException {
@@ -130,7 +129,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
         try {
             User userToReturn = userRepository.saveAndFlush(userToSave);
-            if (!userExists) asyncUserService.recordUserLog(userToReturn.getUid(), UserLogType.CREATED_IN_DB, "User first created via web sign up");
+            if (!userExists)
+                asyncUserService.recordUserLog(userToReturn.getUid(), UserLogType.CREATED_IN_DB, "Web");
             asyncUserService.recordUserLog(userToReturn.getUid(), UserLogType.CREATED_WEB, "User created web profile");
             return userToReturn;
         } catch (final Exception e) {
@@ -141,24 +141,21 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     public User createAndroidUserProfile(UserDTO userDTO) throws UserExistsException {
-        Assert.notNull(userDTO);
+        Objects.requireNonNull(userDTO);
         User userProfile = new User(userDTO.getPhoneNumber(), userDTO.getDisplayName());
         User userToSave;
         String phoneNumber = PhoneNumberUtil.convertPhoneNumber(userProfile.getPhoneNumber());
         boolean userExists = userExist(phoneNumber);
 
         if (userExists) {
-
             User userToUpdate = loadOrSaveUser(phoneNumber);
             if (userToUpdate.hasAndroidProfile()) {
-
                 throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a android profile!");
             }
-
             userToUpdate.setUsername(phoneNumber);
             userToUpdate.setHasAndroidProfile(true);
-            userProfile.setMessagingPreference(UserMessagingPreference.ANDROID_APP);
-            userProfile.setAlertPreference(AlertPreference.NOTIFY_ALL_EVENTS);
+            userToUpdate.setMessagingPreference(UserMessagingPreference.ANDROID_APP);
+            userToUpdate.setAlertPreference(AlertPreference.NOTIFY_ALL_EVENTS);
             userToUpdate.setHasInitiatedSession(true);
             userToSave = userToUpdate;
 
@@ -175,8 +172,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
         try {
             User userToReturn = userRepository.saveAndFlush(userToSave);
-            if (userExists)
-                asyncUserService.recordUserLog(userToReturn.getUid(), UserLogType.CREATED_IN_DB, "User first created via web sign up");
+            if (!userExists)
+                asyncUserService.recordUserLog(userToReturn.getUid(), UserLogType.CREATED_IN_DB, "Android");
             asyncUserService.recordUserLog(userToReturn.getUid(), UserLogType.REGISTERED_ANDROID, "User created android profile");
             return userToReturn;
         } catch (final Exception e) {
