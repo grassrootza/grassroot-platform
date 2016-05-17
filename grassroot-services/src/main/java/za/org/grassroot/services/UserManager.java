@@ -150,15 +150,15 @@ public class UserManager implements UserManagementService, UserDetailsService {
         if (userExists) {
 
             User userToUpdate = loadOrSaveUser(phoneNumber);
-            if (userToUpdate.hasAndroidProfile()) {
-
-                throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a android profile!");
+            if (userToUpdate.hasAndroidProfile() && userToUpdate.getMessagingPreference().equals(UserMessagingPreference.ANDROID_APP)) {
+                log.warn("User already has android profile");
+                throw new UserExistsException("User '"  + userProfile.getUsername() + "' already has a android profile!");
             }
 
             userToUpdate.setUsername(phoneNumber);
             userToUpdate.setHasAndroidProfile(true);
-            userProfile.setMessagingPreference(UserMessagingPreference.ANDROID_APP);
-            userProfile.setAlertPreference(AlertPreference.NOTIFY_ALL_EVENTS);
+            userToUpdate.setMessagingPreference(UserMessagingPreference.ANDROID_APP);
+            userToUpdate.setAlertPreference(AlertPreference.NOTIFY_ALL_EVENTS);
             userToUpdate.setHasInitiatedSession(true);
             userToSave = userToUpdate;
 

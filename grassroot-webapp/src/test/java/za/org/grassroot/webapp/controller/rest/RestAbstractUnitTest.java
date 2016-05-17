@@ -10,6 +10,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.VerificationTokenCodeRepository;
+import za.org.grassroot.integration.services.GcmService;
 import za.org.grassroot.services.*;
 
 import java.sql.Timestamp;
@@ -81,6 +82,9 @@ public class RestAbstractUnitTest
     protected EventBroker eventBrokerMock;
     @Mock
     protected TaskBroker taskBrokerMock;
+
+    @Mock
+    protected GcmService gcmServiceMock;
 
     protected MessageSource messageSource() {
 
