@@ -5,7 +5,6 @@ import org.springframework.integration.support.MessageBuilder;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.stereotype.Service;
-import za.org.grassroot.core.domain.MessageProtocol;
 import za.org.grassroot.core.domain.Notification;
 
 /**
@@ -15,33 +14,7 @@ import za.org.grassroot.core.domain.Notification;
 public class MessageSendingManager implements MessageSendingService {
 
     @Autowired
-    private SmsSendingService smsSender;
-    @Autowired
-    MessageChannel requestChannel;
-
-
-    @Override
-    public String sendMessage(String message, String destination, MessageProtocol messageProtocol) {
-
-        // todo: replace with an object
-        String messageResponse;
-
-        if (messageProtocol != null) {
-            switch (messageProtocol) {
-                case SMS:
-                    messageResponse = smsSender.sendSMS(message, destination);
-                    break;
-                default:
-                    messageResponse = smsSender.sendSMS(message, destination);
-                    break;
-            }
-        } else {
-            messageResponse = smsSender.sendSMS(message, destination);
-        }
-
-        return messageResponse;
-
-    }
+    private MessageChannel requestChannel;
 
     @Override
     public void sendMessage(Notification notification) {

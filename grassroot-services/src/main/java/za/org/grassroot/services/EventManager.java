@@ -14,7 +14,7 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.services.async.GenericJmsTemplateProducerService;
+import za.org.grassroot.integration.services.SmsSendingService;
 import za.org.grassroot.services.util.CacheUtilService;
 
 import java.time.Instant;
@@ -42,6 +42,9 @@ public class EventManager implements EventManagementService {
     private VoteRepository voteRepository;
 
     @Autowired
+    private SmsSendingService smsSendingService;
+
+    @Autowired
     UserRepository userRepository;
 
     @Autowired
@@ -52,9 +55,6 @@ public class EventManager implements EventManagementService {
 
     @Autowired
     UserManagementService userManagementService;
-
-    @Autowired
-    GenericJmsTemplateProducerService jmsTemplateProducerService;
 
     @Autowired
     EventLogManagementService eventLogManagementService;
@@ -339,8 +339,8 @@ public class EventManager implements EventManagementService {
 
     @Override
     public int notifyUnableToProcessEventReply(User user) {
-        jmsTemplateProducerService.sendWithNoReply("processing-failure", user);
+        String message = messageAssemblingService.createReplyFailureMessage(user);
+        smsSendingService.sendSMS(message, user.getPhoneNumber());
         return 0;
     }
-
 }

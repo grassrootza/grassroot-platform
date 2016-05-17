@@ -41,9 +41,6 @@ public class ScheduledTasks {
     private LogBookBroker logBookBroker;
 
     @Autowired
-    private GenericJmsTemplateProducerService jmsTemplateProducerService;
-
-    @Autowired
     private EventRepository eventRepository;
 
     @Autowired

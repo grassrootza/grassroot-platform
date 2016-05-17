@@ -7,7 +7,6 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.repository.LogBookRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.services.async.GenericJmsTemplateProducerService;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -38,9 +37,6 @@ public class LogBookManager implements LogBookService {
 
     @Autowired
     private UserRepository userRepository;
-
-    @Autowired
-    private GenericJmsTemplateProducerService jmsTemplateProducerService;
 
     @Override
     public LogBook load(Long logBookId) {

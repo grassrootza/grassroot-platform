@@ -26,7 +26,6 @@ import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.repository.UserRequestRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.async.AsyncUserLogger;
-import za.org.grassroot.services.async.GenericJmsTemplateProducerService;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.exception.UserExistsException;
 import za.org.grassroot.services.util.CacheUtilService;
@@ -50,8 +49,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     private static final Logger log = LoggerFactory.getLogger(UserManager.class);
 
-    @Autowired
-    GenericJmsTemplateProducerService jmsTemplateProducerService;
     @Autowired
     private PasswordEncoder passwordEncoder;
     @Autowired

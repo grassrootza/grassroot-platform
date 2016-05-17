@@ -6,6 +6,6 @@
 
 CURR=$PWD
 cd /var/grassroot
-nohup java  -Dspring.profiles.active=$PROFILE -Dorg.apache.activemq.SERIALIZABLE_PACKAGES="java.lang,java.util,java.sql,java.time,org.apache.activemq,org.hibernate,za.org.grassroot.core" -jar grassroot-webapp/target/grassroot-webapp-1.0-SNAPSHOT.jar  `cat /home/ubuntu/cmd_line_arguments` > grassroot-app.log 2>&1 &
+nohup java  -Dspring.profiles.active=$PROFILE -jar grassroot-webapp/target/grassroot-webapp-1.0-SNAPSHOT.jar  `cat /home/ubuntu/cmd_line_arguments` > grassroot-app.log 2>&1 &
 echo $! > .pid
 cd $CURR

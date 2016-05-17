@@ -2,8 +2,6 @@ package za.org.grassroot;
 
 import org.quartz.CronTrigger;
 import org.quartz.JobDetail;
-import org.quartz.Scheduler;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.orm.jpa.EntityScan;
@@ -14,9 +12,6 @@ import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.data.jpa.convert.threeten.Jsr310JpaConverters;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-import org.springframework.jms.annotation.EnableJms;
-import org.springframework.jms.config.JmsListenerContainerFactory;
-import org.springframework.jms.config.SimpleJmsListenerContainerFactory;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
@@ -24,11 +19,9 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.scheduling.quartz.CronTriggerFactoryBean;
 import org.springframework.scheduling.quartz.JobDetailFactoryBean;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
-import org.springframework.scheduling.quartz.SpringBeanJobFactory;
 import za.org.grassroot.scheduling.ApplicationContextAwareQuartzJobBean;
 import za.org.grassroot.scheduling.BatchedNotificationSenderJob;
 
-import javax.jms.ConnectionFactory;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -42,17 +35,9 @@ import java.util.concurrent.Executors;
 @EntityScan(basePackageClasses = {GrassRootServicesConfig.class, Jsr310JpaConverters.class})
 @EnableAutoConfiguration
 @EnableJpaRepositories
-@EnableJms
 @EnableAsync
 @EnableScheduling
 public class GrassRootServicesConfig implements SchedulingConfigurer {
-
-    @Bean
-    JmsListenerContainerFactory<?> messagingJmsContainerFactory(ConnectionFactory connectionFactory) {
-        SimpleJmsListenerContainerFactory factory = new SimpleJmsListenerContainerFactory();
-        factory.setConnectionFactory(connectionFactory);
-        return factory;
-    }
 
     @Bean( name = "servicesMessageSource")
     public ResourceBundleMessageSource messageSource() {
