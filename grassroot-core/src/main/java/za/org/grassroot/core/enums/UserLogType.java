@@ -15,7 +15,8 @@ public enum UserLogType {
     USSD_INTERRUPTED("user was interrupted on a USSD menu"),
     USSD_DATE_ENTERED("user entered a date time string in USSD"),
     USSD_DATE_WRONG("user corrected a date time string"),
-    USER_SKIPPED_NAME("user preferred not to set name");
+    USER_SKIPPED_NAME("user preferred not to set name"),
+    DEREGISTERED_ANDROID("user android profile deleted");
 
     private final String text;
 

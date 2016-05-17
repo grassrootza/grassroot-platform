@@ -43,5 +43,11 @@ public class GcmManager implements GcmService {
         return gcmRegistrationRepository.save(gcmRegistration);
     }
 
+    @Override
+    public void unregisterUser(User user) {
+        GcmRegistration gcmRegistration = gcmRegistrationRepository.findByUser(user);
+        gcmRegistrationRepository.delete(gcmRegistration);
+    }
+
 
 }

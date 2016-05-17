@@ -6,6 +6,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserCreateRequest;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.AlertPreference;
+import za.org.grassroot.services.exception.NoSuchProfileException;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.exception.UserExistsException;
 
@@ -25,6 +26,8 @@ public interface UserManagementService {
     User load(String userUid);
 
     User createUserProfile(User userProfile);
+
+    User deleteAndroidUserProfile(User user) throws NoSuchProfileException;
 
     UserDTO loadUserCreateRequest(String phoneNumber);
 
@@ -87,6 +90,8 @@ public interface UserManagementService {
     User setDisplayName(User user, String displayName);
 
     User setUserLanguage(User sessionUser, String locale);
+
+
 
     LinkedHashMap<String, String> getImplementedLanguages();
 

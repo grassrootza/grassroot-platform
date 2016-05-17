@@ -25,7 +25,9 @@ import za.org.grassroot.core.repository.LogBookRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.repository.UserRequestRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
+import za.org.grassroot.integration.services.GcmService;
 import za.org.grassroot.services.async.AsyncUserLogger;
+import za.org.grassroot.services.exception.NoSuchProfileException;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.exception.UserExistsException;
 import za.org.grassroot.services.util.CacheUtilService;
@@ -65,12 +67,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     private AsyncUserLogger asyncUserService;
     @Autowired
     private UserRequestRepository userCreateRequestRepository;
-    @Autowired
-    private LogBookRepository logBookRepository;
-    @Autowired
-    private LogsAndNotificationsBroker logsAndNotificationsBroker;
-    @Autowired
-    private MessageAssemblingService messageAssemblingService;
 
 
     @Override
@@ -83,6 +79,14 @@ public class UserManager implements UserManagementService, UserDetailsService {
         return userRepository.save(userProfile);
     }
 
+    @Autowired
+    private LogBookRepository logBookRepository;
+    @Autowired
+    private LogsAndNotificationsBroker logsAndNotificationsBroker;
+    @Autowired
+    private MessageAssemblingService messageAssemblingService;
+    @Autowired
+    private GcmService gcmService;
     @Override
     @Transactional
     public User createUserWebProfile(User userProfile) throws UserExistsException {
@@ -180,6 +184,28 @@ public class UserManager implements UserManagementService, UserDetailsService {
             log.warn(e.getMessage());
             throw new UserExistsException("User '" + userProfile.getUsername() + "' already exists!");
         }
+
+    }
+
+    @Override
+    public User deleteAndroidUserProfile(User user)  {
+
+        if (!user.hasAndroidProfile()) {
+            throw  new NoSuchProfileException();
+        }
+            user.setHasAndroidProfile(false);
+            user.setMessagingPreference(UserMessagingPreference.SMS);
+            user.setHasInitiatedSession(true);
+
+            try {
+                user = userRepository.saveAndFlush(user);
+                gcmService.unregisterUser(user);
+                asyncUserService.recordUserLog(user.getUid(), UserLogType.DEREGISTERED_ANDROID, "User android profile deleted");
+            } catch (final Exception e) {
+                e.printStackTrace();
+                log.warn(e.getMessage());
+            }
+            return user;
 
     }
 
