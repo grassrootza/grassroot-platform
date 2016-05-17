@@ -25,7 +25,7 @@ public class BatchedNotificationSenderImpl implements BatchedNotificationSender 
 	@Override
 	public void processPendingNotifications() {
 		Instant time = Instant.now();
-		List<Notification> notifications = notificationRepository.findFirst30ByNextAttemptTimeBeforeOrderByNextAttemptTimeAsc(time);
+		List<Notification> notifications = notificationRepository.findFirst50ByNextAttemptTimeBeforeOrderByNextAttemptTimeAsc(time);
 		if (notifications.size() > 0) {
 			logger.debug("Sending {} registered notification(s)", notifications.size());
 		}

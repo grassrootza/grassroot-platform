@@ -60,7 +60,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 			logger.info("Storing {} notifications", notifications.size());
 		}
 		for (Notification notification : notifications) {
-			logger.info("Saving notification: {}", notification);
+			// logger.info("Saving notification: {}", notification); removing for now as generates _many_ logs
 			notificationRepository.save(notification);
 		}
 	}

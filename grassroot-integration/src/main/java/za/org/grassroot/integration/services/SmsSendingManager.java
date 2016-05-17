@@ -33,32 +33,17 @@ public class SmsSendingManager implements SmsSendingService {
     private Logger log = LoggerFactory.getLogger(SmsSendingManager.class);
 
     @Autowired
-    Environment environment;
-
-    /*
-     Would have preferred eventLogManagement than the repository, but that creates circular dependency. Note that we
-      only use this, at present, for the tests.
-      */
-    @Autowired
-    EventLogRepository eventLogRepository;
+    private Environment environment;
 
     @Autowired
-    UserRepository userRepository;
-
-    @Autowired
-    EventRepository eventRepository;
+    private RestTemplate restTemplate;
 
     private String smsGatewayHost = "xml2sms.gsm.co.za";
     private String smsGatewayUsername = System.getenv("SMSUSER");
     private String smsGatewayPassword = System.getenv("SMSPASS");
 
-    private String testMessagePhone = "27701110000";
-
-    @Async
     @Override
     public String sendSMS(String message, String destinationNumber) {
-
-        RestTemplate restTemplate = new RestTemplate();
 
         UriComponentsBuilder gatewayURI = UriComponentsBuilder.newInstance().scheme("https").host(smsGatewayHost);
 
