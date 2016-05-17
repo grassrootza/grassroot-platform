@@ -14,8 +14,6 @@ public interface LogBookService {
 
     LogBook load(Long logBookId);
 
-    List<LogBook> getAllLogBookEntriesForGroup(Group group);
-
     List<LogBook> getLogBookEntriesInPeriod(Group group, LocalDateTime periodStart, LocalDateTime periodEnd);
 
     List<LogBook> getAllLogBookEntriesForGroup(Group group, boolean completed);
@@ -31,12 +29,4 @@ public interface LogBookService {
      */
 
     LogBook save(LogBook logBook);
-
-    /*
-    Set of methods to deal with marking complete, depending on what has been specified in the view layer
-     */
-
-    LogBook setCompletedWithDate(Long logBookId, Long completedByUserId, LocalDateTime completedDate);
-
-    LogBook setCompleted(Long logBookId, LocalDateTime completedDate);
 }
