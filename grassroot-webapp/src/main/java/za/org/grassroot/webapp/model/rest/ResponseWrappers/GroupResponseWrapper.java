@@ -36,7 +36,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
     public GroupResponseWrapper(Group group, GroupLog groupLog, Role role){
         this.id = group.getUid();
         this.groupName = group.getName("");
-        this.description = groupLog.getDescription();
+        this.description = (groupLog.getDescription()!=null)?groupLog.getDescription():group.getDescription();
         this.dateTime = groupLog.getCreatedDateTime().atZone(DateTimeUtil.getSAST()).toLocalDateTime();
         this.groupCreator = group.getCreatedByUser().getDisplayName();
         this.role = (role!=null)?role.getName():null;
