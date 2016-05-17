@@ -121,6 +121,21 @@ public class GroupRestController {
 
     }
 
+    @RequestMapping(value = "/get/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> getGroups(@PathVariable String phoneNumber, @PathVariable String code,
+                                                     @PathVariable String groupUid) {
+
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        Group group = groupBroker.load(groupUid);
+
+        permissionBroker.validateGroupPermission(user, group, null);
+
+        List<GroupResponseWrapper> toReturn = Collections.singletonList(createWrapper(group, group.getMembership(user).getRole()));
+        ResponseWrapper rw = new GenericResponseWrapper(HttpStatus.OK, RestMessage.USER_GROUPS, RestStatus.SUCCESS, toReturn);
+
+        return new ResponseEntity<>(rw, HttpStatus.OK);
+    }
+
     @RequestMapping(value = "/search", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> searchForGroup(@RequestParam("searchTerm") String searchTerm) {
 
