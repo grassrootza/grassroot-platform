@@ -49,6 +49,9 @@ public class DateTimeUtil {
     private static final ZoneId zoneSystem = ZoneId.systemDefault();
 
     public static Instant convertToSystemTime(LocalDateTime userInput, ZoneId userZoneId) {
+        Objects.requireNonNull(userInput, "Local date time is required");
+        Objects.requireNonNull(userZoneId);
+
         ZonedDateTime userTime = ZonedDateTime.of(userInput, userZoneId);
         ZonedDateTime systemTime = userTime.withZoneSameInstant(zoneSystem);
 
