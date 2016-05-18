@@ -182,9 +182,10 @@ public class GroupRestController {
 
     }
 
-    @RequestMapping(value="/members/list/{phoneNumber}/{code}/{groupUid}", method=RequestMethod.GET)
+    @RequestMapping(value="/members/list/{phoneNumber}/{code}/{groupUid}/{selected}", method=RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> getGroupMember(@PathVariable("phoneNumber") String phoneNumber,
                                                           @PathVariable("code") String code, @PathVariable("groupUid") String groupUid,
+                                                          @PathVariable("selected") boolean selectedByDefault,
                                                           @RequestParam(value = "page", required = false) Integer requestPage,
                                                           @RequestParam(value = "size",required = false) Integer requestPageSize){
 
@@ -207,7 +208,7 @@ public class GroupRestController {
             List<MembershipResponseWrapper> members = new ArrayList<>();
             List<User> usersFromPage = pageable.getContent();
             for (User u : usersFromPage) {
-                members.add(new MembershipResponseWrapper(group, u, group.getMembership(user).getRole()));
+                members.add(new MembershipResponseWrapper(group, u, group.getMembership(user).getRole(), selectedByDefault));
             }
             responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.GROUP_MEMBERS, RestStatus.SUCCESS, members);
         }

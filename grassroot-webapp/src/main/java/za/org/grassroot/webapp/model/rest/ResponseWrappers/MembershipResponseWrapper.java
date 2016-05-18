@@ -14,13 +14,15 @@ public class MembershipResponseWrapper {
     private String groupUid;
     private String phoneNumber;
     private String roleName;
+    private boolean selected;
 
-    public MembershipResponseWrapper(Group group, User user, Role role) {
+    public MembershipResponseWrapper(Group group, User user, Role role, boolean selected) {
         this.memberUid = user.getUid();
         this.displayName = user.nameToDisplay();
         this.groupUid = group.getUid();
         this.phoneNumber = user.getPhoneNumber();
         this.roleName = role.getName();
+        this.selected = selected;
     }
 
     public String getMemberUid() {
@@ -42,4 +44,6 @@ public class MembershipResponseWrapper {
     public String getRoleName() {
         return roleName;
     }
+
+    public boolean isSelected() { return selected; }
 }
