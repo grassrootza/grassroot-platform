@@ -272,8 +272,9 @@ public class LogBookController extends BaseController {
 
     // todo : more permissions than just the below!
     @RequestMapping("modify")
-    public String modifyLogBookEntry(Model model, @RequestParam(value="logBookId") Long logBookId) {
-        LogBook logBook = logBookService.load(logBookId);
+    public String modifyLogBookEntry(Model model, @RequestParam(value="logBookUid") String logBookUid) {
+
+        LogBook logBook = logBookBroker.load(logBookUid);
         Group group = (Group) logBook.getParent();
         if (!group.getMembers().contains(getUserProfile())) throw new AccessDeniedException("");
 
@@ -300,7 +301,7 @@ public class LogBookController extends BaseController {
         // may consider doing some of this in services layer, but main point is can't just use logBook entity passed
         // back from form as thymeleaf whacks all the attributes we don't explicitly code into hidden inputs
 
-        LogBook savedLogBook = logBookService.load(logBook.getId());
+        LogBook savedLogBook = logBookBroker.load(logBook.getUid());
         if (!logBook.getMessage().equals(savedLogBook.getMessage()))
             savedLogBook.setMessage(logBook.getMessage());
 

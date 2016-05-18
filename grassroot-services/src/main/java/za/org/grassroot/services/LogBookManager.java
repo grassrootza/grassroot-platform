@@ -25,12 +25,6 @@ public class LogBookManager implements LogBookService {
     private LogBookRepository logBookRepository;
 
     @Override
-    public LogBook load(Long logBookId) {
-        return logBookRepository.findOne(logBookId);
-    }
-
-
-    @Override
     public List<LogBook> getLogBookEntriesInPeriod(Group group, LocalDateTime periodStart, LocalDateTime periodEnd) {
         Sort sort = new Sort(Sort.Direction.ASC, "createdDateTime");
         Instant start = convertToSystemTime(periodStart, getSAST());

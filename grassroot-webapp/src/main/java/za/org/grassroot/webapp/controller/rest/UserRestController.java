@@ -11,6 +11,7 @@ import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.core.dto.TokenDTO;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.AlertPreference;
+import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.PasswordTokenService;
 import za.org.grassroot.services.UserManagementService;
@@ -98,7 +99,8 @@ public class UserRestController {
     }
 
     @RequestMapping(value = "/login/authenticate/{phoneNumber}/{code}", method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> authenticate(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String token) {
+    public ResponseEntity<ResponseWrapper> authenticate(@PathVariable("phoneNumber") String phoneNumber,
+                                                        @PathVariable("code") String token) {
 
         if (passwordTokenService.isVerificationCodeValid(phoneNumber, token)) {
             log.info("User authentication successful for user with phoneNumber={}", phoneNumber);
@@ -106,6 +108,7 @@ public class UserRestController {
             if(!user.hasAndroidProfile()){
                 userManagementService.createAndroidUserProfile(new UserDTO(user));
             }
+            userManagementService.setMessagingPreference(user.getUid(), UserMessagingPreference.ANDROID_APP);
             VerificationTokenCode longLivedToken = passwordTokenService.generateLongLivedCode(user);
             boolean hasGroups = userManagementService.isPartOfActiveGroups(user);
             return new ResponseEntity<>(new AuthenticationResponseWrapper(HttpStatus.OK, RestMessage.LOGIN_SUCCESS,

@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.integration.services.GcmService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.services.exception.NoSuchProfileException;
@@ -28,12 +29,12 @@ public class GcmRestController {
     private GcmService gcmService;
 
     @RequestMapping(value = "/register/{phoneNumber}/{code}", method = RequestMethod.POST)
-    public ResponseEntity<ResponseWrapper> registerUser(@PathVariable("phoneNumber") String phoneNumber,
-                                                       @PathVariable("code") String code,
-                                                       @RequestParam("registration_id") String registrationId) {
+    public ResponseEntity<ResponseWrapper> registerForGcm(@PathVariable("phoneNumber") String phoneNumber,
+                                                          @PathVariable("code") String code,
+                                                          @RequestParam("registration_id") String registrationId) {
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         gcmService.registerUser(user, registrationId);
-
+        userManagementService.setMessagingPreference(user.getUid(), UserMessagingPreference.ANDROID_APP);
         return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.CREATED, RestMessage.REGISTERED_FOR_PUSH, RestStatus.SUCCESS),
                 HttpStatus.CREATED);
 
@@ -43,11 +44,9 @@ public class GcmRestController {
     public ResponseEntity<ResponseWrapper> deRegister(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code)
             throws NoSuchProfileException{
         User user = userManagementService.loadOrSaveUser(phoneNumber);
-        userManagementService.deleteAndroidUserProfile(user);
+        userManagementService.setMessagingPreference(user.getUid(), UserMessagingPreference.SMS);
         ResponseWrapper responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.DEREGISTERED_FOR_PUSH, RestStatus.SUCCESS);
-
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
-
     }
 
     @ExceptionHandler(NoSuchProfileException.class)

@@ -222,8 +222,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
         user.setAlertPreference(alertPreference);
 
         return userRepository.saveAndFlush(user);
-
-
     }
 
     @Override
@@ -242,6 +240,16 @@ public class UserManager implements UserManagementService, UserDetailsService {
         }
         VerificationTokenCode token = passwordTokenService.generateAndroidVerificationCode(phoneNumber);
         return token.getCode();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void setMessagingPreference(String userUid, UserMessagingPreference preference) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(preference);
+
+        User user = userRepository.findOneByUid(userUid);
+        user.setMessagingPreference(preference);
     }
 
     @Override
@@ -353,13 +361,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public boolean needsToVote(User sessionUser) {
         log.info("Checking if vote outstanding for user: " + sessionUser);
         return eventManagementService.getOutstandingVotesForUser(sessionUser).size() > 0;
-    }
-
-    @Override
-    public boolean needsToVoteOrRSVP(User sessionUser) {
-        // note: inserting a hasUpcomingEvents here makes it faster before cache is warmed up but slower after
-        // as then will be doing a quick count query but still slower than cache retrieval, trade-off to monitor
-        return (needsToVote(sessionUser) || needsToRSVP(sessionUser));
     }
 
     @Override

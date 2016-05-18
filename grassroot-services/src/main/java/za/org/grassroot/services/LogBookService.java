@@ -12,8 +12,6 @@ import java.util.List;
  */
 public interface LogBookService {
 
-    LogBook load(Long logBookId);
-
     List<LogBook> getLogBookEntriesInPeriod(Group group, LocalDateTime periodStart, LocalDateTime periodEnd);
 
     List<LogBook> getAllLogBookEntriesForGroup(Group group, boolean completed);

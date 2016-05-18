@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.GcmRegistration;
+import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.integration.services.GcmService;
 
 import static org.mockito.Mockito.verify;
@@ -39,6 +40,7 @@ public class GcmRestControllerTest extends RestAbstractUnitTest {
         mockMvc.perform(post(path + "register/{phoneNumber}/{code}", testUserPhone, testUserCode).param("registration_id", "random")).andExpect(status().isCreated());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
         verify(gcmServiceMock).registerUser(sessionTestUser,"random");
+        verify(userManagementServiceMock).setMessagingPreference(sessionTestUser.getUid(), UserMessagingPreference.ANDROID_APP);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(gcmServiceMock);
 

@@ -6,6 +6,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserCreateRequest;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.AlertPreference;
+import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.services.exception.NoSuchProfileException;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.exception.UserExistsException;
@@ -38,6 +39,8 @@ public interface UserManagementService {
     User updateUserAndroidProfileSettings(User user,String name, String language, AlertPreference alertPreference);
 
     String generateAndroidUserVerifier(String phoneNumber, String displayName);
+
+    void setMessagingPreference(String userUid, UserMessagingPreference preference);
 
     boolean userExist(String phoneNumber);
 
@@ -77,8 +80,6 @@ public interface UserManagementService {
 
     boolean needsToVote(User sessionUser);
 
-    boolean needsToVoteOrRSVP(User sessionUser);
-
     boolean hasIncompleteLogBooks(String userUid, long daysInPast);
     
     User resetUserPassword(String username, String newPassword, String token);
@@ -90,8 +91,6 @@ public interface UserManagementService {
     User setDisplayName(User user, String displayName);
 
     User setUserLanguage(User sessionUser, String locale);
-
-
 
     LinkedHashMap<String, String> getImplementedLanguages();
 
