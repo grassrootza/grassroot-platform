@@ -28,7 +28,7 @@ public class GcmRestController {
     private GcmService gcmService;
 
     @RequestMapping(value = "/register/{phoneNumber}/{code}", method = RequestMethod.POST)
-    public ResponseEntity<ResponseWrapper> createGroup(@PathVariable("phoneNumber") String phoneNumber,
+    public ResponseEntity<ResponseWrapper> registerUser(@PathVariable("phoneNumber") String phoneNumber,
                                                        @PathVariable("code") String code,
                                                        @RequestParam("registration_id") String registrationId) {
         User user = userManagementService.loadOrSaveUser(phoneNumber);
@@ -40,7 +40,8 @@ public class GcmRestController {
     }
 
     @RequestMapping(value = "/deregister/{phoneNumber}/{code}", method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> deRegister(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code) throws NoSuchProfileException{
+    public ResponseEntity<ResponseWrapper> deRegister(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code)
+            throws NoSuchProfileException{
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         userManagementService.deleteAndroidUserProfile(user);
         ResponseWrapper responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.DEREGISTERED_FOR_PUSH, RestStatus.SUCCESS);

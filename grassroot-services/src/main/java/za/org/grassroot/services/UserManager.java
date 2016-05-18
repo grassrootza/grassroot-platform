@@ -75,6 +75,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     private MessageAssemblingService messageAssemblingService;
     @Autowired
     private GcmService gcmService;
+    
 
     @Override
     public User load(String userUid) {
@@ -148,10 +149,13 @@ public class UserManager implements UserManagementService, UserDetailsService {
         boolean userExists = userExist(phoneNumber);
 
         if (userExists) {
+
             User userToUpdate = loadOrSaveUser(phoneNumber);
-            if (userToUpdate.hasAndroidProfile()) {
-                throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a android profile!");
+            if (userToUpdate.hasAndroidProfile() && userToUpdate.getMessagingPreference().equals(UserMessagingPreference.ANDROID_APP)) {
+                log.warn("User already has android profile");
+                throw new UserExistsException("User '"  + userProfile.getUsername() + "' already has a android profile!");
             }
+
             userToUpdate.setUsername(phoneNumber);
             userToUpdate.setHasAndroidProfile(true);
             userToUpdate.setMessagingPreference(UserMessagingPreference.ANDROID_APP);
