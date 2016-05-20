@@ -106,7 +106,8 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
                                                              Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)).thenReturn(true);
 
         when(userManagementServiceMock.getGroupMembers(testGroup, 0, 5)).thenReturn(userPage);
-        mockMvc.perform(get(path + "/members/list/{phoneNumber}/{code}/{groupUid}/", testUserPhone, testUserCode, testGroup.getUid())
+        mockMvc.perform(get(path + "/members/list/{phoneNumber}/{code}/{groupUid}/{selected}",
+                            testUserPhone, testUserCode, testGroup.getUid(), true)
                                 .param("page", String.valueOf(0))
                                 .param("size", String.valueOf(5)))
                 .andExpect(status().is2xxSuccessful());

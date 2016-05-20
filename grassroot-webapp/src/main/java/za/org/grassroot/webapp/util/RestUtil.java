@@ -16,7 +16,8 @@ public class RestUtil {
                                                                    Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE,
                                                                    Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY,
                                                                    Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER,
-                                                                   Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS).collect(Collectors.toSet());
+                                                                   Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS,
+                                                                   Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER).collect(Collectors.toSet());
 
     public static Set<Permission> filterPermissions(Set<Permission> permissions){
         return permissions.stream().filter(p -> homeScreenPermissions.contains(p))

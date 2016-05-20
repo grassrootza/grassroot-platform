@@ -84,10 +84,11 @@ public class NotificationManager implements NotificationService{
     @Transactional
     public void markNotificationAsDelivered(String notificationUid) {
         Notification notification = notificationRepository.findByUid(notificationUid);
-        if (notification == null) {
-            throw new IllegalStateException("No notification under UID " + notificationUid);
+        if (notification != null) {
+            notification.markAsDelivered();
+        } else {
+            logger.info("No notification under UID {}, possibly from another environment", notificationUid);
         }
-        notification.markAsDelivered();
     }
 
     @Override

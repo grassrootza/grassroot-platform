@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.util.PhoneNumberUtil;
@@ -231,6 +232,19 @@ public class GroupRestController {
 
         return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.OK, RestMessage.MEMBERS_ADDED, RestStatus.SUCCESS),
                                     HttpStatus.CREATED);
+    }
+
+    @RequestMapping(value = "/members/remove/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> removeMembers(@PathVariable String phoneNumber, @PathVariable String code,
+                                                         @PathVariable String groupUid, @RequestParam("memberUids") Set<String> memberUids) {
+
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        try {
+            groupBroker.removeMembers(user.getUid(), groupUid, memberUids);
+            return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.OK, RestMessage.MEMBERS_REMOVED, RestStatus.SUCCESS), HttpStatus.OK);
+        } catch (AccessDeniedException e) {
+            return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.FORBIDDEN, RestMessage.PERMISSION_DENIED, RestStatus.FAILURE), HttpStatus.FORBIDDEN);
+        }
     }
 
     private Set<MembershipInfo> addMembersToGroup(List<String> phoneNumbers, Set<MembershipInfo> members) {

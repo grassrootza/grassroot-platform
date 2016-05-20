@@ -9,7 +9,7 @@
 <div th:if="${request.options != null}">
     <div th:switch="${display}">
         <div th:case="false">
-            <form th:action="@{/emulator/view}" method="get">
+            <form th:action="@{/emulator/ussd/view}" method="get">
                 <input type="hidden" name="link" th:value="${request.options[0].callback}"/>
                 <input type="text" name="request"/>
                 <input type="submit" value="Submit"/>
@@ -20,7 +20,7 @@
             <ol>
                 <th:block th:object="${request}">
                     <li th:each="option : *{options}"><a th:text="${option.value}"
-                                                         th:href="@{/emulator/view(link=${option.callback})} "></a></li>
+                                                         th:href="@{/emulator/ussd/view(link=${option.callback})} "></a></li>
                 </th:block>
             </ol>
 
@@ -33,7 +33,7 @@
 
 </div>
 <div><form>
-    <button th:action="@{/emulator/view}" method="get">Interrupt</button>
+    <button th:action="@{/emulator/ussd/view}" method="get">Interrupt</button>
 </form></div>
 
 </body>
