@@ -52,7 +52,6 @@ public class VoteRestController {
     @Autowired
     EventBroker eventBroker;
 
-
     @RequestMapping(value = "/create/{id}/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> createVote(@PathVariable("phoneNumber") String phoneNumber,
                                                       @PathVariable("code") String code,

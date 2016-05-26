@@ -57,8 +57,7 @@ public interface AssignedMembersContainer extends GroupDescendant, UidIdentifiab
 
 		Group group = getAncestorGroup();
 
-		Map<String, User> membersByUid = group.getMembers().stream()
-				.collect(Collectors.toMap(User::getUid, member -> member));
+		Map<String, User> membersByUid = group.getMembers().stream().collect(Collectors.toMap(User::getUid, member -> member));
 
 		Set<User> existingMembers = fetchAssignedMembersCollection();
 

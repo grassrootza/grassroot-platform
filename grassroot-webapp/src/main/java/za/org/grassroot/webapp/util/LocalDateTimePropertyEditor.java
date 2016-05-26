@@ -22,10 +22,9 @@ public class LocalDateTimePropertyEditor extends PropertyEditorSupport{
         this.simpleDateFormat = DateTimeFormatter.ofPattern(DEFAULT_DATE_PATTERN);
     }
 
-    public LocalDateTimePropertyEditor(String pattern) {
-        this.simpleDateFormat = DateTimeFormatter.ofPattern(pattern);
+    public LocalDateTimePropertyEditor(DateTimeFormatter dtf) {
+        this.simpleDateFormat = dtf;
     }
-
 
     @Override
     public void setAsText(String text) throws IllegalArgumentException {

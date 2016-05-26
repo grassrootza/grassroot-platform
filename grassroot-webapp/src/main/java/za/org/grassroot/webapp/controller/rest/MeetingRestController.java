@@ -7,6 +7,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.ServletRequestDataBinder;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
@@ -22,9 +24,12 @@ import za.org.grassroot.webapp.model.rest.ResponseWrappers.EventWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
+import za.org.grassroot.webapp.util.LocalDateTimePropertyEditor;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -52,28 +57,39 @@ public class MeetingRestController {
     @Autowired
     EventBroker eventBroker;
 
+    @InitBinder
+    public void initBinder(ServletRequestDataBinder binder) {
+        binder.registerCustomEditor(LocalDateTime.class, new LocalDateTimePropertyEditor(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+    }
 
-    @RequestMapping(value = "/create/{id}/{phoneNumber}/{code}", method = RequestMethod.POST)
-    public ResponseEntity<ResponseWrapper> createMeeting(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
-                                                         @PathVariable("id") String groupUid, @RequestParam("title") String title, @RequestParam("description") String description,
-                                                         @RequestParam("startTime") String time, @RequestParam("notifyGroup") boolean relayable, @RequestParam("reminderMins") int reminderMinutes,
-                                                         @RequestParam("location") String location, @RequestParam("includeSubGroups") boolean includeSubGroups, @RequestParam("rsvpRequired") boolean rsvp,
-                                                         @RequestParam(value="members", required = false) List<String> members) {
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public void handleBadRequest(HttpMessageNotReadableException e) {
+        log.warn("Returning HTTP 400", e);
+    }
 
-        log.info("REST : received meeting create request... with time string: {}", time);
+    @RequestMapping(value = "/create/{phoneNumber}/{code}/{parentUid}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> createMeeting(@PathVariable String phoneNumber, @PathVariable String code,
+                                                         @PathVariable String parentUid, @RequestParam String title,
+                                                         @RequestParam String description,
+                                                         @RequestParam LocalDateTime eventStartDateTime,
+                                                         @RequestParam int reminderMinutes,
+                                                         @RequestParam String location,
+                                                         @RequestParam(value="members", required = false) Set<String> members) {
+
+        log.info("REST : received meeting create request... with local date time: {}, and members: {}",
+                 eventStartDateTime.toString(), members == null ? "null" : members.toString());
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
-        Set<String> membersUid = Sets.newHashSet();
-        if(members != null){
-            membersUid.addAll(members);
-        }
+        Set<String> assignedMemberUids = (members == null) ? new HashSet<>() : members;
+        EventReminderType reminderType = reminderMinutes == -1 ? EventReminderType.GROUP_CONFIGURED : EventReminderType.CUSTOM;
 
-        LocalDateTime meetingDateTime = LocalDateTime.parse(time, getPreferredRestFormat());
-        eventBroker.createMeeting(user.getUid(), groupUid, JpaEntityType.GROUP, title, meetingDateTime, location,
-                                  includeSubGroups, rsvp, relayable, EventReminderType.CUSTOM, reminderMinutes, description, membersUid);
+        // todo : decide what to do with event reminder types
+        eventBroker.createMeeting(user.getUid(), parentUid, JpaEntityType.GROUP, title, eventStartDateTime, location,
+                                  false, true, false, reminderType, reminderMinutes, description, assignedMemberUids);
+
         ResponseWrapper responseWrapper = new ResponseWrapperImpl(HttpStatus.CREATED, RestMessage.MEETING_CREATED, RestStatus.SUCCESS);
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
-
     }
 
     @RequestMapping(value = "/update/{id}/{phoneNumber}/{code}", method = RequestMethod.POST)
@@ -89,8 +105,9 @@ public class MeetingRestController {
 
         try {
             LocalDateTime dateTime = LocalDateTime.parse(time, getPreferredRestFormat());
+            EventReminderType reminderType = reminderMinutes == -1 ? EventReminderType.GROUP_CONFIGURED : EventReminderType.CUSTOM;
             eventBroker.updateMeeting(user.getUid(), meetingUid, title, dateTime, location, includeSubGroups, rsvp, relayable,
-                    EventReminderType.CUSTOM, reminderMinutes, description);
+                    reminderType, reminderMinutes, description);
             responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.MEETING_DETAILS_UPDATED, RestStatus.SUCCESS);
         } catch (IllegalStateException e) {
             responseWrapper = new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.MEETING_CANCELLED, RestStatus.FAILURE);

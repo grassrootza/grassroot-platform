@@ -76,7 +76,6 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
 
     @Test
     public void searchForGroupsShouldWork() throws Exception {
-
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(groupBrokerMock.findGroupFromJoinCode(testSearchTerm)).thenReturn(testGroup);
         mockMvc.perform(get(path + "search").param("searchTerm", testSearchTerm)).andExpect(status().is2xxSuccessful());
@@ -86,7 +85,6 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
 
     @Test
     public void searchRequestToJoinGroup() throws Exception {
-
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(groupJoinRequestServiceMock.open(sessionTestUser.getUid(), testGroup.getUid(), null)).thenReturn(testGroup.getUid());
         mockMvc.perform(post(path + "join/request/{phoneNumber}/{code}", testUserPhone, testUserCode).param("uid", testGroup.getUid())).andExpect(status().is2xxSuccessful());

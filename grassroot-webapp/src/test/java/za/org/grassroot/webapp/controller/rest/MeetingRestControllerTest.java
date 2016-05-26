@@ -47,19 +47,18 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.createMeeting(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP,
                                            testEventTitle, testDateTime, testEventLocation, true, true, true, EventReminderType.CUSTOM, 5, testEventDescription, membersToAdd)).thenReturn(meetingEvent);
-        mockMvc.perform(post(path + "/create/{id}/{phoneNumber}/{code}", testGroup.getUid(), testUserPhone, testUserCode)
+        mockMvc.perform(post(path + "/create/{phoneNumber}/{code}/{parentUid}", testUserPhone, testUserCode, testGroup.getUid())
                                 .param("title", testEventTitle)
                                 .param("description", testEventDescription)
-                                .param("startTime", testDateTime.format(DateTimeFormatter.ISO_DATE_TIME))
-                                .param("notifyGroup", String.valueOf(true))
-                                .param("reminderMins", String.valueOf(5))
-                                .param("location", testEventLocation)
-                                .param("includeSubGroups", String.valueOf(false))
-                                .param("rsvpRequired", String.valueOf(true)))
+                                .param("eventStartDateTime", testDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
+                                .param("reminderMinutes", String.valueOf(-1))
+                                .param("location", testEventLocation))
                 .andExpect(status().is2xxSuccessful());
+
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
         verify(eventBrokerMock).createMeeting(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP,
-                                              testEventTitle, testDateTime, testEventLocation, false, true, true, EventReminderType.CUSTOM, 5, testEventDescription, membersToAdd);
+                                              testEventTitle, testDateTime, testEventLocation, false, true, false,
+                                              EventReminderType.GROUP_CONFIGURED, -1, testEventDescription, membersToAdd);
     }
 
     @Test
