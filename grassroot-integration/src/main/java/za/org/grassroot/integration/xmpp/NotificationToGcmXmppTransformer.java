@@ -49,7 +49,7 @@ public class NotificationToGcmXmppTransformer {
 
         String title = null;
         String body = null;
-        String click_action = getClickAction(notification);
+        String clickAction = getClickAction(notification);
 
         switch (notification.getNotificationType()) {
             case EVENT:
@@ -67,7 +67,7 @@ public class NotificationToGcmXmppTransformer {
                 throw new UnsupportedOperationException("Have to add support for notification type: " + notification.getNotificationType());
         }
 
-        return GcmXmppMessageCodec.encode(registrationID, messageId, collapseKey, title, body, click_action, dataPart);
+        return GcmXmppMessageCodec.encode(registrationID, messageId, collapseKey, title, body, clickAction, dataPart);
     }
 
     private String generateCollapseKey(Notification notification) {
@@ -115,13 +115,13 @@ public class NotificationToGcmXmppTransformer {
     }
 
     private String getClickAction(Notification notification) {
-        String click_action = null;
+        String clickAction = null;
         switch (notification.getNotificationType()) {
             case EVENT:
                 return notification.getNotificationType().name();
             case LOGBOOK:
                 return TaskType.TODO.name();
         }
-        return click_action;
+        return clickAction;
     }
 }
