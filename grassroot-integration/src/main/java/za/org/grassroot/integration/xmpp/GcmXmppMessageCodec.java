@@ -36,17 +36,18 @@ public class GcmXmppMessageCodec {
 	}
 
 	public static org.springframework.messaging.Message<Message> encode(String registrationID, String messageId, String collapseKey,
-																		String title, String body, Map<String, Object> dataPart) {
-		logger.info("Generated collapseKey " + collapseKey);
-		Map<String, Object> notificatonPart = createNotificatonPart(title, body);
+																		String title, String body, String clickAction, Map<String, Object> dataPart) {
+		logger.info("Generated collapseKey " + collapseKey);;
+		Map<String, Object> notificatonPart = createNotificatonPart(title, body, clickAction);
 		GcmEntity gcmPayload = new GcmEntity(messageId, registrationID, collapseKey, dataPart, notificatonPart);
 		return constructGcmMessage(gcmPayload);
 	}
 
-	private static Map<String, Object> createNotificatonPart(String title, String body) {
+	private static Map<String, Object> createNotificatonPart(String title, String body, String clickAction) {
 		Map<String, Object> data = new HashMap<>();
 		data.put("title", title);
 		data.put("body", body);
+		data.put("click_action", clickAction);
 		return data;
 	}
 
