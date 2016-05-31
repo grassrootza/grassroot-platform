@@ -22,94 +22,106 @@ import java.util.Map;
 @Component
 public class NotificationToGcmXmppTransformer {
 
-	private static Logger log = LoggerFactory.getLogger(NotificationToGcmXmppTransformer.class);
+    private static Logger log = LoggerFactory.getLogger(NotificationToGcmXmppTransformer.class);
 
-	@Autowired
-	private GcmRegistrationRepository gcmRegistrationRepository;
+    @Autowired
+    private GcmRegistrationRepository gcmRegistrationRepository;
 
-	@Transformer(inputChannel = "gcmOutboundChannel", outputChannel = "gcmXmppOutboundChannel")
-	public Message<org.jivesoftware.smack.packet.Message> transform(Message<Notification> message) throws Exception {
-		Notification notification = message.getPayload();
+    @Transformer(inputChannel = "gcmOutboundChannel", outputChannel = "gcmXmppOutboundChannel")
+    public Message<org.jivesoftware.smack.packet.Message> transform(Message<Notification> message) throws Exception {
+        Notification notification = message.getPayload();
 
-		Message<org.jivesoftware.smack.packet.Message> gcmMessage = constructGcmMessage(notification);
-		log.info("Message with id " + notification.getUid() + " transformed to " + gcmMessage.getPayload().toXML().toString());
-		return gcmMessage;
-	}
+        Message<org.jivesoftware.smack.packet.Message> gcmMessage = constructGcmMessage(notification);
+        log.info("Message with id " + notification.getUid() + " transformed to " + gcmMessage.getPayload().toXML().toString());
+        return gcmMessage;
+    }
 
-	private Message<org.jivesoftware.smack.packet.Message> constructGcmMessage(Notification notification) throws JsonProcessingException {
-		GcmRegistration gcmRegistration = gcmRegistrationRepository.findByUser(notification.getTarget());
-		String registrationID = gcmRegistration.getRegistrationId();
+    private Message<org.jivesoftware.smack.packet.Message> constructGcmMessage(Notification notification) throws JsonProcessingException {
+        GcmRegistration gcmRegistration = gcmRegistrationRepository.findByUser(notification.getTarget());
+        String registrationID = gcmRegistration.getRegistrationId();
 
-		String messageId = notification.getUid();
+        String messageId = notification.getUid();
 
-		log.info("Attempting to transform message with id " + messageId);
-		String collapseKey = generateCollapseKey(notification);
-		log.info("Generated collapseKey " + collapseKey);
+        log.info("Attempting to transform message with id " + messageId);
+        String collapseKey = generateCollapseKey(notification);
+        log.info("Generated collapseKey " + collapseKey);
+        Map<String, Object> dataPart = createDataPart(notification);
 
-		Map<String, Object> dataPart = createDataPart(notification);
+        String title = null;
+        String body = null;
+        String click_action = getClickAction(notification);
 
-		String title = null;
-		String body = null;
-		switch (notification.getNotificationType()) {
-			case EVENT:
-				title = notification.getEventLog().getEvent().getAncestorGroup().getGroupName();
-				body = notification.getMessage();
-				break;
+        switch (notification.getNotificationType()) {
+            case EVENT:
+                title = notification.getEventLog().getEvent().getAncestorGroup().getGroupName();
+                body = notification.getMessage();
+                break;
 
-			case LOGBOOK:
-				LogBook logBook = notification.getLogBookLog().getLogBook();
-				title = logBook.getAncestorGroup().getGroupName();
-				body = notification.getMessage();
-				break;
+            case LOGBOOK:
+                LogBook logBook = notification.getLogBookLog().getLogBook();
+                title = logBook.getAncestorGroup().getGroupName();
+                body = notification.getMessage();
+                break;
 
-			default:
-				throw new UnsupportedOperationException("Have to add support for notification type: " + notification.getNotificationType());
-		}
+            default:
+                throw new UnsupportedOperationException("Have to add support for notification type: " + notification.getNotificationType());
+        }
 
-		return GcmXmppMessageCodec.encode(registrationID, messageId, collapseKey, title, body, dataPart);
-	}
+        return GcmXmppMessageCodec.encode(registrationID, messageId, collapseKey, title, body, click_action, dataPart);
+    }
 
-	private String generateCollapseKey(Notification notification) {
-		StringBuilder sb = new StringBuilder();
-		switch (notification.getNotificationType()) {
-			case EVENT:
-				String groupName = notification.getEventLog().getEvent().getAncestorGroup().getGroupName();
-				return sb.append(notification.getEventLog().getEvent().getUid()).append("_").append(groupName).toString();
+    private String generateCollapseKey(Notification notification) {
+        StringBuilder sb = new StringBuilder();
+        switch (notification.getNotificationType()) {
+            case EVENT:
+                String groupName = notification.getEventLog().getEvent().getAncestorGroup().getGroupName();
+                return sb.append(notification.getEventLog().getEvent().getUid()).append("_").append(groupName).toString();
 
-			case LOGBOOK:
-				return sb.append(notification.getLogBookLog().getLogBook().getUid()).append("_").
-						append(notification.getGroupLog().getGroup().getGroupName()).toString();
-		}
-		return null;
-	}
+            case LOGBOOK:
+                return sb.append(notification.getLogBookLog().getLogBook().getUid()).append("_").
+                        append(notification.getGroupLog().getGroup().getGroupName()).toString();
+        }
+        return null;
+    }
 
-	private Map<String, Object> createDataPart(Notification notification) {
-		Map<String, Object> data = new HashMap<>();
+    private Map<String, Object> createDataPart(Notification notification) {
+        Map<String, Object> data = new HashMap<>();
 
-		switch (notification.getNotificationType()) {
-			case EVENT:
-				return GcmXmppMessageCodec.createDataPart(
-						notification.getEventLog().getEvent().getAncestorGroup().getGroupName(),
-						notification.getEventLog().getEvent().getAncestorGroup().getGroupName(),
-						notification.getMessage(),
-						notification.getEventLog().getEvent().getUid(),
-						notification.getCreatedDateTime(),
-						notification.getNotificationType(),
-						notification.getEventLog().getEvent().getEventType().name()
-				);
+        switch (notification.getNotificationType()) {
+            case EVENT:
+                return GcmXmppMessageCodec.createDataPart(
+                        notification.getEventLog().getEvent().getAncestorGroup().getGroupName(),
+                        notification.getEventLog().getEvent().getAncestorGroup().getGroupName(),
+                        notification.getMessage(),
+                        notification.getEventLog().getEvent().getUid(),
+                        notification.getCreatedDateTime(),
+                        notification.getNotificationType(),
+                        notification.getEventLog().getEvent().getEventType().name()
+                );
 
-			case LOGBOOK:
-				LogBook logBook = notification.getLogBookLog().getLogBook();
+            case LOGBOOK:
+                LogBook logBook = notification.getLogBookLog().getLogBook();
 
-				return GcmXmppMessageCodec.createDataPart(
-						logBook.getAncestorGroup().getGroupName(),
-						null,
-						notification.getMessage(),
-						notification.getLogBookLog().getLogBook().getId(),
-						notification.getCreatedDateTime(),
-						notification.getNotificationType(),TaskType.TODO.name()
-				);
-		}
-		return data;
-	}
+                return GcmXmppMessageCodec.createDataPart(
+                        logBook.getAncestorGroup().getGroupName(),
+                        null,
+                        notification.getMessage(),
+                        notification.getLogBookLog().getLogBook().getId(),
+                        notification.getCreatedDateTime(),
+                        notification.getNotificationType(), TaskType.TODO.name()
+                );
+        }
+        return data;
+    }
+
+    private String getClickAction(Notification notification) {
+        String click_action = null;
+        switch (notification.getNotificationType()) {
+            case EVENT:
+                return notification.getNotificationType().name();
+            case LOGBOOK:
+                return TaskType.TODO.name();
+        }
+        return click_action;
+    }
 }
