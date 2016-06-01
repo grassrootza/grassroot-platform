@@ -19,7 +19,7 @@ public class EventWrapper extends TaskDTO {
     public EventWrapper(Event event, EventLog eventLog, User user, boolean hasResponded, ResponseTotalsDTO totals) {
         super(event, eventLog, user, hasResponded);
         this.isCancelled = event.isCanceled();
-        this.canEdit = getCanEdit(event,user);
+        this.canEdit = getCanEdit(user,event);
         this.totals = totals;
     }
 
@@ -39,6 +39,15 @@ public class EventWrapper extends TaskDTO {
         }
         return (role.getPermissions().contains(Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE)
                 && event.getEventStartDateTime().isAfter(Instant.now()));
+    }
+
+    private boolean getCanEdit(User user, Event event){
+        boolean canEdit = false;
+            boolean isOpen = event.getEventStartDateTime().isAfter(Instant.now());
+            if (event.getCreatedByUser().equals(user) && isOpen){
+                canEdit = true;
+            }
+        return canEdit;
     }
 
     public ResponseTotalsDTO getTotals() {
