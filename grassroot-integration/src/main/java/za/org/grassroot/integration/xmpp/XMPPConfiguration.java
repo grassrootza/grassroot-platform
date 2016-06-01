@@ -5,6 +5,7 @@ import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.XMPPConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,11 +23,14 @@ import javax.net.ssl.SSLSocketFactory;
  */
 @Configuration
 @Import(InfrastructureConfiguration.class)
-@ConditionalOnProperty(name = "gcm.connection.enabled", havingValue = "true",  matchIfMissing = true)
+@ConditionalOnProperty(name = "gcm.connection.enabled", havingValue = "true",  matchIfMissing = false)
 public class XMPPConfiguration {
 
-    private String host = "gcm-xmpp.googleapis.com";
-    private int port = 5235;
+    @Value("${gcm.connection.url}")
+    private String host;
+
+    @Value("${gcm.connection.port}")
+    private int port;
 
     private Logger log = LoggerFactory.getLogger(XMPPConfiguration.class);
 
@@ -39,12 +43,11 @@ public class XMPPConfiguration {
         connectionConfiguration.setReconnectionAllowed(true);
         connectionConfiguration.setRosterLoadedAtLogin(false);
         return connectionConfiguration;
-
     }
 
     @Bean(name = "gcmConnection")
     public XmppConnectionFactoryBean xmppConnectionFactoryBean() {
-        log.info("Starting up XMPP connection");
+        log.info("Starting up XMPP connection, for URL={} on port={}", host, port);
         XmppConnectionFactoryBean connectionFactoryBean = new XmppConnectionFactoryBean(connectionConfiguration());
         connectionFactoryBean.setUser(System.getenv("GCM_SENDER_ID"));
         connectionFactoryBean.setPassword(System.getenv("GCM_KEY"));

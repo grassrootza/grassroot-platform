@@ -63,11 +63,11 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
 
     @Test
     public void updatingAMeetingShoulWork() throws Exception {
-
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         mockMvc.perform(post(path + "/update/{id}/{phoneNumber}/{code}", meetingEvent.getUid(), testUserPhone, testUserCode).param("title", testEventTitle).param("description", testEventDescription).param("startTime", String.valueOf(testInstant)).param("notifyGroup", String.valueOf(true)).param("reminderMins", String.valueOf(5)).param("location", testEventLocation).param("includeSubGroups", String.valueOf(true)).param("rsvpRequired", String.valueOf(true))).andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
     }
+
     @Test
     public void rsvpingShouldWork() throws Exception {
 
