@@ -49,6 +49,7 @@ public enum RestMessage {
     RSVP_SENT,
     PAST_DUE,
 
+    TODO_CREATED,
     TODO_SET_COMPLETED,
     TODO_ALREADY_COMPLETED,
 

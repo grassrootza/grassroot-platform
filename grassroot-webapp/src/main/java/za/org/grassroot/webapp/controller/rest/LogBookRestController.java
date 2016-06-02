@@ -1,12 +1,14 @@
 package za.org.grassroot.webapp.controller.rest;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.ServletRequestDataBinder;
+import org.springframework.web.bind.annotation.*;
+import za.org.grassroot.core.domain.EventReminderType;
+import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -17,9 +19,13 @@ import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
+import za.org.grassroot.webapp.util.LocalDateTimePropertyEditor;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Created by aakilomar on 9/5/15.
@@ -27,6 +33,14 @@ import java.time.LocalDateTime;
 @RestController
 @RequestMapping(value = "/api/logbook")
 public class LogBookRestController {
+
+    private static final Logger log = LoggerFactory.getLogger(LogBookRestController.class);
+
+    // todo : move a bunch of this to a superclass
+    @InitBinder
+    public void initBinder(ServletRequestDataBinder binder) {
+        binder.registerCustomEditor(LocalDateTime.class, new LocalDateTimePropertyEditor(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+    }
 
     @Autowired
     UserManagementService userManagementService;
@@ -50,6 +64,29 @@ public class LogBookRestController {
         responseWrapper = new ResponseWrapperImpl(HttpStatus.CONFLICT, RestMessage.TODO_ALREADY_COMPLETED, RestStatus.FAILURE);
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
 
+    }
+
+    @RequestMapping(value = "/create/{phoneNumber}/{code}/{parentUid}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> createMeeting(@PathVariable String phoneNumber, @PathVariable String code,
+                                                         @PathVariable String parentUid,
+                                                         @RequestParam String title,
+                                                         @RequestParam String description,
+                                                         @RequestParam LocalDateTime dueDate,
+                                                         @RequestParam int reminderMinutes,
+                                                         @RequestParam(value="members", required = false) Set<String> members) {
+
+        log.info("REST : received logbook create request... with local date time: {}, and members: {}",
+                 dueDate.toString(), members == null ? "null" : members.toString());
+
+        User user = userManagementService.loadOrSaveUser(phoneNumber);
+        Set<String> assignedMemberUids = (members == null) ? new HashSet<>() : members;
+
+        // todo : handle negative reminderMinutes
+        logBookBroker.create(user.getUid(), JpaEntityType.GROUP, parentUid, title, dueDate, reminderMinutes,
+                             false, assignedMemberUids);
+
+        ResponseWrapper responseWrapper = new ResponseWrapperImpl(HttpStatus.CREATED, RestMessage.TODO_CREATED, RestStatus.SUCCESS);
+        return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
     }
 
 
