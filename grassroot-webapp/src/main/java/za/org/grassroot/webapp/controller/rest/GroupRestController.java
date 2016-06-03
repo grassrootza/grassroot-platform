@@ -65,12 +65,12 @@ public class GroupRestController {
             groupBroker.create(user.getUid(), groupName, null, addMembersToGroup(phoneNumbers, membersToAdd),
                                GroupPermissionTemplate.DEFAULT_GROUP, description, null);
 
+            return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.CREATED, RestMessage.GROUP_CREATED, RestStatus.SUCCESS),
+                                        HttpStatus.CREATED);
         } catch (RuntimeException e) {
             return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.GROUP_NOT_CREATED, RestStatus.FAILURE),
-                    HttpStatus.BAD_REQUEST);
+                                        HttpStatus.BAD_REQUEST);
         }
-        return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.CREATED, RestMessage.GROUP_CREATED, RestStatus.SUCCESS),
-                HttpStatus.CREATED);
 
     }
 
@@ -88,14 +88,15 @@ public class GroupRestController {
         groupMembers.add(creator);
 
         try {
-            groupBroker.create(user.getUid(), groupName, null, groupMembers, GroupPermissionTemplate.DEFAULT_GROUP, description, null);
+            // todo : clean up response wrapper / holder / etc mess when have time
+            Group group = groupBroker.create(user.getUid(), groupName, null, groupMembers, GroupPermissionTemplate.DEFAULT_GROUP, description, null);
+            List<GroupResponseWrapper> toReturn = Collections.singletonList(createWrapper(group, group.getMembership(user).getRole()));
+            ResponseWrapper rw = new GenericResponseWrapper(HttpStatus.OK, RestMessage.GROUP_CREATED, RestStatus.SUCCESS, toReturn);
+            return new ResponseEntity<>(rw, HttpStatus.OK);
         } catch (RuntimeException e) {
             return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.GROUP_NOT_CREATED, RestStatus.FAILURE),
                                         HttpStatus.BAD_REQUEST);
         }
-
-        return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.CREATED, RestMessage.GROUP_CREATED, RestStatus.SUCCESS),
-                                    HttpStatus.CREATED);
     }
 
     @RequestMapping(value = "/list/{phoneNumber}/{code}", method = RequestMethod.GET)
@@ -270,6 +271,7 @@ public class GroupRestController {
             }
         } else {
             responseWrapper = new GroupResponseWrapper(group, groupLog, role);
+            log.info("created response wrapper = {}", responseWrapper);
         }
         return responseWrapper;
 

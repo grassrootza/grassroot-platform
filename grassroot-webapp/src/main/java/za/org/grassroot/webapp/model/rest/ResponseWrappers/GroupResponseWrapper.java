@@ -110,6 +110,12 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
 
     }
 
-
-
+    @Override
+    public String toString() {
+        return "GroupResponseWrapper{" +
+                "groupUid='" + groupUid + '\'' +
+                ", lastChangeType=" + lastChangeType +
+                ", groupName='" + groupName + '\'' +
+                '}';
+    }
 }
