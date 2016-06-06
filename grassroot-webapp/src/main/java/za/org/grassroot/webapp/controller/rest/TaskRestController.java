@@ -14,7 +14,6 @@ import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
 import za.org.grassroot.core.dto.TaskDTO;
 
 import java.util.Collections;
@@ -34,20 +33,29 @@ public class TaskRestController {
     @Autowired
     private TaskBroker taskBroker;
 
-
-    @RequestMapping(value = "/list/{id}/{phoneNumber}/{code}", method = RequestMethod.GET)
+    @RequestMapping(value = "/list/{phoneNumber}/{code}/{parentUid}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> getTasks(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
-                                                    @PathVariable("id") String groupUid) {
+                                                    @PathVariable("parentUid") String parentUid) {
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
-        List<TaskDTO> tasks = taskBroker.fetchGroupTasks(user.getUid(), groupUid, false, LogBookStatus.BOTH);
+        List<TaskDTO> tasks = taskBroker.fetchGroupTasks(user.getUid(), parentUid, false, LogBookStatus.BOTH);
         Collections.sort(tasks, Collections.reverseOrder()); // todo: double check this is right ordering
         ResponseWrapper responseWrapper;
         RestMessage message = (tasks.isEmpty()) ? RestMessage.NO_GROUP_ACTIVITIES : RestMessage.GROUP_ACTIVITIES;
         // note: should not return a failure or 404 on this if task list empty, should instead use the rest message to differentiate
         responseWrapper = new GenericResponseWrapper(HttpStatus.OK, message, RestStatus.SUCCESS, tasks);
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
+    }
 
+    @RequestMapping(value = "/list/{phoneNumber}/{code}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> getTasks(@PathVariable String phoneNumber, @PathVariable String code) {
+        // todo: should really start storing UID on phone and pass that back here
+        User user = userManagementService.loadOrSaveUser(phoneNumber);
+        List<TaskDTO> tasks = taskBroker.fetchUserTasks(user.getUid(), false);
+        Collections.sort(tasks, Collections.reverseOrder());
+        RestMessage message = (tasks.isEmpty()) ? RestMessage.USER_HAS_NO_TASKS : RestMessage.USER_ACTIVITIES;
+        ResponseWrapper wrapper = new GenericResponseWrapper(HttpStatus.OK, message, RestStatus.SUCCESS, tasks);
+        return new ResponseEntity<>(wrapper, HttpStatus.OK);
     }
 
 }

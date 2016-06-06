@@ -1,12 +1,16 @@
 package za.org.grassroot.webapp.controller.rest;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.GroupLogType;
@@ -27,13 +31,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 public class GroupRestControllerTest extends RestAbstractUnitTest {
 
+    private static final Logger log = LoggerFactory.getLogger(GroupRestControllerTest.class);
+
     @InjectMocks
     GroupRestController groupRestController;
 
     String path = "/api/group/";
     List<Group> groups = new ArrayList<>();
     Set<Group> groupSet = new HashSet<>();
-    MembershipInfo membershipInfo = new MembershipInfo(testUserPhone, BaseRoles.ROLE_GROUP_ORGANIZER, sessionTestUser.getUsername());
+    MembershipInfo membershipInfo = new MembershipInfo(testUserPhone, BaseRoles.ROLE_GROUP_ORGANIZER, sessionTestUser.getDisplayName());
     Set<MembershipInfo> membersToAdd = Sets.newHashSet();
     Event event = meetingEvent;
 
@@ -47,12 +53,29 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
     public void createGroupShouldWork() throws Exception {
 
         settingUpDummyData(testGroup, groups, membershipInfo, membersToAdd);
+        GroupLog groupLog = new GroupLog(testGroup, sessionTestUser, GroupLogType.GROUP_MEMBER_ADDED, 0L, "");
 
-        when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
-        when(groupBrokerMock.create(sessionTestUser.getUid(), testGroupName, null, membersToAdd, GroupPermissionTemplate.DEFAULT_GROUP, testEventDescription, null)).thenReturn(testGroup);
-        mockMvc.perform(post(path + "create/{phoneNumber}/{code}", testUserPhone, testUserCode).param("groupName", testGroupName).param("description", testEventDescription)).andExpect(status().isCreated());
-        verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
+        when(groupBrokerMock.create(sessionTestUser.getUid(), testGroupName, null, membersToAdd,
+                                    GroupPermissionTemplate.DEFAULT_GROUP, testEventDescription, null)).thenReturn(testGroup);
+        when(groupBrokerMock.getMostRecentLog(testGroup)).thenReturn(groupLog);
+
+        log.info("Mock set up for : userUid={}, name={}, members={}, desc={}", sessionTestUser.getUid(), testGroupName,
+                 membersToAdd, testEventDescription);
+
+        ObjectMapper mapper = new ObjectMapper();
+        String body = mapper.writeValueAsString(new HashSet<String>());
+
+        mockMvc.perform(post(path + "create/{phoneNumber}/{code}/{groupName}/{description}",
+                             testUserPhone, testUserCode, testGroupName, testEventDescription)
+                                .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk());
+
+        verify(userManagementServiceMock).findByInputNumber(testUserPhone);
         verify(groupBrokerMock).create(sessionTestUser.getUid(), testGroupName, null, membersToAdd, GroupPermissionTemplate.DEFAULT_GROUP, meetingEvent.getDescription(), null);
+        verify(groupBrokerMock, times(1)).getMostRecentLog(testGroup);
+        verifyNoMoreInteractions(groupBrokerMock);
+        verifyNoMoreInteractions(userManagementServiceMock);
     }
 
     @Test
@@ -113,8 +136,8 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
         verify(groupBrokerMock).load(testGroup.getUid());
         verify(userManagementServiceMock).getGroupMembers(testGroup, 0, 5);
     }
-    private void settingUpDummyData(Group group, List<Group> groups, MembershipInfo membershipInfo, Set<MembershipInfo> membersToAdd) {
 
+    private void settingUpDummyData(Group group, List<Group> groups, MembershipInfo membershipInfo, Set<MembershipInfo> membersToAdd) {
         membersToAdd.add(membershipInfo);
         group.addMember(sessionTestUser, BaseRoles.ROLE_GROUP_ORGANIZER);
         groups.add(group);

@@ -49,39 +49,12 @@ public class GroupRestController {
     @Autowired
     private GroupJoinRequestService groupJoinRequestService;
 
-
-    @RequestMapping(value = "/create/{phoneNumber}/{code}", method = RequestMethod.POST)
-    public ResponseEntity<ResponseWrapper> createGroup(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
-                                                       @RequestParam("groupName") String groupName, @RequestParam(value = "description", required = true) String description,
-                                                       @RequestParam(value = "phoneNumbers", required = false) List<String> phoneNumbers) {
-
-        User user = userManagementService.loadOrSaveUser(phoneNumber);
-        MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
-        Set<MembershipInfo> membersToAdd = Sets.newHashSet();
-        membersToAdd.add(creator);
-        log.info("Requesting to create group with name={}", groupName);
-        log.info("description ={}", description);
-        try {
-            groupBroker.create(user.getUid(), groupName, null, addMembersToGroup(phoneNumbers, membersToAdd),
-                               GroupPermissionTemplate.DEFAULT_GROUP, description, null);
-
-            return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.CREATED, RestMessage.GROUP_CREATED, RestStatus.SUCCESS),
-                                        HttpStatus.CREATED);
-        } catch (RuntimeException e) {
-            return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.GROUP_NOT_CREATED, RestStatus.FAILURE),
-                                        HttpStatus.BAD_REQUEST);
-        }
-
-    }
-
-    @RequestMapping(value = "/create/new/{phoneNumber}/{code}/{groupName}/{description}", method = RequestMethod.POST)
-    public ResponseEntity<ResponseWrapper> createGroupNew(@PathVariable String phoneNumber, @PathVariable String code,
-                                                          @PathVariable String groupName, @PathVariable String description,
-                                                          @RequestBody Set<MembershipInfo> membersToAdd) {
+    @RequestMapping(value = "/create/{phoneNumber}/{code}/{groupName}/{description:.+}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> createGroup(@PathVariable String phoneNumber, @PathVariable String code,
+                                                       @PathVariable String groupName, @PathVariable String description,
+                                                       @RequestBody Set<MembershipInfo> membersToAdd) {
 
         User user = userManagementService.findByInputNumber(phoneNumber);
-        log.info("membersReceived = {}", membersToAdd != null ? membersToAdd.toString() : "null");
-        log.info("groupName processed = {}, group description = {}", groupName, description);
 
         Set<MembershipInfo> groupMembers = new HashSet<>(membersToAdd);
         MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
@@ -89,11 +62,15 @@ public class GroupRestController {
 
         try {
             // todo : clean up response wrapper / holder / etc mess when have time
-            Group group = groupBroker.create(user.getUid(), groupName, null, groupMembers, GroupPermissionTemplate.DEFAULT_GROUP, description, null);
+            log.info("Creating group with params: userUid={}, name={}, members={}, description={}", user.getUid(),
+                     groupName, groupMembers, description);
+            Group group = groupBroker.create(user.getUid(), groupName, null, groupMembers, GroupPermissionTemplate.DEFAULT_GROUP,
+                                             description, null);
             List<GroupResponseWrapper> toReturn = Collections.singletonList(createWrapper(group, group.getMembership(user).getRole()));
             ResponseWrapper rw = new GenericResponseWrapper(HttpStatus.OK, RestMessage.GROUP_CREATED, RestStatus.SUCCESS, toReturn);
             return new ResponseEntity<>(rw, HttpStatus.OK);
         } catch (RuntimeException e) {
+            e.printStackTrace();
             return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.GROUP_NOT_CREATED, RestStatus.FAILURE),
                                         HttpStatus.BAD_REQUEST);
         }

@@ -42,7 +42,7 @@ public class TaskRestControllerTest extends RestAbstractUnitTest {
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(taskBrokerMock.fetchGroupTasks(sessionTestUser.getUid(), testGroup.getUid(), false, LogBookStatus.BOTH)).
                 thenReturn(taskList);
-        mockMvc.perform(get(path + "/list/{id}/{phoneNumber}/{code}", testGroup.getUid(), testUserPhone, testUserCode)).andExpect(status().is2xxSuccessful());
+        mockMvc.perform(get(path + "/list/{phoneNumber}/{code}/{id}", testUserPhone, testUserCode, testGroup.getUid())).andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
         verify(taskBrokerMock, times(1)).fetchGroupTasks(sessionTestUser.getUid(), testGroup.getUid(), false, LogBookStatus.BOTH);
     }
