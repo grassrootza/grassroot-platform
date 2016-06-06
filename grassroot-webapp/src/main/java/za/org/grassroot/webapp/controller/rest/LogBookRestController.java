@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.rest;
 
+import edu.emory.mathcs.backport.java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,12 +12,16 @@ import za.org.grassroot.core.domain.EventReminderType;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.TaskDTO;
+import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.LogBookBroker;
 import za.org.grassroot.services.LogBookService;
+import za.org.grassroot.services.TaskBroker;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
+import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
 import za.org.grassroot.webapp.util.LocalDateTimePropertyEditor;
@@ -43,10 +48,13 @@ public class LogBookRestController {
     }
 
     @Autowired
-    UserManagementService userManagementService;
+    private UserManagementService userManagementService;
 
     @Autowired
-    LogBookBroker logBookBroker;
+    private LogBookBroker logBookBroker;
+
+    @Autowired
+    private TaskBroker taskBroker;
 
     @RequestMapping(value ="/complete/{phoneNumber}/{code}/{id}", method =  RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> setComplete(@PathVariable("phoneNumber") String phoneNumber,
@@ -58,7 +66,9 @@ public class LogBookRestController {
         ResponseWrapper responseWrapper;
         if(!logBook.isCompleted()){
             logBookBroker.complete(user.getUid(), id, LocalDateTime.now(), null); // todo: watch timezones on this
-            responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.TODO_SET_COMPLETED, RestStatus.SUCCESS);
+            TaskDTO updatedTask = taskBroker.load(user.getUid(), id, TaskType.TODO);
+            responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.TODO_SET_COMPLETED,
+                                                         RestStatus.SUCCESS, Collections.singletonList(updatedTask));
             return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
         }
         responseWrapper = new ResponseWrapperImpl(HttpStatus.CONFLICT, RestMessage.TODO_ALREADY_COMPLETED, RestStatus.FAILURE);
@@ -82,10 +92,13 @@ public class LogBookRestController {
         Set<String> assignedMemberUids = (members == null) ? new HashSet<>() : members;
 
         // todo : handle negative reminderMinutes
-        logBookBroker.create(user.getUid(), JpaEntityType.GROUP, parentUid, title, dueDate, reminderMinutes,
-                             false, assignedMemberUids);
+        LogBook lb = logBookBroker.create(user.getUid(), JpaEntityType.GROUP, parentUid, title, dueDate, reminderMinutes,
+                                          false, assignedMemberUids);
+        TaskDTO createdTask = taskBroker.load(user.getUid(), lb.getUid(), TaskType.TODO);
 
-        ResponseWrapper responseWrapper = new ResponseWrapperImpl(HttpStatus.CREATED, RestMessage.TODO_CREATED, RestStatus.SUCCESS);
+        ResponseWrapper responseWrapper = new GenericResponseWrapper(HttpStatus.CREATED, RestMessage.TODO_CREATED,
+                                                                     RestStatus.SUCCESS, Collections.singletonList(createdTask));
+
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
     }
 

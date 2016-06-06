@@ -45,7 +45,6 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
 
     @Before
     public void setUp() {
-
         mockMvc = MockMvcBuilders.standaloneSetup(groupRestController).build();
     }
 

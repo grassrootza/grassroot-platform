@@ -23,6 +23,8 @@ public class TaskDTO implements Comparable<TaskDTO>{
     private String name;
     private String type;
     private String parentName;
+    private String parentUid;
+
     private String deadline;
     private String deadlineISO;
     private Long deadlineMillis;
@@ -31,6 +33,7 @@ public class TaskDTO implements Comparable<TaskDTO>{
     private String reply;
     private boolean wholeGroupAssigned;
     private int memberCount;
+
     @JsonIgnore
     private Instant instant;
     @JsonIgnore
@@ -53,6 +56,7 @@ public class TaskDTO implements Comparable<TaskDTO>{
         this.description =event.getDescription();
         this.name = event.getCreatedByUser().getDisplayName();
         this.parentName = event.getParent().getName();
+        this.parentUid = event.getParent().getUid();
         this.hasResponded = hasResponded;
         this.type = String.valueOf(event.getEventType());
         this.instant = event.getEventStartDateTime();
@@ -69,6 +73,7 @@ public class TaskDTO implements Comparable<TaskDTO>{
     public TaskDTO(LogBook logBook, User user) {
         this(logBook);
         this.parentName = logBook.getParent().getName();
+        this.parentUid = logBook.getParent().getUid();
         this.name = logBook.getCreatedByUser().getDisplayName();
         this.hasResponded = (logBook.isCompleted())?true:false;
         this.reply = getTodoStatus(logBook);
@@ -94,6 +99,8 @@ public class TaskDTO implements Comparable<TaskDTO>{
     }
 
     public String getParentName() { return parentName; }
+
+    public String getParentUid() { return parentUid; }
 
     public String getType() {
         return type;

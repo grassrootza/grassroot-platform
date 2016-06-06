@@ -46,7 +46,10 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
 
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.createMeeting(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP,
-                                           testEventTitle, testDateTime, testEventLocation, true, true, true, EventReminderType.CUSTOM, 5, testEventDescription, membersToAdd)).thenReturn(meetingEvent);
+                                           testEventTitle, testDateTime, testEventLocation, false, true, false,
+                                           EventReminderType.GROUP_CONFIGURED, -1, testEventDescription, membersToAdd))
+                .thenReturn(meetingEvent);
+
         mockMvc.perform(post(path + "/create/{phoneNumber}/{code}/{parentUid}", testUserPhone, testUserCode, testGroup.getUid())
                                 .param("title", testEventTitle)
                                 .param("description", testEventDescription)

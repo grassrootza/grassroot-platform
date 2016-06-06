@@ -2,6 +2,7 @@
 package za.org.grassroot.webapp.controller.rest;
 
 import com.google.common.collect.Sets;
+import edu.emory.mathcs.backport.java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,12 +13,11 @@ import org.springframework.web.bind.ServletRequestDataBinder;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
+import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.services.EventBroker;
-import za.org.grassroot.services.EventLogManagementService;
-import za.org.grassroot.services.EventManagementService;
-import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.core.enums.TaskType;
+import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.EventWrapper;
@@ -46,16 +46,16 @@ public class MeetingRestController {
     private static final Logger log = LoggerFactory.getLogger(MeetingRestController.class);
 
     @Autowired
-    EventManagementService eventManagementService;
+    private UserManagementService userManagementService;
 
     @Autowired
-    UserManagementService userManagementService;
+    private EventLogManagementService eventLogManagementService;
 
     @Autowired
-    EventLogManagementService eventLogManagementService;
+    private EventBroker eventBroker;
 
     @Autowired
-    EventBroker eventBroker;
+    private TaskBroker taskBroker;
 
     @InitBinder
     public void initBinder(ServletRequestDataBinder binder) {
@@ -85,10 +85,14 @@ public class MeetingRestController {
         EventReminderType reminderType = reminderMinutes == -1 ? EventReminderType.GROUP_CONFIGURED : EventReminderType.CUSTOM;
 
         // todo : decide what to do with event reminder types
-        eventBroker.createMeeting(user.getUid(), parentUid, JpaEntityType.GROUP, title, eventStartDateTime, location,
-                                  false, true, false, reminderType, reminderMinutes, description, assignedMemberUids);
+        Meeting meeting = eventBroker.createMeeting(user.getUid(), parentUid, JpaEntityType.GROUP, title, eventStartDateTime,
+                                                    location, false, true, false, reminderType, reminderMinutes, description,
+                                                    assignedMemberUids);
+        TaskDTO createdMeeting = taskBroker.load(user.getUid(), meeting.getUid(), TaskType.MEETING);
 
-        ResponseWrapper responseWrapper = new ResponseWrapperImpl(HttpStatus.CREATED, RestMessage.MEETING_CREATED, RestStatus.SUCCESS);
+        ResponseWrapper responseWrapper = new GenericResponseWrapper(HttpStatus.CREATED, RestMessage.MEETING_CREATED,
+                                                                     RestStatus.SUCCESS, Collections.singletonList(createdMeeting));
+
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
     }
 
@@ -129,7 +133,9 @@ public class MeetingRestController {
             responseWrapper = new ResponseWrapperImpl(HttpStatus.NOT_FOUND, RestMessage.MEETING_CANCELLED, RestStatus.FAILURE);
         } else if (isOpen(meeting)) {
             eventLogManagementService.rsvpForEvent(meeting, user, EventRSVPResponse.fromString(trimmedResponse));
-            responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.RSVP_SENT, RestStatus.SUCCESS);
+            TaskDTO updatedTask = taskBroker.load(user.getUid(), meetingUid, TaskType.MEETING);
+            responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.RSVP_SENT,
+                                                         RestStatus.SUCCESS, Collections.singletonList(updatedTask));
         } else {
             responseWrapper = new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.PAST_DUE, RestStatus.FAILURE);
         }

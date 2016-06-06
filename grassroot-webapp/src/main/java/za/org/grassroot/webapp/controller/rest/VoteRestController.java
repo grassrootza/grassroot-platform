@@ -1,6 +1,7 @@
 package za.org.grassroot.webapp.controller.rest;
 
 import com.google.common.collect.Sets;
+import edu.emory.mathcs.backport.java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,13 +10,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
+import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.services.EventBroker;
-import za.org.grassroot.services.EventLogManagementService;
-import za.org.grassroot.services.EventManagementService;
-import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.core.enums.TaskType;
+import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.EventWrapper;
@@ -41,16 +41,16 @@ public class VoteRestController {
     private static final Logger log = LoggerFactory.getLogger(VoteRestController.class);
 
     @Autowired
-    EventManagementService eventManagementService;
+    private UserManagementService userManagementService;
 
     @Autowired
-    UserManagementService userManagementService;
+    private EventLogManagementService eventLogManagementService;
 
     @Autowired
-    EventLogManagementService eventLogManagementService;
+    private EventBroker eventBroker;
 
     @Autowired
-    EventBroker eventBroker;
+    private TaskBroker taskBroker;
 
     @RequestMapping(value = "/create/{id}/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> createVote(@PathVariable("phoneNumber") String phoneNumber,
@@ -79,7 +79,9 @@ public class VoteRestController {
         eventBroker.updateReminderSettings(user.getUid(), vote.getUid(), EventReminderType.CUSTOM,
                                            RestUtil.getReminderMinutes(reminderMinutes));
 
-        ResponseWrapper responseWrapper = new ResponseWrapperImpl(HttpStatus.CREATED, RestMessage.VOTE_CREATED, RestStatus.SUCCESS);
+        TaskDTO voteCreated = taskBroker.load(user.getUid(), vote.getUid(), TaskType.VOTE);
+        ResponseWrapper responseWrapper = new GenericResponseWrapper(HttpStatus.CREATED, RestMessage.VOTE_CREATED,
+                                                                     RestStatus.SUCCESS, Collections.singletonList(voteCreated));
 
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
 
@@ -112,7 +114,9 @@ public class VoteRestController {
         ResponseWrapper responseWrapper;
         if (event.getEventType().equals(EventType.VOTE) && (!hasVoted && isOpen(event))) {
             eventLogManagementService.rsvpForEvent(event, user, EventRSVPResponse.fromString(trimmedResponse));
-            responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.VOTE_SENT, RestStatus.SUCCESS);
+            TaskDTO updatedTask = taskBroker.load(user.getUid(), voteUid, TaskType.VOTE);
+            responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.VOTE_SENT, RestStatus.SUCCESS,
+                                                         Collections.singletonList(updatedTask));
         } else if (hasVoted) {
             responseWrapper = new ResponseWrapperImpl(HttpStatus.CONFLICT, RestMessage.USER_HAS_ALREADY_VOTED, RestStatus.FAILURE);
         } else {
