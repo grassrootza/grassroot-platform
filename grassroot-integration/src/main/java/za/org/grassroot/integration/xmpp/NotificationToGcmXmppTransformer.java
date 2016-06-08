@@ -79,7 +79,7 @@ public class NotificationToGcmXmppTransformer {
 
             case LOGBOOK:
                 return sb.append(notification.getLogBookLog().getLogBook().getUid()).append("_").
-                        append(notification.getGroupLog().getGroup().getGroupName()).toString();
+                        append(notification.getLogBookLog().getLogBook().getAncestorGroup().getGroupName()).toString();
         }
         return null;
     }
