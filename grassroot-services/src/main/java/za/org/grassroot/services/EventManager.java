@@ -87,18 +87,6 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public Set<Meeting> getUpcomingMeetings(Group group) {
-        return (Set) group.getUpcomingEvents(event -> event.getEventType().equals(EventType.MEETING));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Set<Vote> getUpcomingVotes(Group group) {
-        return (Set) group.getUpcomingEvents(event -> event.getEventType().equals(EventType.VOTE));
-    }
-
-    @Override
     public List<User> getListOfUsersThatRSVPYesForEvent(Event event) {
         return userRepository.findUsersThatRSVPYesForEvent(event);
     }

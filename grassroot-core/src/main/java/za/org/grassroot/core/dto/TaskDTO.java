@@ -17,9 +17,10 @@ import java.time.format.DateTimeFormatter;
  */
 public class TaskDTO implements Comparable<TaskDTO>{
 
-    private String id;
+    private String taskUid;
     private String title;
     private String description;
+    private String location;
     private String name;
     private String type;
     private String parentName;
@@ -38,14 +39,12 @@ public class TaskDTO implements Comparable<TaskDTO>{
     private Instant instant;
     @JsonIgnore
     private LocalDateTime deadlineDateTime;
-    @JsonIgnore
-    private String location; // only use in Web at present, hence Json ignore, may change in future
 
     private TaskDTO(){}
 
     // todo: try move more stuff into this constructor
     private TaskDTO(AssignedMembersContainer entity) {
-        this.id = entity.getUid();
+        this.taskUid = entity.getUid();
         this.title = entity.getName();
         this.wholeGroupAssigned = entity.isAllGroupMembersAssigned();
         this.memberCount = entity.countAssignedMembers();
@@ -75,7 +74,7 @@ public class TaskDTO implements Comparable<TaskDTO>{
         this.parentName = logBook.getParent().getName();
         this.parentUid = logBook.getParent().getUid();
         this.name = logBook.getCreatedByUser().getDisplayName();
-        this.hasResponded = (logBook.isCompleted())?true:false;
+        this.hasResponded = logBook.isCompleted();
         this.reply = getTodoStatus(logBook);
         this.instant = logBook.getActionByDate();
         this.type = String.valueOf(TaskType.TODO);
@@ -87,8 +86,8 @@ public class TaskDTO implements Comparable<TaskDTO>{
         this.location = "";
     }
 
-    public String getId() {
-        return id;
+    public String getTaskUid() {
+        return taskUid;
     }
     public String getDescription() {
         return description;
@@ -183,35 +182,20 @@ public class TaskDTO implements Comparable<TaskDTO>{
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
+
         TaskDTO taskDTO = (TaskDTO) o;
-        if (hasResponded != taskDTO.hasResponded) return false;
-        if (canAction != taskDTO.canAction) return false;
-        if (!id.equals(taskDTO.id)) return false;
-        if (!title.equals(taskDTO.title)) return false;
-        if (description != null ? !description.equals(taskDTO.description) : taskDTO.description != null) return false;
-        if (!name.equals(taskDTO.name)) return false;
-        if (!type.equals(taskDTO.type)) return false;
-        if (!deadline.equals(taskDTO.deadline)) return false;
-        if (!reply.equals(taskDTO.reply)) return false;
-        return instant.equals(taskDTO.instant);
+
+        if (!taskUid.equals(taskDTO.taskUid)) return false;
+        return type.equals(taskDTO.type);
 
     }
 
     @Override
     public int hashCode() {
-        int result = id.hashCode();
-        result = 31 * result + title.hashCode();
-        result = 31 * result + (description != null ? description.hashCode() : 0);
-        result = 31 * result + name.hashCode();
+        int result = taskUid.hashCode();
         result = 31 * result + type.hashCode();
-        result = 31 * result + deadline.hashCode();
-        result = 31 * result + (hasResponded ? 1 : 0);
-        result = 31 * result + (canAction ? 1 : 0);
-        result = 31 * result + reply.hashCode();
-        result = 31 * result + instant.hashCode();
         return result;
     }
-
 
     @Override
     public int compareTo(TaskDTO o) {

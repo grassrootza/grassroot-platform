@@ -18,14 +18,6 @@ import java.util.Set;
 public interface EventManagementService {
 
     /*
-    Methods to find and load events, first by group
-     */
-
-    Set<Meeting> getUpcomingMeetings(Group group);
-
-    Set<Vote> getUpcomingVotes(Group group);
-
-    /*
     Methods to get upcoming or prior events which user can view or manage
      */
 
@@ -45,7 +37,7 @@ public interface EventManagementService {
     // third argument: past events = -1 ; future events = 1; both directions = 0;
     Page<Event> getEventsUserCanView(User user, EventType type, int pastPresentOrBoth, int pageNumber, int pageSize);
 
-    public Event getMostRecentEvent(Group group);
+    Event getMostRecentEvent(Group group);
 
     /*
     Methods to get important details about events, including users by RSVP response, and a descriptive hashmap of strings

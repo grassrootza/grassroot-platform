@@ -20,6 +20,7 @@ import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
+import za.org.grassroot.webapp.model.rest.MeetingRsvpsDTO;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.EventWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
@@ -31,6 +32,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static za.org.grassroot.core.util.DateTimeUtil.getPreferredRestFormat;
@@ -56,6 +58,12 @@ public class MeetingRestController {
 
     @Autowired
     private TaskBroker taskBroker;
+
+    @Autowired
+    private PermissionBroker permissionBroker;
+
+    @Autowired
+    private EventManagementService eventManagementService; // todo :really need to migrate from this old thing to broker
 
     @InitBinder
     public void initBinder(ServletRequestDataBinder binder) {
@@ -156,6 +164,27 @@ public class MeetingRestController {
                 eventWrapper);
 
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
+    }
+
+    @RequestMapping(value = "/rsvps/{phoneNumber}/{code}/{meetingUid}", method = RequestMethod.GET)
+    public ResponseEntity<MeetingRsvpsDTO> listRsvps(@PathVariable String phoneNumber, @PathVariable String code,
+                                                     @PathVariable String meetingUid) {
+        // todo : some permission checking to make sure user can see details
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        Meeting meeting = eventBroker.loadMeeting(meetingUid);
+        ResponseTotalsDTO totals = eventLogManagementService.getResponseCountForEvent(meeting);
+
+        boolean canViewRsvps = meeting.getCreatedByUser().equals(user) ||
+                permissionBroker.isGroupPermissionAvailable(user, meeting.getAncestorGroup(), Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS);
+
+        MeetingRsvpsDTO rsvpsDTO;
+        if (canViewRsvps) {
+            rsvpsDTO = new MeetingRsvpsDTO(meetingUid, totals, eventManagementService.getRSVPResponses(meeting));
+        } else {
+            rsvpsDTO = new MeetingRsvpsDTO(meetingUid, totals);
+        }
+
+        return new ResponseEntity<>(rsvpsDTO, HttpStatus.OK);
     }
 
     private boolean isOpen(Event event) {

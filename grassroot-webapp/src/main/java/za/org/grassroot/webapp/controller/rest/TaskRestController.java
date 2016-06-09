@@ -1,5 +1,7 @@
 package za.org.grassroot.webapp.controller.rest;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -8,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.LogBookStatus;
 import za.org.grassroot.webapp.enums.RestMessage;
@@ -26,6 +29,8 @@ import java.util.List;
 @RestController
 @RequestMapping(value = "/api/task")
 public class TaskRestController {
+
+    private static final Logger logger = LoggerFactory.getLogger(TaskRestController.class);
 
     @Autowired
     private UserManagementService userManagementService;
@@ -55,6 +60,19 @@ public class TaskRestController {
         Collections.sort(tasks, Collections.reverseOrder());
         RestMessage message = (tasks.isEmpty()) ? RestMessage.USER_HAS_NO_TASKS : RestMessage.USER_ACTIVITIES;
         ResponseWrapper wrapper = new GenericResponseWrapper(HttpStatus.OK, message, RestStatus.SUCCESS, tasks);
+        return new ResponseEntity<>(wrapper, HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/fetch/{phoneNumber}/{code}/{taskUid}/{taskType}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> fetchTask(@PathVariable String phoneNumber, @PathVariable String code,
+                                                     @PathVariable String taskUid, @PathVariable String taskType) {
+
+        logger.info("fetching task, phoneNumber={}, taskType={}, taskUid={}", phoneNumber, taskType, taskUid);
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        TaskType type = TaskType.valueOf(taskType);
+        TaskDTO task = taskBroker.load(user.getUid(), taskUid, type);
+        ResponseWrapper wrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.USER_ACTIVITIES, RestStatus.SUCCESS,
+                                                             Collections.singletonList(task));
         return new ResponseEntity<>(wrapper, HttpStatus.OK);
     }
 
