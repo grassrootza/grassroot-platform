@@ -90,6 +90,7 @@ public class NotificationToGcmXmppTransformer {
         switch (notification.getNotificationType()) {
             case EVENT:
                 return GcmXmppMessageCodec.createDataPart(
+                        notification.getUid(),
                         notification.getEventLog().getEvent().getAncestorGroup().getGroupName(),
                         notification.getEventLog().getEvent().getAncestorGroup().getGroupName(),
                         notification.getMessage(),
@@ -103,6 +104,7 @@ public class NotificationToGcmXmppTransformer {
                 LogBook logBook = notification.getLogBookLog().getLogBook();
 
                 return GcmXmppMessageCodec.createDataPart(
+                        notification.getUid(),
                         logBook.getAncestorGroup().getGroupName(),
                         null,
                         notification.getMessage(),
