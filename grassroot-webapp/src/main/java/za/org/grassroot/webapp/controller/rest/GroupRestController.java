@@ -1,6 +1,5 @@
 package za.org.grassroot.webapp.controller.rest;
 
-import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +17,6 @@ import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.*;
 
-import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -62,7 +60,7 @@ public class GroupRestController {
 
         try {
             // todo : clean up response wrapper / holder / etc mess when have time
-            log.info("Creating group with params: userUid={}, name={}, members={}, description={}", user.getUid(),
+            log.info("Creating group with paarams: userUid={}, name={}, members={}, description={}", user.getUid(),
                      groupName, groupMembers, description);
             Group group = groupBroker.create(user.getUid(), groupName, null, groupMembers, GroupPermissionTemplate.DEFAULT_GROUP,
                                              description, null);
@@ -242,12 +240,12 @@ public class GroupRestController {
         if (event != null) {
             if (event.getEventStartDateTime() != null && event.getEventStartDateTime()
                     .isAfter(groupLog.getCreatedDateTime())) {
-                responseWrapper = new GroupResponseWrapper(group, event, role);
+                responseWrapper = new GroupResponseWrapper(group, event, role, true);
             } else {
-                responseWrapper = new GroupResponseWrapper(group, groupLog, role);
+                responseWrapper = new GroupResponseWrapper(group, groupLog, role, true);
             }
         } else {
-            responseWrapper = new GroupResponseWrapper(group, groupLog, role);
+            responseWrapper = new GroupResponseWrapper(group, groupLog, role, false);
             log.info("created response wrapper = {}", responseWrapper);
         }
         return responseWrapper;

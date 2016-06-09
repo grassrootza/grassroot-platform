@@ -26,13 +26,16 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
     private LocalDateTime dateTime;
     private Set<Permission> permissions;
 
-    private GroupResponseWrapper(Group group, Role role) {
+    private boolean hasTasks;
+
+    private GroupResponseWrapper(Group group, Role role, boolean hasTasks) {
         this.groupUid = group.getUid();
         this.groupName = group.getName("");
         this.groupCreator = group.getCreatedByUser().getDisplayName();
         this.groupMemberCount = group.getMemberships().size();
         this.role = (role!=null)?role.getName():null;
         this.permissions = RestUtil.filterPermissions(role.getPermissions());
+        this.hasTasks = hasTasks;
 
         if (group.hasValidGroupTokenCode()) {
             this.joinCode = group.getGroupTokenCode();
@@ -41,15 +44,15 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
         }
     }
 
-    public GroupResponseWrapper(Group group, Event event, Role role){
-        this(group, role);
+    public GroupResponseWrapper(Group group, Event event, Role role, boolean hasTasks){
+        this(group, role, hasTasks);
         this.lastChangeType = GroupChangeType.getChangeType(event);
         this.description = event.getName();
         this.dateTime = event.getEventDateTimeAtSAST();
     }
 
-    public GroupResponseWrapper(Group group, GroupLog groupLog, Role role){
-        this(group, role);
+    public GroupResponseWrapper(Group group, GroupLog groupLog, Role role, boolean hasTasks){
+        this(group, role, hasTasks);
         this.lastChangeType = GroupChangeType.getChangeType(groupLog);
         this.description = (groupLog.getDescription()!=null) ? groupLog.getDescription() : group.getDescription();
         this.dateTime = groupLog.getCreatedDateTime().atZone(DateTimeUtil.getSAST()).toLocalDateTime();
@@ -88,6 +91,8 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
     public String getJoinCode() { return joinCode; }
 
     public GroupChangeType getLastChangeType() { return lastChangeType; }
+
+    public boolean isHasTasks() { return hasTasks; }
 
     @Override
     public int compareTo(GroupResponseWrapper g) {
