@@ -94,7 +94,7 @@
               <!-- LHS: Description of task -->
               <div class="col-md-8">
                 <p class="list-group-item-text">
-                  <a href="#" th:href="'javascript:fetchTaskDescription(\'' + ${task.id} + '\', \'' + ${task.type} + '\')'">
+                  <a href="#" th:href="'javascript:fetchTaskDescription(\'' + ${task.taskUid} + '\', \'' + ${task.type} + '\')'">
                     <strong th:text="${task.type}">Meeting</strong>: <span th:text="${task.title}">Title</span>
                   </a>
                   <br/>
@@ -109,20 +109,20 @@
                 <div th:unless="${task.hasResponded}">
                   <div th:switch="${task.type}">
                     <div th:case="MEETING">
-                      <a th:href="@{meeting/rsvp(eventUid=${task.id},answer=yes)}">
+                      <a th:href="@{meeting/rsvp(eventUid=${task.taskUid},answer=yes)}">
                         <button class="btn btn-primary btn-sm">I'll attend</button>
                       </a>
-                      <a th:href="@{meeting/rsvp(eventUid=${task.id},answer=no)}">
+                      <a th:href="@{meeting/rsvp(eventUid=${task.taskUid},answer=no)}">
                         <button class="btn btn-danger btn-sm">I can't make it</button>
                       </a>
                     </div>
                     <div th:case="VOTE">
-                      <a th:href="@{vote/answer(eventUid=${task.id},answer=yes)}" class="btn btn-primary btn-sm">Vote yes</a>
-                      <a th:href="@{vote/answer(eventUid=${task.id},answer=no)}" class="btn btn-danger btn-sm">Vote no</a>
-                      <a th:href="@{vote/answer(eventUid=${task.id},answer=maybe)}" class="btn btn-default btn-sm">Abstain</a>
+                      <a th:href="@{vote/answer(eventUid=${task.taskUid},answer=yes)}" class="btn btn-primary btn-sm">Vote yes</a>
+                      <a th:href="@{vote/answer(eventUid=${task.taskUid},answer=no)}" class="btn btn-danger btn-sm">Vote no</a>
+                      <a th:href="@{vote/answer(eventUid=${task.taskUid},answer=maybe)}" class="btn btn-default btn-sm">Abstain</a>
                     </div>
                     <div th:case="TODO">
-                      <a th:href="@{log/complete(logBookUid=${task.id})}" class="btn btn-default btn-sm">Mark complete</a>
+                      <a th:href="@{log/complete(logBookUid=${task.taskUid})}" class="btn btn-default btn-sm">Mark complete</a>
                     </div>
                   </div>
                 </div>
@@ -130,18 +130,18 @@
                 <div th:if="${task.hasResponded}">
                   <div th:switch="${task.type}">
                       <div th:case="MEETING">
-                        <a href="#" th:href="'javascript:fetchTaskDescription(\'' + ${task.id} + '\', \'' + ${task.type} + '\')'">
+                        <a href="#" th:href="'javascript:fetchTaskDescription(\'' + ${task.taskUid} + '\', \'' + ${task.type} + '\')'">
                           <span class="badge" th:if="${#strings.equalsIgnoreCase(task.reply, 'Yes')}">You're attending</span>
                           <span class="badge" th:if="${#strings.equalsIgnoreCase(task.reply, 'No')}">You're not attending</span>
                         </a>
                       </div>
                       <div th:case="VOTE">
-                        <a href="#" th:href="'javascript:fetchTaskDescription(\'' + ${task.id} + '\', \'' + ${task.type} + '\')'">
+                        <a href="#" th:href="'javascript:fetchTaskDescription(\'' + ${task.taskUid} + '\', \'' + ${task.type} + '\')'">
                           <span class="badge" th:text="#{web.home.vote.answer(${#strings.toLowerCase(task.reply)})}">ABC</span>
                         </a>
                       </div>
                       <div th:case="TODO">
-                        <a href="#" th:href="'javascript:fetchTaskDescription(\'' + ${task.id} + '\', \'' + ${task.type} + '\')'">
+                        <a href="#" th:href="'javascript:fetchTaskDescription(\'' + ${task.taskUid} + '\', \'' + ${task.type} + '\')'">
                           <span class="badge">Action complete</span>
                         </a>
                       </div>
@@ -271,7 +271,7 @@
 
     function populateAndDisplayTaskModal(task) {
 
-      var uid = task.id;
+      var uid = task.taskUid;
       var type = task.type;
       var deadline = formatDeadline(new Date(task.deadlineISO), task.type);
       var replied = task.hasResponded;

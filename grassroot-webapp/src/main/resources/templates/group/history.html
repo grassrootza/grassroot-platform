@@ -51,7 +51,7 @@
           <td><span th:text="${#dates.format(event.eventStartDateTime, 'dd MMM yyyy')}">Date time</span></td>
           <td><span th:text="${event.eventType}"></span></td>
           <td>
-            <a th:href="@{view_event(eventId=${event.id}, eventType=${event.eventType})}"> <!-- todo: when figure out Thymeleaf var setting, process this -->
+            <a th:href="@{view_event(eventUid=${event.uid}, eventType=${event.eventType})}"> <!-- todo: when figure out Thymeleaf var setting, process this -->
               <span th:text="${event.name}">Description</span>
             </a>
           </td>

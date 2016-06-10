@@ -319,7 +319,7 @@
           </span></b>
         </li>
         <li class="list-group-item clearfix" th:each="task, iterStat : ${groupTasks}">
-          <div th:switch="${task.type}" th:with="uid=${task.id}">
+          <div th:switch="${task.type}" th:with="uid=${task.taskUid}">
 
             <div th:case="MEETING"  th:with="deadline=${#temporals.format(task.deadlineDateTime,'dd MMM, HH:mm')}">
               <a href="" th:href="@{/meeting/view(eventUid=${uid})}">
@@ -333,7 +333,7 @@
             </div>
 
             <div th:case="VOTE" th:with="deadline=${#temporals.format(task.deadlineDateTime, 'dd MMM, HH:mm')}">
-              <a href="" th:href="@{/vote/view(eventUid=${task.id})}"><b>VOTE:</b> <span th:text="${task.title}"></span></a>
+              <a href="" th:href="@{/vote/view(eventUid=${task.taskUid})}"><b>VOTE:</b> <span th:text="${task.title}"></span></a>
               <span th:if="${task.hasResponded}" class="badge pull-right">
                 Closes <span th:text="${deadline}">11 September 2015</span>
               </span>
@@ -345,10 +345,10 @@
             </div>
 
             <div th:case="TODO" th:with="deadline=${#temporals.format(task.deadlineDateTime,'EEE d MMM')}">
-              <a href="" th:href="@{/log/details(logBookUid=${task.id})}"><b>TODO:</b>
+              <a href="" th:href="@{/log/details(logBookUid=${task.taskUid})}"><b>TODO:</b>
                 <span th:text="${task.title}"></span> (due <span th:text="${#temporals.format(task.deadlineDateTime, 'd MMM')}">11 Sep 2015</span>)</a>
               <div th:unless="${task.hasResponded}" class="pull-right">
-                <a th:href="@{/log/complete(logBookUid=${task.id})}" class="btn btn-default btn-xs">Mark as completed</a>
+                <a th:href="@{/log/complete(logBookUid=${task.taskUid})}" class="btn btn-default btn-xs">Mark as completed</a>
               </div>
             </div>
 

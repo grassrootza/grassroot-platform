@@ -769,7 +769,6 @@ public class GroupController extends BaseController {
         String path = (eventType == EventType.MEETING) ? "/meeting/" : "/vote/";
         redirectAttributes.addAttribute("eventUid", eventUid);
         return "redirect:" + path + "view";
-
     }
 
     /**

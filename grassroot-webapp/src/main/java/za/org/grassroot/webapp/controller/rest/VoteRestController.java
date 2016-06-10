@@ -99,8 +99,19 @@ public class VoteRestController {
         ResponseWrapper responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.VOTE_DETAILS, RestStatus.SUCCESS, eventWrapper);
 
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
+    }
 
-
+    @RequestMapping(value = "/totals/{phoneNumber}/{code}/{voteUid}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseTotalsDTO> fetchVoteTotals(@PathVariable String phoneNumber, @PathVariable String code,
+                                                             @PathVariable String voteUid) {
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        Event event = eventBroker.load(voteUid); // todo : permission checking on this user!
+        ResponseTotalsDTO totals = eventLogManagementService.getVoteResultsForEvent(event);
+        if (totals != null) {
+            return new ResponseEntity<>(totals, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
     }
 
     @RequestMapping(value = "/do/{id}/{phoneNumber}/{code}", method = RequestMethod.GET)
@@ -144,8 +155,6 @@ public class VoteRestController {
         }
 
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
-
-
     }
 
     private boolean isOpen(Event event) { return event.getEventStartDateTime().isAfter(Instant.now()); }
