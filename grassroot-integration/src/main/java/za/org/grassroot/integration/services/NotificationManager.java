@@ -50,7 +50,7 @@ public class NotificationManager implements NotificationService{
     @Override
     @Transactional(readOnly = true)
     public Page<Notification> getNotificationsByTarget(User target, int pageNumber, int pageSize) {
-        return notificationRepository.findByTarget(target, new PageRequest(pageNumber, pageSize));
+        return notificationRepository.findByTargetOrderByCreatedDateTimeDesc(target, new PageRequest(pageNumber, pageSize));
     }
 
     @Override
