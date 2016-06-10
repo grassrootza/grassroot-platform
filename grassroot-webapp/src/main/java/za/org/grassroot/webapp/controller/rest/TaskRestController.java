@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.LogBookStatus;
@@ -19,6 +20,7 @@ import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrappe
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
 import za.org.grassroot.core.dto.TaskDTO;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 
@@ -71,7 +73,7 @@ public class TaskRestController {
         User user = userManagementService.findByInputNumber(phoneNumber);
         TaskType type = TaskType.valueOf(taskType);
         TaskDTO task = taskBroker.load(user.getUid(), taskUid, type);
-        ResponseWrapper wrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.USER_ACTIVITIES, RestStatus.SUCCESS,
+        ResponseWrapper wrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.TASK_DETAILS, RestStatus.SUCCESS,
                                                              Collections.singletonList(task));
         return new ResponseEntity<>(wrapper, HttpStatus.OK);
     }

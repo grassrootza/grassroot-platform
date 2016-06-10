@@ -31,6 +31,7 @@ public enum RestMessage {
     USER_ACTIVITIES,
     GROUP_ACTIVITIES,
     NO_GROUP_ACTIVITIES,
+    TASK_DETAILS,
 
     GROUP_MEMBERS, // assuming this is not an error, moving here
     PARENT_MEMBERS,

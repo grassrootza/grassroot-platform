@@ -31,16 +31,6 @@ public class EventWrapper extends TaskDTO {
         return canEdit;
     }
 
-    private boolean getCanEdit(Event event, User user) {
-        Role role = event.getAncestorGroup().getMembership(user).getRole();
-        if (event.getEventType().equals(EventType.MEETING)
-                && event.getEventStartDateTime().isAfter(Instant.now())) {
-            return role.getPermissions().contains(Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
-        }
-        return (role.getPermissions().contains(Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE)
-                && event.getEventStartDateTime().isAfter(Instant.now()));
-    }
-
     private boolean getCanEdit(User user, Event event){
         boolean canEdit = false;
             boolean isOpen = event.getEventStartDateTime().isAfter(Instant.now());

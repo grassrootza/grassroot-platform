@@ -34,6 +34,7 @@ public class TaskDTO implements Comparable<TaskDTO>{
     private String reply;
     private boolean wholeGroupAssigned;
     private int memberCount;
+    private boolean canEdit;
 
     @JsonIgnore
     private Instant instant;
@@ -67,6 +68,7 @@ public class TaskDTO implements Comparable<TaskDTO>{
                 eventLog.getMessage() : String.valueOf(TodoStatus.NO_RESPONSE);
         this.canAction = canAction(event, user, hasResponded);
         this.location = (event.getEventType().equals(EventType.MEETING)) ? ((Meeting) event).getEventLocation() : "";
+        this.canEdit = (event.getCreatedByUser().equals(user) && instant.isAfter(Instant.now()));
     }
 
     public TaskDTO(LogBook logBook, User user) {
@@ -84,6 +86,7 @@ public class TaskDTO implements Comparable<TaskDTO>{
         this.deadlineMillis = instant.toEpochMilli();
         this.canAction = canAction(logBook, user, true);
         this.location = "";
+        this.canEdit = false; // until figure out how/what/when
     }
 
     public String getTaskUid() {
@@ -136,6 +139,8 @@ public class TaskDTO implements Comparable<TaskDTO>{
     public boolean isWholeGroupAssigned() { return wholeGroupAssigned; }
 
     public int getMemberCount() { return memberCount; }
+
+    public boolean isCanEdit() { return canEdit; }
 
     private String getTodoStatus(LogBook logBook) {
 
