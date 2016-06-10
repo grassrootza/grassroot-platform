@@ -47,9 +47,8 @@ public class NotificationToGcmXmppTransformer {
         log.info("Generated collapseKey " + collapseKey);
         Map<String, Object> dataPart = createDataPart(notification);
 
-        String title = null;
-        String body = null;
-        String clickAction = getClickAction(notification);
+        String title;
+        String body;
 
         switch (notification.getNotificationType()) {
             case EVENT:
@@ -67,7 +66,7 @@ public class NotificationToGcmXmppTransformer {
                 throw new UnsupportedOperationException("Have to add support for notification type: " + notification.getNotificationType());
         }
 
-        return GcmXmppMessageCodec.encode(registrationID, messageId, collapseKey, title, body, clickAction, dataPart);
+        return GcmXmppMessageCodec.encode(registrationID, messageId, collapseKey, title, body, null, dataPart);
     }
 
     private String generateCollapseKey(Notification notification) {

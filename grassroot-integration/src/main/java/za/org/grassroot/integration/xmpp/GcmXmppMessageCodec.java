@@ -21,6 +21,7 @@ import java.util.Map;
 public class GcmXmppMessageCodec {
 	private static final Logger logger = LoggerFactory.getLogger(GcmXmppMessageCodec.class);
 	private static final ObjectMapper mapper = new ObjectMapper();
+	private static final String DEFAULT_ACTION = "NOTIFICATION";
 
 	private GcmXmppMessageCodec() {
 		// utility
@@ -37,8 +38,9 @@ public class GcmXmppMessageCodec {
 
 	public static org.springframework.messaging.Message<Message> encode(String registrationID, String messageId, String collapseKey,
 																		String title, String body, String clickAction, Map<String, Object> dataPart) {
-		logger.info("Generated collapseKey " + collapseKey);;
-		Map<String, Object> notificatonPart = createNotificatonPart(title, body, clickAction);
+		logger.info("Generated collapseKey " + collapseKey);
+		Map<String, Object> notificatonPart = (clickAction != null)? createNotificatonPart(title, body, clickAction):
+				createNotificatonPart(title, body, DEFAULT_ACTION);
 		GcmEntity gcmPayload = new GcmEntity(messageId, registrationID, collapseKey, dataPart, notificatonPart);
 		return constructGcmMessage(gcmPayload);
 	}
