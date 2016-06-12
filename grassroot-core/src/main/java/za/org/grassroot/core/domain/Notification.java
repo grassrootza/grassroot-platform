@@ -95,7 +95,7 @@ public abstract class Notification implements Serializable {
 			logBookLog = (LogBookLog) actionLog;
 		} else if (actionLog instanceof AccountLog) {
 			accountLog = (AccountLog) actionLog;
-		} else if (actionLog instanceof AccountLog) {
+		} else if (actionLog instanceof UserLog) {
 			userLog = (UserLog) actionLog;
 		} else {
 			throw new IllegalArgumentException("Unsupported action log: " + actionLog);
