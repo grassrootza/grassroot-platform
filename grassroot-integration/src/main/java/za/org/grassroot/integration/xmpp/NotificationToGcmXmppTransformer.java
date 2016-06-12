@@ -22,7 +22,7 @@ import java.util.Map;
 @Component
 public class NotificationToGcmXmppTransformer {
 
-    private static Logger log = LoggerFactory.getLogger(NotificationToGcmXmppTransformer.class);
+    private static final Logger log = LoggerFactory.getLogger(NotificationToGcmXmppTransformer.class);
 
     @Autowired
     private GcmRegistrationRepository gcmRegistrationRepository;
@@ -38,11 +38,11 @@ public class NotificationToGcmXmppTransformer {
 
     private Message<org.jivesoftware.smack.packet.Message> constructGcmMessage(Notification notification) throws JsonProcessingException {
         GcmRegistration gcmRegistration = gcmRegistrationRepository.findByUser(notification.getTarget());
-        String registrationID = gcmRegistration.getRegistrationId();
 
+        String registrationID = gcmRegistration.getRegistrationId();
         String messageId = notification.getUid();
 
-        log.info("Attempting to transform message with id " + messageId);
+        log.info("Attempting to transform message for registration ID {}, with message id {}", messageId, registrationID);
         String collapseKey = generateCollapseKey(notification);
         log.info("Generated collapseKey " + collapseKey);
         Map<String, Object> dataPart = createDataPart(notification);
