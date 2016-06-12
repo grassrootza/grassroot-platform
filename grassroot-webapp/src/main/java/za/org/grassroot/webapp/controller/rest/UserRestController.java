@@ -3,6 +3,7 @@ package za.org.grassroot.webapp.controller.rest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,6 +14,7 @@ import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.util.PhoneNumberUtil;
+import za.org.grassroot.integration.services.SmsSendingService;
 import za.org.grassroot.services.PasswordTokenService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.services.geo.GeoLocationBroker;
@@ -39,15 +41,21 @@ public class UserRestController {
     @Autowired
     private GeoLocationBroker geoLocationBroker;
 
+    @Autowired
+    private SmsSendingService smsSendingService;
+
+    @Autowired
+    private Environment environment;
+
     private Logger log = LoggerFactory.getLogger(UserRestController.class);
 
     @RequestMapping(value = "/add/{phoneNumber}/{displayName}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> add(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("displayName") String displayName) {
-
         ResponseWrapper responseWrapper;
-        if (!ifExists(phoneNumber)) {
+        final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
+        if (!ifExists(msisdn)) {
             log.info("Creating a verifier for a new user with phoneNumber ={}", phoneNumber);
-            String tokenCode = userManagementService.generateAndroidUserVerifier(phoneNumber, displayName);
+            String tokenCode = temporaryTokenSend(userManagementService.generateAndroidUserVerifier(phoneNumber, displayName), msisdn);
             responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.VERIFICATION_TOKEN_SENT, RestStatus.SUCCESS, tokenCode);
             return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
         }
@@ -83,19 +91,19 @@ public class UserRestController {
 
     @RequestMapping(value = "/login/{phoneNumber}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> logon(@PathVariable("phoneNumber") String phoneNumber) {
-
         ResponseWrapper responseWrapper;
-        if (ifExists(phoneNumber)) {
-            log.info("Logging in user with phoneNumber={}", phoneNumber);
-            String token = userManagementService.generateAndroidUserVerifier(phoneNumber, null);
+        final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
+        if (ifExists(msisdn)) {
+            log.info("Logging in user with phoneNumber = {}", msisdn);
+            // this will send the token by SMS and return an empty string if in production, or return the token if on staging
+            String token = temporaryTokenSend(userManagementService.generateAndroidUserVerifier(msisdn, null), msisdn);
             responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.VERIFICATION_TOKEN_SENT, RestStatus.SUCCESS,token);
             return new ResponseEntity<>(responseWrapper, HttpStatus.OK);
+        } else {
+            responseWrapper = new ResponseWrapperImpl(HttpStatus.NOT_FOUND, RestMessage.USER_DOES_NOT_EXIST, RestStatus.FAILURE);
+            log.info("Android login: user with phoneNumber={} does not exist", phoneNumber);
+            return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
         }
-        responseWrapper = new ResponseWrapperImpl(HttpStatus.NOT_FOUND, RestMessage.USER_DOES_NOT_EXIST, RestStatus.FAILURE);
-        log.info("Android login: user with phoneNumber={} does not exist", phoneNumber);
-        return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
-
-
     }
 
     @RequestMapping(value = "/login/authenticate/{phoneNumber}/{code}", method = RequestMethod.GET)
@@ -184,6 +192,22 @@ public class UserRestController {
 
     private boolean ifExists(String phoneNumber) {
         return userManagementService.userExist(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
+    }
+
+    private String temporaryTokenSend(String token, String destinationNumber) {
+
+        if (environment.acceptsProfiles("production")) {
+            if (token != null && System.getenv("SMSUSER") != null && System.getenv("SMSPASS") != null) {
+                String messageResult = smsSendingService.sendSMS("Your Grassroot verification code is: " + token,
+                                                                 destinationNumber);
+                log.debug("SMS Send result: {}", messageResult);
+            } else {
+                log.warn("Did not send verification message. No system messaging configuration found.");
+            }
+            return "";
+        } else {
+            return token;
+        }
     }
 
 

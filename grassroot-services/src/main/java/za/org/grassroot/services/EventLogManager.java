@@ -82,8 +82,8 @@ public class EventLogManager implements EventLogManagementService {
             // see if everyone voted, if they did expire the vote so that the results are sent out
             if (event.getEventType() == EventType.VOTE) {
                 ResponseTotalsDTO rsvpTotalsDTO = getVoteResultsForEvent(event);
-                log.info("rsvpForEvent...everyone has voted... sending out results for {}", event.getName());
                 if (rsvpTotalsDTO.getNumberNoRSVP() < 1) {
+                    log.info("rsvpForEvent...everyone has voted... sending out results for {}", event.getName());
                     event.setEventStartDateTime(Instant.now());
                 }
             }
