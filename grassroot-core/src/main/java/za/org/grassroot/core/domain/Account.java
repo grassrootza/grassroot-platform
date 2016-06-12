@@ -255,8 +255,8 @@ public class Account implements Serializable {
                 ", enabled=" + enabled +
                 ", free form messages='" + freeFormMessages + '\'' +
                 ", relayable messages='" + relayableMessages + '\'' +
-                ", number administrators='" + administrators.size() + '\'' +
-                ", number groups paid for='" + paidGroups.size() + '\'' +
+//                ", number administrators='" + administrators.size() + '\'' +
+//                ", number groups paid for='" + paidGroups.size() + '\'' +
                 '}';
     }
 

@@ -386,7 +386,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		List<User> rsvpWithNoMembers = userRepository.findUsersThatRSVPNoForEvent(event);
 		for (User member : getAllEventMembers(event)) {
-			if (rsvpWithNoMembers.contains(member)) {
+			if (!rsvpWithNoMembers.contains(member)) {
 				String message = messageAssemblingService.createEventCancelledMessage(member, event);
 				Notification notification = new EventCancelledNotification(member, message, eventLog);
 				bundle.addNotification(notification);
