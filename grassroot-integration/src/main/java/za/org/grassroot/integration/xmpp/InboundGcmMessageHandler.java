@@ -72,7 +72,7 @@ public class InboundGcmMessageHandler {
     private void handleAcknowledgementReceipt(GcmUpstreamMessage input) {
         String messageId = input.getMessageId();
         String data = String.valueOf(input.getData());
-        log.info("Gcm acknowledges receipt of message " + messageId+ " with payload "+data);
+        log.info("Gcm acknowledges receipt of message {}, with payload {}", messageId, data);
 
     }
 

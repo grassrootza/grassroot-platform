@@ -90,6 +90,7 @@ public class VoteRestController {
     @RequestMapping(value = "/view/{id}/{phoneNumber}/{code}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> viewVote(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
                                                     @PathVariable("id") String voteUid) {
+
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         Event event = eventBroker.load(voteUid);
         EventLog eventLog = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.EventRSVP);
