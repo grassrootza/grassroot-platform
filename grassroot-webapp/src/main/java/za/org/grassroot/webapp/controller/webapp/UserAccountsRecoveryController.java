@@ -119,11 +119,9 @@ public class UserAccountsRecoveryController extends BaseController {
         try {
 
             if (verificationTokenCode != null && System.getenv("SMSUSER") != null && System.getenv("SMSPASS") != null) {
-
                 String messageResult = smsSendingService.sendSMS(
                         "Your GrassRoot verification code is: " + verificationTokenCode.getCode(),
                         verificationTokenCode.getUsername());
-
                 log.debug("SMS Send result: {}", messageResult);
             } else {
                 log.warn("Did not send verification message. No system messaging configuration found.");
@@ -131,6 +129,5 @@ public class UserAccountsRecoveryController extends BaseController {
         } catch (Exception exception) {
             log.error("Could not send token message", exception);
         }
-
     }
 }
