@@ -18,7 +18,7 @@ public class GcmEntity {
     @JsonProperty("collapse_key")
     private String collapseKey;
     @JsonProperty("time_to_live")
-    private Long timeToLive = 300L; //5 minutes
+    private Long timeToLive = 0L; //5 minutes
     @JsonProperty("delay_while_idle")
     private boolean delayWhileIdle = false;
     @JsonProperty("delivery_receipt_requested")
