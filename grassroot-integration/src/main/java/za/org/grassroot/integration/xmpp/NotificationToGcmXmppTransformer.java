@@ -7,11 +7,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.integration.annotation.Transformer;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.GcmRegistration;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.TaskType;
+import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.repository.GcmRegistrationRepository;
+import za.org.grassroot.core.repository.UserRepository;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,6 +30,8 @@ public class NotificationToGcmXmppTransformer {
 
     @Autowired
     private GcmRegistrationRepository gcmRegistrationRepository;
+    @Autowired
+    private UserRepository userRepository;
 
     @Transformer(inputChannel = "gcmOutboundChannel", outputChannel = "gcmXmppOutboundChannel")
     public Message<org.jivesoftware.smack.packet.Message> transform(Message<Notification> message) throws Exception {
@@ -36,8 +42,18 @@ public class NotificationToGcmXmppTransformer {
         return gcmMessage;
     }
 
+    @Transactional
     private Message<org.jivesoftware.smack.packet.Message> constructGcmMessage(Notification notification) throws JsonProcessingException {
         GcmRegistration gcmRegistration = gcmRegistrationRepository.findByUser(notification.getTarget());
+
+        if (gcmRegistration == null) {
+            // this sometimes happens with bad connections : throwing here ensures picker will try notification again
+            // and then this should stop, with preference reset
+            User user = notification.getTarget();
+            user.setMessagingPreference(UserMessagingPreference.SMS);
+            userRepository.save(user);
+            throw new RuntimeException("Error! User had no gcm registration but had gcm preference; resetting");
+        }
 
         String registrationID = gcmRegistration.getRegistrationId();
         String messageId = notification.getUid();

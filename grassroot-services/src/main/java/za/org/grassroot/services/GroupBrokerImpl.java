@@ -111,7 +111,7 @@ public class GroupBrokerImpl implements GroupBroker {
             groupAddedEventLog = new GroupLog(parent, user, GroupLogType.GROUP_ADDED, group.getId());
         }
 
-        LogsAndNotificationsBundle bundle = addMemberships(user, group, membershipInfos);
+        LogsAndNotificationsBundle bundle = addMemberships(user, group, membershipInfos, true);
         bundle.addLog(groupAddedEventLog);
 
         permissionBroker.setRolePermissionsFromTemplate(group, groupPermissionTemplate);
@@ -218,7 +218,7 @@ public class GroupBrokerImpl implements GroupBroker {
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
 
         logger.info("Adding members: group={}, memberships={}, user={}", group, membershipInfos, user);
-        LogsAndNotificationsBundle bundle = addMemberships(user, group, membershipInfos);
+        LogsAndNotificationsBundle bundle = addMemberships(user, group, membershipInfos, false);
 
         logsAndNotificationsBroker.storeBundle(bundle);
     }
@@ -274,7 +274,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
     }
 
-    private LogsAndNotificationsBundle addMemberships(User initiator, Group group, Set<MembershipInfo> membershipInfos) {
+    private LogsAndNotificationsBundle addMemberships(User initiator, Group group, Set<MembershipInfo> membershipInfos, boolean duringGroupCreation) {
         // note: User objects should only ever store phone numbers in the msisdn format (i.e, with country code at front, no '+')
         Set<String> memberPhoneNumbers = membershipInfos.stream().map(MembershipInfo::getPhoneNumberWithCCode).collect(Collectors.toSet());
         logger.info("phoneNumbers returned: ...." + memberPhoneNumbers);
@@ -284,6 +284,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
         Set<User> createdUsers = new HashSet<>();
         Set<Membership> memberships = new HashSet<>();
+
         for (MembershipInfo membershipInfo : membershipInfos) {
             // note: splitting this instead of getOrDefault, since that method calls default method even if it finds something, hence spurious user creation
             String phoneNumberWithCCode = membershipInfo.getPhoneNumberWithCCode();
@@ -313,10 +314,11 @@ public class GroupBrokerImpl implements GroupBroker {
 
         Set<Meeting> meetings = (Set) group.getUpcomingEventsIncludingParents(event -> event.getEventType().equals(EventType.MEETING));
 
+        final GroupLogType logType = duringGroupCreation ? GroupLogType.GROUP_MEMBER_ADDED_AT_CREATION : GroupLogType.GROUP_MEMBER_ADDED;
         for (Membership membership : memberships) {
             User member = membership.getUser();
 
-            GroupLog groupLog = new GroupLog(group, initiator, GroupLogType.GROUP_MEMBER_ADDED, member.getId());
+            GroupLog groupLog = new GroupLog(group, initiator, logType, member.getId());
             bundle.addLog(groupLog);
 
             // for each meeting that belongs to this group, or it belongs to one of parent groups and apply to subgroups,
@@ -454,7 +456,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
         if (!membersToAdd.isEmpty()) {
             // note: as above, only call if non-empty so permission check only happens
-            LogsAndNotificationsBundle addMembershipsBundle = addMemberships(user, group, membersToAdd);
+            LogsAndNotificationsBundle addMembershipsBundle = addMemberships(user, group, membersToAdd, false);
             bundle.addBundle(addMembershipsBundle);
         }
 
@@ -497,7 +499,7 @@ public class GroupBrokerImpl implements GroupBroker {
         } else {
 
             Set<MembershipInfo> membershipInfos = MembershipInfo.createFromMembers(groupFrom.getMemberships());
-            LogsAndNotificationsBundle bundle = addMemberships(user, groupInto, membershipInfos);
+            LogsAndNotificationsBundle bundle = addMemberships(user, groupInto, membershipInfos, false);
             resultGroup = groupInto;
             if (!leaveActive) {
                 deactivate(user.getUid(), groupFrom.getUid(), false);

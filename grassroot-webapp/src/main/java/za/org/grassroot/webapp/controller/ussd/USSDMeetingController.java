@@ -12,6 +12,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.language.DateTimeParseFailure;
 import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.services.EventRequestBroker;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
@@ -307,7 +308,14 @@ public class USSDMeetingController extends USSDController {
         // todo: handle error if date parser finds nothing (e.g., user made a mistake and entered "J" or similar)
 
         User user = userManager.findByInputNumber(inputNumber, saveMeetingMenu(confirmMenu, mtgRequestUid, false));
-        if (!interrupted) eventUtil.updateEventRequest(user.getUid(), mtgRequestUid, priorMenu, userInput);
+
+        if (!interrupted) {
+            try {
+                eventUtil.updateEventRequest(user.getUid(), mtgRequestUid, priorMenu, userInput);
+            } catch (DateTimeParseFailure e) {
+                return handleDateTimeParseFailure(user, priorMenu, mtgRequestUid);
+            }
+        }
 
         MeetingRequest meeting = (MeetingRequest) eventRequestBroker.load(mtgRequestUid);
         String dateString = convertToUserTimeZone(meeting.getEventStartDateTime(), getSAST()).format(dateTimeFormat);
@@ -326,6 +334,17 @@ public class USSDMeetingController extends USSDController {
                 composeBackMessage(user, subjectMenu));
 
         return menuBuilder(thisMenu);
+
+    }
+
+    private Request handleDateTimeParseFailure(User user, String priorMenu, String mtgRequestUid) throws URISyntaxException {
+
+        final String keyRoot = mtgKey + ".parse.error." + priorMenu;
+        String prompt = getMessage(keyRoot, user);
+        USSDMenu menu = new USSDMenu(prompt);
+        menu.setFreeText(true);
+        menu.setNextURI(mtgMenu(confirmMenu, mtgRequestUid) + "&" + previousMenu + "=" + priorMenu);
+        return menuBuilder(menu);
 
     }
 

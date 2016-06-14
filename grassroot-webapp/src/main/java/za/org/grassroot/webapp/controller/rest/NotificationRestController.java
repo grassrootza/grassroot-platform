@@ -20,6 +20,7 @@ import za.org.grassroot.webapp.model.rest.ResponseWrappers.NotificationWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
 
+import java.security.AccessControlException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -73,15 +74,22 @@ public class NotificationRestController {
     public ResponseEntity<ResponseWrapper> updateReadStatus(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
                                                             @RequestParam("uid") String uid) throws Exception{
 
+        User user = userManagementService.loadOrSaveUser(phoneNumber);
         Notification notification = notificationService.loadNotification(uid);
-        if(notification.isRead()){
-            throw new NotificationAlreadyUpdatedException();
+
+        if (!notification.getTarget().equals(user)) {
+            throw new AccessControlException("Error! Trying to set another user's notification status");
         }
-        else{
+
+        ResponseWrapper responseWrapper;
+        if(notification.isRead()) {
+            log.info("Trying to update notification when already read");
+            responseWrapper = new ResponseWrapperImpl(HttpStatus.ALREADY_REPORTED, RestMessage.ALREADY_UPDATED, RestStatus.FAILURE);
+        } else {
             notificationService.updateNotificationReadStatus(uid,true);
-            ResponseWrapper responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.NOTIFICATION_UPDATED, RestStatus.SUCCESS);
-            return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
+            responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.NOTIFICATION_UPDATED, RestStatus.SUCCESS);
         }
+        return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
 
     }
 

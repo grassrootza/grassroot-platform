@@ -110,7 +110,10 @@ public class USSDGroupUtil extends USSDUtil {
                                            String urlIfExisting, String urlIfEmpty, String nonGroupParams) throws URISyntaxException {
         USSDMenu groupMenu;
         // todo: replace this with a check on permissions
-        if (!userManager.isPartOfActiveGroups(sessionUser)) {
+        Permission filter = SectionPermissionMap.get(section); // returning null is what we want if key not present
+        GroupPage groupsPartOf = permissionBroker.getPageOfGroupDTOs(sessionUser, filter, 0, PAGE_LENGTH);
+
+        if (groupsPartOf == null || groupsPartOf.getContent().isEmpty()) {
             groupMenu = new USSDMenu(promptIfEmpty);
             groupMenu.addMenuOption(urlIfEmpty, getMessage(section, groupKeyForMessages, "options.new", sessionUser));
             groupMenu.addMenuOption("start", getMessage("start", sessionUser));

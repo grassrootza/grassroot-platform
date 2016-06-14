@@ -88,10 +88,8 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
 
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
-        verify(userManagementServiceMock, times(1)).isPartOfActiveGroups(testUser);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(userManagementServiceMock, times(1)).isPartOfActiveGroups(testUser);
-        verify(permissionBrokerMock, times(1)).getPageOfGroupDTOs(testUser, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE, 0, 3);
+        verify(permissionBrokerMock, times(2)).getPageOfGroupDTOs(testUser, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE, 0, 3);
         verifyNoMoreInteractions(permissionBrokerMock);
         verify(eventManagementServiceMock, times(1)).userHasEventsToView(testUser, EventType.VOTE);
         verifyNoMoreInteractions(eventManagementServiceMock);
@@ -105,8 +103,8 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
 
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(anyString());
-        verify(userManagementServiceMock, times(1)).isPartOfActiveGroups(testUser);
         verifyNoMoreInteractions(userManagementServiceMock);
+        verify(permissionBrokerMock, times(1)).getPageOfGroupDTOs(testUser, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE, 0, 3);
         verify(eventManagementServiceMock, times(1)).userHasEventsToView(testUser, EventType.VOTE);
         verifyNoMoreInteractions(eventManagementServiceMock);
     }
@@ -127,9 +125,8 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
                 andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
-        verify(userManagementServiceMock, times(2)).isPartOfActiveGroups(testUser);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(permissionBrokerMock, times(2)).getPageOfGroupDTOs(testUser, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE, 0, 3);
+        verify(permissionBrokerMock, times(4)).getPageOfGroupDTOs(testUser, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE, 0, 3);
         verifyNoMoreInteractions(permissionBrokerMock);
     }
 

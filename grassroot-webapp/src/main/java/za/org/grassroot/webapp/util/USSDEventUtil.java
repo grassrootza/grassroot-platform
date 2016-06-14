@@ -12,6 +12,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.language.DateGroup;
+import za.org.grassroot.language.DateTimeParseFailure;
 import za.org.grassroot.language.Parser;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.EventRequestBroker;
@@ -176,21 +177,27 @@ public class USSDEventUtil extends USSDUtil {
      * @param passedValue
      * @return LocalDateTime of most likely match; if no match, returns the current date time rounded up to next hour
      */
-    public static LocalDateTime parseDateTime(String passedValue) {
+    public static LocalDateTime parseDateTime(String passedValue) throws DateTimeParseFailure {
 
         LocalDateTime parsedDateTime;
 
-        Parser parser = new Parser();
-        DateGroup firstDateGroup = parser.parse(passedValue).iterator().next();
-        if (firstDateGroup != null) {
-            Date parsedDate = firstDateGroup.getDates().iterator().next();
-            parsedDateTime = parsedDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-            log.info("Date time processed: " + parsedDateTime.toString());
-        } else {
-            parsedDateTime = LocalDateTime.now().plus(1, ChronoUnit.HOURS).truncatedTo(ChronoUnit.HOURS);
-        }
+        try {
 
-        return parsedDateTime;
+            Parser parser = new Parser();
+            DateGroup firstDateGroup = parser.parse(passedValue).iterator().next();
+            if (firstDateGroup != null) {
+                Date parsedDate = firstDateGroup.getDates().iterator().next();
+                parsedDateTime = parsedDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+                log.info("Date time processed: " + parsedDateTime.toString());
+            } else {
+                parsedDateTime = LocalDateTime.now().plus(1, ChronoUnit.HOURS).truncatedTo(ChronoUnit.HOURS);
+            }
+
+            return parsedDateTime;
+
+        } catch (Exception e) {
+            throw new DateTimeParseFailure();
+        }
     }
 
     /**

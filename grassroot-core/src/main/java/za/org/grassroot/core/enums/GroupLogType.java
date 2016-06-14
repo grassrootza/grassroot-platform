@@ -1,6 +1,7 @@
 package za.org.grassroot.core.enums;
 /*
 N.B. please remember to add new ones at the bottom
+todo : switch this to string based enum, not ordinal
  */
 public enum GroupLogType {
     GROUP_ADDED("group added"), // 0
@@ -19,7 +20,8 @@ public enum GroupLogType {
     LANGUAGE_CHANGED("changed group default language"), // 13
     PARENT_CHANGED("added or changed parent group"), // 14
     MESSAGE_SENT("free form message sent"), // 15 todo : maybe consider shifting to an "account log" or similar
-    GROUP_MEMBER_ADDED_VIA_JOIN_CODE("group member joined via join code"); // 16
+    GROUP_MEMBER_ADDED_VIA_JOIN_CODE("group member joined via join code"), // 16
+    GROUP_MEMBER_ADDED_AT_CREATION("Group created"); // 17
 
     private final String text;
 

@@ -21,4 +21,6 @@ public interface NotificationRepository extends JpaRepository<Notification,Long>
     Page<Notification> findByTargetOrderByCreatedDateTimeDesc(User target, Pageable pageable);
 
     List<Notification> findFirst50ByNextAttemptTimeBeforeOrderByNextAttemptTimeAsc(Instant time);
+
+    List<Notification> findFirst100ByReadFalseAndCreatedDateTimeGreaterThan(Instant time);
 }

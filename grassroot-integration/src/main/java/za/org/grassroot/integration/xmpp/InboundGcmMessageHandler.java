@@ -42,7 +42,6 @@ public class InboundGcmMessageHandler {
 
     private static final String ORIGINAL_MESSAGE_ID = "original_message_id";
 
-
     @ServiceActivator(inputChannel = "gcmInboundChannel")
     public void handleUpstreamMessage(GcmUpstreamMessage message) throws Exception {
 
@@ -81,7 +80,6 @@ public class InboundGcmMessageHandler {
         String messageId = input.getMessageId();
         String from = input.getFrom();
 
-
         String action = String.valueOf(input.getData().get("action"));
         if(action != null) {
             switch (action) {
@@ -113,7 +111,6 @@ public class InboundGcmMessageHandler {
         String messageId = String.valueOf(input.getData().get(ORIGINAL_MESSAGE_ID));
         log.info("Message " + messageId + " delivery successful, updating notification to delivered status.");
         notificationService.markNotificationAsDelivered(messageId);
-
     }
 
 

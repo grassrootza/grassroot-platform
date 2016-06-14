@@ -135,7 +135,6 @@ public class EventBrokerImpl implements EventBroker {
 		logger.info("Created meeting, with reminder type={} and time={}", meeting.getReminderType(),
 					meeting.getScheduledReminderTime().toString());
 
-
 		meetingRepository.save(meeting);
 
 		eventLogManagementService.rsvpForEvent(meeting, meeting.getCreatedByUser(), EventRSVPResponse.YES);

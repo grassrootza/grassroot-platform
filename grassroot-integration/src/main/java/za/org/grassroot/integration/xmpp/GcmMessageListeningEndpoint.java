@@ -37,13 +37,9 @@ public class GcmMessageListeningEndpoint extends ChatMessageListeningEndpoint {
         ProviderManager.addExtensionProvider(GcmPacketExtension.GCM_ELEMENT_NAME, GcmPacketExtension.GCM_NAMESPACE,
                 new PacketExtensionProvider() {
                     @Override
-
                     public PacketExtension parseExtension(XmlPullParser parser) throws Exception {
-
                         String json = parser.nextText();
-
                         return new GcmPacketExtension(json);
-
                     }
 
                 });
@@ -89,10 +85,8 @@ public class GcmMessageListeningEndpoint extends ChatMessageListeningEndpoint {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-
             } else {
-
-                log.warn("Unsuported Packet " + packet.toString());
+                log.warn("Unsupported Packet " + packet.toString());
             }
 
         }

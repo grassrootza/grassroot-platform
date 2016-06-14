@@ -112,7 +112,6 @@ public class NotificationManager implements NotificationService{
             } else {
                 // we set next attempt (redelivery) time which will get erased in case delivery gets confirmed in the mean time
                 notification.setNextAttemptTime(now.plusSeconds(60 * 15));
-
                 messageSendingService.sendMessage(notification);
             }
 

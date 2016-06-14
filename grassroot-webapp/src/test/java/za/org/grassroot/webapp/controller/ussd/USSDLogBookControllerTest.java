@@ -43,14 +43,9 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
     private static final String logBookIdParam = "logbookUid";
     private static final Long dummyId = 1L;
     private static final String dummyUserInput = "blah blah blah blah";
-    private static final int hour = 13;
-    private static final int minutes = 00;
     private static final String groupMenu = "group",
             subjectMenu = "subject",
             dueDateMenu = "due_date",
-            assignMenu = "assign",
-            searchUserMenu = "search_user",
-            pickUserMenu = "pick_user",
             confirmMenu = "confirm",
             send = "send";
     private static final String entryTypeMenu = "type",
@@ -59,12 +54,10 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
             viewEntryDates = "view_dates",
             viewAssignment = "view_assigned",
             setCompleteMenu = "set_complete",
-            viewCompleteMenu = "view_complete",
             completingUser = "choose_completor",
             pickCompletor = "pick_completor",
             completedDate = "date_completed",
-            confirmCompleteDate = "confirm_date",
-            confirmComplete = "confirm_complete";
+            confirmCompleteDate = "confirm_date";
 
     private static final String path = "/ussd/log/";
 
@@ -107,9 +100,8 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         mockMvc.perform(get(path + groupMenu).param(phoneParam, testUserPhone).param("new", "1")).
                 andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
-        verify(userManagementServiceMock, times(1)).isPartOfActiveGroups(testUser);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(permissionBrokerMock, times(1)).getPageOfGroupDTOs(testUser, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY, 0, 3);
+        verify(permissionBrokerMock, times(2)).getPageOfGroupDTOs(testUser, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY, 0, 3);
         verifyNoMoreInteractions(permissionBrokerMock);
         verifyNoMoreInteractions(groupBrokerMock);
 
@@ -123,8 +115,9 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         mockMvc.perform(get(path + groupMenu).param(phoneParam, testUserPhone).param("new", "1")).
                 andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
-        verify(userManagementServiceMock, times(1)).isPartOfActiveGroups(testUser);
         verifyNoMoreInteractions(userManagementServiceMock);
+        verify(permissionBrokerMock, times(1)).getPageOfGroupDTOs(testUser, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY, 0, 3);
+        verifyNoMoreInteractions(permissionBrokerMock);
         verifyNoMoreInteractions(groupBrokerMock);
 
     }

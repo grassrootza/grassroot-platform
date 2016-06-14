@@ -229,6 +229,8 @@ public class USSDGroupController extends USSDController {
         User sessionUser = userManager.findByInputNumber(inputNumber, saveGroupMenu(renameGroupPrompt, groupUid));
         Group groupToRename = groupBroker.load(groupUid);
 
+        log.info("renaming group with this name : " + groupToRename.getGroupName());
+
         String promptMessage = (groupToRename.getGroupName().trim().length() == 0) ?
             getMessage(thisSection, renameGroupPrompt, promptKey + "1", sessionUser) :
             getMessage(thisSection, renameGroupPrompt, promptKey + "2", groupToRename.getGroupName(), sessionUser);

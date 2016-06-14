@@ -21,6 +21,7 @@ import org.springframework.scheduling.quartz.JobDetailFactoryBean;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import za.org.grassroot.scheduling.ApplicationContextAwareQuartzJobBean;
 import za.org.grassroot.scheduling.BatchedNotificationSenderJob;
+import za.org.grassroot.scheduling.UnreadNotificationSenderJob;
 
 import java.util.Properties;
 import java.util.concurrent.Executor;
@@ -78,9 +79,26 @@ public class GrassRootServicesConfig implements SchedulingConfigurer {
 	}
 
 	@Bean
-	public SchedulerFactoryBean schedulerFactoryBean(
-			@Qualifier("batchedNotificationSenderCronTrigger") CronTrigger trigger
-	) {
+	public JobDetailFactoryBean unreadNotificationSenderJobDetail() {
+		JobDetailFactoryBean factoryBean = new JobDetailFactoryBean();
+		factoryBean.setJobClass(UnreadNotificationSenderJob.class);
+		factoryBean.setDurability(false);
+		return factoryBean;
+	}
+
+	@Bean
+	public CronTriggerFactoryBean unreadNotificationSenderCronTrigger(
+			@Qualifier("unreadNotificationSenderJobDetail") JobDetail jobDetail) {
+		CronTriggerFactoryBean factoryBean = new CronTriggerFactoryBean();
+		factoryBean.setJobDetail(jobDetail);
+		factoryBean.setCronExpression("0 0/5 * * * ?");
+		factoryBean.setMisfireInstruction(CronTrigger.MISFIRE_INSTRUCTION_DO_NOTHING);
+		return factoryBean;
+	}
+
+	@Bean
+	public SchedulerFactoryBean schedulerFactoryBean(@Qualifier("batchedNotificationSenderCronTrigger") CronTrigger sendTrigger,
+													 @Qualifier("unreadNotificationSenderCronTrigger") CronTrigger unreadTrigger) {
 		Properties quartzProperties = new Properties();
 
 		SchedulerFactoryBean factory = new SchedulerFactoryBean();
@@ -90,8 +108,9 @@ public class GrassRootServicesConfig implements SchedulingConfigurer {
 		factory.setQuartzProperties(quartzProperties);
 		factory.setStartupDelay(10);
 		factory.setApplicationContextSchedulerContextKey(ApplicationContextAwareQuartzJobBean.APPLICATION_CONTEXT_KEY);
-		factory.setTriggers(trigger);
+		factory.setTriggers(sendTrigger, unreadTrigger);
 
 		return factory;
 	}
+
 }
