@@ -313,6 +313,7 @@ public class USSDMeetingController extends USSDController {
             try {
                 eventUtil.updateEventRequest(user.getUid(), mtgRequestUid, priorMenu, userInput);
             } catch (DateTimeParseFailure e) {
+                cacheManager.putUssdMenuForUser(user.getPhoneNumber(), saveMeetingMenu(priorMenu, mtgRequestUid, false));
                 return handleDateTimeParseFailure(user, priorMenu, mtgRequestUid);
             }
         }
