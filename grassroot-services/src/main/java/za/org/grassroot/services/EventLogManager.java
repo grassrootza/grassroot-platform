@@ -80,8 +80,11 @@ public class EventLogManager implements EventLogManagementService {
             cacheUtilService.clearRsvpCacheForUser(user, event.getEventType());
 
             // see if everyone voted, if they did expire the vote so that the results are sent out
+            // todo: consider adding a "prior closing date time" or some other way to trigger this
+
             if (event.getEventType() == EventType.VOTE) {
                 ResponseTotalsDTO rsvpTotalsDTO = getVoteResultsForEvent(event);
+                log.info("rsvpForEvent... response total DTO for vote : " + rsvpTotalsDTO.toString());
                 if (rsvpTotalsDTO.getNumberNoRSVP() < 1) {
                     log.info("rsvpForEvent...everyone has voted... sending out results for {}", event.getName());
                     event.setEventStartDateTime(Instant.now());

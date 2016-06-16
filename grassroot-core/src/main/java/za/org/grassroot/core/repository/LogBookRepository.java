@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
@@ -49,6 +50,7 @@ public interface LogBookRepository extends JpaRepository<LogBook, Long> {
     // methods for analyzing logbooks (for admin)
     Long countByCreatedDateTimeBetween(Instant start, Instant end);
 
+    @Transactional
     @Query(value = "select * from log_book l where l.action_by_date is not null and l.completed = false and l.number_of_reminders_left_to_send > 0 and (l.action_by_date + l.reminder_minutes * INTERVAL '1 minute') < current_timestamp", nativeQuery = true)
     List<LogBook> findAllLogBooksForReminding();
 

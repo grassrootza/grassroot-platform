@@ -114,12 +114,6 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
-    public int countUpcomingEvents(User user) {
-        return eventRepository.countByParentGroupMembershipsUserAndEventStartDateTimeGreaterThan(user, Instant.now());
-    }
-
-
-    @Override
     public List<Event> getOutstandingVotesForUser(User user) {
         return getOutstandingResponseForUser(user, EventType.VOTE);
     }

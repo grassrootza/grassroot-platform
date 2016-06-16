@@ -10,7 +10,6 @@ import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
-import za.org.grassroot.services.util.CacheUtilManager;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -68,7 +67,9 @@ public class USSDGroupUtil extends USSDUtil {
             groupTokenMenu = "token",
             renameGroupPrompt = "rename",
             addMemberPrompt = "addnumber",
-            inactiveMenu = "inactive";
+            inactiveMenu = "inactive",
+            advancedGroupMenu = "advanced",
+            listGroupMembers = "list"; // actually just gives a count
 
     private static final SimpleDateFormat unnamedGroupDate = new SimpleDateFormat("d MMM");
 
@@ -222,7 +223,6 @@ public class USSDGroupUtil extends USSDUtil {
             menu.setNextURI(section.toPath() + returnUrl);
             groupUid = "";
         } else {
-
             Set<MembershipInfo> members = turnNumbersIntoMembers(enteredNumbers.get(validNumbers));
             members.add(new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName()));
             log.info("ZOGG : In GroupUtil ... Calling create with members ... " + members);
@@ -287,76 +287,78 @@ public class USSDGroupUtil extends USSDUtil {
         return menu;
     }
 
-    public USSDMenu existingGroupMenu(User sessionUser, String groupUid, boolean skippedSelection) {
+    public USSDMenu existingGroupMenu(User user, String groupUid, boolean skippedSelection) {
 
-        USSDSection thisSection = GROUP_MANAGER;
-        Group group = groupBroker.load(groupUid);
-        String menuKey = thisSection.toKey() + existingGroupMenu + "." + optionsKey;
+        final Group group = groupBroker.load(groupUid);
+        final String menuKey = GROUP_MANAGER.toKey() + existingGroupMenu + "." + optionsKey;
 
-        boolean openToken = group.getGroupTokenCode() != null && Instant.now().isBefore(group.getTokenExpiryDateTime().toInstant());
+        final boolean openToken = group.getGroupTokenCode() != null && Instant.now().isBefore(group.getTokenExpiryDateTime().toInstant());
 
-        String tokenKey = openToken ? menuKey + groupTokenMenu + ".exists" : menuKey + groupTokenMenu + ".create";
-        String prompt;
+        USSDMenu listMenu = new USSDMenu(assembleGroupPrompt(group, user, openToken, skippedSelection));
 
-        if (skippedSelection) {
-            prompt = getMessage(thisSection, existingGroupMenu, promptKey + ".single", group.getName(""), sessionUser);
-        } else {
-            if (openToken) {
-                String dial = "*134*1994*" + group.getGroupTokenCode() + "#";
-                prompt = getMessage(thisSection, existingGroupMenu, promptKey + ".token", dial, sessionUser);
+        if (skippedSelection)
+            listMenu.addMenuOption(GROUP_MANAGER.toPath() + "create", getMessage(GROUP_MANAGER.toKey() + "create.option", user));
+
+        if (permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER))
+            listMenu.addMenuOption(groupMenuWithId(addMemberPrompt, groupUid), getMessage(menuKey + addMemberPrompt, user));
+
+        if (permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS))
+            listMenu.addMenuOption(groupMenuWithId(renameGroupPrompt, groupUid), getMessage(menuKey + renameGroupPrompt, user));
+
+        listMenu.addMenuOption(groupMenuWithId(unsubscribePrompt, groupUid), getMessage(menuKey + unsubscribePrompt, user));
+
+        if (listMenu.getMenuOptions().size() <= 3) {
+            if (permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS)) {
+                listMenu.addMenuOption(groupMenuWithId(advancedGroupMenu, groupUid), getMessage(menuKey + advancedGroupMenu, user));
             } else {
-                prompt = getMessage(thisSection, existingGroupMenu, promptKey, sessionUser);
+                listMenu.addMenuOption(USSDSection.MEETINGS.toPath() + "start", getMessage(menuKey + "back-mtg", user));
             }
         }
 
-        USSDMenu listMenu = new USSDMenu(prompt);
+        listMenu.addMenuOption(skippedSelection ? "start" : GROUP_MANAGER.toPath() + "start", getMessage(menuKey + "back", user));
 
-        if (skippedSelection)
-            listMenu.addMenuOption(GROUP_MANAGER.toPath() + "create", getMessage(GROUP_MANAGER.toKey() + "create.option", sessionUser));
+        return listMenu;
+    }
 
-        if (permissionBroker.isGroupPermissionAvailable(sessionUser, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER))
-            listMenu.addMenuOption(groupMenuWithId(addMemberPrompt, groupUid), getMessage(menuKey + addMemberPrompt, sessionUser));
+    public USSDMenu advancedGroupOptionsMenu(User user, String groupUid) {
 
-        if (permissionBroker.isGroupPermissionAvailable(sessionUser, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS))
-            listMenu.addMenuOption(groupMenuWithId(groupTokenMenu, groupUid), getMessage(tokenKey, sessionUser));
+        Group group = groupBroker.load(groupUid);
+        boolean openToken = group.getGroupTokenCode() != null && Instant.now().isBefore(group.getTokenExpiryDateTime().toInstant());
 
-        listMenu.addMenuOption(groupMenuWithId(unsubscribePrompt, groupUid), getMessage(menuKey + unsubscribePrompt, sessionUser));
+        USSDMenu listMenu = new USSDMenu(assembleGroupPrompt(group, user, openToken, false));
+        final String menuKey = GROUP_MANAGER.toKey() + advancedGroupMenu + "." + optionsKey;
+        final String tokenKey = openToken ? menuKey + groupTokenMenu + ".exists" : menuKey + groupTokenMenu + ".create";
 
-        if (permissionBroker.isGroupPermissionAvailable(sessionUser, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS))
-            listMenu.addMenuOption(groupMenuWithId(renameGroupPrompt, groupUid), getMessage(menuKey + renameGroupPrompt, sessionUser));
+        if (permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS))
+            listMenu.addMenuOption(groupMenuWithId(groupTokenMenu, groupUid), getMessage(tokenKey, user));
 
-        if (groupBroker.isDeactivationAvailable(sessionUser, group, true))
-            listMenu.addMenuOption(groupMenuWithId(inactiveMenu, groupUid), getMessage(menuKey + inactiveMenu, sessionUser));
+        if (groupBroker.isDeactivationAvailable(user, group, true))
+            listMenu.addMenuOption(groupMenuWithId(inactiveMenu, groupUid), getMessage(menuKey + inactiveMenu, user));
+
+        listMenu.addMenuOption(groupMenuWithId(listGroupMembers, groupUid), getMessage(menuKey + listGroupMembers, user));
+
+        listMenu.addMenuOption(groupMenuWithId(existingGroupMenu, groupUid), getMessage(menuKey + "back", user));
 
         return listMenu;
 
     }
 
-    private boolean hasPermission(USSDSection section, Group group, User user){
+    private String assembleGroupPrompt(Group group, User user, boolean openToken, boolean skippedSelection) {
 
-        boolean canCreate = true;
-        Long startTime = System.currentTimeMillis();
-        switch (section){
-            case MEETINGS:
-                canCreate = permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
-            break;
-            case VOTES:
-                canCreate = permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
-                break;
-            case LOGBOOK:
-                canCreate = permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
-                break;
-            case GROUP_MANAGER:
-                canCreate = permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-                break;
-            default:
-                break;
-         }
-        Long endTime = System.currentTimeMillis();
-        log.info(String.format("Ussd group permission checking ... took %d msec", endTime - startTime));
-        return canCreate;
+        String prompt;
+        if (skippedSelection) {
+            prompt = getMessage(GROUP_MANAGER, existingGroupMenu, promptKey + ".single", group.getName(""), user);
+        } else {
+            if (openToken) {
+                String dial = "*134*1994*" + group.getGroupTokenCode() + "#";
+                prompt = getMessage(GROUP_MANAGER, existingGroupMenu, promptKey + ".token", dial, user);
+            } else {
+                prompt = getMessage(GROUP_MANAGER, existingGroupMenu, promptKey, user);
+            }
+        }
+
+        return prompt;
+
     }
-
-
 
 }

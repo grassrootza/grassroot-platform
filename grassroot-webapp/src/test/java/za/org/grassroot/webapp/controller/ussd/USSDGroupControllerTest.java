@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.MembershipInfo;
@@ -83,10 +84,13 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         resetTestGroup();
         String urlToSave = saveGroupMenu("menu", testGroup.getUid());
 
+        Permission p1 = Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER;
+        Permission p2 = Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS;
+
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
-        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
-        when(groupBrokerMock.isDeactivationAvailable(testUser, testGroup, true)).thenReturn(false);
+        when(permissionBrokerMock.isGroupPermissionAvailable(testUser, testGroup, p1)).thenReturn(true);
+        when(permissionBrokerMock.isGroupPermissionAvailable(testUser, testGroup, p2)).thenReturn(true);
 
         mockMvc.perform(get(path + "menu").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
                 andExpect(status().isOk());
@@ -95,9 +99,9 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupBrokerMock, times(2)).isDeactivationAvailable(testUser, testGroup, true);
         verify(groupBrokerMock, times(2)).load(testGroup.getUid());
-        verifyZeroInteractions(eventManagementServiceMock);
+        verify(permissionBrokerMock, times(2)).isGroupPermissionAvailable(testUser, testGroup, p1);
+        verify(permissionBrokerMock, times(4)).isGroupPermissionAvailable(testUser, testGroup, p2);
     }
 
     @Test

@@ -9,9 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.PermissionBroker;
@@ -25,6 +23,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Set;
 
@@ -43,7 +42,9 @@ public class USSDGroupController extends USSDController {
 
     private static final Logger log = LoggerFactory.getLogger(USSDGroupController.class);
 
-    private static final String existingGroupMenu = "menu",
+    private static final String
+            existingGroupMenu = "menu",
+            advancedGroupMenu = "advanced",
             createGroupMenu = "create",
             closeGroupToken = "create-token",
             createGroupAddNumbers = "add-numbers",
@@ -88,6 +89,14 @@ public class USSDGroupController extends USSDController {
 
         return (groupUid == null || groupUid.equals("")) ? createPrompt(inputNumber) :
                 menuBuilder(ussdGroupUtil.existingGroupMenu(userManager.findByInputNumber(inputNumber), groupUid, false));
+    }
+
+    @RequestMapping(value = groupPath + advancedGroupMenu)
+    @ResponseBody
+    public Request advancedGroupMenu(@RequestParam(value = phoneNumber) String inputNumber,
+                                     @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
+
+        return menuBuilder(ussdGroupUtil.advancedGroupOptionsMenu(userManager.findByInputNumber(inputNumber), groupUid));
     }
 
     /*
@@ -582,7 +591,33 @@ public class USSDGroupController extends USSDController {
         }
 
         return menuBuilder(menu);
+    }
 
+    @RequestMapping(value = groupPath + listGroupMembers)
+    @ResponseBody
+    public Request listGroupMemberSize(@RequestParam String msisdn, @RequestParam String groupUid) throws URISyntaxException {
+        final User user = userManager.findByInputNumber(msisdn);
+        final Group group = groupBroker.load(groupUid);
+
+        // need to do this here as aren't calling service broker method ...
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+
+        final GroupLog lastLog = groupBroker.getMostRecentLog(group);
+        final String lastModified = DateTimeUtil.convertToUserTimeZone(lastLog.getCreatedDateTime(), DateTimeUtil.getSAST())
+                .format(DateTimeFormatter.ofPattern("dd-MM"));
+        final String lastMessage = lastLog.getGroupLogType().toString();
+
+        final int groupSize = group.getMemberships().size();
+        final String[] promptParams = new String[] { String.valueOf(groupSize), lastModified, lastMessage};
+
+        final String prompt = getMessage(thisSection, listGroupMembers, promptKey, promptParams, user);
+
+        USSDMenu menu = new USSDMenu(prompt);
+        menu.addMenuOption(groupMenuWithId(existingGroupMenu, groupUid), getMessage(thisSection, listGroupMembers, optionsKey + "back", user));
+        menu.addMenuOption(thisSection.toPath() + startMenu, getMessage(thisSection, listGroupMembers, optionsKey + "back-grp", user));
+        menu.addMenuOption(startMenu, getMessage(startMenu, user));
+
+        return menuBuilder(menu);
     }
 
 }

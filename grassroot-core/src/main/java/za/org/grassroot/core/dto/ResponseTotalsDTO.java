@@ -29,7 +29,6 @@ public class ResponseTotalsDTO implements Serializable {
         this.maybe = (fields[2] == null) ? 0 : Integer.parseInt(fields[2].toString());
         this.invalid = (fields[3] == null) ? 0 : Integer.parseInt(fields[3].toString());
         this.numberOfUsers = (fields[4] == null) ? 0 : Integer.parseInt(fields[4].toString());
-
     }
 
     public int getNumberNoRSVP() {

@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Meeting;
@@ -31,7 +32,8 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
      * With their start date time in the future (after the Instant, passed to get around weird H2/current_timestamp/Instant conversion thing
      * @return
      */
-    @Query(value = "SELECT e FROM Event e WHERE e.eventStartDateTime > ?1 AND e.class = 'MEETING' AND e.canceled = FALSE AND (e.createdDateTime BETWEEN ?2 AND ?3) AND (SELECT count(el) FROM EventLog el WHERE el.eventLogType = 10 AND e = el.event) = 0 ")
+    @Transactional
+	@Query(value = "SELECT e FROM Event e WHERE e.eventStartDateTime > ?1 AND e.class = 'MEETING' AND e.canceled = FALSE AND (e.createdDateTime BETWEEN ?2 AND ?3) AND (SELECT count(el) FROM EventLog el WHERE el.eventLogType = 10 AND e = el.event) = 0 ")
     List<Meeting> meetingsForResponseTotals(Instant startTimeAfter, Instant intervalStart, Instant intervalEnd);
 
     /*

@@ -243,6 +243,7 @@ public class GroupBrokerImpl implements GroupBroker {
     public void notifyOrganizersOfJoinCodeUse(Instant periodStart, Instant periodEnd) {
         logger.info("Checking whether we need to notify any organizers of join code use ...");
         List<Group> groupsWhereJoinCodeUsed = groupRepository.findGroupsWhereJoinCodeUsedBetween(periodStart, periodEnd);
+        logger.info("What the repository returned: {}", groupsWhereJoinCodeUsed != null ? groupsWhereJoinCodeUsed.size() : "null");
         // what follows is somewhat expensive, but is fortunately going to be called quite rarely
         if (groupsWhereJoinCodeUsed != null && !groupsWhereJoinCodeUsed.isEmpty()) {
             logger.info("People joined groups today via a join code! Processing for {} groups", groupsWhereJoinCodeUsed.size());
