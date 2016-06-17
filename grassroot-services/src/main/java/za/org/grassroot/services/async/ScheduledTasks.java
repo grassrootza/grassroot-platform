@@ -59,7 +59,7 @@ public class ScheduledTasks {
     @Autowired
     private GroupRepository groupRepository;
 
-    @Transactional
+    // @Transactional
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendReminders() {
         List<Event> events = eventRepository.findEventsForReminders(Instant.now());
@@ -76,7 +76,7 @@ public class ScheduledTasks {
         logger.info("Sending scheduled reminders...done");
     }
 
-    @Transactional
+    // @Transactional
     @Scheduled(fixedRate = 60000) //runs every 1 minutes
     public void sendUnsentVoteResults() {
         List<Vote> votes = voteRepository.findUnsentVoteResults();
@@ -92,7 +92,7 @@ public class ScheduledTasks {
         }
     }
 
-    @Transactional
+    // @Transactional
     @Scheduled(cron = "0 0 16 * * *") // runs at 4pm (=6pm SAST) every day
     public void sendMeetingThankYous() {
         LocalDate yesterday = LocalDate.now().minus(1, ChronoUnit.DAYS);
@@ -112,7 +112,7 @@ public class ScheduledTasks {
         }
     }
 
-    @Transactional
+    // @Transactional
     @Scheduled(fixedRate = 3600000) // runs every hour
     public void sendMeetingRSVPsToDate() {
         // since the scheduled job runs once an hour, check for meetings created two days ago, in an hour interval
@@ -130,7 +130,7 @@ public class ScheduledTasks {
         }
     }
 
-    @Transactional
+    // @Transactional
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendLogBookReminders() {
         List<LogBook> logBooks = logBookRepository.findAllLogBooksForReminding();
@@ -147,7 +147,7 @@ public class ScheduledTasks {
         }
     }
 
-    @Transactional
+    // @Transactional
     @Scheduled(cron = "0 0 3 * * *") // runs at 3am every day
     public void calculateAggregateLocations() {
         // we had put few types of calculations here in sequence because one depends on
@@ -165,7 +165,7 @@ public class ScheduledTasks {
         }
     }
 
-    @Transactional
+    // @Transactional
     @Scheduled(cron = "0 0 15 * * *") // runs at 3pm (= 5pm SAST) every day
     public void sendGroupJoinNotifications() { groupBroker.notifyOrganizersOfJoinCodeUse(Instant.now().minus(1, ChronoUnit.DAYS),
                                                                                          Instant.now());}

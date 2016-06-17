@@ -18,6 +18,8 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
 	Meeting findOneByUid(String uid);
 
     int countByCreatedDateTimeBetween(Instant start, Instant end);
+
+	@Transactional
 	List<Meeting> findByEventStartDateTimeBetweenAndCanceledFalseAndRsvpRequiredTrue(Instant startTimeAfter, Instant startTimeBefore);
 
 	List<Meeting> findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(Group group, Instant startDateTime, Instant endDateTime);
