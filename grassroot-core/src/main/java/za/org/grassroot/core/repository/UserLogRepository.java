@@ -2,6 +2,7 @@ package za.org.grassroot.core.repository;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
@@ -20,8 +21,10 @@ public interface UserLogRepository extends JpaRepository<UserLog, Long> {
 
     List<UserLog> findByUserUidAndCreationTimeBetween(String UserUid, Instant start, Instant end, Sort sort);
 
+    @Transactional(readOnly = true)
     int countByUserUidAndUserLogTypeAndUserInterfaceAndCreationTimeBetween(String userUid, UserLogType userLogType,
                                                                            UserInterfaceType interfaceType, Instant start, Instant end);
 
+    @Transactional(readOnly = true)
     int countByUserUidAndUserLogTypeAndDescription(String userUid, UserLogType userLogType, String description);
 }

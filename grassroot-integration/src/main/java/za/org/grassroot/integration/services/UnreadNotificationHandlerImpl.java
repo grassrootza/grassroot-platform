@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.repository.NotificationRepository;
@@ -26,6 +27,7 @@ public class UnreadNotificationHandlerImpl implements UnreadNotificationHandler 
     private MessageSendingManager messageSendingManager;
 
     @Override
+    @Transactional
     public void processUnreadNotifications() {
         logger.info("Processing unread notifications ...");
         Instant timeToCheck = Instant.now().minus(10, ChronoUnit.MINUTES);

@@ -90,6 +90,7 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 	}
 
 	@Override
+	@Transactional
 	public CenterCalculationResult calculateCenter(Set<String> userUids, LocalDate date) {
 		Objects.requireNonNull(userUids);
 		Objects.requireNonNull(date);

@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.repository.NotificationRepository;
 
@@ -23,6 +24,7 @@ public class BatchedNotificationSenderImpl implements BatchedNotificationSender 
 	 * Processed in non-transacted manner because we want to process each notification in separate transaction.
 	 */
 	@Override
+	@Transactional
 	public void processPendingNotifications() {
 		Instant time = Instant.now();
 		List<Notification> notifications = notificationRepository.findFirst50ByNextAttemptTimeBeforeOrderByNextAttemptTimeAsc(time);
