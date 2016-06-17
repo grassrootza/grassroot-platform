@@ -24,7 +24,6 @@ public class BatchedNotificationSenderImpl implements BatchedNotificationSender 
 	 * Processed in non-transacted manner because we want to process each notification in separate transaction.
 	 */
 	@Override
-	@Transactional
 	public void processPendingNotifications() {
 		Instant time = Instant.now();
 		List<Notification> notifications = notificationRepository.findFirst50ByNextAttemptTimeBeforeOrderByNextAttemptTimeAsc(time);
