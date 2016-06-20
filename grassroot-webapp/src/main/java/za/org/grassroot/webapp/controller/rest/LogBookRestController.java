@@ -8,10 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.ServletRequestDataBinder;
 import org.springframework.web.bind.annotation.*;
-import za.org.grassroot.core.domain.EventReminderType;
-import za.org.grassroot.core.domain.JpaEntityType;
-import za.org.grassroot.core.domain.LogBook;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -22,6 +19,7 @@ import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrapper;
+import za.org.grassroot.webapp.model.rest.ResponseWrappers.MembershipResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
 import za.org.grassroot.webapp.util.LocalDateTimePropertyEditor;
@@ -29,7 +27,9 @@ import za.org.grassroot.webapp.util.LocalDateTimePropertyEditor;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -73,6 +73,20 @@ public class LogBookRestController {
         }
         responseWrapper = new ResponseWrapperImpl(HttpStatus.CONFLICT, RestMessage.TODO_ALREADY_COMPLETED, RestStatus.FAILURE);
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
+
+    }
+
+    @RequestMapping(value = "/assigned/{phoneNumber}/{code}/{uid}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> getAssignedMemberList(String phoneNumber, String code,@PathVariable("uid") String uid){
+
+        LogBook logBook = logBookBroker.load(uid);
+        Set<User> users = logBook.isAllGroupMembersAssigned() ? new HashSet<>() : logBook.getAssignedMembers();
+        List<MembershipResponseWrapper> assignedMembers = new ArrayList<>();
+        for(User user: users){
+            assignedMembers.add(new MembershipResponseWrapper(user));
+        }
+        ResponseWrapper responseWrapper = new  GenericResponseWrapper(HttpStatus.OK,RestMessage.GROUP_MEMBERS, RestStatus.SUCCESS, assignedMembers);
+        return new ResponseEntity<>(responseWrapper,HttpStatus.valueOf(responseWrapper.getCode()));
 
     }
 
