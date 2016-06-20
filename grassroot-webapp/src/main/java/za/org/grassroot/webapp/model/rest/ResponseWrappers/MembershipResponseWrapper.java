@@ -25,6 +25,11 @@ public class MembershipResponseWrapper {
         this.selected = selected;
     }
 
+    public MembershipResponseWrapper(User user) {
+        this.memberUid = user.getUid();
+        this.displayName = user.nameToDisplay();
+    }
+
     public String getMemberUid() {
         return memberUid;
     }
