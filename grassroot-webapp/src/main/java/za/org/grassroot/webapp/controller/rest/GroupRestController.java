@@ -60,11 +60,12 @@ public class GroupRestController {
 
         try {
             // todo : clean up response wrapper / holder / etc mess when have time
-            log.info("Creating group with paarams: userUid={}, name={}, members={}, description={}", user.getUid(),
-                     groupName, groupMembers, description);
-            Group group = groupBroker.create(user.getUid(), groupName, null, groupMembers, GroupPermissionTemplate.DEFAULT_GROUP,
-                                             description, null);
-            List<GroupResponseWrapper> toReturn = Collections.singletonList(createWrapper(group, group.getMembership(user).getRole()));
+	        // todo : include open token logic in group create, controlled by boolean flag
+	        log.info("Creating group with paarams: userUid={}, name={}, members={}, description={}", user.getUid(), groupName, groupMembers, description);
+            Group group = groupBroker.create(user.getUid(), groupName, null, groupMembers, GroupPermissionTemplate.DEFAULT_GROUP, description, null);
+            groupBroker.openJoinToken(user.getUid(), group.getUid(), false, null);
+            Group createdGroup = groupBroker.load(group.getUid());
+	        List<GroupResponseWrapper> toReturn = Collections.singletonList(createWrapper(createdGroup, createdGroup.getMembership(user).getRole()));
             ResponseWrapper rw = new GenericResponseWrapper(HttpStatus.OK, RestMessage.GROUP_CREATED, RestStatus.SUCCESS, toReturn);
             return new ResponseEntity<>(rw, HttpStatus.OK);
         } catch (RuntimeException e) {

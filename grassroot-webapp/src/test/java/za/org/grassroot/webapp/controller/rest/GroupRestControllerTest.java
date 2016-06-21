@@ -57,6 +57,7 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(groupBrokerMock.create(sessionTestUser.getUid(), testGroupName, null, membersToAdd,
                                     GroupPermissionTemplate.DEFAULT_GROUP, testEventDescription, null)).thenReturn(testGroup);
+        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         when(groupBrokerMock.getMostRecentLog(testGroup)).thenReturn(groupLog);
 
         log.info("Mock set up for : userUid={}, name={}, members={}, desc={}", sessionTestUser.getUid(), testGroupName,
@@ -73,7 +74,9 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
         verify(userManagementServiceMock).findByInputNumber(testUserPhone);
         verify(groupBrokerMock).create(sessionTestUser.getUid(), testGroupName, null, membersToAdd, GroupPermissionTemplate.DEFAULT_GROUP, meetingEvent.getDescription(), null);
         verify(groupBrokerMock, times(1)).getMostRecentLog(testGroup);
-        verifyNoMoreInteractions(groupBrokerMock);
+        verify(groupBrokerMock, times(1)).openJoinToken(sessionTestUser.getUid(), testGroup.getUid(), false, null);
+	    verify(groupBrokerMock, times(1)).load(testGroup.getUid());
+	    verifyNoMoreInteractions(groupBrokerMock);
         verifyNoMoreInteractions(userManagementServiceMock);
     }
 
