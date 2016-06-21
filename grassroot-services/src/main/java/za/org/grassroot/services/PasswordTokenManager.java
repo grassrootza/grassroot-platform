@@ -30,8 +30,6 @@ public class PasswordTokenManager implements PasswordTokenService {
     private Logger log = LoggerFactory.getLogger(PasswordTokenManager.class);
 
     @Autowired
-    private PasswordEncoder passwordTokenEncoder;
-    @Autowired
     private VerificationTokenCodeRepository verificationTokenCodeRepository;
     @Autowired
     private UserRepository userRepository;
@@ -149,16 +147,6 @@ public class PasswordTokenManager implements PasswordTokenService {
 
         return !isGreaterThanLifeSpanMinutes;
 
-    }
-
-    @Override
-    public void invalidateVerificationCode(User user, String code) {
-
-        VerificationTokenCode verificationTokenCode = verificationTokenCodeRepository.findByUsernameAndCode(user.getUsername(), code);
-        if (verificationTokenCode != null) {
-            verificationTokenCode.setCode(null);
-            verificationTokenCodeRepository.save(verificationTokenCode);
-        }
     }
 
     private Timestamp getExpiryDateFromNow()

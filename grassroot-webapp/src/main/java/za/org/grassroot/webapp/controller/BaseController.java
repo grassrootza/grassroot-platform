@@ -34,9 +34,6 @@ public class BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(BaseController.class);
 
-    public static final String MESSAGES_KEY        = "successMessages";
-    public static final String ERRORS_MESSAGES_KEY = "errors";
-
     public enum MessageType {
         INFO("infoMessage"),
         SUCCESS("successMessage"),
@@ -106,28 +103,6 @@ public class BaseController {
         return messageSource.getMessage("web." + id, null, locale);
     }
 
-
-    @SuppressWarnings("unchecked")
-    public void saveError(HttpServletRequest request, String error) {
-        List errors = (List) request.getSession().getAttribute(ERRORS_MESSAGES_KEY);
-        if (errors == null) {
-            errors = new ArrayList();
-        }
-        errors.add(error);
-        request.getSession().setAttribute(ERRORS_MESSAGES_KEY, errors);
-    }
-
-    @SuppressWarnings("unchecked")
-    public void saveMessage(HttpServletRequest request, String msg) {
-        List messages = (List) request.getSession().getAttribute(MESSAGES_KEY);
-
-        if (messages == null) {
-            messages = new ArrayList();
-        }
-
-        messages.add(msg);
-        request.getSession().setAttribute(MESSAGES_KEY, messages);
-    }
 
     //Methods to help with standalone unit testing
 

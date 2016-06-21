@@ -1,16 +1,16 @@
 package za.org.grassroot.services;
 
-import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Role;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.RoleRepository;
 
 import javax.transaction.Transactional;
-import java.util.*;
+import java.util.List;
 
 /**
  * @author Lesetse Kimwaga
@@ -37,22 +37,6 @@ public class RoleManager implements RoleManagementService {
     }
 
     @Override
-    public Role getRole(Long roleId) {
-        return roleRepository.findOne(roleId);
-    }
-
-    @Override
-    public Role updateRole(Role role) {
-        return roleRepository.save(role);
-    }
-
-    @Override
-    public void deleteRole(Role role) {
-
-        roleRepository.delete(role);
-    }
-
-    @Override
     public Role fetchStandardRoleByName(String name) {
         // log.info("Attempting to fetch a standard role from this role name ... " + name);
         List<Role> roles = roleRepository.findByNameAndRoleType(name, Role.RoleType.STANDARD);
@@ -76,16 +60,4 @@ public class RoleManager implements RoleManagementService {
     public User addStandardRoleToUser(String roleName, User user) {
         return addStandardRoleToUser(fetchStandardRoleByName(roleName), user);
     }
-
-    @Override
-    public User removeStandardRoleFromUser(Role role, User user) {
-        user.removeStandardRole(role);
-        return userManagementService.save(user);
-    }
-
-    @Override
-    public User removeStandardRoleFromUser(String roleName, User user) {
-        return removeStandardRoleFromUser(fetchStandardRoleByName(roleName), user);
-    }
-
 }

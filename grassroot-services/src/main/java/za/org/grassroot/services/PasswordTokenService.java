@@ -9,8 +9,6 @@ import za.org.grassroot.core.dto.UserDTO;
  */
 public interface PasswordTokenService {
 
-    int TOKEN_ACCESS_THRESHOLD = 4;
-
     VerificationTokenCode generateVerificationCode(User user);
 
     VerificationTokenCode generateVerificationCode(String username);
@@ -28,8 +26,6 @@ public interface PasswordTokenService {
     boolean isVerificationCodeValid(String username, String code);
 
     boolean isExpired(VerificationTokenCode verificationTokenCode);
-
-    void invalidateVerificationCode(User user, String code);
 
     VerificationTokenCode generateLongLivedCode(User user);
 

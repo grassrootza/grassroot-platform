@@ -29,8 +29,6 @@ public class StandaloneDatabaseConfig extends DatabaseConfig {
 
         return new EmbeddedDatabaseBuilder()
                 .setType(EmbeddedDatabaseType.H2)
-                .addScript("classpath:db/create_acl_schema.sql")
-                .addScript("classpath:db/insert_acl_class_seed_data.sql")
                 //.addScript("classpath:db/insert_permissions_seed_data.sql")
                 .ignoreFailedDrops(true)
                 .build();
