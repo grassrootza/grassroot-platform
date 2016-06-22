@@ -138,9 +138,9 @@ public class VoteRestController {
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
     }
 
-    @RequestMapping(value = "/update/{id}/{phoneNumber}/{code}", method = RequestMethod.POST)
+    @RequestMapping(value = "/update/{uid}/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> updateVote(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
-                                                      @PathVariable("id") String voteUid, @RequestParam("title") String title,
+                                                      @PathVariable("uid") String voteUid, @RequestParam("title") String title,
                                                       @RequestParam(value = "closingTime") String time,
                                                       @RequestParam(value = "description", required = false) String description) {
 
@@ -149,7 +149,8 @@ public class VoteRestController {
         try {
             LocalDateTime updatedTime = LocalDateTime.parse(time.trim(), getPreferredRestFormat());
             eventBroker.updateVote(user.getUid(), voteUid, updatedTime, description);
-            responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.VOTE_DETAILS_UPDATED, RestStatus.SUCCESS);
+            TaskDTO updatedTask = taskBroker.load(user.getUid(), voteUid, TaskType.VOTE);
+            responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.VOTE_DETAILS_UPDATED, RestStatus.SUCCESS,Collections.singletonList(updatedTask));
         } catch (java.lang.IllegalStateException e) {
             responseWrapper = new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.VOTE_CANCELLED, RestStatus.FAILURE);
 
@@ -157,6 +158,22 @@ public class VoteRestController {
 
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
     }
+
+    @RequestMapping(value = "/cancel/{phoneNumber}/{code}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> cancelVote(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code, @RequestParam("uid") String voteUid){
+        User user = userManagementService.loadOrSaveUser(phoneNumber);
+        String userUid = user.getUid();
+        Event event = eventBroker.load(voteUid);
+        ResponseWrapper responseWrapper;
+        if(!event.isCanceled()){
+            eventBroker.cancel(userUid,voteUid);
+            responseWrapper = new  ResponseWrapperImpl(HttpStatus.OK, RestMessage.VOTE_CANCELLED, RestStatus.SUCCESS);
+        }else{
+            responseWrapper = new  ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.VOTE_ALREADY_CANCELLED, RestStatus.FAILURE);
+        }
+        return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
+    }
+
 
     private boolean isOpen(Event event) { return event.getEventStartDateTime().isAfter(Instant.now()); }
 
