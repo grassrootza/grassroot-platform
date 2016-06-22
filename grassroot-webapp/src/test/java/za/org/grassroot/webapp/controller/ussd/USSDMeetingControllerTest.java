@@ -240,7 +240,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave2)).thenReturn(testUser);
-        when(eventManagementServiceMock.createMeeting(testUser, 1L)).thenReturn(testMeeting);
+        when(eventManagementServiceMock.createLogbook(testUser, 1L)).thenReturn(testMeeting);
 
         mockMvc.perform(get(path + "testGroup").param(phoneParam, testUserPhone).param("groupId", "" + testGroup.getId()).
                 param("request", "0")).andExpect(status().isOk());
@@ -251,7 +251,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(1)).setLastUssdMenu(testUser, urlToSave2);
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave2);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(eventManagementServiceMock, times(1)).createMeeting(testUser, testGroup.getId());
+        verify(eventManagementServiceMock, times(1)).createLogbook(testUser, testGroup.getId());
         verifyNoMoreInteractions(eventManagementServiceMock);
         verifyZeroInteractions(groupManagementServiceMock);
 

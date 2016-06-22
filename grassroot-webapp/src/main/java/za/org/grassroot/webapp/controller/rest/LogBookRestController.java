@@ -91,7 +91,7 @@ public class LogBookRestController {
     }
 
     @RequestMapping(value = "/create/{phoneNumber}/{code}/{parentUid}", method = RequestMethod.POST)
-    public ResponseEntity<ResponseWrapper> createMeeting(@PathVariable String phoneNumber, @PathVariable String code,
+    public ResponseEntity<ResponseWrapper> createLogbook(@PathVariable String phoneNumber, @PathVariable String code,
                                                          @PathVariable String parentUid,
                                                          @RequestParam String title,
                                                          @RequestParam String description,
@@ -100,21 +100,35 @@ public class LogBookRestController {
                                                          @RequestParam(value="members", required = false) Set<String> members) {
 
         log.info("REST : received logbook create request... with local date time: {}, and members: {}",
-                 dueDate.toString(), members == null ? "null" : members.toString());
+                dueDate.toString(), members == null ? "null" : members.toString());
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         Set<String> assignedMemberUids = (members == null) ? new HashSet<>() : members;
 
         // todo : handle negative reminderMinutes
         LogBook lb = logBookBroker.create(user.getUid(), JpaEntityType.GROUP, parentUid, title, dueDate, reminderMinutes,
-                                          false, assignedMemberUids);
+                false, assignedMemberUids);
         TaskDTO createdTask = taskBroker.load(user.getUid(), lb.getUid(), TaskType.TODO);
 
         ResponseWrapper responseWrapper = new GenericResponseWrapper(HttpStatus.CREATED, RestMessage.TODO_CREATED,
-                                                                     RestStatus.SUCCESS, Collections.singletonList(createdTask));
+                RestStatus.SUCCESS, Collections.singletonList(createdTask));
 
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
     }
 
+    @RequestMapping(value ="update/{phoneNumber}/{code}/{uid}", method = RequestMethod.POST)
+     public ResponseEntity<ResponseWrapper> updateLogbook(@PathVariable String phoneNumber, @PathVariable String code,
+                @PathVariable String parentUid,
+                @RequestParam String title,
+                @RequestParam String description,
+                @RequestParam LocalDateTime dueDate,
+        @RequestParam int reminderMinutes,
+        @RequestParam(value="members", required = false) Set<String> members)       {
+
+      //  logBookBroker.
+
+        return null;
+
+    }
 
 }

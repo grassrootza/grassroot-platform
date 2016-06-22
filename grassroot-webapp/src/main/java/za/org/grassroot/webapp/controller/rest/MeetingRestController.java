@@ -101,11 +101,12 @@ public class MeetingRestController {
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
     }
 
-    @RequestMapping(value = "/update/{id}/{phoneNumber}/{code}", method = RequestMethod.POST)
+    @RequestMapping(value = "/update/{uid}/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> updateMeeting(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
-                                                         @PathVariable("id") String meetingUid, @RequestParam("title") String title, @RequestParam("description") String description,
-                                                         @RequestParam("startTime") String time, @RequestParam("notifyGroup") boolean relayable, @RequestParam("reminderMins") int reminderMinutes,
-                                                         @RequestParam("location") String location, @RequestParam("includeSubGroups") boolean includeSubGroups, @RequestParam("rsvpRequired") boolean rsvp) {
+                                                         @PathVariable("uid") String meetingUid, @RequestParam("title") String title, @RequestParam(value = "description", required =false ) String description,
+                                                         @RequestParam("startTime") String time, @RequestParam("reminderMins") int reminderMinutes,
+                                                         @RequestParam("location") String location, @RequestParam(value = "includeSubGroups", required = false) boolean includeSubGroups,
+                                                         @RequestParam(value = "rsvpRequired", required = false) boolean rsvp) {
 
         log.info("Received update meeting request, with string: " + time);
 
@@ -115,9 +116,10 @@ public class MeetingRestController {
         try {
             LocalDateTime dateTime = LocalDateTime.parse(time, getPreferredRestFormat());
             EventReminderType reminderType = reminderMinutes == -1 ? EventReminderType.GROUP_CONFIGURED : EventReminderType.CUSTOM;
-            eventBroker.updateMeeting(user.getUid(), meetingUid, title, dateTime, location, includeSubGroups, rsvp, relayable,
+            eventBroker.updateMeeting(user.getUid(), meetingUid, title, dateTime, location, includeSubGroups, true, true,
                     reminderType, reminderMinutes, description);
-            responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.MEETING_DETAILS_UPDATED, RestStatus.SUCCESS);
+            TaskDTO updatedTask =  taskBroker.load(user.getUid(), meetingUid, TaskType.MEETING);
+            responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.MEETING_DETAILS_UPDATED, RestStatus.SUCCESS, Collections.singletonList(updatedTask));
         } catch (IllegalStateException e) {
             responseWrapper = new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.MEETING_CANCELLED, RestStatus.FAILURE);
         }
@@ -182,6 +184,21 @@ public class MeetingRestController {
         }
 
         return new ResponseEntity<>(rsvpsDTO, HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/cancel/{phoneNumber}/{code}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> cancelVote(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code, @RequestParam("uid") String meetingUid){
+        User user = userManagementService.loadOrSaveUser(phoneNumber);
+        String userUid = user.getUid();
+        Event event = eventBroker.load(meetingUid);
+        ResponseWrapper responseWrapper;
+        if(!event.isCanceled()){
+            eventBroker.cancel(userUid,meetingUid);
+            responseWrapper = new  ResponseWrapperImpl(HttpStatus.OK, RestMessage.MEETING_CANCELLED, RestStatus.SUCCESS);
+        }else{
+            responseWrapper = new  ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.MEETING_ALREADY_CANCELLED, RestStatus.FAILURE);
+        }
+        return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
     }
 
     private boolean isOpen(Event event) {
