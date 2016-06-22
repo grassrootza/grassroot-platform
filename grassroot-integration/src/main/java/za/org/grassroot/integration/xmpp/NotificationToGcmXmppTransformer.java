@@ -128,7 +128,7 @@ public class NotificationToGcmXmppTransformer {
                         logBook.getAncestorGroup().getGroupName(),
                         null,
                         notification.getMessage(),
-                        notification.getLogBookLog().getLogBook().getId(),
+                        logBook.getUid(),
                         notification.getCreatedDateTime(),
                         notification.getNotificationType(), TaskType.TODO.name()
                 );
