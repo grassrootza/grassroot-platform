@@ -32,7 +32,6 @@ import java.util.List;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.backVoteUrl;
-import static za.org.grassroot.webapp.util.USSDUrlUtil.entityUidUrlSuffix;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.saveVoteMenu;
 
 /**
@@ -281,7 +280,7 @@ public class USSDVoteController extends USSDController {
         USSDMenu menu;
 
         if (futureEvent) {
-            EventLog userResponse = eventLogManager.getEventLogOfUser(vote, user, EventLogType.EventRSVP);
+            EventLog userResponse = eventLogManager.getEventLogOfUser(vote, user, EventLogType.RSVP);
 
             List<String> otherResponses;
             if  (userResponse == null) {
@@ -343,7 +342,7 @@ public class USSDVoteController extends USSDController {
             menu.addMenuOption(voteMenus + startMenu, "Back to votes menu");
             menu.addMenuOptions(optionsHomeExit(user));
         } else {
-            final EventLog eventLog = eventLogManager.getEventLogOfUser(vote, user, EventLogType.EventRSVP);
+            final EventLog eventLog = eventLogManager.getEventLogOfUser(vote, user, EventLogType.RSVP);
             final String[] fields = { vote.getName(), eventLog.getMessage().toLowerCase() };
             menu = new USSDMenu("You voted X. What do you want to do?");
             menu.addMenuOption(voteMenus + "change-vote-do" + suffix, "Vote the other way");

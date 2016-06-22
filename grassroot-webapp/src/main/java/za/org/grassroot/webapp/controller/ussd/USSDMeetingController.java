@@ -573,7 +573,7 @@ public class USSDMeetingController extends USSDController {
      */
     private USSDMenu meetingAttendeeMenu(User user, Event event) {
 
-        final EventLog userResponse = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.EventRSVP);
+        final EventLog userResponse = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.RSVP);
 
         final String attendeeKey = "attendee";
         final String suffix = entityUidUrlSuffix + event.getUid();

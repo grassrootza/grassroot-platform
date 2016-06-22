@@ -31,7 +31,7 @@ public class TaskRestControllerTest extends RestAbstractUnitTest {
     public void setUp() {
 
         mockMvc = MockMvcBuilders.standaloneSetup(taskRestController).build();
-        // eventLog = new EventLog(sessionTestUser, meetingEvent, EventLogType.EventRSVP, testEventDescription);
+        // eventLog = new EventLog(sessionTestUser, meetingEvent, EventLogType.RSVP, testEventDescription);
         taskList = new ArrayList<>();
         taskList.add(new TaskDTO(testLogBook, sessionTestUser));
     }

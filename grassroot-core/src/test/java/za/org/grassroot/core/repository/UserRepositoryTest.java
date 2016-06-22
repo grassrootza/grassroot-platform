@@ -17,7 +17,6 @@ import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 
 import javax.transaction.Transactional;
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -127,7 +126,7 @@ public class UserRepositoryTest {
         group.addMember(u2);
         group = groupRepository.save(group);
         Event event = eventRepository.save(new Meeting("rsvp event", Instant.now(), u1, group, "someLocation", true));
-        EventLog eventLog = eventLogRepository.save(new EventLog(u1, event, EventLogType.EventRSVP, EventRSVPResponse.YES.toString()));
+        EventLog eventLog = eventLogRepository.save(new EventLog(u1, event, EventLogType.RSVP, EventRSVPResponse.YES.toString()));
         List<User> list = userRepository.findUsersThatRSVPYesForEvent(event);
         log.info("list.size..." + list.size() + "...first user..." + list.get(0).getPhoneNumber());
         assertEquals(u1.getPhoneNumber(),list.get(0).getPhoneNumber());
@@ -141,8 +140,8 @@ public class UserRepositoryTest {
         group.addMember(u2);
         group = groupRepository.save(group);
 		Event event = eventRepository.save(new Meeting("rsvp event", Instant.now(), u1, group, "someLocation", true));
-		EventLog eventLog = eventLogRepository.save(new EventLog(u1, event, EventLogType.EventRSVP, EventRSVPResponse.YES.toString()));
-        EventLog eventLog2 = eventLogRepository.save(new EventLog(u2, event, EventLogType.EventRSVP, EventRSVPResponse.NO.toString()));
+		EventLog eventLog = eventLogRepository.save(new EventLog(u1, event, EventLogType.RSVP, EventRSVPResponse.YES.toString()));
+        EventLog eventLog2 = eventLogRepository.save(new EventLog(u2, event, EventLogType.RSVP, EventRSVPResponse.NO.toString()));
 
         List<User> list = userRepository.findUsersThatRSVPNoForEvent(event);
         assertEquals(u2.getPhoneNumber(),list.get(0).getPhoneNumber());

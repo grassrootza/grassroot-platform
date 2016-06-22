@@ -44,7 +44,7 @@ public class EventLogRepositoryTest {
         User user2 = userRepository.save(new User("00111112"));
         group.addMember(user2);
         Event event = eventRepository.save(new Meeting("test meeting",Instant.now(),  user, group, "someLoc"));
-        eventLogRepository.save(new EventLog(user, event, EventLogType.EventCreated, "you are hereby invited to the test meeting"));
+        eventLogRepository.save(new EventLog(user, event, EventLogType.CREATED, "you are hereby invited to the test meeting"));
 
         // complete the test
     }
@@ -56,7 +56,7 @@ public class EventLogRepositoryTest {
         User user2 = userRepository.save(new User("00111114"));
         group.addMember(user2);
         Event event = eventRepository.save(new Meeting("test meeting 2", Instant.now(), user, group, "someLoc"));
-        eventLogRepository.save(new EventLog(user2, event, EventLogType.EventReminder, "you are reminded about the test meeting"));
+        eventLogRepository.save(new EventLog(user2, event, EventLogType.REMINDER, "you are reminded about the test meeting"));
 
         // complete the test
     }
@@ -68,7 +68,7 @@ public class EventLogRepositoryTest {
         User user2 = userRepository.save(new User("00111116"));
         group.addMember(user2);
         Event event = eventRepository.save(new Meeting("test meeting 3", Instant.now(), user, group, "someLoc"));
-        eventLogRepository.save(new EventLog(user, event, EventLogType.EventCreated, "you are invited to test meeting 3"));
+        eventLogRepository.save(new EventLog(user, event, EventLogType.CREATED, "you are invited to test meeting 3"));
     }
 
     @Test
@@ -80,7 +80,7 @@ public class EventLogRepositoryTest {
         group.addMember(user2);
         groupRepository.save(group);
         Event event = eventRepository.save(new Meeting("test meeting 5", Instant.now(), user, group, "someLoc"));
-        eventLogRepository.save(new EventLog(user, event, EventLogType.EventReminder, "you are hereby reminded about test meeting 5"));
+        eventLogRepository.save(new EventLog(user, event, EventLogType.REMINDER, "you are hereby reminded about test meeting 5"));
 //        Boolean reminderSent = eventLogRepository.reminderSent(event, user);
         Boolean reminderSent = true; // todo: chenge to use notifications
         assertEquals(true, Boolean.parseBoolean(reminderSent.toString()));
@@ -94,7 +94,7 @@ public class EventLogRepositoryTest {
         User user2 = userRepository.save(new User("00111110"));
         group.addMember(user2);
         Event event = eventRepository.save(new Meeting("test meeting 6", Instant.now(), user, group, "someLoc"));
-        eventLogRepository.save(new EventLog(user2, event, EventLogType.EventReminder, "you are reminded about test meeting 6"));
+        eventLogRepository.save(new EventLog(user2, event, EventLogType.REMINDER, "you are reminded about test meeting 6"));
         Boolean aBoolean = false;         // todo: chenge to use notifications
 
         assertEquals(false, Boolean.parseBoolean(aBoolean.toString()));
@@ -110,8 +110,8 @@ public class EventLogRepositoryTest {
         User user2 = userRepository.save(new User("001111121"));
         group.addMember(user2);
         Event event = eventRepository.save(new Meeting("test meeting 7", Instant.now(), user, group, "someLoc"));
-        EventLog elog1 = eventLogRepository.save(new EventLog(user, event, EventLogType.EventMinutes, "item 1"));
-        EventLog elog2 = eventLogRepository.save(new EventLog(user, event, EventLogType.EventMinutes, "item 2"));
-        EventLog enot = eventLogRepository.save(new EventLog(user, event, EventLogType.EventCreated, "notification message"));
+        EventLog elog1 = eventLogRepository.save(new EventLog(user, event, EventLogType.MINUTES, "item 1"));
+        EventLog elog2 = eventLogRepository.save(new EventLog(user, event, EventLogType.MINUTES, "item 2"));
+        EventLog enot = eventLogRepository.save(new EventLog(user, event, EventLogType.CREATED, "notification message"));
     }
 }

@@ -27,27 +27,22 @@ public class AccountLog implements ActionLog {
     @ManyToOne
     private Account account;
 
-    @Basic
     @Column(name="creation_time", nullable = false, updatable = false)
     private Instant creationTime;
 
-    @Basic
-    @Column(name="account_log_type", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(name="account_log_type", nullable = false, length = 50)
     private AccountLogType accountLogType;
 
-    @Basic
     @Column(name="user_uid", nullable = false)
     private String userUid;
 
-    @Basic
     @Column(name="group_uid")
     private String groupUid;
 
-    @Basic
     @Column(name="paid_group_uid")
     private String paidGroupUid;
 
-    @Basic
     @Column(name="description", length = 255)
     private String description;
 

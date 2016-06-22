@@ -141,7 +141,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		EventLog eventLog = new EventLog(user, meeting, EventLogType.EventCreated);
+		EventLog eventLog = new EventLog(user, meeting, EventLogType.CREATED);
 		bundle.addLog(eventLog);
 
 		Set<Notification> notifications = constructEventInfoNotifications(meeting, eventLog);
@@ -196,7 +196,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		EventLog eventLog = new EventLog(user, meeting, EventLogType.EventChange);
+		EventLog eventLog = new EventLog(user, meeting, EventLogType.CHANGE);
 		bundle.addLog(eventLog);
 
 		Set<Notification> notifications = constructEventChangedNotifications(meeting, eventLog, startTimeChanged);
@@ -241,7 +241,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		EventLog eventLog = new EventLog(user, meeting, EventLogType.EventChange);
+		EventLog eventLog = new EventLog(user, meeting, EventLogType.CHANGE);
 		bundle.addLog(eventLog);
 
 		Set<Notification> notifications = constructEventChangedNotifications(meeting, eventLog, startTimeChanged);
@@ -284,7 +284,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		EventLog eventLog = new EventLog(user, vote, EventLogType.EventCreated);
+		EventLog eventLog = new EventLog(user, vote, EventLogType.CREATED);
 		bundle.addLog(eventLog);
 
 		Set<Notification> notifications = constructEventInfoNotifications(vote, eventLog);
@@ -324,7 +324,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		EventLog eventLog = new EventLog(user, vote, EventLogType.EventChange);
+		EventLog eventLog = new EventLog(user, vote, EventLogType.CHANGE);
 		bundle.addLog(eventLog);
 
 		logsAndNotificationsBroker.storeBundle(bundle);
@@ -380,7 +380,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		EventLog eventLog = new EventLog(user, event, EventLogType.EventCancelled);
+		EventLog eventLog = new EventLog(user, event, EventLogType.CANCELLED);
 		bundle.addLog(eventLog);
 
 		List<User> rsvpWithNoMembers = userRepository.findUsersThatRSVPNoForEvent(event);
@@ -417,7 +417,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		EventLog eventLog = new EventLog(null, event, EventLogType.EventReminder);
+		EventLog eventLog = new EventLog(null, event, EventLogType.REMINDER);
 
 		Set<User> excludedMembers = findEventReminderExcludedMembers(event);
 		List<User> eventReminderNotificationSentMembers = userRepository.findNotificationTargetsForEvent(
@@ -464,7 +464,7 @@ public class EventBrokerImpl implements EventBroker {
 	private LogsAndNotificationsBundle constructMeetingRsvpTotalsBundle(Meeting meeting) {
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		EventLog eventLog = new EventLog(null, meeting, EventLogType.EventRsvpTotalMessage);
+		EventLog eventLog = new EventLog(null, meeting, EventLogType.RSVP_TOTAL_MESSAGE);
 		bundle.addLog(eventLog);
 
 		ResponseTotalsDTO responseTotalsDTO = eventLogManagementService.getResponseCountForEvent(meeting);
@@ -494,7 +494,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		EventLog eventLog = new EventLog(user, event, EventLogType.EventManualReminder, message);
+		EventLog eventLog = new EventLog(user, event, EventLogType.MANUAL_REMINDER, message);
 		bundle.addLog(eventLog);
 
 		Set<User> excludedMembers = findEventReminderExcludedMembers(event);
@@ -542,7 +542,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		EventLog eventLog = new EventLog(null, meeting, EventLogType.EventThankYouMessage);
+		EventLog eventLog = new EventLog(null, meeting, EventLogType.THANK_YOU_MESSAGE);
 
 		Set<User> tankYouNotificationSentMembers = new HashSet<>(
 				userRepository.findNotificationTargetsForEvent(meeting, MeetingThankYouNotification.class));
@@ -574,7 +574,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		EventLog eventLog = new EventLog(null, vote, EventLogType.EventResult);
+		EventLog eventLog = new EventLog(null, vote, EventLogType.RESULT);
 
 		ResponseTotalsDTO responseTotalsDTO = eventLogManagementService.getVoteResultsForEvent(vote);
 		Set<User> voteResultsNotificationSentMembers = new HashSet<>(userRepository.findNotificationTargetsForEvent(

@@ -51,7 +51,7 @@ public class TaskBrokerImpl implements TaskBroker {
             case MEETING:
             case VOTE:
                 Event event = eventBroker.load(taskUid);
-                EventLog eventLog = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.EventRSVP);
+                EventLog eventLog = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.RSVP);
                 return new TaskDTO(event, eventLog, user, eventLog != null);
             case TODO:
                 LogBook logBook = logBookBroker.load(taskUid);
@@ -74,7 +74,7 @@ public class TaskBrokerImpl implements TaskBroker {
 
         Instant start = futureOnly ? Instant.now() : null;
         for (Event event : groupBroker.retrieveGroupEvents(group, null, start, null)) {
-            EventLog eventLog = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.EventRSVP);
+            EventLog eventLog = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.RSVP);
             boolean hasResponded = eventLogManagementService.userRsvpForEvent(event, user);
             if (event.getEventStartDateTime() != null) {
                 taskSet.add(new TaskDTO(event, eventLog, user, hasResponded));
@@ -107,7 +107,7 @@ public class TaskBrokerImpl implements TaskBroker {
         List<Event> upcomingEventsForUser = eventBroker.loadUserEvents(user.getUid(), null, false, futureOnly);
 
         for (Event event : upcomingEventsForUser) {
-            EventLog response = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.EventRSVP);
+            EventLog response = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.RSVP);
             upcomingTasks.add(new TaskDTO(event, response, user, response != null));
         }
 

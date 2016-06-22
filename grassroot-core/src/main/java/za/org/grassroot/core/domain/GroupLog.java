@@ -31,7 +31,8 @@ public class GroupLog implements Serializable, ActionLog {
     @JoinColumn(name="user_id")
     private User user;
 
-    @Column(name="group_log_type", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(name="group_log_type", nullable = false, length = 50)
     private GroupLogType groupLogType;
 
     @Column

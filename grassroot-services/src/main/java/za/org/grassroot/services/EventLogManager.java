@@ -14,7 +14,6 @@ import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.util.CacheUtilService;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -75,7 +74,7 @@ public class EventLogManager implements EventLogManagementService {
                           "...rsvp..." + rsvpResponse.toString());
 
         if (!userRsvpForEvent(event,user)) {
-            createEventLog(EventLogType.EventRSVP, event.getUid(), user.getUid(), rsvpResponse.toString());
+            createEventLog(EventLogType.RSVP, event.getUid(), user.getUid(), rsvpResponse.toString());
             // clear rsvp cache for user
             cacheUtilService.clearRsvpCacheForUser(user, event.getEventType());
 
@@ -92,7 +91,7 @@ public class EventLogManager implements EventLogManagementService {
             }
         } else if (event.getEventStartDateTime().isAfter(Instant.now())) {
             // allow the user to change their rsvp / vote as long as meeting is open
-            EventLog eventLog = eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.EventRSVP);
+            EventLog eventLog = eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.RSVP);
             eventLog.setMessage(rsvpResponse.toString());
             log.info("rsvpForEvent... changing response to {} on eventLog {}", rsvpResponse.toString(), eventLog);
             eventLogRepository.saveAndFlush(eventLog); // todo: shouldn't need this, but it's not persisting (cleaning needed)

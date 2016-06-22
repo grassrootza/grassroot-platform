@@ -30,7 +30,7 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
     MeetingRestController meetingRestController;
 
     String path = "/api/meeting";
-    EventLog testEventLog = new EventLog(sessionTestUser, meetingEvent, EventLogType.EventCreated, "test notification");
+    EventLog testEventLog = new EventLog(sessionTestUser, meetingEvent, EventLogType.CREATED, "test notification");
     ResponseTotalsDTO testResponseTotalsDTO = new ResponseTotalsDTO();
 
     @Before
@@ -91,14 +91,14 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
 
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.loadMeeting(meetingEvent.getUid())).thenReturn(meetingEvent);
-        when(eventLogManagementServiceMock.getEventLogOfUser(meetingEvent, sessionTestUser, EventLogType.EventRSVP)).thenReturn(testEventLog);
+        when(eventLogManagementServiceMock.getEventLogOfUser(meetingEvent, sessionTestUser, EventLogType.RSVP)).thenReturn(testEventLog);
         when(eventLogManagementServiceMock.userRsvpForEvent(meetingEvent, sessionTestUser)).thenReturn(false);
         when(eventLogManagementServiceMock.getResponseCountForEvent(meetingEvent)).thenReturn(testResponseTotalsDTO);
         mockMvc.perform(get(path + "/view/{id}/{phoneNumber}/{code}", meetingEvent.getUid(), testUserPhone, testUserCode))
                 .andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
         verify(eventBrokerMock).loadMeeting(meetingEvent.getUid());
-        verify(eventLogManagementServiceMock).getEventLogOfUser(meetingEvent, sessionTestUser, EventLogType.EventRSVP);
+        verify(eventLogManagementServiceMock).getEventLogOfUser(meetingEvent, sessionTestUser, EventLogType.RSVP);
         verify(eventLogManagementServiceMock).userRsvpForEvent(meetingEvent, sessionTestUser);
         verify(eventLogManagementServiceMock).getResponseCountForEvent(meetingEvent);
 

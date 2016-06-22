@@ -15,16 +15,4 @@ public enum UserInterfaceType {
 
     @Override
     public String toString() { return text; }
-
-    public static UserInterfaceType fromString(String template) {
-
-        if (template != null) {
-            for (UserInterfaceType t : UserInterfaceType.values()) {
-                if (template.equalsIgnoreCase(t.text)) {
-                    return t;
-                }
-            }
-        }
-        return UserInterfaceType.UNKNOWN;
-    }
 }

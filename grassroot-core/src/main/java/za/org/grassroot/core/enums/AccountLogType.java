@@ -15,7 +15,7 @@ public enum AccountLogType {
 
     private final String text;
 
-    private AccountLogType(final String text) {
+    AccountLogType(final String text) {
         this.text = text;
     }
 

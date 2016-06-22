@@ -13,7 +13,6 @@ import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventLogType;
-import za.org.grassroot.core.enums.UserMessagingPreference;
 
 import javax.transaction.Transactional;
 import java.time.*;
@@ -123,7 +122,7 @@ public class MeetingRepositoryTest {
         assertThat(checkFirst.contains(mtg), is(true));
         assertThat(checkFirst.contains(mtg2), is(true));
 
-        EventLog eventLog = new EventLog(user, mtg, EventLogType.EventRsvpTotalMessage, "message");
+        EventLog eventLog = new EventLog(user, mtg, EventLogType.RSVP_TOTAL_MESSAGE, "message");
         eventLogRepository.save(eventLog);
         assertThat(eventLogRepository.count(), is(1L));
 

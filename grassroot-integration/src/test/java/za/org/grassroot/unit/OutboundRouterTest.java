@@ -41,9 +41,9 @@ public class OutboundRouterTest {
 
     @Test
     public void routingToSmsShouldWork() throws Exception{
-      //  EventLog eventLog = new EventLog(new User(""), new Meeting("Dummy Meeting", Instant.now(), new User("433"), null, "johannesburg"), EventLogType.EventTest, "message", UserMessagingPreference.SMS);
+      //  EventLog eventLog = new EventLog(new User(""), new Meeting("Dummy Meeting", Instant.now(), new User("433"), null, "johannesburg"), EventLogType.TEST, "message", UserMessagingPreference.SMS);
 
-        EventLog eventLog = new EventLog(new User(""), Meeting.makeEmpty(new User("")), EventLogType.EventTest,"message");
+        EventLog eventLog = new EventLog(new User(""), Meeting.makeEmpty(new User("")), EventLogType.TEST,"message");
 
         Notification payload = new EventCancelledNotification(new User("42342342"), "blah", eventLog);
         Message<Notification> message = MessageBuilder.withPayload(payload)
@@ -55,10 +55,10 @@ public class OutboundRouterTest {
     @Test
     public void routingToGcmShouldWork() throws Exception{
 
-        EventLog eventLog = new EventLog(new User(""), Meeting.makeEmpty(new User("")), EventLogType.EventTest,"message");
+        EventLog eventLog = new EventLog(new User(""), Meeting.makeEmpty(new User("")), EventLogType.TEST,"message");
 
      //   EventLog eventLog = new EventLog(new User(""), new Meeting("Dummy Meeting", Instant.now(), new User("433"), null, "johannesburg"),
-          //      EventLogType.EventTest, "message",
+          //      EventLogType.TEST, "message",
              //   UserMessagingPreference.ANDROID_APP);
 
         Notification payload = new EventCancelledNotification(new User("42342342"), "blah", eventLog);
@@ -70,7 +70,7 @@ public class OutboundRouterTest {
 
     @Test
     public void routingToSmsShouldWorkWhenRouteIsNull() throws Exception{
-        EventLog eventLog = new EventLog(new User(""), Meeting.makeEmpty(new User("")), EventLogType.EventTest,"message");
+        EventLog eventLog = new EventLog(new User(""), Meeting.makeEmpty(new User("")), EventLogType.TEST,"message");
 
         Notification payload = new EventCancelledNotification(new User("42342342"), "blah", eventLog);
         Message<Notification> message = MessageBuilder.withPayload(payload).build();

@@ -42,7 +42,8 @@ public class EventLog implements ActionLog {
     @JoinColumn(name = "event_id", nullable = false)
     private Event event;
 
-    @Enumerated
+    @Enumerated(EnumType.STRING)
+    @Column(name="event_log_type", nullable = false, length = 50)
     private EventLogType eventLogType;
 
     @Column

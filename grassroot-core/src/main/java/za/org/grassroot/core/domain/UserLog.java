@@ -24,24 +24,21 @@ public class UserLog implements ActionLog {
     @Column(name = "uid", nullable = false, length = 50)
     private String uid;
 
-    @Basic
     @Column(name="creation_time", nullable = false, updatable = false)
     private Instant creationTime;
 
-    @Basic
-    @Column(name="user_log_type", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(name="user_log_type", nullable = false, length = 50)
     private UserLogType userLogType;
 
-    @Basic
     @Column(name="user_uid", nullable = false)
     private String userUid;
 
-    @Basic
     @Column(name="description", length = 255)
     private String description;
 
-    @Basic
-    @Column(name="user_interface", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(name="user_interface", nullable = false, length = 50)
     private UserInterfaceType userInterface;
 
     private UserLog() {

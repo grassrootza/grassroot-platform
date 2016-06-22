@@ -11,9 +11,7 @@ import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
-import za.org.grassroot.core.util.DateTimeUtil;
 
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -73,7 +71,7 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
     public void viewingAVoteShouldWork() throws Exception {
 
         testGroup.addMember(sessionTestUser, new Role("ROLE_GROUP_ORGANIZER", testGroup.getUid()));
-        EventLog eventLog = new EventLog(sessionTestUser, voteEvent, EventLogType.EventRSVP, "This is a test log");
+        EventLog eventLog = new EventLog(sessionTestUser, voteEvent, EventLogType.RSVP, "This is a test log");
         List<Object[]> list = new ArrayList<>();
         String[] responses = {"1", "2", "3", "4", "5"};
         list.add(responses);
@@ -81,13 +79,13 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
 
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.load(voteEvent.getUid())).thenReturn(voteEvent);
-        when(eventLogManagementServiceMock.getEventLogOfUser(voteEvent, sessionTestUser, EventLogType.EventRSVP)).thenReturn(eventLog);
+        when(eventLogManagementServiceMock.getEventLogOfUser(voteEvent, sessionTestUser, EventLogType.RSVP)).thenReturn(eventLog);
         when(eventLogManagementServiceMock.userRsvpForEvent(voteEvent, sessionTestUser)).thenReturn(true);
         when(eventLogManagementServiceMock.getVoteResultsForEvent(voteEvent)).thenReturn(rsvpTotalsDTO);
         mockMvc.perform(get(path + "/view/{id}/{phoneNumber}/{code}", voteEvent.getUid(), testUserPhone, testUserCode)).andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
         verify(eventBrokerMock).load(voteEvent.getUid());
-        verify(eventLogManagementServiceMock).getEventLogOfUser(voteEvent, sessionTestUser, EventLogType.EventRSVP);
+        verify(eventLogManagementServiceMock).getEventLogOfUser(voteEvent, sessionTestUser, EventLogType.RSVP);
         verify(eventLogManagementServiceMock).userRsvpForEvent(voteEvent, sessionTestUser);
         verify(eventLogManagementServiceMock).getVoteResultsForEvent(voteEvent);
     }

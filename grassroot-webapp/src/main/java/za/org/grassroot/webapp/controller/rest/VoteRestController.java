@@ -93,7 +93,7 @@ public class VoteRestController {
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         Event event = eventBroker.load(voteUid);
-        EventLog eventLog = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.EventRSVP);
+        EventLog eventLog = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.RSVP);
         boolean hasResponded = eventLogManagementService.userRsvpForEvent(event, user);
         ResponseTotalsDTO totals = eventLogManagementService.getVoteResultsForEvent(event);
         EventWrapper eventWrapper = new EventWrapper(event, eventLog, user, hasResponded, totals);

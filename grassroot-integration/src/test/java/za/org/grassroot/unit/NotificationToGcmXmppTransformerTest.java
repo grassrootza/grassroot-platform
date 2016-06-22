@@ -53,7 +53,7 @@ public class NotificationToGcmXmppTransformerTest {
       /*  User user = new User("0828875097");
         Group group = new Group("test eventlog", user);
         Event event = new Meeting("test meeting",Instant.now(),  user, group, "someLoc");
-        EventLog eventLog = new EventLog(user, event, EventLogType.EventCreated, "you are hereby invited to the test meeting", null);
+        EventLog eventLog = new EventLog(user, event, EventLogType.CREATED, "you are hereby invited to the test meeting", null);
         GcmRegistration gcmRegistration = new GcmRegistration(user,"xzf12", Instant.now());
         Notification notification = new Notification(user,eventLog, false,false, NotificationType.EVENT);
         Message<Notification> message = MessageBuilder.withPayload(notification).build();

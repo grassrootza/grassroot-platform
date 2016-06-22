@@ -67,10 +67,12 @@ public class User implements UserDetails {
     @Column(name ="android")
     private boolean hasAndroidProfile = false;
 
-    @Column(name = "message_preference", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "message_preference", nullable = false, length = 50)
     private UserMessagingPreference messagingPreference;
 
-    @Column(name ="alert_preference")
+    @Enumerated(EnumType.STRING)
+    @Column(name ="alert_preference", length = 50)
     private AlertPreference alertPreference;
 
     @Column(name = "enabled")

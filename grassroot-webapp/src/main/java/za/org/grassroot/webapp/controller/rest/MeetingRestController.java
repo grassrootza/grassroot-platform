@@ -1,7 +1,6 @@
 
 package za.org.grassroot.webapp.controller.rest;
 
-import com.google.common.collect.Sets;
 import edu.emory.mathcs.backport.java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,8 +30,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static za.org.grassroot.core.util.DateTimeUtil.getPreferredRestFormat;
@@ -156,7 +153,7 @@ public class MeetingRestController {
     public ResponseEntity<ResponseWrapper> rsvp(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code, @PathVariable("id") String id) {
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         Meeting meeting = eventBroker.loadMeeting(id);
-        EventLog eventLog = eventLogManagementService.getEventLogOfUser(meeting, user, EventLogType.EventRSVP);
+        EventLog eventLog = eventLogManagementService.getEventLogOfUser(meeting, user, EventLogType.RSVP);
         boolean hasResponded = eventLogManagementService.userRsvpForEvent(meeting, user);
         ResponseTotalsDTO totals = eventLogManagementService.getResponseCountForEvent(meeting);
         EventWrapper eventWrapper = new EventWrapper(meeting, eventLog, user, hasResponded, totals);

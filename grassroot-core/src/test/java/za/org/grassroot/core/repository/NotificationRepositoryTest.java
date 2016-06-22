@@ -55,7 +55,7 @@ public class NotificationRepositoryTest {
         User user = userRepository.save(new User("08488754097"));
         Group group = groupRepository.save(new Group("test eventlog", user));
         Event event = eventRepository.save(new Meeting("test meeting",Instant.now(),  user, group, "someLoc"));
-        EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.EventCreated, "you are hereby invited to the test meeting"));
+        EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.CREATED, "you are hereby invited to the test meeting"));
         GcmRegistration gcmRegistration = gcmRegistrationRepository.save(new GcmRegistration(user, "33433", Instant.now()));
         notificationRepository.save(new EventCancelledNotification(user, "blah", eventLog));
         List<Notification> notifications = notificationRepository.findAll();
@@ -69,7 +69,7 @@ public class NotificationRepositoryTest {
         User user = userRepository.save(new User("0848835097"));
         Group group = groupRepository.save(new Group("test eventlog", user));
         Event event = eventRepository.save(new Meeting("test meeting",Instant.now(),  user, group, "someLoc"));
-        EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.EventCreated, "you are hereby invited to the test meeting"));
+        EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.CREATED, "you are hereby invited to the test meeting"));
         GcmRegistration gcmRegistration = gcmRegistrationRepository.save(new GcmRegistration(user, "33433", Instant.now()));
         notificationRepository.save(new EventCancelledNotification(user, "blah", eventLog));
         List<Notification> notifications = notificationRepository.findByTarget(user);
