@@ -96,7 +96,7 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     @Query(value = "Select * from getusergroupswithsize(?1) where active = true", nativeQuery = true)
     List<Object[]> findActiveUserGroupsOrderedByRecentEvent(Long userId);
 
-    @Query(value = "SELECT g FROM Group g WHERE g.id IN (SELECT gl.group.id FROM GroupLog gl WHERE (gl.createdDateTime BETWEEN ?1 AND ?2) AND gl.groupLogType = 16)")
+    @Query(value = "SELECT g FROM Group g WHERE g.id IN (SELECT gl.group.id FROM GroupLog gl WHERE (gl.createdDateTime BETWEEN ?1 AND ?2) AND gl.groupLogType = za.org.grassroot.core.enums.GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE)")
     List<Group> findGroupsWhereJoinCodeUsedBetween(Instant periodStart, Instant periodEnd);
 
 
