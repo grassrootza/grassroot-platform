@@ -3,10 +3,15 @@ package za.org.grassroot.services.util;
 import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.domain.Notification;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Bundle of ActionLogs and Notifications.
+ * Performs filtering of registering Notifications based on their priority and notification priority of target user.
+ */
 public class LogsAndNotificationsBundle {
 	private final Set<ActionLog> logs;
 	private final Set<Notification> notifications;
@@ -20,20 +25,31 @@ public class LogsAndNotificationsBundle {
 		this(new HashSet<>(), new HashSet<>());
 	}
 
+	public void addNotification(Notification notification) {
+		Objects.requireNonNull(notification);
+		addNotifications(Collections.singleton(notification));
+	}
+
+	public void addNotifications(Set<Notification> notifications) {
+		Objects.requireNonNull(notifications);
+		for (Notification notification : notifications) {
+			if (isNotificationPrioritySatisfiedByTarget(notification)) {
+				this.notifications.add(notification);
+			}
+		}
+	}
+
+	private boolean isNotificationPrioritySatisfiedByTarget(Notification notification) {
+		Objects.requireNonNull(notification, "Notification cannot be null");
+		return notification.getPriority() >= notification.getTarget().getNotificationPriority();
+	}
+
 	public void addLog(ActionLog log) {
 		logs.add(Objects.requireNonNull(log));
 	}
 
-	public void addNotification(Notification notification) {
-		notifications.add(Objects.requireNonNull(notification));
-	}
-
 	public void addLogs(Set<ActionLog> logs) {
 		this.logs.addAll(Objects.requireNonNull(logs));
-	}
-
-	public void addNotifications(Set<Notification> notifications) {
-		this.notifications.addAll(Objects.requireNonNull(notifications));
 	}
 
 	public void addBundle(LogsAndNotificationsBundle bundle) {

@@ -18,6 +18,8 @@ import java.util.Objects;
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "type", discriminatorType = DiscriminatorType.STRING)
 public abstract class Notification implements Serializable {
+	// default priority for notification is not overriden with getPriority();
+	private static final int DEFAULT_PRIORITY = 1;
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -182,6 +184,10 @@ public abstract class Notification implements Serializable {
 	public void setLastAttemptTime(Instant lastAttemptTime) {
 		this.lastAttemptTime = lastAttemptTime;
 	}
+
+	public int getPriority() {
+		return DEFAULT_PRIORITY;
+	};
 
 	/**
 	 * Locale utilities

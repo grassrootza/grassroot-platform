@@ -17,5 +17,4 @@ public class WelcomeNotification extends UserNotification {
 	public WelcomeNotification(User target, String message, UserLog userLog) {
 		super(target, message, userLog);
 	}
-
 }

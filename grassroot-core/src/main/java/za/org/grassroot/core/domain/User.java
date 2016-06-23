@@ -28,6 +28,7 @@ import static za.org.grassroot.core.util.PhoneNumberUtil.invertPhoneNumber;
 @Entity
 @Table(name = "user_profile")  //table name needs to be quoted in SQL because 'user' is a reserved keyword
 public class User implements UserDetails {
+    private static final int DEFAULT_NOTIFICATION_PRIORITY = 1;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -60,6 +61,9 @@ public class User implements UserDetails {
 
     @Column(name = "password")
     private String password;
+
+    @Column(name = "notification_priority")
+    private Integer notificationPriority;
 
     @Column(name = "web")
     private boolean hasWebProfile = false;
@@ -354,7 +358,18 @@ public class User implements UserDetails {
         this.version = version;
     }
 
-//~=================================================================================================================
+    public int getNotificationPriority() {
+        if (notificationPriority == null) {
+            return DEFAULT_NOTIFICATION_PRIORITY;
+        }
+        return notificationPriority;
+    }
+
+    public void setNotificationPriority(Integer notificationPriority) {
+        this.notificationPriority = notificationPriority;
+    }
+
+    //~=================================================================================================================
 
     /**
      * Inserting some methods to deal with users not having names -- might want to move to service layer...
