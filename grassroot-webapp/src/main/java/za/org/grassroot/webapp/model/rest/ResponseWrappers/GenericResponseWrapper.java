@@ -19,4 +19,13 @@ public class GenericResponseWrapper extends ResponseWrapperImpl {
         return data;
     }
 
+    @Override
+    public String toString() {
+        return "GenericResponseWrapper{" +
+                "data=" + data +
+                "status='" + status + '\'' +
+                ", code=" + code +
+                ", message='" + message + '\'' +
+                '}';
+    }
 }

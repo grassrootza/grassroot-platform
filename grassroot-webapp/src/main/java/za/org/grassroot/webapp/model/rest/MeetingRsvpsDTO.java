@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.model.rest;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
@@ -10,6 +11,7 @@ import java.util.Map;
 /**
  * Created by luke on 2016/06/09.
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class MeetingRsvpsDTO {
 
     private String meetingUid;
@@ -30,14 +32,14 @@ public class MeetingRsvpsDTO {
         this.numberNo = totals.getNo();
         this.numberNoReply = totals.getNumberNoRSVP();
         this.canViewRsvps = false;
+        this.rsvpResponses = new HashMap<>();
     }
 
     public MeetingRsvpsDTO(String meetingUid, ResponseTotalsDTO totals, Map<User, EventRSVPResponse> details) {
         this(meetingUid, totals);
         this.canViewRsvps = true;
-        this.rsvpResponses = new HashMap<>();
         for (User u : details.keySet()) {
-            this.rsvpResponses.put(u.getDisplayName(), details.get(u).toString());
+            this.rsvpResponses.put(u.nameToDisplay(), details.get(u).toString());
         }
     }
 

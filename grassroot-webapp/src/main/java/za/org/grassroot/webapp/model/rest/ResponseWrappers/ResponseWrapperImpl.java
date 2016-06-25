@@ -11,9 +11,9 @@ import za.org.grassroot.webapp.enums.RestStatus;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ResponseWrapperImpl implements ResponseWrapper {
 
-    private String status;
-    private int code;
-    private String message;
+    protected String status;
+    protected int code;
+    protected String message;
 
     public ResponseWrapperImpl(){}
 
@@ -22,8 +22,6 @@ public class ResponseWrapperImpl implements ResponseWrapper {
         this.message = String.valueOf(message);
         this.status = String.valueOf(status);
     }
-
-
 
     @Override
     public String getMessage() {
@@ -40,5 +38,12 @@ public class ResponseWrapperImpl implements ResponseWrapper {
         return code;
     }
 
-
+    @Override
+    public String toString() {
+        return "ResponseWrapperImpl{" +
+                "status='" + status + '\'' +
+                ", code=" + code +
+                ", message='" + message + '\'' +
+                '}';
+    }
 }

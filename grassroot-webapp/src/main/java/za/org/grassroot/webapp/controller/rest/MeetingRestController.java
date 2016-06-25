@@ -101,31 +101,29 @@ public class MeetingRestController {
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
     }
 
-    @RequestMapping(value = "/update/{uid}/{phoneNumber}/{code}", method = RequestMethod.POST)
-    public ResponseEntity<ResponseWrapper> updateMeeting(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
-                                                         @PathVariable("uid") String meetingUid, @RequestParam("title") String title, @RequestParam(value = "description", required =false ) String description,
-                                                         @RequestParam("startTime") String time, @RequestParam("reminderMins") int reminderMinutes,
-                                                         @RequestParam("location") String location, @RequestParam(value = "includeSubGroups", required = false) boolean includeSubGroups,
-                                                         @RequestParam(value = "rsvpRequired", required = false) boolean rsvp) {
+    @RequestMapping(value = "/update/{phoneNumber}/{code}/{meetingUid}", method = RequestMethod.POST)
+    public ResponseEntity<TaskDTO> updateMeeting(@PathVariable String phoneNumber, @PathVariable("code") String code,
+                                                         @PathVariable String meetingUid,
+                                                         @RequestParam String title,
+                                                         @RequestParam(value = "description", required =false ) String description,
+                                                         @RequestParam("startTime") LocalDateTime time,
+                                                         @RequestParam("location") String location,
+                                                         @RequestParam(value="members", required=false) Set<String> members) {
 
-        log.info("Received update meeting request, with string: " + time);
+        log.info("inside update meeting ... received, date time: {}, members: {}", time.format(DateTimeFormatter.ISO_DATE_TIME), members != null ? members : "null");
+	    User user = userManagementService.findByInputNumber(phoneNumber);
+	    ResponseEntity<TaskDTO> responseEntity;
 
-        User user = userManagementService.loadOrSaveUser(phoneNumber);
-        ResponseWrapper responseWrapper;
-
-        try {
-            LocalDateTime dateTime = LocalDateTime.parse(time, getPreferredRestFormat());
-            EventReminderType reminderType = reminderMinutes == -1 ? EventReminderType.GROUP_CONFIGURED : EventReminderType.CUSTOM;
-            eventBroker.updateMeeting(user.getUid(), meetingUid, title, dateTime, location, includeSubGroups, true, true,
-                    reminderType, reminderMinutes, description);
+	    try {
+	        eventBroker.updateMeeting(user.getUid(), meetingUid, title, description, time, location, null, -1, members);
             TaskDTO updatedTask =  taskBroker.load(user.getUid(), meetingUid, TaskType.MEETING);
-            responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.MEETING_DETAILS_UPDATED, RestStatus.SUCCESS, Collections.singletonList(updatedTask));
+            responseEntity = new ResponseEntity<>(updatedTask, HttpStatus.OK);
         } catch (IllegalStateException e) {
-            responseWrapper = new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.MEETING_CANCELLED, RestStatus.FAILURE);
+            responseEntity = new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
-        return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
-
+	    log.info("returning response entity: {}, headers: {}, body: {}", responseEntity.getStatusCode(), responseEntity.getHeaders(), responseEntity.getBody());
+	    return responseEntity;
     }
 
     @RequestMapping(value = "/rsvp/{id}/{phoneNumber}/{code}", method = RequestMethod.GET)
@@ -152,7 +150,7 @@ public class MeetingRestController {
 
 
     @RequestMapping(value = "/view/{id}/{phoneNumber}/{code}", method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> rsvp(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code, @PathVariable("id") String id) {
+    public ResponseEntity<ResponseWrapper> view(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code, @PathVariable("id") String id) {
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         Meeting meeting = eventBroker.loadMeeting(id);
         EventLog eventLog = eventLogManagementService.getEventLogOfUser(meeting, user, EventLogType.RSVP);
@@ -172,6 +170,8 @@ public class MeetingRestController {
         User user = userManagementService.findByInputNumber(phoneNumber);
         Meeting meeting = eventBroker.loadMeeting(meetingUid);
         ResponseTotalsDTO totals = eventLogManagementService.getResponseCountForEvent(meeting);
+
+        log.info("here are the rsvp totals: {}", totals);
 
         boolean canViewRsvps = meeting.getCreatedByUser().equals(user) ||
                 permissionBroker.isGroupPermissionAvailable(user, meeting.getAncestorGroup(), Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS);

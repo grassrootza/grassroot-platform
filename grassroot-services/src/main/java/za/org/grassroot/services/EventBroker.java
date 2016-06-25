@@ -48,9 +48,8 @@ public interface EventBroker {
 	void updateMeeting(String userUid, String meetingUid, String name, LocalDateTime eventStartDateTime, String eventLocation);
 
 	// for changing all or most fields
-	void updateMeeting(String userUid, String meetingUid, String name, LocalDateTime eventStartDateTime, String eventLocation,
-					   boolean includeSubGroups, boolean rsvpRequired, boolean relayable, EventReminderType reminderType,
-					   int customReminderMinutes, String description);
+	void updateMeeting(String userUid, String meetingUid, String name, String description, LocalDateTime eventStartDateTime, String eventLocation,
+	                   EventReminderType reminderType, int customReminderMinutes, Set<String> assignedMemberUids);
 
 	Vote createVote(String userUid, String parentUid, JpaEntityType parentType, String name, LocalDateTime eventStartDateTime,
 					boolean includeSubGroups, boolean relayable, String description, Set<String> assignMemberUids);

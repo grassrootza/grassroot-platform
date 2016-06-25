@@ -46,19 +46,25 @@ public class TaskBrokerImpl implements TaskBroker {
         Objects.requireNonNull(type);
 
         User user = userRepository.findOneByUid(userUid);
+        TaskDTO taskToReturn;
 
         switch (type) {
             case MEETING:
             case VOTE:
                 Event event = eventBroker.load(taskUid);
                 EventLog eventLog = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.RSVP);
-                return new TaskDTO(event, eventLog, user, eventLog != null);
+                taskToReturn = new TaskDTO(event, eventLog, user, eventLog != null);
+                break;
             case TODO:
                 LogBook logBook = logBookBroker.load(taskUid);
-                return new TaskDTO(logBook, user);
+                taskToReturn = new TaskDTO(logBook, user);
+                break;
+            default:
+                taskToReturn = null;
         }
 
-        return null;
+        log.info("Task created by user: {}", taskToReturn.isCreatedByUser());
+        return taskToReturn;
     }
 
     @Override

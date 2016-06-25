@@ -17,12 +17,15 @@ import za.org.grassroot.services.enums.LogBookStatus;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrapper;
+import za.org.grassroot.webapp.model.rest.ResponseWrappers.MembershipResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
 import za.org.grassroot.core.dto.TaskDTO;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by paballo on 2016/03/17.
@@ -39,6 +42,12 @@ public class TaskRestController {
 
     @Autowired
     private TaskBroker taskBroker;
+
+	@Autowired
+	private EventBroker eventBroker;
+
+	@Autowired
+	private LogBookBroker logBookBroker;
 
     @RequestMapping(value = "/list/{phoneNumber}/{code}/{parentUid}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> getTasks(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
@@ -76,6 +85,35 @@ public class TaskRestController {
         ResponseWrapper wrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.TASK_DETAILS, RestStatus.SUCCESS,
                                                              Collections.singletonList(task));
         return new ResponseEntity<>(wrapper, HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/assigned/{phoneNumber}/{code}/{taskUid}/{taskType}", method = RequestMethod.GET)
+    public ResponseEntity<List<MembershipResponseWrapper>> fetchAssignedMembers(@PathVariable String phoneNumber, @PathVariable String code,
+                                                           @PathVariable String taskUid, @PathVariable TaskType taskType) {
+	    logger.info("fetching task assigned members, taskType = {}", taskType);
+	    User user = userManagementService.findByInputNumber(phoneNumber);
+	    // todo : think about whether we need permissions here
+	    Set<User> users;
+	    switch (taskType) {
+		    case MEETING:
+		    case VOTE:
+			    Event event = eventBroker.load(taskUid);
+			    users = event.getAssignedMembers();
+			    break;
+		    case TODO:
+			    LogBook logBook = logBookBroker.load(taskUid);
+			    users = logBook.getAssignedMembers();
+			    break;
+		    default:
+			    throw new UnsupportedOperationException("Error! Trying to fetch assigned members for unknown task type");
+	    }
+
+	    List<MembershipResponseWrapper> assignedMembers = new ArrayList<>();
+	    for(User u: users){
+		    assignedMembers.add(new MembershipResponseWrapper(u));
+	    }
+
+	    return new ResponseEntity<>(assignedMembers, HttpStatus.OK);
     }
 
 
