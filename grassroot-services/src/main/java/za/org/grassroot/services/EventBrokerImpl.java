@@ -207,16 +207,14 @@ public class EventBrokerImpl implements EventBroker {
 
 	@Override
 	@Transactional
-	public void updateMeeting(String userUid, String meetingUid, String name, LocalDateTime eventStartDateTime,
-							  String eventLocation, boolean includeSubGroups, boolean rsvpRequired,
-							  boolean relayable, EventReminderType reminderType, int customReminderMinutes, String description) {
+	public void updateMeeting(String userUid, String meetingUid, String name, String description, LocalDateTime eventStartDateTime,
+	                          String eventLocation, EventReminderType reminderType, int customReminderMinutes, Set<String> assignedMemberUids) {
 
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(meetingUid);
 		Objects.requireNonNull(name);
 		Objects.requireNonNull(eventStartDateTime);
 		Objects.requireNonNull(eventLocation);
-		Objects.requireNonNull(reminderType);
 
 		User user = userRepository.findOneByUid(userUid);
 		Meeting meeting = (Meeting) eventRepository.findOneByUid(meetingUid);
@@ -224,6 +222,7 @@ public class EventBrokerImpl implements EventBroker {
 		if (meeting.isCanceled()) {
 			throw new IllegalStateException("Meeting is canceled: " + meeting);
 		}
+
 		Instant convertedStartDateTime = convertToSystemTime(eventStartDateTime, getSAST());
 		validateEventStartTime(convertedStartDateTime);
 		boolean startTimeChanged = !convertedStartDateTime.equals(meeting.getEventStartDateTime());
@@ -231,19 +230,35 @@ public class EventBrokerImpl implements EventBroker {
 		meeting.setName(name);
 		meeting.setEventStartDateTime(convertedStartDateTime);
 		meeting.setEventLocation(eventLocation);
-		meeting.setIncludeSubGroups(includeSubGroups);
-		meeting.setRsvpRequired(rsvpRequired);
-		meeting.setRelayable(relayable);
-		meeting.setReminderType(reminderType);
-		meeting.setCustomReminderMinutes(customReminderMinutes);
+
+		if (reminderType != null) {
+			meeting.setReminderType(reminderType);
+		}
+
+		if (customReminderMinutes != -1 && !meeting.getReminderType().equals(CUSTOM)) {
+			meeting.setCustomReminderMinutes(customReminderMinutes);
+		}
 
 		meeting.updateScheduledReminderTime();
+
+		if (assignedMemberUids != null && !assignedMemberUids.isEmpty()) {
+			if (meeting.isAllGroupMembersAssigned()) {
+				meeting.assignMembers(assignedMemberUids);
+			} else {
+				// todo : maybe move this into a single method in the assigned members container
+				Set<String> existingMemberUids = meeting.getAssignedMembers().stream().map(User::getUid).collect(Collectors.toSet());
+				existingMemberUids.removeAll(assignedMemberUids);
+				meeting.removeAssignedMembers(existingMemberUids);
+				meeting.assignMembers(assignedMemberUids);
+			}
+		}
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
 		EventLog eventLog = new EventLog(user, meeting, EventLogType.CHANGE);
 		bundle.addLog(eventLog);
 
+		// todo : handle member addition or removal differently (use a flag / enum to record meeting change type?)
 		Set<Notification> notifications = constructEventChangedNotifications(meeting, eventLog, startTimeChanged);
 		bundle.addNotifications(notifications);
 

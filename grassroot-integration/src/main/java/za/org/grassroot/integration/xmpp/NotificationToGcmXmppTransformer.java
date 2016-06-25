@@ -46,13 +46,14 @@ public class NotificationToGcmXmppTransformer {
     private Message<org.jivesoftware.smack.packet.Message> constructGcmMessage(Notification notification) throws JsonProcessingException {
         GcmRegistration gcmRegistration = gcmRegistrationRepository.findByUser(notification.getTarget());
 
+        // todo : move this to somewhere earlier
         if (gcmRegistration == null) {
             // this sometimes happens with bad connections : throwing here ensures picker will try notification again
-            // and then this should stop, with preference reset
+            // and then this should stop, with preference reset, but maybe try move it earlier
             User user = notification.getTarget();
             user.setMessagingPreference(UserMessagingPreference.SMS);
-            userRepository.save(user);
-            throw new RuntimeException("Error! User had no gcm registration but had gcm preference; resetting");
+            log.info("Error! User had no gcm registration but had gcm preference; resetting");
+            return null;
         }
 
         String registrationID = gcmRegistration.getRegistrationId();

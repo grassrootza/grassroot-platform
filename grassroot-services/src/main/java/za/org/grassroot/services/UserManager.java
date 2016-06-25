@@ -417,8 +417,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
         for (String welcomeMessageId : welcomeMessageIds) {
             String message = messageAssemblingService.createWelcomeMessage(welcomeMessageId, sessionUser);
             WelcomeNotification notification = new WelcomeNotification(sessionUser, message, userLog);
-            // notification sending delay of 15 mins
-            notification.setNextAttemptTime(Instant.now().plusSeconds(60 * 15));
+            // notification sending delay of 2days
+            notification.setNextAttemptTime(Instant.now().plus(48, ChronoUnit.HOURS));
             bundle.addNotification(notification);
         }
 

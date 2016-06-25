@@ -212,6 +212,13 @@ public class USSDGroupUtil extends USSDUtil {
         return thisMenu;
     }
 
+    public USSDMenu invalidGroupNamePrompt(User user,String groupName, USSDSection section, String nextUrl) throws URISyntaxException {
+        USSDMenu thisMenu = new USSDMenu(getMessage(section, groupKeyForMessages, promptKey + ".invalid-name",groupName, user));
+        thisMenu.setFreeText(true);
+        thisMenu.setNextURI(section.toPath() + nextUrl);
+        return thisMenu;
+    }
+
     public String addNumbersToNewGroup(User user, USSDSection section, USSDMenu menu, String userInput, String returnUrl) throws URISyntaxException {
         String groupUid;
         final Map<String, List<String>> enteredNumbers = PhoneNumberUtil.splitPhoneNumbers(userInput);
