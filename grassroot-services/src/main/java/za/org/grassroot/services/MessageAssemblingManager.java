@@ -84,6 +84,16 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     }
 
     @Override
+    public String createLogBookUpdateNotificationMessage(User target, LogBook logBook){
+        Locale locale = getUserLocale(target);
+        String[] args = populateLogBookFields(logBook);
+        String messageKey = logBook.isAllGroupMembersAssigned() ? "sms.logbook.update.notassigned" :
+                (logBook.getAssignedMembers().size()) == 1 ? "sms.logbook.update.assigned.one" : "sms.logbook.update.assigned.many";
+        return messageSourceAccessor.getMessage(messageKey, args, locale);
+
+    }
+
+    @Override
     public String createVoteResultsMessage(User user, Vote event, double yes, double no, double abstain, double noReply) {
         Locale locale = getUserLocale(user);
         String messageKey = "sms.vote.send.results";

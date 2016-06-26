@@ -6,6 +6,7 @@ import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.services.enums.LogBookStatus;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -53,6 +54,8 @@ public interface LogBookBroker {
 
 	// todo: we need some sort of logic here for not showing users the same logbook over and over
 	LogBook fetchLogBookForUserResponse(String userUid, long daysInPast, boolean assignedLogBooksOnly);
+
+	LogBook update(String userUid, String uid, String message, LocalDateTime actionByDate, int reminderMinutes, Set<String> assignnedMemberUids);
 
 
 }
