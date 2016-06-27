@@ -80,6 +80,17 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     }
 
     @Test
+    public void createGroupWithInvalidNameShouldWork() throws Exception {
+        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+        mockMvc.perform(get(path + "create-do").param(phoneParam, testUserPhone).param(userInputParam, "1")).
+                andExpect(status().isOk());
+        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
+        verifyZeroInteractions(groupBrokerMock);
+        verifyNoMoreInteractions(userManagementServiceMock);
+
+    }
+
+    @Test
     public void existingGroupMenuShouldWork() throws Exception {
         resetTestGroup();
         String urlToSave = saveGroupMenu("menu", testGroup.getUid());
