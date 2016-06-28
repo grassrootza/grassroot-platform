@@ -118,16 +118,19 @@ public class LogBookRestController {
 
     @RequestMapping(value ="update/{phoneNumber}/{code}/{uid}", method = RequestMethod.POST)
      public ResponseEntity<ResponseWrapper> updateLogbook(@PathVariable String phoneNumber, @PathVariable String code,
-                @PathVariable String parentUid,
+                @PathVariable String uid,
                 @RequestParam String title,
-                @RequestParam String description,
                 @RequestParam LocalDateTime dueDate,
         @RequestParam int reminderMinutes,
-        @RequestParam(value="members", required = false) Set<String> members)       {
+        @RequestParam(value="members", required = false) Set<String> members)      {
 
-      //  logBookBroker.
+        User user = userManagementService.load(phoneNumber);
+        String userUid = user.getUid();
+        logBookBroker.update(userUid, uid,title,dueDate,reminderMinutes,members);
+        TaskDTO taskDTO = taskBroker.load(userUid, uid, TaskType.TODO);
+        ResponseWrapper responseWrapper = new GenericResponseWrapper(HttpStatus.OK,RestMessage.TODO_UPDATED, RestStatus.SUCCESS, taskDTO);
 
-        return null;
+        return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
 
     }
 

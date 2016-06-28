@@ -774,6 +774,14 @@ public class GroupBrokerImpl implements GroupBroker {
     }
 
     @Override
+    public void deleteInvalidGroups(String invalidName, Instant threshold) {
+       List<Group> invalidGroups =  groupRepository.findByGroupNameAndCreatedDateTimeBefore(invalidName, Timestamp.from(threshold));
+        invalidGroups.stream().filter(group -> group.getMembers().size() < 2).forEach(group -> {
+            groupRepository.delete(group);
+        });
+    }
+
+    @Override
     public Set<Group> mergeCandidates(String userUid, String groupUid) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);

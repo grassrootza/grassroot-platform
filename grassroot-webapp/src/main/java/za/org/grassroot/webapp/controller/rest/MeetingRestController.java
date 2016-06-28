@@ -102,9 +102,9 @@ public class MeetingRestController {
     }
 
     @RequestMapping(value = "/update/{phoneNumber}/{code}/{meetingUid}", method = RequestMethod.POST)
-    public ResponseEntity<TaskDTO> updateMeeting(@PathVariable String phoneNumber, @PathVariable("code") String code,
-                                                         @PathVariable String meetingUid,
-                                                         @RequestParam String title,
+    public ResponseEntity<TaskDTO> updateMeeting(@PathVariable("phoneNumber")String phoneNumber, @PathVariable("code") String code,
+                                                         @PathVariable("meetingUid") String meetingUid,
+                                                         @RequestParam("title") String title,
                                                          @RequestParam(value = "description", required =false ) String description,
                                                          @RequestParam("startTime") LocalDateTime time,
                                                          @RequestParam("location") String location,

@@ -18,6 +18,7 @@ import za.org.grassroot.services.exception.GroupDeactivationNotAvailableExceptio
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
+import za.org.grassroot.webapp.util.USSDGroupUtil;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
@@ -55,7 +56,7 @@ public class USSDGroupController extends USSDController {
             groupTokenMenu = "token",
             mergeGroupMenu = "merge",
             inactiveMenu = "inactive",
-            validity ="validity.";
+            validity = "validity.";
 
     private static final String groupPath = homePath + groupMenus;
     private static final USSDSection thisSection = USSDSection.GROUP_MANAGER;
@@ -67,14 +68,14 @@ public class USSDGroupController extends USSDController {
      */
     @RequestMapping(value = groupPath + startMenu)
     @ResponseBody
-    public Request groupList(@RequestParam(value= phoneNumber, required=true) String inputNumber,
-                             @RequestParam(value="interrupted", required=false) boolean interrupted) throws URISyntaxException {
+    public Request groupList(@RequestParam(value = phoneNumber, required = true) String inputNumber,
+                             @RequestParam(value = "interrupted", required = false) boolean interrupted) throws URISyntaxException {
 
         // in case went "back" from menu in middle of create group
         User sessionUser = (interrupted) ? userManager.findByInputNumber(inputNumber, null) :
                 userManager.findByInputNumber(inputNumber);
         return menuBuilder(ussdGroupUtil.askForGroupAllowCreateNew(sessionUser, USSDSection.GROUP_MANAGER, existingGroupMenu,
-                                                                   createGroupMenu, createGroupMenu + doSuffix, null));
+                createGroupMenu, createGroupMenu + doSuffix, null));
     }
 
     /*
@@ -84,8 +85,8 @@ public class USSDGroupController extends USSDController {
 
     @RequestMapping(value = groupPath + existingGroupMenu)
     @ResponseBody
-    public Request groupMenu(@RequestParam(value= phoneNumber) String inputNumber,
-                             @RequestParam(value= groupUidParam) String groupUid) throws URISyntaxException {
+    public Request groupMenu(@RequestParam(value = phoneNumber) String inputNumber,
+                             @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
 
         return (groupUid == null || groupUid.equals("")) ? createPrompt(inputNumber) :
                 menuBuilder(ussdGroupUtil.existingGroupMenu(userManager.findByInputNumber(inputNumber), groupUid, false));
@@ -105,7 +106,7 @@ public class USSDGroupController extends USSDController {
 
     @RequestMapping(value = groupPath + createGroupMenu)
     @ResponseBody
-    public Request createPrompt(@RequestParam(value= phoneNumber) String inputNumber) throws URISyntaxException {
+    public Request createPrompt(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
         User sessionUser = userManager.findByInputNumber(inputNumber, groupMenus + createGroupMenu);
         return menuBuilder(ussdGroupUtil.createGroupPrompt(sessionUser, thisSection, createGroupMenu + doSuffix));
     }
@@ -116,37 +117,40 @@ public class USSDGroupController extends USSDController {
 
     @RequestMapping(value = groupPath + createGroupMenu + doSuffix)
     @ResponseBody
-    public Request createGroupWithName(@RequestParam(value= phoneNumber, required=true) String inputNumber,
-                                       @RequestParam(value= userInputParam, required=true) String groupName,
-                                       @RequestParam(value="interrupted", required=false) boolean interrupted,
-                                       @RequestParam(value= groupUidParam, required=false) String groupUid) throws URISyntaxException {
+    public Request createGroupWithName(@RequestParam(value = phoneNumber, required = true) String inputNumber,
+                                       @RequestParam(value = userInputParam, required = true) String groupName,
+                                       @RequestParam(value = "interrupted", required = false) boolean interrupted,
+                                       @RequestParam(value = groupUidParam, required = false) String groupUid) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
-
         Group createdGroup;
-
-        if (interrupted) {
-            createdGroup = groupBroker.load(groupUid);
+        USSDMenu menu;
+        if (!isValidGroupName(groupName)) {
+            menu = ussdGroupUtil.invalidGroupNamePrompt(user, groupName, thisSection, createGroupMenu + doSuffix);
         } else {
-            Long startTime = System.currentTimeMillis();
-            MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
-            createdGroup = groupBroker.create(user.getUid(), groupName, null, Collections.singleton(creator),
-                                              GroupPermissionTemplate.DEFAULT_GROUP, null, null);
-            groupBroker.openJoinToken(user.getUid(), createdGroup.getUid(), false, null);
-            Long endTime = System.currentTimeMillis();
-            log.info(String.format("Group has been created ... time taken ... %d msecs", endTime - startTime));
+            if (interrupted) {
+                createdGroup = groupBroker.load(groupUid);
+            } else {
+                Long startTime = System.currentTimeMillis();
+                MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
+                createdGroup = groupBroker.create(user.getUid(), groupName, null, Collections.singleton(creator),
+                        GroupPermissionTemplate.DEFAULT_GROUP, null, null);
+                groupBroker.openJoinToken(user.getUid(), createdGroup.getUid(), false, null);
+                Long endTime = System.currentTimeMillis();
+                log.info(String.format("Group has been created ... time taken ... %d msecs", endTime - startTime));
+            }
+
+            String joiningCode = "*134*1994*" + createdGroup.getGroupTokenCode() + "#";
+            userManager.setLastUssdMenu(user, saveGroupMenuWithInput(createGroupMenu + doSuffix, createdGroup.getUid(), groupName));
+            menu = new USSDMenu(getMessage(thisSection, createGroupMenu + doSuffix, promptKey,
+                    new String[]{groupName, joiningCode}, user));
+
+            menu.addMenuOption(groupMenuWithId(createGroupAddNumbers, createdGroup.getUid()),
+                    getMessage(thisSection, createGroupMenu + doSuffix, optionsKey + "numbers", user));
+            menu.addMenuOption(groupMenuWithId(closeGroupToken, createdGroup.getUid()),
+                    getMessage(thisSection, createGroupMenu + doSuffix, optionsKey + "token", user));
+
         }
-
-        String joiningCode = "*134*1994*" + createdGroup.getGroupTokenCode() + "#";
-        userManager.setLastUssdMenu(user, saveGroupMenuWithInput(createGroupMenu + doSuffix, createdGroup.getUid(), groupName));
-        USSDMenu menu = new USSDMenu(getMessage(thisSection, createGroupMenu + doSuffix, promptKey,
-                                                new String[]{ groupName, joiningCode}, user));
-
-        menu.addMenuOption(groupMenuWithId(createGroupAddNumbers, createdGroup.getUid()),
-                           getMessage(thisSection, createGroupMenu + doSuffix, optionsKey + "numbers", user));
-        menu.addMenuOption(groupMenuWithId(closeGroupToken, createdGroup.getUid()),
-                           getMessage(thisSection, createGroupMenu + doSuffix, optionsKey + "token", user));
-
         return menuBuilder(menu);
     }
 
@@ -171,9 +175,9 @@ public class USSDGroupController extends USSDController {
         USSDMenu menu = new USSDMenu(getMessage(thisSection, closeGroupToken, promptKey, user));
 
         menu.addMenuOption(groupMenuWithId(createGroupAddNumbers, groupUid),
-                           getMessage(thisSection, closeGroupToken, optionsKey + "add", user));
+                getMessage(thisSection, closeGroupToken, optionsKey + "add", user));
         menu.addMenuOption(groupMenus + startMenu + "?interrupted=1",
-                           getMessage(thisSection, closeGroupToken, optionsKey + "home", user));
+                getMessage(thisSection, closeGroupToken, optionsKey + "home", user));
         menu.addMenuOption("exit", getMessage("exit.option", user));
 
         return menuBuilder(menu);
@@ -191,24 +195,24 @@ public class USSDGroupController extends USSDController {
                                                       @RequestParam(groupUidParam) String groupUid) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber, saveGroupMenu(createGroupAddNumbers, groupUid));
         return menuBuilder(new USSDMenu(getMessage(thisSection, createGroupAddNumbers, promptKey, user),
-                                     groupMenuWithId(createGroupAddNumbers + doSuffix, groupUid)));
+                groupMenuWithId(createGroupAddNumbers + doSuffix, groupUid)));
     }
 
     @RequestMapping(value = groupPath + createGroupAddNumbers + doSuffix)
     @ResponseBody
-    public Request addNumbersToNewlyCreatedGroup(@RequestParam(value= phoneNumber, required=true) String inputNumber,
-                                                 @RequestParam(value= groupUidParam, required=true) String groupUid,
-                                                 @RequestParam(value= userInputParam, required=true) String userInput,
-                                                 @RequestParam(value="prior_input", required=false) String priorInput) throws URISyntaxException, UnsupportedEncodingException {
+    public Request addNumbersToNewlyCreatedGroup(@RequestParam(value = phoneNumber, required = true) String inputNumber,
+                                                 @RequestParam(value = groupUidParam, required = true) String groupUid,
+                                                 @RequestParam(value = userInputParam, required = true) String userInput,
+                                                 @RequestParam(value = "prior_input", required = false) String priorInput) throws URISyntaxException, UnsupportedEncodingException {
 
         USSDMenu thisMenu;
         final String userResponse = (priorInput == null) ? userInput : priorInput;
         User user = userManager.findByInputNumber(inputNumber,
-                                                    saveGroupMenuWithInput(createGroupAddNumbers + doSuffix, groupUid, userResponse));
+                saveGroupMenuWithInput(createGroupAddNumbers + doSuffix, groupUid, userResponse));
 
         if (!userResponse.trim().equals("0")) {
             thisMenu = ussdGroupUtil.addNumbersToExistingGroup(user, groupUid, thisSection,
-                                                               userResponse, createGroupAddNumbers + doSuffix);
+                    userResponse, createGroupAddNumbers + doSuffix);
         } else { // stop asking for numbers, reset interrupt prompt and give options to go back
             Group group = groupBroker.load(groupUid);
             String prompt = (group.getGroupTokenCode() != null && Instant.now().isBefore(group.getTokenExpiryDateTime().toInstant())) ?
@@ -216,9 +220,9 @@ public class USSDGroupController extends USSDController {
                     getMessage(thisSection, createGroupAddNumbers, promptKey + ".done", user);
             thisMenu = new USSDMenu(prompt);
             thisMenu.addMenuOption(groupMenus + startMenu + "?interrupted=1",
-                                   getMessage(thisSection, createGroupAddNumbers, optionsKey + "home", user));
+                    getMessage(thisSection, createGroupAddNumbers, optionsKey + "home", user));
             thisMenu.addMenuOption(groupMenus + closeGroupToken + groupUidUrlSuffix + groupUid,
-                                   getMessage(thisSection, createGroupAddNumbers, optionsKey + "token", user));
+                    getMessage(thisSection, createGroupAddNumbers, optionsKey + "token", user));
             thisMenu.addMenuOption("exit", getMessage("exit.option", user));
         }
 
@@ -232,8 +236,8 @@ public class USSDGroupController extends USSDController {
 
     @RequestMapping(value = groupPath + renameGroupPrompt)
     @ResponseBody
-    public Request renamePrompt(@RequestParam(value= phoneNumber) String inputNumber,
-                                @RequestParam(value= groupUidParam) String groupUid) throws URISyntaxException {
+    public Request renamePrompt(@RequestParam(value = phoneNumber) String inputNumber,
+                                @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
 
         User sessionUser = userManager.findByInputNumber(inputNumber, saveGroupMenu(renameGroupPrompt, groupUid));
         Group groupToRename = groupBroker.load(groupUid);
@@ -241,8 +245,8 @@ public class USSDGroupController extends USSDController {
         log.info("renaming group with this name : " + groupToRename.getGroupName());
 
         String promptMessage = (groupToRename.getGroupName().trim().length() == 0) ?
-            getMessage(thisSection, renameGroupPrompt, promptKey + "1", sessionUser) :
-            getMessage(thisSection, renameGroupPrompt, promptKey + "2", groupToRename.getGroupName(), sessionUser);
+                getMessage(thisSection, renameGroupPrompt, promptKey + "1", sessionUser) :
+                getMessage(thisSection, renameGroupPrompt, promptKey + "2", groupToRename.getGroupName(), sessionUser);
 
         return menuBuilder(new USSDMenu(promptMessage, groupMenuWithId(renameGroupPrompt + doSuffix, groupUid)));
 
@@ -250,15 +254,15 @@ public class USSDGroupController extends USSDController {
 
     @RequestMapping(value = groupPath + renameGroupPrompt + doSuffix)
     @ResponseBody
-    public Request renameGroup(@RequestParam(value= phoneNumber, required=true) String inputNumber,
-                               @RequestParam(value= groupUidParam, required=true) String groupUid,
-                               @RequestParam(value= userInputParam, required=true) String newName,
-                               @RequestParam(value= interruptedFlag, required = false) boolean interrupted) throws URISyntaxException {
+    public Request renameGroup(@RequestParam(value = phoneNumber, required = true) String inputNumber,
+                               @RequestParam(value = groupUidParam, required = true) String groupUid,
+                               @RequestParam(value = userInputParam, required = true) String newName,
+                               @RequestParam(value = interruptedFlag, required = false) boolean interrupted) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber, null);
         if (!interrupted) groupBroker.updateName(user.getUid(), groupUid, newName);
         USSDMenu thisMenu = new USSDMenu(getMessage(thisSection, renameGroupPrompt + doSuffix, promptKey, newName, user),
-                                optionsHomeExit(user));
+                optionsHomeExit(user));
 
         return menuBuilder(thisMenu);
     }
@@ -269,8 +273,8 @@ public class USSDGroupController extends USSDController {
 
     @RequestMapping(value = groupPath + groupTokenMenu)
     @ResponseBody
-    public Request groupToken(@RequestParam(value= phoneNumber) String inputNumber,
-                              @RequestParam(value= groupUidParam) String groupUid) throws URISyntaxException {
+    public Request groupToken(@RequestParam(value = phoneNumber) String inputNumber,
+                              @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
 
         // todo: validate that this user has permission to create a token for this group
 
@@ -283,40 +287,40 @@ public class USSDGroupController extends USSDController {
             boolean indefiniteToken = sessionGroup.getTokenExpiryDateTime().equals(DateTimeUtil.getVeryLongTimestamp());
             tokenMenu = new USSDMenu(getMessage(thisSection, groupTokenMenu, promptKey + ".exists", tokenCode, sessionUser));
             if (!indefiniteToken) tokenMenu.addMenuOption(groupMenuWithId(groupTokenMenu + "-extend", groupUid),
-                                                          getMessage(thisSection, groupTokenMenu, optionsKey + "extend", sessionUser));
+                    getMessage(thisSection, groupTokenMenu, optionsKey + "extend", sessionUser));
             tokenMenu.addMenuOption(groupMenuWithId(groupTokenMenu + "-close", groupUid),
-                                    getMessage(thisSection, groupTokenMenu, optionsKey + "close", sessionUser));
+                    getMessage(thisSection, groupTokenMenu, optionsKey + "close", sessionUser));
 
         } else {
             /* Creating a new token, ask for number of days, set an interruption flag */
             tokenMenu = new USSDMenu(getMessage(thisSection, groupTokenMenu, promptKey, sessionUser));
             String daysUrl = groupMenus + groupTokenMenu + doSuffix + groupUidUrlSuffix + groupUid + "&days=";
-            tokenMenu.addMenuOption(daysUrl + "0", getMessage(thisSection,groupTokenMenu,validity+"permanent",sessionUser));
-            tokenMenu.addMenuOption(daysUrl + "1", getMessage(thisSection,groupTokenMenu,validity+"day",sessionUser));
-            tokenMenu.addMenuOption(daysUrl + "7", getMessage(thisSection,groupTokenMenu,validity+"week",sessionUser));
+            tokenMenu.addMenuOption(daysUrl + "0", getMessage(thisSection, groupTokenMenu, validity + "permanent", sessionUser));
+            tokenMenu.addMenuOption(daysUrl + "1", getMessage(thisSection, groupTokenMenu, validity + "day", sessionUser));
+            tokenMenu.addMenuOption(daysUrl + "7", getMessage(thisSection, groupTokenMenu, validity + "week", sessionUser));
         }
         return menuBuilder(tokenMenu);
     }
 
     @RequestMapping(value = groupPath + groupTokenMenu + doSuffix)
     @ResponseBody
-    public Request createToken(@RequestParam(value= phoneNumber) String inputNumber,
-                               @RequestParam(value= groupUidParam) String groupUid,
-                               @RequestParam(value="days") Integer daysValid) throws URISyntaxException {
+    public Request createToken(@RequestParam(value = phoneNumber) String inputNumber,
+                               @RequestParam(value = groupUidParam) String groupUid,
+                               @RequestParam(value = "days") Integer daysValid) throws URISyntaxException {
 
         /* Generate a token, but also set the interruption switch back to null -- group creation is finished, if group was created */
         User user = userManager.findByInputNumber(inputNumber, null);
         String token = (daysValid == 0) ? groupBroker.openJoinToken(user.getUid(), groupUid, false, null) :
                 groupBroker.openJoinToken(user.getUid(), groupUid, true, LocalDateTime.now().plusDays(daysValid));
         return menuBuilder(new USSDMenu(getMessage(thisSection, groupTokenMenu, "created", token, user),
-                                              optionsHomeExit(user)));
+                optionsHomeExit(user)));
     }
 
     @RequestMapping(value = groupPath + groupTokenMenu + "-extend")
     @ResponseBody
-    public Request extendToken(@RequestParam(value= phoneNumber, required=true) String inputNumber,
-                               @RequestParam(value= groupUidParam, required=true) String groupUid,
-                               @RequestParam(value="days", required=false) Integer daysValid) throws URISyntaxException {
+    public Request extendToken(@RequestParam(value = phoneNumber, required = true) String inputNumber,
+                               @RequestParam(value = groupUidParam, required = true) String groupUid,
+                               @RequestParam(value = "days", required = false) Integer daysValid) throws URISyntaxException {
 
         String urlToSave = (daysValid == null) ? saveGroupMenu(groupTokenMenu + "-extend", groupUid) : null;
         User sessionUser = userManager.findByInputNumber(inputNumber, urlToSave);
@@ -327,17 +331,17 @@ public class USSDGroupController extends USSDController {
             // means we are still asking for the number of days to extend
             promptMenu = new USSDMenu(getMessage(thisSection, groupTokenMenu, promptKey + ".extend", sessionUser));
             promptMenu.addMenuOption(groupMenus + existingGroupMenu + groupUidUrlSuffix + groupUid,
-                                     getMessage(thisSection, groupTokenMenu, optionsKey + "extend.none", sessionUser));
+                    getMessage(thisSection, groupTokenMenu, optionsKey + "extend.none", sessionUser));
             String daySuffix = getMessage(thisSection, groupTokenMenu, optionsKey + "days", sessionUser);
             for (int i = 1; i <= 3; i++)
-                promptMenu.addMenuOption(groupMenuWithId(groupTokenMenu + "-extend", groupUid)+ "&days=" + i, i + daySuffix);
+                promptMenu.addMenuOption(groupMenuWithId(groupTokenMenu + "-extend", groupUid) + "&days=" + i, i + daySuffix);
         } else {
             // we have been passed a number of days to extend
             LocalDateTime newExpiry = LocalDateTime.now().plusDays(daysValid);
             groupBroker.openJoinToken(sessionUser.getUid(), sessionGroup.getUid(), true, newExpiry);
             String date = newExpiry.format(dateFormat);
             promptMenu = new USSDMenu(getMessage(thisSection, groupTokenMenu, promptKey + ".extend.done", date, sessionUser),
-                                        optionsHomeExit(sessionUser));
+                    optionsHomeExit(sessionUser));
         }
         return menuBuilder(promptMenu);
     }
@@ -345,9 +349,9 @@ public class USSDGroupController extends USSDController {
 
     @RequestMapping(value = groupPath + groupTokenMenu + "-close")
     @ResponseBody
-    public Request extendToken(@RequestParam(value= phoneNumber, required=true) String inputNumber,
-                               @RequestParam(value= groupUidParam, required=true) String groupUid,
-                               @RequestParam(value= yesOrNoParam, required=false) String confirmed) throws URISyntaxException {
+    public Request extendToken(@RequestParam(value = phoneNumber, required = true) String inputNumber,
+                               @RequestParam(value = groupUidParam, required = true) String groupUid,
+                               @RequestParam(value = yesOrNoParam, required = false) String confirmed) throws URISyntaxException {
 
         // todo: check the token and group match, and that the user has token admin rights
         User user;
@@ -357,13 +361,13 @@ public class USSDGroupController extends USSDController {
             user = userManager.findByInputNumber(inputNumber, saveGroupMenu(groupTokenMenu + "-close", groupUid));
             String beginUri = groupMenus + groupTokenMenu, endUri = groupUidUrlSuffix + groupUid;
             thisMenu = new USSDMenu(getMessage(thisSection, groupTokenMenu, promptKey + ".close", user),
-                                    optionsYesNo(user, beginUri + "-close" + endUri));
+                    optionsYesNo(user, beginUri + "-close" + endUri));
         } else if ("yes".equals(confirmed)) {
             user = userManager.findByInputNumber(inputNumber, null);
             // todo: error handling here (bad token, etc., also, security)
             groupBroker.closeJoinToken(user.getUid(), groupUid);
             thisMenu = new USSDMenu(getMessage(thisSection, groupTokenMenu, promptKey + ".close-done", user),
-                                    optionsHomeExit(user));
+                    optionsHomeExit(user));
         } else {
             user = userManager.findByInputNumber(inputNumber, null);
             thisMenu = new USSDMenu("Okay, cancelled", optionsHomeExit(user));
@@ -376,12 +380,12 @@ public class USSDGroupController extends USSDController {
     /**
      * SECTION: MENUS TO ADD MEMBERS, UNSUBSCRIBE, AND LIST MEMBERS
      * todo: decide if want some kind of "list members" function (maybe delivered via SMS)?
-     * */
+     */
 
     @RequestMapping(value = groupPath + addMemberPrompt)
     @ResponseBody
-    public Request addNumberInput(@RequestParam(value= phoneNumber) String inputNumber,
-                                  @RequestParam(value= groupUidParam) String groupUid) throws URISyntaxException {
+    public Request addNumberInput(@RequestParam(value = phoneNumber) String inputNumber,
+                                  @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
 
         // todo: have a way to flag if returned here from next menu because number wasn't right
         // todo: load and display some brief descriptive text about the group, e.g., name and who created it
@@ -403,16 +407,16 @@ public class USSDGroupController extends USSDController {
 
     @RequestMapping(value = groupPath + addMemberPrompt + doSuffix)
     @ResponseBody
-    public Request addNumberToGroup(@RequestParam(value= phoneNumber) String inputNumber,
-                                     @RequestParam(value= groupUidParam) String groupUid,
-                                     @RequestParam(value= userInputParam) String numberToAdd) throws URISyntaxException {
+    public Request addNumberToGroup(@RequestParam(value = phoneNumber) String inputNumber,
+                                    @RequestParam(value = groupUidParam) String groupUid,
+                                    @RequestParam(value = userInputParam) String numberToAdd) throws URISyntaxException {
 
         // todo: make sure this user is part of the group and has permission to add people to it
 
         User sessionUser = userManager.findByInputNumber(inputNumber, null);
         USSDMenu thisMenu = (numberToAdd.trim().equals("0")) ?
                 new USSDMenu(getMessage(thisSection, addMemberPrompt + doSuffix, promptKey, sessionUser),
-                                        optionsHomeExit(sessionUser)) :
+                        optionsHomeExit(sessionUser)) :
                 ussdGroupUtil.addNumbersToExistingGroup(sessionUser, groupUid, thisSection, numberToAdd, addMemberPrompt + doSuffix);
 
         return menuBuilder(thisMenu);
@@ -420,8 +424,8 @@ public class USSDGroupController extends USSDController {
 
     @RequestMapping(value = groupPath + unsubscribePrompt)
     @ResponseBody
-    public Request unsubscribeConfirm(@RequestParam(value= phoneNumber) String inputNumber,
-                                      @RequestParam(value= groupUidParam) String groupUid) throws URISyntaxException {
+    public Request unsubscribeConfirm(@RequestParam(value = phoneNumber) String inputNumber,
+                                      @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
 
         // todo: add in a brief description of group, e.g., who created it
 
@@ -430,9 +434,9 @@ public class USSDGroupController extends USSDController {
         String menuKey = groupKey + "." + unsubscribePrompt + ".";
         USSDMenu promptMenu = new USSDMenu(getMessage(menuKey + promptKey, sessionUser));
         promptMenu.addMenuOption(groupMenuWithId(unsubscribePrompt + doSuffix, groupUid),
-                                 getMessage(menuKey + optionsKey + "confirm", sessionUser));
+                getMessage(menuKey + optionsKey + "confirm", sessionUser));
         promptMenu.addMenuOption(groupMenuWithId(existingGroupMenu, groupUid),
-                                 getMessage(menuKey + optionsKey + "back", sessionUser));
+                getMessage(menuKey + optionsKey + "back", sessionUser));
 
         return menuBuilder(promptMenu);
 
@@ -441,8 +445,8 @@ public class USSDGroupController extends USSDController {
     // todo: security & permissions so we make sure it is the user themselves doing this
     @RequestMapping(value = groupPath + unsubscribePrompt + doSuffix)
     @ResponseBody
-    public Request unsubscribeDo(@RequestParam(value= phoneNumber) String inputNumber,
-                                 @RequestParam(value= groupUidParam) String groupUid) throws URISyntaxException {
+    public Request unsubscribeDo(@RequestParam(value = phoneNumber) String inputNumber,
+                                 @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
 
         User sessionUser = userManager.findByInputNumber(inputNumber, null);
         // todo: add error and exception handling, as well as validation and checking (e.g., if user in group, etc)
@@ -454,12 +458,12 @@ public class USSDGroupController extends USSDController {
 
     /**
      * SECTION: MERGING GROUP MENUS (AND DEACTIVATE)
-     * */
+     */
 
     @RequestMapping(value = groupPath + mergeGroupMenu)
     @ResponseBody
-    public Request selectMergeGroups(@RequestParam(value= phoneNumber) String inputNumber,
-                                     @RequestParam(value= groupUidParam) String groupUid) throws URISyntaxException {
+    public Request selectMergeGroups(@RequestParam(value = phoneNumber) String inputNumber,
+                                     @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
 
         USSDMenu menu;
         User user = userManager.findByInputNumber(inputNumber, saveGroupMenu(mergeGroupMenu, groupUid));
@@ -469,29 +473,29 @@ public class USSDGroupController extends USSDController {
         if (mergeCandidates == null || mergeCandidates.size() == 0) {
             menu = new USSDMenu(getMessage(thisSection, mergeGroupMenu, promptKey + ".error", user));
             menu.addMenuOption(groupMenuWithId(existingGroupMenu, groupUid),
-                               getMessage(thisSection, mergeGroupMenu, optionsKey + "back", user));
+                    getMessage(thisSection, mergeGroupMenu, optionsKey + "back", user));
             menu.addMenuOptions(optionsHomeExit(user));
         } else {
             menu = new USSDMenu(getMessage(thisSection, mergeGroupMenu, promptKey, user));
             menu = ussdGroupUtil.addListOfGroupsToMenu(menu, groupMenus + mergeGroupMenu + "-confirm?firstGroupSelected=" + groupUid,
-                                         new ArrayList<>(mergeCandidates), user);
+                    new ArrayList<>(mergeCandidates), user);
         }
         return menuBuilder(menu);
     }
 
     @RequestMapping(value = groupPath + mergeGroupMenu + "-confirm")
     @ResponseBody
-    public Request confirmMerge(@RequestParam(value= phoneNumber) String inputNumber,
-                                @RequestParam(value= groupUidParam) String groupUid1,
-                                @RequestParam(value="firstGroupSelected") String firstGroupSelected) throws URISyntaxException {
+    public Request confirmMerge(@RequestParam(value = phoneNumber) String inputNumber,
+                                @RequestParam(value = groupUidParam) String groupUid1,
+                                @RequestParam(value = "firstGroupSelected") String firstGroupSelected) throws URISyntaxException {
 
         // todo: specify which one is smaller
         // todo: check permissions
         User user = userManager.findByInputNumber(inputNumber,
-                                                  saveGroupMenuWithParams(mergeGroupMenu + "-confirm", groupUid1,
-                                                                          "&firstGroupSelected=" + firstGroupSelected));
-        String[] groupNames = new String[] { groupBroker.load(groupUid1).getName(""),
-                groupBroker.load(firstGroupSelected).getName("") };
+                saveGroupMenuWithParams(mergeGroupMenu + "-confirm", groupUid1,
+                        "&firstGroupSelected=" + firstGroupSelected));
+        String[] groupNames = new String[]{groupBroker.load(groupUid1).getName(""),
+                groupBroker.load(firstGroupSelected).getName("")};
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, mergeGroupMenu + "-confirm", promptKey, groupNames, user));
         String urlRoot = groupMenus + mergeGroupMenu + doSuffix + "&groupUid1=" + groupUid1 + "&groupUid2=" + firstGroupSelected + "&action=";
@@ -515,16 +519,16 @@ public class USSDGroupController extends USSDController {
         String groupsSuffix = "?groupUid1=" + groupUid1 + "&groupUid2=" + groupUid2;
         User user = userManager.findByInputNumber(inputNumber, groupMenus + mergeGroupMenu + "-newname" + groupsSuffix);
         return menuBuilder(new USSDMenu(getMessage(thisSection, mergeGroupMenu + "-newname", promptKey, user),
-                                         groupMenus + mergeGroupMenu + doSuffix + groupsSuffix));
+                groupMenus + mergeGroupMenu + doSuffix + groupsSuffix));
     }
 
     @RequestMapping(value = groupPath + mergeGroupMenu + doSuffix)
     @ResponseBody
-    public Request mergeDo(@RequestParam(value= phoneNumber, required=true) String inputNumber,
-                           @RequestParam(value= groupUidParam + "1", required=true) String firstGroupUid,
-                           @RequestParam(value= groupUidParam + "2", required=true) String secondGroupUid,
-                           @RequestParam(value ="action", required=false) String action,
-                           @RequestParam(value=userInputParam, required = false) String userInput) throws URISyntaxException {
+    public Request mergeDo(@RequestParam(value = phoneNumber, required = true) String inputNumber,
+                           @RequestParam(value = groupUidParam + "1", required = true) String firstGroupUid,
+                           @RequestParam(value = groupUidParam + "2", required = true) String secondGroupUid,
+                           @RequestParam(value = "action", required = false) String action,
+                           @RequestParam(value = userInputParam, required = false) String userInput) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber, null); // resetting return flag
         Group firstGroup = groupBroker.load(firstGroupUid);
@@ -550,7 +554,7 @@ public class USSDGroupController extends USSDController {
         USSDMenu menu = new USSDMenu(getMessage(thisSection, mergeGroupMenu + doSuffix, promptKey, user));
 
         menu.addMenuOption(groupMenuWithId(existingGroupMenu, resultGroup.getUid()),
-                           getMessage(thisSection, mergeGroupMenu + doSuffix, optionsKey + "group", user));
+                getMessage(thisSection, mergeGroupMenu + doSuffix, optionsKey + "group", user));
         menu.addMenuOptions(optionsHomeExit(user));
 
         return menuBuilder(menu);
@@ -558,24 +562,24 @@ public class USSDGroupController extends USSDController {
 
     @RequestMapping(value = groupPath + inactiveMenu)
     @ResponseBody
-    public Request inactiveConfirm(@RequestParam(value= phoneNumber) String inputNumber,
-                                   @RequestParam(value= groupUidParam) String groupUid) throws URISyntaxException {
+    public Request inactiveConfirm(@RequestParam(value = phoneNumber) String inputNumber,
+                                   @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
 
         // todo: check permissions to do this and add exception handling
         User user = userManager.findByInputNumber(inputNumber, null); // since return flag may have been set prior
         USSDMenu menu = new USSDMenu(getMessage(thisSection, inactiveMenu, promptKey, user));
         menu.addMenuOption(groupMenuWithId(inactiveMenu + doSuffix, groupUid),
-                           getMessage(thisSection, inactiveMenu, optionsKey + "confirm", user));
+                getMessage(thisSection, inactiveMenu, optionsKey + "confirm", user));
         menu.addMenuOption(groupMenuWithId(existingGroupMenu, groupUid),
-                           getMessage(thisSection, inactiveMenu, optionsKey + "cancel", user));
+                getMessage(thisSection, inactiveMenu, optionsKey + "cancel", user));
         return menuBuilder(menu);
 
     }
 
     @RequestMapping(value = groupPath + inactiveMenu + doSuffix)
     @ResponseBody
-    public Request inactiveDo(@RequestParam(value= phoneNumber) String inputNumber,
-                              @RequestParam(value= groupUidParam) String groupUid) throws URISyntaxException {
+    public Request inactiveDo(@RequestParam(value = phoneNumber) String inputNumber,
+                              @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
 
         // todo: check for user role & permissions (must have all of them)
 
@@ -608,7 +612,7 @@ public class USSDGroupController extends USSDController {
         final String lastMessage = lastLog.getGroupLogType().toString();
 
         final int groupSize = group.getMemberships().size();
-        final String[] promptParams = new String[] { String.valueOf(groupSize), lastModified, lastMessage};
+        final String[] promptParams = new String[]{String.valueOf(groupSize), lastModified, lastMessage};
 
         final String prompt = getMessage(thisSection, listGroupMembers, promptKey, promptParams, user);
 
@@ -618,6 +622,11 @@ public class USSDGroupController extends USSDController {
         menu.addMenuOption(startMenu, getMessage(startMenu, user));
 
         return menuBuilder(menu);
+    }
+
+
+    private boolean isValidGroupName(String groupName) {
+        return groupName.length() > 1;
     }
 
 }
