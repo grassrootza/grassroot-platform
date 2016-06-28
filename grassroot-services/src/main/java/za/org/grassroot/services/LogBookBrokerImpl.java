@@ -22,6 +22,7 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
@@ -306,4 +307,51 @@ public class LogBookBrokerImpl implements LogBookBroker {
 		}
 		return lbToReturn;
 	}
+
+	@Override
+	public LogBook update(String userUid, String uid, String message, LocalDateTime actionByDate, int reminderMinutes, Set<String> assignedMemberUids) {
+
+		Instant convertedActionByDate = convertToSystemTime(actionByDate, getSAST());
+		LogBook logBook = logBookRepository.findOneByUid(uid);
+		User user = userRepository.findOneByUid(userUid);
+		logBook.setMessage(message);
+		logBook.setActionByDate(convertedActionByDate);
+		logBook.setReminderMinutes(reminderMinutes);
+		if(assignedMemberUids !=null && !assignedMemberUids.isEmpty()){
+			logBook.assignMembers(assignedMemberUids);
+		}
+		logBookRepository.save(logBook);
+
+		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+		LogBookLog logBookLog = new LogBookLog(user, logBook, null);
+		bundle.addLog(logBookLog);
+
+		Set<Notification> notifications = constructLogBookRecordedNotifications(logBook, logBookLog);
+		bundle.addNotifications(notifications);
+
+		logsAndNotificationsBroker.storeBundle(bundle);
+
+
+		return logBook;
+
+	}
+
+	/*@Override
+	@Transactional(readOnly = true)
+	public List<LogBook> retrieveParentLogBooks(String userUid, String parentUid, JpaEntityType parentType) {
+		Objects.requireNonNull(userUid);
+		Objects.requireNonNull(parentUid);
+		Objects.requireNonNull(parentType);
+
+		User user = userRepository.findOneByUid(userUid);
+		AssignedMembersContainer parent = uidIdentifiableRepository.findOneByUid(AssignedMembersContainer.class,
+																				 parentType, parentUid);
+
+		// todo: decide if, say, group organizers on ultimate group should be able to access this
+		if (!parent.getAssignedMembers().contains(user))
+			throw new AccessDeniedException("Member is not assigned to this parent, so does not have read access");
+
+		return logBookRepository.findByGroupUidOrEventUid(parentUid, parentUid);
+
+	}*/
 }

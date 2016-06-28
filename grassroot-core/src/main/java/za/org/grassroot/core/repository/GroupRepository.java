@@ -16,6 +16,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.GroupDTO;
 
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Date;
@@ -72,6 +73,8 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
      */
     List<Group> findByGroupNameContainingIgnoreCaseAndDiscoverable(String nameFragment, boolean discoverable);
 
+    List<Group> findByGroupNameAndCreatedDateTimeBefore(String groupName, Timestamp threshold);
+
     /*
     Methods for analytical service, to retrieve and count groups in periods (by created date time)
      */
@@ -98,6 +101,8 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
 
     @Query(value = "SELECT g FROM Group g WHERE g.id IN (SELECT gl.group.id FROM GroupLog gl WHERE (gl.createdDateTime BETWEEN ?1 AND ?2) AND gl.groupLogType = za.org.grassroot.core.enums.GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE)")
     List<Group> findGroupsWhereJoinCodeUsedBetween(Instant periodStart, Instant periodEnd);
+
+
 
 
 }

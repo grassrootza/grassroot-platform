@@ -166,6 +166,14 @@ public class ScheduledTasks {
     }
 
     // @Transactional
+    @Scheduled(cron = "0 0 3 * * *") // runs at 1am every day
+    public void removeInvalidGroups() {
+        String invalidName = "1";
+        Instant threshold = Instant.now().minus(7, ChronoUnit.DAYS);
+        groupBroker.deleteInvalidGroups(invalidName,threshold);
+    }
+
+    // @Transactional
     @Scheduled(cron = "0 0 15 * * *") // runs at 3pm (= 5pm SAST) every day
     public void sendGroupJoinNotifications() { groupBroker.notifyOrganizersOfJoinCodeUse(Instant.now().minus(1, ChronoUnit.DAYS),
                                                                                          Instant.now());}

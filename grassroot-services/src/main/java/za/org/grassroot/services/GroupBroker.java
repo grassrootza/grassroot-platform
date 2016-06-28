@@ -77,6 +77,8 @@ public interface GroupBroker {
 
     void link(String userUid, String childGroupUid, String parentGroupUid);
 
+    void deleteInvalidGroups(String invalidName, Instant threshold);
+
     Set<Group> mergeCandidates(String userUid, String groupUid);
 
     Group merge(String userUid, String firstGroupUid, String secondGroupUid,

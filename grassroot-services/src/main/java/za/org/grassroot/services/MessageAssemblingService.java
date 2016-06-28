@@ -22,6 +22,8 @@ public interface MessageAssemblingService {
 
     String createLogBookInfoNotificationMessage(User target, LogBook logBook);
 
+    String createLogBookUpdateNotificationMessage(User target, LogBook logBook);
+
     String createVoteResultsMessage(User user, Vote event, double yes, double no, double abstain, double noReply);
 
     String createScheduledEventReminderMessage(User destination, Event event);
