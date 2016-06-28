@@ -65,7 +65,7 @@ public class LogBookRestController {
 
         ResponseWrapper responseWrapper;
         if(!logBook.isCompleted()){
-            logBookBroker.complete(user.getUid(), id, LocalDateTime.now(), null); // todo: watch timezones on this
+            logBookBroker.confirmCompletion(user.getUid(), id, LocalDateTime.now()); // todo: watch timezones on this
             TaskDTO updatedTask = taskBroker.load(user.getUid(), id, TaskType.TODO);
             responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.TODO_SET_COMPLETED,
                                                          RestStatus.SUCCESS, Collections.singletonList(updatedTask));

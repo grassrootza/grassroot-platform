@@ -31,7 +31,7 @@ public abstract class AbstractLogBookEntity {
 	// -------------------------------------------------------------
 	// THESE SHOULD BE OF PRIVATE VISIBILITY; BECAUSE EVERYONE ELSE
 	// SHOULD READ/WRITE THEM VIA getParent()/setParent() !!!
-	// ONLY DIECT JPQL/SQL QUERIES SHOULD USE THIS IF NECESSARY!
+	// ONLY DIRECT JPQL/SQL QUERIES SHOULD USE THIS IF NECESSARY!
 	// -------------------------------------------------------------
 
 	@ManyToOne(cascade = CascadeType.ALL)

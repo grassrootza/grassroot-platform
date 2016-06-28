@@ -35,8 +35,13 @@ public class LogBookManager implements LogBookService {
     @Override
     public List<LogBook> getAllLogBookEntriesForGroup(Group group, boolean completed) {
         // use an old timestamp both so we prune the really old entries, and to get around half-formed ("null due date") entries
-        return logBookRepository.findByParentGroupAndCompletedAndActionByDateGreaterThan(
-                group, completed, LocalDateTime.now().minusYears(1L).toInstant(ZoneOffset.UTC));
+        if (completed) {
+            return logBookRepository.findByParentGroupAndCompletionPercentageGreaterThanEqualAndActionByDateGreaterThan(
+                    group, 50, LocalDateTime.now().minusYears(1L).toInstant(ZoneOffset.UTC));
+        } else {
+            return logBookRepository.findByParentGroupAndCompletionPercentageLessThanAndActionByDateGreaterThan(
+                    group, 50, LocalDateTime.now().minusYears(1L).toInstant(ZoneOffset.UTC));
+        }
     }
 
     @Override

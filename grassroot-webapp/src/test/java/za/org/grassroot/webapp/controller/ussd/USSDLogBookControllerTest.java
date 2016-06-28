@@ -331,9 +331,10 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
     @Test
     public void viewEntryMenuWorks() throws Exception {
-
-        LogBook dummyLogBook = LogBook.makeEmpty();
-        dummyLogBook.setCompleted(true);
+        Group testGroup = new Group("test testGroup", testUser);
+        LogBook dummyLogBook = new LogBook(testUser, testGroup, "Some logbook subject", Instant.now());
+        dummyLogBook.getAncestorGroup().addMember(testUser);
+        dummyLogBook.addCompletionConfirmation(testUser, Instant.now());
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, saveLogMenu(viewEntryMenu, dummyLogBook.getUid()))).thenReturn(testUser);
         when(logBookBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
@@ -352,7 +353,8 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
         Group testGroup = new Group("tg1", testUser);
         LogBook dummyLogBook = new LogBook(testUser, testGroup, "test logbook", Instant.now().plus(7, ChronoUnit.DAYS));
-        dummyLogBook.setCompleted(false);
+        dummyLogBook.getAncestorGroup().addMember(testUser);
+        dummyLogBook.addCompletionConfirmation(testUser, Instant.now());
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
         when(logBookBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
@@ -373,9 +375,8 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
         Group testGroup = new Group("tg2", testUser);
         LogBook dummyLogBook = new LogBook(testUser, testGroup, "test logbook", Instant.now().minus(7, ChronoUnit.DAYS));
-        dummyLogBook.setCompleted(true);
-        dummyLogBook.setCompletedDate(Instant.now());
-        dummyLogBook.setCompletedByUser(testUser);
+        dummyLogBook.getAncestorGroup().addMember(testUser);
+        dummyLogBook.addCompletionConfirmation(testUser, Instant.now());
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
         when(logBookBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
@@ -396,10 +397,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         testGroup.addMember(testUser);
         LogBook dummyLogBook = new LogBook(testUser, testGroup, "test logbook", Instant.now().minus(7, ChronoUnit.DAYS));
 
-        dummyLogBook.setCompleted(true);
-        dummyLogBook.setCompletedDate(Instant.now());
-
-        dummyLogBook.setCompletedByUser(testUser);
+        dummyLogBook.addCompletionConfirmation(testUser, Instant.now());
         dummyLogBook.assignMembers(Collections.singleton(testUser.getUid()));
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
         when(logBookBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
@@ -421,9 +419,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         testGroup.addMember(testUser);
         LogBook dummyLogBook = new LogBook(testUser, testGroup, "test logbook", Instant.now().minus(7, ChronoUnit.DAYS));
 
-        dummyLogBook.setCompleted(true);
-        dummyLogBook.setCompletedDate(Instant.now());
-        dummyLogBook.setCompletedByUser(testUser);
+        dummyLogBook.addCompletionConfirmation(testUser, Instant.now());
         dummyLogBook.assignMembers(Collections.singleton(testUser.getUid()));
 
         String urlToSave = saveLogMenu(setCompleteMenu, dummyLogBook.getUid());
@@ -536,7 +532,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         LogBook dummyLogBook = new LogBook(testUser, testGroup, "test logbook", Instant.now().plus(1, ChronoUnit.DAYS));
 
         dummyLogBook.assignMembers(Collections.singleton(testUser.getUid()));
-        dummyLogBook.setCompletedByUser(testUser);
+        dummyLogBook.addCompletionConfirmation(testUser, Instant.now());
         String completed_date = "20/11";
         LocalDateTime correctDateTime = LocalDateTime.of(2016, 11, 20, 13, 0);
 
@@ -547,7 +543,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
                 param(assignUserID, testUser.getUid())).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
-        verify(logBookBrokerMock, times(1)).complete(testUser.getUid(), dummyLogBook.getUid(), correctDateTime, testUser.getUid());
+        verify(logBookBrokerMock, times(1)).confirmCompletion(testUser.getUid(), dummyLogBook.getUid(), correctDateTime);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(logBookBrokerMock);
 

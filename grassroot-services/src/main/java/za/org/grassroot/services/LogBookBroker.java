@@ -21,16 +21,12 @@ public interface LogBookBroker {
 	void removeAssignedMembers(String userUid, String logBookUid, Set<String> memberUids);
 
 	/**
-	 * Marks a logbook entry as complete. Records that the first passed user marked the entry as complete, and, optionally,
-	 * records who completed the logbook and when.
-	 *
-	 * @param userUid The user recording the logbook as complete
-	 * @param logBookUid The uid of the logbook entry that was marked complete
-	 * @param completionTime When the logbook was completed (in user's local timezone). If null, marked as now.
-	 * @param completedByUserUid The user who completed the action. If null, marked as assigned member, or left unrecorded.
-     * @return True, if the logbook state was changed (i.e., was "not complete"), false, if it was already marked
-     */
-	boolean complete(String userUid, String logBookUid, LocalDateTime completionTime, String completedByUserUid);
+	 * Confirms completion by given user which should be a member of specified logbook.
+	 * @param userUid member that is confirming completion
+	 * @param logBookUid logbook ID
+	 * @param completionTime time of completion; can be null only in case when some other member previously set it for given logbook
+	 */
+	boolean confirmCompletion(String userUid, String logBookUid, LocalDateTime completionTime);
 
 	void sendScheduledReminder(String logBookUid);
 

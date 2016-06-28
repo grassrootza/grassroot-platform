@@ -5,6 +5,7 @@ import za.org.grassroot.core.util.UIDGenerator;
 import javax.persistence.*;
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -14,23 +15,17 @@ import java.util.Set;
 @Table(name = "log_book",
         indexes = {
                 @Index(name = "idx_log_book_group_id", columnList = "parent_group_id"),
-                @Index(name = "idx_log_book_completed", columnList = "completed"),
                 @Index(name = "idx_log_book_retries_left", columnList = "number_of_reminders_left_to_send"),
                 @Index(name = "idx_log_book_replicated_group_id", columnList = "replicated_group_id")})
 public class LogBook extends AbstractLogBookEntity implements AssignedMembersContainer, VoteContainer, MeetingContainer, GroupDescendant {
-
-    @Column(name = "completed")
-    private boolean completed;
-
-    @ManyToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name="completed_by_user_id")
-    private User completedByUser;
-
     @Column(name="completed_date")
     private Instant completedDate;
 
     @Column(name="number_of_reminders_left_to_send")
     private int numberOfRemindersLeftToSend;
+
+    @Column(name="completion_percentage", nullable = false)
+    private double completionPercentage;
 
     @ManyToOne(cascade = CascadeType.ALL)
    	@JoinColumn(name = "replicated_group_id")
@@ -46,6 +41,9 @@ public class LogBook extends AbstractLogBookEntity implements AssignedMembersCon
     @ManyToOne
    	@JoinColumn(name = "ancestor_group_id", nullable = false)
    	private Group ancestorGroup;
+
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "logBook", orphanRemoval = true)
+    private Set<LogBookCompletionConfirmation> completionConfirmations = new HashSet<>();
 
     private LogBook() {
         // for JPA
@@ -73,28 +71,8 @@ public class LogBook extends AbstractLogBookEntity implements AssignedMembersCon
         this.id = id;
     }
 
-    public boolean isCompleted() {
-        return completed;
-    }
-
-    public void setCompleted(boolean completed) {
-        this.completed = completed;
-    }
-
-    public User getCompletedByUser() {
-        return completedByUser;
-    }
-
-    public void setCompletedByUser(User completedByUser) {
-        this.completedByUser = completedByUser;
-    }
-
     public Instant getCompletedDate() {
         return completedDate;
-    }
-
-    public void setCompletedDate(Instant completedDate) {
-        this.completedDate = completedDate;
     }
 
     public int getNumberOfRemindersLeftToSend() {
@@ -132,12 +110,53 @@ public class LogBook extends AbstractLogBookEntity implements AssignedMembersCon
         this.assignedMembers = assignedMembersCollection;
     }
 
+    public boolean addCompletionConfirmation(User member, Instant completionTime) {
+        Objects.requireNonNull(member);
+
+        if (completionTime == null && this.completedDate == null) {
+            throw new IllegalArgumentException("Completion time cannot be null when there is no completed time registered in logbook: " + this);
+        }
+        // we override current completion time with this latest specified one
+        if (completionTime != null) {
+            this.completedDate = completionTime;
+        }
+
+        Set<User> members = getMembers();
+        if (!members.contains(member)) {
+            throw new IllegalArgumentException("User " + member + " is not a member of log book: " + this);
+        }
+        LogBookCompletionConfirmation confirmation = new LogBookCompletionConfirmation(this, member, completionTime);
+        boolean confirmationAdded = this.completionConfirmations.add(confirmation);
+
+        this.completionPercentage = calculateCompletionStatus().getPercentage();
+
+        return confirmationAdded;
+    }
+
+    public LogBookCompletionStatus calculateCompletionStatus() {
+        Set<User> members = getMembers();
+        int membersCount = members.size();
+        // we count only those confirmations that are from users that
+        // are currently members (these can always change)
+        long confirmationsCount = completionConfirmations.stream()
+                .filter(confirmation -> members.contains(confirmation.getMember()))
+                .count();
+        return new LogBookCompletionStatus((int) confirmationsCount, membersCount);
+    }
+
+    public boolean isCompleted() {
+        return calculateCompletionStatus().getPercentage() >= 50;
+    }
+
+    public double getCompletionPercentage() {
+        return completionPercentage;
+    }
+
     @Override
     public String toString() {
         return "LogBook{" +
                 "id=" + id +
                 ", uid=" + uid +
-                ", completed=" + completed +
                 ", completedDate=" + completedDate +
                 ", message='" + message + '\'' +
                 ", actionByDate=" + actionByDate +

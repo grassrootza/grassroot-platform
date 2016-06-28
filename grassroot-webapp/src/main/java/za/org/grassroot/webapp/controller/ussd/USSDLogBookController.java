@@ -310,7 +310,9 @@ public class USSDLogBookController extends USSDController {
         USSDMenu menu;
         if (logBook.isCompleted()) {
             String completedDate = dateFormat.format(convertToUserTimeZone(logBook.getCompletedDate(), getSAST()));
-            String userCompleted = logBook.getCompletedByUser() == null ? "" : "by " + logBook.getCompletedByUser().nameToDisplay();
+            // todo: accomodate to new design without single completion user
+//            String userCompleted = logBook.getCompletedByUser() == null ? "" : "by " + logBook.getCompletedByUser().nameToDisplay();
+            String userCompleted = "by <UNKNOWN>";
             String[] fields = new String[]{createdDate, dueDate, completedDate, userCompleted};
             menu = new USSDMenu(getMessage(thisSection, viewEntryDates, promptKey + ".complete", fields, user));
         } else {
@@ -445,7 +447,7 @@ public class USSDLogBookController extends USSDController {
         LocalDateTime completedDateTime = (completedDate != null) ?
                 DateTimeUtil.convertDateStringToLocalDateTime(reformatDateInput(completedDate), stdHour, stdMinute) : LocalDateTime.now();
         userLogger.recordUserInputtedDateTime(user.getUid(), completedDate, "logbook-completion", UserInterfaceType.USSD);
-        logBookBroker.complete(user.getUid(), logBookUid, completedDateTime, completedByUserUid);
+        logBookBroker.confirmCompletion(completedByUserUid, logBookUid, completedDateTime);
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, setCompleteMenu, promptKey, user));
         // todo: consider adding option to go back to either section start or group logbook start

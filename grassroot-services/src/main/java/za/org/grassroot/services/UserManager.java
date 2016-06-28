@@ -370,7 +370,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
         User user = userRepository.findOneByUid(userUid);
         Instant start = Instant.now().minus(daysInPast, ChronoUnit.DAYS);
         Instant end = Instant.now();
-        return (logBookRepository.countByParentGroupMembershipsUserAndActionByDateBetweenAndCompleted(user, start, end, false) > 0);
+        int count = logBookRepository.countByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThan(user, start, end, 50);
+        return count > 0;
     }
 
     /*

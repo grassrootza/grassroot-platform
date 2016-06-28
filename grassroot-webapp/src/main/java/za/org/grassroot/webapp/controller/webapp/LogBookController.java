@@ -187,14 +187,9 @@ public class LogBookController extends BaseController {
         model.addAttribute("creatingUser", logBookEntry.getCreatedByUser());
         model.addAttribute("isComplete", logBookEntry.isCompleted());
 
-        // todo: implement this using new design
-/*
-        if(logBookEntry.getAssignedToUser() != null)
-            model.addAttribute("assignedToUser", logBookEntry.getAssignedToUser());
-*/
-        if(logBookEntry.isCompleted() && logBookEntry.getCompletedByUser() != null) {
+        if(logBookEntry.isCompleted()) {
             log.info("Entry is marked as completed, by user: " + logBookEntry.getCreatedByUser());
-            model.addAttribute("completedByUser", logBookEntry.getCompletedByUser());
+            model.addAttribute("completedByUser", "<UNKNOWN>");
         }
 
         if (logBookService.hasReplicatedEntries(logBookEntry)) {
@@ -252,16 +247,16 @@ public class LogBookController extends BaseController {
         if (completedByAssigned || !designateCompletor) {
             log.info("No user assigned, so either setting as complete today or specifying a completion date");
             if (setCompletedDate) {
-                logBookBroker.complete(sessionUserUid, logBook.getUid(), completedDate, null);
+                logBookBroker.confirmCompletion(sessionUserUid, logBook.getUid(), completedDate);
             } else {
-                logBookBroker.complete(sessionUserUid, logBook.getUid(), LocalDateTime.now(), null);
+                logBookBroker.confirmCompletion(sessionUserUid, logBook.getUid(), LocalDateTime.now());
             }
         } else {
             log.info("User assigned, so marking it accordingly, with completing user uid: {}", completedByUserUid);
             if (setCompletedDate) {
-                logBookBroker.complete(sessionUserUid, logBook.getUid(), completedDate, completedByUser.getUid());
+                logBookBroker.confirmCompletion(completedByUser.getUid(), logBook.getUid(), completedDate);
             } else {
-                logBookBroker.complete(sessionUserUid, logBook.getUid(), LocalDateTime.now(), completedByUser.getUid());
+                logBookBroker.confirmCompletion(completedByUser.getUid(), logBook.getUid(), LocalDateTime.now());
             }
         }
 

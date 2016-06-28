@@ -23,6 +23,8 @@ import za.org.grassroot.webapp.util.USSDEventUtil;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -399,7 +401,7 @@ public class USSDHomeController extends USSDController {
 
         String prompt;
         if (response.equalsIgnoreCase("yes")) {
-            boolean stateChanged = logBookBroker.complete(user.getUid(), logBookUid, null, null);
+            boolean stateChanged = logBookBroker.confirmCompletion(user.getUid(), logBookUid, LocalDateTime.now());
             prompt = stateChanged ? getMessage(thisSection, startMenu, promptKey + ".logbook-completed", user) :
                     getMessage(thisSection, startMenu, promptKey + ".logbook-unchanged", user);
         } else {

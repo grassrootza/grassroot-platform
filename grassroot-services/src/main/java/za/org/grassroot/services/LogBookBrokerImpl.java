@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -145,26 +146,24 @@ public class LogBookBrokerImpl implements LogBookBroker {
 
 	@Override
 	@Transactional
-	public boolean complete(String userUid, String logBookUid, LocalDateTime completionTime, String completedByUserUid) {
+	public boolean confirmCompletion(String userUid, String logBookUid, LocalDateTime completionTime) {
+		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(logBookUid);
 
-		User completedByUser = completedByUserUid == null ? null : userRepository.findOneByUid(completedByUserUid);
-		Instant completionInstant = completionTime == null ? Instant.now() : convertToSystemTime(completionTime, getSAST());
-
+		User user = userRepository.findOneByUid(userUid);
 		LogBook logBook = logBookRepository.findOneByUid(logBookUid);
 
-		logger.info("Completing logbook={}, with completion time={}", logBook.getMessage(), completionInstant);
+		logger.info("Confirming completion logbook={}, completion time={}, user={}", logBook, completionTime, user);
 
-		if (logBook.isCompleted()) {
-			return false;
+		Instant completionInstant = completionTime == null ? null : convertToSystemTime(completionTime, getSAST());
+		boolean confirmationRegistered = logBook.addCompletionConfirmation(user, completionInstant);
+		if (!confirmationRegistered) {
+			// should error be raised when member already registered completions !?
+			logger.info("Completion confirmation already exists for member {} and log book {}", user, logBook);
 		}
-
-		// todo : create a logbook log, once safe to do so (i.e., after refactor
-		logBook.setCompleted(true);
-		logBook.setCompletedDate(completionInstant);
-		logBook.setCompletedByUser(completedByUser);
-		return true;
+		return confirmationRegistered;
 	}
+
 
 	@Override
 	@Transactional
@@ -204,15 +203,23 @@ public class LogBookBrokerImpl implements LogBookBroker {
 		Objects.requireNonNull(userUid);
 
 		Page<LogBook> page;
-		PageRequest pgr = new PageRequest(pageNumber, pageSize);
+		Pageable pageable = new PageRequest(pageNumber, pageSize);
 		User user = userRepository.findOneByUid(userUid);
 
 		if (groupUid != null) {
 			Group group = groupRepository.findOneByUid(groupUid);
 			permissionBroker.validateGroupPermission(user, group, null); // make sure user is part of group
-			page = logBookRepository.findByParentGroupAndCompletedOrderByActionByDateDesc(group, entriesComplete, pgr);
+			if (entriesComplete) {
+				page = logBookRepository.findByParentGroupAndCompletionPercentageGreaterThanEqualOrderByActionByDateDesc(group, 50, pageable);
+			} else {
+				page = logBookRepository.findByParentGroupAndCompletionPercentageLessThanOrderByActionByDateDesc(group, 50, pageable);
+			}
 		} else {
-			page = logBookRepository.findByParentGroupMembershipsUserAndCompletedOrderByActionByDateDesc(user, entriesComplete, pgr);
+			if (entriesComplete) {
+				page = logBookRepository.findByParentGroupMembershipsUserAndCompletionPercentageGreaterThanEqualOrderByActionByDateDesc(user, 50, pageable);
+			} else {
+				page = logBookRepository.findByParentGroupMembershipsUserAndCompletionPercentageLessThanOrderByActionByDateDesc(user, 50, pageable);
+			}
 		}
 
 		return page;
@@ -232,23 +239,17 @@ public class LogBookBrokerImpl implements LogBookBroker {
 
 		Group group = groupRepository.findOneByUid(groupUid);
 		Instant start = futureLogBooksOnly ? Instant.now() : DateTimeUtil.getEarliestInstant();
-		List<LogBook> logBooks;
 
 		switch (status) {
 			case COMPLETE:
-				logBooks = logBookRepository.findByParentGroupAndCompletedAndActionByDateGreaterThan(group, true, start);
-				break;
+				return logBookRepository.findByParentGroupAndCompletionPercentageGreaterThanEqualAndActionByDateGreaterThan(group, 50, start);
 			case INCOMPLETE:
-				logBooks = logBookRepository.findByParentGroupAndCompletedAndActionByDateGreaterThan(group, false, start);
-				break;
+				return logBookRepository.findByParentGroupAndCompletionPercentageLessThanAndActionByDateGreaterThan(group, 50, start);
 			case BOTH:
-				logBooks = logBookRepository.findByParentGroupAndActionByDateGreaterThan(group, start);
-				break;
+				return logBookRepository.findByParentGroupAndActionByDateGreaterThan(group, start);
 			default:
-				logBooks = logBookRepository.findByParentGroupAndActionByDateGreaterThan(group, start);
+				return logBookRepository.findByParentGroupAndActionByDateGreaterThan(group, start);
 		}
-
-		return logBooks;
 	}
 
 	@Override
@@ -259,37 +260,30 @@ public class LogBookBrokerImpl implements LogBookBroker {
 		User user = userRepository.findOneByUid(userUid);
 		Instant start = futureLogBooksOnly ? Instant.now() : DateTimeUtil.getEarliestInstant();
 		Sort sort = new Sort(Sort.Direction.DESC, "createdDateTime");
-		List<LogBook> logbooks;
+
 		if (!assignedLogBooksOnly) {
 			switch(status) {
 				case COMPLETE:
-					logbooks = logBookRepository.findByParentGroupMembershipsUserAndActionByDateBetweenAndCompleted(user, start, Instant.MAX, true, sort);
-					break;
+					return logBookRepository.findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(user, start, Instant.MAX, 50, sort);
 				case INCOMPLETE:
-					logbooks = logBookRepository.findByParentGroupMembershipsUserAndActionByDateBetweenAndCompleted(user, start, Instant.MAX, false, sort);
-					break;
+					return logBookRepository.findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThan(user, start, Instant.MAX, 50, sort);
 				case BOTH:
-					logbooks = logBookRepository.findByParentGroupMembershipsUserAndActionByDateGreaterThan(user, start);
-					break;
+					return logBookRepository.findByParentGroupMembershipsUserAndActionByDateGreaterThan(user, start);
 				default:
-					logbooks = logBookRepository.findByParentGroupMembershipsUserAndActionByDateGreaterThan(user, start);
+					return logBookRepository.findByParentGroupMembershipsUserAndActionByDateGreaterThan(user, start);
 			}
 		} else {
 			switch (status) {
 				case COMPLETE:
-					logbooks = logBookRepository.findByAssignedMembersAndActionByDateBetweenAndCompleted(user, start, Instant.MAX, true, sort);
-					break;
+					return logBookRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(user, start, Instant.MAX, 50, sort);
 				case INCOMPLETE:
-					logbooks = logBookRepository.findByAssignedMembersAndActionByDateBetweenAndCompleted(user, start, Instant.MAX, false, sort);
-					break;
+					return logBookRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageLessThan(user, start, Instant.MAX, 50, sort);
 				case BOTH:
-					logbooks = logBookRepository.findByAssignedMembersAndActionByDateGreaterThan(user, start);
-					break;
+					return logBookRepository.findByAssignedMembersAndActionByDateGreaterThan(user, start);
 				default:
-					logbooks = logBookRepository.findByParentGroupMembershipsUserAndActionByDateGreaterThan(user, start);
+					return logBookRepository.findByParentGroupMembershipsUserAndActionByDateGreaterThan(user, start);
 			}
 		}
-		return logbooks;
 	}
 
 	@Override
@@ -303,32 +297,13 @@ public class LogBookBrokerImpl implements LogBookBroker {
 
 		if (!assignedLogBooksOnly) {
 			List<LogBook> userLbs = logBookRepository.
-					findByParentGroupMembershipsUserAndActionByDateBetweenAndCompleted(user, start, end, false, sort);
+					findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThan(user, start, end, 50, sort);
 			lbToReturn = (userLbs.isEmpty()) ? null : userLbs.get(0);
 		} else {
 			List<LogBook> userLbs = logBookRepository.
-					findByAssignedMembersAndActionByDateBetweenAndCompleted(user, start, end, false, sort);
+					findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageLessThan(user, start, end, 50, sort);
 			lbToReturn = (userLbs.isEmpty()) ? null : userLbs.get(0);
 		}
 		return lbToReturn;
 	}
-
-	/*@Override
-	@Transactional(readOnly = true)
-	public List<LogBook> retrieveParentLogBooks(String userUid, String parentUid, JpaEntityType parentType) {
-		Objects.requireNonNull(userUid);
-		Objects.requireNonNull(parentUid);
-		Objects.requireNonNull(parentType);
-
-		User user = userRepository.findOneByUid(userUid);
-		AssignedMembersContainer parent = uidIdentifiableRepository.findOneByUid(AssignedMembersContainer.class,
-																				 parentType, parentUid);
-
-		// todo: decide if, say, group organizers on ultimate group should be able to access this
-		if (!parent.getAssignedMembers().contains(user))
-			throw new AccessDeniedException("Member is not assigned to this parent, so does not have read access");
-
-		return logBookRepository.findByGroupUidOrEventUid(parentUid, parentUid);
-
-	}*/
 }

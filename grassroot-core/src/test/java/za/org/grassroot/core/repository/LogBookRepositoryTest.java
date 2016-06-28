@@ -73,7 +73,6 @@ public class LogBookRepositoryTest {
         Group group = groupRepository.save(new Group("test logbook", user));
         LogBook lb1 = logBookRepository.save(new LogBook(user, group,"just do it", addHoursFromNow(2)));
         LogBook lb2 = logBookRepository.save(new LogBook(user, group, "just do it too", addHoursFromNow(2)));
-        lb1.setCompleted(true);
         lb1 = logBookRepository.save(lb1);
     }
 
@@ -107,11 +106,11 @@ public class LogBookRepositoryTest {
         logBookRepository.save(lb2);
 
         Sort sort = new Sort(Sort.Direction.DESC, "actionByDate");
-        List<LogBook> list = logBookRepository.findByAssignedMembersAndActionByDateBetweenAndCompleted(user, Instant.now(), Instant.MAX, true, sort);
+        List<LogBook> list = logBookRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(user, Instant.now(), Instant.MAX, 50, sort);
         assertEquals(0, list.size());
-        lb1.setCompleted(true);
+        lb1.addCompletionConfirmation(user, Instant.now());
         logBookRepository.save(lb1);
-        list = logBookRepository.findByAssignedMembersAndActionByDateBetweenAndCompleted(user, Instant.now(), Instant.MAX, true, sort);
+        list = logBookRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(user, Instant.now(), Instant.MAX, 50, sort);
         assertEquals(1,list.size());
     }
 
