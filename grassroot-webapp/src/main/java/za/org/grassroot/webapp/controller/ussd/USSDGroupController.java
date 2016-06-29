@@ -126,6 +126,7 @@ public class USSDGroupController extends USSDController {
         Group createdGroup;
         USSDMenu menu;
         if (!isValidGroupName(groupName)) {
+            userManager.setLastUssdMenu(user, groupMenus + createGroupMenu);
             menu = ussdGroupUtil.invalidGroupNamePrompt(user, groupName, thisSection, createGroupMenu + doSuffix);
         } else {
             if (interrupted) {

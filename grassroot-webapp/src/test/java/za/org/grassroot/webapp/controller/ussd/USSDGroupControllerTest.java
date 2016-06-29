@@ -85,6 +85,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         mockMvc.perform(get(path + "create-do").param(phoneParam, testUserPhone).param(userInputParam, "1")).
                 andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
+        verify(userManagementServiceMock, times(1)).setLastUssdMenu(testUser, "group/create");
         verifyZeroInteractions(groupBrokerMock);
         verifyNoMoreInteractions(userManagementServiceMock);
 
