@@ -59,7 +59,7 @@ public class GrassRootWebApplicationConfig {
     }*/
 
     @Bean
-    @Profile({ "staging", "production" })
+    @Profile({ "staging", "production", "localpg" })
     public EmbeddedServletContainerFactory servletContainer() {
         int httpPort = Integer.parseInt(environment.getProperty("HTTP_PORT"));
         int httpsPort = Integer.parseInt(environment.getProperty("HTTPS_PORT"));
@@ -67,15 +67,18 @@ public class GrassRootWebApplicationConfig {
         TomcatEmbeddedServletContainerFactory tomcat = new TomcatEmbeddedServletContainerFactory(){
             @Override
             protected void postProcessContext(Context context) {
-                SecurityConstraint securityConstraint = new SecurityConstraint();
-                securityConstraint.setUserConstraint("CONFIDENTIAL");
-                SecurityCollection collection = new SecurityCollection();
-                collection.addPattern("/*");
-                securityConstraint.addCollection(collection);
-                context.addConstraint(securityConstraint);
+                if (environment.acceptsProfiles("staging", "production")) {
+                    SecurityConstraint securityConstraint = new SecurityConstraint();
+                    securityConstraint.setUserConstraint("CONFIDENTIAL");
+                    SecurityCollection collection = new SecurityCollection();
+                    collection.addPattern("/*");
+                    securityConstraint.addCollection(collection);
+                    context.addConstraint(securityConstraint);
+                }
             }
         };
-        Connector nonSSLConnector = createNonSSLConnectorWithRedirect(httpPort, httpsPort);
+        Connector nonSSLConnector = environment.acceptsProfiles("localpg") ? createNonSSLConnectorWithoutRedirect(httpPort) :
+                createNonSSLConnectorWithRedirect(httpPort, httpsPort);
         tomcat.addAdditionalTomcatConnectors(nonSSLConnector);
         return tomcat;
     }
@@ -87,10 +90,10 @@ public class GrassRootWebApplicationConfig {
         return connector;
     }
 
-    /*private Connector createNonSSLConnectorWithoutRedirect(int httpPort) {
+    private Connector createNonSSLConnectorWithoutRedirect(int httpPort) {
         Connector connector = new Connector("org.apache.coyote.http11.Http11NioProtocol");
         connector.setPort(httpPort);
         return connector;
-    }*/
+    }
 
 }
