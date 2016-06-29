@@ -82,7 +82,7 @@ public class TaskDTO implements Comparable<TaskDTO> {
         this.parentUid = logBook.getParent().getUid();
 	    this.parentName = logBook.getParent().getName();
         this.createdByUserName = logBook.getCreatedByUser().getDisplayName();
-        this.hasResponded = logBook.isCompleted();
+        this.hasResponded = logBook.isCompletedBy(user);
         this.reply = getTodoStatus(logBook);
         this.instant = logBook.getActionByDate();
         this.type = String.valueOf(TaskType.TODO);

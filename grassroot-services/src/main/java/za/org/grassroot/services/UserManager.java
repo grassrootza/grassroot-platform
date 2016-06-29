@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -370,8 +371,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
         User user = userRepository.findOneByUid(userUid);
         Instant start = Instant.now().minus(daysInPast, ChronoUnit.DAYS);
         Instant end = Instant.now();
-        int count = logBookRepository.countByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThan(user, start, end, 50);
-        return count > 0;
+        List<LogBook> logBooks = logBookRepository.findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThan(
+                user, start, end, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, new Sort(Sort.Direction.DESC, "createdDateTime"));
+        return logBooks.stream().anyMatch(logBook -> !logBook.isCompletedBy(user));
     }
 
     /*

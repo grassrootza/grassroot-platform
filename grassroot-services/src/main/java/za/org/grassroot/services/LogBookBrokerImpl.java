@@ -211,15 +211,15 @@ public class LogBookBrokerImpl implements LogBookBroker {
 			Group group = groupRepository.findOneByUid(groupUid);
 			permissionBroker.validateGroupPermission(user, group, null); // make sure user is part of group
 			if (entriesComplete) {
-				page = logBookRepository.findByParentGroupAndCompletionPercentageGreaterThanEqualOrderByActionByDateDesc(group, 50, pageable);
+				page = logBookRepository.findByParentGroupAndCompletionPercentageGreaterThanEqualOrderByActionByDateDesc(group, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, pageable);
 			} else {
-				page = logBookRepository.findByParentGroupAndCompletionPercentageLessThanOrderByActionByDateDesc(group, 50, pageable);
+				page = logBookRepository.findByParentGroupAndCompletionPercentageLessThanOrderByActionByDateDesc(group, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, pageable);
 			}
 		} else {
 			if (entriesComplete) {
-				page = logBookRepository.findByParentGroupMembershipsUserAndCompletionPercentageGreaterThanEqualOrderByActionByDateDesc(user, 50, pageable);
+				page = logBookRepository.findByParentGroupMembershipsUserAndCompletionPercentageGreaterThanEqualOrderByActionByDateDesc(user, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, pageable);
 			} else {
-				page = logBookRepository.findByParentGroupMembershipsUserAndCompletionPercentageLessThanOrderByActionByDateDesc(user, 50, pageable);
+				page = logBookRepository.findByParentGroupMembershipsUserAndCompletionPercentageLessThanOrderByActionByDateDesc(user, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, pageable);
 			}
 		}
 
@@ -243,9 +243,9 @@ public class LogBookBrokerImpl implements LogBookBroker {
 
 		switch (status) {
 			case COMPLETE:
-				return logBookRepository.findByParentGroupAndCompletionPercentageGreaterThanEqualAndActionByDateGreaterThan(group, 50, start);
+				return logBookRepository.findByParentGroupAndCompletionPercentageGreaterThanEqualAndActionByDateGreaterThan(group, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, start);
 			case INCOMPLETE:
-				return logBookRepository.findByParentGroupAndCompletionPercentageLessThanAndActionByDateGreaterThan(group, 50, start);
+				return logBookRepository.findByParentGroupAndCompletionPercentageLessThanAndActionByDateGreaterThan(group, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, start);
 			case BOTH:
 				return logBookRepository.findByParentGroupAndActionByDateGreaterThan(group, start);
 			default:
@@ -265,9 +265,9 @@ public class LogBookBrokerImpl implements LogBookBroker {
 		if (!assignedLogBooksOnly) {
 			switch(status) {
 				case COMPLETE:
-					return logBookRepository.findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(user, start, Instant.MAX, 50, sort);
+					return logBookRepository.findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(user, start, Instant.MAX, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, sort);
 				case INCOMPLETE:
-					return logBookRepository.findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThan(user, start, Instant.MAX, 50, sort);
+					return logBookRepository.findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThan(user, start, Instant.MAX, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, sort);
 				case BOTH:
 					return logBookRepository.findByParentGroupMembershipsUserAndActionByDateGreaterThan(user, start);
 				default:
@@ -276,9 +276,9 @@ public class LogBookBrokerImpl implements LogBookBroker {
 		} else {
 			switch (status) {
 				case COMPLETE:
-					return logBookRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(user, start, Instant.MAX, 50, sort);
+					return logBookRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(user, start, Instant.MAX, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, sort);
 				case INCOMPLETE:
-					return logBookRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageLessThan(user, start, Instant.MAX, 50, sort);
+					return logBookRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageLessThan(user, start, Instant.MAX, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, sort);
 				case BOTH:
 					return logBookRepository.findByAssignedMembersAndActionByDateGreaterThan(user, start);
 				default:
@@ -298,11 +298,11 @@ public class LogBookBrokerImpl implements LogBookBroker {
 
 		if (!assignedLogBooksOnly) {
 			List<LogBook> userLbs = logBookRepository.
-					findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThan(user, start, end, 50, sort);
+					findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThan(user, start, end, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, sort);
 			lbToReturn = (userLbs.isEmpty()) ? null : userLbs.get(0);
 		} else {
 			List<LogBook> userLbs = logBookRepository.
-					findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageLessThan(user, start, end, 50, sort);
+					findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageLessThan(user, start, end, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, sort);
 			lbToReturn = (userLbs.isEmpty()) ? null : userLbs.get(0);
 		}
 		return lbToReturn;

@@ -10,6 +10,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.services.AnalyticalManager;
+import za.org.grassroot.services.AnalyticalService;
 import za.org.grassroot.services.UserManagementService;
 
 import java.net.URI;
@@ -28,7 +29,7 @@ public class USSDGroupControllerIT extends USSDAbstractIT {
     UserManagementService userManager;
 
     @Autowired
-    AnalyticalManager analyticalManager;
+    AnalyticalService analyticalManager;
 
     @Autowired
     GroupRepository groupRepository;

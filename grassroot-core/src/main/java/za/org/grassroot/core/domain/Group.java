@@ -329,7 +329,7 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
         return groupRoles.stream()
                 .filter(role -> role.getName().equals(roleName))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("No role udner name " + roleName + " found in group " + this));
+                .orElseThrow(() -> new IllegalArgumentException("No role under name " + roleName + " found in group " + this));
     }
 
     public boolean hasMember(User user) {

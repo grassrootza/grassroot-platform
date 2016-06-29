@@ -37,10 +37,10 @@ public class LogBookManager implements LogBookService {
         // use an old timestamp both so we prune the really old entries, and to get around half-formed ("null due date") entries
         if (completed) {
             return logBookRepository.findByParentGroupAndCompletionPercentageGreaterThanEqualAndActionByDateGreaterThan(
-                    group, 50, LocalDateTime.now().minusYears(1L).toInstant(ZoneOffset.UTC));
+                    group, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, LocalDateTime.now().minusYears(1L).toInstant(ZoneOffset.UTC));
         } else {
             return logBookRepository.findByParentGroupAndCompletionPercentageLessThanAndActionByDateGreaterThan(
-                    group, 50, LocalDateTime.now().minusYears(1L).toInstant(ZoneOffset.UTC));
+                    group, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, LocalDateTime.now().minusYears(1L).toInstant(ZoneOffset.UTC));
         }
     }
 

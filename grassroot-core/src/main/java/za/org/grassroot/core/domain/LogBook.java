@@ -18,6 +18,8 @@ import java.util.Set;
                 @Index(name = "idx_log_book_retries_left", columnList = "number_of_reminders_left_to_send"),
                 @Index(name = "idx_log_book_replicated_group_id", columnList = "replicated_group_id")})
 public class LogBook extends AbstractLogBookEntity implements AssignedMembersContainer, VoteContainer, MeetingContainer, GroupDescendant {
+    public static final double COMPLETION_PERCENTAGE_BOUNDARY = 50;
+
     @Column(name="completed_date")
     private Instant completedDate;
 
@@ -145,7 +147,12 @@ public class LogBook extends AbstractLogBookEntity implements AssignedMembersCon
     }
 
     public boolean isCompleted() {
-        return calculateCompletionStatus().getPercentage() >= 50;
+        return calculateCompletionStatus().getPercentage() >= COMPLETION_PERCENTAGE_BOUNDARY;
+    }
+
+    public boolean isCompletedBy(User member) {
+        Objects.requireNonNull(member);
+        return completionConfirmations.stream().anyMatch(confirmation -> confirmation.getMember().equals(member));
     }
 
     public double getCompletionPercentage() {
