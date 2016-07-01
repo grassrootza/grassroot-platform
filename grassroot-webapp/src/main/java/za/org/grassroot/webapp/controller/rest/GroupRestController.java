@@ -9,7 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.util.PhoneNumberUtil;
+import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.RequestorAlreadyPartOfGroupException;
@@ -18,6 +18,7 @@ import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by paballo.
@@ -59,17 +60,12 @@ public class GroupRestController {
         groupMembers.add(creator);
 
         try {
-            // todo : clean up response wrapper / holder / etc mess when have time
-	        // todo : include open token logic in group create, controlled by boolean flag
-	        log.info("Creating group with paarams: userUid={}, name={}, members={}, description={}", user.getUid(), groupName, groupMembers, description);
-            Group group = groupBroker.create(user.getUid(), groupName, null, groupMembers, GroupPermissionTemplate.DEFAULT_GROUP, description, null);
-            groupBroker.openJoinToken(user.getUid(), group.getUid(), false, null);
-            Group createdGroup = groupBroker.load(group.getUid());
-	        List<GroupResponseWrapper> toReturn = Collections.singletonList(createWrapper(createdGroup, createdGroup.getMembership(user).getRole()));
-            ResponseWrapper rw = new GenericResponseWrapper(HttpStatus.OK, RestMessage.GROUP_CREATED, RestStatus.SUCCESS, toReturn);
+            Group group = groupBroker.create(user.getUid(), groupName, null, groupMembers, GroupPermissionTemplate.DEFAULT_GROUP, description, null, true);
+            List<GroupResponseWrapper> groupWrappers = Collections.singletonList(createGroupWrapper(group, user));
+            ResponseWrapper rw = new GenericResponseWrapper(HttpStatus.OK, RestMessage.GROUP_CREATED, RestStatus.SUCCESS, groupWrappers);
             return new ResponseEntity<>(rw, HttpStatus.OK);
         } catch (RuntimeException e) {
-            e.printStackTrace();
+            log.error("Error occurred while creating group: " + e.getMessage(), e);
             return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.GROUP_NOT_CREATED, RestStatus.FAILURE),
                                         HttpStatus.BAD_REQUEST);
         }
@@ -79,24 +75,14 @@ public class GroupRestController {
     public ResponseEntity<ResponseWrapper> getUserGroups(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String token) {
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
-        Set<Group> groupSet = permissionBroker.getActiveGroups(user, null);
-        ResponseWrapper responseWrapper;
-        if (!groupSet.isEmpty()) {
-            List<GroupResponseWrapper> groups = new ArrayList<>();
-            for (Group group : groupSet) {
-                Role role = group.getMembership(user).getRole();
-                groups.add(createWrapper(group,role));
-            }
-            Collections.sort(groups, Collections.reverseOrder()); // i.e., "descending"
-            responseWrapper =  new GenericResponseWrapper(HttpStatus.OK, RestMessage.USER_GROUPS,
-                    RestStatus.SUCCESS, groups);
-            return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
-        }
-        // todo: should not use 404 code for this
-        responseWrapper =  new ResponseWrapperImpl(HttpStatus.NOT_FOUND, RestMessage.USER_HAS_NO_GROUPS,
-                RestStatus.FAILURE);
-        return new ResponseEntity<>(responseWrapper,HttpStatus.valueOf(responseWrapper.getCode()));
+        Set<Group> groups = permissionBroker.getActiveGroups(user, null, null);
+        List<GroupResponseWrapper> groupWrappers = groups.stream()
+                .map(group -> createGroupWrapper(group, user))
+                .sorted(Collections.reverseOrder())
+                .collect(Collectors.toList());
 
+        GenericResponseWrapper responseWrapper =  new GenericResponseWrapper(HttpStatus.OK, RestMessage.USER_GROUPS, RestStatus.SUCCESS, groupWrappers);
+        return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
     }
 
     @RequestMapping(value = "/get/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.GET)
@@ -108,9 +94,8 @@ public class GroupRestController {
 
         permissionBroker.validateGroupPermission(user, group, null);
 
-        List<GroupResponseWrapper> toReturn = Collections.singletonList(createWrapper(group, group.getMembership(user).getRole()));
-        ResponseWrapper rw = new GenericResponseWrapper(HttpStatus.OK, RestMessage.USER_GROUPS, RestStatus.SUCCESS, toReturn);
-
+        List<GroupResponseWrapper> groupWrappers = Collections.singletonList(createGroupWrapper(group, user));
+        ResponseWrapper rw = new GenericResponseWrapper(HttpStatus.OK, RestMessage.USER_GROUPS, RestStatus.SUCCESS, groupWrappers);
         return new ResponseEntity<>(rw, HttpStatus.OK);
     }
 
@@ -224,19 +209,14 @@ public class GroupRestController {
         }
     }
 
-    private Set<MembershipInfo> addMembersToGroup(List<String> phoneNumbers, Set<MembershipInfo> members) {
-        if (phoneNumbers != null) {
-            for (String phoneNumber : phoneNumbers)
-                if (PhoneNumberUtil.testInputNumber(phoneNumber)) {
-                    members.add(new MembershipInfo(PhoneNumberUtil.convertPhoneNumber(phoneNumber), BaseRoles.ROLE_ORDINARY_MEMBER, null));
-                }
-        }
-        return members;
-    }
-
-    private GroupResponseWrapper createWrapper(Group group, Role role) {
+    private GroupResponseWrapper createGroupWrapper(Group group, User caller) {
+        Role role = group.getMembership(caller).getRole();
         Event event = eventManagementService.getMostRecentEvent(group);
         GroupLog groupLog = groupBroker.getMostRecentLog(group);
+        // maybe there are bad data in db, or subgroup without and grouplog has been created (which is possible)
+        if (groupLog == null) {
+            groupLog = new GroupLog(group, group.getCreatedByUser(), GroupLogType.GROUP_ADDED, null);
+        }
         GroupResponseWrapper responseWrapper;
         if (event != null) {
             if (event.getEventStartDateTime() != null && event.getEventStartDateTime()
@@ -247,8 +227,8 @@ public class GroupRestController {
             }
         } else {
             responseWrapper = new GroupResponseWrapper(group, groupLog, role, false);
-            log.info("created response wrapper = {}", responseWrapper);
         }
+        log.info("created response wrapper = {}", responseWrapper);
         return responseWrapper;
 
     }
@@ -258,6 +238,4 @@ public class GroupRestController {
                 searchTerm.substring("*134*1994*".length(), searchTerm.length() - 1) : searchTerm;
 
     }
-
-
 }

@@ -21,7 +21,7 @@ public interface GroupBroker {
     /** METHODS FOR CREATING AND EDITING GROUPS **/
 
     Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos,
-                 GroupPermissionTemplate groupPermissionTemplate, String description, Integer reminderMinutes);
+                 GroupPermissionTemplate groupPermissionTemplate, String description, Integer reminderMinutes, boolean openJoinToken);
 
     void deactivate(String userUid, String groupUid, boolean checkIfWithinTimeWindow);
 
@@ -55,7 +55,7 @@ public interface GroupBroker {
 
     /** METHODS FOR DEALING WITH JOIN TOKENS, PUBLIC SETTINGS, AND SEARCHING **/
 
-    String openJoinToken(String userUid, String groupUid, boolean temporary, LocalDateTime expiryDateTime);
+    String openJoinToken(String userUid, String groupUid, LocalDateTime expiryDateTime);
 
     void closeJoinToken(String userUid, String groupUid);
 

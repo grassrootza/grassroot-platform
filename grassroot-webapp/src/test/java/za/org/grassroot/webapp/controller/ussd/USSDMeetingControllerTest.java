@@ -178,7 +178,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone, secondUrlToSave)).thenReturn(testUser);
         log.info("ZOGG : About to call broker create with members ..." + members);
 
-        when(groupBrokerMock.create(testUser.getUid(), "", null, members, GroupPermissionTemplate.DEFAULT_GROUP, null, null)).
+        when(groupBrokerMock.create(testUser.getUid(), "", null, members, GroupPermissionTemplate.DEFAULT_GROUP, null, null, false)).
                 thenReturn(testGroup);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
 
@@ -191,7 +191,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, secondUrlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(cacheUtilManagerMock, times(1)).putUssdMenuForUser(testUserPhone, secondUrlToSave);
-        verify(groupBrokerMock, times(1)).create(testUser.getUid(), "", null, members, GroupPermissionTemplate.DEFAULT_GROUP, null, null);
+        verify(groupBrokerMock, times(1)).create(testUser.getUid(), "", null, members, GroupPermissionTemplate.DEFAULT_GROUP, null, null, false);
         verify(groupBrokerMock, times(1)).addMembers(testUser.getUid(), testGroup.getUid(), ordinaryMember("0801112345"));
         verifyNoMoreInteractions(groupBrokerMock);
 

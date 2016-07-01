@@ -81,7 +81,7 @@ public class GroupBrokerImpl implements GroupBroker {
     @Override
     @Transactional
     public Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos,
-                        GroupPermissionTemplate groupPermissionTemplate, String description, Integer reminderMinutes) {
+                        GroupPermissionTemplate groupPermissionTemplate, String description, Integer reminderMinutes, boolean openJoinToken) {
 
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(name);
@@ -95,8 +95,8 @@ public class GroupBrokerImpl implements GroupBroker {
             parent = groupRepository.findOneByUid(parentGroupUid);
         }
 
-        logger.info("Creating new group: name={}, description={}, membershipInfos={}, groupPermissionTemplate={},  parent={}, user={}",
-                name, description, membershipInfos, groupPermissionTemplate, parent, user);
+        logger.info("Creating new group: name={}, description={}, membershipInfos={}, groupPermissionTemplate={},  parent={}, user={}, openJoinToken=",
+                name, description, membershipInfos, groupPermissionTemplate, parent, user, openJoinToken);
 
         Group group = new Group(name, user);
         // last: set some advanced features, with defaults in case null passed
@@ -118,6 +118,11 @@ public class GroupBrokerImpl implements GroupBroker {
         group = groupRepository.save(group);
 
         logger.info("Group created under UID {}", group.getUid());
+
+        if (openJoinToken) {
+            JoinTokenOpeningResult joinTokenOpeningResult = openJoinTokenInternal(user, group, null);
+            bundle.addLog(joinTokenOpeningResult.getGroupLog());
+        }
 
         logsAndNotificationsBroker.storeBundle(bundle);
 
@@ -492,7 +497,7 @@ public class GroupBrokerImpl implements GroupBroker {
             Set<MembershipInfo> membershipInfos = MembershipInfo.createFromMembers(groupInto.getMemberships());
             membershipInfos.addAll(MembershipInfo.createFromMembers(groupFrom.getMemberships()));
             // todo: work out what to do about templates ... probably a UX issue more than solving here
-            resultGroup = create(user.getUid(), newGroupName, null, membershipInfos, GroupPermissionTemplate.DEFAULT_GROUP, null, null);
+            resultGroup = create(user.getUid(), newGroupName, null, membershipInfos, GroupPermissionTemplate.DEFAULT_GROUP, null, null, false);
             if (!leaveActive) {
                 deactivate(user.getUid(), groupInto.getUid(), false);
                 deactivate(user.getUid(), groupFrom.getUid(), false);
@@ -607,43 +612,81 @@ public class GroupBrokerImpl implements GroupBroker {
 
     @Override
     @Transactional
-    public String openJoinToken(String userUid, String groupUid, boolean temporary, LocalDateTime expiryDateTime) {
+    public String openJoinToken(String userUid, String groupUid, LocalDateTime expiryDateTime) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
 
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
-        String tokenToReturn, logMessage;
+        JoinTokenOpeningResult result = openJoinTokenInternal(user, group, expiryDateTime);
+
+        logActionLogsAfterCommit(Collections.singleton(result.getGroupLog()));
+
+        return result.getToken();
+    }
+
+    private JoinTokenOpeningResult openJoinTokenInternal(User user, Group group, LocalDateTime expiryDateTime) {
         LocalDateTime currentExpiry = (group.getTokenExpiryDateTime() != null) ? group.getTokenExpiryDateTime().toLocalDateTime() : null;
         final LocalDateTime endOfCentury = getVeryLongTimeAway();
 
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
+        logger.info("Opening join token: user={}, group={}, expiryDateTime={}", user, group, expiryDateTime);
+
+        boolean temporary = expiryDateTime != null;
+
         // if there is already a valid token we are just changing expiry and returning it
+        String token, logMessage;
         if (currentExpiry != null && currentExpiry.isAfter(LocalDateTime.now())) {
             if (!temporary) {
                 group.setTokenExpiryDateTime(Timestamp.valueOf(endOfCentury));
             } else if (expiryDateTime != null) {
                 group.setTokenExpiryDateTime(Timestamp.valueOf(expiryDateTime));
             }
-            tokenToReturn = group.getGroupTokenCode();
+            token = group.getGroupTokenCode();
             logMessage = temporary ? String.format("Changed group joining code closing time to %s", expiryDateTime.format(DateTimeFormatter.ISO_DATE_TIME))
                     : "Extended group joining code to permanent";
         } else {
             logger.info("Generating a group join code that is open ...");
-            tokenToReturn = String.valueOf(tokenGeneratorService.getNextToken());
+            token = String.valueOf(tokenGeneratorService.getNextToken());
             LocalDateTime expiry = (temporary) ? expiryDateTime : endOfCentury;
             group.setTokenExpiryDateTime(Timestamp.valueOf(expiry));
-            group.setGroupTokenCode(tokenToReturn);
-            logMessage = temporary ? String.format("Created join code, %s, with closing time %s", tokenToReturn, expiryDateTime.format(DateTimeFormatter.ISO_DATE_TIME))
-                    : String.format("Created join code %s, to remain open until closed by group", tokenToReturn);
+            group.setGroupTokenCode(token);
+            logMessage = temporary ? String.format("Created join code, %s, with closing time %s", token, expiryDateTime.format(DateTimeFormatter.ISO_DATE_TIME))
+                    : String.format("Created join code %s, to remain open until closed by group", token);
         }
 
-        logActionLogsAfterCommit(Collections.singleton(new GroupLog(group, user,
-                                                                     GroupLogType.TOKEN_CHANGED, 0L, logMessage)));
+        GroupLog groupLog = new GroupLog(group, user, GroupLogType.TOKEN_CHANGED, 0L, logMessage);
 
-        return tokenToReturn;
+        return new JoinTokenOpeningResult(token, groupLog);
+    }
+
+    private static class JoinTokenOpeningResult {
+        private final String token;
+        private final GroupLog groupLog;
+
+        public JoinTokenOpeningResult(String token, GroupLog groupLog) {
+            this.token = Objects.requireNonNull(token);
+            this.groupLog = Objects.requireNonNull(groupLog);
+        }
+
+        public String getToken() {
+            return token;
+        }
+
+        public GroupLog getGroupLog() {
+            return groupLog;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("JoinTokenOpeningResult{");
+            sb.append("token='").append(token).append('\'');
+            sb.append(", groupLog=").append(groupLog);
+            sb.append('}');
+            return sb.toString();
+        }
     }
 
     @Override

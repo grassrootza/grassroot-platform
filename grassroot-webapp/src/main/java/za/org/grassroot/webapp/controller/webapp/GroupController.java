@@ -275,7 +275,7 @@ public class GroupController extends BaseController {
         String parentUid = (groupCreator.getHasParent()) ? groupCreator.getParent().getUid() : null;
         Group groupCreated = groupBroker.create(user.getUid(), groupCreator.getGroupName(), parentUid,
                                                 new HashSet<>(groupCreator.getAddedMembers()), template, null,
-                                                groupCreator.getReminderMinutes());
+                                                groupCreator.getReminderMinutes(), false);
         timeEnd = System.currentTimeMillis();
         log.info(String.format("User load & group creation: %d msecs", timeEnd - timeStart));
 
@@ -359,7 +359,7 @@ public class GroupController extends BaseController {
         // todo: make sure services layer checks permissions
         Group group = groupBroker.load(groupUid);
         if (!group.hasValidGroupTokenCode()) {
-            groupBroker.openJoinToken(getUserProfile().getUid(), groupUid, false, null);
+            groupBroker.openJoinToken(getUserProfile().getUid(), groupUid, null);
             addMessage(model, MessageType.SUCCESS, "group.token.created", request);
         } else {
             groupBroker.closeJoinToken(getUserProfile().getUid(), groupUid);

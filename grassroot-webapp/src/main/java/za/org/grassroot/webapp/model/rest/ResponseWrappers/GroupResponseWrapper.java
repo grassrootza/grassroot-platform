@@ -14,17 +14,16 @@ import java.util.Set;
  */
 public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
 
-    private String groupUid;
-    private String groupName;
+    private final String groupUid;
+    private final String groupName;
+    private final String groupCreator;
+    private final String role;
+    private final String joinCode;
+    private final Integer groupMemberCount;
+    private final Set<Permission> permissions;
     private String description;
     private GroupChangeType lastChangeType;
-    private String groupCreator;
-
-    private String role;
-    private String joinCode;
-    private Integer groupMemberCount;
     private LocalDateTime dateTime;
-    private Set<Permission> permissions;
 
     private boolean hasTasks;
 

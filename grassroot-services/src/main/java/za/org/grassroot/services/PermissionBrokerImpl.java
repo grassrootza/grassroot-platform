@@ -9,6 +9,7 @@ import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -16,7 +17,13 @@ import java.util.stream.Collectors;
 public class PermissionBrokerImpl implements PermissionBroker {
 
     @Autowired
-    GroupRepository groupRepository;
+    private GroupRepository groupRepository;
+
+    @Autowired
+    private GroupBroker groupBroker;
+
+    @Autowired
+    private EventManagementService eventManagementService;
 
     // major todo: externalize these permissions
 
@@ -129,27 +136,41 @@ public class PermissionBrokerImpl implements PermissionBroker {
     }
 
     public boolean isGroupPermissionAvailable(User user, Group group, Permission requiredPermission) {
-        if (requiredPermission == null) {
-            return group.getMembers().contains(user);
-        } else {
-            for (Membership membership : user.getMemberships()) {
-                if (membership.getGroup().equals(group)) {
-                    return membership.getRole().getPermissions().contains(requiredPermission);
-                }
-            }
-            return false;
-        }
+        return user.getMemberships().stream().anyMatch(membership ->
+                membership.getGroup().equals(group) &&
+                (requiredPermission == null || membership.getRole().getPermissions().contains(requiredPermission)));
     }
 
     @Override
     @Transactional(readOnly = true)
     public Set<Group> getActiveGroups(User user, Permission requiredPermission) {
+        return getActiveGroups(user, requiredPermission, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Set<Group> getActiveGroups(User user, Permission requiredPermission, Instant changedSince) {
+        Objects.requireNonNull(user, "User cannot be null");
+
         List<Group> allActiveGroups = groupRepository.findByMembershipsUserAndActive(user, true);
-        if (requiredPermission == null)
-            return new HashSet<>(allActiveGroups);
-        else
-            return allActiveGroups.stream().filter(g -> isGroupPermissionAvailable(user, g, requiredPermission)).
-                collect(Collectors.toSet());
+        return allActiveGroups.stream()
+                .filter(group -> requiredPermission == null || isGroupPermissionAvailable(user, group, requiredPermission))
+                .filter(group -> changedSince == null || isGroupChangedSince(group, changedSince))
+                .collect(Collectors.toSet());
+    }
+
+    private boolean isGroupChangedSince(Group group, Instant changedSince) {
+        GroupLog mostRecentLog = groupBroker.getMostRecentLog(group);
+        if (mostRecentLog.getCreatedDateTime().isAfter(changedSince)) {
+            return true;
+        }
+
+        Event mostRecentEvent = eventManagementService.getMostRecentEvent(group);
+        if (mostRecentEvent.getCreatedDateTime().isAfter(changedSince)) {
+            return true;
+        }
+
+        return false;
     }
 
     @Override

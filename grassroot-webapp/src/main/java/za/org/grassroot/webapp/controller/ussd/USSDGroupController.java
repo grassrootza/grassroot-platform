@@ -18,7 +18,6 @@ import za.org.grassroot.services.exception.GroupDeactivationNotAvailableExceptio
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
-import za.org.grassroot.webapp.util.USSDGroupUtil;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
@@ -135,8 +134,8 @@ public class USSDGroupController extends USSDController {
                 Long startTime = System.currentTimeMillis();
                 MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
                 createdGroup = groupBroker.create(user.getUid(), groupName, null, Collections.singleton(creator),
-                        GroupPermissionTemplate.DEFAULT_GROUP, null, null);
-                groupBroker.openJoinToken(user.getUid(), createdGroup.getUid(), false, null);
+                        GroupPermissionTemplate.DEFAULT_GROUP, null, null, false);
+                groupBroker.openJoinToken(user.getUid(), createdGroup.getUid(), null);
                 Long endTime = System.currentTimeMillis();
                 log.info(String.format("Group has been created ... time taken ... %d msecs", endTime - startTime));
             }
@@ -311,8 +310,8 @@ public class USSDGroupController extends USSDController {
 
         /* Generate a token, but also set the interruption switch back to null -- group creation is finished, if group was created */
         User user = userManager.findByInputNumber(inputNumber, null);
-        String token = (daysValid == 0) ? groupBroker.openJoinToken(user.getUid(), groupUid, false, null) :
-                groupBroker.openJoinToken(user.getUid(), groupUid, true, LocalDateTime.now().plusDays(daysValid));
+        LocalDateTime tokenExpiryDateTime = (daysValid == 0) ? null : LocalDateTime.now().plusDays(daysValid);
+        String token = groupBroker.openJoinToken(user.getUid(), groupUid, tokenExpiryDateTime);
         return menuBuilder(new USSDMenu(getMessage(thisSection, groupTokenMenu, "created", token, user),
                 optionsHomeExit(user)));
     }
@@ -339,7 +338,7 @@ public class USSDGroupController extends USSDController {
         } else {
             // we have been passed a number of days to extend
             LocalDateTime newExpiry = LocalDateTime.now().plusDays(daysValid);
-            groupBroker.openJoinToken(sessionUser.getUid(), sessionGroup.getUid(), true, newExpiry);
+            groupBroker.openJoinToken(sessionUser.getUid(), sessionGroup.getUid(), newExpiry);
             String date = newExpiry.format(dateFormat);
             promptMenu = new USSDMenu(getMessage(thisSection, groupTokenMenu, promptKey + ".extend.done", date, sessionUser),
                     optionsHomeExit(sessionUser));

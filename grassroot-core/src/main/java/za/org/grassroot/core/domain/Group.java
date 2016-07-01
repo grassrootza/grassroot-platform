@@ -375,7 +375,7 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
                 (tokenExpiryDateTime != null && tokenExpiryDateTime.toInstant().isAfter(Instant.now()));
     }
 
-    private Set<Event> getEvents() {
+    public Set<Event> getEvents() {
         if (events == null) {
             events = new HashSet<>();
         }

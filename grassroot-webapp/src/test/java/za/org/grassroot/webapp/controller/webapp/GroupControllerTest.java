@@ -132,7 +132,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
         when(groupBrokerMock.create(sessionTestUser.getUid(), dummyGroupCreator.getGroupName(), null,
                                     new HashSet<>(dummyGroupCreator.getAddedMembers()),
-                                    GroupPermissionTemplate.DEFAULT_GROUP, null, (60 * 24))).thenReturn(dummyGroup);
+                                    GroupPermissionTemplate.DEFAULT_GROUP, null, (60 * 24), false)).thenReturn(dummyGroup);
 
         when((userManagementServiceMock.loadOrSaveUser(sessionTestUser.getPhoneNumber()))).thenReturn(sessionTestUser);
         when(userManagementServiceMock.save(sessionTestUser)).thenReturn(sessionTestUser);
@@ -271,7 +271,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(view().name("group/view"))
                 .andExpect(model().attribute("group", hasProperty("id", is(dummyId))));
 
-        verify(groupBrokerMock, times(1)).openJoinToken(sessionTestUser.getUid(), testGroup.getUid(), false, null);
+        verify(groupBrokerMock, times(1)).openJoinToken(sessionTestUser.getUid(), testGroup.getUid(), null);
     }
 
     @Test

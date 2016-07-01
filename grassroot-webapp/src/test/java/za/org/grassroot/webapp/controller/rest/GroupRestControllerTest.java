@@ -17,8 +17,6 @@ import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import static org.mockito.Mockito.*;
@@ -56,7 +54,7 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(groupBrokerMock.create(sessionTestUser.getUid(), testGroupName, null, membersToAdd,
-                                    GroupPermissionTemplate.DEFAULT_GROUP, testEventDescription, null)).thenReturn(testGroup);
+                                    GroupPermissionTemplate.DEFAULT_GROUP, testEventDescription, null, false)).thenReturn(testGroup);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         when(groupBrokerMock.getMostRecentLog(testGroup)).thenReturn(groupLog);
 
@@ -72,9 +70,9 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
                 .andExpect(status().isOk());
 
         verify(userManagementServiceMock).findByInputNumber(testUserPhone);
-        verify(groupBrokerMock).create(sessionTestUser.getUid(), testGroupName, null, membersToAdd, GroupPermissionTemplate.DEFAULT_GROUP, meetingEvent.getDescription(), null);
+        verify(groupBrokerMock).create(sessionTestUser.getUid(), testGroupName, null, membersToAdd, GroupPermissionTemplate.DEFAULT_GROUP, meetingEvent.getDescription(), null, false);
         verify(groupBrokerMock, times(1)).getMostRecentLog(testGroup);
-        verify(groupBrokerMock, times(1)).openJoinToken(sessionTestUser.getUid(), testGroup.getUid(), false, null);
+        verify(groupBrokerMock, times(1)).openJoinToken(sessionTestUser.getUid(), testGroup.getUid(), null);
 	    verify(groupBrokerMock, times(1)).load(testGroup.getUid());
 	    verifyNoMoreInteractions(groupBrokerMock);
         verifyNoMoreInteractions(userManagementServiceMock);

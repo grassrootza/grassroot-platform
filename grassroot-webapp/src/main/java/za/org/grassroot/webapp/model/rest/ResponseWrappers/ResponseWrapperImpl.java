@@ -11,11 +11,9 @@ import za.org.grassroot.webapp.enums.RestStatus;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ResponseWrapperImpl implements ResponseWrapper {
 
-    protected String status;
-    protected int code;
-    protected String message;
-
-    public ResponseWrapperImpl(){}
+    protected final String status;
+    protected final int code;
+    protected final String message;
 
     public ResponseWrapperImpl(HttpStatus code, RestMessage message, RestStatus status) {
         this.code = code.value();

@@ -9,6 +9,7 @@ import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
 import org.springframework.security.access.AccessDeniedException;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
@@ -47,6 +48,8 @@ public interface PermissionBroker {
      * @return The requisite set of groups
      */
     Set<Group> getActiveGroups(User user, Permission requiredPermission);
+
+    Set<Group> getActiveGroups(User user, Permission requiredPermission, Instant changedSince);
 
     /**
      * Returns the set of active groups for which the user has the required permission. Returns the GroupDTO entity,

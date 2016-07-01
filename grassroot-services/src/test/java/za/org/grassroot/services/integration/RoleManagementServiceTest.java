@@ -48,7 +48,7 @@ public class RoleManagementServiceTest extends AbstractTransactionalJUnit4Spring
     public void shouldAssignDefaultPermissionsToRole() {
 
         User user = userManagementService.loadOrSaveUser("0810001111");
-        Group group = groupBroker.create(user.getUid(), "test group", null, new HashSet<>(), DEFAULT_GROUP, null, null);
+        Group group = groupBroker.create(user.getUid(), "test group", null, new HashSet<>(), DEFAULT_GROUP, null, null, false);
 
         /* Role organizerRole = roleManagementService.fetchGroupRole(BaseRoles.ROLE_GROUP_ORGANIZER, group);
         Permission addUserPermission = permissionsManagementService.findByName(BasePermissions.GROUP_PERMISSION_ADD_GROUP_MEMBER);
