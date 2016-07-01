@@ -3,6 +3,7 @@ package za.org.grassroot.webapp.controller.ussd;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -21,6 +22,7 @@ import za.org.grassroot.webapp.model.ussd.AAT.Option;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import za.org.grassroot.webapp.util.USSDEventUtil;
 
+import javax.annotation.PostConstruct;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
@@ -53,6 +55,9 @@ public class USSDHomeController extends USSDController {
     @Autowired
     private LogBookBroker logBookBroker;
 
+    @Autowired
+    private Environment environment;
+
     private static final Logger log = LoggerFactory.getLogger(USSDHomeController.class);
 
     private static final String path = homePath;
@@ -64,7 +69,7 @@ public class USSDHomeController extends USSDController {
             promptGroupRename = "group-rename-prompt",
             promptConfirmGroupInactive = "group-inactive-confirm";
 
-    private static final int hashPosition = Integer.valueOf(System.getenv("USSD_CODE_LENGTH"));
+    private int hashPosition;
 
     private static final String openingMenuKey = String.join(".", Arrays.asList(homeKey, startMenu, optionsKey));
 
@@ -82,6 +87,12 @@ public class USSDHomeController extends USSDController {
             USER_PROFILE, GROUP_MANAGER, MEETINGS, VOTES, LOGBOOK);
 
     private static final long daysPastLogbooks = 5; // just check for logbooks that crossed deadline in last ~week
+
+    @PostConstruct
+    public void init() {
+        // Spring initialization stuff...
+        hashPosition = environment.getRequiredProperty("USSD_CODE_LENGTH", Integer.class);
+    }
 
     public USSDMenu welcomeMenu(String opening, User user) {
 

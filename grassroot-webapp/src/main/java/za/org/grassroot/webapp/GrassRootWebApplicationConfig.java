@@ -61,8 +61,6 @@ public class GrassRootWebApplicationConfig {
     @Bean
     @Profile({ "staging", "production", "localpg" })
     public EmbeddedServletContainerFactory servletContainer() {
-        int httpPort = Integer.parseInt(environment.getProperty("HTTP_PORT"));
-        int httpsPort = Integer.parseInt(environment.getProperty("HTTPS_PORT"));
 
         TomcatEmbeddedServletContainerFactory tomcat = new TomcatEmbeddedServletContainerFactory(){
             @Override
@@ -77,8 +75,15 @@ public class GrassRootWebApplicationConfig {
                 }
             }
         };
-        Connector nonSSLConnector = environment.acceptsProfiles("localpg") ? createNonSSLConnectorWithoutRedirect(httpPort) :
-                createNonSSLConnectorWithRedirect(httpPort, httpsPort);
+
+        int httpPort = environment.getRequiredProperty("HTTP_PORT", Integer.class);
+        Connector nonSSLConnector;
+        if (environment.acceptsProfiles("localpg")) {
+            nonSSLConnector = createNonSSLConnectorWithoutRedirect(httpPort);
+        } else {
+            Integer httpsPort = environment.getRequiredProperty("HTTPS_PORT", Integer.class);
+            nonSSLConnector = createNonSSLConnectorWithRedirect(httpPort, httpsPort);
+        }
         tomcat.addAdditionalTomcatConnectors(nonSSLConnector);
         return tomcat;
     }
