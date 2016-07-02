@@ -29,22 +29,18 @@
         <dependency>
             <groupId>org.springframework.integration</groupId>
             <artifactId>spring-integration-core</artifactId>
-            <version>4.2.4.RELEASE</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.integration</groupId>
             <artifactId>spring-integration-xmpp</artifactId>
-            <version>4.2.4.RELEASE</version>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
-            <version>4.5.2</version>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpasyncclient</artifactId>
-            <version>4.1.1</version>
         </dependency>
         <dependency>
             <groupId>org.igniterealtime.smack</groupId>
@@ -70,11 +66,6 @@
             <groupId>org.igniterealtime.smack</groupId>
             <artifactId>smack-experimental</artifactId>
             <version>4.1.0-beta1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.16.8</version>
         </dependency>
     </dependencies>
     <build>

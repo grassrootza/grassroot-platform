@@ -11,6 +11,13 @@
     <name>Grassroot Application</name>
     <url>http://www.grassroot.org.za/</url>
 
+    <parent>
+            <groupId>io.spring.platform</groupId>
+            <artifactId>platform-bom</artifactId>
+            <version>2.0.5.RELEASE</version>
+            <relativePath/>
+    </parent>
+
     <organization>
         <name>Grassroot</name>
         <url>http://www.grassroot.org.za/</url>
@@ -34,7 +41,6 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>18.0</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -79,21 +85,8 @@
         <dependency>
         	<groupId>org.springframework.security</groupId>
         	<artifactId>spring-security-test</artifactId>
-        	<version>4.0.3.RELEASE</version>
         </dependency>
     </dependencies>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>io.spring.platform</groupId>
-                <artifactId>platform-bom</artifactId>
-                <version>2.0.2.RELEASE</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <build>
         <plugins>
@@ -117,23 +110,6 @@
                     </excludes>
                 </configuration>
             </plugin>
-            <!--<plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-failsafe-plugin</artifactId>
-                <version>2.18.1</version>
-                <configuration>
-                    <forkCount>0</forkCount>
-                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>integration-test</goal>
-                            <goal>verify</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>-->
         </plugins>
 
         <resources>
