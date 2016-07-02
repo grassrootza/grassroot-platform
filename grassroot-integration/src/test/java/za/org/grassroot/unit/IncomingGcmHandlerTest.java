@@ -28,7 +28,6 @@ import javax.transaction.Transactional;
 @SpringApplicationConfiguration(classes = {UserRepository.class, InfrastructureConfiguration.class, NotificationToGcmXmppTransformer.class,
         OutboundMessageRouter.class,InboundGcmMessageHandler.class,TestContextConfig.class,  MessageSendingManager.class})
 @RunWith(SpringJUnit4ClassRunner.class)
-@Transactional
 @ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
 public class IncomingGcmHandlerTest {
 

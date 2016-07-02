@@ -31,7 +31,6 @@ import static org.junit.Assert.assertEquals;
  */
 @SpringApplicationConfiguration(classes = {NotificationToGcmXmppTransformer.class,TestContextConfig.class})
 @RunWith(SpringJUnit4ClassRunner.class)
-@Transactional
 @ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
 public class NotificationToGcmXmppTransformerTest {
 
