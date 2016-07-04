@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.notification.EventInfoNotification;
+import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.GroupLogType;
@@ -936,6 +937,12 @@ public class GroupBrokerImpl implements GroupBroker {
         return events;
     }
 
+
+    @Override
+    public GroupPage groupsWithInvalidNamesPage(User user,int pageNumber, int pageSize){
+        return new GroupPage(getGroupsWithInvalidNames(user),pageNumber,pageSize);
+    }
+
     @Override
     @Transactional
     public void calculateGroupLocation(String groupUid, LocalDate localDate) {
@@ -957,5 +964,19 @@ public class GroupBrokerImpl implements GroupBroker {
         } else {
             logger.debug("No member location data found for group {} for local date {}", group, localDate);
         }
+    }
+
+    public List<GroupDTO> getGroupsWithInvalidNames(User user){
+
+        //for now limiting this to only groups create by the user
+        List<Group> groupsMemberOf = groupRepository.findByCreatedByUser(user);
+        List<GroupDTO> groupsWithInvalidNames = new ArrayList<>();
+        for(Group group: groupsMemberOf) {
+            if (group.getGroupName().length() < 2) {
+                groupsWithInvalidNames.add(new GroupDTO(group));
+            }
+        }
+        return  groupsWithInvalidNames;
+
     }
 }

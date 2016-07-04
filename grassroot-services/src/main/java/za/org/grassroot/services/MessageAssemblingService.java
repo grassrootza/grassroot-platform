@@ -34,6 +34,8 @@ public interface MessageAssemblingService {
 
     String createWelcomeMessage(String messageId, User user);
 
+    String createGroupJoinRequestMessage(User user, GroupJoinRequest request);
+
     String createReplyFailureMessage(User user);
 
     /**

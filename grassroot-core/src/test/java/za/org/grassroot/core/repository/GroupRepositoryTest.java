@@ -295,7 +295,7 @@ public class GroupRepositoryTest {
         assertFalse(group2.isPaidFor());
     }
 
-    @Test
+   /* @Test
     public void shouldFindByDiscoverable() {
         assertThat(groupRepository.count(), is(0L));
         User user = userRepository.save(new User("0881110000"));
@@ -315,7 +315,7 @@ public class GroupRepositoryTest {
         assertThat(secondList.size(), is(1));
         assertTrue(secondList.contains(testGroup1));
         assertFalse(secondList.contains(testGroup2));
-    }
+    }*/
 
     @Test
     public void shouldFindWhereGroupJoinUsed() {

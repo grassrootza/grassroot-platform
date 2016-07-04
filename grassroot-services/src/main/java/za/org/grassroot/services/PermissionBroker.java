@@ -49,6 +49,7 @@ public interface PermissionBroker {
      */
     Set<Group> getActiveGroups(User user, Permission requiredPermission);
 
+
     Set<Group> getActiveGroups(User user, Permission requiredPermission, Instant changedSince);
 
     /**

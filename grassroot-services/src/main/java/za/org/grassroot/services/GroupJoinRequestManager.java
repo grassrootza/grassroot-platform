@@ -9,13 +9,18 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.notification.JoinRequestNotification;
 import za.org.grassroot.core.enums.GroupJoinRequestEventType;
 import za.org.grassroot.core.enums.GroupJoinRequestStatus;
+import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.GroupJoinRequestEventRepository;
 import za.org.grassroot.core.repository.GroupJoinRequestRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.exception.RequestorAlreadyPartOfGroupException;
+import za.org.grassroot.services.util.LogsAndNotificationsBroker;
+import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
 import java.util.List;
@@ -33,6 +38,12 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
     private final PermissionBroker permissionBroker;
 
     @Autowired
+    private LogsAndNotificationsBroker logsAndNotificationsBroker;
+
+    @Autowired
+    private MessageAssemblingService messageAssemblingService;
+
+    @Autowired
     public GroupJoinRequestManager(GroupRepository groupRepository,
                                    UserRepository userRepository,
                                    GroupJoinRequestRepository groupJoinRequestRepository,
@@ -46,6 +57,7 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
         this.groupBroker = groupBroker;
         this.permissionBroker = permissionBroker;
     }
+
 
     @Override
     @Transactional
@@ -66,6 +78,14 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
         Instant time = Instant.now();
         GroupJoinRequest request = new GroupJoinRequest(requestor, group, time, (description != null) ? description : null);
         groupJoinRequestRepository.save(request);
+
+        String message = messageAssemblingService.createGroupJoinRequestMessage(group.getJoinApprover(), request);
+        UserLog userLog = new UserLog(group.getJoinApprover().getUid(), UserLogType.JOIN_REQUEST, "Join request sent, user to approve",
+                UserInterfaceType.UNKNOWN);
+        JoinRequestNotification notification = new JoinRequestNotification(group.getJoinApprover(), message, userLog);
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        bundle.addNotification(notification);
+        logsAndNotificationsBroker.storeBundle(bundle);
 
         GroupJoinRequestEvent event = new GroupJoinRequestEvent(GroupJoinRequestEventType.OPENED, request, requestor, time);
         groupJoinRequestEventRepository.save(event);

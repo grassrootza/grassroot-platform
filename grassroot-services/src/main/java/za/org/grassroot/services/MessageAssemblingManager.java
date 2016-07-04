@@ -145,6 +145,14 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     }
 
     @Override
+    public String createGroupJoinRequestMessage(User user, GroupJoinRequest request) {
+        String[] fields = {request.getRequestor().getDisplayName(), request.getGroup().getGroupName()};
+        return messageSourceAccessor.getMessage("sms.group.join.request",fields,getUserLocale(user));
+
+    }
+
+
+    @Override
     public String createReplyFailureMessage(User user) {
         return messageSourceAccessor.getMessage("sms.reply.failure", "",getUserLocale(user));
 
