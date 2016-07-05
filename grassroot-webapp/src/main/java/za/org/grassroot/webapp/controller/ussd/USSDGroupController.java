@@ -698,7 +698,7 @@ public class USSDGroupController extends USSDController {
         groupBroker.deleteInvalidGroup(user.getUid(),groupUid);
         String prompt = getMessage(thisSection, deleteMenu+doSuffix,promptKey+".success",user);
         USSDMenu menu = new USSDMenu(prompt);
-        menu.addMenuOption(thisSection.toPath() + groupPath + invalidGroups, "Back");
+        menu.addMenuOption(thisSection.toPath() + invalidGroups, "Back");
 
         return menuBuilder(menu);
     }

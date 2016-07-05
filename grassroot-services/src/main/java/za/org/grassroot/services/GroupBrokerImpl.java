@@ -820,21 +820,21 @@ public class GroupBrokerImpl implements GroupBroker {
 
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
+
+        logger.info("Deactivating group: {}", group);
         group.setActive(false);
+
+        GroupLog groupAddedEventLog;
+        if (group.getParent() == null) {
+            groupAddedEventLog = new GroupLog(group, user, GroupLogType.GROUP_REMOVED, null);
+        } else {
+            groupAddedEventLog = new GroupLog(group.getParent(), user, GroupLogType.GROUP_REMOVED, group.getId());
+        }
+
+        logActionLogsAfterCommit(Collections.singleton(groupAddedEventLog));
+
         groupRepository.save(group);
 
-        //todo delete the group permanently, must figure out how to fix referential intergrity issues
-     /*   Set<User> users = group.getMembers();
-
-        for(User user:users){
-            group.removeMember(user);
-        }
-        Set<Role> groupRoles = roleRepository.findByGroupUid(groupUid);
-        for(Role role: groupRoles){
-            roleRepository.delete(role);
-
-        }
-        groupRepository.delete(group);*/
     }
 
     @Override
@@ -985,11 +985,11 @@ public class GroupBrokerImpl implements GroupBroker {
 
     public List<GroupDTO> getGroupsWithInvalidNames(User user) {
 
-        //for now limiting this to only groups create by the user
-        List<Group> groupsMemberOf = groupRepository.findByCreatedByUser(user);
+        //for now limiting this to only groups created by the user
+        List<Group> groupsMemberOf = groupRepository.findByCreatedByUserAndActive(user,true);
         List<GroupDTO> groupsWithInvalidNames = new ArrayList<>();
         for (Group group : groupsMemberOf) {
-            if (group.getGroupName().length() < 2) {
+            if (group.getGroupName().length() < 2 && group.getMembers().size() <2) {
                 groupsWithInvalidNames.add(new GroupDTO(group));
             }
         }
