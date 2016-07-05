@@ -136,11 +136,11 @@ public class USSDGroupUtil extends USSDUtil {
 
 
     public USSDMenu showGroupsWithInvalidNames(User user, USSDSection section, String promptIfExisting, String promptIfEmpty, String url)
-            throws URISyntaxException{
+            throws URISyntaxException {
 
         GroupPage groupsPartOf = groupBroker.groupsWithInvalidNamesPage(user, 0, PAGE_LENGTH);
         USSDMenu groupMenu;
-        if(groupsPartOf.getContent().isEmpty()){
+        if (groupsPartOf.getContent().isEmpty()) {
             groupMenu = new USSDMenu(promptIfEmpty);
             groupMenu.addMenuOption("start", getMessage("start", user));
             groupMenu.addMenuOption("exit", getMessage("exit.option", user));
@@ -161,16 +161,10 @@ public class USSDGroupUtil extends USSDUtil {
         String requestUid = request.getUid();
         String displayName = request.getRequestor().getDisplayName();
         String groupName = request.getGroup().getGroupName();
-        USSDMenu menu;
-        //  if(requests.size() <3){
         prompt = getMessage(section.toString(), groupKeyForMessages, promptKey + ".join_request", new String[]{displayName, groupName}, user);
-        menu = new USSDMenu(prompt);
+        USSDMenu menu = new USSDMenu(prompt);
         menu.addMenuOption(USSDUrlUtil.approveRejectRequestMenuUrl("approve", userUid, requestUid), getMessage(section, groupKeyForMessages, optionsKey + "approve", user));
         menu.addMenuOption(USSDUrlUtil.approveRejectRequestMenuUrl("reject", userUid, requestUid), getMessage(section, groupKeyForMessages, optionsKey + "reject", user));
-      /* }else{
-           prompt = getMessage()
-
-        }*/
 
         return menu;
     }
@@ -221,14 +215,14 @@ public class USSDGroupUtil extends USSDUtil {
                 if (urlForNewGroup != null)
                     menu.addMenuOption(urlForNewGroup, getMessage(groupKeyForMessages, "create", "option", user));
             }
-            menu.addMenuOption(section.toPath() +"clean", getMessage(groupKeyForMessages,"clean","option", user));
+            menu.addMenuOption(section.toPath() + "clean", getMessage(groupKeyForMessages, "clean", "option", user));
         }
         return menu;
     }
 
     public USSDMenu userInvalidGroupMenuPageOne(User user, String prompt, String existingGroupUrl,
-                                         USSDSection section) throws URISyntaxException {
-        return userGroupsWtihInvalidNamesPaginated(user, section ,prompt, existingGroupUrl, 0);
+                                                USSDSection section) throws URISyntaxException {
+        return userGroupsWtihInvalidNamesPaginated(user, section, prompt, existingGroupUrl, 0);
     }
 
     public USSDMenu userGroupsWtihInvalidNamesPaginated(User user, USSDSection section, String prompt, String urlForExistingGroups, Integer pageNumber) {

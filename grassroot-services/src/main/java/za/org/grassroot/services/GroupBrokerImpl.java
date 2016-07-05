@@ -984,7 +984,6 @@ public class GroupBrokerImpl implements GroupBroker {
     }
 
     public List<GroupDTO> getGroupsWithInvalidNames(User user) {
-
         //for now limiting this to only groups created by the user
         List<Group> groupsMemberOf = groupRepository.findByCreatedByUserAndActive(user,true);
         List<GroupDTO> groupsWithInvalidNames = new ArrayList<>();

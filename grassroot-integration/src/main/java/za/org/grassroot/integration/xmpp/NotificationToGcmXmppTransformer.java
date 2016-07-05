@@ -83,6 +83,10 @@ public class NotificationToGcmXmppTransformer {
                 title = "Grassroot Message"; // todo : need to put group in here
                 body = notification.getMessage();
                 break;
+            case USER:
+                title = "Grassroot Message";
+                body = notification.getMessage();
+                break;
 
             default:
                 throw new UnsupportedOperationException("Have to add support for notification type: " + notification.getNotificationType());

@@ -14,10 +14,7 @@ import za.org.grassroot.core.enums.GroupJoinRequestEventType;
 import za.org.grassroot.core.enums.GroupJoinRequestStatus;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
-import za.org.grassroot.core.repository.GroupJoinRequestEventRepository;
-import za.org.grassroot.core.repository.GroupJoinRequestRepository;
-import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.exception.RequestorAlreadyPartOfGroupException;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
@@ -42,6 +39,9 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
 
     @Autowired
     private MessageAssemblingService messageAssemblingService;
+
+    @Autowired
+    private UserLogRepository userLogRepository;
 
     @Autowired
     public GroupJoinRequestManager(GroupRepository groupRepository,
@@ -82,6 +82,8 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
         String message = messageAssemblingService.createGroupJoinRequestMessage(group.getJoinApprover(), request);
         UserLog userLog = new UserLog(group.getJoinApprover().getUid(), UserLogType.JOIN_REQUEST, "Join request sent, user to approve",
                 UserInterfaceType.UNKNOWN);
+        userLogRepository.save(userLog);
+
         JoinRequestNotification notification = new JoinRequestNotification(group.getJoinApprover(), message, userLog);
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         bundle.addNotification(notification);

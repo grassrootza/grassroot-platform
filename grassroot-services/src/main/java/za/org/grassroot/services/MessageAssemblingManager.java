@@ -145,6 +145,15 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     }
 
     @Override
+    public String createMeetingAttendanceConfirmationMessage(User organiser, User member, EventLog eventLog) {
+        String[] fields = new String[]{
+                member.getDisplayName(),
+                eventLog.getMessage()
+        };
+        return  messageSourceAccessor.getMessage("sms.meeting.confirmation", fields, getUserLocale(organiser));
+    }
+
+    @Override
     public String createGroupJoinRequestMessage(User user, GroupJoinRequest request) {
         String[] fields = {request.getRequestor().getDisplayName(), request.getGroup().getGroupName()};
         return messageSourceAccessor.getMessage("sms.group.join.request",fields,getUserLocale(user));
