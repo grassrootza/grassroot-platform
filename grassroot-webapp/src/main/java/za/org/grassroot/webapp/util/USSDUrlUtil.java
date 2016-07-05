@@ -141,8 +141,16 @@ public class USSDUrlUtil {
         return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupUid=" + groupUid;
     }
 
+    public static String groupVisibilityOption(String menu, String groupUid, boolean discoverable){
+       return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupUid=" + groupUid+"&hide="+discoverable;
+    }
+
     public static String logViewExistingUrl(String menu, String groupUid, Boolean done, Integer pageNumber) {
         return USSDSection.LOGBOOK.toPath() + menu + "?groupUid=" + groupUid + "&done=" + done + "&pageNumber=" + pageNumber;
+    }
+
+    public static String approveRejectRequestMenuUrl(String menu, String userUid, String requestUid){
+        return USSDSection.GROUP_MANAGER.toPath() + menu +"-do" +"?requestUid=" +requestUid +  "&userUid="+userUid;
     }
 
 }

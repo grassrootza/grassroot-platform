@@ -54,6 +54,9 @@ public class USSDGroupUtil extends USSDUtil {
     @Autowired
     CacheUtilService cacheManager;
 
+    @Autowired
+    GroupJoinRequestService groupJoinRequestService;
+
     private static final String groupKeyForMessages = "group";
 
     private static final String groupUidParameter = "groupUid";
@@ -66,6 +69,10 @@ public class USSDGroupUtil extends USSDUtil {
             unsubscribePrompt = "unsubscribe",
             groupTokenMenu = "token",
             renameGroupPrompt = "rename",
+            hideGroup = "hidegroup",
+            showGroup = "showgroup",
+            visibility = "visibility",
+            makeDiscoverable = "showGroup",
             addMemberPrompt = "addnumber",
             inactiveMenu = "inactive",
             advancedGroupMenu = "advanced",
@@ -105,6 +112,7 @@ public class USSDGroupUtil extends USSDUtil {
             groupMenu = userGroupMenuPageOne(sessionUser, prompt, existingGroupUri, newGroupUri, section);
         }
         return groupMenu;
+
     }
 
     public USSDMenu askForGroupNoInlineNew(User sessionUser, USSDSection section, String promptIfExisting, String promptIfEmpty,
@@ -124,6 +132,41 @@ public class USSDGroupUtil extends USSDUtil {
             groupMenu = userGroupMenuPageOne(sessionUser, promptIfExisting, existingGroupUri, null, section);
         }
         return groupMenu;
+    }
+
+
+    public USSDMenu showGroupsWithInvalidNames(User user, USSDSection section, String promptIfExisting, String promptIfEmpty, String url)
+            throws URISyntaxException {
+
+        GroupPage groupsPartOf = groupBroker.groupsWithInvalidNamesPage(user, 0, PAGE_LENGTH);
+        USSDMenu groupMenu;
+        if (groupsPartOf.getContent().isEmpty()) {
+            groupMenu = new USSDMenu(promptIfEmpty);
+            groupMenu.addMenuOption("start", getMessage("start", user));
+            groupMenu.addMenuOption("exit", getMessage("exit.option", user));
+        } else {
+            String existingGroupUri = section.toPath() + url;
+            groupMenu = userInvalidGroupMenuPageOne(user, promptIfExisting, existingGroupUri, section);
+
+        }
+        return groupMenu;
+
+    }
+
+    public USSDMenu showGroupRequests(User user, USSDSection section, String nextUrl) {
+        List<GroupJoinRequest> requests = groupJoinRequestService.getOpenRequestsForUser(user.getUid());
+        GroupJoinRequest request = requests.get(0);
+        String prompt;
+        String userUid = request.getRequestor().getUid();
+        String requestUid = request.getUid();
+        String displayName = request.getRequestor().getDisplayName();
+        String groupName = request.getGroup().getGroupName();
+        prompt = getMessage(section.toString(), groupKeyForMessages, promptKey + ".join_request", new String[]{displayName, groupName}, user);
+        USSDMenu menu = new USSDMenu(prompt);
+        menu.addMenuOption(USSDUrlUtil.approveRejectRequestMenuUrl("approve", userUid, requestUid), getMessage(section, groupKeyForMessages, optionsKey + "approve", user));
+        menu.addMenuOption(USSDUrlUtil.approveRejectRequestMenuUrl("reject", userUid, requestUid), getMessage(section, groupKeyForMessages, optionsKey + "reject", user));
+
+        return menu;
     }
 
     // helper method which will use some defaults
@@ -150,25 +193,49 @@ public class USSDGroupUtil extends USSDUtil {
                                            Integer pageNumber, USSDSection section)
             throws URISyntaxException {
 
-        USSDMenu menu = new USSDMenu(prompt);
-
-        Permission filter = SectionPermissionMap.get(section); // returning null is what we want if key not present
-        GroupPage groupsPartOf = permissionBroker.getPageOfGroupDTOs(user, filter, pageNumber, PAGE_LENGTH);
-        log.debug("Getting groups for USSD menu, permission={}, found {} groups", filter, groupsPartOf.getTotalElements());
-
-        if (groupsPartOf.getTotalElements() == 1 && section != USSDSection.MEETINGS) { // exclude meetings since can create new in it
-            menu = skipGroupSelection(user, section, groupsPartOf.getContent().get(0));
+        USSDMenu menu;
+        if (hasOpenJoinRequests(user)) {
+            menu = showGroupRequests(user, section, urlForExistingGroups);
         } else {
-            menu = addListOfGroupsToMenu(menu,section, urlForExistingGroups, groupsPartOf.getContent(), user);
-            if (groupsPartOf.hasNext())
-                menu.addMenuOption(USSDUrlUtil.paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, pageNumber + 1),
-                        "More groups"); // todo: i18n
-            if (groupsPartOf.hasPrevious())
-                menu.addMenuOption(USSDUrlUtil.paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, pageNumber - 1),
-                        "Back"); // todo: i18n
-            if (urlForNewGroup != null)
-                menu.addMenuOption(urlForNewGroup, getMessage(groupKeyForMessages, "create", "option", user));
+            menu = new USSDMenu(prompt);
+            Permission filter = SectionPermissionMap.get(section); // returning null is what we want if key not present
+            GroupPage groupsPartOf = permissionBroker.getPageOfGroupDTOs(user, filter, pageNumber, PAGE_LENGTH);
+            log.debug("Getting groups for USSD menu, permission={}, found {} groups", filter, groupsPartOf.getTotalElements());
+
+            if (groupsPartOf.getTotalElements() == 1 && section != USSDSection.MEETINGS) { // exclude meetings since can create new in it
+                menu = skipGroupSelection(user, section, groupsPartOf.getContent().get(0));
+            } else {
+                menu = addListOfGroupsToMenu(menu, section, urlForExistingGroups, groupsPartOf.getContent(), user);
+                if (groupsPartOf.hasNext())
+                    menu.addMenuOption(USSDUrlUtil.paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, pageNumber + 1),
+                            "More groups"); // todo: i18n
+                if (groupsPartOf.hasPrevious())
+                    menu.addMenuOption(USSDUrlUtil.paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, pageNumber - 1),
+                            "Back"); // todo: i18n
+                if (urlForNewGroup != null)
+                    menu.addMenuOption(urlForNewGroup, getMessage(groupKeyForMessages, "create", "option", user));
+            }
+            menu.addMenuOption(section.toPath() + "clean", getMessage(groupKeyForMessages, "clean", "option", user));
         }
+        return menu;
+    }
+
+    public USSDMenu userInvalidGroupMenuPageOne(User user, String prompt, String existingGroupUrl,
+                                                USSDSection section) throws URISyntaxException {
+        return userGroupsWtihInvalidNamesPaginated(user, section, prompt, existingGroupUrl, 0);
+    }
+
+    public USSDMenu userGroupsWtihInvalidNamesPaginated(User user, USSDSection section, String prompt, String urlForExistingGroups, Integer pageNumber) {
+        USSDMenu menu = new USSDMenu(prompt);
+        GroupPage groupsPartOf = groupBroker.groupsWithInvalidNamesPage(user, pageNumber, PAGE_LENGTH);
+        menu = addListOfGroupsToMenu(menu, section, urlForExistingGroups, groupsPartOf.getContent(), user);
+        if (groupsPartOf.hasNext())
+            menu.addMenuOption(USSDUrlUtil.paginatedGroupUrl(prompt, urlForExistingGroups, null, pageNumber + 1),
+                    "More groups");
+        if (groupsPartOf.hasPrevious())
+            menu.addMenuOption(USSDUrlUtil.paginatedGroupUrl(prompt, urlForExistingGroups, null, pageNumber - 1),
+                    "Back");
+
         return menu;
     }
 
@@ -179,7 +246,7 @@ public class USSDGroupUtil extends USSDUtil {
         for (Group group : groups) {
             String name = (group.hasName()) ? group.getGroupName() :
                     getMessage(groupKeyForMessages, "unnamed", "label", unnamedGroupDate.format(group.getCreatedDateTime()), user);
-                menu.addMenuOption(formedUrl + group.getUid(), name);
+            menu.addMenuOption(formedUrl + group.getUid(), name);
         }
         return menu;
     }
@@ -212,8 +279,8 @@ public class USSDGroupUtil extends USSDUtil {
         return thisMenu;
     }
 
-    public USSDMenu invalidGroupNamePrompt(User user,String groupName, USSDSection section, String nextUrl) throws URISyntaxException {
-        USSDMenu thisMenu = new USSDMenu(getMessage(section, groupKeyForMessages, promptKey + ".invalid-name",groupName, user));
+    public USSDMenu invalidGroupNamePrompt(User user, String groupName, USSDSection section, String nextUrl) throws URISyntaxException {
+        USSDMenu thisMenu = new USSDMenu(getMessage(section, groupKeyForMessages, promptKey + ".invalid-name", groupName, user));
         thisMenu.setFreeText(true);
         thisMenu.setNextURI(section.toPath() + nextUrl);
         return thisMenu;
@@ -336,8 +403,12 @@ public class USSDGroupUtil extends USSDUtil {
         final String menuKey = GROUP_MANAGER.toKey() + advancedGroupMenu + "." + optionsKey;
         final String tokenKey = openToken ? menuKey + groupTokenMenu + ".exists" : menuKey + groupTokenMenu + ".create";
 
-        if (permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS))
+        if (permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS)) {
+            String visibilityMenuOptionPrompt = group.isDiscoverable() ? getMessage(menuKey + hideGroup, user)
+                    : getMessage(menuKey + showGroup, user);
             listMenu.addMenuOption(groupMenuWithId(groupTokenMenu, groupUid), getMessage(tokenKey, user));
+            listMenu.addMenuOption(groupMenuWithId(visibility, groupUid), visibilityMenuOptionPrompt);
+        }
 
         if (groupBroker.isDeactivationAvailable(user, group, true))
             listMenu.addMenuOption(groupMenuWithId(inactiveMenu, groupUid), getMessage(menuKey + inactiveMenu, user));
@@ -370,5 +441,10 @@ public class USSDGroupUtil extends USSDUtil {
         return prompt;
 
     }
+
+    private boolean hasOpenJoinRequests(User user) {
+        return groupJoinRequestService.getOpenRequestsForUser(user.getUid()).size() > 0;
+    }
+
 
 }

@@ -16,7 +16,8 @@ public enum UserLogType {
     USSD_DATE_ENTERED("user entered a date time string in USSD"),
     USSD_DATE_WRONG("user corrected a date time string"),
     USER_SKIPPED_NAME("user preferred not to set name"),
-    DEREGISTERED_ANDROID("user android profile deleted");
+    DEREGISTERED_ANDROID("user android profile deleted"),
+    JOIN_REQUEST("user required to approve a join request");
 
     private final String text;
 

@@ -49,8 +49,7 @@ public class EventBrokerImpl implements EventBroker {
 	private UserRepository userRepository;
 	@Autowired
 	private PermissionBroker permissionBroker;
-	@Autowired
-    private ApplicationEventPublisher applicationEventPublisher;
+
 
 	@Autowired
 	private LogsAndNotificationsBroker logsAndNotificationsBroker;

@@ -136,7 +136,7 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
         this.createdByUser = Objects.requireNonNull(createdByUser);
         this.createdDateTime = Timestamp.from(Instant.now());
         this.active = true;
-        this.discoverable = false;
+        this.discoverable = true; //make groups dicoverable by default
         this.parent = parent;
         this.reminderMinutes = 24 * 60; // defaults to a day
         this.description = ""; // at some point may want to add to the constructor

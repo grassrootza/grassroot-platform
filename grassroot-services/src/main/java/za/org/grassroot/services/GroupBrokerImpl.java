@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.notification.EventInfoNotification;
+import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.GroupLogType;
@@ -543,7 +544,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
         // todo: consider more fine grained logging (which permission changed)
         logActionLogsAfterCommit(Collections.singleton(new GroupLog(group, user, GroupLogType.PERMISSIONS_CHANGED, 0L,
-                                               "Changed permissions assigned to group roles")));
+                "Changed permissions assigned to group roles")));
 
     }
 
@@ -812,11 +813,28 @@ public class GroupBrokerImpl implements GroupBroker {
     }
 
     @Override
-    public void deleteInvalidGroups(String invalidName, Instant threshold) {
-       List<Group> invalidGroups =  groupRepository.findByGroupNameAndCreatedDateTimeBefore(invalidName, Timestamp.from(threshold));
-        invalidGroups.stream().filter(group -> group.getMembers().size() < 2).forEach(group -> {
-            groupRepository.delete(group);
-        });
+    public void deleteInvalidGroup(String userUid, String groupUid) {
+
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+
+
+        logger.info("Deactivating group: {}", group);
+        group.setActive(false);
+
+        GroupLog groupAddedEventLog;
+        if (group.getParent() == null) {
+            groupAddedEventLog = new GroupLog(group, user, GroupLogType.GROUP_REMOVED, null);
+        } else {
+            groupAddedEventLog = new GroupLog(group.getParent(), user, GroupLogType.GROUP_REMOVED, group.getId());
+        }
+
+        logActionLogsAfterCommit(Collections.singleton(groupAddedEventLog));
+
+        groupRepository.save(group);
+
     }
 
     @Override
@@ -936,6 +954,12 @@ public class GroupBrokerImpl implements GroupBroker {
         return events;
     }
 
+
+    @Override
+    public GroupPage groupsWithInvalidNamesPage(User user, int pageNumber, int pageSize) {
+        return new GroupPage(getGroupsWithInvalidNames(user), pageNumber, pageSize);
+    }
+
     @Override
     @Transactional
     public void calculateGroupLocation(String groupUid, LocalDate localDate) {
@@ -957,5 +981,18 @@ public class GroupBrokerImpl implements GroupBroker {
         } else {
             logger.debug("No member location data found for group {} for local date {}", group, localDate);
         }
+    }
+
+    public List<GroupDTO> getGroupsWithInvalidNames(User user) {
+        //for now limiting this to only groups created by the user
+        List<Group> groupsMemberOf = groupRepository.findByCreatedByUserAndActive(user,true);
+        List<GroupDTO> groupsWithInvalidNames = new ArrayList<>();
+        for (Group group : groupsMemberOf) {
+            if (group.getGroupName().length() < 2 && group.getMembers().size() <2) {
+                groupsWithInvalidNames.add(new GroupDTO(group));
+            }
+        }
+        return groupsWithInvalidNames;
+
     }
 }

@@ -5,10 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.MessageSource;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.services.EventBroker;
-import za.org.grassroot.services.EventManagementService;
-import za.org.grassroot.services.GroupBroker;
-import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.services.*;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
@@ -92,6 +89,9 @@ public class USSDController {
     protected CacheUtilService cacheManager;
     @Autowired
     protected AsyncUserLogger userLogger;
+
+    @Autowired
+    protected GroupJoinRequestService groupJoinRequestService;
 
     @Autowired
     @Qualifier("messageSource")
