@@ -35,10 +35,10 @@ public class GroupLog implements Serializable, ActionLog {
     @Column(name="group_log_type", nullable = false, length = 50)
     private GroupLogType groupLogType;
 
-    @Column
+    @Column(name = "user_or_sub_group_id")
     private Long userOrSubGroupId;
 
-    @Column
+    @Column(name = "description")
     private String description;
 
     private GroupLog() {

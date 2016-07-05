@@ -1,11 +1,14 @@
 package za.org.grassroot.services;
 
+import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.GroupDTO;
+import za.org.grassroot.core.enums.EventLogType;
+import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
@@ -24,6 +27,9 @@ public class PermissionBrokerImpl implements PermissionBroker {
 
     @Autowired
     private EventManagementService eventManagementService;
+
+    @Autowired
+    private EventLogRepository eventLogRepository;
 
     // major todo: externalize these permissions
 
@@ -167,6 +173,12 @@ public class PermissionBrokerImpl implements PermissionBroker {
 
         Event mostRecentEvent = eventManagementService.getMostRecentEvent(group);
         if (mostRecentEvent.getCreatedDateTime().isAfter(changedSince)) {
+            return true;
+        }
+
+        // if most recent event is created before last time user checked this group, then we check if this event has been changed after this last time
+        EventLog lastChangeEventLog = eventLogRepository.findFirstByEventAndEventLogTypeOrderByCreatedDateTimeDesc(mostRecentEvent, EventLogType.CHANGE);
+        if (lastChangeEventLog.getCreatedDateTime().isAfter(changedSince)) {
             return true;
         }
 

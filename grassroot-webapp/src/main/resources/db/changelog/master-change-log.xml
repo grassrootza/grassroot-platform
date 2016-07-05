@@ -97,5 +97,6 @@
     <include file="change_91.xml" relativeToChangelogFile="true" />
     <include file="change_92.xml" relativeToChangelogFile="true" />
     <include file="change_93.xml" relativeToChangelogFile="true" />
+    <include file="change_94.xml" relativeToChangelogFile="true" />
 
 </databaseChangeLog>

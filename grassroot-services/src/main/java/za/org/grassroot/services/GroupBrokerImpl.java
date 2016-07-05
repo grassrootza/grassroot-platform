@@ -102,17 +102,14 @@ public class GroupBrokerImpl implements GroupBroker {
         // last: set some advanced features, with defaults in case null passed
         group.setDescription((description == null) ? "" : description);
         group.setReminderMinutes((reminderMinutes == null) ? (24 * 60) : reminderMinutes);
-
-        GroupLog groupAddedEventLog;
-        if (parent == null) {
-            groupAddedEventLog = new GroupLog(group, user, GroupLogType.GROUP_ADDED, null);
-        } else {
-            group.setParent(parent);
-            groupAddedEventLog = new GroupLog(parent, user, GroupLogType.GROUP_ADDED, group.getId());
-        }
+        group.setParent(parent);
 
         LogsAndNotificationsBundle bundle = addMemberships(user, group, membershipInfos, true);
-        bundle.addLog(groupAddedEventLog);
+
+        bundle.addLog(new GroupLog(group, user, GroupLogType.GROUP_ADDED, null));
+        if (parent != null) {
+            bundle.addLog(new GroupLog(parent, user, GroupLogType.SUBGROUP_ADDED, group.getId(), "Subgroup added"));
+        }
 
         permissionBroker.setRolePermissionsFromTemplate(group, groupPermissionTemplate);
         group = groupRepository.save(group);
@@ -156,14 +153,13 @@ public class GroupBrokerImpl implements GroupBroker {
         logger.info("Deactivating group: {}", group);
         group.setActive(false);
 
-        GroupLog groupAddedEventLog;
-        if (group.getParent() == null) {
-            groupAddedEventLog = new GroupLog(group, user, GroupLogType.GROUP_REMOVED, null);
-        } else {
-            groupAddedEventLog = new GroupLog(group.getParent(), user, GroupLogType.GROUP_REMOVED, group.getId());
+        Set<ActionLog> actionLogs = new HashSet<>();
+        actionLogs.add(new GroupLog(group, user, GroupLogType.GROUP_REMOVED, null));
+        if (group.getParent() != null) {
+            actionLogs.add(new GroupLog(group.getParent(), user, GroupLogType.SUBGROUP_REMOVED, group.getId()));
         }
 
-        logActionLogsAfterCommit(Collections.singleton(groupAddedEventLog));
+        logActionLogsAfterCommit(actionLogs);
     }
 
     @Override
@@ -653,8 +649,9 @@ public class GroupBrokerImpl implements GroupBroker {
             LocalDateTime expiry = (temporary) ? expiryDateTime : endOfCentury;
             group.setTokenExpiryDateTime(Timestamp.valueOf(expiry));
             group.setGroupTokenCode(token);
-            logMessage = temporary ? String.format("Created join code, %s, with closing time %s", token, expiryDateTime.format(DateTimeFormatter.ISO_DATE_TIME))
-                    : String.format("Created join code %s, to remain open until closed by group", token);
+            logMessage = temporary ?
+                    String.format("Created join code, %s, with closing time %s", token, expiryDateTime.format(DateTimeFormatter.ISO_DATE_TIME)) :
+                    String.format("Created join code %s, to remain open until closed by group", token);
         }
 
         GroupLog groupLog = new GroupLog(group, user, GroupLogType.TOKEN_CHANGED, 0L, logMessage);
@@ -809,10 +806,8 @@ public class GroupBrokerImpl implements GroupBroker {
         child.setParent(parent);
 
         Set<ActionLog> actionLogs = new HashSet<>();
-        actionLogs.add(new GroupLog(parent, user, GroupLogType.SUBGROUP_ADDED, child.getId(),
-                              "Subgroup added"));
-        actionLogs.add(new GroupLog(child, user, GroupLogType.PARENT_CHANGED, parent.getId(),
-                              "Parent group added or changed"));
+        actionLogs.add(new GroupLog(parent, user, GroupLogType.SUBGROUP_ADDED, child.getId(), "Subgroup added"));
+        actionLogs.add(new GroupLog(child, user, GroupLogType.PARENT_CHANGED, parent.getId(), "Parent group added or changed"));
         logActionLogsAfterCommit(actionLogs);
     }
 

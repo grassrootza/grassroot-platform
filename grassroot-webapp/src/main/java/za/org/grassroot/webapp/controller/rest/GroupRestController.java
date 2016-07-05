@@ -18,6 +18,7 @@ import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.*;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -73,10 +74,15 @@ public class GroupRestController {
     }
 
     @RequestMapping(value = "/list/{phoneNumber}/{code}", method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> getUserGroups(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String token) {
+    public ResponseEntity<ResponseWrapper> getUserGroups(
+            @PathVariable("phoneNumber") String phoneNumber,
+            @PathVariable("code") String token,
+            @RequestParam(name = "changedSince", required = false) Long changedSinceMillis) {
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
-        Set<Group> groups = permissionBroker.getActiveGroups(user, null, null);
+
+        Instant changedSince = changedSinceMillis == null ? null : Instant.ofEpochMilli(changedSinceMillis);
+        Set<Group> groups = permissionBroker.getActiveGroups(user, null, changedSince);
         List<GroupResponseWrapper> groupWrappers = groups.stream()
                 .map(group -> createGroupWrapper(group, user))
                 .sorted(Collections.reverseOrder())
@@ -214,10 +220,6 @@ public class GroupRestController {
         Role role = group.getMembership(caller).getRole();
         Event event = eventManagementService.getMostRecentEvent(group);
         GroupLog groupLog = groupBroker.getMostRecentLog(group);
-        // maybe there are bad data in db, or subgroup without and grouplog has been created (which is possible)
-        if (groupLog == null) {
-            groupLog = new GroupLog(group, group.getCreatedByUser(), GroupLogType.GROUP_ADDED, null);
-        }
         GroupResponseWrapper responseWrapper;
         if (event != null) {
             if (event.getEventStartDateTime() != null && event.getEventStartDateTime()
