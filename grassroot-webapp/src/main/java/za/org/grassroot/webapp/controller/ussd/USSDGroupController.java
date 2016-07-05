@@ -10,7 +10,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.services.GroupPage;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
@@ -18,6 +20,7 @@ import za.org.grassroot.services.exception.GroupDeactivationNotAvailableExceptio
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
+import za.org.grassroot.webapp.util.USSDGroupUtil;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
@@ -25,6 +28,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
@@ -47,7 +51,6 @@ public class USSDGroupController extends USSDController {
             advancedGroupMenu = "advanced",
             createGroupMenu = "create",
             closeGroupToken = "create-token",
-            viewInvalid = "view-invalid",
             createGroupAddNumbers = "add-numbers",
             listGroupMembers = "list",
             renameGroupPrompt = "rename",
@@ -62,8 +65,7 @@ public class USSDGroupController extends USSDController {
             mergeGroupMenu = "merge",
             inactiveMenu = "inactive",
             validity = "validity",
-            invalidGroups = "clean",
-            deleteMenu = "delete";
+            invalidGroups = "clean";
 
     private static final String groupPath = homePath + groupMenus;
     private static final USSDSection thisSection = USSDSection.GROUP_MANAGER;
@@ -103,7 +105,6 @@ public class USSDGroupController extends USSDController {
     @ResponseBody
     public Request advancedGroupMenu(@RequestParam(value = phoneNumber) String inputNumber,
                                      @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
-
         return menuBuilder(ussdGroupUtil.advancedGroupOptionsMenu(userManager.findByInputNumber(inputNumber), groupUid));
     }
 
@@ -142,8 +143,7 @@ public class USSDGroupController extends USSDController {
                 Long startTime = System.currentTimeMillis();
                 MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
                 createdGroup = groupBroker.create(user.getUid(), groupName, null, Collections.singleton(creator),
-                        GroupPermissionTemplate.DEFAULT_GROUP, null, null, false);
-                groupBroker.openJoinToken(user.getUid(), createdGroup.getUid(), null);
+                        GroupPermissionTemplate.DEFAULT_GROUP, null, null, true);
                 Long endTime = System.currentTimeMillis();
                 log.info(String.format("Group has been created ... time taken ... %d msecs", endTime - startTime));
             }
@@ -682,25 +682,16 @@ public class USSDGroupController extends USSDController {
     public Request listGroupsWithInvalidNames(@RequestParam String msisdn) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(msisdn);
-        USSDMenu menu;
-        menu = ussdGroupUtil.showGroupsWithInvalidNames(user, USSDSection.GROUP_MANAGER,getMessage(thisSection, deleteMenu,promptKey+".hasgroups",user),
-                getMessage(thisSection, deleteMenu,promptKey+".nogroups",user), deleteMenu + doSuffix);
-        menu.addMenuOption(groupMenus + startMenu, "Back");
+	    Group group = groupBroker.fetchGroupsWithOneCharNames(user, 2).get(0);
 
-        return menuBuilder(menu);
-    }
+	    String createdDate = group.getCreatedDateTime().toLocalDateTime().format(DateTimeFormatter.ofPattern("d MMM"));
+	    String prompt = getMessage(thisSection, invalidGroups, promptKey, new String[] { group.getGroupName(), createdDate, String.valueOf(group.getMembers().size()) }, user);
+	    USSDMenu menu = new USSDMenu(prompt);
+	    menu.addMenuOption(groupMenuWithId(renameGroupPrompt, group.getUid()), getMessage(thisSection, invalidGroups, optionsKey + "rename", user));
+	    menu.addMenuOption(groupMenuWithId(inactiveMenu + doSuffix, group.getUid()), getMessage(thisSection, invalidGroups, optionsKey + "delete", user));
+	    menu.addMenuOption(groupMenus + startMenu, getMessage(thisSection, invalidGroups, optionsKey + "back", user));
 
-    @RequestMapping(value = groupPath + deleteMenu + doSuffix)
-    @ResponseBody
-    public Request deleteGroup(@RequestParam String msisdn, @RequestParam String groupUid) throws URISyntaxException {
-
-        User user = userManager.findByInputNumber(msisdn);
-        groupBroker.deleteInvalidGroup(user.getUid(),groupUid);
-        String prompt = getMessage(thisSection, deleteMenu+doSuffix,promptKey+".success",user);
-        USSDMenu menu = new USSDMenu(prompt);
-        menu.addMenuOption(thisSection.toPath() + invalidGroups, "Back");
-
-        return menuBuilder(menu);
+	    return menuBuilder(menu);
     }
 
     @RequestMapping(value = groupPath + listGroupMembers)

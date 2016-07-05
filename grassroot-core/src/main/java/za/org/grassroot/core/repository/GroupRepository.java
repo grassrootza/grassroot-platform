@@ -35,8 +35,6 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
      */
     Group findFirstByCreatedByUserOrderByIdDesc(User createdByUser);
 
-
-
     Group findOneByUid(String uid);
 
     /*
@@ -106,7 +104,8 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     @Query(value = "SELECT g FROM Group g WHERE g.id IN (SELECT gl.group.id FROM GroupLog gl WHERE (gl.createdDateTime BETWEEN ?1 AND ?2) AND gl.groupLogType = za.org.grassroot.core.enums.GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE)")
     List<Group> findGroupsWhereJoinCodeUsedBetween(Instant periodStart, Instant periodEnd);
 
-
+    @Query(value = "SELECT g from Group g WHERE g.createdByUser = ?1 AND g.active = true AND LENGTH(g.groupName) < 2")
+    List<Group> findActiveGroupsWithNamesLessThanOneCharacter(User createdByUser);
 
 
 }

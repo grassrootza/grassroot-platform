@@ -132,7 +132,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
         when(groupBrokerMock.create(sessionTestUser.getUid(), dummyGroupCreator.getGroupName(), null,
                                     new HashSet<>(dummyGroupCreator.getAddedMembers()),
-                                    GroupPermissionTemplate.DEFAULT_GROUP, null, (60 * 24), false)).thenReturn(dummyGroup);
+                                    GroupPermissionTemplate.DEFAULT_GROUP, null, (60 * 24), true)).thenReturn(dummyGroup);
 
         when((userManagementServiceMock.loadOrSaveUser(sessionTestUser.getPhoneNumber()))).thenReturn(sessionTestUser);
         when(userManagementServiceMock.save(sessionTestUser)).thenReturn(sessionTestUser);

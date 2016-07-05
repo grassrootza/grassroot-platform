@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "group_profile") // quoting table name in case "group" is a reserved keyword
-public class Group implements LogBookContainer, VoteContainer, MeetingContainer, Serializable {
+public class Group implements LogBookContainer, VoteContainer, MeetingContainer, Serializable, Comparable<Group> {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
@@ -136,7 +136,8 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
         this.createdByUser = Objects.requireNonNull(createdByUser);
         this.createdDateTime = Timestamp.from(Instant.now());
         this.active = true;
-        this.discoverable = true; //make groups dicoverable by default
+        this.discoverable = true; // make groups discoverable by default
+        this.joinApprover = createdByUser; // discoverable groups need a join approver, defaulting to creating user
         this.parent = parent;
         this.reminderMinutes = 24 * 60; // defaults to a day
         this.description = ""; // at some point may want to add to the constructor
@@ -551,5 +552,15 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
         sb.append(", reminderMinutes=").append(reminderMinutes);
         sb.append('}');
         return sb.toString();
+    }
+
+    @Override
+    public int compareTo(Group group) {
+        if (uid.equals(group.getUid())) {
+            return 0;
+        } else {
+            Timestamp otherCreatedDateTime = group.getCreatedDateTime();
+            return createdDateTime.compareTo(otherCreatedDateTime);
+        }
     }
 }

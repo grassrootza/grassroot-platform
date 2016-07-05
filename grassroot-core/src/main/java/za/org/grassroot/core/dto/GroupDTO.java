@@ -3,6 +3,7 @@ package za.org.grassroot.core.dto;
 import za.org.grassroot.core.domain.Group;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**

@@ -110,7 +110,6 @@ public class GroupController extends BaseController {
     private void initModifierBinder(WebDataBinder binder) { binder.setValidator(groupWrapperValidator); }
 
     private boolean isUserPartOfGroup(User sessionUser, Group group) {
-        // todo: do this from cache so it's not slow ...
         return permissionBroker.isGroupPermissionAvailable(sessionUser, group, null);
     }
 
@@ -191,7 +190,7 @@ public class GroupController extends BaseController {
         Group group = groupBroker.load(groupUid);
         Set<Permission> userPermissions = permissionBroker.getPermissions(user, group); // throws exception if not in group
         Long endTime = System.currentTimeMillis();
-        log.info(String.format("Checking group membership & loading permissions took ... %d msec", endTime - startTime));
+        log.info("Checking group membership & loading permissions took {} msec, for group {}", endTime - startTime, group);
 
         model.addAttribute("group", group);
         model.addAttribute("roles", roleDescriptions);
@@ -275,7 +274,7 @@ public class GroupController extends BaseController {
         String parentUid = (groupCreator.getHasParent()) ? groupCreator.getParent().getUid() : null;
         Group groupCreated = groupBroker.create(user.getUid(), groupCreator.getGroupName(), parentUid,
                                                 new HashSet<>(groupCreator.getAddedMembers()), template, null,
-                                                groupCreator.getReminderMinutes(), false);
+                                                groupCreator.getReminderMinutes(), true);
         timeEnd = System.currentTimeMillis();
         log.info(String.format("User load & group creation: %d msecs", timeEnd - timeStart));
 

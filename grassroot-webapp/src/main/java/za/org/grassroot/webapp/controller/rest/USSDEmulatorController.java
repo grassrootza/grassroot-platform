@@ -37,7 +37,7 @@ public class USSDEmulatorController extends BaseController {
     @Autowired
     private PermissionBroker permissionBroker;
 
-    private static final String BASE = "https://localhost:8443/";
+    private static final String BASE = "http://localhost:8080/";
     private static final String phoneNumberParam = "msisdn";
     private static final String inputStringParam = "request";
     private static final String linkParam = "link";
@@ -49,8 +49,6 @@ public class USSDEmulatorController extends BaseController {
         if (link == null) {
             link = BASE.concat("ussd/start");
         }
-        //todo: fix this
-        link = link.replace("http://localhost:8080", "https://localhost:8443");
         URI targetUrl = getURI(link, inputString);
 
         try {

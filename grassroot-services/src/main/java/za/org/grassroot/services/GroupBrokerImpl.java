@@ -172,7 +172,9 @@ public class GroupBrokerImpl implements GroupBroker {
             return isUserGroupCreator;
         } else {
             Instant deactivationTimeThreshold = group.getCreatedDateTime().toInstant().plus(Duration.ofHours(48));
-            return isUserGroupCreator && Instant.now().isBefore(deactivationTimeThreshold);
+            boolean isGroupMalformed = (group.getGroupName() == null || group.getGroupName().length() < 2)
+		            && group.getMembers().size() <= 2;
+	        return isUserGroupCreator && (isGroupMalformed || Instant.now().isBefore(deactivationTimeThreshold));
         }
     }
 
@@ -813,31 +815,6 @@ public class GroupBrokerImpl implements GroupBroker {
     }
 
     @Override
-    public void deleteInvalidGroup(String userUid, String groupUid) {
-
-        User user = userRepository.findOneByUid(userUid);
-        Group group = groupRepository.findOneByUid(groupUid);
-
-        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-
-
-        logger.info("Deactivating group: {}", group);
-        group.setActive(false);
-
-        GroupLog groupAddedEventLog;
-        if (group.getParent() == null) {
-            groupAddedEventLog = new GroupLog(group, user, GroupLogType.GROUP_REMOVED, null);
-        } else {
-            groupAddedEventLog = new GroupLog(group.getParent(), user, GroupLogType.GROUP_REMOVED, group.getId());
-        }
-
-        logActionLogsAfterCommit(Collections.singleton(groupAddedEventLog));
-
-        groupRepository.save(group);
-
-    }
-
-    @Override
     public Set<Group> mergeCandidates(String userUid, String groupUid) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
@@ -954,12 +931,6 @@ public class GroupBrokerImpl implements GroupBroker {
         return events;
     }
 
-
-    @Override
-    public GroupPage groupsWithInvalidNamesPage(User user, int pageNumber, int pageSize) {
-        return new GroupPage(getGroupsWithInvalidNames(user), pageNumber, pageSize);
-    }
-
     @Override
     @Transactional
     public void calculateGroupLocation(String groupUid, LocalDate localDate) {
@@ -983,16 +954,14 @@ public class GroupBrokerImpl implements GroupBroker {
         }
     }
 
-    public List<GroupDTO> getGroupsWithInvalidNames(User user) {
+	@Override
+	@Transactional(readOnly = true)
+	public List<Group> fetchGroupsWithOneCharNames(User user, int sizeThreshold) {
         //for now limiting this to only groups created by the user
-        List<Group> groupsMemberOf = groupRepository.findByCreatedByUserAndActive(user,true);
-        List<GroupDTO> groupsWithInvalidNames = new ArrayList<>();
-        for (Group group : groupsMemberOf) {
-            if (group.getGroupName().length() < 2 && group.getMembers().size() <2) {
-                groupsWithInvalidNames.add(new GroupDTO(group));
-            }
-        }
-        return groupsWithInvalidNames;
-
+		List<Group> candidateGroups = new ArrayList<>(groupRepository.findActiveGroupsWithNamesLessThanOneCharacter(user));
+		return candidateGroups.stream()
+				.filter(group -> group.getMembers().size() <= sizeThreshold)
+				.sorted(Collections.reverseOrder())
+				.collect(Collectors.toList());
     }
 }
