@@ -95,21 +95,25 @@ public class USSDGroupUtil extends USSDUtil {
 
         /* Two cases:
         (a) user has no groups, so just ask for one and then go to the next page (goes to newGroupMenu)
-        (b) user has groups, ask for one (goes to section + nextUrl), with option to create new (goes to section + newPrompt);
+        (b) user has groups, and there are open join requests on them which the user can answer
+        (c) user has groups, ask for one (goes to section + nextUrl), with option to create new (goes to section + newPrompt);
          */
 
         USSDMenu groupMenu;
         log.info("Inside askForGroupAllowCreateNew ... newGroupUrl is ..." + createNewGroup);
 
         if (!userManager.isPartOfActiveGroups(sessionUser)) {
-            // case (b), ask for a name and then go to the next menu
+            // case (a), ask for a name and then go to the next menu
             groupMenu = createGroupPrompt(sessionUser, section, createNewGroup);
+        } else if (hasOpenJoinRequests(sessionUser)) {
+            // case (b), display first join request
+	        groupMenu = showGroupRequests(sessionUser, section);
         } else {
-            // case (a), ask for an existing one, with option to prompt for new one
-            String prompt = getMessage(section, groupKeyForMessages, promptKey + ".existing", sessionUser);
-            String existingGroupUri = section.toPath() + nextUrl + ((nonGroupParams == null) ? "" : nonGroupParams);
-            String newGroupUri = section.toPath() + newPrompt + ((nonGroupParams == null) ? "" : nonGroupParams);
-            groupMenu = userGroupMenuPageOne(sessionUser, prompt, existingGroupUri, newGroupUri, section);
+                // case (c), ask for an existing one, with option to prompt for new one
+                String prompt = getMessage(section, groupKeyForMessages, promptKey + ".existing", sessionUser);
+                String existingGroupUri = section.toPath() + nextUrl + ((nonGroupParams == null) ? "" : nonGroupParams);
+                String newGroupUri = section.toPath() + newPrompt + ((nonGroupParams == null) ? "" : nonGroupParams);
+                groupMenu = userGroupMenuPageOne(sessionUser, prompt, existingGroupUri, newGroupUri, section);
         }
         return groupMenu;
 
@@ -153,7 +157,7 @@ public class USSDGroupUtil extends USSDUtil {
 
     }
 
-    public USSDMenu showGroupRequests(User user, USSDSection section, String nextUrl) {
+    public USSDMenu showGroupRequests(User user, USSDSection section) {
         List<GroupJoinRequest> requests = groupJoinRequestService.getOpenRequestsForUser(user.getUid());
         GroupJoinRequest request = requests.get(0);
         String prompt;
@@ -193,31 +197,30 @@ public class USSDGroupUtil extends USSDUtil {
                                            Integer pageNumber, USSDSection section)
             throws URISyntaxException {
 
-        USSDMenu menu;
-        if (hasOpenJoinRequests(user)) {
-            menu = showGroupRequests(user, section, urlForExistingGroups);
-        } else {
-            menu = new USSDMenu(prompt);
-            Permission filter = SectionPermissionMap.get(section); // returning null is what we want if key not present
-            GroupPage groupsPartOf = permissionBroker.getPageOfGroupDTOs(user, filter, pageNumber, PAGE_LENGTH);
-            log.debug("Getting groups for USSD menu, permission={}, found {} groups", filter, groupsPartOf.getTotalElements());
+        USSDMenu menu = new USSDMenu(prompt);
+        Permission filter = SectionPermissionMap.get(section); // returning null is what we want if key not present
+        GroupPage groupsPartOf = permissionBroker.getPageOfGroupDTOs(user, filter, pageNumber, PAGE_LENGTH);
+        log.debug("Getting groups for USSD menu, permission={}, found {} groups", filter, groupsPartOf.getTotalElements());
 
-            if (groupsPartOf.getTotalElements() == 1 && section != USSDSection.MEETINGS) { // exclude meetings since can create new in it
-                menu = skipGroupSelection(user, section, groupsPartOf.getContent().get(0));
-            } else {
-                menu = addListOfGroupsToMenu(menu, section, urlForExistingGroups, groupsPartOf.getContent(), user);
-                if (groupsPartOf.hasNext())
-                    menu.addMenuOption(USSDUrlUtil.paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, pageNumber + 1),
-                            "More groups"); // todo: i18n
-                if (groupsPartOf.hasPrevious())
-                    menu.addMenuOption(USSDUrlUtil.paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, pageNumber - 1),
-                            "Back"); // todo: i18n
-                if (urlForNewGroup != null)
-                    menu.addMenuOption(urlForNewGroup, getMessage(groupKeyForMessages, "create", "option", user));
-            }
-            menu.addMenuOption(section.toPath() + "clean", getMessage(groupKeyForMessages, "clean", "option", user));
+        if (groupsPartOf.getTotalElements() == 1 && section != USSDSection.MEETINGS) { // exclude meetings since can create new in it
+            menu = skipGroupSelection(user, section, groupsPartOf.getContent().get(0));
+        } else {
+            menu = addListOfGroupsToMenu(menu, section, urlForExistingGroups, groupsPartOf.getContent(), user);
+            if (groupsPartOf.hasNext())
+                menu.addMenuOption(USSDUrlUtil.paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, pageNumber + 1),
+                        "More groups"); // todo: i18n
+            if (groupsPartOf.hasPrevious())
+                menu.addMenuOption(USSDUrlUtil.paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, pageNumber - 1),
+                        "Back"); // todo: i18n
+            if (urlForNewGroup != null)
+                menu.addMenuOption(urlForNewGroup, getMessage(groupKeyForMessages, "create", "option", user));
         }
-        return menu;
+
+	    if (section != null) { // i.e., we are not in the pagination helper
+		    menu.addMenuOption(section.toPath() + "clean", getMessage(groupKeyForMessages, "clean", "option", user));
+	    }
+
+	    return menu;
     }
 
     public USSDMenu userInvalidGroupMenuPageOne(User user, String prompt, String existingGroupUrl,

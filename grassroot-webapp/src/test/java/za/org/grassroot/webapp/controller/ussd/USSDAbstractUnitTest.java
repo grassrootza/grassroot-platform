@@ -20,6 +20,9 @@ import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.webapp.util.USSDGroupUtil;
 
+import java.time.LocalDate;
+import java.time.Year;
+import java.time.temporal.ChronoField;
 import java.util.Properties;
 import java.util.Set;
 
@@ -64,12 +67,18 @@ public abstract class USSDAbstractUnitTest {
     @Mock
     protected AsyncUserLogger asyncUserLoggerMock;
 
+    @Mock
+    protected GroupJoinRequestService groupJoinRequestService;
+
     @InjectMocks
     protected USSDGroupUtil ussdGroupUtil;
 
     protected static final String base = "/ussd/";
     protected static final String userChoiceParam = "request";
     protected static final String interruptedChoice = "1";
+
+    protected static final LocalDate testDay = LocalDate.of(Year.now().getValue(), 6, 16);
+    protected static final Year testYear = testDay.isAfter(LocalDate.now()) ? Year.now() : Year.now().plusYears(1);
 
     protected HandlerExceptionResolver exceptionResolver() {
         SimpleMappingExceptionResolver exceptionResolver = new SimpleMappingExceptionResolver();

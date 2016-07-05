@@ -287,14 +287,16 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         Group testGroup = new Group("test testGroup", testUser);
         LogBookRequest dummyLogBook = LogBookRequest.makeEmpty(testUser, testGroup);
 
-        LocalDateTime correctDueDate = LocalDateTime.of(2016, 6, 16, 13, 0);
-        List<String> bloomVariations = Arrays.asList("16-06", "16 06", "16/06", "16-6", "16 6", "16/6",
-                "16-06-2016", "16 06 2016", "16/06/2016", "16-6-2016", "16/6/2016");
+        LocalDateTime correctDueDate = LocalDateTime.of(testYear.getValue(), testDay.getMonthValue(), testDay.getDayOfMonth(), 13, 0);
+        List<String> bloomVariations = Arrays.asList("%02d-%02d", "%02d %02d", "%02d/%02d", "%d-%d", "%d %d", "%d/%d",
+                "%02d-%02d-%d", "%02d %02d %d", "%02d/%02d/%d", "%d-%d-%d", "%d/%d/%d");
 
-        for (String date : bloomVariations) {
+	    for (String format : bloomVariations) {
 
-            String urlToSave = USSDUrlUtil.saveLogMenu(confirmMenu, dummyLogBook.getUid(), dueDateMenu, date, true);
-            String formattedDateString = reformatDateInput(date).trim();
+	        String date = String.format(format, testDay.getDayOfMonth(), testDay.getMonthValue(), testYear.getValue());
+		    String urlToSave = USSDUrlUtil.saveLogMenu(confirmMenu, dummyLogBook.getUid(), dueDateMenu, date, true);
+	        String formattedDateString = reformatDateInput(date).trim();
+
             dummyLogBook.setActionByDate(convertDateStringToLocalDateTime(formattedDateString, 13, 0).toInstant(ZoneOffset.UTC));
             when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
             when(logBookRequestBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);

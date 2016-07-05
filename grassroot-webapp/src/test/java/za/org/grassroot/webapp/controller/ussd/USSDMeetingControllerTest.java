@@ -472,7 +472,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         User testUser = new User(testUserPhone);
         Group testGroup = new Group("tg1", testUser);
-        LocalDateTime forTimestamp = LocalDateTime.of(2016, 6, 16, 13, 0);
+        LocalDateTime forTimestamp = LocalDateTime.of(2017, 6, 16, 13, 0);
         MeetingRequest testMeeting = MeetingRequest.makeEmpty(testUser, testGroup);
         testMeeting.setEventStartDateTime(convertToSystemTime(forTimestamp, getSAST()));
         String requestUid = testMeeting.getUid();
@@ -485,7 +485,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         // todo : test for just YY, once done
         List<String> bloomVariations = Arrays.asList("16-06", "16 06", "16/06", "16-6", "16 6", "16/6",
-                                                     "16-06-2016", "16 06 2016", "16/06/2016", "16-6-2016", "16/6/2016");
+                                                     "16-06-2017", "16 06 2017", "16/06/2017", "16-6-2017", "16/6/2017");
 
         for (String date : bloomVariations) {
             mockMvc.perform(get(path + "confirm").param(phoneParam, testUserPhone).param("entityUid", testMeeting.getUid()).
@@ -635,7 +635,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     public void changeDateAndTimeShouldWork() throws Exception {
 
         User testUser = new User(testUserPhone);
-        LocalDateTime original = LocalDateTime.of(2016, 06, 15, 10, 0);
+        LocalDateTime original = LocalDateTime.of(2017, 06, 15, 10, 0);
         LocalDateTime changedDate = original.plusDays(1L);
         LocalDateTime changedTime = original.minusHours(1L);
         Meeting testMeeting = new Meeting("test meeeting", convertToSystemTime(original, getSAST()), testUser, new Group("somegroup", testUser), "someloc");

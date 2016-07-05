@@ -54,8 +54,7 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(groupBrokerMock.create(sessionTestUser.getUid(), testGroupName, null, membersToAdd,
-                                    GroupPermissionTemplate.DEFAULT_GROUP, testEventDescription, null, false)).thenReturn(testGroup);
-        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
+                                    GroupPermissionTemplate.DEFAULT_GROUP, testEventDescription, null, true)).thenReturn(testGroup);
         when(groupBrokerMock.getMostRecentLog(testGroup)).thenReturn(groupLog);
 
         log.info("Mock set up for : userUid={}, name={}, members={}, desc={}", sessionTestUser.getUid(), testGroupName,
@@ -70,11 +69,9 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
                 .andExpect(status().isOk());
 
         verify(userManagementServiceMock).findByInputNumber(testUserPhone);
-        verify(groupBrokerMock).create(sessionTestUser.getUid(), testGroupName, null, membersToAdd, GroupPermissionTemplate.DEFAULT_GROUP, meetingEvent.getDescription(), null, false);
+        verify(groupBrokerMock).create(sessionTestUser.getUid(), testGroupName, null, membersToAdd, GroupPermissionTemplate.DEFAULT_GROUP, meetingEvent.getDescription(), null, true);
         verify(groupBrokerMock, times(1)).getMostRecentLog(testGroup);
-        verify(groupBrokerMock, times(1)).openJoinToken(sessionTestUser.getUid(), testGroup.getUid(), null);
-	    verify(groupBrokerMock, times(1)).load(testGroup.getUid());
-	    verifyNoMoreInteractions(groupBrokerMock);
+        verifyNoMoreInteractions(groupBrokerMock);
         verifyNoMoreInteractions(userManagementServiceMock);
     }
 
@@ -87,13 +84,15 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
         groupSet.add(testGroup);
 
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
+        when(permissionBrokerMock.getActiveGroups(sessionTestUser, null, null)).thenReturn(groupSet);
+
         when(eventManagementServiceMock.getMostRecentEvent(testGroup)).thenReturn(event);
-        when(permissionBrokerMock.getActiveGroups(sessionTestUser, null)).thenReturn(groupSet);
         when(groupBrokerMock.getMostRecentLog(testGroup)).thenReturn(groupLog);
         mockMvc.perform(get(path + "list/{phoneNumber}/{code}", testUserPhone, testUserCode)).andExpect(status().is2xxSuccessful());
-        verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
-        verify(eventManagementServiceMock).getMostRecentEvent(testGroup);
-        verify(permissionBrokerMock).getActiveGroups(sessionTestUser, null);
+
+	    verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
+        verify(permissionBrokerMock).getActiveGroups(sessionTestUser, null, null);
+	    verify(eventManagementServiceMock).getMostRecentEvent(testGroup);
         verify(groupBrokerMock).getMostRecentLog(testGroup);
     }
 
