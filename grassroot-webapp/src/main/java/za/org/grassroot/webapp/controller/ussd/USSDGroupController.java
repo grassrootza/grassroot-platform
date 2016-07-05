@@ -18,7 +18,6 @@ import za.org.grassroot.services.exception.GroupDeactivationNotAvailableExceptio
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
-import za.org.grassroot.webapp.util.USSDGroupUtil;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
@@ -63,7 +62,8 @@ public class USSDGroupController extends USSDController {
             mergeGroupMenu = "merge",
             inactiveMenu = "inactive",
             validity = "validity",
-            invalidGroups= "invalid";
+            invalidGroups = "clean",
+            deleteMenu = "delete";
 
     private static final String groupPath = homePath + groupMenus;
     private static final USSDSection thisSection = USSDSection.GROUP_MANAGER;
@@ -322,7 +322,7 @@ public class USSDGroupController extends USSDController {
                 : getMessage(thisSection, groupVisibility, promptKey + ".private", sessionUser);
         USSDMenu thisMenu = new USSDMenu(promptMessage);
         thisMenu.addMenuOption(groupVisibilityOption(groupVisibility + doSuffix, groupUid, isDiscoverable), "Yes");
-        thisMenu.addMenuOption(groupMenuWithId(advancedGroupMenu,groupUid), "Back");
+        thisMenu.addMenuOption(groupMenuWithId(advancedGroupMenu, groupUid), "Back");
 
         return menuBuilder(thisMenu);
 
@@ -331,7 +331,7 @@ public class USSDGroupController extends USSDController {
     @RequestMapping(value = groupPath + hideGroupPrompt + doSuffix)
     @ResponseBody
     public Request groupVisibilityDo(@RequestParam(value = phoneNumber) String inputNumber, @RequestParam(value = groupUidParam) String groupUid,
-                                @RequestParam(value = "hide") boolean isDiscoverable) throws URISyntaxException {
+                                     @RequestParam(value = "hide") boolean isDiscoverable) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
         groupBroker.updateDiscoverable(user.getUid(), groupUid, !isDiscoverable, inputNumber);
@@ -339,7 +339,7 @@ public class USSDGroupController extends USSDController {
                 getMessage(thisSection, groupVisibility + doSuffix, promptKey + ".public-done", user);
 
         USSDMenu thisMenu = new USSDMenu(promptMessage);
-        thisMenu.addMenuOption(groupMenuWithId(advancedGroupMenu,groupUid), "Back");
+        thisMenu.addMenuOption(groupMenuWithId(advancedGroupMenu, groupUid), "Back");
 
 
         return menuBuilder(thisMenu);
@@ -679,14 +679,28 @@ public class USSDGroupController extends USSDController {
 
     @RequestMapping(value = groupPath + invalidGroups)
     @ResponseBody
-    public Request listGroupsWithInvalidNames(@RequestParam String msisdn) throws URISyntaxException{
+    public Request listGroupsWithInvalidNames(@RequestParam String msisdn) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(msisdn);
-        USSDMenu ussdMenu;
-        ussdMenu = ussdGroupUtil.showGroupsWithInvalidNames(user,USSDSection.GROUP_MANAGER,existingGroupMenu,
-                createGroupMenu, createGroupMenu + doSuffix, null, null);
+        USSDMenu menu;
+        menu = ussdGroupUtil.showGroupsWithInvalidNames(user, USSDSection.GROUP_MANAGER,getMessage(thisSection, deleteMenu,promptKey+".hasgroups",user),
+                getMessage(thisSection, deleteMenu,promptKey+".nogroups",user), deleteMenu + doSuffix);
+        menu.addMenuOption(groupMenus + startMenu, "Back");
 
-        return menuBuilder(ussdMenu);
+        return menuBuilder(menu);
+    }
+
+    @RequestMapping(value = groupPath + deleteMenu + doSuffix)
+    @ResponseBody
+    public Request deleteGroup(@RequestParam String msisdn, @RequestParam String groupUid) throws URISyntaxException {
+
+        User user = userManager.findByInputNumber(msisdn);
+        groupBroker.deleteInvalidGroup(user.getUid(),groupUid);
+        String prompt = getMessage(thisSection, deleteMenu+doSuffix,promptKey+".success",user);
+        USSDMenu menu = new USSDMenu(prompt);
+        menu.addMenuOption(thisSection.toPath() + groupPath + invalidGroups, "Back");
+
+        return menuBuilder(menu);
     }
 
     @RequestMapping(value = groupPath + listGroupMembers)

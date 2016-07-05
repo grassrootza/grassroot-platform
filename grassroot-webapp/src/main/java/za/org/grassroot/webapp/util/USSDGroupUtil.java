@@ -134,18 +134,18 @@ public class USSDGroupUtil extends USSDUtil {
         return groupMenu;
     }
 
-    public USSDMenu showGroupsWithInvalidNames(User user, USSDSection section, String promptIfExisting, String promptIfEmpty, String urlIfExisting, String urlIfEmpty, String nonGroupParams)
+
+    public USSDMenu showGroupsWithInvalidNames(User user, USSDSection section, String promptIfExisting, String promptIfEmpty, String url)
             throws URISyntaxException{
 
         GroupPage groupsPartOf = groupBroker.groupsWithInvalidNamesPage(user, 0, PAGE_LENGTH);
         USSDMenu groupMenu;
         if(groupsPartOf.getContent().isEmpty()){
             groupMenu = new USSDMenu(promptIfEmpty);
-            groupMenu.addMenuOption(urlIfEmpty, getMessage(section, groupKeyForMessages, "options.new", user));
             groupMenu.addMenuOption("start", getMessage("start", user));
             groupMenu.addMenuOption("exit", getMessage("exit.option", user));
         } else {
-            String existingGroupUri = section.toPath() + urlIfExisting + ((nonGroupParams == null) ? "" : nonGroupParams);
+            String existingGroupUri = section.toPath() + url;
             groupMenu = userInvalidGroupMenuPageOne(user, promptIfExisting, existingGroupUri, section);
 
         }
@@ -221,7 +221,7 @@ public class USSDGroupUtil extends USSDUtil {
                 if (urlForNewGroup != null)
                     menu.addMenuOption(urlForNewGroup, getMessage(groupKeyForMessages, "create", "option", user));
             }
-            menu.addMenuOption("mmm", "Delete Invalid Groups");
+            menu.addMenuOption(section.toPath() +"clean", getMessage(groupKeyForMessages,"clean","option", user));
         }
         return menu;
     }

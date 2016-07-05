@@ -544,7 +544,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
         // todo: consider more fine grained logging (which permission changed)
         logActionLogsAfterCommit(Collections.singleton(new GroupLog(group, user, GroupLogType.PERMISSIONS_CHANGED, 0L,
-                                               "Changed permissions assigned to group roles")));
+                "Changed permissions assigned to group roles")));
 
     }
 
@@ -813,11 +813,28 @@ public class GroupBrokerImpl implements GroupBroker {
     }
 
     @Override
-    public void deleteInvalidGroups(String invalidName, Instant threshold) {
-       List<Group> invalidGroups =  groupRepository.findByGroupNameAndCreatedDateTimeBefore(invalidName, Timestamp.from(threshold));
-        invalidGroups.stream().filter(group -> group.getMembers().size() < 2).forEach(group -> {
-            groupRepository.delete(group);
-        });
+    public void deleteInvalidGroup(String userUid, String groupUid) {
+
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+
+        group.setActive(false);
+        groupRepository.save(group);
+
+        //todo delete the group permanently, must figure out how to fix referential intergrity issues
+     /*   Set<User> users = group.getMembers();
+
+        for(User user:users){
+            group.removeMember(user);
+        }
+        Set<Role> groupRoles = roleRepository.findByGroupUid(groupUid);
+        for(Role role: groupRoles){
+            roleRepository.delete(role);
+
+        }
+        groupRepository.delete(group);*/
     }
 
     @Override
@@ -939,8 +956,8 @@ public class GroupBrokerImpl implements GroupBroker {
 
 
     @Override
-    public GroupPage groupsWithInvalidNamesPage(User user,int pageNumber, int pageSize){
-        return new GroupPage(getGroupsWithInvalidNames(user),pageNumber,pageSize);
+    public GroupPage groupsWithInvalidNamesPage(User user, int pageNumber, int pageSize) {
+        return new GroupPage(getGroupsWithInvalidNames(user), pageNumber, pageSize);
     }
 
     @Override
@@ -966,17 +983,17 @@ public class GroupBrokerImpl implements GroupBroker {
         }
     }
 
-    public List<GroupDTO> getGroupsWithInvalidNames(User user){
+    public List<GroupDTO> getGroupsWithInvalidNames(User user) {
 
         //for now limiting this to only groups create by the user
         List<Group> groupsMemberOf = groupRepository.findByCreatedByUser(user);
         List<GroupDTO> groupsWithInvalidNames = new ArrayList<>();
-        for(Group group: groupsMemberOf) {
+        for (Group group : groupsMemberOf) {
             if (group.getGroupName().length() < 2) {
                 groupsWithInvalidNames.add(new GroupDTO(group));
             }
         }
-        return  groupsWithInvalidNames;
+        return groupsWithInvalidNames;
 
     }
 }
