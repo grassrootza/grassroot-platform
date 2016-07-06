@@ -954,7 +954,26 @@ public class GroupBrokerImpl implements GroupBroker {
         }
     }
 
-	@Override
+    @Override
+    public void saveGroupImage(String userUid, String groupUid, String format, byte[] image) {
+        Objects.requireNonNull(groupUid);
+        Objects.requireNonNull(format);
+        Objects.requireNonNull(image);
+
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+        group.setImage(image);
+        group.setImageType(format);
+
+        groupRepository.save(group);
+
+        GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_AVATAR_UPLOADED, group.getId(),
+                "Group avatar uploaded");
+        logActionLogsAfterCommit(Collections.singleton(groupLog));
+
+    }
+
+    @Override
 	@Transactional(readOnly = true)
 	public List<Group> fetchGroupsWithOneCharNames(User user, int sizeThreshold) {
         //for now limiting this to only groups created by the user

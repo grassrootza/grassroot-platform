@@ -122,6 +122,12 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
     @OneToMany(mappedBy = "parent")
     private Set<Group> children = new HashSet<>();
 
+    @Column(name="avatar")
+    private byte[] image;
+
+    @Column(name="avatar_format")
+    private String imageType;
+
     private Group() {
         // for JPA
     }
@@ -461,6 +467,24 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
 
     public void setDescription(String description) { this.description = description; }
 
+    public byte[] getImage() {
+        return image;
+    }
+
+    public void setImage(byte[] image) {
+        this.image = image;
+    }
+
+    public String getImageType() {
+        return imageType;
+    }
+
+    public void setImageType(String imageType) {
+        this.imageType = imageType;
+    }
+
+
+
     public Set<Role> getGroupRoles() {
         if (groupRoles == null) {
             groupRoles = new HashSet<>();
@@ -563,4 +587,6 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
             return createdDateTime.compareTo(otherCreatedDateTime);
         }
     }
+
+
 }

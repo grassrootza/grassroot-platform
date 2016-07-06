@@ -21,7 +21,8 @@ public enum GroupLogType {
     PARENT_CHANGED("added or changed parent group"),
     MESSAGE_SENT("free form message sent"), // todo : maybe consider shifting to an "account log" or similar
     GROUP_MEMBER_ADDED_VIA_JOIN_CODE("group member joined via join code"),
-    GROUP_MEMBER_ADDED_AT_CREATION("Group created");
+    GROUP_MEMBER_ADDED_AT_CREATION("Group created"),
+    GROUP_AVATAR_UPLOADED("Group image loaded");
 
     private final String text;
 
