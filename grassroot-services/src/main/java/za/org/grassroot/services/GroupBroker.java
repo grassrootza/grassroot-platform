@@ -99,4 +99,9 @@ public interface GroupBroker {
     List<Group> fetchGroupsWithOneCharNames(User creatingUser, int sizeThreshold);
 
     void calculateGroupLocation(String groupUid, LocalDate localDate);
+
+    //save group avatar
+    void saveGroupImage(String groupUid, String format, byte[] image);
+
+
 }

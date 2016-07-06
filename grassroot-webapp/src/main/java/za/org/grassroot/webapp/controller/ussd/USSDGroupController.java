@@ -260,7 +260,7 @@ public class USSDGroupController extends USSDController {
 
         User user = userManager.findByInputNumber(inputNumber);
         groupJoinRequestService.decline(user.getUid(), requestUid);
-        final String prompt = getMessage(thisSection, approveUser, "rejected", user);
+        final String prompt = getMessage(thisSection, approveUser, "rejectedU", user);
         USSDMenu menu = new USSDMenu(prompt);
         menu.addMenuOption(groupMenus + startMenu, "Back");
 
