@@ -174,14 +174,16 @@ public class PermissionBrokerImpl implements PermissionBroker {
         }
 
         Event mostRecentEvent = eventManagementService.getMostRecentEvent(group);
-        if (mostRecentEvent.getCreatedDateTime().isAfter(changedSince)) {
-            return true;
-        }
+        if (mostRecentEvent != null) {
+            if (mostRecentEvent.getCreatedDateTime().isAfter(changedSince)) {
+				return true;
+			}
 
-        // if most recent event is created before last time user checked this group, then we check if this event has been changed after this last time
-        EventLog lastChangeEventLog = eventLogRepository.findFirstByEventAndEventLogTypeOrderByCreatedDateTimeDesc(mostRecentEvent, EventLogType.CHANGE);
-        if (lastChangeEventLog.getCreatedDateTime().isAfter(changedSince)) {
-            return true;
+            // if most recent event is created before last time user checked this group, then we check if this event has been changed after this last time
+            EventLog lastChangeEventLog = eventLogRepository.findFirstByEventAndEventLogTypeOrderByCreatedDateTimeDesc(mostRecentEvent, EventLogType.CHANGE);
+            if (lastChangeEventLog != null && lastChangeEventLog.getCreatedDateTime().isAfter(changedSince)) {
+				return true;
+			}
         }
 
         return false;
