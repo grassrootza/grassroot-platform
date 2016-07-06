@@ -48,7 +48,8 @@ public class XMPPConfiguration {
     @Bean(name = "gcmConnection")
     public XmppConnectionFactoryBean xmppConnectionFactoryBean() {
         log.info("Starting up XMPP connection, for URL={} on port={}", host, port);
-        XmppConnectionFactoryBean connectionFactoryBean = new XmppConnectionFactoryBean(connectionConfiguration());
+        XmppConnectionFactoryBean connectionFactoryBean = new XmppConnectionFactoryBean();
+        connectionFactoryBean.setConnectionConfiguration(connectionConfiguration());
         connectionFactoryBean.setUser(System.getenv("GCM_SENDER_ID"));
         connectionFactoryBean.setPassword(System.getenv("GCM_KEY"));
         connectionFactoryBean.setAutoStartup(true);

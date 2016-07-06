@@ -23,7 +23,7 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.logging.Logger;
 
-import static junit.framework.Assert.assertTrue;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by aakilomar on 8/24/15.
