@@ -73,7 +73,7 @@ public class GroupRestController {
         } catch (RuntimeException e) {
             log.error("Error occurred while creating group: " + e.getMessage(), e);
             return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.GROUP_NOT_CREATED, RestStatus.FAILURE),
-                                        HttpStatus.BAD_REQUEST);
+                    HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -92,7 +92,7 @@ public class GroupRestController {
                 .sorted(Collections.reverseOrder())
                 .collect(Collectors.toList());
 
-        GenericResponseWrapper responseWrapper =  new GenericResponseWrapper(OK, RestMessage.USER_GROUPS, RestStatus.SUCCESS, groupWrappers);
+        GenericResponseWrapper responseWrapper = new GenericResponseWrapper(OK, RestMessage.USER_GROUPS, RestStatus.SUCCESS, groupWrappers);
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
     }
 
@@ -140,28 +140,28 @@ public class GroupRestController {
     @RequestMapping(value = "/join/request/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> requestToJoinGroup(@PathVariable("phoneNumber") String phoneNumber,
                                                               @PathVariable("code") String code, @RequestParam(value = "uid")
-                                                              String groupToJoinUid) {
+                                                                      String groupToJoinUid) {
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         ResponseWrapper responseWrapper;
         try {
-            log.info("User " + phoneNumber +"requests to join group with uid " + groupToJoinUid );
+            log.info("User " + phoneNumber + "requests to join group with uid " + groupToJoinUid);
             groupJoinRequestService.open(user.getUid(), groupToJoinUid, null);
             responseWrapper = new ResponseWrapperImpl(OK, RestMessage.GROUP_JOIN_REQUEST_SENT, RestStatus.SUCCESS);
         } catch (RequestorAlreadyPartOfGroupException e) {
             responseWrapper = new ResponseWrapperImpl(HttpStatus.CONFLICT, RestMessage.USER_ALREADY_PART_OF_GROUP,
-                                                      RestStatus.FAILURE);
+                    RestStatus.FAILURE);
         }
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
 
     }
 
-    @RequestMapping(value="/members/list/{phoneNumber}/{code}/{groupUid}/{selected}", method=RequestMethod.GET)
+    @RequestMapping(value = "/members/list/{phoneNumber}/{code}/{groupUid}/{selected}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> getGroupMember(@PathVariable("phoneNumber") String phoneNumber,
                                                           @PathVariable("code") String code, @PathVariable("groupUid") String groupUid,
                                                           @PathVariable("selected") boolean selectedByDefault,
                                                           @RequestParam(value = "page", required = false) Integer requestPage,
-                                                          @RequestParam(value = "size",required = false) Integer requestPageSize){
+                                                          @RequestParam(value = "size", required = false) Integer requestPageSize) {
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         Group group = groupBroker.load(groupUid);
@@ -169,15 +169,15 @@ public class GroupRestController {
         // todo: really need a utility method like "return request failure" or something similar
         if (!permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
             return new ResponseEntity<>(
-                    new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.GROUP_ACTIVITIES,RestStatus.FAILURE), HttpStatus.BAD_REQUEST);
+                    new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.GROUP_ACTIVITIES, RestStatus.FAILURE), HttpStatus.BAD_REQUEST);
         }
 
         int page = (requestPage != null) ? requestPage : 0;
-        int size = (requestPageSize != null)? requestPageSize : groupMemberListPageSizeDefault;
+        int size = (requestPageSize != null) ? requestPageSize : groupMemberListPageSizeDefault;
         Page<User> pageable = userManagementService.getGroupMembers(group, page, size);
         ResponseWrapper responseWrapper;
-        if(page > pageable.getTotalPages()){
-            responseWrapper = new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.GROUP_ACTIVITIES,RestStatus.FAILURE);
+        if (page > pageable.getTotalPages()) {
+            responseWrapper = new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.GROUP_ACTIVITIES, RestStatus.FAILURE);
         } else {
             List<MembershipResponseWrapper> members = new ArrayList<>();
             List<User> usersFromPage = pageable.getContent();
@@ -186,7 +186,7 @@ public class GroupRestController {
             }
             responseWrapper = new GenericResponseWrapper(OK, RestMessage.GROUP_MEMBERS, RestStatus.SUCCESS, members);
         }
-        return new ResponseEntity<>(responseWrapper,HttpStatus.valueOf(responseWrapper.getCode()));
+        return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
     }
 
     @RequestMapping(value = "/members/add/{phoneNumber}/{code}/{uid}", method = RequestMethod.POST)
@@ -204,7 +204,7 @@ public class GroupRestController {
         }
 
         return new ResponseEntity<>(new ResponseWrapperImpl(OK, RestMessage.MEMBERS_ADDED, RestStatus.SUCCESS),
-                                    HttpStatus.CREATED);
+                HttpStatus.CREATED);
     }
 
     @RequestMapping(value = "/members/remove/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.POST)
@@ -221,23 +221,23 @@ public class GroupRestController {
     }
 
 
-
-    @RequestMapping(value = "/image/upload/{phoneNumber}/{code}/{groupUid}", method =RequestMethod.POST)
+    @RequestMapping(value = "/image/upload/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.POST)
     public ResponseEntity<?> uploadImage(@PathVariable String phoneNumber, @PathVariable String code, @PathVariable String groupUid,
-                                         @RequestParam("image") MultipartFile file){
+                                         @RequestParam("image") MultipartFile file) {
         User user = userManagementService.findByInputNumber(phoneNumber);
         Group group = groupBroker.load(groupUid);
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
-        if(file!=null){
+        if (file != null) {
             try {
                 byte[] image = file.getBytes();
                 String format = file.getContentType();
                 validateFileFormat(format);
-                groupBroker.saveGroupImage(group.getUid(),format,image);
+                groupBroker.saveGroupImage(user.getUid(), group.getUid(), format, image);
 
-            } catch (IOException|IllegalArgumentException e) {
+            } catch (IOException | IllegalArgumentException e) {
                 log.error(e.getMessage());
+
                 return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.NOT_ACCEPTABLE, RestMessage.INVALID_INPUT,
                         RestStatus.FAILURE), HttpStatus.NOT_ACCEPTABLE);
             }
@@ -267,16 +267,16 @@ public class GroupRestController {
 
     }
 
-    private String getSearchToken(String searchTerm){
-       return searchTerm.contains("*134*1994*") ?
+    private String getSearchToken(String searchTerm) {
+        return searchTerm.contains("*134*1994*") ?
                 searchTerm.substring("*134*1994*".length(), searchTerm.length() - 1) : searchTerm;
 
     }
 
-    private void validateFileFormat(String format){
-        //todo
-        if(!(format.endsWith("png") || format.endsWith("jpg") || format.endsWith("jpeg"))){
-            throw  new IllegalArgumentException("Invalid file format");
+    private void validateFileFormat(String format) {
+        //todo use regex
+        if (!(format.endsWith("png") || format.endsWith("jpg") || format.endsWith("jpeg"))) {
+            throw new IllegalArgumentException("Invalid file format Exception");
         }
     }
 }

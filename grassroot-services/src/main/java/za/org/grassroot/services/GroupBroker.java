@@ -101,7 +101,7 @@ public interface GroupBroker {
     void calculateGroupLocation(String groupUid, LocalDate localDate);
 
     //save group avatar
-    void saveGroupImage(String groupUid, String format, byte[] image);
+    void saveGroupImage(String userUid, String groupUid, String format, byte[] image);
 
 
 }
