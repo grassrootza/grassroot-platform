@@ -49,9 +49,10 @@ public class TaskRestController {
 	@Autowired
 	private LogBookBroker logBookBroker;
 
-    @RequestMapping(value = "/list/{phoneNumber}/{code}/{parentUid}", method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> getTasksByGroup(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
-                                                    @PathVariable("parentUid") String parentUid) {
+    // calling this "for parent" as in future will use it for any entity that can have sub-tasks, but for now just used for groups
+	@RequestMapping(value = "/list/{phoneNumber}/{code}/{parentUid}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> getTasksForParent(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
+                                                             @PathVariable("parentUid") String parentUid) {
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         List<TaskDTO> tasks = taskBroker.fetchGroupTasks(user.getUid(), parentUid, false, LogBookStatus.BOTH);
@@ -64,10 +65,10 @@ public class TaskRestController {
     }
 
     @RequestMapping(value = "/list/{phoneNumber}/{code}", method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> getTasksByUser(@PathVariable String phoneNumber, @PathVariable String code) {
+    public ResponseEntity<ResponseWrapper> getAllUpcomingTasksForUser(@PathVariable String phoneNumber, @PathVariable String code) {
         // todo: should really start storing UID on phone and pass that back here
         User user = userManagementService.loadOrSaveUser(phoneNumber);
-        List<TaskDTO> tasks = taskBroker.fetchUserTasks(user.getUid(), false);
+        List<TaskDTO> tasks = taskBroker.fetchUserTasks(user.getUid(), true);
         Collections.sort(tasks, Collections.reverseOrder());
         RestMessage message = (tasks.isEmpty()) ? RestMessage.USER_HAS_NO_TASKS : RestMessage.USER_ACTIVITIES;
         ResponseWrapper wrapper = new GenericResponseWrapper(HttpStatus.OK, message, RestStatus.SUCCESS, tasks);

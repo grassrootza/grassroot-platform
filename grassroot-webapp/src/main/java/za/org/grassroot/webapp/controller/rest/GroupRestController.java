@@ -9,6 +9,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.services.*;
@@ -18,9 +19,12 @@ import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.*;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.springframework.http.HttpStatus.OK;
 
 /**
  * Created by paballo.
@@ -64,12 +68,12 @@ public class GroupRestController {
         try {
             Group group = groupBroker.create(user.getUid(), groupName, null, groupMembers, GroupPermissionTemplate.DEFAULT_GROUP, description, null, true);
             List<GroupResponseWrapper> groupWrappers = Collections.singletonList(createGroupWrapper(group, user));
-            ResponseWrapper rw = new GenericResponseWrapper(HttpStatus.OK, RestMessage.GROUP_CREATED, RestStatus.SUCCESS, groupWrappers);
-            return new ResponseEntity<>(rw, HttpStatus.OK);
+            ResponseWrapper rw = new GenericResponseWrapper(OK, RestMessage.GROUP_CREATED, RestStatus.SUCCESS, groupWrappers);
+            return new ResponseEntity<>(rw, OK);
         } catch (RuntimeException e) {
             log.error("Error occurred while creating group: " + e.getMessage(), e);
             return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.GROUP_NOT_CREATED, RestStatus.FAILURE),
-                                        HttpStatus.BAD_REQUEST);
+                    HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -88,7 +92,7 @@ public class GroupRestController {
                 .sorted(Collections.reverseOrder())
                 .collect(Collectors.toList());
 
-        GenericResponseWrapper responseWrapper =  new GenericResponseWrapper(HttpStatus.OK, RestMessage.USER_GROUPS, RestStatus.SUCCESS, groupWrappers);
+        GenericResponseWrapper responseWrapper = new GenericResponseWrapper(OK, RestMessage.USER_GROUPS, RestStatus.SUCCESS, groupWrappers);
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
     }
 
@@ -102,8 +106,8 @@ public class GroupRestController {
         permissionBroker.validateGroupPermission(user, group, null);
 
         List<GroupResponseWrapper> groupWrappers = Collections.singletonList(createGroupWrapper(group, user));
-        ResponseWrapper rw = new GenericResponseWrapper(HttpStatus.OK, RestMessage.USER_GROUPS, RestStatus.SUCCESS, groupWrappers);
-        return new ResponseEntity<>(rw, HttpStatus.OK);
+        ResponseWrapper rw = new GenericResponseWrapper(OK, RestMessage.USER_GROUPS, RestStatus.SUCCESS, groupWrappers);
+        return new ResponseEntity<>(rw, OK);
     }
 
     @RequestMapping(value = "/search", method = RequestMethod.GET)
@@ -115,7 +119,7 @@ public class GroupRestController {
         if (groupByToken != null) {
             Event event = eventManagementService.getMostRecentEvent(groupByToken);
             GroupSearchWrapper groupWrapper = new GroupSearchWrapper(groupByToken, event);
-            responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.GROUP_FOUND, RestStatus.SUCCESS, groupWrapper);
+            responseWrapper = new GenericResponseWrapper(OK, RestMessage.GROUP_FOUND, RestStatus.SUCCESS, groupWrapper);
         } else {
             List<Group> possibleGroups = groupBroker.findPublicGroups(searchTerm);
             List<GroupSearchWrapper> groups;
@@ -125,7 +129,7 @@ public class GroupRestController {
                     Event event = eventManagementService.getMostRecentEvent(group);
                     groups.add(new GroupSearchWrapper(group, event));
                 }
-                responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.POSSIBLE_GROUP_MATCHES, RestStatus.SUCCESS, groups);
+                responseWrapper = new GenericResponseWrapper(OK, RestMessage.POSSIBLE_GROUP_MATCHES, RestStatus.SUCCESS, groups);
             } else {
                 responseWrapper = new ResponseWrapperImpl(HttpStatus.NOT_FOUND, RestMessage.NO_GROUP_MATCHING_TERM_FOUND, RestStatus.FAILURE);
             }
@@ -136,28 +140,28 @@ public class GroupRestController {
     @RequestMapping(value = "/join/request/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> requestToJoinGroup(@PathVariable("phoneNumber") String phoneNumber,
                                                               @PathVariable("code") String code, @RequestParam(value = "uid")
-                                                              String groupToJoinUid) {
+                                                                      String groupToJoinUid) {
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         ResponseWrapper responseWrapper;
         try {
-            log.info("User " + phoneNumber +"requests to join group with uid " + groupToJoinUid );
+            log.info("User " + phoneNumber + "requests to join group with uid " + groupToJoinUid);
             groupJoinRequestService.open(user.getUid(), groupToJoinUid, null);
-            responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.GROUP_JOIN_REQUEST_SENT, RestStatus.SUCCESS);
+            responseWrapper = new ResponseWrapperImpl(OK, RestMessage.GROUP_JOIN_REQUEST_SENT, RestStatus.SUCCESS);
         } catch (RequestorAlreadyPartOfGroupException e) {
             responseWrapper = new ResponseWrapperImpl(HttpStatus.CONFLICT, RestMessage.USER_ALREADY_PART_OF_GROUP,
-                                                      RestStatus.FAILURE);
+                    RestStatus.FAILURE);
         }
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
 
     }
 
-    @RequestMapping(value="/members/list/{phoneNumber}/{code}/{groupUid}/{selected}", method=RequestMethod.GET)
+    @RequestMapping(value = "/members/list/{phoneNumber}/{code}/{groupUid}/{selected}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> getGroupMember(@PathVariable("phoneNumber") String phoneNumber,
                                                           @PathVariable("code") String code, @PathVariable("groupUid") String groupUid,
                                                           @PathVariable("selected") boolean selectedByDefault,
                                                           @RequestParam(value = "page", required = false) Integer requestPage,
-                                                          @RequestParam(value = "size",required = false) Integer requestPageSize){
+                                                          @RequestParam(value = "size", required = false) Integer requestPageSize) {
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         Group group = groupBroker.load(groupUid);
@@ -165,24 +169,24 @@ public class GroupRestController {
         // todo: really need a utility method like "return request failure" or something similar
         if (!permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
             return new ResponseEntity<>(
-                    new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.GROUP_ACTIVITIES,RestStatus.FAILURE), HttpStatus.BAD_REQUEST);
+                    new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.GROUP_ACTIVITIES, RestStatus.FAILURE), HttpStatus.BAD_REQUEST);
         }
 
         int page = (requestPage != null) ? requestPage : 0;
-        int size = (requestPageSize != null)? requestPageSize : groupMemberListPageSizeDefault;
+        int size = (requestPageSize != null) ? requestPageSize : groupMemberListPageSizeDefault;
         Page<User> pageable = userManagementService.getGroupMembers(group, page, size);
         ResponseWrapper responseWrapper;
-        if(page > pageable.getTotalPages()){
-            responseWrapper = new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.GROUP_ACTIVITIES,RestStatus.FAILURE);
+        if (page > pageable.getTotalPages()) {
+            responseWrapper = new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.GROUP_ACTIVITIES, RestStatus.FAILURE);
         } else {
             List<MembershipResponseWrapper> members = new ArrayList<>();
             List<User> usersFromPage = pageable.getContent();
             for (User u : usersFromPage) {
                 members.add(new MembershipResponseWrapper(group, u, group.getMembership(user).getRole(), selectedByDefault));
             }
-            responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.GROUP_MEMBERS, RestStatus.SUCCESS, members);
+            responseWrapper = new GenericResponseWrapper(OK, RestMessage.GROUP_MEMBERS, RestStatus.SUCCESS, members);
         }
-        return new ResponseEntity<>(responseWrapper,HttpStatus.valueOf(responseWrapper.getCode()));
+        return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
     }
 
     @RequestMapping(value = "/members/add/{phoneNumber}/{code}/{uid}", method = RequestMethod.POST)
@@ -199,8 +203,8 @@ public class GroupRestController {
             groupBroker.addMembers(user.getUid(), group.getUid(), membersToAdd);
         }
 
-        return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.OK, RestMessage.MEMBERS_ADDED, RestStatus.SUCCESS),
-                                    HttpStatus.CREATED);
+        return new ResponseEntity<>(new ResponseWrapperImpl(OK, RestMessage.MEMBERS_ADDED, RestStatus.SUCCESS),
+                HttpStatus.CREATED);
     }
 
     @RequestMapping(value = "/members/remove/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.POST)
@@ -210,10 +214,37 @@ public class GroupRestController {
         User user = userManagementService.findByInputNumber(phoneNumber);
         try {
             groupBroker.removeMembers(user.getUid(), groupUid, memberUids);
-            return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.OK, RestMessage.MEMBERS_REMOVED, RestStatus.SUCCESS), HttpStatus.OK);
+            return new ResponseEntity<>(new ResponseWrapperImpl(OK, RestMessage.MEMBERS_REMOVED, RestStatus.SUCCESS), OK);
         } catch (AccessDeniedException e) {
             return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.FORBIDDEN, RestMessage.PERMISSION_DENIED, RestStatus.FAILURE), HttpStatus.FORBIDDEN);
         }
+    }
+
+
+    @RequestMapping(value = "/image/upload/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.POST)
+    public ResponseEntity<?> uploadImage(@PathVariable String phoneNumber, @PathVariable String code, @PathVariable String groupUid,
+                                         @RequestParam("image") MultipartFile file) {
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        Group group = groupBroker.load(groupUid);
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+
+        if (file != null) {
+            try {
+                byte[] image = file.getBytes();
+                String format = file.getContentType();
+                validateFileFormat(format);
+                groupBroker.saveGroupImage(user.getUid(), group.getUid(), format, image);
+
+            } catch (IOException | IllegalArgumentException e) {
+                log.error(e.getMessage());
+
+                return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.NOT_ACCEPTABLE, RestMessage.INVALID_INPUT,
+                        RestStatus.FAILURE), HttpStatus.NOT_ACCEPTABLE);
+            }
+        }
+
+        return new ResponseEntity<Object>(new ResponseWrapperImpl(HttpStatus.OK, RestMessage.UPLOADED, RestStatus.SUCCESS), OK);
+
     }
 
     private GroupResponseWrapper createGroupWrapper(Group group, User caller) {
@@ -236,9 +267,16 @@ public class GroupRestController {
 
     }
 
-    private String getSearchToken(String searchTerm){
-       return searchTerm.contains("*134*1994*") ?
+    private String getSearchToken(String searchTerm) {
+        return searchTerm.contains("*134*1994*") ?
                 searchTerm.substring("*134*1994*".length(), searchTerm.length() - 1) : searchTerm;
 
+    }
+
+    private void validateFileFormat(String format) {
+        //todo use regex
+        if (!(format.endsWith("png") || format.endsWith("jpg") || format.endsWith("jpeg"))) {
+            throw new IllegalArgumentException("Invalid file format Exception");
+        }
     }
 }
