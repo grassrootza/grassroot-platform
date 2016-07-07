@@ -26,7 +26,6 @@ public interface LogBookRepository extends JpaRepository<LogBook, Long> {
     Retrieve all logbook entries for all the groups of a particular user
      */
     List<LogBook> findByParentGroupMembershipsUserAndActionByDateGreaterThan(User user, Instant start);
-    List<LogBook> findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(User user, Instant start, Instant end, double minCompletionPercentage, Sort sort);
     List<LogBook> findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThan(User user, Instant start, Instant end, double maxCompletionPercentage, Sort sort);
 
     Page<LogBook> findByParentGroupMembershipsUserAndCompletionPercentageGreaterThanEqualOrderByActionByDateDesc(User user, double minCompletionPercentage, Pageable pageable);
@@ -35,7 +34,6 @@ public interface LogBookRepository extends JpaRepository<LogBook, Long> {
     /*
     Retrieve all logbook entries assigned to a particular user
      */
-    List<LogBook> findByAssignedMembersAndActionByDateGreaterThan(User user, Instant start);
     List<LogBook> findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(User user, Instant start, Instant end, double minCompletionPercentage, Sort sort);
     List<LogBook> findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageLessThan(User user, Instant start, Instant end, double maxCompletionPercentage, Sort sort);
 

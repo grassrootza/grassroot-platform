@@ -22,7 +22,6 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
@@ -250,40 +249,6 @@ public class LogBookBrokerImpl implements LogBookBroker {
 				return logBookRepository.findByParentGroupAndActionByDateGreaterThan(group, start);
 			default:
 				return logBookRepository.findByParentGroupAndActionByDateGreaterThan(group, start);
-		}
-	}
-
-	@Override
-	@Transactional(readOnly = true)
-	public List<LogBook> loadUserLogBooks(String userUid, boolean assignedLogBooksOnly, boolean futureLogBooksOnly, LogBookStatus status) {
-		Objects.requireNonNull(userUid);
-
-		User user = userRepository.findOneByUid(userUid);
-		Instant start = futureLogBooksOnly ? Instant.now() : DateTimeUtil.getEarliestInstant();
-		Sort sort = new Sort(Sort.Direction.DESC, "createdDateTime");
-
-		if (!assignedLogBooksOnly) {
-			switch(status) {
-				case COMPLETE:
-					return logBookRepository.findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(user, start, Instant.MAX, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, sort);
-				case INCOMPLETE:
-					return logBookRepository.findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThan(user, start, Instant.MAX, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, sort);
-				case BOTH:
-					return logBookRepository.findByParentGroupMembershipsUserAndActionByDateGreaterThan(user, start);
-				default:
-					return logBookRepository.findByParentGroupMembershipsUserAndActionByDateGreaterThan(user, start);
-			}
-		} else {
-			switch (status) {
-				case COMPLETE:
-					return logBookRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(user, start, Instant.MAX, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, sort);
-				case INCOMPLETE:
-					return logBookRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageLessThan(user, start, Instant.MAX, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, sort);
-				case BOTH:
-					return logBookRepository.findByAssignedMembersAndActionByDateGreaterThan(user, start);
-				default:
-					return logBookRepository.findByParentGroupMembershipsUserAndActionByDateGreaterThan(user, start);
-			}
 		}
 	}
 

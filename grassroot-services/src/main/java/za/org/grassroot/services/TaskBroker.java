@@ -17,6 +17,6 @@ public interface TaskBroker {
 
     List<TaskDTO> fetchGroupTasks(String userUid, String groupUid, boolean futureOnly, LogBookStatus logBookStatus);
 
-    List<TaskDTO> fetchUserTasks(String userUid, boolean futureOnly);
+    List<TaskDTO> fetchUpcomingUserTasks(String userUid);
 
 }

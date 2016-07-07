@@ -76,6 +76,7 @@ public class LogBookRepositoryTest {
         lb1 = logBookRepository.save(lb1);
     }
 
+/*
     public void shouldSaveAndRetrieveLogBookAssignedToUser()  {
 
         User user = userRepository.save(new User("001111144"));
@@ -89,6 +90,7 @@ public class LogBookRepositoryTest {
         list = logBookRepository.findByAssignedMembersAndActionByDateGreaterThan(user, Instant.now());
         assertEquals(2,list.size());
     }
+*/
 
     @Test
     public void shouldSaveAndRetrieveLogBookAssignedToUserAndCompleted()  {

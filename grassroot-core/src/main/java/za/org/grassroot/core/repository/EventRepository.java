@@ -1,7 +1,5 @@
 package za.org.grassroot.core.repository;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -9,7 +7,6 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.enums.EventType;
 
 import java.time.Instant;
 import java.util.List;
@@ -31,8 +28,6 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
 	List<Event> findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(User user, Instant start);
 
-	List<Event> findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceledFalse(User user, Instant startTime);
-
 	/*
 
 	N.B. do not remove start_date_time > current_timestamp as it will force the query to do an
@@ -53,25 +48,4 @@ where e.canceled = FALSE
 
 	@Query(value = "select v from Vote v where v.eventStartDateTime > ?1 and v.canceled = false")
 	List<Event> findAllVotesAfterTimeStamp(Instant fromInstant);
-
-    /* (Some old queries, leaving in, just in case SQL statements come in handy in the future)
-
-	@Query(value = "select e from Event e where e.parentGroup.memberships.user = :user and e.class = :eventClass and e.canceled = :canceled order by e.EventStartDateTime desc")
-	List<Event> findByParentGroupMembershipsUserAndEventTypeAndCanceledOrderByEventStartDateTimeDesc(User user, Class<? extends Event> eventClass, boolean canceled);
-
-	@Query(value = "select e from Event e where e.parentGroup.memberships.user = :user and e.class = :eventClass and e.eventStartDateTime > :startTime and e.canceled = :canceled")
-	List<Event> findByParentGroupMembershipsUserAndEventTypeAndEventStartDateTimeGreaterThanAndCanceled(User user, Class<? extends Event> eventClass, Date startTime, boolean cancelled);
-
-	@Query(value = "select e from Event e where e.parentGroup.memberships.user = :user and e.class = :eventClass and e.eventStartDateTime < :startTime and e.canceled = :canceled")
-	List<Event> findByParentGroupMembershipsUserAndEventTypeAndEventStartDateTimeLessThanAndCanceled(User user, Class<? extends Event> eventClass, Date startTime, boolean cancelled);
-
-    @Query(value = "select count(e) from Event e where e.class = :eventClass and e.eventStartDateTime is not null")
-	Long countByEventTypeAndEventStartDateTimeNotNull(Class<? extends Event> eventClass);
-
-	@Query(value = "select count(e) from Event e where e.class = :eventClass and e.createdDateTime between :start and :end and e.eventStartDateTime is not null")
-	int countByEventTypeAndCreatedDateTimeBetween(EventType eventType, Timestamp start, Timestamp end);
-
-
-*/
-
 }

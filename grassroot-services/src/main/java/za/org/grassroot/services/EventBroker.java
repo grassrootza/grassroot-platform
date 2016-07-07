@@ -14,16 +14,6 @@ public interface EventBroker {
 	Meeting loadMeeting(String meetingUid);
 
 	/**
-	 * Returns a list of events which the user is participating in and/or a member of.
-	 * @param userUid The user being queried
-	 * @param eventType The event type to return (passing null returns any)
-	 * @param createdEventsOnly Whether to find only events which the user created, or all those where they are a member
-	 * @param futureEventsOnly Whether to fetch all events for the user or just those in the future
-     * @return The list of events which the user is part of
-     */
-	List<Event> loadUserEvents(String userUid, EventType eventType, boolean createdEventsOnly, boolean futureEventsOnly);
-
-	/**
 	 * Create a meeting entity, also triggering notifications to be stored, and subsequently sent
 	 * @param userUid The UID of the user who is calling the meeting
 	 * @param parentUid The UID of the parent entity (group/meeting/etc)

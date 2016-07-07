@@ -24,9 +24,6 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
 
 	List<Meeting> findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(Group group, Instant startDateTime, Instant endDateTime);
 
-	List<Event> findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(User user, Instant start);
-	List<Event> findByCreatedByUserAndEventStartDateTimeGreaterThanAndCanceledFalse(User user, Instant startTime);
-
     /**
      * Find meetings for which we should send out response totals (i.e., X said yes, and so forth), being meetings:
      * Called in a certain interval of time

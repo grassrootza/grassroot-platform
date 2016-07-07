@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.LogBookStatus;
@@ -21,7 +20,6 @@ import za.org.grassroot.webapp.model.rest.ResponseWrappers.MembershipResponseWra
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
 import za.org.grassroot.core.dto.TaskDTO;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -68,7 +66,7 @@ public class TaskRestController {
     public ResponseEntity<ResponseWrapper> getAllUpcomingTasksForUser(@PathVariable String phoneNumber, @PathVariable String code) {
         // todo: should really start storing UID on phone and pass that back here
         User user = userManagementService.loadOrSaveUser(phoneNumber);
-        List<TaskDTO> tasks = taskBroker.fetchUserTasks(user.getUid(), true);
+        List<TaskDTO> tasks = taskBroker.fetchUpcomingUserTasks(user.getUid());
         Collections.sort(tasks, Collections.reverseOrder());
         RestMessage message = (tasks.isEmpty()) ? RestMessage.USER_HAS_NO_TASKS : RestMessage.USER_ACTIVITIES;
         ResponseWrapper wrapper = new GenericResponseWrapper(HttpStatus.OK, message, RestStatus.SUCCESS, tasks);

@@ -10,20 +10,13 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.ModelAndView;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.dto.GroupTreeDTO;
-import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.AuthenticationUtil;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.async.AsyncUserLogger;
-import za.org.grassroot.services.enums.LogBookStatus;
 import za.org.grassroot.webapp.controller.BaseController;
-import za.org.grassroot.core.dto.TaskDTO;
-import za.org.grassroot.webapp.model.web.GroupViewNodeSql;
 
 import javax.servlet.http.HttpServletRequest;
-import java.time.Instant;
-import java.util.*;
 
 /**
  * @author Lesetse Kimwaga
@@ -102,7 +95,7 @@ public class HomeController extends BaseController {
         log.info(String.format("Retrieved the active groups for the user ... took %d msecs", System.currentTimeMillis() - startTime1));
 
         Long startTime2 = System.currentTimeMillis();
-        model.addAttribute("upcomingTasks", taskBroker.fetchUserTasks(user.getUid(), true));
+        model.addAttribute("upcomingTasks", taskBroker.fetchUpcomingUserTasks(user.getUid()));
         log.info(String.format("Retrieved the user's upcoming tasks ... took %d msecs", System.currentTimeMillis() - startTime2));
 
         Long startTime3 = System.currentTimeMillis();

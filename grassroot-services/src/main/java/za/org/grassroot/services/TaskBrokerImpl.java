@@ -7,9 +7,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.TaskDTO;
-import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.repository.EventLogRepository;
+import za.org.grassroot.core.repository.EventRepository;
+import za.org.grassroot.core.repository.LogBookRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.enums.LogBookStatus;
 
@@ -32,6 +33,12 @@ public class TaskBrokerImpl implements TaskBroker {
 
     @Autowired
     private EventBroker eventBroker;
+
+    @Autowired
+    private EventRepository eventRepository;
+
+    @Autowired
+    private LogBookRepository logBookRepository;
 
     @Autowired
     private EventLogRepository eventLogRepository;
@@ -100,27 +107,27 @@ public class TaskBrokerImpl implements TaskBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public List<TaskDTO> fetchUserTasks(String userUid, boolean futureOnly) {
+    public List<TaskDTO> fetchUpcomingUserTasks(String userUid) {
         Objects.requireNonNull(userUid);
 
-        Long startTime = System.currentTimeMillis();
-
         User user = userRepository.findOneByUid(userUid);
-        Set<TaskDTO> tasksDtos = new HashSet<>();
+        Set<TaskDTO> taskDtos = new HashSet<>();
 
-        List<Event> events = eventBroker.loadUserEvents(user.getUid(), null, false, futureOnly);
+        Instant now = Instant.now();
+
+        List<Event> events = eventRepository.findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(user, now);
         for (Event event : events) {
-            tasksDtos.add(new TaskDTO(event, user, eventLogRepository));
+            taskDtos.add(new TaskDTO(event, user, eventLogRepository));
         }
 
-        List<LogBook> logBooks = logBookBroker.loadUserLogBooks(user.getUid(), false, futureOnly, LogBookStatus.BOTH);
+        List<LogBook> logBooks = logBookRepository.findByParentGroupMembershipsUserAndActionByDateGreaterThan(user, now);
         for (LogBook logBook : logBooks) {
-            tasksDtos.add(new TaskDTO(logBook, user));
+            taskDtos.add(new TaskDTO(logBook, user));
         }
 
-        List<TaskDTO> tasks = new ArrayList<>(tasksDtos);
+        List<TaskDTO> tasks = new ArrayList<>(taskDtos);
         Collections.sort(tasks);
-        log.info("Retrieved all the user's upcoming tasks, took {} msecs", System.currentTimeMillis() - startTime);
+        log.info("Retrieved all the user's upcoming tasks, took {} msecs", System.currentTimeMillis() - now.toEpochMilli());
         return tasks;
     }
 }
