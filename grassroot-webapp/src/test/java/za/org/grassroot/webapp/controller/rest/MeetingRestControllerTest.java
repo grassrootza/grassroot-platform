@@ -104,7 +104,6 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
         verify(eventBrokerMock).loadMeeting(meetingEvent.getUid());
         verify(eventLogRepositoryMock).findByEventAndUserAndEventLogType(meetingEvent, sessionTestUser, EventLogType.RSVP);
-        verify(eventLogManagementServiceMock).userRsvpForEvent(meetingEvent, sessionTestUser);
         verify(eventLogManagementServiceMock).getResponseCountForEvent(meetingEvent);
 
     }
