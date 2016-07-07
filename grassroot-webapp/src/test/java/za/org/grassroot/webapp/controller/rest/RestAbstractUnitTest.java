@@ -9,6 +9,7 @@ import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.VerificationTokenCodeRepository;
 import za.org.grassroot.integration.services.GcmService;
 import za.org.grassroot.services.*;
@@ -64,6 +65,8 @@ public class RestAbstractUnitTest
     protected AccountManagementService accountManagementServiceMock;
     @Mock
     protected EventLogManagementService eventLogManagementServiceMock;
+    @Mock
+    protected EventLogRepository eventLogRepositoryMock;
     @Mock
     protected LogBookBroker logBookBrokerMock;
     @Mock

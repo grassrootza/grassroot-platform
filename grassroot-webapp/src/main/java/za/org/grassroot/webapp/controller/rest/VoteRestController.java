@@ -15,6 +15,7 @@ import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
+import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
@@ -51,6 +52,9 @@ public class VoteRestController {
 
     @Autowired
     private TaskBroker taskBroker;
+
+    @Autowired
+    private EventLogRepository eventLogRepository;
 
     @RequestMapping(value = "/create/{id}/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> createVote(@PathVariable("phoneNumber") String phoneNumber,
@@ -93,10 +97,8 @@ public class VoteRestController {
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         Event event = eventBroker.load(voteUid);
-        EventLog eventLog = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.RSVP);
-        boolean hasResponded = eventLogManagementService.userRsvpForEvent(event, user);
         ResponseTotalsDTO totals = eventLogManagementService.getVoteResultsForEvent(event);
-        EventWrapper eventWrapper = new EventWrapper(event, eventLog, user, hasResponded, totals);
+        EventWrapper eventWrapper = new EventWrapper(event, user, totals, eventLogRepository);
         ResponseWrapper responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.VOTE_DETAILS, RestStatus.SUCCESS, eventWrapper);
 
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));

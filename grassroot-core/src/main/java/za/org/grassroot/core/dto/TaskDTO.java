@@ -4,10 +4,12 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.collect.ComparisonChain;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.enums.TodoStatus;
+import za.org.grassroot.core.repository.EventLogRepository;
+import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -19,81 +21,87 @@ import java.time.format.DateTimeFormatter;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TaskDTO implements Comparable<TaskDTO> {
 
-    private String taskUid;
-    private String title;
+    private final String taskUid;
+
+    private final String title;
     private String description;
     private String location;
-    private String createdByUserName;
-    private String type;
+    private final String createdByUserName;
+    private final boolean createdByUser;
 
-    private String parentUid;
-    private String parentName;
+    private final String type;
 
-    private String deadline;
-    private String deadlineISO;
-    private Long deadlineMillis;
+    private final String parentUid;
+    private final String parentName;
+
+    private final String deadline;
+    private final String deadlineISO;
+    private final Long deadlineMillis;
     private boolean hasResponded;
     private boolean canAction;
     private String reply;
 
-    private boolean wholeGroupAssigned;
-    private int assignedMemberCount;
+    private final boolean wholeGroupAssigned;
+    private final int assignedMemberCount;
     private boolean canEdit;
-    private boolean createdByUser;
 
     @JsonIgnore
-    private Instant instant;
+    private final Instant instant;
     @JsonIgnore
-    private LocalDateTime deadlineDateTime;
+    private final LocalDateTime deadlineDateTime;
 
-    private TaskDTO(){}
+    private TaskDTO(User user, Task task) {
+        this.taskUid = task.getUid();
+        this.title = task.getName();
 
-    // todo: try move more stuff into this constructor
-    private TaskDTO(AssignedMembersContainer entity) {
-        this.taskUid = entity.getUid();
-        this.title = entity.getName();
-        this.wholeGroupAssigned = entity.isAllGroupMembersAssigned();
-        this.assignedMemberCount = entity.countAssignedMembers();
-    }
+        this.parentUid = task.getParent().getUid();
+	    this.parentName = task.getParent().getName();
 
-    public TaskDTO(Event event, EventLog eventLog, User user, boolean hasResponded) {
-        this(event);
-        this.description =event.getDescription();
-        this.createdByUserName = event.getCreatedByUser().getDisplayName();
-        this.parentUid = event.getParent().getUid();
-	    this.parentName = event.getParent().getName();
-        this.hasResponded = hasResponded;
-        this.type = String.valueOf(event.getEventType());
-        this.instant = event.getEventStartDateTime();
-        this.deadlineDateTime = event.getEventDateTimeAtSAST();
+        this.wholeGroupAssigned = task.isAllGroupMembersAssigned();
+        this.assignedMemberCount = task.countAssignedMembers();
+
+        this.createdByUser = task.getCreatedByUser().equals(user);
+        this.createdByUserName = task.getCreatedByUser().getDisplayName();
+        this.type = task.getJpaEntityType().equals(JpaEntityType.LOGBOOK) ? TaskType.TODO.name() : task.getJpaEntityType().name();
+
+        this.instant = task.getDeadlineTime();
+        this.deadlineDateTime = task.getDeadlineTimeAtSAST();
         this.deadline = formatAsLocalDateTime(instant);
         this.deadlineISO = this.deadlineDateTime.format(DateTimeFormatter.ISO_DATE_TIME);
         this.deadlineMillis = instant.toEpochMilli();
-        this.reply= (eventLog !=null && !eventLog.getMessage().equals("Invalid RSVP")) ?
-                eventLog.getMessage() : String.valueOf(TodoStatus.NO_RESPONSE);
-        this.canAction = canAction(event, user, hasResponded);
+    }
+
+	/**
+     * Definitely not nice to introduce EventLogRepository as constructor dependency, but it currently seems as
+     * worthwhile trade-off because it ensures consistency on this object data at multiple places in code.
+     */
+    public TaskDTO(Event event, User user, EventLogRepository eventLogRepository) {
+        this(user, event);
+
+        EventLog eventLog = eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.RSVP);
+//        if (!eventLog.getEventLogType().equals(EventLogType.RSVP)) {
+//            throw new IllegalArgumentException("Event log has to be of " + EventLogType.RSVP + ": " + eventLog);
+//        }
+        this.description =event.getDescription();
+        this.hasResponded = eventLog != null;
+
+        this.reply = (eventLog != null && !eventLog.getMessage().equals("Invalid RSVP")) ?
+                eventLog.getMessage() :
+                String.valueOf(TodoStatus.NO_RESPONSE);
+        this.canAction = canActionOnEvent(event, hasResponded);
         this.location = (event.getEventType().equals(EventType.MEETING)) ? ((Meeting) event).getEventLocation() : "";
         this.canEdit = (event.getCreatedByUser().equals(user) && instant.isAfter(Instant.now()));
-	    this.createdByUser = event.getCreatedByUser().equals(user);
     }
 
     public TaskDTO(LogBook logBook, User user) {
-        this(logBook);
-        this.parentUid = logBook.getParent().getUid();
-	    this.parentName = logBook.getParent().getName();
-        this.createdByUserName = logBook.getCreatedByUser().getDisplayName();
+        this(user, logBook);
+
         this.hasResponded = logBook.isCompletedBy(user);
         this.reply = getTodoStatus(logBook);
-        this.instant = logBook.getActionByDate();
-        this.type = String.valueOf(TaskType.TODO);
-        this.deadlineDateTime = logBook.getActionByDateAtSAST();
-        this.deadline = formatAsLocalDateTime(instant);
-        this.deadlineISO = this.deadlineDateTime.format(DateTimeFormatter.ISO_DATE_TIME);
-        this.deadlineMillis = instant.toEpochMilli();
-        this.canAction = canAction(logBook, user, true);
+
+        this.canAction = canActionOnLogBook(logBook, user);
         this.location = "";
         this.canEdit = logBook.getCreatedByUser().equals(user); // may adjust in future
-	    this.createdByUser = logBook.getCreatedByUser().equals(user);
     }
 
     public String getTaskUid() {
@@ -163,27 +171,25 @@ public class TaskDTO implements Comparable<TaskDTO> {
 
     }
 
-    private boolean canAction(Object object, User user, boolean hasResponded) {
-
-        boolean canAction = false;
-        if (object instanceof Event) {
-            Event event = (Event) object;
-            boolean isOpen = event.getEventStartDateTime().isAfter(Instant.now());
-            if (event.getEventType().equals(EventType.MEETING) && isOpen) {
-                canAction = true;
-            } else {
-                if (event.getEventType().equals(EventType.VOTE) && (isOpen && !hasResponded)) {
-                    canAction = true;
-                }
-            }
+    private boolean canActionOnEvent(Event event, boolean hasResponded) {
+        boolean isOpen = event.getEventStartDateTime().isAfter(Instant.now());
+        if (event.getEventType().equals(EventType.MEETING) && isOpen) {
+            return true;
         } else {
-            LogBook logBook = (LogBook) object;
-            if (!logBook.isCompleted() && (logBook.getAssignedMembers().contains(user)
-                    || logBook.getAssignedMembers().isEmpty())) {
-                canAction = true;
+            if (event.getEventType().equals(EventType.VOTE) && (isOpen && !hasResponded)) {
+                return true;
             }
         }
-        return canAction;
+        return false;
+    }
+
+    private boolean canActionOnLogBook(LogBook logBook, User user) {
+        if (!logBook.isCompleted() &&
+                (logBook.getAssignedMembers().contains(user)
+                || logBook.getAssignedMembers().isEmpty())) {
+            return true;
+        }
+        return false;
     }
 
 

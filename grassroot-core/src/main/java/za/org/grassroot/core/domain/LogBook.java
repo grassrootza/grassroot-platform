@@ -17,7 +17,7 @@ import java.util.Set;
                 @Index(name = "idx_log_book_group_id", columnList = "parent_group_id"),
                 @Index(name = "idx_log_book_retries_left", columnList = "number_of_reminders_left_to_send"),
                 @Index(name = "idx_log_book_replicated_group_id", columnList = "replicated_group_id")})
-public class LogBook extends AbstractLogBookEntity implements AssignedMembersContainer, VoteContainer, MeetingContainer, GroupDescendant {
+public class LogBook extends AbstractLogBookEntity implements Task<LogBookContainer>, VoteContainer, MeetingContainer {
     public static final double COMPLETION_PERCENTAGE_BOUNDARY = 50;
 
     @Column(name="completed_date")
@@ -157,6 +157,11 @@ public class LogBook extends AbstractLogBookEntity implements AssignedMembersCon
 
     public double getCompletionPercentage() {
         return completionPercentage;
+    }
+
+    @Override
+    public Instant getDeadlineTime() {
+        return actionByDate;
     }
 
     @Override

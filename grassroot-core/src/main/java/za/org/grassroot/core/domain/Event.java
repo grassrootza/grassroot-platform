@@ -3,7 +3,6 @@ package za.org.grassroot.core.domain;
 /**
  * Created by luke on 2015/07/16.
  * <p/>
- * Major todo: Construct logic for equals (non-trivial, as same group may have two events at same time ...)
  * todo - aakil - add event duration
  */
 
@@ -21,8 +20,8 @@ import java.util.Set;
 @Table(name = "event")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "type", discriminatorType = DiscriminatorType.STRING)
-public abstract class Event<P extends UidIdentifiable> extends AbstractEventEntity<P>
-		implements LogBookContainer, AssignedMembersContainer, GroupDescendant, Serializable {
+public abstract class Event<P extends UidIdentifiable> extends AbstractEventEntity
+		implements LogBookContainer, Task<P>, Serializable {
 
 	@Column(name = "canceled")
 	private boolean canceled;
@@ -143,6 +142,11 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 	@Override
 	public Set<User> fetchAssignedMembersCollection() {
 		return assignedMembers;
+	}
+
+	@Override
+	public Instant getDeadlineTime() {
+		return eventStartDateTime;
 	}
 
 	@Override

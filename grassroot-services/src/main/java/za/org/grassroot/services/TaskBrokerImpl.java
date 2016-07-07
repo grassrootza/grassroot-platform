@@ -9,6 +9,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.TaskType;
+import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.enums.LogBookStatus;
 
@@ -33,7 +34,7 @@ public class TaskBrokerImpl implements TaskBroker {
     private EventBroker eventBroker;
 
     @Autowired
-    private EventLogManagementService eventLogManagementService;
+    private EventLogRepository eventLogRepository;
 
     @Autowired
     private LogBookBroker logBookBroker;
@@ -52,8 +53,7 @@ public class TaskBrokerImpl implements TaskBroker {
             case MEETING:
             case VOTE:
                 Event event = eventBroker.load(taskUid);
-                EventLog eventLog = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.RSVP);
-                taskToReturn = new TaskDTO(event, eventLog, user, eventLog != null);
+                taskToReturn = new TaskDTO(event, user, eventLogRepository);
                 break;
             case TODO:
                 LogBook logBook = logBookBroker.load(taskUid);
@@ -80,10 +80,8 @@ public class TaskBrokerImpl implements TaskBroker {
 
         Instant start = futureOnly ? Instant.now() : null;
         for (Event event : groupBroker.retrieveGroupEvents(group, null, start, null)) {
-            EventLog eventLog = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.RSVP);
-            boolean hasResponded = eventLogManagementService.userRsvpForEvent(event, user);
             if (event.getEventStartDateTime() != null) {
-                taskSet.add(new TaskDTO(event, eventLog, user, hasResponded));
+                taskSet.add(new TaskDTO(event, user, eventLogRepository));
             }
         }
 
@@ -91,7 +89,6 @@ public class TaskBrokerImpl implements TaskBroker {
             if (logBook.getCreatedByUser().equals(user)) {
                 taskSet.add(new TaskDTO(logBook, user));
             } else {
-                User creatingUser = logBook.getCreatedByUser();
                 taskSet.add(new TaskDTO(logBook, user));
             }
         }
@@ -109,20 +106,19 @@ public class TaskBrokerImpl implements TaskBroker {
         Long startTime = System.currentTimeMillis();
 
         User user = userRepository.findOneByUid(userUid);
-        Set<TaskDTO> upcomingTasks = new HashSet<>();
-        List<Event> upcomingEventsForUser = eventBroker.loadUserEvents(user.getUid(), null, false, futureOnly);
+        Set<TaskDTO> tasksDtos = new HashSet<>();
 
-        for (Event event : upcomingEventsForUser) {
-            EventLog response = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.RSVP);
-            upcomingTasks.add(new TaskDTO(event, response, user, response != null));
+        List<Event> events = eventBroker.loadUserEvents(user.getUid(), null, false, futureOnly);
+        for (Event event : events) {
+            tasksDtos.add(new TaskDTO(event, user, eventLogRepository));
         }
 
         List<LogBook> logBooks = logBookBroker.loadUserLogBooks(user.getUid(), false, futureOnly, LogBookStatus.BOTH);
         for (LogBook logBook : logBooks) {
-            upcomingTasks.add(new TaskDTO(logBook, user));
+            tasksDtos.add(new TaskDTO(logBook, user));
         }
 
-        List<TaskDTO> tasks = new ArrayList<>(upcomingTasks);
+        List<TaskDTO> tasks = new ArrayList<>(tasksDtos);
         Collections.sort(tasks);
         log.info("Retrieved all the user's upcoming tasks, took {} msecs", System.currentTimeMillis() - startTime);
         return tasks;

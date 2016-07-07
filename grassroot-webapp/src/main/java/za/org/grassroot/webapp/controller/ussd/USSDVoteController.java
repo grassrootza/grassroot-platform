@@ -14,6 +14,7 @@ import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.services.EventRequestBroker;
@@ -44,10 +45,13 @@ public class USSDVoteController extends USSDController {
     private static final Logger log = LoggerFactory.getLogger(USSDVoteController.class);
 
     @Autowired
-    EventRequestBroker eventRequestBroker;
+    private EventRequestBroker eventRequestBroker;
 
     @Autowired
-    EventLogManagementService eventLogManager;
+    private EventLogManagementService eventLogManager;
+
+    @Autowired
+    private EventLogRepository eventLogRepository;
 
     @Autowired
     private USSDEventUtil eventUtil;
@@ -280,7 +284,7 @@ public class USSDVoteController extends USSDController {
         USSDMenu menu;
 
         if (futureEvent) {
-            EventLog userResponse = eventLogManager.getEventLogOfUser(vote, user, EventLogType.RSVP);
+            EventLog userResponse = eventLogRepository.findByEventAndUserAndEventLogType(vote, user, EventLogType.RSVP);
 
             List<String> otherResponses;
             if  (userResponse == null) {

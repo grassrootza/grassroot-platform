@@ -11,7 +11,7 @@ import java.util.Set;
 @Table(name = "event_request")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "type", discriminatorType = DiscriminatorType.STRING)
-public abstract class EventRequest<P extends UidIdentifiable> extends AbstractEventEntity<P> {
+public abstract class EventRequest<P extends UidIdentifiable> extends AbstractEventEntity {
 
 	@ManyToMany(cascade = CascadeType.ALL)
 	@JoinTable(name = "event_request_assigned_members",

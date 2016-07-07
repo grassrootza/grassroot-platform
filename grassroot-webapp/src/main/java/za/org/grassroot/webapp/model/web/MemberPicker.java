@@ -1,13 +1,10 @@
 package za.org.grassroot.webapp.model.web;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import za.org.grassroot.core.domain.AssignedMembersContainer;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Task;
 import za.org.grassroot.core.domain.User;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -18,8 +15,6 @@ import java.util.stream.Collectors;
  */
 public class MemberPicker {
 
-    private static final Logger log = LoggerFactory.getLogger(MemberPicker.class);
-
     // creating this as a list so we can sort it sensibly later
     private List<AssignmentWrapper> listOfMembers;
 
@@ -27,9 +22,9 @@ public class MemberPicker {
         listOfMembers = new ArrayList<>();
     }
 
-    public MemberPicker(AssignedMembersContainer membersContainer, boolean selectedByDefault) {
+    public MemberPicker(Task<?> task, boolean selectedByDefault) {
         listOfMembers = new ArrayList<>();
-        for (User user : membersContainer.getAssignedMembers()) {
+        for (User user : task.getAssignedMembers()) {
             listOfMembers.add(new AssignmentWrapper(user, selectedByDefault));
         }
     }

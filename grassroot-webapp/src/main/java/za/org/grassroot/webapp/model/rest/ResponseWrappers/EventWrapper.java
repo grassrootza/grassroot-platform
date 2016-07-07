@@ -4,6 +4,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.dto.TaskDTO;
+import za.org.grassroot.core.repository.EventLogRepository;
 
 import java.time.Instant;
 
@@ -16,8 +17,8 @@ public class EventWrapper extends TaskDTO {
     private boolean canEdit;
     private ResponseTotalsDTO totals;
 
-    public EventWrapper(Event event, EventLog eventLog, User user, boolean hasResponded, ResponseTotalsDTO totals) {
-        super(event, eventLog, user, hasResponded);
+    public EventWrapper(Event event, User user, ResponseTotalsDTO totals, EventLogRepository eventLogRepository) {
+        super(event, user, eventLogRepository);
         this.isCancelled = event.isCanceled();
         this.canEdit = getCanEdit(user,event);
         this.totals = totals;

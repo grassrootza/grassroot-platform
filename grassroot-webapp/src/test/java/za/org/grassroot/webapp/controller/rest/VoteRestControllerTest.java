@@ -79,13 +79,13 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
 
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.load(voteEvent.getUid())).thenReturn(voteEvent);
-        when(eventLogManagementServiceMock.getEventLogOfUser(voteEvent, sessionTestUser, EventLogType.RSVP)).thenReturn(eventLog);
+        when(eventLogRepositoryMock.findByEventAndUserAndEventLogType(voteEvent, sessionTestUser, EventLogType.RSVP)).thenReturn(eventLog);
         when(eventLogManagementServiceMock.userRsvpForEvent(voteEvent, sessionTestUser)).thenReturn(true);
         when(eventLogManagementServiceMock.getVoteResultsForEvent(voteEvent)).thenReturn(rsvpTotalsDTO);
         mockMvc.perform(get(path + "/view/{id}/{phoneNumber}/{code}", voteEvent.getUid(), testUserPhone, testUserCode)).andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
         verify(eventBrokerMock).load(voteEvent.getUid());
-        verify(eventLogManagementServiceMock).getEventLogOfUser(voteEvent, sessionTestUser, EventLogType.RSVP);
+        verify(eventLogRepositoryMock).findByEventAndUserAndEventLogType(voteEvent, sessionTestUser, EventLogType.RSVP);
         verify(eventLogManagementServiceMock).userRsvpForEvent(voteEvent, sessionTestUser);
         verify(eventLogManagementServiceMock).getVoteResultsForEvent(voteEvent);
     }

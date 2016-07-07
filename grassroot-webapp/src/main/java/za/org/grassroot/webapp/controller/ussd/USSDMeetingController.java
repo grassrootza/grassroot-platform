@@ -12,6 +12,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.language.DateTimeParseFailure;
 import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.services.EventRequestBroker;
@@ -52,6 +53,9 @@ public class USSDMeetingController extends USSDController {
 
     @Autowired
     private EventLogManagementService eventLogManagementService;
+
+    @Autowired
+    private EventLogRepository eventLogRepository;
 
     private Logger log = LoggerFactory.getLogger(getClass());
     private static final String path = homePath + meetingMenus;
@@ -573,7 +577,7 @@ public class USSDMeetingController extends USSDController {
      */
     private USSDMenu meetingAttendeeMenu(User user, Event event) {
 
-        final EventLog userResponse = eventLogManagementService.getEventLogOfUser(event, user, EventLogType.RSVP);
+        final EventLog userResponse = eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.RSVP);
 
         final String attendeeKey = "attendee";
         final String suffix = entityUidUrlSuffix + event.getUid();

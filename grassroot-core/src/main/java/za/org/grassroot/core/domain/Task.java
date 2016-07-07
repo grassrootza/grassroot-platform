@@ -1,14 +1,39 @@
 package za.org.grassroot.core.domain;
 
-import org.hibernate.LazyInitializationException;
+import za.org.grassroot.core.util.DateTimeUtil;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public interface AssignedMembersContainer extends GroupDescendant, UidIdentifiable {
+/**
+ * Common type for Vote, Meeting and LogBook.
+ * @param <P> parent type
+ */
+public interface Task<P extends UidIdentifiable> extends UidIdentifiable {
+	void setParent(P parent);
+
+	P getParent();
+
+	User getCreatedByUser();
+
+	Instant getDeadlineTime();
+
+	default LocalDateTime getDeadlineTimeAtSAST() {
+		return getDeadlineTime().atZone(DateTimeUtil.getSAST()).toLocalDateTime();
+	}
+
+	/**
+	 * Returns group that contains this entity (because some entities can have parents that are not groups).
+	 * This is basically direct relationship to parent group, even if parent is not direct one.
+	 * @return ancestor group that contains this entity
+	 */
+	Group getAncestorGroup();
+
 	/**
 	 * This is just a way to get handle of internal JPA/Hibernate assigned member collection.
 	 * It should not be of public visibility, but unfortunately, java interfaces cannot specify

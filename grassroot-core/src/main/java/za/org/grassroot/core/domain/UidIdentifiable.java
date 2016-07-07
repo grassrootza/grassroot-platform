@@ -10,6 +10,7 @@ public interface UidIdentifiable {
 	Long getId();
 
 	String getName();
+
 	Set<User> getMembers();
 
 	/**
@@ -20,10 +21,10 @@ public interface UidIdentifiable {
 	default Group getThisOrAncestorGroup() {
 		if (this instanceof Group) {
 			return (Group) this;
-		} else if (this instanceof GroupDescendant) {
-			return ((GroupDescendant) this).getAncestorGroup();
+		} else if (this instanceof Task) {
+			return ((Task) this).getAncestorGroup();
 		} else {
-			throw new UnsupportedOperationException("Cannot resolve group if this entity is not " + GroupDescendant.class.getCanonicalName() + " or Group itsel, but is: " + this);
+			throw new UnsupportedOperationException("Cannot resolve group if this entity is not " + Task.class.getCanonicalName() + " or Group itself, but is: " + this);
 		}
 	}
 }

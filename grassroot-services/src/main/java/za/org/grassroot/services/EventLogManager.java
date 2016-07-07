@@ -99,14 +99,9 @@ public class EventLogManager implements EventLogManagementService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public EventLog getEventLogOfUser(Event event, User user, EventLogType eventLogType) {
-        return eventLogRepository.findByEventAndUserAndEventLogType(event, user,eventLogType);
-    }
-
-    @Override
     public boolean userRsvpForEvent(Event event, User user) {
-        return eventLogRepository.userRsvpForEvent(event, user);
+        EventLog rsvpEventLog = eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.RSVP);
+        return rsvpEventLog != null;
     }
 
     @Override

@@ -16,6 +16,7 @@ import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.TaskType;
+import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
@@ -61,6 +62,9 @@ public class MeetingRestController {
 
     @Autowired
     private EventManagementService eventManagementService; // todo :really need to migrate from this old thing to broker
+
+    @Autowired
+    private EventLogRepository eventLogRepository;
 
     @InitBinder
     public void initBinder(ServletRequestDataBinder binder) {
@@ -153,10 +157,8 @@ public class MeetingRestController {
     public ResponseEntity<ResponseWrapper> view(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code, @PathVariable("id") String id) {
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         Meeting meeting = eventBroker.loadMeeting(id);
-        EventLog eventLog = eventLogManagementService.getEventLogOfUser(meeting, user, EventLogType.RSVP);
-        boolean hasResponded = eventLogManagementService.userRsvpForEvent(meeting, user);
         ResponseTotalsDTO totals = eventLogManagementService.getResponseCountForEvent(meeting);
-        EventWrapper eventWrapper = new EventWrapper(meeting, eventLog, user, hasResponded, totals);
+        EventWrapper eventWrapper = new EventWrapper(meeting, user, totals, eventLogRepository);
         ResponseWrapper responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.MEETING_DETAILS, RestStatus.SUCCESS,
                 eventWrapper);
 

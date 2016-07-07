@@ -12,7 +12,7 @@ import java.util.Objects;
  * This class should contain all fields common to both Event and EventRequest entity
  */
 @MappedSuperclass
-public abstract class AbstractEventEntity<P extends UidIdentifiable> {
+public abstract class AbstractEventEntity {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "id", nullable = false)
@@ -79,10 +79,6 @@ public abstract class AbstractEventEntity<P extends UidIdentifiable> {
 	@ManyToOne
 	@JoinColumn(name = "parent_log_book_id")
 	protected LogBook parentLogBook;
-
-	public abstract void setParent(P parent);
-
-	public abstract P getParent();
 
 	protected AbstractEventEntity() {
 		// for JPA

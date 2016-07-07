@@ -50,7 +50,7 @@ public class TaskRestController {
 	private LogBookBroker logBookBroker;
 
     @RequestMapping(value = "/list/{phoneNumber}/{code}/{parentUid}", method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> getTasks(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
+    public ResponseEntity<ResponseWrapper> getTasksByGroup(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
                                                     @PathVariable("parentUid") String parentUid) {
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
@@ -64,7 +64,7 @@ public class TaskRestController {
     }
 
     @RequestMapping(value = "/list/{phoneNumber}/{code}", method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> getTasks(@PathVariable String phoneNumber, @PathVariable String code) {
+    public ResponseEntity<ResponseWrapper> getTasksByUser(@PathVariable String phoneNumber, @PathVariable String code) {
         // todo: should really start storing UID on phone and pass that back here
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         List<TaskDTO> tasks = taskBroker.fetchUserTasks(user.getUid(), false);
