@@ -86,7 +86,6 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
         verify(eventBrokerMock).load(voteEvent.getUid());
         verify(eventLogRepositoryMock).findByEventAndUserAndEventLogType(voteEvent, sessionTestUser, EventLogType.RSVP);
-        verify(eventLogManagementServiceMock).userRsvpForEvent(voteEvent, sessionTestUser);
         verify(eventLogManagementServiceMock).getVoteResultsForEvent(voteEvent);
     }
 
