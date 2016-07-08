@@ -99,13 +99,13 @@ public class EventLog implements ActionLog {
     @Override
     public String toString() {
         return "EventLog{" +
-                "id=" + id +
-                ", uid=" + uid +
-                ", rype=" + eventLogType +
+                "type=" + eventLogType +
                 ", user=" + user +
                 ", event=" + event +
                 ", message='" + message + '\'' +
                 ", createdDateTime=" + createdDateTime +
+                ", uid=" + uid +
+                ", id=" + id +
                 '}';
     }
 

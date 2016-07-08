@@ -7,11 +7,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.TaskDTO;
+import za.org.grassroot.core.enums.EventLogType;
+import za.org.grassroot.core.enums.LogBookLogType;
 import za.org.grassroot.core.enums.TaskType;
-import za.org.grassroot.core.repository.EventLogRepository;
-import za.org.grassroot.core.repository.EventRepository;
-import za.org.grassroot.core.repository.LogBookRepository;
-import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.enums.LogBookStatus;
 
 import java.time.Instant;
@@ -42,6 +41,9 @@ public class TaskBrokerImpl implements TaskBroker {
 
     @Autowired
     private EventLogRepository eventLogRepository;
+
+    @Autowired
+    private LogBookLogRepository logBookLogRepository;
 
     @Autowired
     private LogBookBroker logBookBroker;
@@ -107,7 +109,7 @@ public class TaskBrokerImpl implements TaskBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public List<TaskDTO> fetchUpcomingUserTasks(String userUid) {
+    public List<TaskDTO> fetchUpcomingUserTasks(String userUid, Instant changedSince) {
         Objects.requireNonNull(userUid);
 
         User user = userRepository.findOneByUid(userUid);
@@ -117,17 +119,46 @@ public class TaskBrokerImpl implements TaskBroker {
 
         List<Event> events = eventRepository.findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(user, now);
         for (Event event : events) {
-            taskDtos.add(new TaskDTO(event, user, eventLogRepository));
+            if (changedSince == null || isEventChangedSince(event, changedSince)) {
+                EventLog userResponseLog = eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.RSVP);
+                if (changedSince == null || userResponseLog == null || (userResponseLog != null && userResponseLog.getCreatedDateTime().isAfter(changedSince))) {
+                    taskDtos.add(new TaskDTO(event, user, userResponseLog));
+                }
+            }
         }
 
         List<LogBook> logBooks = logBookRepository.findByParentGroupMembershipsUserAndActionByDateGreaterThan(user, now);
         for (LogBook logBook : logBooks) {
-            taskDtos.add(new TaskDTO(logBook, user));
+            if (changedSince == null || isLogBookChangedSince(logBook, changedSince)) {
+                taskDtos.add(new TaskDTO(logBook, user));
+            }
         }
 
         List<TaskDTO> tasks = new ArrayList<>(taskDtos);
         Collections.sort(tasks);
         log.info("Retrieved all the user's upcoming tasks, took {} msecs", System.currentTimeMillis() - now.toEpochMilli());
         return tasks;
+    }
+
+    private boolean isEventChangedSince(Event event, Instant changedSince) {
+        if (event.getCreatedDateTime().isAfter(changedSince)) {
+            return true;
+        }
+        EventLog lastChangeLog = eventLogRepository.findFirstByEventAndEventLogTypeOrderByCreatedDateTimeDesc(event, EventLogType.CHANGE);
+        if (lastChangeLog != null && lastChangeLog.getCreatedDateTime().isAfter(changedSince)) {
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isLogBookChangedSince(LogBook logBook, Instant changedSince) {
+        if (logBook.getCreatedDateTime().isAfter(changedSince)) {
+            return true;
+        }
+        LogBookLog lastChangeLog = logBookLogRepository.findFirstByLogBookAndTypeOrderByCreatedDateTimeDesc(logBook, LogBookLogType.CHANGED);
+        if (lastChangeLog != null && lastChangeLog.getCreatedDateTime().isAfter(changedSince)) {
+            return true;
+        }
+        return false;
     }
 }

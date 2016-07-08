@@ -5,6 +5,7 @@ import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.services.enums.LogBookStatus;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
@@ -17,6 +18,6 @@ public interface TaskBroker {
 
     List<TaskDTO> fetchGroupTasks(String userUid, String groupUid, boolean futureOnly, LogBookStatus logBookStatus);
 
-    List<TaskDTO> fetchUpcomingUserTasks(String userUid);
+    List<TaskDTO> fetchUpcomingUserTasks(String userUid, Instant changedSince);
 
 }

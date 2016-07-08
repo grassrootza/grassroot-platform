@@ -1,5 +1,8 @@
 package za.org.grassroot.core.domain;
 
+import za.org.grassroot.core.enums.EventLogType;
+import za.org.grassroot.core.enums.LogBookLogType;
+
 import javax.persistence.*;
 import java.time.Instant;
 import java.util.Date;
@@ -10,8 +13,7 @@ import java.util.Objects;
  */
 @Entity
 @Table(name = "log_book_log",
-		indexes = {@Index(name = "idx_log_book_log_logbook_id", columnList = "logbook_id", unique = false)})
-
+		indexes = {@Index(name = "idx_log_book_log_logbook_id", columnList = "log_book_id")})
 public class LogBookLog implements ActionLog {
 
 	@Id
@@ -24,7 +26,7 @@ public class LogBookLog implements ActionLog {
 	private Instant createdDateTime;
 
 	@ManyToOne
-	@JoinColumn(name = "logbook_id", nullable = false)
+	@JoinColumn(name = "log_book_id", nullable = false)
 	private LogBook logBook;
 
 	@Column(name = "message")
@@ -34,23 +36,28 @@ public class LogBookLog implements ActionLog {
 	@JoinColumn(name = "user_id")
 	private User user;
 
+	@Enumerated(EnumType.STRING)
+	@Column(name="type", nullable = false, length = 50)
+ 	private LogBookLogType type;
+
 	private LogBookLog() {
 		// for JPA only
 	}
 
-	public LogBookLog(User user, LogBook logBook, String message) {
+	public LogBookLog(LogBookLogType type, User user, LogBook logBook, String message) {
+		this.type = Objects.requireNonNull(type);
 		this.logBook = Objects.requireNonNull(logBook);
 		this.message = message;
 		this.user = user;
 		this.createdDateTime = Instant.now();
 	}
 
-	public Long getId() {
-		return id;
+	public LogBookLogType getType() {
+		return type;
 	}
 
-	public void setId(Long id) {
-		this.id = id;
+	public Long getId() {
+		return id;
 	}
 
 	public Instant getCreatedDateTime() {
@@ -71,10 +78,13 @@ public class LogBookLog implements ActionLog {
 
 	@Override
 	public String toString() {
-		return "LogBookLog{" +
-				"id=" + id +
-				", createdDateTime=" + createdDateTime +
-				", message='" + message + '\'' +
-				'}';
+		final StringBuilder sb = new StringBuilder("LogBookLog{");
+		sb.append("type=").append(type);
+		sb.append(", logBook=").append(logBook);
+		sb.append(", user=").append(user);
+		sb.append(", createdDateTime=").append(createdDateTime);
+		sb.append(", id=").append(id);
+		sb.append('}');
+		return sb.toString();
 	}
 }

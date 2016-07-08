@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.LogBookInfoNotification;
 import za.org.grassroot.core.domain.notification.LogBookReminderNotification;
+import za.org.grassroot.core.enums.LogBookLogType;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.LogBookRepository;
 import za.org.grassroot.core.repository.UidIdentifiableRepository;
@@ -83,7 +84,7 @@ public class LogBookBrokerImpl implements LogBookBroker {
 		logBook = logBookRepository.save(logBook);
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-		LogBookLog logBookLog = new LogBookLog(user, logBook, null);
+		LogBookLog logBookLog = new LogBookLog(LogBookLogType.CREATED, user, logBook, null);
 		bundle.addLog(logBookLog);
 
 		Set<Notification> notifications = constructLogBookRecordedNotifications(logBook, logBookLog);
@@ -172,7 +173,7 @@ public class LogBookBrokerImpl implements LogBookBroker {
 
 		LogBook logBook = logBookRepository.findOneByUid(logBookUid);
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-		LogBookLog logBookLog = new LogBookLog(null, logBook, null);
+		LogBookLog logBookLog = new LogBookLog(LogBookLogType.REMINDER_SENT, null, logBook, null);
 
 		Set<User> members = logBook.isAllGroupMembersAssigned() ? logBook.getAncestorGroup().getMembers() : logBook.getAssignedMembers();
 		for (User member : members) {
@@ -288,7 +289,7 @@ public class LogBookBrokerImpl implements LogBookBroker {
 		logBookRepository.save(logBook);
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-		LogBookLog logBookLog = new LogBookLog(user, logBook, null);
+		LogBookLog logBookLog = new LogBookLog(LogBookLogType.CHANGED, user, logBook, null);
 		bundle.addLog(logBookLog);
 
 		Set<Notification> notifications = constructLogBookRecordedNotifications(logBook, logBookLog);

@@ -20,8 +20,8 @@ public interface EventLogRepository extends JpaRepository<EventLog, Long> {
     See if the reminder was already sent before sending it
     */
     @Query(value = "SELECT sum(CASE WHEN message = 'Yes' THEN 1 ELSE 0 END) AS yes, sum(CASE WHEN message = 'No' THEN 1 ELSE 0 END) AS no, sum(CASE WHEN message = 'Maybe' THEN 1 ELSE 0 END) AS maybe, sum(CASE WHEN message = 'Invalid RSVP' THEN 1 ELSE 0 END) AS invalid, (select count(*) from group_user_membership gu where gu.group_id = ?2) as numberofusers FROM event_log el, group_user_membership gu WHERE el.event_id = ?1 AND gu.group_id = ?2 AND el.user_id = gu.user_id AND el.event_log_type = 'RSVP'",nativeQuery = true)
-    public List<Object[]> rsvpTotalsForEventAndGroup(Long eventId, Long groupId);
+    List<Object[]> rsvpTotalsForEventAndGroup(Long eventId, Long groupId);
 
     @Query(value = "SELECT sum(CASE WHEN message = 'Yes' THEN 1 ELSE 0 END) AS yes, sum(CASE WHEN message = 'No' THEN 1 ELSE 0 END) AS no, sum(CASE WHEN message = 'Maybe' THEN 1 ELSE 0 END) AS maybe, sum(CASE WHEN message = 'Invalid RSVP' THEN 1 ELSE 0 END) AS invalid,(select count(*) from group_user_membership gu where gu.group_id = ?2) as numberofusers FROM event_log el, group_user_membership gu WHERE el.event_id = ?1 AND gu.group_id = ?2 AND el.user_id = gu.user_id AND el.event_log_type = 'RSVP'",nativeQuery = true)
-    public List<Object[]> voteTotalsForEventAndGroup(Long eventId, Long groupId);
+    List<Object[]> voteTotalsForEventAndGroup(Long eventId, Long groupId);
 }

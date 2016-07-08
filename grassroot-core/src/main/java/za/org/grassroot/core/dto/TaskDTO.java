@@ -76,12 +76,15 @@ public class TaskDTO implements Comparable<TaskDTO> {
      * worthwhile trade-off because it ensures consistency on this object data at multiple places in code.
      */
     public TaskDTO(Event event, User user, EventLogRepository eventLogRepository) {
+        this(event, user, eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.RSVP));
+    }
+
+    public TaskDTO(Event event, User user, EventLog eventLog) {
         this(user, event);
 
-        EventLog eventLog = eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.RSVP);
-//        if (!eventLog.getEventLogType().equals(EventLogType.RSVP)) {
-//            throw new IllegalArgumentException("Event log has to be of " + EventLogType.RSVP + ": " + eventLog);
-//        }
+        if (!eventLog.getEventLogType().equals(EventLogType.RSVP)) {
+            throw new IllegalArgumentException("Event log has to be of " + EventLogType.RSVP + ": " + eventLog);
+        }
         this.description =event.getDescription();
         this.hasResponded = eventLog != null;
 
@@ -89,8 +92,9 @@ public class TaskDTO implements Comparable<TaskDTO> {
                 eventLog.getMessage() :
                 String.valueOf(TodoStatus.NO_RESPONSE);
         this.canAction = canActionOnEvent(event, hasResponded);
-        this.location = (event.getEventType().equals(EventType.MEETING)) ? ((Meeting) event).getEventLocation() : "";
-        this.canEdit = (event.getCreatedByUser().equals(user) && instant.isAfter(Instant.now()));
+        this.location = event.getEventType().equals(EventType.MEETING) ? ((Meeting) event).getEventLocation() : "";
+        this.canEdit = event.getCreatedByUser().equals(user) && instant.isAfter(Instant.now());
+
     }
 
     public TaskDTO(LogBook logBook, User user) {

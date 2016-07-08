@@ -5,10 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.services.*;
@@ -20,6 +17,7 @@ import za.org.grassroot.webapp.model.rest.ResponseWrappers.MembershipResponseWra
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
 import za.org.grassroot.core.dto.TaskDTO;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -63,10 +61,14 @@ public class TaskRestController {
     }
 
     @RequestMapping(value = "/list/{phoneNumber}/{code}", method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> getAllUpcomingTasksForUser(@PathVariable String phoneNumber, @PathVariable String code) {
+    public ResponseEntity<ResponseWrapper> getAllUpcomingTasksForUser(
+			@PathVariable String phoneNumber,
+			@PathVariable String code,
+			@RequestParam(name = "changedSince", required = false) Long changedSinceMillis) {
         // todo: should really start storing UID on phone and pass that back here
         User user = userManagementService.loadOrSaveUser(phoneNumber);
-        List<TaskDTO> tasks = taskBroker.fetchUpcomingUserTasks(user.getUid());
+		Instant changedSince = changedSinceMillis == null ? null : Instant.ofEpochMilli(changedSinceMillis);
+		List<TaskDTO> tasks = taskBroker.fetchUpcomingUserTasks(user.getUid(), changedSince);
         Collections.sort(tasks, Collections.reverseOrder());
         RestMessage message = (tasks.isEmpty()) ? RestMessage.USER_HAS_NO_TASKS : RestMessage.USER_ACTIVITIES;
         ResponseWrapper wrapper = new GenericResponseWrapper(HttpStatus.OK, message, RestStatus.SUCCESS, tasks);

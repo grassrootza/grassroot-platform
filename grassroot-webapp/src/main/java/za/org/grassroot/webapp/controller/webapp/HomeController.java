@@ -95,7 +95,7 @@ public class HomeController extends BaseController {
         log.info(String.format("Retrieved the active groups for the user ... took %d msecs", System.currentTimeMillis() - startTime1));
 
         Long startTime2 = System.currentTimeMillis();
-        model.addAttribute("upcomingTasks", taskBroker.fetchUpcomingUserTasks(user.getUid()));
+        model.addAttribute("upcomingTasks", taskBroker.fetchUpcomingUserTasks(user.getUid(), null));
         log.info(String.format("Retrieved the user's upcoming tasks ... took %d msecs", System.currentTimeMillis() - startTime2));
 
         Long startTime3 = System.currentTimeMillis();
