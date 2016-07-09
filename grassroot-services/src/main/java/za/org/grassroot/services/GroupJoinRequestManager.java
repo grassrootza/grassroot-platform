@@ -117,7 +117,7 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
 
         MembershipInfo membershipInfo =
                 new MembershipInfo(requestingUser.getPhoneNumber(), BaseRoles.ROLE_ORDINARY_MEMBER, requestingUser.getDisplayName());
-        groupBroker.addMembers(userUid, groupToJoin.getUid(), Sets.newHashSet(membershipInfo));
+        groupBroker.addMembers(userUid, groupToJoin.getUid(), Sets.newHashSet(membershipInfo), false);
 
         GroupJoinRequestEvent event = new GroupJoinRequestEvent(GroupJoinRequestEventType.APPROVED, request, user, time);
         groupJoinRequestEventRepository.save(event);

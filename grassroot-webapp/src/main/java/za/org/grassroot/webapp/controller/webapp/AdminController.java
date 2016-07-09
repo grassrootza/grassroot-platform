@@ -3,7 +3,6 @@ package za.org.grassroot.webapp.controller.webapp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -15,17 +14,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MaskedUserDTO;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
-import za.org.grassroot.webapp.model.web.MemberWrapper;
 
 import javax.servlet.http.HttpServletRequest;
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -39,10 +35,11 @@ public class AdminController extends BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(AdminController.class);
 
-    private static final Integer GROUP_PAGE_SIZE = 10; // todo: allow user to set
-
     @Autowired
     private UserManagementService userManagementService;
+
+    @Autowired
+    private GroupRepository groupRepository;
 
     @Autowired
     private GroupBroker groupBroker;
@@ -57,7 +54,7 @@ public class AdminController extends BaseController {
     private RoleManagementService roleManagementService;
 
     @Autowired
-    private AnalyticalService analyticalService;
+    private AdminService adminService;
 
     // todo: move this map somewhere
 /*    private static final Map<String, String> groupRoles = ImmutableMap.of(BaseRoles.ROLE_ORDINARY_MEMBER, "Ordinary member",
@@ -68,41 +65,39 @@ public class AdminController extends BaseController {
     @RequestMapping("/admin/home")
     public String adminIndex(Model model, @ModelAttribute("currentUser") UserDetails userDetails) {
 
-        User user = getUserProfile();
-
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime week = now.minusWeeks(1L);
         LocalDateTime month = now.minusMonths(1L);
 
         // todo: put these into maps
 
-        model.addAttribute("countLastWeek", analyticalService.countUsersCreatedInInterval(week, now));
-        model.addAttribute("countLastMonth", analyticalService.countUsersCreatedInInterval(month, now));
-        model.addAttribute("userCount", analyticalService.countAllUsers());
+        model.addAttribute("countLastWeek", adminService.countUsersCreatedInInterval(week, now));
+        model.addAttribute("countLastMonth", adminService.countUsersCreatedInInterval(month, now));
+        model.addAttribute("userCount", adminService.countAllUsers());
 
-        model.addAttribute("countUssdLastWeek", analyticalService.countUsersCreatedAndInitiatedInPeriod(week, now));
-        model.addAttribute("countUssdLastMonth", analyticalService.countUsersCreatedAndInitiatedInPeriod(month, now));
-        model.addAttribute("countUssdTotal", analyticalService.countUsersThatHaveInitiatedSession());
+        model.addAttribute("countUssdLastWeek", adminService.countUsersCreatedAndInitiatedInPeriod(week, now));
+        model.addAttribute("countUssdLastMonth", adminService.countUsersCreatedAndInitiatedInPeriod(month, now));
+        model.addAttribute("countUssdTotal", adminService.countUsersThatHaveInitiatedSession());
 
-        model.addAttribute("countWebLastWeek", analyticalService.countUsersCreatedWithWebProfileInPeriod(week, now));
-        model.addAttribute("countWebLastMonth", analyticalService.countUsersCreatedWithWebProfileInPeriod(month, now));
-        model.addAttribute("countWebTotal", analyticalService.countUsersThatHaveWebProfile());
+        model.addAttribute("countWebLastWeek", adminService.countUsersCreatedWithWebProfileInPeriod(week, now));
+        model.addAttribute("countWebLastMonth", adminService.countUsersCreatedWithWebProfileInPeriod(month, now));
+        model.addAttribute("countWebTotal", adminService.countUsersThatHaveWebProfile());
 
-        model.addAttribute("groupsLastWeek", analyticalService.countGroupsCreatedInInterval(week, now));
-        model.addAttribute("groupsLastMonth", analyticalService.countGroupsCreatedInInterval(month, now));
-        model.addAttribute("groupsTotal", analyticalService.countActiveGroups());
+        model.addAttribute("groupsLastWeek", adminService.countGroupsCreatedInInterval(week, now));
+        model.addAttribute("groupsLastMonth", adminService.countGroupsCreatedInInterval(month, now));
+        model.addAttribute("groupsTotal", adminService.countActiveGroups());
 
-        model.addAttribute("meetingsLastWeek", analyticalService.countEventsCreatedInInterval(week, now, EventType.MEETING));
-        model.addAttribute("meetingsLastMonth", analyticalService.countEventsCreatedInInterval(month, now, EventType.MEETING));
-        model.addAttribute("meetingsTotal", analyticalService.countAllEvents(EventType.MEETING));
+        model.addAttribute("meetingsLastWeek", adminService.countEventsCreatedInInterval(week, now, EventType.MEETING));
+        model.addAttribute("meetingsLastMonth", adminService.countEventsCreatedInInterval(month, now, EventType.MEETING));
+        model.addAttribute("meetingsTotal", adminService.countAllEvents(EventType.MEETING));
 
-        model.addAttribute("votesLastWeek", analyticalService.countEventsCreatedInInterval(week, now, EventType.VOTE));
-        model.addAttribute("votesLastMonth", analyticalService.countEventsCreatedInInterval(month, now, EventType.VOTE));
-        model.addAttribute("votesTotal", analyticalService.countAllEvents(EventType.VOTE));
+        model.addAttribute("votesLastWeek", adminService.countEventsCreatedInInterval(week, now, EventType.VOTE));
+        model.addAttribute("votesLastMonth", adminService.countEventsCreatedInInterval(month, now, EventType.VOTE));
+        model.addAttribute("votesTotal", adminService.countAllEvents(EventType.VOTE));
 
-        model.addAttribute("todosLastWeek", analyticalService.countLogBooksRecordedInInterval(week, now));
-        model.addAttribute("todosLastMonth", analyticalService.countLogBooksRecordedInInterval(month, now));
-        model.addAttribute("todosTotal", analyticalService.countAllLogBooks());
+        model.addAttribute("todosLastWeek", adminService.countLogBooksRecordedInInterval(week, now));
+        model.addAttribute("todosLastMonth", adminService.countLogBooksRecordedInInterval(month, now));
+        model.addAttribute("todosTotal", adminService.countAllLogBooks());
 
         return "admin/home";
 
@@ -117,7 +112,7 @@ public class AdminController extends BaseController {
     public String allUsers(Model model) {
 
         User user = getUserProfile();
-        model.addAttribute("totalUserCount", analyticalService.countAllUsers());
+        model.addAttribute("totalUserCount", adminService.countAllUsers());
 
         return "admin/users/home";
     }
@@ -132,7 +127,7 @@ public class AdminController extends BaseController {
                            @RequestParam("lookup_term") String lookupTerm, HttpServletRequest request) {
 
         String pageToDisplay;
-        List<MaskedUserDTO> foundUsers = analyticalService.searchByInputNumberOrDisplayName(lookupTerm);
+        List<MaskedUserDTO> foundUsers = adminService.searchByInputNumberOrDisplayName(lookupTerm);
 
         log.info("Admin site, found this many users with the search term ... " + foundUsers.size());
 
@@ -155,151 +150,70 @@ public class AdminController extends BaseController {
         return pageToDisplay;
     }
 
-    /*
-    Group admin methods
-     */
+	/*
+	RESTRUCTURED METHODS TO HANDLE GROUP ADMIN
+	 */
+
+    // todo : move this to a common interface
+    final static List<String[]> roleDescriptions = Arrays.asList(new String[]{BaseRoles.ROLE_ORDINARY_MEMBER, "Ordinary member"},
+            new String[]{BaseRoles.ROLE_COMMITTEE_MEMBER, "Committee member"},
+            new String[]{BaseRoles.ROLE_GROUP_ORGANIZER, "Group organizer"});
+
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping("/admin/groups/home")
-    public String allGroups(Model model, @RequestParam(value = "page", required = false) Integer page) {
-
-        // major todo: some way to search through groups
-        // major todo: ability to do tree view
-
-        page = (page == null) ? 0 : page;
-
-        if (page == -1) {
-            model.addAttribute("paginated", false);
-            model.addAttribute("countBase", 0);
-            List<Group> groupList = analyticalService.getAllGroups();
-            model.addAttribute("groupList", groupList);
-        } else {
-
-            // thymeleaf, as usual, makes the simple (incrementing the page paramater) complex, so have to construct work-around using ints
-
-            model.addAttribute("paginated", true);
-            model.addAttribute("countBase", page * GROUP_PAGE_SIZE);
-            Page<Group> groupList = analyticalService.getAllActiveGroupsPaginated(page, GROUP_PAGE_SIZE);
-
-            Integer previousPage = (groupList.hasPrevious()) ? page - 1 : -1;
-            Integer nextPage = (groupList.hasNext()) ? page + 1 : -1;
-
-            model.addAttribute("previousPage", previousPage);
-            model.addAttribute("nextPage", nextPage);
-            model.addAttribute("groupList", groupList.getContent());
-        }
-
-        return "admin/groups/home";
-
+    @RequestMapping("/admin/groups/search")
+    public String searchForGroup() {
+        return "admin/groups/search";
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping("/admin/groups/filter")
-    public String filterGroups(Model model) {
-        return "admin/groups/filter";
+    @RequestMapping(value = "/admin/groups/search", method = RequestMethod.POST)
+    public String findGroup(Model model, @RequestParam(value = "search_term") String searchTerm) {
+        List<Group> possibleGroups = groupRepository.findByGroupNameContainingIgnoreCase(searchTerm);
+        model.addAttribute("possibleGroups", possibleGroups);
+        model.addAttribute("roles", roleDescriptions);
+        return "admin/groups/search_result";
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping("/admin/groups/list")
-    public String listGroups(Model model,@RequestParam(value="createdByUser", required=false) String createdByUserUid,
-                             @RequestParam(value="groupMemberSize", required=false) Integer groupSize,
-                             @RequestParam(value="createdAfter", required=false) Timestamp createdAfterDate,
-                             @RequestParam(value="createdBefore", required=false) Timestamp createdBeforeDate) {
-
-        log.info("createdAfterDate: " + createdAfterDate);
-        log.info("createdBeforeDate: " + createdBeforeDate);
-
-        User createdByUser;
-        if (createdByUserUid == null || createdByUserUid.trim().equals(""))
-            createdByUser = null;
-        else
-            createdByUser = userManagementService.load(createdByUserUid);
-
-        List<Group> groupList = analyticalService.getGroupsFiltered(createdByUser, groupSize, createdAfterDate, createdBeforeDate);
-
-        model.addAttribute("groupList", groupList);
-        return "admin/groups/list";
-
-    }
-
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping("/admin/groups/view")
+    @RequestMapping(value = "/admin/groups/view", method = RequestMethod.GET)
     public String adminViewGroup(Model model, @RequestParam String groupUid) {
-
-        Group group = groupBroker.load(groupUid);
-
-        List<String[]> groupRoles = Arrays.asList(new String[]{"NULL", "Not set"},
-                                                  new String[]{BaseRoles.ROLE_ORDINARY_MEMBER, "Ordinary member"},
-                                                  new String[]{BaseRoles.ROLE_COMMITTEE_MEMBER, "Committee member"},
-                                                  new String[]{BaseRoles.ROLE_GROUP_ORGANIZER, "Group organizer"});
-
-        List<MemberWrapper> members = new ArrayList<>();
-        for (User user : group.getMembers()) {
-            Role roleInGroup = group.getMembership(user).getRole();
-            log.info("constructingMemberWrapper ... user's role is ... " + ((roleInGroup != null) ? roleInGroup.describe() : "null"));
-            members.add(new MemberWrapper(user, group, roleInGroup));
-        }
-
-        model.addAttribute("group", group);
-        model.addAttribute("members", members);
-        model.addAttribute("roles", groupRoles);
-
+	    model.addAttribute("group", groupBroker.load(groupUid));
         return "admin/groups/view";
     }
 
-    /*
-    Group admin methods to adjust roles
-     */
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/admin/groups/roles/change")
-    public String changeGroupRole(Model model, @RequestParam String groupUid, @RequestParam("userUid") String userUid,
-                                  @RequestParam("roleName") String roleName, HttpServletRequest request) {
+	@PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+	@RequestMapping(value = "/admin/groups/deactivate", method = RequestMethod.GET)
+	public String deactivateGroup(Model model, @RequestParam String groupUid, HttpServletRequest request) {
+		adminService.deactiveGroup(getUserProfile().getUid(), groupUid);
+        addMessage(model, MessageType.SUCCESS, "admin.group.deactivated", request);
+        return "admin/groups/search";
+	}
 
-        User userToModify = userManagementService.load(userUid);
-        log.info("Found this user ... " + userToModify);
-        Group group = groupBroker.load(groupUid);
+	@PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+	@RequestMapping(value = "/admin/groups/add", method = RequestMethod.POST)
+	public String addMemberToGroup(Model model, HttpServletRequest request,
+                                   @RequestParam String groupUid,
+                                   @RequestParam String displayName,
+                                   @RequestParam String phoneNumber,
+	                               @RequestParam String roleName) {
+        MembershipInfo membershipInfo = new MembershipInfo(phoneNumber, roleName, displayName);
+		adminService.addMemberToGroup(getUserProfile().getUid(), groupUid, membershipInfo);
+        addMessage(model, MessageType.SUCCESS, "admin.group.added", request);
+        return "admin/groups/search";
+	}
 
-        log.info("Role name retrieved: " + roleName);
-        log.info("About to do role assignment etc ... Role: " + roleName + " ... to user ... " + userToModify.nameToDisplay() +
-                         " ... to group ... " + group.getGroupName());
+	@PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+	@RequestMapping(value = "/admin/groups/role_change", method = RequestMethod.POST)
+	public String changeMemberRole(Model model, @RequestParam String groupUid, @RequestParam String userUid,
+	                               @RequestParam String roleName, HttpServletRequest request) {
+		User userToModify = userManagementService.load(userUid);
+		Group group = groupBroker.load(groupUid);
 
-        groupBroker.updateMembershipRole(getUserProfile().getUid(), group.getUid(), userToModify.getUid(), roleName);
+		groupBroker.updateMembershipRole(getUserProfile().getUid(), group.getUid(), userToModify.getUid(), roleName);
 
-        addMessage(model, MessageType.INFO, "admin.done", request);
-        return adminViewGroup(model, groupUid);
-    }
-
-    // NOTE: should be redundant as dealt with via the Liquibase SQL script (if need for user to do, then implement in
-    // permissionBroker or groupBroker
-
-    /* @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/admin/groups/roles/reset")
-    public String resetGroupRoles(Model model, @RequestParam Long groupId, HttpServletRequest request) {
-
-        // todo: uh, confirmation screen
-        asyncRoleService.resetGroupToDefaultRolesPermissions(groupId, GroupPermissionTemplate.DEFAULT_GROUP, getUserProfile());
-        addMessage(model, MessageType.INFO, "admin.done", request);
-        return allGroups(model, 0);
-    }
-
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/admin/groups/roles/reset-select")
-    public String resetGroupsSelect(Model model) {
-        // todo: add filtering here
-        Page<Group> groupsToSelect = groupManagementService.getAllActiveGroupsPaginated(0, 50);
-        model.addAttribute("groupList", groupsToSelect);
-        return "/admin/groups/reset-select";
-    }
-
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/admin/groups/roles/reset-multiple", method = RequestMethod.POST)
-    public String resetRolesForMultipleGroups(Model model, @RequestParam("groupId") Long[] groupId) {
-        List<Long> groupIds = Arrays.asList(groupId);
-        for (Long id : groupIds) {
-            log.info("Resetting group ... " + groupManagementService.loadGroup(id).getGroupName());
-            asyncRoleService.resetGroupToDefaultRolesPermissions(id, GroupPermissionTemplate.DEFAULT_GROUP, getUserProfile());
-        }
-        return allGroups(model, 0);
-    } */
+		addMessage(model, MessageType.INFO, "admin.done", request);
+		return "admin/groups/search";
+	}
 
     /**
      * Methods to create institutional accounts and designate their administrators

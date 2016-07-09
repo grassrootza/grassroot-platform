@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.notification.EventInfoNotification;
-import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.GroupLogType;
@@ -215,11 +214,15 @@ public class GroupBrokerImpl implements GroupBroker {
 
     @Override
     @Transactional
-    public void addMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos) {
+    public void addMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos, boolean adminUserCalling) {
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
-        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
+        if (!adminUserCalling) {
+            permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
+        } else {
+            // todo : insert a check on admin user permission here
+        }
 
         logger.info("Adding members: group={}, memberships={}, user={}", group, membershipInfos, user);
         LogsAndNotificationsBundle bundle = addMemberships(user, group, membershipInfos, false);

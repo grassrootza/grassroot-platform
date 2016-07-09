@@ -1,0 +1,100 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+  <title>Grassroot - System Admin</title>
+</head>
+<body>
+
+<div layout:fragment="content">
+  <div layout:fragment="messages"></div>
+
+  <div class="well">
+    <div class="row">
+      <h2>Search results:</h2>
+    </div>
+    <div class="row">
+      <table class="table table-striped">
+        <thead>
+        <th></th>
+          <th>Group name</th>
+          <th>Creating user</th>
+          <th>Number of members</th>
+          <th>Created date time</th>
+          <th>Number of events</th>
+          <th></th>
+          <th></th>
+        </thead>
+        <tbody>
+        <tr th:each="group, iterStat : ${possibleGroups}">
+          <td><span th:text="${iterStat.count}">1</span></td>
+          <td><a th:href="@{view(groupUid=${group.uid})}"><span th:text="${group.getName('')}"></span></a></td>
+          <td><span th:text="${group.createdByUser.nameToDisplay()}"></span></td>
+          <td><span th:text="${group.getMembers().size()}"></span></td>
+          <td><span th:text="${#calendars.format(group.getCreatedDateTime(),'dd MMMM yyyy')}"></span></td>
+          <td><span th:text="${group.getEvents().size()}">Number</span></td>
+          <td>
+            <a th:href="@{deactivate(groupUid=${group.uid})}">Deactivate</a>
+          </td>
+          <td>
+            <button type="button" class="btn btn-default btn-xs" data-toggle="modal" data-target="#addModal"
+                    th:attr="data-groupuid=${group.uid}">Add member</button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-labelledby="addModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="addModalLabel">Add member to group</h4>
+        </div>
+        <form th:action="@{add}" method="post">
+          <input type="hidden" name="groupUid" id="groupUid" value="ABC" />
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="new-member-name" class="control-label">Name</label>
+              <input type="text" class="form-control" id="new-member-name" name="displayName" />
+            </div>
+            <div class="form-group">
+              <label for="new-member-phone" class="control-label">Phone number</label>
+              <input type="text" class="form-control" id="new-member-phone" name="phoneNumber" />
+            </div>
+            <div class="form-group">
+              <label for="new-member-role" class="control-label">Role</label>
+              <select class="form-control" id="new-member-role" name="roleName">
+                <option th:each="role : ${roles}"
+                        th:value="${role[0]}"
+                        th:text="${role[1]}"></option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-primary">Add</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="header-container" layout:fragment="script-container">
+  <script>
+    $('#addModal').on('show.bs.modal', function (event) {
+      var button = $(event.relatedTarget); // Button that triggered the modal
+      var uid = button.data('groupuid'); // Extract info from data-* attributes
+      var modal = $(this);
+      console.log("GroupUID: " + uid);
+      modal.find('#groupUid').val(uid);
+    })
+  </script>
+</div>
+
+</body>
+</html>

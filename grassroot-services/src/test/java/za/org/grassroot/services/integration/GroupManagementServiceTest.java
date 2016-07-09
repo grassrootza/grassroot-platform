@@ -109,7 +109,7 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
                                                       new MembershipInfo("0810001112", ordinaryRole, ""),
                                                       new MembershipInfo("0810001113", ordinaryRole, ""),
                                                       new MembershipInfo("0810001114", ordinaryRole, ""));
-        groupBroker.addMembers(user.getUid(), group.getUid(), members);
+        groupBroker.addMembers(user.getUid(), group.getUid(), members, false);
         log.info("ZOG: Group now looks like ... " + group.toString() + "... with groupMembers ... " + group.getMembers());
         assertNotNull(group.getMembers());
         assertEquals(4, group.getMembers().size());
@@ -149,7 +149,7 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
         Group group1 = groupBroker.create(user1.getUid(), testGroupBase + "1", null, Sets.newHashSet(member1, member2), DEFAULT_GROUP, null, null, false);
         Group group2 = groupBroker.create(user2.getUid(), testGroupBase + "2", null, Sets.newHashSet(member2a, member1a), DEFAULT_GROUP, null, null, false);
 
-        groupBroker.addMembers(user2.getUid(), group2.getUid(), Sets.newHashSet(member1));
+        groupBroker.addMembers(user2.getUid(), group2.getUid(), Sets.newHashSet(member1), false);
         assertTrue(group2.getMembers().contains(user1));
         Set<Group> list1 = permissionBroker.getActiveGroups(user1, null);
         Set<Group> list2 = permissionBroker.getActiveGroups(user1, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);

@@ -75,7 +75,7 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
      */
     List<Group> findByGroupNameContainingIgnoreCaseAndDiscoverable(String nameFragment, boolean discoverable);
 
-    List<Group> findByGroupNameAndCreatedDateTimeBefore(String groupName, Timestamp threshold);
+    List<Group> findByGroupNameContainingIgnoreCase(String nameFragment);
 
     /*
     Methods for analytical service, to retrieve and count groups in periods (by created date time)

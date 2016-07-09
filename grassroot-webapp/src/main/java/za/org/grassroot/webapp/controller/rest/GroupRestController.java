@@ -11,12 +11,12 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.RequestorAlreadyPartOfGroupException;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
+import za.org.grassroot.webapp.model.rest.GroupJoinRequestDTO;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.*;
 
 import java.io.IOException;
@@ -153,7 +153,20 @@ public class GroupRestController {
                     RestStatus.FAILURE);
         }
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
+    }
 
+    @RequestMapping(value = "/join/list/{phoneNumber}/{code}", method = RequestMethod.GET)
+    public ResponseEntity<List<GroupJoinRequestDTO>> listPendingJoinRequests(@PathVariable String phoneNumber,
+                                                                             @PathVariable String code) {
+
+        User user = userManagementService.loadOrSaveUser(phoneNumber);
+        List<GroupJoinRequest> openRequests = new ArrayList<>(groupJoinRequestService.getOpenRequestsForUser(user.getUid()));
+        List<GroupJoinRequestDTO> requestDTOs = openRequests.stream()
+                .map(GroupJoinRequestDTO::new)
+                .sorted(Collections.reverseOrder())
+                .collect(Collectors.toList());
+
+        return new ResponseEntity<>(requestDTOs, OK);
     }
 
     @RequestMapping(value = "/members/list/{phoneNumber}/{code}/{groupUid}/{selected}", method = RequestMethod.GET)
@@ -200,7 +213,7 @@ public class GroupRestController {
 
         // todo : handle error
         if (membersToAdd != null && !membersToAdd.isEmpty()) {
-            groupBroker.addMembers(user.getUid(), group.getUid(), membersToAdd);
+            groupBroker.addMembers(user.getUid(), group.getUid(), membersToAdd, false);
         }
 
         return new ResponseEntity<>(new ResponseWrapperImpl(OK, RestMessage.MEMBERS_ADDED, RestStatus.SUCCESS),

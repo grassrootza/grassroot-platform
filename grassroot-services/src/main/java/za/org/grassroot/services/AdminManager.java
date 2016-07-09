@@ -1,11 +1,12 @@
 package za.org.grassroot.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MaskedUserDTO;
 import za.org.grassroot.core.enums.EventType;
@@ -17,17 +18,15 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.Collections;
 import java.util.List;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * Created by luke on 2016/02/04.
  */
 @Service
 @Transactional
-public class AnalyticalManager implements AnalyticalService {
+public class AdminManager implements AdminService {
 
     @Autowired
     private UserRepository userRepository;
@@ -44,6 +43,12 @@ public class AnalyticalManager implements AnalyticalService {
     @Autowired
     private LogBookRepository logBookRepository;
 
+	@Autowired
+	private RoleRepository roleRepository;
+
+	@Autowired
+	private GroupBroker groupBroker;
+
     /*
     Helper functions to mask a list of entities
      */
@@ -57,11 +62,6 @@ public class AnalyticalManager implements AnalyticalService {
     @Override
     public Long countAllUsers() {
         return userRepository.count();
-    }
-
-    @Override
-    public List<MaskedUserDTO> loadSubsetUsersMasked(List<Long> ids) {
-        return maskListUsers(userRepository.findAll(ids));
     }
 
     @Override
@@ -111,33 +111,26 @@ public class AnalyticalManager implements AnalyticalService {
     }
 
     @Override
-    public List<Group> getAllGroups() {
-        return groupRepository.findAll();
+    @Transactional
+    public void deactiveGroup(String adminUserUid, String groupUid) {
+        User user = userRepository.findOneByUid(adminUserUid);
+        Role adminRole = roleRepository.findByName(BaseRoles.ROLE_SYSTEM_ADMIN).get(0);
+	    if (!user.getStandardRoles().contains(adminRole)) {
+		    throw new AccessDeniedException("Error! User does not have admin role");
+	    }
+
+	    Group group = groupRepository.findOneByUid(groupUid);
+        group.setActive(false);
+        // todo : should probably save a grouplog for this, etc
     }
 
-    @Override
-    public Page<Group> getAllActiveGroupsPaginated(Integer pageNumber, Integer pageSize) {
-        return groupRepository.findAllByActiveOrderByIdAsc(true, new PageRequest(pageNumber, pageSize));
-    }
+	@Override
+	@Transactional
+	public void addMemberToGroup(String adminUserUid, String groupUid, MembershipInfo membershipInfo) {
+		groupBroker.addMembers(adminUserUid, groupUid, Collections.singleton(membershipInfo), true);
+	}
 
-    @Override
-    public List<Group> getGroupsFiltered(User createdByUser, Integer minGroupSize, Date createdAfterDate, Date createdBeforeDate) {
-        /*
-        Note: this is an extremely expensive way to do what follows, and needs to be fixed in due course, but for now it'll be called
-         rarely, and just by system admin, on at most a few hundred groups.
-          */
-        List<Group> allGroups = getAllGroups();
-        Predicate<Group> predicate = group -> {
-            boolean createdByUserIncluded = createdByUser == null || group.getCreatedByUser().equals(createdByUser);
-            boolean minGroupSizeIncluded = minGroupSize == null || group.getMembers().size() > minGroupSize;
-            boolean createdAfterDateIncluded = createdAfterDate == null || group.getCreatedDateTime().after(createdAfterDate);
-            boolean createdBeforeDateIncluded = createdBeforeDate == null || group.getCreatedDateTime().before(createdBeforeDate);
-            return createdByUserIncluded && minGroupSizeIncluded && createdAfterDateIncluded && createdBeforeDateIncluded;
-        };
-        return allGroups.stream().filter(predicate).collect(Collectors.toList());
-    }
-
-    /**
+	/**
      * SECTION: METHODS TO HANDLE EVENTS
      */
 

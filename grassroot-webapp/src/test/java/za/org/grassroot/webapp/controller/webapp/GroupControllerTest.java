@@ -621,7 +621,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         mockMvc.perform(post("/group/add_bulk").param("groupUid", String.valueOf(testGroup.getUid())).param("list",testNumbers))
                 .andExpect(status().isOk()).andExpect(view().name("group/add_bulk_error"));
         verify(groupBrokerMock,times(1)).load(testGroup.getUid());
-        verify(groupBrokerMock, times(1)).addMembers(sessionTestUser.getUid(), testGroup.getUid(), testMembers);
+        verify(groupBrokerMock, times(1)).addMembers(sessionTestUser.getUid(), testGroup.getUid(), testMembers, false);
       //  verifyNoMoreInteractions(userManagementServiceMock);
 
     }

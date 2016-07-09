@@ -37,7 +37,7 @@ public interface GroupBroker {
 
     /** METHODS FOR DEALING WITH MEMBERS AND PERMISSIONS **/
 
-    void addMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos);
+    void addMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos, boolean adminUserCalling);
 
     void addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed);
 

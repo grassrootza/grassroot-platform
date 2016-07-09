@@ -192,7 +192,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(cacheUtilManagerMock, times(1)).putUssdMenuForUser(testUserPhone, secondUrlToSave);
         verify(groupBrokerMock, times(1)).create(testUser.getUid(), "", null, members, GroupPermissionTemplate.DEFAULT_GROUP, null, null, false);
-        verify(groupBrokerMock, times(1)).addMembers(testUser.getUid(), testGroup.getUid(), ordinaryMember("0801112345"));
+        verify(groupBrokerMock, times(1)).addMembers(testUser.getUid(), testGroup.getUid(), ordinaryMember("0801112345"), false);
         verifyNoMoreInteractions(groupBrokerMock);
 
     }
@@ -219,7 +219,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(anyString(), anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupBrokerMock, times(2)).addMembers(testUser.getUid(), testGroup.getUid(), ordinaryMember("0801112345"));
+        verify(groupBrokerMock, times(2)).addMembers(testUser.getUid(), testGroup.getUid(), ordinaryMember("0801112345"), false);
         verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(eventRequestBrokerMock);
         verifyZeroInteractions(eventBrokerMock);
@@ -292,7 +292,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(anyString(), anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupBrokerMock, times(1)).addMembers(testUser.getUid(), testGroup.getUid(), ordinaryMember("0801112345"));
+        verify(groupBrokerMock, times(1)).addMembers(testUser.getUid(), testGroup.getUid(), ordinaryMember("0801112345"), false);
         verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(eventBrokerMock);
 

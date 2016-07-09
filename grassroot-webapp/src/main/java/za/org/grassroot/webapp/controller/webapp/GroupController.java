@@ -335,7 +335,7 @@ public class GroupController extends BaseController {
         if (PhoneNumberUtil.testInputNumber(phoneNumber)) { //todo: do this client side
             log.info("tested phone number and it is valid ... " + phoneNumber);
             MembershipInfo newMember = new MembershipInfo(phoneNumber, roleName, displayName);
-            groupBroker.addMembers(getUserProfile().getUid(), groupUid, Sets.newHashSet(newMember));
+            groupBroker.addMembers(getUserProfile().getUid(), groupUid, Sets.newHashSet(newMember), false);
             addMessage(model, MessageType.SUCCESS, "group.addmember.success", request);
         } else {
             addMessage(model, MessageType.ERROR, "user.enter.error.phoneNumber.invalid", request);
@@ -507,7 +507,7 @@ public class GroupController extends BaseController {
             Set<MembershipInfo> membershipInfoSet = new HashSet<>();
             for (String number : numbersToBeAdded)
                 membershipInfoSet.add(new MembershipInfo(number, BaseRoles.ROLE_ORDINARY_MEMBER, null));
-            groupBroker.addMembers(getUserProfile().getUid(), groupUid, membershipInfoSet);
+            groupBroker.addMembers(getUserProfile().getUid(), groupUid, membershipInfoSet, false);
             Long duration = System.currentTimeMillis() - startTime;
             log.info(String.format("Time taken to add %d numbers: %d msecs", numbersToBeAdded.size(), duration));
         }

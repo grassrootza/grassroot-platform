@@ -7,7 +7,9 @@ import za.org.grassroot.webapp.enums.GroupChangeType;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 
 /**
@@ -29,6 +31,8 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
 
     private boolean hasTasks;
 
+    private List<MembershipResponseWrapper> members;
+
     private GroupResponseWrapper(Group group, Role role, boolean hasTasks) {
         this.groupUid = group.getUid();
         this.groupName = group.getName("");
@@ -44,6 +48,10 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
         } else {
             this.joinCode = "NONE";
         }
+
+        this.members = group.getMemberships().stream()
+                .map(membership -> new MembershipResponseWrapper(group, membership.getUser(), membership.getRole(), false))
+                .collect(Collectors.toList());
     }
 
     public GroupResponseWrapper(Group group, Event event, Role role, boolean hasTasks){
@@ -98,6 +106,8 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
 
     public boolean isHasTasks() { return hasTasks; }
 
+    public List<MembershipResponseWrapper> getMembers() { return members; }
+
 
     private static String generateImageUrl(Group group){
         String imageUrl = group.getUid();
@@ -147,6 +157,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
                 "groupUid='" + groupUid + '\'' +
                 ", lastChangeType=" + lastChangeType +
                 ", groupName='" + groupName + '\'' +
+                ", members='" + members.size() + '\'' +
                 '}';
     }
 }

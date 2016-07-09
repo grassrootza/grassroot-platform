@@ -3,6 +3,8 @@ package za.org.grassroot.core.dto;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.collect.ComparisonChain;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventType;
@@ -85,6 +87,7 @@ public class TaskDTO implements Comparable<TaskDTO> {
         if (eventLog != null && !eventLog.getEventLogType().equals(EventLogType.RSVP)) {
             throw new IllegalArgumentException("Event log has to be of " + EventLogType.RSVP + ": " + eventLog);
         }
+
         this.description =event.getDescription();
         this.hasResponded = eventLog != null;
 

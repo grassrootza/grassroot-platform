@@ -1,6 +1,7 @@
 package za.org.grassroot.services;
 
 import org.springframework.data.domain.Page;
+import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MaskedUserDTO;
@@ -14,15 +15,13 @@ import java.util.List;
  * Created by luke on 2016/02/04.
  * major todo: annotate all of this with system admin
  */
-public interface AnalyticalService {
+public interface AdminService {
 
      /*
     Methods to return masked user entities for system analysis
      */
 
     Long countAllUsers();
-
-    List<MaskedUserDTO> loadSubsetUsersMasked(List<Long> ids);
 
     List<MaskedUserDTO> searchByInputNumberOrDisplayName(String inputNumber);
 
@@ -36,10 +35,6 @@ public interface AnalyticalService {
 
     int countUsersCreatedWithWebProfileInPeriod(LocalDateTime start, LocalDateTime end);
 
-    // int countUsersInitiatedSessionInPeriod(); // need a UserLog before we can do this
-
-    // int countUsersCreatedWebProfileInPeriod(); // as above
-
     /*
     Methods to return groups
      */
@@ -48,12 +43,11 @@ public interface AnalyticalService {
 
     int countGroupsCreatedInInterval(LocalDateTime start, LocalDateTime end);
 
-    List<Group> getAllGroups();
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    void deactiveGroup(String adminUserUid, String groupUid);
 
-    Page<Group> getAllActiveGroupsPaginated(Integer pageNumber, Integer pageSize);
-
-    List<Group> getGroupsFiltered(User createdByUser, Integer minGroupSize, Date createdAfterDate, Date createdBeforeDate);
-
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    void addMemberToGroup(String adminUserUid, String groupUid, MembershipInfo membershipInfo);
 
     /*
     Methods to analyze patterns in events, including RSVP totals

@@ -9,8 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.services.AnalyticalManager;
-import za.org.grassroot.services.AnalyticalService;
+import za.org.grassroot.services.AdminService;
 import za.org.grassroot.services.UserManagementService;
 
 import java.net.URI;
@@ -29,7 +28,7 @@ public class USSDGroupControllerIT extends USSDAbstractIT {
     UserManagementService userManager;
 
     @Autowired
-    AnalyticalService analyticalManager;
+    AdminService analyticalManager;
 
     @Autowired
     GroupRepository groupRepository;
@@ -153,16 +152,6 @@ public class USSDGroupControllerIT extends USSDAbstractIT {
         return testGroup;
 
     }
-
-    private void deleteAllGroups(){
-
-        List<Group> userGroups= analyticalManager.getAllGroups();
-        for(Group group: userGroups){
-            groupRepository.delete(group.getId());
-        }
-    }
-
-
 
 
 }

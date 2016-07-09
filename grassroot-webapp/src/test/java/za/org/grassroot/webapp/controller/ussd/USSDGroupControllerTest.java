@@ -284,7 +284,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
                 param("request", "0801110001")).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupBrokerMock, times(1)).addMembers(testUser.getUid(), testGroup.getUid(), ordinaryMember("0801110001"));
+        verify(groupBrokerMock, times(1)).addMembers(testUser.getUid(), testGroup.getUid(), ordinaryMember("0801110001"), false);
         verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
@@ -484,7 +484,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupBrokerMock, times(1)).addMembers(testUser.getUid(), testGroup.getUid(), member);
+        verify(groupBrokerMock, times(1)).addMembers(testUser.getUid(), testGroup.getUid(), member, false);
         verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(eventManagementServiceMock);
     }
