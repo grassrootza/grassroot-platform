@@ -18,6 +18,7 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
@@ -117,6 +118,18 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
         } catch (IOException e) {
             throw new RuntimeException("Unable to locate static pages: " + e.getMessage(), e);
         }
+    }
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        // Resources without Spring Security. No cache control response headers.
+        registry.addResourceHandler("/static/public/**")
+                .addResourceLocations("classpath:/static/public/");
+
+        // Resources controlled by Spring Security, which
+        // adds "Cache-Control: must-revalidate".
+        registry.addResourceHandler("/static/**")
+                .addResourceLocations("classpath:/static/")
+                .setCachePeriod(3600*24);
     }
 
     @Configuration

@@ -11,6 +11,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.util.UIDGenerator;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.RequestorAlreadyPartOfGroupException;
@@ -18,7 +19,9 @@ import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.GroupJoinRequestDTO;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.*;
+import za.org.grassroot.webapp.util.ImageUtil;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
@@ -235,28 +238,31 @@ public class GroupRestController {
 
 
     @RequestMapping(value = "/image/upload/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.POST)
-    public ResponseEntity<?> uploadImage(@PathVariable String phoneNumber, @PathVariable String code, @PathVariable String groupUid,
-                                         @RequestParam("image") MultipartFile file) {
+    public ResponseEntity<ResponseWrapper> uploadImage(@PathVariable String phoneNumber, @PathVariable String code, @PathVariable String groupUid,
+                                         @RequestParam("image") MultipartFile file, HttpServletRequest request) {
         User user = userManagementService.findByInputNumber(phoneNumber);
         Group group = groupBroker.load(groupUid);
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
+        ResponseEntity<ResponseWrapper> responseEntity;
         if (file != null) {
             try {
                 byte[] image = file.getBytes();
-                String format = file.getContentType();
-                validateFileFormat(format);
-                groupBroker.saveGroupImage(user.getUid(), group.getUid(), format, image);
+                String fileName = ImageUtil.generateFileName(file,request);
+                groupBroker.saveGroupImage(user.getUid(), group.getUid(), fileName, image);
+                responseEntity = new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.OK, RestMessage.UPLOADED, RestStatus.SUCCESS), OK);
 
             } catch (IOException | IllegalArgumentException e) {
-                log.error(e.getMessage());
-
-                return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.NOT_ACCEPTABLE, RestMessage.INVALID_INPUT,
+                log.info("error "+e.getLocalizedMessage());
+                responseEntity = new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.NOT_ACCEPTABLE, RestMessage.INVALID_INPUT,
                         RestStatus.FAILURE), HttpStatus.NOT_ACCEPTABLE);
             }
+        } else {
+            responseEntity = new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.NOT_ACCEPTABLE, RestMessage.INVALID_INPUT,
+                    RestStatus.FAILURE), HttpStatus.NOT_ACCEPTABLE);
         }
 
-        return new ResponseEntity<Object>(new ResponseWrapperImpl(HttpStatus.OK, RestMessage.UPLOADED, RestStatus.SUCCESS), OK);
+        return responseEntity;
 
     }
 
@@ -282,13 +288,7 @@ public class GroupRestController {
     private String getSearchToken(String searchTerm) {
         return searchTerm.contains("*134*1994*") ?
                 searchTerm.substring("*134*1994*".length(), searchTerm.length() - 1) : searchTerm;
-
     }
 
-    private void validateFileFormat(String format) {
-        //todo use regex
-        if (!(format.endsWith("png") || format.endsWith("jpg") || format.endsWith("jpeg"))) {
-            throw new IllegalArgumentException("Invalid file format Exception");
-        }
-    }
+
 }

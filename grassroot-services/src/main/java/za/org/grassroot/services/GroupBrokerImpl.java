@@ -984,7 +984,7 @@ public class GroupBrokerImpl implements GroupBroker {
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
         group.setImage(image);
-        group.setImageType(format);
+        group.setImageUrl(format);
 
         groupRepository.save(group);
 
@@ -992,6 +992,11 @@ public class GroupBrokerImpl implements GroupBroker {
                 "Group avatar uploaded");
         logActionLogsAfterCommit(Collections.singleton(groupLog));
 
+    }
+
+    @Override
+    public Group getGroupByImageUrl(String imageUrl) {
+        return groupRepository.findOneByImageUrl(imageUrl);
     }
 
     @Override
