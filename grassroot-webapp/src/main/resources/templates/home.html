@@ -49,7 +49,8 @@
                 <a th:href="@{/group/join/decline(requestUid=${request.uid})}">
                   <button class="btn btn-default btn-sm" type="submit">Reject</button></a>
                 <button type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#joinReqDetailsModal"
-                   data:description="${request.description}" data:uid="${request.uid}" data:name="${request.requestor.getName('')}">
+                   data:description="${request.description}" data:uid="${request.uid}" data:name="${request.requestor.getName('')}"
+                        data:phone="${request.requestor.phoneNumber}" >
                   See details</button>
               </div>
             </div>
@@ -70,8 +71,9 @@
           </h4>
         </div>
         <div class="modal-body">
-          <p><label>Name:</label> <span id="requestorName">Person</span></p>
-          <p><label>Date: </label> <span id="dateRequested">Some time</span></p>
+          <p><label>Name:</label><span id="requestorName">Person</span></p>
+          <p><label>Number:</label><span id="requestorPhone">Phone number</span></p>
+          <!-- <p><label>Date: </label> <span id="dateRequested">Some time</span></p> --> <!-- todo : insert later, when needed -->
           <p><label>Message: </label> <span id="requestDescription">Description</span></p>
         </div>
         <div class="modal-footer">
@@ -353,9 +355,15 @@
 
       var name = button.data('name');
       var description = button.data('description');
+      var phone = button.data('phone');
+
+      console.log("description = " + description);
+      console.log("declineHref = " + declineHref);
+      console.log("name & number = " + name + ", " + phone);
 
       var modal = $(this);
       modal.find('#requestorName').text(name);
+      modal.find('#requestorPhone').text(phone);
       modal.find('#requestDescription').text(description);
       modal.find('#approveLink').attr('href', approveHref);
       modal.find('#declineLink').attr('href', declineHref);

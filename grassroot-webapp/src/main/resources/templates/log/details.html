@@ -2,7 +2,7 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorator="layout">
 <head>
-  <title>GrassRoot - View Logbook Entry</title>
+  <title>Grassroot - View Logbook Entry</title>
 </head>
 <body>
 
@@ -38,9 +38,6 @@
       </li>
       <li class="list-group-item" th:if="${assignedToUser != null}">
         Action was assigned to member <mark class="text-primary" th:text="${assignedToUser.nameToDisplay()}">Name</mark>
-      </li>
-      <li class="list-group-item" th:if="${completedByUser != null}">
-        Action was completed by <mark class="text-primary" th:text="${completedByUser.nameToDisplay()}">Name</mark>
       </li>
       <li class="list-group-item" th:if="${parentEntry != null}">
         <a th:href="@{details(logBookId=${parentEntry.id})}">

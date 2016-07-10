@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.LogBookBroker;
@@ -185,11 +186,6 @@ public class TodoController extends BaseController {
         model.addAttribute("creatingUser", logBookEntry.getCreatedByUser());
         model.addAttribute("isComplete", logBookEntry.isCompleted());
 
-        if(logBookEntry.isCompleted()) {
-            log.info("Entry is marked as completed, by user: " + logBookEntry.getCreatedByUser());
-            model.addAttribute("completedByUser", "<UNKNOWN>");
-        }
-
         if (logBookService.hasReplicatedEntries(logBookEntry)) {
             log.info("Found replicated entries ... adding them to model");
             List<LogBook> replicatedEntries = logBookService.getAllReplicatedEntriesFromParentLogBook(logBookEntry);
@@ -225,16 +221,14 @@ public class TodoController extends BaseController {
 
     @RequestMapping(value = "complete-do", method = RequestMethod.POST)
     public String confirmTodoComplete(Model model, @RequestParam String logBookUid,
-                                      @RequestParam(value="completedByAssigned", required=false) boolean completedByAssigned,
-                                      @RequestParam(value="designateCompletingUser", required=false) boolean designateCompletor,
                                       @RequestParam(value="specifyCompletedDate", required=false) boolean setCompletedDate,
-                                      @RequestParam(value="completingUserUid", required=false) String completedByUserUid,
-                                      @RequestParam(value="completedOnDate", required=false) LocalDateTime completedOnDate,
+                                      @RequestParam(value="completedOnDate", required=false) String completedOnDate,
                                       HttpServletRequest request) {
 
         log.info("Marking logbook entry as completed ... ");
 
-        LocalDateTime completedDate = (setCompletedDate) ? completedOnDate : LocalDateTime.now();
+        LocalDateTime completedDate = (setCompletedDate) ? LocalDateTime.parse(completedOnDate, DateTimeUtil.getWebFormFormat())
+		        : LocalDateTime.now();
 
 	    String sessionUserUid = getUserProfile().getUid();
         LogBook logBook = logBookBroker.load(logBookUid);

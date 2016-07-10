@@ -28,6 +28,7 @@ public class DateTimeUtil {
     private static final DateTimeFormatter preferredDateTimeFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
 
     private static final DateTimeFormatter preferredRestFormat = DateTimeFormatter.ISO_DATE_TIME;
+    private static final DateTimeFormatter webFormFormat = DateTimeFormatter.ofPattern("dd/MM/yyyy h:mm a");
 
     private static final LocalDateTime veryLongTimeAway = LocalDateTime.of(2099, 12, 31, 23, 59);
     private static final Instant earliestInstant = LocalDateTime.of(2015, 1, 1, 0 , 0).toInstant(ZoneOffset.UTC);
@@ -36,6 +37,7 @@ public class DateTimeUtil {
     public static DateTimeFormatter getPreferredTimeFormat() { return preferredTimeFormat; }
     public static DateTimeFormatter getPreferredDateTimeFormat() { return preferredDateTimeFormat; }
     public static DateTimeFormatter getPreferredRestFormat() { return preferredRestFormat; }
+    public static DateTimeFormatter getWebFormFormat() { return webFormFormat; }
 
     public static LocalDateTime getVeryLongTimeAway() {
         return veryLongTimeAway;
@@ -55,15 +57,11 @@ public class DateTimeUtil {
         ZonedDateTime userTime = ZonedDateTime.of(userInput, userZoneId);
         ZonedDateTime systemTime = userTime.withZoneSameInstant(zoneSystem);
 
-//        log.info("Time at user: {}, time at system: {}", userTime.format(DateTimeFormatter.ISO_DATE_TIME),
-//                 systemTime.format(DateTimeFormatter.ISO_DATE_TIME));
-
         return systemTime.toInstant();
     }
 
     public static ZonedDateTime convertToUserTimeZone(Instant timeInSystem, ZoneId userZoneId) {
         ZonedDateTime zonedDateTime = timeInSystem.atZone(userZoneId);
-//        log.info("Time in system: {}, converted to zone: {}", timeInSystem.toString(), zonedDateTime.format(DateTimeFormatter.ISO_DATE_TIME));
         return zonedDateTime;
     }
 
