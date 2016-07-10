@@ -1,13 +1,18 @@
 package za.org.grassroot.webapp.controller.rest;
 
 import org.apache.http.client.utils.URIBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.services.PermissionBroker;
@@ -34,21 +39,38 @@ import java.util.List;
 @RequestMapping("/emulator/ussd/")
 public class USSDEmulatorController extends BaseController {
 
-    @Autowired
-    private PermissionBroker permissionBroker;
+	private static final Logger logger = LoggerFactory.getLogger(USSDEmulatorController.class);
 
-    private static final String BASE = "http://localhost:8080/";
+	@Autowired
+	Environment environment;
+
+    private static final String BASE = "https://localhost:8443/";
     private static final String phoneNumberParam = "msisdn";
     private static final String inputStringParam = "request";
     private static final String linkParam = "link";
+
+	private String getBaseUrl() {
+		if (environment.acceptsProfiles("staging")) {
+			return "https://staging.grassroot.org.za:443/";
+		} else {
+			return "http://localhost:8080/";
+		}
+	}
 
     @RequestMapping(value = "view", method = RequestMethod.GET)
     public String emulateUSSD(Model model, @RequestParam(value = linkParam, required = false) String link,
                                @RequestParam(value = inputStringParam, required = false) String inputString) {
 
+	    // note : this should not be accessible on production environment, hence ...
+
+	    if (environment.acceptsProfiles("production")) {
+		    throw new AccessDeniedException("Error! Emulator not accessible on production");
+	    }
+
         if (link == null) {
-            link = BASE.concat("ussd/start");
+            link = getBaseUrl().concat("ussd/start");
         }
+
         URI targetUrl = getURI(link, inputString);
 
         try {
@@ -58,26 +80,36 @@ public class USSDEmulatorController extends BaseController {
         }
 
         try {
-            Request request = getRequestObject(targetUrl);
-            boolean display = (request.options.get(0).display == null) ? true : request.options.get(0).display;
-            model.addAttribute("display", display);
-            model.addAttribute("request", request);
-            return "emulator/view";
+            logger.info("About to get request object ...");
+	        Request request = getRequestObject(targetUrl);
+	        if (request != null) {
+		        boolean display = (request.options.get(0).display == null) ? true : request.options.get(0).display;
+		        model.addAttribute("display", display);
+		        model.addAttribute("request", request);
+		        return "emulator/view";
+	        } else {
+		        return "emulator/error";
+	        }
         } catch (Exception e) {
-            return "emulator/error";
+            e.printStackTrace();
+	        return "emulator/error";
         }
     }
 
     private Request getRequestObject(URI url) {
-
-        NullHostnameVerifier verifier = new NullHostnameVerifier();
+        logger.info("attempting to get URI : " + url.toASCIIString());
+	    NullHostnameVerifier verifier = new NullHostnameVerifier();
         MySimpleClientHttpRequestFactory requestFactory = new MySimpleClientHttpRequestFactory(verifier);
         RestTemplate template = new RestTemplate();
         template.setRequestFactory(requestFactory);
-
-
-        return template.getForObject(url, Request.class);
-
+	    Request returnedObject;
+	    try {
+		    returnedObject = template.getForObject(url, Request.class);
+	    } catch (RestClientException e) {
+		    returnedObject = null;
+		    e.printStackTrace();
+	    }
+	    return returnedObject;
     }
 
     private URI getURI(String link, String inputString) {
