@@ -142,15 +142,23 @@ public class GroupController extends BaseController {
     public String requestToJoinGroup(Model model, @RequestParam(value="uid") String groupToJoinUid,
                                      @RequestParam(value="description", required = false) String description,
                                      HttpServletRequest request, RedirectAttributes attributes) {
-        try {
-            groupJoinRequestService.open(getUserProfile().getUid(), groupToJoinUid, description);
-            addMessage(attributes, MessageType.INFO, "group.join.request.done", request);
-            return "redirect:/home";
-        } catch (RequestorAlreadyPartOfGroupException e) {
-            addMessage(attributes, MessageType.INFO, "group.join.request.member", request);
-            attributes.addAttribute("groupUid", groupToJoinUid);
-            return "redirect:/group/view";
-        }
+
+	    // dealing with Jquery weirdness that has crept in on Chrome ...
+
+	    if (groupToJoinUid.equals("error")) {
+		    addMessage(attributes, MessageType.ERROR, "group.join.request.error", request);
+		    return "redirect:/home";
+	    } else {
+		    try {
+			    groupJoinRequestService.open(getUserProfile().getUid(), groupToJoinUid, description);
+			    addMessage(attributes, MessageType.INFO, "group.join.request.done", request);
+			    return "redirect:/home";
+		    } catch (RequestorAlreadyPartOfGroupException e) {
+			    addMessage(attributes, MessageType.INFO, "group.join.request.member", request);
+			    attributes.addAttribute("groupUid", groupToJoinUid);
+			    return "redirect:/group/view";
+		    }
+	    }
     }
 
     // todo: think about security carefully on these (e.g., on the sequence of calls)

@@ -377,7 +377,7 @@ public class USSDGroupUtil extends USSDUtil {
             listMenu.addMenuOption(groupMenuWithId(inactiveMenu, groupUid), getMessage(menuKey + inactiveMenu, user));
 
         if (!group.getCreatedByUser().equals(user))
-            listMenu.addMenuOption(groupMenuWithId(unsubscribePrompt, groupUid), getMessage(menuKey + unsubscribePrompt, user));
+            listMenu.addMenuOption(groupMenuWithId(unsubscribePrompt, groupUid), getMessage(GROUP_MANAGER, existingGroupMenu, optionsKey + unsubscribePrompt, user));
 
         listMenu.addMenuOption(groupMenuWithId(listGroupMembers, groupUid), getMessage(menuKey + listGroupMembers, user));
 

@@ -439,7 +439,6 @@ public class USSDToDoController extends USSDController {
     @ResponseBody
     public Request setLogBookEntryComplete(@RequestParam(value = phoneNumber) String inputNumber,
                                        @RequestParam(value = logBookParam) String logBookUid,
-                                       @RequestParam(value = assignUserID, required = false) String completedByUserUid,
                                        @RequestParam(value = "completed_date", required = false) String completedDate) throws URISyntaxException {
         // todo: check permissions
         User user = userManager.findByInputNumber(inputNumber, null);
@@ -447,7 +446,7 @@ public class USSDToDoController extends USSDController {
         LocalDateTime completedDateTime = (completedDate != null) ?
                 DateTimeUtil.convertDateStringToLocalDateTime(reformatDateInput(completedDate), stdHour, stdMinute) : LocalDateTime.now();
         userLogger.recordUserInputtedDateTime(user.getUid(), completedDate, "logbook-completion", UserInterfaceType.USSD);
-        logBookBroker.confirmCompletion(completedByUserUid, logBookUid, completedDateTime);
+        logBookBroker.confirmCompletion(user.getUid(), logBookUid, completedDateTime);
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, setCompleteMenu, promptKey, user));
         // todo: consider adding option to go back to either section start or group logbook start

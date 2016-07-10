@@ -38,6 +38,7 @@ public class TaskDTO implements Comparable<TaskDTO> {
 
     private final String deadline;
     private final String deadlineISO;
+    private final String deadlineAtSAST;
     private final Long deadlineMillis;
     private boolean hasResponded;
     private boolean canAction;
@@ -70,6 +71,7 @@ public class TaskDTO implements Comparable<TaskDTO> {
         this.deadlineDateTime = task.getDeadlineTimeAtSAST();
         this.deadline = formatAsLocalDateTime(instant);
         this.deadlineISO = this.deadlineDateTime.format(DateTimeFormatter.ISO_DATE_TIME);
+        this.deadlineAtSAST = this.deadlineDateTime.format(DateTimeFormatter.ISO_DATE_TIME);
         this.deadlineMillis = instant.toEpochMilli();
     }
 
@@ -137,6 +139,8 @@ public class TaskDTO implements Comparable<TaskDTO> {
     public LocalDateTime getDeadlineDateTime() { return deadlineDateTime; }
 
     public String getDeadlineISO() { return deadlineISO; }
+
+    public String getDeadlineAtSAST() { return deadlineAtSAST; }
 
     public long getDeadlineMillis() { return deadlineMillis; }
 

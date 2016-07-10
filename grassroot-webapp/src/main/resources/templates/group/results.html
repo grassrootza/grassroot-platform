@@ -108,7 +108,7 @@
           <h4 class="modal-title" id="joinModalLabel">Submit join request</h4>
         </div>
         <form th:action="@{/group/join/request}" method="post">
-          <input type="hidden" name="uid" id="uid" />
+          <input type="hidden" name="uid" id="uid" value="error" />
           <div class="modal-body">
             <label>
               Message to group:

@@ -275,7 +275,7 @@
 
       var uid = task.taskUid;
       var type = task.type;
-      var deadline = formatDeadline(new Date(task.deadlineISO), task.type);
+      var deadline = formatDeadline(new Date(task.deadlineAtSAST), task.type);
       var replied = task.hasResponded;
       var wholeGroup = task.wholeGroupAssigned;
       var descriptionExists = task.description != undefined && task.description != "";

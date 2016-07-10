@@ -595,7 +595,7 @@ public class USSDMeetingController extends USSDController {
                 menu.addMenuOption(basePath + "yes", getMessage(thisSection, attendeeKey, optionsKey + "rsvpyes", user));
             }
         } else {
-            menu = new USSDMenu(getMessage(thisSection, attendeeKey, "noreply" + promptKey, fields, user));
+            menu = new USSDMenu(getMessage(thisSection, attendeeKey, "noreply." + promptKey, fields, user));
             menu.addMenuOption(basePath + "yes", getMessage(thisSection, "attendee", optionsKey + "rsvpyes", user));
             menu.addMenuOption(basePath + "no", getMessage(thisSection, "attendee", optionsKey + "rsvpno", user));
         }
