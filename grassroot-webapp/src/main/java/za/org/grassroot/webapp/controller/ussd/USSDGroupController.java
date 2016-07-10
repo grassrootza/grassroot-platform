@@ -247,7 +247,7 @@ public class USSDGroupController extends USSDController {
         groupJoinRequestService.approve(user.getUid(), requestUid);
         final String prompt = getMessage(thisSection, approveUser, "approved", user);
         USSDMenu menu = new USSDMenu(prompt);
-        menu.addMenuOption(groupMenus + startMenu, "Back");
+        menu.addMenuOption(groupMenus + startMenu, "Continue");
 
         return menuBuilder(menu);
 
@@ -262,7 +262,7 @@ public class USSDGroupController extends USSDController {
         groupJoinRequestService.decline(user.getUid(), requestUid);
         final String prompt = getMessage(thisSection, approveUser, "rejected", user);
         USSDMenu menu = new USSDMenu(prompt);
-        menu.addMenuOption(groupMenus + startMenu, "Back");
+        menu.addMenuOption(groupMenus + startMenu, getMessage(thisSection, approveUser, "continue", user));
 
         return menuBuilder(menu);
     }
@@ -374,9 +374,9 @@ public class USSDGroupController extends USSDController {
             /* Creating a new token, ask for number of days, set an interruption flag */
             tokenMenu = new USSDMenu(getMessage(thisSection, groupTokenMenu, promptKey, sessionUser));
             String daysUrl = groupMenus + groupTokenMenu + doSuffix + groupUidUrlSuffix + groupUid + "&days=";
-            tokenMenu.addMenuOption(daysUrl + "0", getMessage(thisSection, groupTokenMenu, validity + "permanent", sessionUser));
-            tokenMenu.addMenuOption(daysUrl + "1", getMessage(thisSection, groupTokenMenu, validity + "day", sessionUser));
-            tokenMenu.addMenuOption(daysUrl + "7", getMessage(thisSection, groupTokenMenu, validity + "week", sessionUser));
+            tokenMenu.addMenuOption(daysUrl + "0", getMessage(thisSection, groupTokenMenu, validity + ".permanent", sessionUser));
+            tokenMenu.addMenuOption(daysUrl + "1", getMessage(thisSection, groupTokenMenu, validity + ".day", sessionUser));
+            tokenMenu.addMenuOption(daysUrl + "7", getMessage(thisSection, groupTokenMenu, validity + ".week", sessionUser));
         }
         return menuBuilder(tokenMenu);
     }
