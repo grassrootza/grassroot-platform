@@ -11,9 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.TaskType;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.LogBookBroker;
-import za.org.grassroot.services.LogBookService;
 import za.org.grassroot.services.TaskBroker;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
@@ -24,7 +22,6 @@ import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
 import za.org.grassroot.webapp.util.LocalDateTimePropertyEditor;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -37,9 +34,9 @@ import java.util.Set;
  */
 @RestController
 @RequestMapping(value = "/api/logbook")
-public class LogBookRestController {
+public class TodoRestController {
 
-    private static final Logger log = LoggerFactory.getLogger(LogBookRestController.class);
+    private static final Logger log = LoggerFactory.getLogger(TodoRestController.class);
 
     // todo : move a bunch of this to a superclass
     @InitBinder

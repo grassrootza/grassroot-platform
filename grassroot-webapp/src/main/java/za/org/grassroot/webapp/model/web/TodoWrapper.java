@@ -9,7 +9,7 @@ import java.util.Objects;
 /**
  * Created by luke on 2016/03/26.
  */
-public class LogBookWrapper {
+public class TodoWrapper {
 
     private JpaEntityType parentEntityType;
     private String parentUid;
@@ -29,15 +29,15 @@ public class LogBookWrapper {
 
     private boolean replicateToSubGroups;
 
-    public LogBookWrapper() {
+    public TodoWrapper() {
 
     }
 
-    public LogBookWrapper(JpaEntityType parentEntityType) {
+    public TodoWrapper(JpaEntityType parentEntityType) {
         this.parentEntityType = parentEntityType;
     }
 
-    public LogBookWrapper(JpaEntityType parentEntityType, String parentUid, String parentName) {
+    public TodoWrapper(JpaEntityType parentEntityType, String parentUid, String parentName) {
         this.parentEntityType = parentEntityType;
         this.parentUid = parentUid;
         this.parentName = parentName;
@@ -144,7 +144,7 @@ public class LogBookWrapper {
 
     @Override
     public String toString() {
-        return "LogBookWrapper{" +
+        return "TodoWrapper{" +
                 "parentEntityType=" + parentEntityType +
                 ", parentName='" + parentName + '\'' +
                 ", message='" + message + '\'' +

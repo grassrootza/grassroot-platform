@@ -62,7 +62,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
     private static final String path = "/ussd/log/";
 
     @InjectMocks
-    USSDLogBookController ussdLogBookController;
+    USSDToDoController ussdLogBookController;
 
     @Mock
     UserRepository userRepository;

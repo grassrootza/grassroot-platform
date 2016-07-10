@@ -18,11 +18,10 @@ import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.LogBookBroker;
 import za.org.grassroot.services.LogBookService;
 import za.org.grassroot.webapp.controller.BaseController;
-import za.org.grassroot.webapp.model.web.LogBookWrapper;
+import za.org.grassroot.webapp.model.web.TodoWrapper;
 import za.org.grassroot.webapp.model.web.MemberPicker;
 
 import javax.servlet.http.HttpServletRequest;
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -32,9 +31,9 @@ import java.util.*;
  */
 @Controller
 @RequestMapping("/log/")
-public class LogBookController extends BaseController {
+public class TodoController extends BaseController {
 
-    private static final Logger log = LoggerFactory.getLogger(LogBookController.class);
+    private static final Logger log = LoggerFactory.getLogger(TodoController.class);
     private static final DateTimeFormatter pickerParser = DateTimeFormatter.ofPattern("dd/MM/yyyy h:mm a");
 
     @Autowired
@@ -54,17 +53,16 @@ public class LogBookController extends BaseController {
      */
 
     @RequestMapping("create")
-    public String createLogBook(Model model, @RequestParam(value="groupUid", required=false) String parentUid,
-                                @RequestParam(value="parentType", required=false) JpaEntityType parentType) {
+    public String createTodo(Model model, @RequestParam(value="groupUid", required=false) String parentUid,
+                             @RequestParam(value="parentType", required=false) JpaEntityType parentType) {
 
-        LogBookWrapper entryWrapper;
-        User user = getUserProfile();
+        TodoWrapper entryWrapper;
 
         // todo: clean this up / consolidate it
         if (JpaEntityType.MEETING.equals(parentType)) {
 
             Meeting parent = eventBroker.loadMeeting(parentUid);
-            LogBookWrapper wrapper = new LogBookWrapper(JpaEntityType.MEETING, parentUid, parent.getName());
+            TodoWrapper wrapper = new TodoWrapper(JpaEntityType.MEETING, parentUid, parent.getName());
 
             model.addAttribute("parent", parent);
             model.addAttribute("logBook", wrapper);
@@ -81,14 +79,14 @@ public class LogBookController extends BaseController {
                 model.addAttribute("userUid", userFromDb.getUid());
                 model.addAttribute("possibleGroups", permissionBroker.
                         getActiveGroups(userFromDb, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY));
-                entryWrapper = new LogBookWrapper(JpaEntityType.GROUP);
+                entryWrapper = new TodoWrapper(JpaEntityType.GROUP);
 
             } else {
 
                 model.addAttribute("groupSpecified", true);
                 Group group = groupBroker.load(parentUid);
                 model.addAttribute("group", group);
-                entryWrapper = new LogBookWrapper(JpaEntityType.GROUP, group.getUid(), group.getName(""));
+                entryWrapper = new TodoWrapper(JpaEntityType.GROUP, group.getUid(), group.getName(""));
                 entryWrapper.setMemberPicker(new MemberPicker(group, false));
             }
 
@@ -104,10 +102,10 @@ public class LogBookController extends BaseController {
     }
 
     @RequestMapping(value = "record", method = RequestMethod.POST)
-    public String recordLogBookEntry(@ModelAttribute("entry") LogBookWrapper logBookEntry,
-                                     HttpServletRequest request, RedirectAttributes redirectAttributes) {
+    public String recordTodo(@ModelAttribute("entry") TodoWrapper logBookEntry,
+                             HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
-        log.info("LogBookWrapper received, looks like: {}", logBookEntry.toString());
+        log.info("TodoWrapper received, looks like: {}", logBookEntry.toString());
 
         if (logBookEntry.getReminderType().equals(EventReminderType.GROUP_CONFIGURED)) {
             int convertedMinutes = -(groupBroker.load(logBookEntry.getParentUid()).getReminderMinutes());
@@ -136,7 +134,7 @@ public class LogBookController extends BaseController {
     }
 
     @RequestMapping(value = "record/meeting", method = RequestMethod.POST)
-    public String recordEntryWithMeetingParent(Model model, @ModelAttribute("logBook") LogBookWrapper logBook,
+    public String recordEntryWithMeetingParent(Model model, @ModelAttribute("logBook") TodoWrapper logBook,
                                                HttpServletRequest request, RedirectAttributes attributes) {
 
         LogBook created = logBookBroker.create(getUserProfile().getUid(), logBook.getParentEntityType(),
@@ -171,7 +169,7 @@ public class LogBookController extends BaseController {
     }
 
     @RequestMapping(value = "details")
-    public String viewLogBookDetails(Model model, @RequestParam String logBookUid) {
+    public String viewTodoDetails(Model model, @RequestParam String logBookUid) {
 
         // todo: be able to view "children" of the log book once design changed to allow it
         // (replicate by logbook rather than group)
@@ -214,7 +212,7 @@ public class LogBookController extends BaseController {
     }
 
     @RequestMapping("complete")
-    public String completeLogBookForm(Model model, @RequestParam String logBookUid) {
+    public String completeTodoForm(Model model, @RequestParam String logBookUid) {
 
         LogBook logBookEntry = logBookBroker.load(logBookUid);
         model.addAttribute("entry", logBookEntry);
@@ -225,39 +223,26 @@ public class LogBookController extends BaseController {
         return "log/complete";
     }
 
-    // todo: check that this user has permission to mark the logbook entry as completed
     @RequestMapping(value = "complete-do", method = RequestMethod.POST)
-    public String markLogBookEntryComplete(Model model, @RequestParam String logBookUid,
-                                           @RequestParam(value="completedByAssigned", required=false) boolean completedByAssigned,
-                                           @RequestParam(value="designateCompletingUser", required=false) boolean designateCompletor,
-                                           @RequestParam(value="specifyCompletedDate", required=false) boolean setCompletedDate,
-                                           @RequestParam(value="completingUserUid", required=false) String completedByUserUid,
-                                           @RequestParam(value="completedOnDate", required=false) Timestamp completedOnDate,
-                                           HttpServletRequest request) {
+    public String confirmTodoComplete(Model model, @RequestParam String logBookUid,
+                                      @RequestParam(value="completedByAssigned", required=false) boolean completedByAssigned,
+                                      @RequestParam(value="designateCompletingUser", required=false) boolean designateCompletor,
+                                      @RequestParam(value="specifyCompletedDate", required=false) boolean setCompletedDate,
+                                      @RequestParam(value="completingUserUid", required=false) String completedByUserUid,
+                                      @RequestParam(value="completedOnDate", required=false) LocalDateTime completedOnDate,
+                                      HttpServletRequest request) {
 
-        // todo: refactor this quite a bit
         log.info("Marking logbook entry as completed ... ");
 
-        LocalDateTime completedDate = (setCompletedDate) ? completedOnDate.toLocalDateTime() : LocalDateTime.now();
+        LocalDateTime completedDate = (setCompletedDate) ? completedOnDate : LocalDateTime.now();
 
-        String sessionUserUid = getUserProfile().getUid();
+	    String sessionUserUid = getUserProfile().getUid();
         LogBook logBook = logBookBroker.load(logBookUid);
-        User completedByUser = userManagementService.load(completedByUserUid);
 
-        if (completedByAssigned || !designateCompletor) {
-            log.info("No user assigned, so either setting as complete today or specifying a completion date");
-            if (setCompletedDate) {
-                logBookBroker.confirmCompletion(sessionUserUid, logBook.getUid(), completedDate);
-            } else {
-                logBookBroker.confirmCompletion(sessionUserUid, logBook.getUid(), LocalDateTime.now());
-            }
+        if (setCompletedDate) {
+	        logBookBroker.confirmCompletion(sessionUserUid, logBook.getUid(), completedDate);
         } else {
-            log.info("User assigned, so marking it accordingly, with completing user uid: {}", completedByUserUid);
-            if (setCompletedDate) {
-                logBookBroker.confirmCompletion(completedByUser.getUid(), logBook.getUid(), completedDate);
-            } else {
-                logBookBroker.confirmCompletion(completedByUser.getUid(), logBook.getUid(), LocalDateTime.now());
-            }
+	        logBookBroker.confirmCompletion(sessionUserUid, logBook.getUid(), LocalDateTime.now());
         }
 
         addMessage(model, MessageType.SUCCESS, "log.completed.done", request);
@@ -267,7 +252,7 @@ public class LogBookController extends BaseController {
 
     // todo : more permissions than just the below!
     @RequestMapping("modify")
-    public String modifyLogBookEntry(Model model, @RequestParam(value="logBookUid") String logBookUid) {
+    public String modifyTodo(Model model, @RequestParam(value="logBookUid") String logBookUid) {
 
         LogBook logBook = logBookBroker.load(logBookUid);
         Group group = (Group) logBook.getParent();
@@ -290,8 +275,8 @@ public class LogBookController extends BaseController {
 
     // todo: permission checking
     @RequestMapping(value = "modify", method = RequestMethod.POST)
-    public String changeLogBookEntry(Model model, @ModelAttribute("logBook") LogBook logBook,
-                                     @RequestParam(value = "assignToUser", required = false) boolean assignToUser, HttpServletRequest request) {
+    public String changeTodoEntry(Model model, @ModelAttribute("logBook") LogBook logBook,
+                                  @RequestParam(value = "assignToUser", required = false) boolean assignToUser, HttpServletRequest request) {
 
         // may consider doing some of this in services layer, but main point is can't just use logBook entity passed
         // back from form as thymeleaf whacks all the attributes we don't explicitly code into hidden inputs
@@ -318,7 +303,7 @@ public class LogBookController extends BaseController {
         savedLogBook = logBookService.save(savedLogBook);
 
         addMessage(model, MessageType.SUCCESS, "log.modified.done", request);
-        return viewLogBookDetails(model, savedLogBook.getUid());
+        return viewTodoDetails(model, savedLogBook.getUid());
     }
 
     private Map<Integer, String> reminderTimeDescriptions() {

@@ -39,9 +39,9 @@ import static za.org.grassroot.webapp.util.USSDUrlUtil.saveLogMenu;
  */
 @RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_XML_VALUE)
 @RestController
-public class USSDLogBookController extends USSDController {
+public class USSDToDoController extends USSDController {
 
-    private static final Logger log = LoggerFactory.getLogger(USSDLogBookController.class);
+    private static final Logger log = LoggerFactory.getLogger(USSDToDoController.class);
 
     @Autowired
     private PermissionBroker permissionBroker;

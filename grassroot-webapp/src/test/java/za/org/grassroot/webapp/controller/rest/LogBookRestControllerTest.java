@@ -14,7 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class LogBookRestControllerTest extends RestAbstractUnitTest {
 
     @InjectMocks
-    LogBookRestController logBookRestController;
+    TodoRestController logBookRestController;
 
     String path = "/api/logbook";
 

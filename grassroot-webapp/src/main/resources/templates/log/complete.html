@@ -40,22 +40,6 @@
         </label>
       </div>
 
-      <div class="checkbox" th:unless="${hasAssignedUser}">
-        <label>
-          <input name="designateCompletingUser" type="checkbox" id="designateCompletingUser" />
-          Designate which user completed the action?
-        </label>
-      </div>
-
-      <div class="form-group hidden" id="completingUserPicker">
-        <label for="completingUser" class="control-label">Select member:</label>
-        <select name="completingUserUid" id="completingUser" class="form-control">
-            <option th:each="member: ${assignedMembers}"
-                    th:value="${member.uid}"
-                    th:text="${member.nameToDisplay()}">Member name</option>
-        </select>
-      </div>
-
       <div class="checkbox">
         <label>
           <input name="specifyCompletedDate" type="checkbox" id="setCompletedDate" />
@@ -107,14 +91,6 @@
         },
         sideBySide:true,
         defaultDate: defDate
-      });
-
-      $('#completedByAssigned').change(function(){
-        $('#completingUserPicker').toggleClass('hidden show');
-      });
-
-      $('#designateCompletingUser').change(function(){
-        $('#completingUserPicker').toggleClass('hidden show');
       });
 
       $('#setCompletedDate').change(function(){
