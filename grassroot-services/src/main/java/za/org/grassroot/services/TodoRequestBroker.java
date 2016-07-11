@@ -6,7 +6,7 @@ import za.org.grassroot.core.domain.LogBookRequest;
 import java.time.LocalDateTime;
 import java.util.Set;
 
-public interface LogBookRequestBroker {
+public interface TodoRequestBroker {
 
 	LogBookRequest load(String requestUid);
 

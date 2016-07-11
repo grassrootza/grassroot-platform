@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
-public interface LogBookBroker {
+public interface TodoBroker {
 	LogBook load(String logBookUid);
 
 	LogBook create(String userUid, JpaEntityType parentType, String parentUid, String message, LocalDateTime actionByDate,

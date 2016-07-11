@@ -35,9 +35,9 @@ import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
 import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
 @Service
-public class LogBookBrokerImpl implements LogBookBroker {
+public class TodoBrokerImpl implements TodoBroker {
 
-	private final Logger logger = LoggerFactory.getLogger(LogBookBrokerImpl.class);
+	private final Logger logger = LoggerFactory.getLogger(TodoBrokerImpl.class);
 	private static final int defaultReminders = 2; // todo: externalize this / base it on some logic
 
 	@Autowired
