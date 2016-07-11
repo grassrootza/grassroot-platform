@@ -204,10 +204,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         // todo: switch this to new name (may want a "hasName"/"getName" method defined on UidIdentifiable?
         String salutation = (((Group) event.getParent()).hasName()) ? ((Group) event.getParent()).getGroupName() : "Grassroot";
         DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
-        String dateString = "no date specified";
-        if (event.getEventStartDateTime() != null) {
-            dateString = sdf.format(event.getEventDateTimeAtSAST());
-        }
+        String dateString = sdf.format(event.getEventDateTimeAtSAST());
 
         String location = null;
         if (event instanceof Meeting) {

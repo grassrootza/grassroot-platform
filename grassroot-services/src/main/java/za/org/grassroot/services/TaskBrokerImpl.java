@@ -11,7 +11,6 @@ import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.LogBookLogType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.repository.*;
-import za.org.grassroot.services.enums.LogBookStatus;
 
 import java.time.Instant;
 import java.util.*;
@@ -78,32 +77,49 @@ public class TaskBrokerImpl implements TaskBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public List<TaskDTO> fetchGroupTasks(String userUid, String groupUid, boolean futureOnly, LogBookStatus logBookStatus) {
+    public List<TaskDTO> fetchUpcomingIncompleteGroupTasks(String userUid, String groupUid) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
 
         User user = userRepository.findOneByUid(userUid);
         Group group = groupBroker.load(groupUid);
 
-        Set<TaskDTO> taskSet = new HashSet<>();
+        Set<TaskDTO> taskDtos = new HashSet<>();
 
-        Instant start = futureOnly ? Instant.now() : null;
+        Instant start = Instant.now();
         for (Event event : groupBroker.retrieveGroupEvents(group, null, start, null)) {
-            if (event.getEventStartDateTime() != null) {
-                taskSet.add(new TaskDTO(event, user, eventLogRepository));
-            }
+            taskDtos.add(new TaskDTO(event, user, eventLogRepository));
         }
 
-        for (LogBook logBook : logBookBroker.loadGroupLogBooks(group.getUid(), futureOnly, logBookStatus)) {
-            if (logBook.getCreatedByUser().equals(user)) {
-                taskSet.add(new TaskDTO(logBook, user));
-            } else {
-                taskSet.add(new TaskDTO(logBook, user));
-            }
+        List<LogBook> logBooks = logBookRepository.findByParentGroupAndCompletionPercentageLessThanAndActionByDateGreaterThan(group, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, start);
+        for (LogBook logBook : logBooks) {
+            taskDtos.add(new TaskDTO(logBook, user));
         }
 
-        List<TaskDTO> tasks = new ArrayList<>(taskSet);
+        List<TaskDTO> tasks = new ArrayList<>(taskDtos);
         Collections.sort(tasks);
+        return tasks;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TaskDTO> fetchGroupTasks(String userUid, String groupUid, Instant changedSince) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupBroker.load(groupUid);
+
+        List<Event> events = eventRepository.findByParentGroupAndCanceledFalse(group);
+        Set<TaskDTO> taskDtos = resolveEventTaskDtos(events, user, changedSince);
+
+        List<LogBook> logBooks = logBookRepository.findByParentGroup(group);
+        Set<TaskDTO> logBookTaskDtos = resolveLogBookTaskDtos(logBooks, user, changedSince);
+        taskDtos.addAll(logBookTaskDtos);
+
+        List<TaskDTO> tasks = new ArrayList<>(taskDtos);
+        Collections.sort(tasks);
+
         return tasks;
     }
 
@@ -113,26 +129,14 @@ public class TaskBrokerImpl implements TaskBroker {
         Objects.requireNonNull(userUid);
 
         User user = userRepository.findOneByUid(userUid);
-        Set<TaskDTO> taskDtos = new HashSet<>();
-
         Instant now = Instant.now();
 
         List<Event> events = eventRepository.findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(user, now);
-        for (Event event : events) {
-            if (changedSince == null || isEventChangedSince(event, changedSince)) {
-                EventLog userResponseLog = eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.RSVP);
-                if (changedSince == null || userResponseLog == null || (userResponseLog != null && userResponseLog.getCreatedDateTime().isAfter(changedSince))) {
-                    taskDtos.add(new TaskDTO(event, user, userResponseLog));
-                }
-            }
-        }
+        Set<TaskDTO> taskDtos = resolveEventTaskDtos(events, user, changedSince);
 
         List<LogBook> logBooks = logBookRepository.findByParentGroupMembershipsUserAndActionByDateGreaterThan(user, now);
-        for (LogBook logBook : logBooks) {
-            if (changedSince == null || isLogBookChangedSince(logBook, changedSince)) {
-                taskDtos.add(new TaskDTO(logBook, user));
-            }
-        }
+        Set<TaskDTO> logBookTaskDtos = resolveLogBookTaskDtos(logBooks, user, changedSince);
+        taskDtos.addAll(logBookTaskDtos);
 
         List<TaskDTO> tasks = new ArrayList<>(taskDtos);
         Collections.sort(tasks);
@@ -140,7 +144,28 @@ public class TaskBrokerImpl implements TaskBroker {
         return tasks;
     }
 
-    private boolean isEventChangedSince(Event event, Instant changedSince) {
+    private Set<TaskDTO> resolveEventTaskDtos(List<Event> events, User user, Instant changedSince) {
+        Set<TaskDTO> taskDtos = new HashSet<>();
+        for (Event event : events) {
+            EventLog userResponseLog = eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.RSVP);
+            if (changedSince == null || isEventChangedSince(event, userResponseLog, changedSince)) {
+                taskDtos.add(new TaskDTO(event, user, userResponseLog));
+            }
+        }
+        return taskDtos;
+    }
+
+    private Set<TaskDTO> resolveLogBookTaskDtos(List<LogBook> logBooks, User user, Instant changedSince) {
+        Set<TaskDTO> taskDtos = new HashSet<>();
+        for (LogBook logBook : logBooks) {
+            if (changedSince == null || isLogBookChangedSince(logBook, changedSince)) {
+                taskDtos.add(new TaskDTO(logBook, user));
+            }
+        }
+        return taskDtos;
+    }
+
+    private boolean isEventChangedSince(Event event, EventLog userResponseLog, Instant changedSince) {
         if (event.getCreatedDateTime().isAfter(changedSince)) {
             return true;
         }
@@ -148,6 +173,11 @@ public class TaskBrokerImpl implements TaskBroker {
         if (lastChangeLog != null && lastChangeLog.getCreatedDateTime().isAfter(changedSince)) {
             return true;
         }
+
+        if (userResponseLog != null && userResponseLog.getCreatedDateTime().isAfter(changedSince)) {
+            return true;
+        }
+
         return false;
     }
 

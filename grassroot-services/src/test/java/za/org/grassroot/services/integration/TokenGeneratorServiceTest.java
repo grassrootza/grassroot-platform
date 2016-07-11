@@ -32,13 +32,13 @@ public class TokenGeneratorServiceTest {
 
 
     @Autowired
-    TokenGeneratorService generatorService;
+    private TokenGeneratorService generatorService;
 
     @Test
     @Repeat(15)
     public void testGetNextToken() throws Exception {
 
-        int token = generatorService.getNextToken();
+        String token = generatorService.getNextToken();
         log.info("Generated Token: {}",token);
     }
 }

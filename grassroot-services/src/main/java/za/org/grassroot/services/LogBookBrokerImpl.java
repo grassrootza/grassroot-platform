@@ -235,25 +235,6 @@ public class LogBookBrokerImpl implements LogBookBroker {
 	}
 
 	@Override
-	public List<LogBook> loadGroupLogBooks(String groupUid, boolean futureLogBooksOnly, LogBookStatus status) {
-		Objects.requireNonNull(groupUid);
-
-		Group group = groupRepository.findOneByUid(groupUid);
-		Instant start = futureLogBooksOnly ? Instant.now() : DateTimeUtil.getEarliestInstant();
-
-		switch (status) {
-			case COMPLETE:
-				return logBookRepository.findByParentGroupAndCompletionPercentageGreaterThanEqualAndActionByDateGreaterThan(group, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, start);
-			case INCOMPLETE:
-				return logBookRepository.findByParentGroupAndCompletionPercentageLessThanAndActionByDateGreaterThan(group, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, start);
-			case BOTH:
-				return logBookRepository.findByParentGroupAndActionByDateGreaterThan(group, start);
-			default:
-				return logBookRepository.findByParentGroupAndActionByDateGreaterThan(group, start);
-		}
-	}
-
-	@Override
 	@Transactional(readOnly = true)
 	public LogBook fetchLogBookForUserResponse(String userUid, long daysInPast, boolean assignedLogBooksOnly) {
 		LogBook lbToReturn;

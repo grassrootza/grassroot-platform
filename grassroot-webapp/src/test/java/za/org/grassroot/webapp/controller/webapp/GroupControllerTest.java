@@ -12,7 +12,6 @@ import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
-import za.org.grassroot.services.enums.LogBookStatus;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
 
@@ -73,7 +72,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, dummyGroup,
                                                         Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS)).thenReturn(true);
 
-        when(taskBrokerMock.fetchGroupTasks(sessionTestUser.getUid(), dummyGroup.getUid(), true, LogBookStatus.INCOMPLETE)).
+        when(taskBrokerMock.fetchUpcomingIncompleteGroupTasks(sessionTestUser.getUid(), dummyGroup.getUid())).
                 thenReturn(dummyTasks);
 
         when(groupBrokerMock.subGroups(dummyGroup.getUid())).thenReturn(subGroups);
@@ -90,8 +89,8 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
         // todo: verify sequence of permission checking calls
         verify(groupBrokerMock, times(1)).load(dummyGroup.getUid());
-        verify(taskBrokerMock, times(1)).fetchGroupTasks(sessionTestUser.getUid(), dummyGroup.getUid(),
-                                                         true, LogBookStatus.INCOMPLETE);
+        verify(taskBrokerMock, times(1)).fetchUpcomingIncompleteGroupTasks(sessionTestUser.getUid(), dummyGroup.getUid()
+        );
         verify(groupBrokerMock, times(1)).subGroups(dummyGroup.getUid());
         verifyNoMoreInteractions(eventManagementServiceMock);
     }

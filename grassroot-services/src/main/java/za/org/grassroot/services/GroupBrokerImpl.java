@@ -651,7 +651,7 @@ public class GroupBrokerImpl implements GroupBroker {
                     : "Extended group joining code to permanent";
         } else {
             logger.info("Generating a group join code that is open ...");
-            token = String.valueOf(tokenGeneratorService.getNextToken());
+            token = tokenGeneratorService.getNextToken();
             LocalDateTime expiry = (temporary) ? expiryDateTime : endOfCentury;
             group.setTokenExpiryDateTime(Timestamp.valueOf(expiry));
             group.setGroupTokenCode(token);

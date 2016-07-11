@@ -15,11 +15,11 @@ import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
-import za.org.grassroot.services.enums.LogBookStatus;
 import za.org.grassroot.services.exception.RequestorAlreadyPartOfGroupException;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
@@ -206,7 +206,8 @@ public class GroupController extends BaseController {
         model.addAttribute("languages", userManagementService.getImplementedLanguages().entrySet());
         model.addAttribute("hasParent", (group.getParent() != null));
 
-        model.addAttribute("groupTasks", taskBroker.fetchGroupTasks(user.getUid(), groupUid, true, LogBookStatus.INCOMPLETE));
+        List<TaskDTO> tasks = taskBroker.fetchUpcomingIncompleteGroupTasks(user.getUid(), groupUid);
+        model.addAttribute("groupTasks", tasks);
 
         model.addAttribute("subGroups", groupBroker.subGroups(groupUid));
         model.addAttribute("openToken", group.hasValidGroupTokenCode());

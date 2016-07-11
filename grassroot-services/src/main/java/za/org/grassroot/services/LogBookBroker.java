@@ -44,8 +44,6 @@ public interface LogBookBroker {
 
 	List<Group> retrieveGroupsFromLogBooks(List<LogBook> logBooks);
 
-	List<LogBook> loadGroupLogBooks(String groupUid, boolean futureLogBooksOnly, LogBookStatus status);
-
 	// todo: we need some sort of logic here for not showing users the same logbook over and over
 	LogBook fetchLogBookForUserResponse(String userUid, long daysInPast, boolean assignedLogBooksOnly);
 

@@ -34,7 +34,7 @@ public abstract class AbstractEventEntity {
 	For meetings this the meeting start time
 	For voting this the vote expire time
 	 */
-	@Column(name = "start_date_time")
+	@Column(name = "start_date_time", nullable = false)
 	protected Instant eventStartDateTime;
 
 	@ManyToOne

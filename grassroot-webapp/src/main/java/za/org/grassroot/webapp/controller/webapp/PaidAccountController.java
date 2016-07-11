@@ -15,7 +15,6 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.AccountManagementService;
-import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.webapp.controller.BaseController;
@@ -47,9 +46,6 @@ public class PaidAccountController extends BaseController {
 
     @Autowired
     private EventManagementService eventManagementService;
-
-    @Autowired
-    private EventLogManagementService eventLogService;
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping("/index")

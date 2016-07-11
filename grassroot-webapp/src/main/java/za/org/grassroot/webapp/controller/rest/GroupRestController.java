@@ -266,8 +266,7 @@ public class GroupRestController {
         GroupLog groupLog = groupBroker.getMostRecentLog(group);
         GroupResponseWrapper responseWrapper;
         if (event != null) {
-            if (event.getEventStartDateTime() != null && event.getEventStartDateTime()
-                    .isAfter(groupLog.getCreatedDateTime())) {
+            if (event.getEventStartDateTime().isAfter(groupLog.getCreatedDateTime())) {
                 responseWrapper = new GroupResponseWrapper(group, event, role, true);
             } else {
                 responseWrapper = new GroupResponseWrapper(group, groupLog, role, true);

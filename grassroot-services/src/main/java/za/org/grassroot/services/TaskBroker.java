@@ -16,7 +16,9 @@ public interface TaskBroker {
 
     TaskDTO load(String userUid, String taskUid, TaskType type);
 
-    List<TaskDTO> fetchGroupTasks(String userUid, String groupUid, boolean futureOnly, LogBookStatus logBookStatus);
+    List<TaskDTO> fetchUpcomingIncompleteGroupTasks(String userUid, String groupUid);
+
+    List<TaskDTO> fetchGroupTasks(String userUid, String groupUid, Instant changedSince);
 
     List<TaskDTO> fetchUpcomingUserTasks(String userUid, Instant changedSince);
 

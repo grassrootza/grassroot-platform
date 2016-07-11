@@ -21,6 +21,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 
 public interface GroupRepository extends JpaRepository<Group, Long> {
@@ -89,6 +90,9 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     @Query(value = "SELECT COALESCE(MAX(CAST(group_token_code as INTEGER)),123) FROM group_profile g WHERE group_token_code NOT LIKE ''", nativeQuery = true)
     int getMaxTokenValue();
     
+    @Query(value = "select g.groupTokenCode from Group")
+    List<String> findAllTokenCodes();
+
     /* find a group by id and return it and all it's subgroups
     .N.B. when adding columns to the table they must be added here is well
      */
