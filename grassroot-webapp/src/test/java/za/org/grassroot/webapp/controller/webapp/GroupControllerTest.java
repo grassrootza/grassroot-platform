@@ -12,7 +12,7 @@ import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
-import za.org.grassroot.services.enums.LogBookStatus;
+import za.org.grassroot.services.enums.TodoStatus;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
 
@@ -73,7 +73,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, dummyGroup,
                                                         Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS)).thenReturn(true);
 
-        when(taskBrokerMock.fetchGroupTasks(sessionTestUser.getUid(), dummyGroup.getUid(), true, LogBookStatus.INCOMPLETE)).
+        when(taskBrokerMock.fetchGroupTasks(sessionTestUser.getUid(), dummyGroup.getUid(), true, TodoStatus.INCOMPLETE)).
                 thenReturn(dummyTasks);
 
         when(groupBrokerMock.subGroups(dummyGroup.getUid())).thenReturn(subGroups);
@@ -91,7 +91,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         // todo: verify sequence of permission checking calls
         verify(groupBrokerMock, times(1)).load(dummyGroup.getUid());
         verify(taskBrokerMock, times(1)).fetchGroupTasks(sessionTestUser.getUid(), dummyGroup.getUid(),
-                                                         true, LogBookStatus.INCOMPLETE);
+                                                         true, TodoStatus.INCOMPLETE);
         verify(groupBrokerMock, times(1)).subGroups(dummyGroup.getUid());
         verifyNoMoreInteractions(eventManagementServiceMock);
     }
@@ -528,7 +528,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
         when(eventManagementServiceMock.getGroupEventsInPeriod(testGroup, start, end)).thenReturn(dummyEvents);
-        when(logBookServiceMock.getLogBookEntriesInPeriod(testGroup, start, end)).thenReturn(dummyLogbooks);
+        when(todoBrokerMock.getTodosInPeriod(testGroup, start, end)).thenReturn(dummyLogbooks);
         when(groupBrokerMock.getLogsForGroup(testGroup, start, end)).thenReturn(dummyGroupLogs);
         when(groupBrokerMock.getMonthsGroupActive(testGroup.getUid())).thenReturn(dummyMonths);
         when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, testGroup, null)).thenReturn(true);
@@ -549,8 +549,8 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventManagementServiceMock, times(1)).getGroupEventsInPeriod(testGroup, start, end);
         verifyNoMoreInteractions(eventManagementServiceMock);
-        verify(logBookServiceMock, times(1)).getLogBookEntriesInPeriod(testGroup, start, end);
-        verifyNoMoreInteractions(logBookServiceMock);
+        verify(todoBrokerMock, times(1)).getTodosInPeriod(testGroup, start, end);
+        verifyNoMoreInteractions(todoBrokerMock);
 
     }
 
@@ -577,7 +577,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, testGroup, null)).thenReturn(true);
         when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
         when(eventManagementServiceMock.getGroupEventsInPeriod(testGroup, start, end)).thenReturn(dummyEvents);
-        when(logBookServiceMock.getLogBookEntriesInPeriod(testGroup, start, end)).thenReturn(dummyLogBooks);
+        when(todoBrokerMock.getTodosInPeriod(testGroup, start, end)).thenReturn(dummyLogBooks);
         when(groupBrokerMock.getLogsForGroup(testGroup, start, end)).thenReturn(dummyGroupLogs);
         when(groupBrokerMock.getMonthsGroupActive(testGroup.getUid())).thenReturn(dummyMonths);
 
@@ -597,8 +597,8 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventManagementServiceMock, times(1)).getGroupEventsInPeriod(testGroup, start, end);
         verifyNoMoreInteractions(eventManagementServiceMock);
-        verify(logBookServiceMock, times(1)).getLogBookEntriesInPeriod(testGroup, start, end);
-        verifyNoMoreInteractions(logBookServiceMock);
+        verify(todoBrokerMock, times(1)).getTodosInPeriod(testGroup, start, end);
+        verifyNoMoreInteractions(todoBrokerMock);
 
     }
 

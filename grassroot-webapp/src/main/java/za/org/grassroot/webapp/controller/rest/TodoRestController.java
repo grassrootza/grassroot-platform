@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.TaskType;
-import za.org.grassroot.services.LogBookBroker;
+import za.org.grassroot.services.TodoBroker;
 import za.org.grassroot.services.TaskBroker;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
@@ -48,7 +48,7 @@ public class TodoRestController {
     private UserManagementService userManagementService;
 
     @Autowired
-    private LogBookBroker logBookBroker;
+    private TodoBroker todoBroker;
 
     @Autowired
     private TaskBroker taskBroker;
@@ -58,11 +58,11 @@ public class TodoRestController {
                                                        @PathVariable("code") String code, @PathVariable("id") String id) {
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
-        LogBook logBook = logBookBroker.load(id);
+        LogBook logBook = todoBroker.load(id);
 
         ResponseWrapper responseWrapper;
         if(!logBook.isCompleted()){
-            logBookBroker.confirmCompletion(user.getUid(), id, LocalDateTime.now()); // todo: watch timezones on this
+            todoBroker.confirmCompletion(user.getUid(), id, LocalDateTime.now()); // todo: watch timezones on this
             TaskDTO updatedTask = taskBroker.load(user.getUid(), id, TaskType.TODO);
             responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.TODO_SET_COMPLETED,
                                                          RestStatus.SUCCESS, Collections.singletonList(updatedTask));
@@ -76,7 +76,7 @@ public class TodoRestController {
     @RequestMapping(value = "/assigned/{phoneNumber}/{code}/{uid}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> getAssignedMemberList(String phoneNumber, String code,@PathVariable("uid") String uid){
 
-        LogBook logBook = logBookBroker.load(uid);
+        LogBook logBook = todoBroker.load(uid);
         Set<User> users = logBook.isAllGroupMembersAssigned() ? new HashSet<>() : logBook.getAssignedMembers();
         List<MembershipResponseWrapper> assignedMembers = new ArrayList<>();
         for(User user: users){
@@ -103,7 +103,7 @@ public class TodoRestController {
         Set<String> assignedMemberUids = (members == null) ? new HashSet<>() : members;
 
         // todo : handle negative reminderMinutes
-        LogBook lb = logBookBroker.create(user.getUid(), JpaEntityType.GROUP, parentUid, title, dueDate, reminderMinutes,
+        LogBook lb = todoBroker.create(user.getUid(), JpaEntityType.GROUP, parentUid, title, dueDate, reminderMinutes,
                 false, assignedMemberUids);
         TaskDTO createdTask = taskBroker.load(user.getUid(), lb.getUid(), TaskType.TODO);
 
@@ -123,7 +123,7 @@ public class TodoRestController {
 
         User user = userManagementService.load(phoneNumber);
         String userUid = user.getUid();
-        logBookBroker.update(userUid, uid,title,dueDate,reminderMinutes,members);
+        todoBroker.update(userUid, uid,title,dueDate,reminderMinutes,members);
         TaskDTO taskDTO = taskBroker.load(userUid, uid, TaskType.TODO);
         ResponseWrapper responseWrapper = new GenericResponseWrapper(HttpStatus.OK,RestMessage.TODO_UPDATED, RestStatus.SUCCESS, taskDTO);
 

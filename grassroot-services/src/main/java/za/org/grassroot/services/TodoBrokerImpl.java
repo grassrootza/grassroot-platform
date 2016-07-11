@@ -18,7 +18,7 @@ import za.org.grassroot.core.repository.LogBookRepository;
 import za.org.grassroot.core.repository.UidIdentifiableRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.services.enums.LogBookStatus;
+import za.org.grassroot.services.enums.TodoStatus;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
@@ -58,6 +58,11 @@ public class TodoBrokerImpl implements TodoBroker {
 	@Override
 	public LogBook load(String logBookUid) {
 		return logBookRepository.findOneByUid(logBookUid);
+	}
+
+	@Override
+	public LogBook update(LogBook todo) {
+		return logBookRepository.save(todo);
 	}
 
 	@Override
@@ -227,6 +232,14 @@ public class TodoBrokerImpl implements TodoBroker {
 	}
 
 	@Override
+	public List<LogBook> getTodosInPeriod(Group group, LocalDateTime periodStart, LocalDateTime periodEnd) {
+		Sort sort = new Sort(Sort.Direction.ASC, "createdDateTime");
+		Instant start = convertToSystemTime(periodStart, getSAST());
+		Instant end = convertToSystemTime(periodEnd, getSAST());
+		return logBookRepository.findByParentGroupAndCreatedDateTimeBetween(group, start, end, sort);
+	}
+
+	@Override
 	public List<Group> retrieveGroupsFromLogBooks(List<LogBook> logBooks) {
 		return logBooks.stream()
 				.filter(logBook -> logBook.getParent().getJpaEntityType().equals(JpaEntityType.GROUP))
@@ -235,7 +248,7 @@ public class TodoBrokerImpl implements TodoBroker {
 	}
 
 	@Override
-	public List<LogBook> loadGroupLogBooks(String groupUid, boolean futureLogBooksOnly, LogBookStatus status) {
+	public List<LogBook> loadGroupLogBooks(String groupUid, boolean futureLogBooksOnly, TodoStatus status) {
 		Objects.requireNonNull(groupUid);
 
 		Group group = groupRepository.findOneByUid(groupUid);
@@ -301,6 +314,29 @@ public class TodoBrokerImpl implements TodoBroker {
 		return logBook;
 
 	}
+
+	@Override
+	public boolean hasReplicatedEntries(LogBook logBook) {
+		return logBookRepository.countReplicatedEntries(logBook.getAncestorGroup(), logBook.getMessage(), logBook.getCreatedDateTime()) != 0;
+	}
+
+	@Override
+	public List<LogBook> getAllReplicatedEntriesFromParent(LogBook logBook) {
+		return logBookRepository.findByReplicatedGroupAndMessageAndActionByDateOrderByParentGroupIdAsc(logBook.getAncestorGroup(), logBook.getMessage(),
+				logBook.getActionByDate());
+	}
+
+	@Override
+	public LogBook getParentTodoEntry(LogBook logBook) {
+		Group parentLogBookGroup = logBook.getReplicatedGroup();
+		if (parentLogBookGroup == null) {
+			return null;
+		}
+		else return logBookRepository.findByParentGroupAndMessageAndCreatedDateTime(parentLogBookGroup, logBook.getMessage(),
+				logBook.getCreatedDateTime()).get(0);
+	}
+
+
 
 	/*@Override
 	@Transactional(readOnly = true)

@@ -14,7 +14,6 @@ import za.org.grassroot.core.repository.VerificationTokenCodeRepository;
 import za.org.grassroot.integration.services.GcmService;
 import za.org.grassroot.services.*;
 
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -68,7 +67,7 @@ public class RestAbstractUnitTest
     @Mock
     protected EventLogRepository eventLogRepositoryMock;
     @Mock
-    protected LogBookBroker logBookBrokerMock;
+    protected TodoBroker todoBrokerMock;
     @Mock
     protected UserManagementService userManagementServiceMock;
     @Mock

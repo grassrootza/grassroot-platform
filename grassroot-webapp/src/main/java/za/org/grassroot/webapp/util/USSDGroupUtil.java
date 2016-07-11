@@ -46,7 +46,7 @@ public class USSDGroupUtil extends USSDUtil {
     private EventRequestBroker eventRequestBroker;
 
     @Autowired
-    private LogBookRequestBroker logBookRequestBroker;
+    private TodoRequestBroker todoRequestBroker;
 
     @Autowired
     PermissionBroker permissionBroker;
@@ -309,7 +309,7 @@ public class USSDGroupUtil extends USSDUtil {
                 menu = new USSDMenu(getMessage(section, "issue", promptKey + ".skipped", group.getDisplayName(""), user), nextUrl);
                 break;
             case LOGBOOK:
-                String logBookUid = logBookRequestBroker.create(user.getUid(), group.getUid()).getUid();
+                String logBookUid = todoRequestBroker.create(user.getUid(), group.getUid()).getUid();
                 cacheManager.putUssdMenuForUser(user.getPhoneNumber(), saveLogMenu(subjectMenu, logBookUid));
                 nextUrl = "log/due_date" + USSDUrlUtil.logbookIdUrlSuffix + logBookUid;
                 menu = new USSDMenu(getMessage(section, subjectMenu, promptKey + ".skipped", group.getDisplayName(""), user), nextUrl);

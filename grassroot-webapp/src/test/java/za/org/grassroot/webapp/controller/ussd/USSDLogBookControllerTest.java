@@ -137,14 +137,14 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         Page<LogBook> dummyPage = new PageImpl<>(testLogBooks);
         String urlToSave = logViewExistingUrl(listEntriesMenu, testGroup.getUid(), true, 0);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        when(logBookBrokerMock.retrieveGroupLogBooks(testUser.getUid(), testGroup.getUid(), true, 0, 3)).thenReturn(dummyPage);
+        when(todoBrokerMock.retrieveGroupLogBooks(testUser.getUid(), testGroup.getUid(), true, 0, 3)).thenReturn(dummyPage);
         mockMvc.perform(get(path + listEntriesMenu).param(phoneParam, testUserPhone).param("groupUid", testGroup.getUid())
                 .param("done", String.valueOf(true))).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(logBookBrokerMock, times(1)).retrieveGroupLogBooks(testUser.getUid(), testGroup.getUid(), true, 0, 3);
-        verifyNoMoreInteractions(logBookBrokerMock);
+        verify(todoBrokerMock, times(1)).retrieveGroupLogBooks(testUser.getUid(), testGroup.getUid(), true, 0, 3);
+        verifyNoMoreInteractions(todoBrokerMock);
     }
 
     @Test
@@ -154,7 +154,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         LogBookRequest dummyLogBook = LogBookRequest.makeEmpty(testUser, dummyGroup);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(logBookRequestBrokerMock.create(testUser.getUid(), dummyGroup.getUid())).thenReturn(dummyLogBook);
+        when(todoRequestBrokerMock.create(testUser.getUid(), dummyGroup.getUid())).thenReturn(dummyLogBook);
 
         mockMvc.perform(get(path + "subject").param(phoneParam, testUserPhone).param("groupUid", dummyGroup.getUid()))
                 .andExpect(status().isOk());
@@ -163,8 +163,8 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(cacheUtilManagerMock, times(1)).putUssdMenuForUser(testUserPhone, saveLogMenu("subject", dummyLogBook.getUid()));
         verifyNoMoreInteractions(cacheUtilManagerMock);
-        verify(logBookRequestBrokerMock, times(1)).create(testUser.getUid(), dummyGroup.getUid());
-        verifyNoMoreInteractions(logBookRequestBrokerMock);
+        verify(todoRequestBrokerMock, times(1)).create(testUser.getUid(), dummyGroup.getUid());
+        verifyNoMoreInteractions(todoRequestBrokerMock);
     }
 
     @Test
@@ -181,8 +181,8 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(logBookRequestBrokerMock, times(1)).updateMessage(testUser.getUid(), dummyLogBook.getUid(), dummyUserInput);
-        verifyNoMoreInteractions(logBookRequestBrokerMock);
+        verify(todoRequestBrokerMock, times(1)).updateMessage(testUser.getUid(), dummyLogBook.getUid(), dummyUserInput);
+        verifyNoMoreInteractions(todoRequestBrokerMock);
 
     }
 
@@ -204,7 +204,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
                 .andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
-        verify(logBookRequestBrokerMock, times(1)).updateDueDate(testUser.getUid(), dummyLogBook.getUid(),
+        verify(todoRequestBrokerMock, times(1)).updateDueDate(testUser.getUid(), dummyLogBook.getUid(),
                                                                  parsePreformattedDate(reformatDateInput(priorInput).trim(), hour, minutes));
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(logBookServiceMock);
@@ -265,7 +265,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         String urlToSave = saveLogMenu(confirmMenu, dummyLogBook.getUid(), subjectMenu, "revised message", true);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        when(logBookRequestBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
+        when(todoRequestBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
 
         mockMvc.perform(get(path + confirmMenu).param(logBookIdParam, dummyLogBook.getUid())
                 .param(phoneParam, testUserPhone).param("request", "revised message").param("prior_menu", subjectMenu))
@@ -274,10 +274,10 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
                 .andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
-        verify(logBookRequestBrokerMock, times(2)).load(dummyLogBook.getUid());
-        verify(logBookRequestBrokerMock, times(1)).updateMessage(testUser.getUid(), dummyLogBook.getUid(), "revised message");
+        verify(todoRequestBrokerMock, times(2)).load(dummyLogBook.getUid());
+        verify(todoRequestBrokerMock, times(1)).updateMessage(testUser.getUid(), dummyLogBook.getUid(), "revised message");
         verifyNoMoreInteractions(userManagementServiceMock);
-        verifyNoMoreInteractions(logBookRequestBrokerMock);
+        verifyNoMoreInteractions(todoRequestBrokerMock);
         verifyNoMoreInteractions(groupBrokerMock);
     }
 
@@ -299,7 +299,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
             dummyLogBook.setActionByDate(convertDateStringToLocalDateTime(formattedDateString, 13, 0).toInstant(ZoneOffset.UTC));
             when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-            when(logBookRequestBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
+            when(todoRequestBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
 
             mockMvc.perform(get(path + confirmMenu).param(phoneParam, testUserPhone).param(logBookIdParam, dummyLogBook.getUid())
                     .param("prior_input", date).param("prior_menu", "due_date").param("request", "1"))
@@ -308,10 +308,10 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(bloomVariations.size())).findByInputNumber(eq(testUserPhone), anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(logBookRequestBrokerMock, times(bloomVariations.size())).load(dummyLogBook.getUid());
-        verify(logBookRequestBrokerMock, times(bloomVariations.size())).updateDueDate(testUser.getUid(), dummyLogBook.getUid(),
+        verify(todoRequestBrokerMock, times(bloomVariations.size())).load(dummyLogBook.getUid());
+        verify(todoRequestBrokerMock, times(bloomVariations.size())).updateDueDate(testUser.getUid(), dummyLogBook.getUid(),
                                                                                       correctDueDate);
-        verifyNoMoreInteractions(logBookRequestBrokerMock);
+        verifyNoMoreInteractions(todoRequestBrokerMock);
 
     }
 
@@ -327,8 +327,8 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(logBookRequestBrokerMock, times(1)).finish(dummyLogBook.getUid());
-        verifyNoMoreInteractions(logBookRequestBrokerMock);
+        verify(todoRequestBrokerMock, times(1)).finish(dummyLogBook.getUid());
+        verifyNoMoreInteractions(todoRequestBrokerMock);
     }
 
     @Test
@@ -339,15 +339,15 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         dummyLogBook.addCompletionConfirmation(testUser, Instant.now());
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, saveLogMenu(viewEntryMenu, dummyLogBook.getUid()))).thenReturn(testUser);
-        when(logBookBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
+        when(todoBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
 
         mockMvc.perform(get(path + viewEntryMenu).param(logBookIdParam, dummyLogBook.getUid())
                 .param(phoneParam, testUserPhone)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, saveLogMenu(viewEntryMenu, dummyLogBook.getUid()));
-        verify(logBookBrokerMock, times(1)).load(dummyLogBook.getUid());
+        verify(todoBrokerMock, times(1)).load(dummyLogBook.getUid());
         verifyNoMoreInteractions(userManagementServiceMock);
-        verifyNoMoreInteractions(logBookBrokerMock);
+        verifyNoMoreInteractions(todoBrokerMock);
     }
 
     @Test
@@ -359,16 +359,16 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         dummyLogBook.addCompletionConfirmation(testUser, Instant.now());
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
-        when(logBookBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
+        when(todoBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
 
         mockMvc.perform(get(path + viewEntryDates).param(logBookIdParam, dummyLogBook.getUid())
                 .param(phoneParam, testUserPhone)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
-        verify(logBookBrokerMock, times(1)).load(dummyLogBook.getUid());
+        verify(todoBrokerMock, times(1)).load(dummyLogBook.getUid());
 
         verifyNoMoreInteractions(userManagementServiceMock);
-        verifyNoMoreInteractions(logBookBrokerMock);
+        verifyNoMoreInteractions(todoBrokerMock);
 
     }
 
@@ -381,14 +381,14 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         dummyLogBook.addCompletionConfirmation(testUser, Instant.now());
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
-        when(logBookBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
+        when(todoBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
 
         mockMvc.perform(get(path + viewEntryDates).param(logBookIdParam, dummyLogBook.getUid())
                 .param(phoneParam, testUserPhone)).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
-        verify(logBookBrokerMock, times(1)).load(dummyLogBook.getUid());
+        verify(todoBrokerMock, times(1)).load(dummyLogBook.getUid());
         verifyNoMoreInteractions(userManagementServiceMock);
-        verifyNoMoreInteractions(logBookBrokerMock);
+        verifyNoMoreInteractions(todoBrokerMock);
 
     }
 
@@ -402,15 +402,15 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         dummyLogBook.addCompletionConfirmation(testUser, Instant.now());
         dummyLogBook.assignMembers(Collections.singleton(testUser.getUid()));
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
-        when(logBookBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
+        when(todoBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
 
         mockMvc.perform(get(path + viewAssignment).param(phoneParam, testUserPhone)
                 .param(logBookIdParam, dummyLogBook.getUid())).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
-        verify(logBookBrokerMock, times(1)).load(dummyLogBook.getUid());
+        verify(todoBrokerMock, times(1)).load(dummyLogBook.getUid());
         verifyNoMoreInteractions(userManagementServiceMock);
-        verifyNoMoreInteractions(logBookBrokerMock);
+        verifyNoMoreInteractions(todoBrokerMock);
 
     }
 
@@ -427,7 +427,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         String urlToSave = saveLogMenu(setCompleteMenu, dummyLogBook.getUid());
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        when(logBookBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
+        when(todoBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
 
         mockMvc.perform(get(path + setCompleteMenu).param(phoneParam, testUserPhone)
                 .param(logBookIdParam, dummyLogBook.getUid())).andExpect(status().isOk());
@@ -435,7 +435,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verifyNoMoreInteractions(logBookBrokerMock);
+        verifyNoMoreInteractions(todoBrokerMock);
 
     }
 
@@ -470,7 +470,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(userManagementServiceMock.searchByGroupAndNameNumber(dummyLogBook.getAncestorGroup().getUid(), testUserPhone))
                 .thenReturn(testPossibleUsers);
-        when(logBookBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
+        when(todoBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
 
         mockMvc.perform(get(path + pickCompletor).param(phoneParam, testUserPhone).param(logBookIdParam, dummyLogBook.getUid())
                                 .param("request", testUserPhone)).andExpect(status().isOk());
@@ -480,9 +480,9 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone,
                 saveLogMenu(pickCompletor, dummyLogBook.getUid(), testUserPhone));
         verify(userManagementServiceMock, times(2)).searchByGroupAndNameNumber(dummyLogBook.getAncestorGroup().getUid(), testUserPhone);
-        verify(logBookBrokerMock, times(2)).load(dummyLogBook.getUid());
+        verify(todoBrokerMock, times(2)).load(dummyLogBook.getUid());
         verifyNoMoreInteractions(userManagementServiceMock);
-        verifyNoMoreInteractions(logBookBrokerMock);
+        verifyNoMoreInteractions(todoBrokerMock);
 
     }
 
@@ -501,7 +501,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verifyNoMoreInteractions(logBookBrokerMock);
+        verifyNoMoreInteractions(todoBrokerMock);
 
     }
 
@@ -522,7 +522,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verifyNoMoreInteractions(logBookBrokerMock);
+        verifyNoMoreInteractions(todoBrokerMock);
 
     }
 
@@ -545,9 +545,9 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
                 param(assignUserID, testUser.getUid())).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
-        verify(logBookBrokerMock, times(1)).confirmCompletion(testUser.getUid(), dummyLogBook.getUid(), correctDateTime);
+        verify(todoBrokerMock, times(1)).confirmCompletion(testUser.getUid(), dummyLogBook.getUid(), correctDateTime);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verifyNoMoreInteractions(logBookBrokerMock);
+        verifyNoMoreInteractions(todoBrokerMock);
 
     }
 

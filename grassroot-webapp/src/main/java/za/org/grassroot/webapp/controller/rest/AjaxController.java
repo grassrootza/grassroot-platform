@@ -12,7 +12,7 @@ import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.GroupBroker;
-import za.org.grassroot.services.LogBookBroker;
+import za.org.grassroot.services.TodoBroker;
 import za.org.grassroot.services.TaskBroker;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.webapp.controller.BaseController;
@@ -44,7 +44,7 @@ public class AjaxController extends BaseController {
     private EventBroker eventBroker;
 
     @Autowired
-    private LogBookBroker logBookBroker;
+    private TodoBroker todoBroker;
 
     @Autowired
     private TaskBroker taskBroker;
@@ -65,7 +65,7 @@ public class AjaxController extends BaseController {
         } else if (JpaEntityType.MEETING.equals(type) || JpaEntityType.VOTE.equals(type)) {
             memberPicker = new MemberPicker(eventBroker.load(parentUid), selected);
         } else if (JpaEntityType.LOGBOOK.equals(type)) {
-            memberPicker = new MemberPicker(logBookBroker.load(parentUid), selected);
+            memberPicker = new MemberPicker(todoBroker.load(parentUid), selected);
         } else {
             return errorResponse();
         }

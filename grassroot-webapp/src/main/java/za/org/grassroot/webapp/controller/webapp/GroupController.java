@@ -19,7 +19,7 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
-import za.org.grassroot.services.enums.LogBookStatus;
+import za.org.grassroot.services.enums.TodoStatus;
 import za.org.grassroot.services.exception.RequestorAlreadyPartOfGroupException;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
@@ -55,7 +55,7 @@ public class GroupController extends BaseController {
     private EventManagementService eventManagementService;
 
     @Autowired
-    private LogBookService logBookService;
+    private TodoBroker todoBroker;
 
     @Autowired
     private GroupJoinRequestService groupJoinRequestService;
@@ -206,7 +206,7 @@ public class GroupController extends BaseController {
         model.addAttribute("languages", userManagementService.getImplementedLanguages().entrySet());
         model.addAttribute("hasParent", (group.getParent() != null));
 
-        model.addAttribute("groupTasks", taskBroker.fetchGroupTasks(user.getUid(), groupUid, true, LogBookStatus.INCOMPLETE));
+        model.addAttribute("groupTasks", taskBroker.fetchGroupTasks(user.getUid(), groupUid, true, TodoStatus.INCOMPLETE));
 
         model.addAttribute("subGroups", groupBroker.subGroups(groupUid));
         model.addAttribute("openToken", group.hasValidGroupTokenCode());
@@ -753,7 +753,7 @@ public class GroupController extends BaseController {
 
         Long startTime = System.currentTimeMillis();
         List<Event> eventsInPeriod = eventManagementService.getGroupEventsInPeriod(group, startDateTime, endDateTime);
-        List<LogBook> logBooksInPeriod = logBookService.getLogBookEntriesInPeriod(group, startDateTime, endDateTime);
+        List<LogBook> logBooksInPeriod = todoBroker.getTodosInPeriod(group, startDateTime, endDateTime);
         List<GroupLog> groupLogsInPeriod = groupBroker.getLogsForGroup(group, startDateTime, endDateTime);
         List<LocalDate> monthsActive = groupBroker.getMonthsGroupActive(groupUid);
         Long endTime = System.currentTimeMillis();

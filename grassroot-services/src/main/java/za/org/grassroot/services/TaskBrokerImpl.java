@@ -11,7 +11,7 @@ import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.LogBookLogType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.repository.*;
-import za.org.grassroot.services.enums.LogBookStatus;
+import za.org.grassroot.services.enums.TodoStatus;
 
 import java.time.Instant;
 import java.util.*;
@@ -46,7 +46,7 @@ public class TaskBrokerImpl implements TaskBroker {
     private LogBookLogRepository logBookLogRepository;
 
     @Autowired
-    private LogBookBroker logBookBroker;
+    private TodoBroker todoBroker;
 
     @Override
     @Transactional(readOnly = true)
@@ -65,7 +65,7 @@ public class TaskBrokerImpl implements TaskBroker {
                 taskToReturn = new TaskDTO(event, user, eventLogRepository);
                 break;
             case TODO:
-                LogBook logBook = logBookBroker.load(taskUid);
+                LogBook logBook = todoBroker.load(taskUid);
                 taskToReturn = new TaskDTO(logBook, user);
                 break;
             default:
@@ -78,7 +78,7 @@ public class TaskBrokerImpl implements TaskBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public List<TaskDTO> fetchGroupTasks(String userUid, String groupUid, boolean futureOnly, LogBookStatus logBookStatus) {
+    public List<TaskDTO> fetchGroupTasks(String userUid, String groupUid, boolean futureOnly, TodoStatus todoStatus) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
 
@@ -94,7 +94,7 @@ public class TaskBrokerImpl implements TaskBroker {
             }
         }
 
-        for (LogBook logBook : logBookBroker.loadGroupLogBooks(group.getUid(), futureOnly, logBookStatus)) {
+        for (LogBook logBook : todoBroker.loadGroupLogBooks(group.getUid(), futureOnly, todoStatus)) {
             if (logBook.getCreatedByUser().equals(user)) {
                 taskSet.add(new TaskDTO(logBook, user));
             } else {

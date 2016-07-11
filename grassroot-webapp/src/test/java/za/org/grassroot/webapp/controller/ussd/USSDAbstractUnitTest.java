@@ -22,7 +22,6 @@ import za.org.grassroot.webapp.util.USSDGroupUtil;
 
 import java.time.LocalDate;
 import java.time.Year;
-import java.time.temporal.ChronoField;
 import java.util.Properties;
 import java.util.Set;
 
@@ -56,10 +55,10 @@ public abstract class USSDAbstractUnitTest {
     protected EventRequestBroker eventRequestBrokerMock;
 
     @Mock
-    protected LogBookBroker logBookBrokerMock;
+    protected TodoBroker todoBrokerMock;
 
     @Mock
-    protected LogBookRequestBroker logBookRequestBrokerMock;
+    protected TodoRequestBroker todoRequestBrokerMock;
 
     @Mock
     protected CacheUtilService cacheUtilManagerMock;

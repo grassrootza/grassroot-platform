@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.services.*;
-import za.org.grassroot.services.enums.LogBookStatus;
+import za.org.grassroot.services.enums.TodoStatus;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrapper;
@@ -43,7 +43,7 @@ public class TaskRestController {
 	private EventBroker eventBroker;
 
 	@Autowired
-	private LogBookBroker logBookBroker;
+	private TodoBroker todoBroker;
 
     // calling this "for parent" as in future will use it for any entity that can have sub-tasks, but for now just used for groups
 	@RequestMapping(value = "/list/{phoneNumber}/{code}/{parentUid}", method = RequestMethod.GET)
@@ -51,7 +51,7 @@ public class TaskRestController {
                                                              @PathVariable("parentUid") String parentUid) {
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
-        List<TaskDTO> tasks = taskBroker.fetchGroupTasks(user.getUid(), parentUid, false, LogBookStatus.BOTH);
+        List<TaskDTO> tasks = taskBroker.fetchGroupTasks(user.getUid(), parentUid, false, TodoStatus.BOTH);
         Collections.sort(tasks, Collections.reverseOrder()); // todo: double check this is right ordering
         ResponseWrapper responseWrapper;
         RestMessage message = (tasks.isEmpty()) ? RestMessage.NO_GROUP_ACTIVITIES : RestMessage.GROUP_ACTIVITIES;
@@ -102,7 +102,7 @@ public class TaskRestController {
 			    users = event.getAssignedMembers();
 			    break;
 		    case TODO:
-			    LogBook logBook = logBookBroker.load(taskUid);
+			    LogBook logBook = todoBroker.load(taskUid);
 			    users = logBook.getAssignedMembers();
 			    break;
 		    default:
