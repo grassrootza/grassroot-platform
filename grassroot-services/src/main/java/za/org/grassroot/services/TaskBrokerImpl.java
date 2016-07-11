@@ -45,7 +45,7 @@ public class TaskBrokerImpl implements TaskBroker {
     private LogBookLogRepository logBookLogRepository;
 
     @Autowired
-    private LogBookBroker logBookBroker;
+    private TodoBroker todoBroker;
 
     @Override
     @Transactional(readOnly = true)
@@ -64,7 +64,7 @@ public class TaskBrokerImpl implements TaskBroker {
                 taskToReturn = new TaskDTO(event, user, eventLogRepository);
                 break;
             case TODO:
-                LogBook logBook = logBookBroker.load(taskUid);
+                LogBook logBook = todoBroker.load(taskUid);
                 taskToReturn = new TaskDTO(logBook, user);
                 break;
             default:
@@ -91,6 +91,7 @@ public class TaskBrokerImpl implements TaskBroker {
             taskDtos.add(new TaskDTO(event, user, eventLogRepository));
         }
 
+        // todo : hmm, actually, we may want this to find all incomplete actions, but to consider / adjust in future
         List<LogBook> logBooks = logBookRepository.findByParentGroupAndCompletionPercentageLessThanAndActionByDateGreaterThan(group, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, start);
         for (LogBook logBook : logBooks) {
             taskDtos.add(new TaskDTO(logBook, user));

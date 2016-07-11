@@ -42,7 +42,7 @@ public class TaskRestController {
 	private EventBroker eventBroker;
 
 	@Autowired
-	private LogBookBroker logBookBroker;
+	private TodoBroker todoBroker;
 
     // calling this "for parent" as in future will use it for any entity that can have sub-tasks, but for now just used for groups
 	@RequestMapping(value = "/list/{phoneNumber}/{code}/{parentUid}", method = RequestMethod.GET)
@@ -103,7 +103,7 @@ public class TaskRestController {
 			    users = event.getAssignedMembers();
 			    break;
 		    case TODO:
-			    LogBook logBook = logBookBroker.load(taskUid);
+			    LogBook logBook = todoBroker.load(taskUid);
 			    users = logBook.getAssignedMembers();
 			    break;
 		    default:

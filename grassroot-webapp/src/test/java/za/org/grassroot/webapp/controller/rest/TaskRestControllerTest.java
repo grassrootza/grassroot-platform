@@ -28,7 +28,6 @@ public class TaskRestControllerTest extends RestAbstractUnitTest {
 
     @Before
     public void setUp() {
-
         mockMvc = MockMvcBuilders.standaloneSetup(taskRestController).build();
         // eventLog = new EventLog(sessionTestUser, meetingEvent, EventLogType.RSVP, testEventDescription);
         taskList = new ArrayList<>();
@@ -37,7 +36,6 @@ public class TaskRestControllerTest extends RestAbstractUnitTest {
 
     @Test
     public void gettingTasksShouldWork() throws Exception {
-
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(taskBrokerMock.fetchGroupTasks(sessionTestUser.getUid(), testGroup.getUid(), null)).
                 thenReturn(taskList);

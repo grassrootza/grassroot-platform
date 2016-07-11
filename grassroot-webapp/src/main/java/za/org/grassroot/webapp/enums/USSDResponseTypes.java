@@ -7,7 +7,7 @@ public enum USSDResponseTypes {
 
     MTG_RSVP,
     VOTE,
-    RESPOND_LOGBOOK,
+    RESPOND_TODO,
     RENAME_SELF,
     NAME_GROUP,
     NONE;

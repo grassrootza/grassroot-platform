@@ -11,27 +11,24 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.LogBookRequestRepository;
 import za.org.grassroot.core.repository.UidIdentifiableRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.core.util.DateTimeUtil;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.util.DateTimeUtil.*;
 
 @Service
-public class LogBookRequestBrokerImpl implements LogBookRequestBroker {
-	private final Logger logger = LoggerFactory.getLogger(LogBookRequestBrokerImpl.class);
+public class TodoRequestBrokerImpl implements TodoRequestBroker {
+	private final Logger logger = LoggerFactory.getLogger(TodoRequestBrokerImpl.class);
 
 	@Autowired
 	private UserRepository userRepository;
 	@Autowired
 	private GroupRepository groupRepository;
 	@Autowired
-	private LogBookBroker logBookBroker;
+	private TodoBroker todoBroker;
 	@Autowired
 	private PermissionBroker permissionBroker;
 	@Autowired
@@ -133,7 +130,7 @@ public class LogBookRequestBrokerImpl implements LogBookRequestBroker {
         LogBookContainer parent = logBookRequest.getParent();
 
 		LocalDateTime actionDate = LocalDateTime.from(logBookRequest.getActionByDate().atZone(getSAST()));
-		logBookBroker.create(logBookRequest.getCreatedByUser().getUid(), parent.getJpaEntityType(), parent.getUid(),
+		todoBroker.create(logBookRequest.getCreatedByUser().getUid(), parent.getJpaEntityType(), parent.getUid(),
 				logBookRequest.getMessage(), actionDate, logBookRequest.getReminderMinutes(),
 				logBookRequest.isReplicateToSubgroups(), assignedMemberUids);
 

@@ -5,12 +5,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.GroupBroker;
-import za.org.grassroot.services.LogBookBroker;
+import za.org.grassroot.services.TodoBroker;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 
 import java.time.Instant;
@@ -39,7 +38,7 @@ public class ScheduledTasks {
     private GroupBroker groupBroker;
 
     @Autowired
-    private LogBookBroker logBookBroker;
+    private TodoBroker todoBroker;
 
     @Autowired
     private EventRepository eventRepository;
@@ -132,7 +131,7 @@ public class ScheduledTasks {
 
     // @Transactional
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
-    public void sendLogBookReminders() {
+    public void sendTodoReminders() {
         List<LogBook> logBooks = logBookRepository.findAllLogBooksForReminding();
         if (!logBooks.isEmpty()) {
             logger.info("Sending scheduled reminders for {} logbooks", logBooks.size());
@@ -140,7 +139,7 @@ public class ScheduledTasks {
 
         for (LogBook logBook : logBooks) {
             try {
-                logBookBroker.sendScheduledReminder(logBook.getUid());
+                todoBroker.sendScheduledReminder(logBook.getUid());
             } catch (Throwable th) {
                 logger.error("Error while sending reminder for logger book " + logBook + ": " + th.getMessage(), th);
             }

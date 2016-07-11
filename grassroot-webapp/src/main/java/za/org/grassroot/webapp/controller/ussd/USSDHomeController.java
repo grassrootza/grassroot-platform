@@ -14,7 +14,7 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.services.EventLogManagementService;
-import za.org.grassroot.services.LogBookBroker;
+import za.org.grassroot.services.TodoBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDResponseTypes;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -25,7 +25,6 @@ import za.org.grassroot.webapp.util.USSDEventUtil;
 import javax.annotation.PostConstruct;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -53,7 +52,7 @@ public class USSDHomeController extends USSDController {
     private USSDEventUtil eventUtil;
 
     @Autowired
-    private LogBookBroker logBookBroker;
+    private TodoBroker todoBroker;
 
     @Autowired
     private Environment environment;
@@ -191,7 +190,7 @@ public class USSDHomeController extends USSDController {
 
         if (userManager.needsToVote(user)) return USSDResponseTypes.VOTE;
         if (userManager.needsToRSVP(user)) return USSDResponseTypes.MTG_RSVP;
-        if (userManager.hasIncompleteLogBooks(user.getUid(), daysPastLogbooks)) return USSDResponseTypes.RESPOND_LOGBOOK;
+        if (userManager.hasIncompleteLogBooks(user.getUid(), daysPastLogbooks)) return USSDResponseTypes.RESPOND_TODO;
         if (userManager.needsToRenameSelf(user)) return USSDResponseTypes.RENAME_SELF;
         if (userManager.fetchGroupUserMustRename(user) != null) return USSDResponseTypes.NAME_GROUP;
 
@@ -249,7 +248,7 @@ public class USSDHomeController extends USSDController {
             case MTG_RSVP:
                 openingMenu = assembleRsvpMenu(user);
                 break;
-            case RESPOND_LOGBOOK:
+            case RESPOND_TODO:
                 openingMenu = assembleLogBookMenu(user);
                 break;
             case RENAME_SELF:
@@ -318,7 +317,7 @@ public class USSDHomeController extends USSDController {
 
     private USSDMenu assembleLogBookMenu(User user) {
         log.info("User has an incomplete logbook needing a response!");
-        LogBook logBook = logBookBroker.fetchLogBookForUserResponse(user.getUid(), daysPastLogbooks, false);
+        LogBook logBook = todoBroker.fetchLogBookForUserResponse(user.getUid(), daysPastLogbooks, false);
 
         if (logBook == null) {
             log.info("For some reason, should have found a logbook to respond to, but didnt, user = {}", user);
@@ -412,7 +411,7 @@ public class USSDHomeController extends USSDController {
 
         String prompt;
         if (response.equalsIgnoreCase("yes")) {
-            boolean stateChanged = logBookBroker.confirmCompletion(user.getUid(), logBookUid, LocalDateTime.now());
+            boolean stateChanged = todoBroker.confirmCompletion(user.getUid(), logBookUid, LocalDateTime.now());
             prompt = stateChanged ? getMessage(thisSection, startMenu, promptKey + ".logbook-completed", user) :
                     getMessage(thisSection, startMenu, promptKey + ".logbook-unchanged", user);
         } else {

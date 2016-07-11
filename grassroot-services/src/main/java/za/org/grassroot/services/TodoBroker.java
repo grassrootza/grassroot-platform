@@ -4,15 +4,16 @@ import org.springframework.data.domain.Page;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.LogBook;
-import za.org.grassroot.services.enums.LogBookStatus;
+import za.org.grassroot.services.enums.TodoStatus;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
-public interface LogBookBroker {
+public interface TodoBroker {
 	LogBook load(String logBookUid);
+
+	LogBook update(LogBook todo);
 
 	LogBook create(String userUid, JpaEntityType parentType, String parentUid, String message, LocalDateTime actionByDate,
 				   int reminderMinutes, boolean replicateToSubgroups, Set<String> assignedMemberUids);
@@ -42,12 +43,24 @@ public interface LogBookBroker {
      */
 	Page<LogBook> retrieveGroupLogBooks(String userUid, String groupUid, boolean entriesComplete, int pageNumber, int pageSize);
 
+	List<LogBook> getTodosInPeriod(Group group, LocalDateTime periodStart, LocalDateTime periodEnd);
+
 	List<Group> retrieveGroupsFromLogBooks(List<LogBook> logBooks);
+
+	List<LogBook> loadGroupLogBooks(String groupUid, boolean futureLogBooksOnly, TodoStatus status);
 
 	// todo: we need some sort of logic here for not showing users the same logbook over and over
 	LogBook fetchLogBookForUserResponse(String userUid, long daysInPast, boolean assignedLogBooksOnly);
 
 	LogBook update(String userUid, String uid, String message, LocalDateTime actionByDate, int reminderMinutes, Set<String> assignnedMemberUids);
 
+	/**
+	 * Methods to handle "replicaed" todos (i.e., that cascade down subgroups)
+	 */
 
+	boolean hasReplicatedEntries(LogBook logBook);
+
+	List<LogBook> getAllReplicatedEntriesFromParent(LogBook logBook);
+
+	LogBook getParentTodoEntry(LogBook logBook);
 }

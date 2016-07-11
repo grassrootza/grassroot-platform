@@ -34,7 +34,7 @@ public abstract class WebAppAbstractUnitTest {
     @Mock
     protected EventLogManagementService eventLogManagementServiceMock;
     @Mock
-    protected LogBookService logBookServiceMock;
+    protected TodoBroker todoBrokerMock;
     @Mock
     protected UserManagementService userManagementServiceMock;
     @Mock

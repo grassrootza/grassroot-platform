@@ -11,8 +11,8 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.services.LogBookBroker;
-import za.org.grassroot.services.LogBookRequestBroker;
+import za.org.grassroot.services.TodoBroker;
+import za.org.grassroot.services.TodoRequestBroker;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -47,10 +47,10 @@ public class USSDToDoController extends USSDController {
     private PermissionBroker permissionBroker;
 
     @Autowired
-    private LogBookBroker logBookBroker;
+    private TodoBroker todoBroker;
 
     @Autowired
-    private LogBookRequestBroker logBookRequestBroker;
+    private TodoRequestBroker todoRequestBroker;
 
     private static final USSDSection thisSection = USSDSection.LOGBOOK;
     private static final String path = homePath + logMenus;
@@ -146,7 +146,7 @@ public class USSDToDoController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber);
 
         if (logBookUid == null) {
-            logBookUid = logBookRequestBroker.create(user.getUid(), groupUid).getUid();
+            logBookUid = todoRequestBroker.create(user.getUid(), groupUid).getUid();
         }
 
         cacheManager.putUssdMenuForUser(inputNumber, saveLogMenu(subjectMenu, logBookUid));
@@ -166,7 +166,7 @@ public class USSDToDoController extends USSDController {
 
         userInput = (interrupted) ? priorInput : userInput;
         User user = userManager.findByInputNumber(inputNumber, saveLogMenu(dueDateMenu, logBookUid, userInput));
-        if (!revising) logBookRequestBroker.updateMessage(user.getUid(), logBookUid, userInput);
+        if (!revising) todoRequestBroker.updateMessage(user.getUid(), logBookUid, userInput);
         return menuBuilder(new USSDMenu(menuPrompt(dueDateMenu, user),
                                         nextOrConfirmUrl(dueDateMenu, confirmMenu, logBookUid, true)));
     }
@@ -187,7 +187,7 @@ public class USSDToDoController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber, urlToSave);
 
         if (!interrupted) updateLogBookRequest(user.getUid(), logBookUid, priorMenu, userInput);
-        LogBookRequest logBookRequest = logBookRequestBroker.load(logBookUid);
+        LogBookRequest logBookRequest = todoRequestBroker.load(logBookUid);
 
         String formattedDueDate = dateFormat.format(convertToUserTimeZone(logBookRequest.getActionByDate(), getSAST()));
 
@@ -210,7 +210,7 @@ public class USSDToDoController extends USSDController {
                                       @RequestParam(value = logBookParam) String logBookUid) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber, null);
-        logBookRequestBroker.finish(logBookUid);
+        todoRequestBroker.finish(logBookUid);
         return menuBuilder(new USSDMenu(menuPrompt(send, user), optionsHomeExit(user)));
     }
 
@@ -231,7 +231,7 @@ public class USSDToDoController extends USSDController {
                 USSDUrlUtil.logViewExistingUrl(listEntriesMenu, groupUid, done, pageNumber));
 
         String urlBase = logMenus + viewEntryMenu + logBookUrlSuffix;
-        Page<LogBook> entries = logBookBroker.retrieveGroupLogBooks(user.getUid(), groupUid, done, pageNumber, PAGE_LENGTH);
+        Page<LogBook> entries = todoBroker.retrieveGroupLogBooks(user.getUid(), groupUid, done, pageNumber, PAGE_LENGTH);
         boolean canCreateToDos = permissionBroker.getActiveGroupDTOs(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY).isEmpty();
         boolean hasMultipleGroups = permissionBroker.getActiveGroupDTOs(user, null).size() > 1;
 
@@ -274,7 +274,7 @@ public class USSDToDoController extends USSDController {
                                  @RequestParam(value = logBookParam) String logBookUid) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber, saveLogMenu(viewEntryMenu, logBookUid));
-        LogBook logBook = logBookBroker.load(logBookUid);
+        LogBook logBook = todoBroker.load(logBookUid);
         USSDMenu menu = new USSDMenu(getMessage(thisSection, viewEntryMenu, promptKey, logBook.getMessage(), user));
 
         // todo: check permissions before deciding what options to display
@@ -303,7 +303,7 @@ public class USSDToDoController extends USSDController {
                                     @RequestParam(value = logBookParam) String logBookUid) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber, null);
-        LogBook logBook = logBookBroker.load(logBookUid);
+        LogBook logBook = todoBroker.load(logBookUid);
         String createdDate = dateFormat.format(convertToUserTimeZone(logBook.getCreatedDateTime(), getSAST()));
         String dueDate = dateFormat.format(convertToUserTimeZone(logBook.getActionByDate(), getSAST()));
 
@@ -331,7 +331,7 @@ public class USSDToDoController extends USSDController {
                                          @RequestParam(value = logBookParam) String logBookUid) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber, null);
-        LogBook logBook = logBookBroker.load(logBookUid);
+        LogBook logBook = todoBroker.load(logBookUid);
 
         USSDMenu menu;
 
@@ -446,7 +446,7 @@ public class USSDToDoController extends USSDController {
         LocalDateTime completedDateTime = (completedDate != null) ?
                 DateTimeUtil.convertDateStringToLocalDateTime(reformatDateInput(completedDate), stdHour, stdMinute) : LocalDateTime.now();
         userLogger.recordUserInputtedDateTime(user.getUid(), completedDate, "logbook-completion", UserInterfaceType.USSD);
-        logBookBroker.confirmCompletion(user.getUid(), logBookUid, completedDateTime);
+        todoBroker.confirmCompletion(user.getUid(), logBookUid, completedDateTime);
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, setCompleteMenu, promptKey, user));
         // todo: consider adding option to go back to either section start or group logbook start
@@ -457,7 +457,7 @@ public class USSDToDoController extends USSDController {
     private void updateLogBookRequest(String userUid, String logBookRequestUid, String field, String value) {
         switch (field) {
             case subjectMenu:
-                logBookRequestBroker.updateMessage(userUid, logBookRequestUid, value);
+                todoRequestBroker.updateMessage(userUid, logBookRequestUid, value);
                 break;
             case dueDateMenu:
                 String formattedDateString =  reformatDateInput(value);
@@ -467,7 +467,7 @@ public class USSDToDoController extends USSDController {
                 } catch (Exception e) {
                     dueDateTime = USSDEventUtil.parseDateTime(formattedDateString);
                 }
-                logBookRequestBroker.updateDueDate(userUid, logBookRequestUid, dueDateTime);
+                todoRequestBroker.updateDueDate(userUid, logBookRequestUid, dueDateTime);
                 break;
         }
     }
@@ -475,7 +475,7 @@ public class USSDToDoController extends USSDController {
     private USSDMenu pickUserFromGroup(String logBookUid, String userInput, String nextMenu, String backMenu, User user) {
 
         USSDMenu menu;
-        LogBook logBook = logBookBroker.load(logBookUid);
+        LogBook logBook = todoBroker.load(logBookUid);
         Group parent = (Group) logBook.getParent();
         List<User> possibleUsers = userManager.searchByGroupAndNameNumber(parent.getUid(), userInput);
 
