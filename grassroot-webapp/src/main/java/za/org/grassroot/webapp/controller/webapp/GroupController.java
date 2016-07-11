@@ -128,13 +128,17 @@ public class GroupController extends BaseController {
         Group groupByToken = groupBroker.findGroupFromJoinCode(tokenSearch);
         if (groupByToken != null) {
             model.addAttribute("group", groupByToken);
+	        model.addAttribute("externalGroupFound", true);
         } else {
-            List<Group> possibleGroups = groupBroker.findPublicGroups(term);
-            if (!possibleGroups.isEmpty())
-                model.addAttribute("groupCandidates", possibleGroups);
-            else
-                model.addAttribute("noCandidates", true);
+	        List<Group> publicGroups = groupBroker.findPublicGroups(term);
+	        model.addAttribute("groupCandidates", publicGroups);
+	        model.addAttribute("externalGroupFound", !publicGroups.isEmpty());
         }
+	    final String userUid = getUserProfile().getUid();
+	    List<Group> memberGroups = groupBroker.searchUsersGroups(userUid, term);
+	    List<TaskDTO> memberTasks = taskBroker.searchForTasks(userUid, term);
+	    model.addAttribute("foundGroups", memberGroups);
+	    model.addAttribute("foundTasks", memberTasks);
         return "group/results";
     }
 

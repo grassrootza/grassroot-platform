@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
@@ -74,9 +75,26 @@ public class GroupBrokerImpl implements GroupBroker {
     }
 
     @Override
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @Transactional(readOnly = true)
     public List<Group> loadAll() {
         return groupRepository.findAll();
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Group> searchUsersGroups(String userUid, String searchTerm) {
+	    Objects.requireNonNull(userUid);
+	    Objects.requireNonNull(searchTerm);
+
+	    if (searchTerm.trim().isEmpty()) {
+		    throw new IllegalArgumentException("Error, cannot search for blank term");
+	    }
+
+	    User user = userRepository.findOneByUid(userUid);
+        return groupRepository.findByMembershipsUserAndGroupNameContainingIgnoreCaseAndActiveTrue(user, searchTerm);
+    }
+
 
     @Override
     @Transactional

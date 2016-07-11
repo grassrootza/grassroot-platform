@@ -26,12 +26,6 @@ import java.util.Set;
 
 public interface GroupRepository extends JpaRepository<Group, Long> {
     /*
-    Find all the groups created by a specific user
-     */
-    List<Group> findByCreatedByUser(User createdByUser);
-
-    List<Group> findByCreatedByUserAndActive(User createdByUser, boolean active);
-    /*
     Find the last group created by a specific user
      */
     Group findFirstByCreatedByUserOrderByIdDesc(User createdByUser);
@@ -72,11 +66,11 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     Long countByActive(boolean active);
 
     /*
-    Couple of methods to be able to discover groups, as long as those have opted in
+    Couple of methods to be able to discover groups, public if user not a member, and their own groups
      */
     List<Group> findByGroupNameContainingIgnoreCaseAndDiscoverable(String nameFragment, boolean discoverable);
-
     List<Group> findByGroupNameContainingIgnoreCase(String nameFragment);
+    List<Group> findByMembershipsUserAndGroupNameContainingIgnoreCaseAndActiveTrue(User user, String searchTerm);
 
     /*
     Methods for analytical service, to retrieve and count groups in periods (by created date time)

@@ -18,6 +18,8 @@ public interface GroupBroker {
 
     List<Group> loadAll();
 
+    List<Group> searchUsersGroups(String userUid, String searchTerm);
+
     /** METHODS FOR CREATING AND EDITING GROUPS **/
 
     Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos,

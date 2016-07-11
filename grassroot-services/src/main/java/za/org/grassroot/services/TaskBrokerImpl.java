@@ -145,7 +145,33 @@ public class TaskBrokerImpl implements TaskBroker {
         return tasks;
     }
 
-    private Set<TaskDTO> resolveEventTaskDtos(List<Event> events, User user, Instant changedSince) {
+	@Override
+	@Transactional(readOnly = true)
+	public List<TaskDTO> searchForTasks(String userUid, String searchTerm) {
+		Objects.requireNonNull(userUid);
+		Objects.requireNonNull(searchTerm);
+
+		if (searchTerm.trim().isEmpty()) {
+			throw new IllegalArgumentException("Error! Cannot use this method to search for blank search term");
+		}
+
+		Long startTime = System.currentTimeMillis();
+		User user = userRepository.findOneByUid(userUid);
+		List<Event> events = eventRepository.findByParentGroupMembershipsUserAndNameContainingIgnoreCase(user, searchTerm);
+		Set<TaskDTO> taskDTOs = resolveEventTaskDtos(events, user, null);
+
+		List<LogBook> toDos = logBookRepository.findByParentGroupMembershipsUserAndMessageContainingIgnoreCase(user, searchTerm);
+		Set<TaskDTO> todoTaskDTOs = resolveLogBookTaskDtos(toDos, user, null);
+		taskDTOs.addAll(todoTaskDTOs);
+
+		List<TaskDTO> tasks = new ArrayList<>(taskDTOs);
+		Collections.sort(tasks);
+		log.info("Searched for the term {} among all of user's tasks, took {} msecs", searchTerm, System.currentTimeMillis() - startTime);
+
+		return tasks;
+	}
+
+	private Set<TaskDTO> resolveEventTaskDtos(List<Event> events, User user, Instant changedSince) {
         Set<TaskDTO> taskDtos = new HashSet<>();
         for (Event event : events) {
             EventLog userResponseLog = eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.RSVP);

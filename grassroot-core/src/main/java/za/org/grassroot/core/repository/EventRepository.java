@@ -31,6 +31,14 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 	List<Event> findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(User user, Instant start);
 
 	/*
+	Method to find events that a user is part of and where the title includes a search term
+	 todo: modify to rather use assigned_members, but still pick up if that is empty (i.e., all group or parent members assigned)
+	 todo: also search descriptions
+	 todo: this may be quite slow (i.e., to adjust as part of general tune-up / improvement of these search methods)
+	 */
+	List<Event> findByParentGroupMembershipsUserAndNameContainingIgnoreCase(User user, String searchTerm);
+
+	/*
 
 	N.B. do not remove start_date_time > current_timestamp as it will force the query to do an
 	index scan, when there is enough data
