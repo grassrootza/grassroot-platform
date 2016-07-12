@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.OK;
 
 /**
@@ -262,6 +263,25 @@ public class GroupRestController {
                     RestStatus.FAILURE), HttpStatus.NOT_ACCEPTABLE);
         }
 
+        return responseEntity;
+
+    }
+
+    @RequestMapping(value = "/image/remove/{phoneNumber}/{code}/{groupUid}",method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> removeGroupImage(@PathVariable String phoneNumber, @PathVariable String code, @PathVariable String groupUid){
+
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        Group group = groupBroker.load(groupUid);
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+
+        ResponseEntity<ResponseWrapper> responseEntity;
+        if(group.getImageUrl() !=null){
+            groupBroker.removeGroupImage(user.getUid(),groupUid);
+            responseEntity = new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.OK, RestMessage.PICTURE_REMOVED, RestStatus.SUCCESS),OK);
+        }else{
+            responseEntity = new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.PICTURE_NOT_FOUND,
+                    RestStatus.SUCCESS),BAD_REQUEST);
+        }
         return responseEntity;
 
     }
