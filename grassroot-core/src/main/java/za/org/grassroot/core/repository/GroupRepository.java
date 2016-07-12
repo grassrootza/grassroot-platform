@@ -48,7 +48,7 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     /*
     Find groups which are active
      */
-    List<Group> findByMembershipsUserAndActive(User user, boolean active);
+    List<Group> findByMembershipsUserAndActiveTrue(User user);
     Page<Group> findByMembershipsUserAndActive(User user, Pageable pageable, boolean active);
 
     int countByMembershipsUserAndActiveTrue(User user);
@@ -106,5 +106,9 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     @Query(value = "SELECT g from Group g WHERE g.createdByUser = ?1 AND g.active = true AND LENGTH(g.groupName) < 2")
     List<Group> findActiveGroupsWithNamesLessThanOneCharacter(User createdByUser);
 
+    @Query("select g from GroupLog gl inner join gl.group g inner join g.memberships m WHERE gl.groupLogType = 'GROUP_REMOVED' and gl.createdDateTime >= ?2 and m.user = ?1")
+    List<Group> findDeactivatedAfter(User member, Instant time);
 
+    @Query("SELECT g from GroupLog gl inner join gl.group g WHERE gl.groupLogType = 'GROUP_MEMBER_REMOVED' and gl.userOrSubGroupId = ?1 AND gl.createdDateTime >= ?2")
+    List<Group> findMembershipRemovedAfter(Long formerMemberId, Instant time);
 }

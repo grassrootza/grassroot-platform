@@ -104,7 +104,7 @@ public class USSDToDoController extends USSDController {
     public Request askNewOld(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
         USSDMenu thisMenu;
-        if (permissionBroker.getActiveGroups(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY).isEmpty()) {
+        if (permissionBroker.getActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY).isEmpty()) {
             thisMenu = new USSDMenu(getMessage(thisSection, startMenu, promptKey + ".nocreate", user));
         } else {
             thisMenu = new USSDMenu(getMessage(thisSection, startMenu, promptKey, user));

@@ -42,7 +42,7 @@ public class TestEmulatorController extends BaseController {
     @RequestMapping(value = "/ajax/list", method = RequestMethod.GET)
     public String ajaxListMembersView(Model model) {
 
-        Set<Group> groups = permissionBroker.getActiveGroups(getUserProfile(), null);
+        Set<Group> groups = permissionBroker.getActiveGroupsWithPermission(getUserProfile(), null);
 
         model.addAttribute("groups", new ArrayList<>(groups));
         model.addAttribute("userUid", getUserProfile().getUid());
@@ -54,7 +54,7 @@ public class TestEmulatorController extends BaseController {
     @RequestMapping(value = "/geo/start", method = RequestMethod.GET)
     public String locationTestStart(Model model) {
 
-        Set<Group> groups = permissionBroker.getActiveGroups(getUserProfile(), null);
+        Set<Group> groups = permissionBroker.getActiveGroupsWithPermission(getUserProfile(), null);
         log.info("Found this many groups for the user: " + groups.size());
         model.addAttribute("groups", new ArrayList<>(groups));
         model.addAttribute("userUid", getUserProfile().getUid());

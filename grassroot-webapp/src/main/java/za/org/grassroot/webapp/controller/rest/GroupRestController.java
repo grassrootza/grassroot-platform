@@ -90,13 +90,14 @@ public class GroupRestController {
         User user = userManagementService.loadOrSaveUser(phoneNumber);
 
         Instant changedSince = changedSinceMillis == null ? null : Instant.ofEpochMilli(changedSinceMillis);
-        Set<Group> groups = permissionBroker.getActiveGroups(user, null, changedSince);
-        List<GroupResponseWrapper> groupWrappers = groups.stream()
+        ChangedSinceWrapper<Group> changedSinceWrapper = groupBroker.getActiveGroups(user, changedSince);
+        List<GroupResponseWrapper> groupWrappers = changedSinceWrapper.getAddedAndUpdated().stream()
                 .map(group -> createGroupWrapper(group, user))
                 .sorted(Collections.reverseOrder())
                 .collect(Collectors.toList());
 
-        GenericResponseWrapper responseWrapper = new GenericResponseWrapper(OK, RestMessage.USER_GROUPS, RestStatus.SUCCESS, groupWrappers);
+        ChangedSinceWrapper<GroupResponseWrapper> response = new ChangedSinceWrapper<>(groupWrappers, changedSinceWrapper.getRemovedUids());
+        GenericResponseWrapper responseWrapper = new GenericResponseWrapper(OK, RestMessage.USER_GROUPS, RestStatus.SUCCESS, response);
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
     }
 
@@ -289,15 +290,13 @@ public class GroupRestController {
         Role role = group.getMembership(caller).getRole();
         Event event = eventManagementService.getMostRecentEvent(group);
         GroupLog groupLog = groupBroker.getMostRecentLog(group);
+
+        boolean hasTask = event != null;
         GroupResponseWrapper responseWrapper;
-        if (event != null) {
-            if (event.getEventStartDateTime().isAfter(groupLog.getCreatedDateTime())) {
-                responseWrapper = new GroupResponseWrapper(group, event, role, true);
-            } else {
-                responseWrapper = new GroupResponseWrapper(group, groupLog, role, true);
-            }
+        if (hasTask && event.getEventStartDateTime().isAfter(groupLog.getCreatedDateTime())) {
+            responseWrapper = new GroupResponseWrapper(group, event, role, hasTask);
         } else {
-            responseWrapper = new GroupResponseWrapper(group, groupLog, role, false);
+            responseWrapper = new GroupResponseWrapper(group, groupLog, role, hasTask);
         }
         log.info("created response wrapper = {}", responseWrapper);
         return responseWrapper;

@@ -11,9 +11,7 @@ import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.util.DateTimeUtil;
 
-import java.sql.Timestamp;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
@@ -133,7 +131,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         minuteOptions.add(oneDay);
 
         when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
-        when(permissionBrokerMock.getActiveGroups(sessionTestUser,
+        when(permissionBrokerMock.getActiveGroupsWithPermission(sessionTestUser,
                                                   Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING)).thenReturn(dummyGroups);
 
         mockMvc.perform(get("/meeting/create")).andExpect(status().isOk())
@@ -141,7 +139,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(model().attribute("userGroups", hasItem(dummyGroup)));
 
         verify(userManagementServiceMock, times(1)).load(sessionTestUser.getUid());
-        verify(permissionBrokerMock, times(1)).getActiveGroups(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
+        verify(permissionBrokerMock, times(1)).getActiveGroupsWithPermission(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(groupBrokerMock);
         verifyNoMoreInteractions(eventBrokerMock);
@@ -308,13 +306,13 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         Group dummyGroup = new Group("", sessionTestUser);
         dummyGroup.setId(dummyId);
         dummyGroups.add(dummyGroup);
-        when(permissionBrokerMock.getActiveGroups(sessionTestUser, null)).thenReturn(dummyGroups);
+        when(permissionBrokerMock.getActiveGroupsWithPermission(sessionTestUser, null)).thenReturn(dummyGroups);
         mockMvc.perform(get("/meeting/free"))
                 .andExpect(status().isOk())
                 .andExpect((view().name("meeting/free")))
                 .andExpect(model().attribute("userGroups", hasItem(dummyGroup)))
                 .andExpect(model().attribute("groupSpecified", is(false)));
-        verify(permissionBrokerMock, times(2)).getActiveGroups(sessionTestUser, null);
+        verify(permissionBrokerMock, times(2)).getActiveGroupsWithPermission(sessionTestUser, null);
         verifyZeroInteractions(eventManagementServiceMock);
         verifyZeroInteractions(eventLogManagementServiceMock);
         verifyNoMoreInteractions(userManagementServiceMock);
@@ -371,7 +369,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     public void sendFreeFormWorksWithoutGroupId() throws Exception{
         Group testGroup = new Group("",sessionTestUser);
         Set<Group> dummyGroups = Collections.singleton(testGroup);
-        when(permissionBrokerMock.getActiveGroups(sessionTestUser, null)).thenReturn(dummyGroups);
+        when(permissionBrokerMock.getActiveGroupsWithPermission(sessionTestUser, null)).thenReturn(dummyGroups);
 
         testGroup.addMember(sessionTestUser);
 
@@ -379,7 +377,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(view().name("meeting/free")).andExpect(model()
                 .attribute("userGroups", hasItem(testGroup)))
                 .andExpect(model().attribute("groupSpecified", is(false)));
-        verify(permissionBrokerMock, times(1)).getActiveGroups(sessionTestUser, null);
+        verify(permissionBrokerMock, times(1)).getActiveGroupsWithPermission(sessionTestUser, null);
         verifyZeroInteractions(eventManagementServiceMock);
         verifyZeroInteractions(eventLogManagementServiceMock);
         verifyNoMoreInteractions(userManagementServiceMock);

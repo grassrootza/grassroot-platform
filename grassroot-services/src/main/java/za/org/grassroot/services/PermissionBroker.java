@@ -47,10 +47,7 @@ public interface PermissionBroker {
      * @param requiredPermission The permission being checked. Passing null returns all active groups the user is in.
      * @return The requisite set of groups
      */
-    Set<Group> getActiveGroups(User user, Permission requiredPermission);
-
-
-    Set<Group> getActiveGroups(User user, Permission requiredPermission, Instant changedSince);
+    Set<Group> getActiveGroupsWithPermission(User user, Permission requiredPermission);
 
     /**
      * Returns the set of active groups for which the user has the required permission. Returns the GroupDTO entity,

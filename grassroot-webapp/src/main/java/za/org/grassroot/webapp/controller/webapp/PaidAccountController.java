@@ -207,7 +207,7 @@ public class PaidAccountController extends BaseController {
 
     private List<Group> getCandidateGroupsToDesignate(User user, Account account) {
         Long startTime = System.currentTimeMillis();
-        Set<Group> groupsPartOf = permissionBroker.getActiveGroups(user, null);
+        Set<Group> groupsPartOf = permissionBroker.getActiveGroupsWithPermission(user, null);
         List<PaidGroup> alreadyDesignated = accountManagementService.getGroupsPaidForByAccount(account);
         for (PaidGroup paidGroup : alreadyDesignated)
             if (groupsPartOf.contains(paidGroup.getGroup())) groupsPartOf.remove(paidGroup.getGroup());

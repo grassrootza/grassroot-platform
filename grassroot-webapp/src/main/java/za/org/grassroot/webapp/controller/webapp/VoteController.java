@@ -64,7 +64,7 @@ public class VoteController extends BaseController {
             voteWrapper.setParentUid(groupUid);
             model.addAttribute("group", group);
         } else {
-            model.addAttribute("possibleGroups", permissionBroker.getActiveGroups(user, GROUP_PERMISSION_CREATE_GROUP_VOTE));
+            model.addAttribute("possibleGroups", permissionBroker.getActiveGroupsWithPermission(user, GROUP_PERMISSION_CREATE_GROUP_VOTE));
         }
 
         model.addAttribute("vote", voteWrapper);

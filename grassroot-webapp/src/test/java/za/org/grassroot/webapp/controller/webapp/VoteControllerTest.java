@@ -24,8 +24,6 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
-import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
 /**
  * Created by paballo on 2016/01/22.
@@ -70,14 +68,14 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
         Set<Group> testPossibleGroups = Collections.singleton(testGroup);
 
         when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
-        when(permissionBrokerMock.getActiveGroups(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE)).thenReturn(testPossibleGroups);
+        when(permissionBrokerMock.getActiveGroupsWithPermission(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE)).thenReturn(testPossibleGroups);
 
         mockMvc.perform(get("/vote/create"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("vote/create"))
                 .andExpect(model().attribute("possibleGroups", hasItem(testGroup)));
 
-        verify(permissionBrokerMock, times(1)).getActiveGroups(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
+        verify(permissionBrokerMock, times(1)).getActiveGroupsWithPermission(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
         verifyNoMoreInteractions(permissionBrokerMock);
         verifyNoMoreInteractions(groupBrokerMock);
     }

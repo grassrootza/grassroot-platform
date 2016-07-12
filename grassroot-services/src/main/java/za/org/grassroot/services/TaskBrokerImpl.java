@@ -196,6 +196,9 @@ public class TaskBrokerImpl implements TaskBroker {
         if (event.getCreatedDateTime().isAfter(changedSince)) {
             return true;
         }
+
+        // to be honest, it can be that some change (CHANGED log) didn't affect the information that was presented before on UI,
+        // but it is no big harm to return same data again compared to benefits in code simplicity
         EventLog lastChangeLog = eventLogRepository.findFirstByEventAndEventLogTypeOrderByCreatedDateTimeDesc(event, EventLogType.CHANGE);
         if (lastChangeLog != null && lastChangeLog.getCreatedDateTime().isAfter(changedSince)) {
             return true;
@@ -212,6 +215,8 @@ public class TaskBrokerImpl implements TaskBroker {
         if (logBook.getCreatedDateTime().isAfter(changedSince)) {
             return true;
         }
+        // to be honest, it can be that some change (CHANGED log) didn't affect the information that was presented before on UI,
+        // but it is no big harm to return same data again compared to benefits in code simplicity
         LogBookLog lastChangeLog = logBookLogRepository.findFirstByLogBookAndTypeOrderByCreatedDateTimeDesc(logBook, LogBookLogType.CHANGED);
         if (lastChangeLog != null && lastChangeLog.getCreatedDateTime().isAfter(changedSince)) {
             return true;

@@ -1,6 +1,5 @@
 package za.org.grassroot.services;
 
-import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -12,8 +11,6 @@ import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
-import java.time.Instant;
-import java.time.temporal.Temporal;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -151,42 +148,12 @@ public class PermissionBrokerImpl implements PermissionBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public Set<Group> getActiveGroups(User user, Permission requiredPermission) {
-        return getActiveGroups(user, requiredPermission, null);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Set<Group> getActiveGroups(User user, Permission requiredPermission, Instant changedSince) {
+    public Set<Group> getActiveGroupsWithPermission(User user, Permission requiredPermission) {
         Objects.requireNonNull(user, "User cannot be null");
-
-        List<Group> allActiveGroups = groupRepository.findByMembershipsUserAndActive(user, true);
-        return allActiveGroups.stream()
+        List<Group> activeGroups = groupRepository.findByMembershipsUserAndActiveTrue(user);
+        return activeGroups.stream()
                 .filter(group -> requiredPermission == null || isGroupPermissionAvailable(user, group, requiredPermission))
-                .filter(group -> changedSince == null || isGroupChangedSince(group, changedSince))
                 .collect(Collectors.toSet());
-    }
-
-    private boolean isGroupChangedSince(Group group, Instant changedSince) {
-        GroupLog mostRecentLog = groupBroker.getMostRecentLog(group);
-        if (mostRecentLog.getCreatedDateTime().isAfter(changedSince)) {
-            return true;
-        }
-
-        Event mostRecentEvent = eventManagementService.getMostRecentEvent(group);
-        if (mostRecentEvent != null) {
-            if (mostRecentEvent.getCreatedDateTime().isAfter(changedSince)) {
-				return true;
-			}
-
-            // if most recent event is created before last time user checked this group, then we check if this event has been changed after this last time
-            EventLog lastChangeEventLog = eventLogRepository.findFirstByEventAndEventLogTypeOrderByCreatedDateTimeDesc(mostRecentEvent, EventLogType.CHANGE);
-            if (lastChangeEventLog != null && lastChangeEventLog.getCreatedDateTime().isAfter(changedSince)) {
-				return true;
-			}
-        }
-
-        return false;
     }
 
     @Override

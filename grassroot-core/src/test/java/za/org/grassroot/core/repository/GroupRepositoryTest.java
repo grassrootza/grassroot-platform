@@ -258,7 +258,7 @@ public class GroupRepositoryTest {
         assertThat(list1.size(), is(2));
         group2.setActive(false);
         group2 = groupRepository.save(group2);
-        List<Group> list2 = groupRepository.findByMembershipsUserAndActive(user, true);
+        List<Group> list2 = groupRepository.findByMembershipsUserAndActiveTrue(user);
         assertThat(list2.size(), is(1));
         assertTrue(list2.contains(group1));
         assertFalse(list2.contains(group2));

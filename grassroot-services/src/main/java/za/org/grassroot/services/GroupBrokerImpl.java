@@ -1,6 +1,5 @@
 package za.org.grassroot.services;
 
-import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +14,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.notification.EventInfoNotification;
 import za.org.grassroot.core.dto.GroupTreeDTO;
+import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.enums.UserLogType;
@@ -32,6 +32,7 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static za.org.grassroot.core.enums.UserInterfaceType.UNKNOWN;
 import static za.org.grassroot.core.util.DateTimeUtil.*;
@@ -68,6 +69,10 @@ public class GroupBrokerImpl implements GroupBroker {
     private GeoLocationBroker geoLocationBroker;
     @Autowired
     private GroupLocationRepository groupLocationRepository;
+    @Autowired
+    private EventManagementService eventManagementService;
+    @Autowired
+    private EventLogRepository eventLogRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -409,10 +414,9 @@ public class GroupBrokerImpl implements GroupBroker {
         User user = userRepository.findOneByUid(userUid);
 
         Membership membership = group.getMembership(user);
-        group.removeMembership(membership);
 
-        logActionLogsAfterCommit(Sets.newHashSet(new GroupLog(group, user,
-                                                               GroupLogType.GROUP_MEMBER_REMOVED, user.getId())));
+        Set<ActionLog> actionLogs = removeMemberships(user, group, Collections.singleton(membership));
+        logActionLogsAfterCommit(actionLogs);
     }
 
     @Override
@@ -808,7 +812,7 @@ public class GroupBrokerImpl implements GroupBroker {
         User user = userRepository.findOneByUid(userUid);
         Group groupToMakeChild = groupRepository.findOneByUid(groupUid);
 
-        Set<Group> groupsWithPermission = permissionBroker.getActiveGroups(user,Permission.GROUP_PERMISSION_CREATE_SUBGROUP);
+        Set<Group> groupsWithPermission = permissionBroker.getActiveGroupsWithPermission(user,Permission.GROUP_PERMISSION_CREATE_SUBGROUP);
         groupsWithPermission.remove(groupToMakeChild);
 
         return groupsWithPermission.stream().filter(g -> !isGroupAlsoParent(groupToMakeChild, g)).collect(Collectors.toSet());
@@ -847,7 +851,7 @@ public class GroupBrokerImpl implements GroupBroker {
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
         // todo: may want to check for both update and add members ...
-        Set<Group> otherGroups = permissionBroker.getActiveGroups(user, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        Set<Group> otherGroups = permissionBroker.getActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         otherGroups.remove(group);
         return otherGroups;
     }
@@ -1026,5 +1030,51 @@ public class GroupBrokerImpl implements GroupBroker {
 				.filter(group -> group.getMembers().size() <= sizeThreshold)
 				.sorted(Collections.reverseOrder())
 				.collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ChangedSinceWrapper<Group> getActiveGroups(User user, Instant changedSince) {
+        Objects.requireNonNull(user, "User cannot be null");
+
+        List<Group> activeGroups = groupRepository.findByMembershipsUserAndActiveTrue(user);
+
+        // here we put all those groups that have been satisfying query above, but not anymore since 'changedSince' moment
+        Set<String> removedGroupUids = new HashSet<>();
+        if (changedSince != null) {
+            List<Group> deactivatedAfter = groupRepository.findDeactivatedAfter(user, changedSince);
+            List<Group> formerMembersGroups = groupRepository.findMembershipRemovedAfter(user.getId(), changedSince);
+            removedGroupUids = Stream.concat(deactivatedAfter.stream(), formerMembersGroups.stream())
+                    .map(Group::getUid)
+                    .collect(Collectors.toSet());
+        }
+
+        List<Group> groups = activeGroups.stream()
+                .filter(group -> changedSince == null || isGroupChangedSince(group, changedSince))
+                .collect(Collectors.toList());
+
+        return new ChangedSinceWrapper<>(groups, removedGroupUids);
+    }
+
+    private boolean isGroupChangedSince(Group group, Instant changedSince) {
+        GroupLog mostRecentLog = getMostRecentLog(group);
+        if (mostRecentLog.getCreatedDateTime().isAfter(changedSince)) {
+            return true;
+        }
+
+        Event mostRecentEvent = eventManagementService.getMostRecentEvent(group);
+        if (mostRecentEvent != null) {
+            if (mostRecentEvent.getCreatedDateTime().isAfter(changedSince)) {
+				return true;
+			}
+
+            // if most recent event is created before last time user checked this group, then we check if this event has been changed after this last time
+            EventLog lastChangeEventLog = eventLogRepository.findFirstByEventAndEventLogTypeOrderByCreatedDateTimeDesc(mostRecentEvent, EventLogType.CHANGE);
+            if (lastChangeEventLog != null && lastChangeEventLog.getCreatedDateTime().isAfter(changedSince)) {
+				return true;
+			}
+        }
+
+        return false;
     }
 }

@@ -76,7 +76,7 @@ public class TodoController extends BaseController {
                 model.addAttribute("groupSpecified", false);
                 model.addAttribute("userUid", userFromDb.getUid());
                 model.addAttribute("possibleGroups", permissionBroker.
-                        getActiveGroups(userFromDb, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY));
+                        getActiveGroupsWithPermission(userFromDb, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY));
                 entryWrapper = new TodoWrapper(JpaEntityType.GROUP);
 
             } else {

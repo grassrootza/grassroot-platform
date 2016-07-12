@@ -151,8 +151,8 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
 
         groupBroker.addMembers(user2.getUid(), group2.getUid(), Sets.newHashSet(member1), false);
         assertTrue(group2.getMembers().contains(user1));
-        Set<Group> list1 = permissionBroker.getActiveGroups(user1, null);
-        Set<Group> list2 = permissionBroker.getActiveGroups(user1, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        Set<Group> list1 = permissionBroker.getActiveGroupsWithPermission(user1, null);
+        Set<Group> list2 = permissionBroker.getActiveGroupsWithPermission(user1, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         assertNotEquals(list1, list2);
         assertThat(list1.size(), is(2));
         assertThat(list2.size(), is(1));

@@ -111,4 +111,5 @@ public interface GroupBroker {
     Group getGroupByImageUrl(String imageUrl);
 
 
+    ChangedSinceWrapper<Group> getActiveGroups(User user, Instant changedSince);
 }

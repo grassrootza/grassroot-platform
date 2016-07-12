@@ -133,7 +133,7 @@ public class EventManager implements EventManagementService {
             // fetch from the database
             Map<Long, Long> eventMap = new HashMap<>();
             outstandingRSVPs = new ArrayList<>();
-            List<Group> groups = groupRepository.findByMembershipsUserAndActive(user, true);
+            List<Group> groups = groupRepository.findByMembershipsUserAndActiveTrue(user);
             log.debug("getOutstandingResponseForUser...after...getGroupsPartOf...");
 
             // major todo: must be a more elegant way to do this, e.g., via a single query

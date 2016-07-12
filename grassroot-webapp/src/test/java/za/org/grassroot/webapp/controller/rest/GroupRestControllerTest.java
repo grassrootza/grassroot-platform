@@ -14,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.GroupLogType;
+import za.org.grassroot.services.ChangedSinceWrapper;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
@@ -36,7 +37,6 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
 
     String path = "/api/group/";
     List<Group> groups = new ArrayList<>();
-    Set<Group> groupSet = new HashSet<>();
     MembershipInfo membershipInfo = new MembershipInfo(testUserPhone, BaseRoles.ROLE_GROUP_ORGANIZER, sessionTestUser.getDisplayName());
     Set<MembershipInfo> membersToAdd = Sets.newHashSet();
     Event event = meetingEvent;
@@ -81,17 +81,19 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
         sessionTestUser.setId(2L);
         GroupLog groupLog = new GroupLog(testGroup, sessionTestUser, GroupLogType.GROUP_ADDED, sessionTestUser.getId());
         testGroup.addMember(sessionTestUser, "ROLE_GROUP_ORGANIZER");
-        groupSet.add(testGroup);
+        List<Group> groups = Collections.singletonList(testGroup);
+
+        ChangedSinceWrapper<Group> wrapper = new ChangedSinceWrapper<>(groups, Collections.EMPTY_SET);
 
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
-        when(permissionBrokerMock.getActiveGroups(sessionTestUser, null, null)).thenReturn(groupSet);
+        when(groupBrokerMock.getActiveGroups(sessionTestUser, null)).thenReturn(wrapper);
 
         when(eventManagementServiceMock.getMostRecentEvent(testGroup)).thenReturn(event);
         when(groupBrokerMock.getMostRecentLog(testGroup)).thenReturn(groupLog);
         mockMvc.perform(get(path + "list/{phoneNumber}/{code}", testUserPhone, testUserCode)).andExpect(status().is2xxSuccessful());
 
 	    verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
-        verify(permissionBrokerMock).getActiveGroups(sessionTestUser, null, null);
+        verify(groupBrokerMock).getActiveGroups(sessionTestUser, null);
 	    verify(eventManagementServiceMock).getMostRecentEvent(testGroup);
         verify(groupBrokerMock).getMostRecentLog(testGroup);
     }
