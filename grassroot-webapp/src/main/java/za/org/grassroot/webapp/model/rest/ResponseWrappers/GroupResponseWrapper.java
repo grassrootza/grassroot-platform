@@ -107,6 +107,8 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
     public boolean isHasTasks() { return hasTasks; }
 
     public String getImageUrl() {
+        return imageUrl;
+    }
     public List<MembershipResponseWrapper> getMembers() { return members; }
 
 
