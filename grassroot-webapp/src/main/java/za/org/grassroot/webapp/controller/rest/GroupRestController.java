@@ -128,11 +128,9 @@ public class GroupRestController {
             List<Group> possibleGroups = groupBroker.findPublicGroups(searchTerm);
             List<GroupSearchWrapper> groups;
             if (!possibleGroups.isEmpty()) {
-                groups = new ArrayList<>();
-                for (Group group : possibleGroups) {
-                    Event event = eventManagementService.getMostRecentEvent(group);
-                    groups.add(new GroupSearchWrapper(group, event));
-                }
+                groups = possibleGroups.stream()
+                        .map(group -> new GroupSearchWrapper(group, eventManagementService.getMostRecentEvent(group)))
+                        .collect(Collectors.toList());
                 responseWrapper = new GenericResponseWrapper(OK, RestMessage.POSSIBLE_GROUP_MATCHES, RestStatus.SUCCESS, groups);
             } else {
                 responseWrapper = new ResponseWrapperImpl(HttpStatus.NOT_FOUND, RestMessage.NO_GROUP_MATCHING_TERM_FOUND, RestStatus.FAILURE);
@@ -196,11 +194,9 @@ public class GroupRestController {
         if (page > pageable.getTotalPages()) {
             responseWrapper = new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.GROUP_ACTIVITIES, RestStatus.FAILURE);
         } else {
-            List<MembershipResponseWrapper> members = new ArrayList<>();
-            List<User> usersFromPage = pageable.getContent();
-            for (User u : usersFromPage) {
-                members.add(new MembershipResponseWrapper(group, u, group.getMembership(user).getRole(), selectedByDefault));
-            }
+            List<MembershipResponseWrapper> members = pageable.getContent().stream()
+                    .map(u -> new MembershipResponseWrapper(group, u, group.getMembership(u).getRole(), selectedByDefault))
+                    .collect(Collectors.toList());
             responseWrapper = new GenericResponseWrapper(OK, RestMessage.GROUP_MEMBERS, RestStatus.SUCCESS, members);
         }
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
@@ -220,8 +216,10 @@ public class GroupRestController {
             groupBroker.addMembers(user.getUid(), group.getUid(), membersToAdd, false);
         }
 
-        return new ResponseEntity<>(new ResponseWrapperImpl(OK, RestMessage.MEMBERS_ADDED, RestStatus.SUCCESS),
-                HttpStatus.CREATED);
+        Group updatedGroup = groupBroker.load(groupUid);
+
+        return new ResponseEntity<>(new GenericResponseWrapper(OK, RestMessage.MEMBERS_ADDED, RestStatus.SUCCESS,
+                createGroupWrapper(updatedGroup, user)), HttpStatus.CREATED);
     }
 
     @RequestMapping(value = "/members/remove/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.POST)
@@ -231,7 +229,8 @@ public class GroupRestController {
         User user = userManagementService.findByInputNumber(phoneNumber);
         try {
             groupBroker.removeMembers(user.getUid(), groupUid, memberUids);
-            return new ResponseEntity<>(new ResponseWrapperImpl(OK, RestMessage.MEMBERS_REMOVED, RestStatus.SUCCESS), OK);
+            Group updatedGroup = groupBroker.load(groupUid);
+            return new ResponseEntity<>(new GenericResponseWrapper(OK, RestMessage.MEMBERS_REMOVED, RestStatus.SUCCESS, createGroupWrapper(updatedGroup, user)), OK);
         } catch (AccessDeniedException e) {
             return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.FORBIDDEN, RestMessage.PERMISSION_DENIED, RestStatus.FAILURE), HttpStatus.FORBIDDEN);
         }
