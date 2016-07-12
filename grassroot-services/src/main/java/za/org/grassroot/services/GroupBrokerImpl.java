@@ -10,6 +10,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.filter.OncePerRequestFilter;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.notification.EventInfoNotification;
@@ -976,15 +977,15 @@ public class GroupBrokerImpl implements GroupBroker {
     }
 
     @Override
-    public void saveGroupImage(String userUid, String groupUid, String format, byte[] image) {
+    public void saveGroupImage(String userUid, String groupUid, String imageUrl, byte[] image) {
         Objects.requireNonNull(groupUid);
-        Objects.requireNonNull(format);
+        Objects.requireNonNull(imageUrl);
         Objects.requireNonNull(image);
 
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
         group.setImage(image);
-        group.setImageType(format);
+        group.setImageUrl(imageUrl);
 
         groupRepository.save(group);
 
@@ -992,6 +993,28 @@ public class GroupBrokerImpl implements GroupBroker {
                 "Group avatar uploaded");
         logActionLogsAfterCommit(Collections.singleton(groupLog));
 
+    }
+
+    @Override
+    public void removeGroupImage(String userUid, String groupUid)  {
+        Objects.requireNonNull(groupUid);
+        Objects.requireNonNull(userUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+        group.setImage(null);
+        group.setImageUrl(null);
+
+        groupRepository.save(group);
+
+        GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_AVATAR_REMOVED, group.getId(),
+                "Group avatar removed");
+        logActionLogsAfterCommit(Collections.singleton(groupLog));
+    }
+
+    @Override
+    public Group getGroupByImageUrl(String imageUrl) {
+        return groupRepository.findOneByImageUrl(imageUrl);
     }
 
     @Override

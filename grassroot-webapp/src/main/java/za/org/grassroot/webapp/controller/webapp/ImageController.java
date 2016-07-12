@@ -4,17 +4,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.services.GroupBroker;
+import za.org.grassroot.webapp.util.ImageUtil;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 
 /**
@@ -25,32 +25,39 @@ import java.io.IOException;
 public class ImageController {
 
     private Logger log = LoggerFactory.getLogger(ImageController.class);
+    private static final String RELATIVE_PATH = "/image/get?imageId=";
 
     @Autowired
     private GroupBroker groupBroker;
 
-    @RequestMapping(value = "/get",method = RequestMethod.GET)
-    public ResponseEntity<byte[]> getImage(@RequestParam String imageId) throws IOException {
+    @RequestMapping(value = "get", method = RequestMethod.GET)
+    public ResponseEntity<?> getImage(@RequestParam String imageId, HttpServletRequest request) throws IOException {
 
-        log.info("Image id " + imageId);
+        String scheme = request.getScheme();
+        String serverName = request.getServerName();
+        int serverPort = request.getServerPort();
+        StringBuilder builder = new StringBuilder();
+        builder.append(scheme).append("://").append(serverName);
+        if (serverPort != 80 && serverPort != 443) {
+            builder.append(":").append(serverPort);
+        }
+        String imageUrl = builder.append(ImageUtil.getRelativePath())
+                .append(imageId).toString();
 
-        String[] parts = imageId.split("\\.");
-        String groupUid = parts[0];
-        Group group = groupBroker.load(groupUid);
-
-        byte[] b = group.getImage();
-        String contentType = group.getImageType();
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType(contentType));
+        Group group = groupBroker.getGroupByImageUrl(imageUrl);
 
-        return new ResponseEntity<>(b, headers, HttpStatus.OK);
+        if(group != null) {
+            byte[] image = group.getImage();
+            String mimeType = ImageUtil.getMimeType(imageId);
+            headers.setContentType(MediaType.parseMediaType(mimeType));
 
+            return ResponseEntity.ok().lastModified(24000).headers(headers).body(image);
+        }
+
+        return ResponseEntity.notFound().build();
     }
 
-    //for testing purposes
-    @RequestMapping(method = RequestMethod.GET, value = "/upload")
-    public String provideUploadInfo(Model model) throws IOException {
-        return "upload";
-    }
+
 
 }

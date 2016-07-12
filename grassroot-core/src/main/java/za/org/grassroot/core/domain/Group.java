@@ -126,7 +126,7 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
     private byte[] image;
 
     @Column(name="avatar_format")
-    private String imageType;
+    private String imageUrl;
 
     private Group() {
         // for JPA
@@ -475,12 +475,12 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
         this.image = image;
     }
 
-    public String getImageType() {
-        return imageType;
+    public String getImageUrl() {
+        return imageUrl;
     }
 
-    public void setImageType(String imageType) {
-        this.imageType = imageType;
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
 

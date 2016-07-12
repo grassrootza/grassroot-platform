@@ -105,5 +105,10 @@ public interface GroupBroker {
     //save group avatar
     void saveGroupImage(String userUid, String groupUid, String format, byte[] image);
 
+    void removeGroupImage(String userUid, String groupUid);
+
+    //todo this needs to be in a separate interface
+    Group getGroupByImageUrl(String imageUrl);
+
 
 }

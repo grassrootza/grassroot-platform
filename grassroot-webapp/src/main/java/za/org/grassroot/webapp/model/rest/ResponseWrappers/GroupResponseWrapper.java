@@ -41,7 +41,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
         this.role = (role!=null)?role.getName():null;
         this.permissions = RestUtil.filterPermissions(role.getPermissions());
         this.hasTasks = hasTasks;
-        this.imageUrl =generateImageUrl(group);
+        this.imageUrl = group.getImageUrl();
 
         if (group.hasValidGroupTokenCode()) {
             this.joinCode = group.getGroupTokenCode();
@@ -59,7 +59,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
         this.lastChangeType = GroupChangeType.getChangeType(event);
         this.description = event.getName();
         this.dateTime = event.getEventDateTimeAtSAST();
-        this.imageUrl =generateImageUrl(group);
+        this.imageUrl =group.getImageUrl();
     }
 
     public GroupResponseWrapper(Group group, GroupLog groupLog, Role role, boolean hasTasks){
@@ -67,7 +67,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
         this.lastChangeType = GroupChangeType.getChangeType(groupLog);
         this.description = (groupLog.getDescription()!=null) ? groupLog.getDescription() : group.getDescription();
         this.dateTime = groupLog.getCreatedDateTime().atZone(DateTimeUtil.getSAST()).toLocalDateTime();
-        this.imageUrl = generateImageUrl(group);
+        this.imageUrl = group.getImageUrl();
     }
 
     public String getGroupUid() {
@@ -106,29 +106,13 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
 
     public boolean isHasTasks() { return hasTasks; }
 
+    public String getImageUrl() {
+        return imageUrl;
+    }
     public List<MembershipResponseWrapper> getMembers() { return members; }
 
 
-    private static String generateImageUrl(Group group){
-        String imageUrl = group.getUid();
-        if(group.getImage() != null){
-            switch(group.getImageType()){
-                case MediaType.IMAGE_JPEG_VALUE:
-                    imageUrl = imageUrl + ".jpg";
-                    break;
-                case MediaType.IMAGE_GIF_VALUE:
-                    imageUrl = imageUrl +".gif";
-                    break;
-                case MediaType.IMAGE_PNG_VALUE:
-                    imageUrl = imageUrl +".png";
-                    break;
-                default:
-                    imageUrl = null;
-                    break;
-            }
-        }
-        return imageUrl;
-    }
+
 
     @Override
     public int compareTo(GroupResponseWrapper g) {
