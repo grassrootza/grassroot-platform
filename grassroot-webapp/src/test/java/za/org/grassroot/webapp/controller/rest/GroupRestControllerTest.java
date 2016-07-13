@@ -14,7 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.GroupLogType;
-import za.org.grassroot.services.ChangedSinceWrapper;
+import za.org.grassroot.services.ChangedSinceData;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
@@ -83,7 +83,7 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
         testGroup.addMember(sessionTestUser, "ROLE_GROUP_ORGANIZER");
         List<Group> groups = Collections.singletonList(testGroup);
 
-        ChangedSinceWrapper<Group> wrapper = new ChangedSinceWrapper<>(groups, Collections.EMPTY_SET);
+        ChangedSinceData<Group> wrapper = new ChangedSinceData<>(groups, Collections.EMPTY_SET);
 
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(groupBrokerMock.getActiveGroups(sessionTestUser, null)).thenReturn(wrapper);

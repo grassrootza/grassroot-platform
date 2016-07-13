@@ -11,7 +11,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.util.UIDGenerator;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.RequestorAlreadyPartOfGroupException;
@@ -82,7 +81,7 @@ public class GroupRestController {
     }
 
     @RequestMapping(value = "/list/{phoneNumber}/{code}", method = RequestMethod.GET)
-    public ResponseEntity<ChangedSinceWrapper> getUserGroups(
+    public ResponseEntity<ChangedSinceData<GroupResponseWrapper>> getUserGroups(
             @PathVariable("phoneNumber") String phoneNumber,
             @PathVariable("code") String token,
             @RequestParam(name = "changedSince", required = false) Long changedSinceMillis) {
@@ -90,13 +89,13 @@ public class GroupRestController {
         User user = userManagementService.loadOrSaveUser(phoneNumber);
 
         Instant changedSince = changedSinceMillis == null ? null : Instant.ofEpochMilli(changedSinceMillis);
-        ChangedSinceWrapper<Group> changedSinceWrapper = groupBroker.getActiveGroups(user, changedSince);
-        List<GroupResponseWrapper> groupWrappers = changedSinceWrapper.getAddedAndUpdated().stream()
+        ChangedSinceData<Group> changedSinceData = groupBroker.getActiveGroups(user, changedSince);
+        List<GroupResponseWrapper> groupWrappers = changedSinceData.getAddedAndUpdated().stream()
                 .map(group -> createGroupWrapper(group, user))
                 .sorted(Collections.reverseOrder())
                 .collect(Collectors.toList());
 
-        ChangedSinceWrapper<GroupResponseWrapper> response = new ChangedSinceWrapper<>(groupWrappers, changedSinceWrapper.getRemovedUids());
+        ChangedSinceData<GroupResponseWrapper> response = new ChangedSinceData<>(groupWrappers, changedSinceData.getRemovedUids());
         return new ResponseEntity<>(response, OK);
     }
 

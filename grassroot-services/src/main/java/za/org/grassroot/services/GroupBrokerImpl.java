@@ -9,7 +9,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.filter.OncePerRequestFilter;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.notification.EventInfoNotification;
@@ -1034,17 +1033,17 @@ public class GroupBrokerImpl implements GroupBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public ChangedSinceWrapper<Group> getActiveGroups(User user, Instant changedSince) {
+    public ChangedSinceData<Group> getActiveGroups(User user, Instant changedSince) {
         Objects.requireNonNull(user, "User cannot be null");
 
         List<Group> activeGroups = groupRepository.findByMembershipsUserAndActiveTrue(user);
 
         // here we put all those groups that have been satisfying query above, but not anymore since 'changedSince' moment
-        Set<String> removedGroupUids = new HashSet<>();
+        Set<String> removedUids = new HashSet<>();
         if (changedSince != null) {
-            List<Group> deactivatedAfter = groupRepository.findDeactivatedAfter(user, changedSince);
+            List<Group> deactivatedAfter = groupRepository.findMemberGroupsDeactivatedAfter(user, changedSince);
             List<Group> formerMembersGroups = groupRepository.findMembershipRemovedAfter(user.getId(), changedSince);
-            removedGroupUids = Stream.concat(deactivatedAfter.stream(), formerMembersGroups.stream())
+            removedUids = Stream.concat(deactivatedAfter.stream(), formerMembersGroups.stream())
                     .map(Group::getUid)
                     .collect(Collectors.toSet());
         }
@@ -1053,7 +1052,7 @@ public class GroupBrokerImpl implements GroupBroker {
                 .filter(group -> changedSince == null || isGroupChangedSince(group, changedSince))
                 .collect(Collectors.toList());
 
-        return new ChangedSinceWrapper<>(groups, removedGroupUids);
+        return new ChangedSinceData<>(groups, removedUids);
     }
 
     private boolean isGroupChangedSince(Group group, Instant changedSince) {

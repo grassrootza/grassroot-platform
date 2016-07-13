@@ -5,8 +5,10 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.dto.TaskDTO;
+import za.org.grassroot.services.ChangedSinceData;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static org.mockito.Mockito.verify;
@@ -38,7 +40,7 @@ public class TaskRestControllerTest extends RestAbstractUnitTest {
     public void gettingTasksShouldWork() throws Exception {
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(taskBrokerMock.fetchGroupTasks(sessionTestUser.getUid(), testGroup.getUid(), null)).
-                thenReturn(taskList);
+                thenReturn(new ChangedSinceData<>(taskList, Collections.EMPTY_SET));
         mockMvc.perform(get(path + "/list/{phoneNumber}/{code}/{id}", testUserPhone, testUserCode, testGroup.getUid())).andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
         verify(taskBrokerMock, times(1)).fetchGroupTasks(sessionTestUser.getUid(), testGroup.getUid(), null);

@@ -4,11 +4,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-public class ChangedSinceWrapper<T> {
+public class ChangedSinceData<T> {
 	private final List<T> addedAndUpdated;
 	private final Set<String> removedUids;
 
-	public ChangedSinceWrapper(List<T> addedAndUpdated, Set<String> removedUids) {
+	public ChangedSinceData(List<T> addedAndUpdated, Set<String> removedUids) {
 		this.addedAndUpdated = addedAndUpdated;
 		this.removedUids = removedUids;
 	}

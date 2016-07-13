@@ -2,7 +2,6 @@ package za.org.grassroot.services;
 
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.TaskType;
-import za.org.grassroot.services.enums.TodoStatus;
 
 import java.time.Instant;
 import java.util.List;
@@ -16,9 +15,9 @@ public interface TaskBroker {
 
     List<TaskDTO> fetchUpcomingIncompleteGroupTasks(String userUid, String groupUid);
 
-    List<TaskDTO> fetchGroupTasks(String userUid, String groupUid, Instant changedSince);
+    ChangedSinceData<TaskDTO> fetchGroupTasks(String userUid, String groupUid, Instant changedSince);
 
-    List<TaskDTO> fetchUpcomingUserTasks(String userUid, Instant changedSince);
+    List<TaskDTO> fetchUpcomingUserTasks(String userUid);
 
     List<TaskDTO> searchForTasks(String userUid, String searchTerm);
 

@@ -107,7 +107,7 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     List<Group> findActiveGroupsWithNamesLessThanOneCharacter(User createdByUser);
 
     @Query("select g from GroupLog gl inner join gl.group g inner join g.memberships m WHERE gl.groupLogType = 'GROUP_REMOVED' and gl.createdDateTime >= ?2 and m.user = ?1")
-    List<Group> findDeactivatedAfter(User member, Instant time);
+    List<Group> findMemberGroupsDeactivatedAfter(User member, Instant time);
 
     @Query("SELECT g from GroupLog gl inner join gl.group g WHERE gl.groupLogType = 'GROUP_MEMBER_REMOVED' and gl.userOrSubGroupId = ?1 AND gl.createdDateTime >= ?2")
     List<Group> findMembershipRemovedAfter(Long formerMemberId, Instant time);

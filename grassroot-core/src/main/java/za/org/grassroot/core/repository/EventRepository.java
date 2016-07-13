@@ -58,4 +58,7 @@ where e.canceled = FALSE
 
 	@Query(value = "select v from Vote v where v.eventStartDateTime > ?1 and v.canceled = false")
 	List<Event> findAllVotesAfterTimeStamp(Instant fromInstant);
+
+	@Query("SELECT e from EventLog el inner join el.event e where e.parentGroup = ?1 and el.eventLogType = 'CANCELLED' AND el.createdDateTime >= ?2")
+	List<Event> findByParentGroupAndCanceledSince(Group group, Instant since);
 }

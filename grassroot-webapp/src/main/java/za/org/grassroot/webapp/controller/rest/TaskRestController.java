@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
@@ -27,7 +28,7 @@ import java.util.Set;
  */
 
 @RestController
-@RequestMapping(value = "/api/task")
+@RequestMapping(value = "/api/task", produces = MediaType.APPLICATION_JSON_VALUE)
 public class TaskRestController {
 
     private static final Logger logger = LoggerFactory.getLogger(TaskRestController.class);
@@ -46,30 +47,23 @@ public class TaskRestController {
 
     // calling this "for parent" as in future will use it for any entity that can have sub-tasks, but for now just used for groups
 	@RequestMapping(value = "/list/{phoneNumber}/{code}/{parentUid}", method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> getTasksForParent(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
-                                                             @PathVariable("parentUid") String parentUid,
-															 @RequestParam(name = "changedSince", required = false) Long changedSinceMillis) {
+    public ResponseEntity<ChangedSinceData<TaskDTO>> getTasksForParent(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
+																	   @PathVariable("parentUid") String parentUid,
+																	   @RequestParam(name = "changedSince", required = false) Long changedSinceMillis) {
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
 		Instant changedSince = changedSinceMillis == null ? null : Instant.ofEpochMilli(changedSinceMillis);
-		List<TaskDTO> tasks = taskBroker.fetchGroupTasks(user.getUid(), parentUid, changedSince);
-        Collections.sort(tasks, Collections.reverseOrder()); // todo: double check this is right ordering
-        ResponseWrapper responseWrapper;
-        RestMessage message = (tasks.isEmpty()) ? RestMessage.NO_GROUP_ACTIVITIES : RestMessage.GROUP_ACTIVITIES;
-        // note: should not return a failure or 404 on this if task list empty, should instead use the rest message to differentiate
-        responseWrapper = new GenericResponseWrapper(HttpStatus.OK, message, RestStatus.SUCCESS, tasks);
-        return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
+		ChangedSinceData<TaskDTO> changedSinceData = taskBroker.fetchGroupTasks(user.getUid(), parentUid, changedSince);
+        return new ResponseEntity<>(changedSinceData, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/list/{phoneNumber}/{code}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> getAllUpcomingTasksForUser(
 			@PathVariable String phoneNumber,
-			@PathVariable String code,
-			@RequestParam(name = "changedSince", required = false) Long changedSinceMillis) {
+			@PathVariable String code) {
         // todo: should really start storing UID on phone and pass that back here
         User user = userManagementService.loadOrSaveUser(phoneNumber);
-		Instant changedSince = changedSinceMillis == null ? null : Instant.ofEpochMilli(changedSinceMillis);
-		List<TaskDTO> tasks = taskBroker.fetchUpcomingUserTasks(user.getUid(), changedSince);
+		List<TaskDTO> tasks = taskBroker.fetchUpcomingUserTasks(user.getUid());
         Collections.sort(tasks, Collections.reverseOrder());
         RestMessage message = (tasks.isEmpty()) ? RestMessage.USER_HAS_NO_TASKS : RestMessage.USER_ACTIVITIES;
         ResponseWrapper wrapper = new GenericResponseWrapper(HttpStatus.OK, message, RestStatus.SUCCESS, tasks);
