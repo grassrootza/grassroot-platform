@@ -82,7 +82,7 @@ public class GroupRestController {
     }
 
     @RequestMapping(value = "/list/{phoneNumber}/{code}", method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> getUserGroups(
+    public ResponseEntity<ChangedSinceWrapper> getUserGroups(
             @PathVariable("phoneNumber") String phoneNumber,
             @PathVariable("code") String token,
             @RequestParam(name = "changedSince", required = false) Long changedSinceMillis) {
@@ -97,8 +97,7 @@ public class GroupRestController {
                 .collect(Collectors.toList());
 
         ChangedSinceWrapper<GroupResponseWrapper> response = new ChangedSinceWrapper<>(groupWrappers, changedSinceWrapper.getRemovedUids());
-        GenericResponseWrapper responseWrapper = new GenericResponseWrapper(OK, RestMessage.USER_GROUPS, RestStatus.SUCCESS, response);
-        return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
+        return new ResponseEntity<>(response, OK);
     }
 
     @RequestMapping(value = "/get/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.GET)
@@ -218,9 +217,10 @@ public class GroupRestController {
         }
 
         Group updatedGroup = groupBroker.load(groupUid);
+        List<GroupResponseWrapper> groupWrapper = Collections.singletonList(createGroupWrapper(updatedGroup, user));
+        ResponseWrapper rw = new GenericResponseWrapper(OK, RestMessage.MEMBERS_ADDED, RestStatus.SUCCESS, groupWrapper);
 
-        return new ResponseEntity<>(new GenericResponseWrapper(OK, RestMessage.MEMBERS_ADDED, RestStatus.SUCCESS,
-                createGroupWrapper(updatedGroup, user)), HttpStatus.CREATED);
+        return new ResponseEntity<>(rw, HttpStatus.CREATED);
     }
 
     @RequestMapping(value = "/members/remove/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.POST)
