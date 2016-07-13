@@ -49,6 +49,9 @@ public class EventLog implements ActionLog {
     @Column
     private String message;
 
+    @Column(name = "start_time_changed")
+    private Boolean startTimeChanged; // intended only for logs of type CHANGED
+
     /*
     Constructors
      */
@@ -57,17 +60,22 @@ public class EventLog implements ActionLog {
         // for JPA
     }
 
-    public EventLog(User user, Event event, EventLogType eventLogType) {
-        this(user, event, eventLogType, null);
-    }
-
-    public EventLog(User user, Event event, EventLogType eventLogType, String message) {
+    public EventLog(User user, Event event, EventLogType eventLogType, String message, Boolean startTimeChanged) {
         this.uid = UIDGenerator.generateId();
         this.createdDateTime = Instant.now();
         this.user = user;
         this.event = Objects.requireNonNull(event);
         this.eventLogType = Objects.requireNonNull(eventLogType);
         this.message = message;
+        this.startTimeChanged = startTimeChanged;
+    }
+
+    public EventLog(User user, Event event, EventLogType eventLogType, String message) {
+        this(user, event, eventLogType, message, null);
+    }
+
+    public EventLog(User user, Event event, EventLogType eventLogType) {
+        this(user, event, eventLogType, null);
     }
 
     public Long getId() {
@@ -94,6 +102,10 @@ public class EventLog implements ActionLog {
 
     public String getMessage() {
         return message;
+    }
+
+    public Boolean getStartTimeChanged() {
+        return startTimeChanged;
     }
 
     @Override

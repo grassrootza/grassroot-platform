@@ -160,7 +160,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		EventLog eventLog = new EventLog(user, meeting, EventLogType.CHANGE);
+		EventLog eventLog = new EventLog(user, meeting, EventLogType.CHANGE, null, startTimeChanged);
 		bundle.addLog(eventLog);
 
 		Set<Notification> notifications = constructEventChangedNotifications(meeting, eventLog, startTimeChanged);
@@ -219,7 +219,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		EventLog eventLog = new EventLog(user, meeting, EventLogType.CHANGE);
+		EventLog eventLog = new EventLog(user, meeting, EventLogType.CHANGE, null, startTimeChanged);
 		bundle.addLog(eventLog);
 
 		// todo : handle member addition or removal differently (use a flag / enum to record meeting change type?)
@@ -289,7 +289,8 @@ public class EventBrokerImpl implements EventBroker {
 
 		Instant convertedClosingDateTime = convertToSystemTime(eventStartDateTime, getSAST());
 
-		if (!vote.getEventStartDateTime().equals(eventStartDateTime)) {
+		boolean startTimeChanged = !vote.getEventStartDateTime().equals(eventStartDateTime);
+		if (startTimeChanged) {
 			validateEventStartTime(convertedClosingDateTime);
 			vote.setEventStartDateTime(convertedClosingDateTime);
 			vote.updateScheduledReminderTime();
@@ -303,7 +304,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		EventLog eventLog = new EventLog(user, vote, EventLogType.CHANGE);
+		EventLog eventLog = new EventLog(user, vote, EventLogType.CHANGE, null, startTimeChanged);
 		bundle.addLog(eventLog);
 
 		logsAndNotificationsBroker.storeBundle(bundle);
