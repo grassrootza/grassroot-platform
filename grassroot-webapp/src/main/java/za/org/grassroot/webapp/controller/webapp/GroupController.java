@@ -130,7 +130,7 @@ public class GroupController extends BaseController {
             model.addAttribute("group", groupByToken);
 	        model.addAttribute("externalGroupFound", true);
         } else {
-	        List<Group> publicGroups = groupBroker.findPublicGroups(term);
+	        List<Group> publicGroups = groupBroker.findPublicGroups(term, getUserProfile().getUid());
 	        model.addAttribute("groupCandidates", publicGroups);
 	        model.addAttribute("externalGroupFound", !publicGroups.isEmpty());
         }

@@ -761,10 +761,18 @@ public class GroupBrokerImpl implements GroupBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Group> findPublicGroups(String searchTerm) {
+    public List<Group> findPublicGroups(String searchTerm, String searchingUserUid) {
+        Objects.requireNonNull(searchingUserUid);
+        User searchUser = userRepository.findOneByUid(searchingUserUid);
         String modifiedSearchTerm = searchTerm.trim();
-        // Group foundByToken = groupRepository.findByGroupTokenCodeAndTokenExpiryDateTimeAfter(searchTerm, Timestamp.valueOf(LocalDateTime.now()));
-        return groupRepository.findByGroupNameContainingIgnoreCaseAndDiscoverable(modifiedSearchTerm, true);
+        logger.info("running search : term = {}, user = {}", modifiedSearchTerm, searchUser);
+
+        // note : would likely be more efficient to do this filter in query, but can't get named query to do exclusion
+        // on contains quite right, so ... come back as part of general search implementation
+        List<Group> allGroups = groupRepository.findByGroupNameContainingIgnoreCaseAndDiscoverable(modifiedSearchTerm, true);
+        return allGroups.stream()
+                .filter(group -> !group.hasMember(searchUser))
+                .collect(Collectors.toList());
     }
 
     @Override

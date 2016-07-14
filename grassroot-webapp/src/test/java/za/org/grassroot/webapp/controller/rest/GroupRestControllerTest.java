@@ -100,20 +100,22 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
 
     @Test
     public void searchForGroupsShouldWork() throws Exception {
-        when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(groupBrokerMock.findGroupFromJoinCode(testSearchTerm)).thenReturn(testGroup);
-        mockMvc.perform(get(path + "search").param("searchTerm", testSearchTerm)).andExpect(status().is2xxSuccessful());
+        mockMvc.perform(get(path + "search/{phoneNumber}/{code}", testUserPhone, testUserCode).param("searchTerm", testSearchTerm)).andExpect(status().is2xxSuccessful());
+        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupBrokerMock).findGroupFromJoinCode(testSearchTerm);
     }
 
     @Test
     public void searchRequestToJoinGroup() throws Exception {
-        when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(groupJoinRequestServiceMock.open(sessionTestUser.getUid(), testGroup.getUid(), null)).thenReturn(testGroup.getUid());
-        mockMvc.perform(post(path + "join/request/{phoneNumber}/{code}", testUserPhone, testUserCode).param("uid", testGroup.getUid())).andExpect(status().is2xxSuccessful());
-        verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
-        verify(groupJoinRequestServiceMock).open(sessionTestUser.getUid(), testGroup.getUid(), null);
+        mockMvc.perform(post(path + "join/request/{phoneNumber}/{code}", testUserPhone, testUserCode)
+                .param("uid", testGroup.getUid()).param("message", "please let me in")).andExpect(status().is2xxSuccessful());
+        verify(userManagementServiceMock).findByInputNumber(testUserPhone);
+        verify(groupJoinRequestServiceMock).open(sessionTestUser.getUid(), testGroup.getUid(), "please let me in");
     }
 
     @Test

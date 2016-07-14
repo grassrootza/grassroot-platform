@@ -113,26 +113,32 @@ public class GroupRestController {
         return new ResponseEntity<>(rw, OK);
     }
 
-    @RequestMapping(value = "/search", method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> searchForGroup(@RequestParam("searchTerm") String searchTerm) {
+    @RequestMapping(value = "/search/{phoneNumber}/{code}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> searchForGroup(@PathVariable String phoneNumber,
+                                                          @PathVariable String code,
+                                                          @RequestParam("searchTerm") String searchTerm) {
 
-        String tokenSearch = getSearchToken(searchTerm);
+        User user = userManagementService.findByInputNumber(phoneNumber);
+
+	    String tokenSearch = getSearchToken(searchTerm);
         Group groupByToken = groupBroker.findGroupFromJoinCode(tokenSearch);
+
         ResponseWrapper responseWrapper;
-        if (groupByToken != null) {
+        if (groupByToken != null  && !groupByToken.hasMember(user)) {
             Event event = eventManagementService.getMostRecentEvent(groupByToken);
             GroupSearchWrapper groupWrapper = new GroupSearchWrapper(groupByToken, event);
             responseWrapper = new GenericResponseWrapper(OK, RestMessage.GROUP_FOUND, RestStatus.SUCCESS, groupWrapper);
         } else {
-            List<Group> possibleGroups = groupBroker.findPublicGroups(searchTerm);
-            List<GroupSearchWrapper> groups;
+            List<Group> possibleGroups = groupBroker.findPublicGroups(searchTerm, user.getUid());
+            log.info("searched for possible groups found {}, which are {}", possibleGroups.size(), possibleGroups);
+	        List<GroupSearchWrapper> groups;
             if (!possibleGroups.isEmpty()) {
                 groups = possibleGroups.stream()
                         .map(group -> new GroupSearchWrapper(group, eventManagementService.getMostRecentEvent(group)))
                         .collect(Collectors.toList());
                 responseWrapper = new GenericResponseWrapper(OK, RestMessage.POSSIBLE_GROUP_MATCHES, RestStatus.SUCCESS, groups);
             } else {
-                responseWrapper = new ResponseWrapperImpl(HttpStatus.NOT_FOUND, RestMessage.NO_GROUP_MATCHING_TERM_FOUND, RestStatus.FAILURE);
+                responseWrapper = new ResponseWrapperImpl(OK, RestMessage.NO_GROUP_MATCHING_TERM_FOUND, RestStatus.FAILURE);
             }
         }
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
@@ -140,14 +146,15 @@ public class GroupRestController {
 
     @RequestMapping(value = "/join/request/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> requestToJoinGroup(@PathVariable("phoneNumber") String phoneNumber,
-                                                              @PathVariable("code") String code, @RequestParam(value = "uid")
-                                                                      String groupToJoinUid) {
+                                                              @PathVariable("code") String code,
+                                                              @RequestParam(value = "uid") String groupToJoinUid,
+                                                              @RequestParam(value = "message") String message) {
 
-        User user = userManagementService.loadOrSaveUser(phoneNumber);
+        User user = userManagementService.findByInputNumber(phoneNumber);
         ResponseWrapper responseWrapper;
         try {
             log.info("User " + phoneNumber + "requests to join group with uid " + groupToJoinUid);
-            groupJoinRequestService.open(user.getUid(), groupToJoinUid, null);
+            groupJoinRequestService.open(user.getUid(), groupToJoinUid, message);
             responseWrapper = new ResponseWrapperImpl(OK, RestMessage.GROUP_JOIN_REQUEST_SENT, RestStatus.SUCCESS);
         } catch (RequestorAlreadyPartOfGroupException e) {
             responseWrapper = new ResponseWrapperImpl(HttpStatus.CONFLICT, RestMessage.USER_ALREADY_PART_OF_GROUP,
@@ -168,6 +175,29 @@ public class GroupRestController {
                 .collect(Collectors.toList());
 
         return new ResponseEntity<>(requestDTOs, OK);
+    }
+
+    @RequestMapping(value = "/join/respond/{phoneNumber}/{code}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> respondToGroupRequest(@PathVariable String phoneNumber,
+                                                                 @PathVariable String code,
+                                                                 @RequestParam String requestUid,
+                                                                 @RequestParam String response) {
+        try {
+            log.info("Responding to request, with response = {} and request UID = {}", response, requestUid);
+            User user = userManagementService.findByInputNumber(phoneNumber);
+            if (response.equals("APPROVE")) {
+                groupJoinRequestService.approve(user.getUid(), requestUid);
+                return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.OK, RestMessage.GROUP_JOIN_RESPONSE_PROCESSED, RestStatus.SUCCESS), OK);
+            } else if (response.equals("DENY")) {
+                groupJoinRequestService.decline(user.getUid(), requestUid);
+                return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.OK, RestMessage.GROUP_JOIN_RESPONSE_PROCESSED, RestStatus.SUCCESS), OK);
+            } else {
+                return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.CLIENT_ERROR, RestStatus.FAILURE), OK);
+            }
+        } catch (AccessDeniedException e) {
+            // since role / permissions / assignment may have changed since request was opened ...
+            return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.CONFLICT, RestMessage.APPROVER_PERMISSIONS_CHANGED, RestStatus.FAILURE), OK);
+        }
     }
 
     @RequestMapping(value = "/members/list/{phoneNumber}/{code}/{groupUid}/{selected}", method = RequestMethod.GET)

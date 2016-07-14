@@ -63,7 +63,13 @@ public interface GroupBroker {
 
     void updateDiscoverable(String userUid, String groupUid, boolean discoverable, String authUserPhoneNumber);
 
-    List<Group> findPublicGroups(String searchTerm);
+	/**
+     * Core search method. Finds groups corresponding to the term given, for which the user is not a member
+     * @param searchTerm
+     * @param searchingUserUid
+     * @return
+     */
+    List<Group> findPublicGroups(String searchTerm, String searchingUserUid);
 
     Group findGroupFromJoinCode(String joinCode);
 

@@ -7,21 +7,13 @@ package za.org.grassroot.core.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.jpa.repository.query.Procedure;
-import org.springframework.data.repository.PagingAndSortingRepository;
-import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.dto.GroupDTO;
 
-import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.Date;
 import java.util.List;
-import java.util.Set;
 
 
 public interface GroupRepository extends JpaRepository<Group, Long> {
