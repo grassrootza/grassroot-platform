@@ -1,8 +1,14 @@
 package za.org.grassroot.webapp.controller.rest;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import org.omg.PortableInterceptor.SUCCESSFUL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -17,6 +23,7 @@ import za.org.grassroot.services.exception.RequestorAlreadyPartOfGroupException;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.GroupJoinRequestDTO;
+import za.org.grassroot.webapp.model.rest.PermissionDTO;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.*;
 import za.org.grassroot.webapp.util.ImageUtil;
 
@@ -26,8 +33,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.OK;
+import static org.springframework.http.HttpStatus.*;
 
 /**
  * Created by paballo.
@@ -56,6 +62,18 @@ public class GroupRestController {
 
     @Autowired
     private GroupJoinRequestService groupJoinRequestService;
+
+	@Autowired
+	@Qualifier("messageSourceAccessor")
+	protected MessageSourceAccessor messageSourceAccessor;
+
+	private final static Set<Permission> permissionsDisplayed = Sets.newHashSet(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS,
+			Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING,
+			Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE,
+			Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY,
+			Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER,
+			Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER,
+			Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
     @RequestMapping(value = "/create/{phoneNumber}/{code}/{groupName}/{description:.+}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> createGroup(@PathVariable String phoneNumber, @PathVariable String code,
@@ -274,6 +292,7 @@ public class GroupRestController {
         Group group = groupBroker.load(groupUid);
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
+        // todo : extra compression / checks
         ResponseEntity<ResponseWrapper> responseEntity;
         if (file != null) {
             try {
@@ -312,8 +331,93 @@ public class GroupRestController {
                     RestStatus.SUCCESS),BAD_REQUEST);
         }
         return responseEntity;
-
     }
+
+    @RequestMapping(value = "/edit/rename/{phoneNumber}/{code}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> renameGroup(@PathVariable String phoneNumber, @PathVariable String code,
+                                                       @RequestParam String groupUid, @RequestParam String name) {
+
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        ResponseEntity<ResponseWrapper> response;
+        try {
+            groupBroker.updateName(user.getUid(), groupUid, name);
+            response = new ResponseEntity<>(new ResponseWrapperImpl(OK, RestMessage.GROUP_RENAMED, RestStatus.SUCCESS), OK);
+        } catch (Exception e) {
+            response = new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.FORBIDDEN, RestMessage.PERMISSION_DENIED, RestStatus.FAILURE), HttpStatus.FORBIDDEN);
+        }
+
+        return response;
+    }
+
+    @RequestMapping(value = "/edit/public_switch/{phoneNumber}/{code}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> switchGroupPublicPrivate(@PathVariable String phoneNumber, @PathVariable String code,
+                                                                    @RequestParam String groupUid, @RequestParam boolean state) {
+	    User user = userManagementService.findByInputNumber(phoneNumber);
+	    ResponseEntity<ResponseWrapper> response;
+	    try {
+		    groupBroker.updateDiscoverable(user.getUid(), groupUid, state, user.getPhoneNumber());
+		    response = new ResponseEntity<>(new ResponseWrapperImpl(OK, RestMessage.GROUP_DISCOVERABLE_UPDATED, RestStatus.SUCCESS), OK);
+	    } catch (AccessDeniedException e) {
+		    response = new ResponseEntity<>(new ResponseWrapperImpl(FORBIDDEN, RestMessage.PERMISSION_DENIED, RestStatus.FAILURE), FORBIDDEN);
+	    }
+	    return response;
+    }
+
+	@RequestMapping(value = "/edit/open_join/{phoneNumber}/{code}", method = RequestMethod.POST)
+	public ResponseEntity<ResponseWrapper> openJoinCode(@PathVariable String phoneNumber, @PathVariable String code,
+	                                                    @RequestParam String groupUid) {
+		User user = userManagementService.findByInputNumber(phoneNumber);
+		ResponseEntity<ResponseWrapper> response;
+		try {
+			groupBroker.openJoinToken(user.getUid(), groupUid, null);
+			response = new ResponseEntity<>(new ResponseWrapperImpl(OK, RestMessage.GROUP_JOIN_CODE_OPENED, RestStatus.SUCCESS), OK);
+		} catch (AccessDeniedException e) {
+			response = new ResponseEntity<>(new ResponseWrapperImpl(FORBIDDEN, RestMessage.PERMISSION_DENIED, RestStatus.FAILURE), FORBIDDEN);
+		}
+		return response;
+	}
+
+	@RequestMapping(value = "/edit/close_join/{phoneNumber}/{code}", method = RequestMethod.POST)
+	public ResponseEntity<ResponseWrapper> closeJoinCode(@PathVariable String phoneNumber, @PathVariable String code,
+	                                                      @RequestParam String groupUid) {
+		User user = userManagementService.findByInputNumber(phoneNumber);
+		ResponseEntity<ResponseWrapper> response;
+		try {
+			groupBroker.closeJoinToken(user.getUid(), groupUid);
+			response = new ResponseEntity<>(new ResponseWrapperImpl(OK, RestMessage.GROUP_JOIN_CODE_CLOSED, RestStatus.SUCCESS), OK);
+		} catch (AccessDeniedException e) {
+			response = new ResponseEntity<>(new ResponseWrapperImpl(FORBIDDEN, RestMessage.PERMISSION_DENIED, RestStatus.FAILURE), FORBIDDEN);
+		}
+		return response;
+	}
+
+	@RequestMapping(value = "/edit/fetch_permissions/{phoneNumber}/{code}", method = RequestMethod.POST)
+	public ResponseEntity<ResponseWrapper> fetchPermissions(@PathVariable String phoneNumber, @PathVariable String code,
+	                                                        @RequestParam String groupUid, @RequestParam String roleName) {
+		User user = userManagementService.findByInputNumber(phoneNumber);
+		Group group = groupBroker.load(groupUid);
+
+		ResponseEntity<ResponseWrapper> response;
+		try {
+			Set<Permission> permissionsEnabled = permissionBroker.getPermissions(group, roleName);
+			List<PermissionDTO> permissionsDTO = permissionsDisplayed.stream()
+					.map(permission -> new PermissionDTO(permission, group, roleName, permissionsEnabled, messageSourceAccessor))
+					.sorted()
+					.collect(Collectors.toList());
+			response = new ResponseEntity<>(new GenericResponseWrapper(OK, RestMessage.PERMISSIONS_RETURNED, RestStatus.SUCCESS, permissionsDTO), OK);
+		} catch (AccessDeniedException e) {
+			response = new ResponseEntity<>(new ResponseWrapperImpl(FORBIDDEN, RestMessage.PERMISSION_DENIED, RestStatus.FAILURE), FORBIDDEN);
+		}
+		return response;
+	}
+
+	@RequestMapping(value = "/edit/update_permissions/{phoneNumber}/{code}", method = RequestMethod.POST)
+	public ResponseEntity<ResponseWrapper> updatePermissions(@PathVariable String phoneNUmber, @PathVariable String code,
+	                                                         @RequestParam String groupUid, @RequestParam String roleName,
+	                                                         @RequestParam("permissions") List<PermissionDTO> updatedPermissions) {
+		log.info("updating permissions ...");
+		return new ResponseEntity<>(new ResponseWrapperImpl(OK, RestMessage.PERMISSIONS_RETURNED, RestStatus.SUCCESS), OK);
+	}
 
     private GroupResponseWrapper createGroupWrapper(Group group, User caller) {
         Role role = group.getMembership(caller).getRole();

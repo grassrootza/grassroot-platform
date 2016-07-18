@@ -198,7 +198,8 @@ public class UserRestController {
 
         if (environment.acceptsProfiles("production")) {
             if (token != null && System.getenv("SMSUSER") != null && System.getenv("SMSPASS") != null) {
-                String messageResult = smsSendingService.sendSMS("Your Grassroot verification code is: " + token,
+                // todo : wire up a message source for this
+                String messageResult = smsSendingService.sendSMS("Grassroot code: " + token,
                                                                  destinationNumber);
                 log.debug("SMS Send result: {}", messageResult);
             } else {
