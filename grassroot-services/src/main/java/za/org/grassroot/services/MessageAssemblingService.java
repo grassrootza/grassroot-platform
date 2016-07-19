@@ -36,6 +36,8 @@ public interface MessageAssemblingService {
 
     String createMeetingAttendanceConfirmationMessage(User organiser, User member, EventLog eventLog);
 
+    String createSafetyEventMessage(User respondent, User requestor, Address address);
+
     String createGroupJoinRequestMessage(User user, GroupJoinRequest request);
 
     String createReplyFailureMessage(User user);

@@ -154,6 +154,12 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     }
 
     @Override
+    public String createSafetyEventMessage(User respondent, User requestor,Address address) {
+        String[] fields = new String[]{requestor.getDisplayName(), address.getHouseNumber(),address.getStreetName(),address.getTown()};
+        return messageSourceAccessor.getMessage("sms.safety.new",fields, getUserLocale(requestor));
+    }
+
+    @Override
     public String createGroupJoinRequestMessage(User user, GroupJoinRequest request) {
         String[] fields = {request.getRequestor().getDisplayName(), request.getGroup().getGroupName()};
         return messageSourceAccessor.getMessage("sms.group.join.request",fields,getUserLocale(user));

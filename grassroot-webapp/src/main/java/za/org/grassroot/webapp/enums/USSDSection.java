@@ -11,6 +11,7 @@ public enum USSDSection {
     VOTES ("vote"),
     LOGBOOK ("log"),
     GROUP_MANAGER ("group"),
+    SAFETY_GROUP_MANAGER("safety"),
     USER_PROFILE ("user"),
     U404 ("error");
 

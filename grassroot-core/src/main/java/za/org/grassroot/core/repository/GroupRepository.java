@@ -26,6 +26,7 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     Group findOneByUid(String uid);
 
     Group findOneByImageUrl(String imageUrl);
+
     /*
     Get the sub-groups for a specific group
     one level only

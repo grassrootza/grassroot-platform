@@ -81,6 +81,9 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
     @Column(name = "active", nullable = false)
     private boolean active;
 
+    @Column(name="safety_group", nullable = false)
+    private boolean safetyGroup;
+
     /*
     Adding a 'discoverable' field, so group owners can mark if they want others to be able to find them, and a link
     to the UID of the user who will authorize this (UID so we can set it blank and leave nullable)
@@ -456,6 +459,16 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
         this.active = active;
     }
 
+    public boolean isSafetyGroup() {
+        return safetyGroup;
+    }
+
+    public void setSafetyGroup(boolean safetyGroup) {
+        this.safetyGroup = safetyGroup;
+    }
+
+
+
     public boolean isDiscoverable() {
         return discoverable;
     }
@@ -492,6 +505,7 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
     public GroupDefaultImage getDefaultImage() { return defaultImage; }
 
     public void setDefaultImage(GroupDefaultImage defaultImage) { this.defaultImage = defaultImage; }
+
 
     public Set<Role> getGroupRoles() {
         if (groupRoles == null) {
@@ -595,6 +609,7 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
             return createdDateTime.compareTo(otherCreatedDateTime);
         }
     }
+
 
 
 }

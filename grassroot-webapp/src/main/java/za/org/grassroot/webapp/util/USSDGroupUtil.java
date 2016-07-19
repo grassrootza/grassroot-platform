@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static za.org.grassroot.webapp.enums.USSDSection.GROUP_MANAGER;
+import static za.org.grassroot.webapp.enums.USSDSection.SAFETY_GROUP_MANAGER;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 
 /**
@@ -106,7 +107,7 @@ public class USSDGroupUtil extends USSDUtil {
             groupMenu = createGroupPrompt(sessionUser, section, createNewGroup);
         } else if (section.equals(USSDSection.GROUP_MANAGER) && hasOpenJoinRequests(sessionUser)) {
             // case (b), display first join request
-	        groupMenu = showGroupRequests(sessionUser, section);
+            groupMenu = showGroupRequests(sessionUser, section);
         } else {
             // case (c), ask for an existing one, with option to prompt for new one
             String prompt = getMessage(section, groupKeyForMessages, promptKey + ".existing", sessionUser);
@@ -193,13 +194,14 @@ public class USSDGroupUtil extends USSDUtil {
                         "Back"); // todo: i18n
             if (urlForNewGroup != null)
                 menu.addMenuOption(urlForNewGroup, getMessage(groupKeyForMessages, "create", "option", user));
+            menu.addMenuOption(SAFETY_GROUP_MANAGER.toPath()+"start", getMessage(GROUP_MANAGER.toString() + ".safety.option", user));
         }
 
-	    if (USSDSection.GROUP_MANAGER.equals(section) && (!groupBroker.fetchGroupsWithOneCharNames(user, 2).isEmpty())) {
-		    menu.addMenuOption(section.toPath() + "clean", getMessage(groupKeyForMessages, "clean", "option", user));
-	    }
+        if (USSDSection.GROUP_MANAGER.equals(section) && (!groupBroker.fetchGroupsWithOneCharNames(user, 2).isEmpty())) {
+            menu.addMenuOption(section.toPath() + "clean", getMessage(groupKeyForMessages, "clean", "option", user));
+        }
 
-	    return menu;
+        return menu;
     }
 
     public USSDMenu addListOfGroupsToMenu(USSDMenu menu, String nextMenuUrl, List<Group> groups, User user) {
@@ -335,6 +337,7 @@ public class USSDGroupUtil extends USSDUtil {
 
         if (skippedSelection)
             listMenu.addMenuOption(GROUP_MANAGER.toPath() + "create", getMessage(GROUP_MANAGER.toKey() + "create.option", user));
+            listMenu.addMenuOption(SAFETY_GROUP_MANAGER.toPath() +"start", getMessage(GROUP_MANAGER.toString() + ".safety.option", user));
 
         if (permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER))
             listMenu.addMenuOption(groupMenuWithId(addMemberPrompt, groupUid), getMessage(menuKey + addMemberPrompt, user));
@@ -347,6 +350,7 @@ public class USSDGroupUtil extends USSDUtil {
         } else {
             listMenu.addMenuOption(groupMenuWithId(unsubscribePrompt, groupUid), getMessage(menuKey + unsubscribePrompt, user));
         }
+
 
         if (listMenu.getMenuOptions().size() < 4) {
             listMenu.addMenuOption(USSDSection.MEETINGS.toPath() + "start", getMessage(menuKey + "back-mtg", user));
@@ -408,6 +412,12 @@ public class USSDGroupUtil extends USSDUtil {
     private boolean hasOpenJoinRequests(User user) {
         return groupJoinRequestService.getOpenRequestsForUser(user.getUid()).size() > 0;
     }
+
+
+    public static boolean isValidGroupName(String groupName) {
+        return groupName.length() > 1;
+    }
+
 
 
 }

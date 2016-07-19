@@ -140,6 +140,14 @@ public class USSDUrlUtil {
     public static String groupMenuWithId(String menu, String groupUid) {
         return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupUid=" + groupUid;
     }
+    public static String groupMenuWithId(USSDSection section, String menu, String groupUid) {
+        return section.toPath() + menu + "?groupUid=" + groupUid;
+    }
+
+    public static String safetyMenuWithId(String menu,String safetyUid, boolean response){
+        return  USSDSection.SAFETY_GROUP_MANAGER.toPath() +menu+"?entityUid="+safetyUid+"&response="+response;
+    }
+
 
     public static String groupVisibilityOption(String menu, String groupUid, boolean discoverable){
        return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupUid=" + groupUid+"&hide="+discoverable;
