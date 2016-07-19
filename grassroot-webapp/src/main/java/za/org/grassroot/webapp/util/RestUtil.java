@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
+import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
 
@@ -65,6 +66,10 @@ public class RestUtil {
 
 	public static ResponseEntity<ResponseWrapper> messageOkayResponse(RestMessage message) {
 		return new ResponseEntity<>(new ResponseWrapperImpl(OK, message, RestStatus.SUCCESS), OK);
+	}
+
+	public static ResponseEntity<ResponseWrapper> okayResponseWithData(RestMessage message, Object data) {
+		return new ResponseEntity<>(new GenericResponseWrapper(OK, message, RestStatus.SUCCESS, data), OK);
 	}
 
 }

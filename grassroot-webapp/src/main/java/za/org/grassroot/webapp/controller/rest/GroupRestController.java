@@ -364,8 +364,8 @@ public class GroupRestController {
 		User user = userManagementService.findByInputNumber(phoneNumber);
 		ResponseEntity<ResponseWrapper> response;
 		try {
-			groupBroker.openJoinToken(user.getUid(), groupUid, null);
-			response = RestUtil.messageOkayResponse(RestMessage.GROUP_JOIN_CODE_OPENED);
+			String token = groupBroker.openJoinToken(user.getUid(), groupUid, null);
+			response = RestUtil.okayResponseWithData(RestMessage.GROUP_JOIN_CODE_OPENED, token);
 		} catch (AccessDeniedException e) {
 			response = RestUtil.accessDeniedResponse();
 		}

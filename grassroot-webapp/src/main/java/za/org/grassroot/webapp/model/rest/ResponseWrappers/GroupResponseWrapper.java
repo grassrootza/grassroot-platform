@@ -30,6 +30,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
     private LocalDateTime dateTime;
 
     private boolean hasTasks;
+    private boolean discoverable;
 
     private List<MembershipResponseWrapper> members;
 
@@ -41,6 +42,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
         this.role = (role!=null)?role.getName():null;
         this.permissions = RestUtil.filterPermissions(role.getPermissions());
         this.hasTasks = hasTasks;
+        this.discoverable = group.isDiscoverable();
         this.imageUrl = group.getImageUrl();
 
         if (group.hasValidGroupTokenCode()) {
@@ -106,13 +108,13 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
 
     public boolean isHasTasks() { return hasTasks; }
 
+    public boolean isDiscoverable() { return discoverable; }
+
     public String getImageUrl() {
         return imageUrl;
     }
+
     public List<MembershipResponseWrapper> getMembers() { return members; }
-
-
-
 
     @Override
     public int compareTo(GroupResponseWrapper g) {
