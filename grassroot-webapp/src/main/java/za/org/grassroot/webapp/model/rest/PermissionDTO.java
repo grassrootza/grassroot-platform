@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.model.rest;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.collect.ImmutableMap;
 import org.springframework.context.support.MessageSourceAccessor;
@@ -27,13 +28,17 @@ public class PermissionDTO implements Comparable<PermissionDTO> {
 	private String groupUid;
 	private String forRole;
 
+	private Permission permission;
 	private String permissionName;
 	private String permissionLabel;
 	private String permissionDesc;
 	private boolean permissionEnabled;
 	private int position;
 
+	public PermissionDTO() { } // for Jackson
+
 	public PermissionDTO(Permission permission, Group group, String roleName, Set<Permission> enabledSet, MessageSourceAccessor messageSourceAccessor) {
+		this.permission = permission;
 		this.groupUid = group.getUid();
 		this.forRole = roleName;
 		this.permissionName = permission.getName();
@@ -58,6 +63,15 @@ public class PermissionDTO implements Comparable<PermissionDTO> {
 	public void setForRole(String forRole) {
 		this.forRole = forRole;
 	}
+
+	public Permission getPermission() {
+		if (permission == null && permissionName != null && !permissionName.isEmpty()) {
+			permission = Permission.valueOf(permissionName);
+		}
+		return permission;
+	}
+
+	public void setPermission(Permission permission) { this.permission = permission; }
 
 	public String getPermissionName() {
 		return permissionName;
@@ -98,6 +112,7 @@ public class PermissionDTO implements Comparable<PermissionDTO> {
 		return "PermissionDTO{" +
 				"groupUid='" + groupUid + '\'' +
 				", forRole='" + forRole + '\'' +
+				", permission='" + getPermission() + '\'' +
 				", permissionName='" + permissionName + '\'' +
 				", permissionLabel='" + permissionLabel + '\'' +
 				", permissionDesc='" + permissionDesc + '\'' +

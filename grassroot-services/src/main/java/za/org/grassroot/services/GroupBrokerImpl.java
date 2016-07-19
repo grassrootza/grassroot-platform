@@ -577,6 +577,34 @@ public class GroupBrokerImpl implements GroupBroker {
 
     @Override
     @Transactional
+    public void updateGroupPermissionsForRole(String userUid, String groupUid, String roleName, Set<Permission> permissionsToAdd, Set<Permission> permissionsToRemove) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+        Objects.requireNonNull(permissionsToAdd);
+        Objects.requireNonNull(permissionsToRemove);
+
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE);
+
+        Role roleToUpdate = group.getRole(roleName);
+        Set<Permission> updatedPermissions = new HashSet<>(roleToUpdate.getPermissions());
+        updatedPermissions.removeAll(permissionsToRemove);
+        updatedPermissions.addAll(permissionsToAdd);
+	    if (roleName.equals(BaseRoles.ROLE_GROUP_ORGANIZER)) {
+		    updatedPermissions.addAll(permissionBroker.getProtectedOrganizerPermissions());
+	    }
+
+        roleToUpdate.setPermissions(updatedPermissions);
+
+        logActionLogsAfterCommit(Collections.singleton(new GroupLog(group, user, GroupLogType.PERMISSIONS_CHANGED, 0L,
+                "Changed permissions assigned to " + roleName)));
+
+    }
+
+    @Override
+    @Transactional
     public void updateGroupDefaultReminderSetting(String userUid, String groupUid, int reminderMinutes) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);

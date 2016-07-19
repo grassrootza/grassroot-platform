@@ -1,10 +1,19 @@
 package za.org.grassroot.webapp.util;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.webapp.enums.RestMessage;
+import za.org.grassroot.webapp.enums.RestStatus;
+import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
+import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
 
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static org.springframework.http.HttpStatus.FORBIDDEN;
+import static org.springframework.http.HttpStatus.OK;
 
 /**
  * Created by paballo on 2016/03/22.
@@ -45,5 +54,18 @@ public class RestUtil {
         }
         return reminderMins;
     }
+
+	public static ResponseEntity<ResponseWrapper> errorResponse(HttpStatus httpCode, RestMessage message) {
+		return new ResponseEntity<>(new ResponseWrapperImpl(httpCode, message, RestStatus.FAILURE), httpCode);
+	}
+
+    public static ResponseEntity<ResponseWrapper> accessDeniedResponse() {
+	    return new ResponseEntity<>(new ResponseWrapperImpl(FORBIDDEN, RestMessage.PERMISSION_DENIED, RestStatus.FAILURE), FORBIDDEN);
+    }
+
+	public static ResponseEntity<ResponseWrapper> messageOkayResponse(RestMessage message) {
+		return new ResponseEntity<>(new ResponseWrapperImpl(OK, message, RestStatus.SUCCESS), OK);
+	}
+
 }
 

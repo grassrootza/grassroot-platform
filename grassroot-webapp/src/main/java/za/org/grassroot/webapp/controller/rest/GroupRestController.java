@@ -1,9 +1,7 @@
 package za.org.grassroot.webapp.controller.rest;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.omg.PortableInterceptor.SUCCESSFUL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +24,7 @@ import za.org.grassroot.webapp.model.rest.GroupJoinRequestDTO;
 import za.org.grassroot.webapp.model.rest.PermissionDTO;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.*;
 import za.org.grassroot.webapp.util.ImageUtil;
+import za.org.grassroot.webapp.util.RestUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
@@ -33,7 +32,8 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.springframework.http.HttpStatus.*;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.OK;
 
 /**
  * Created by paballo.
@@ -214,7 +214,7 @@ public class GroupRestController {
             }
         } catch (AccessDeniedException e) {
             // since role / permissions / assignment may have changed since request was opened ...
-            return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.CONFLICT, RestMessage.APPROVER_PERMISSIONS_CHANGED, RestStatus.FAILURE), OK);
+            return RestUtil.errorResponse(HttpStatus.CONFLICT, RestMessage.APPROVER_PERMISSIONS_CHANGED);
         }
     }
 
@@ -228,10 +228,8 @@ public class GroupRestController {
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         Group group = groupBroker.load(groupUid);
 
-        // todo: really need a utility method like "return request failure" or something similar
         if (!permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
-            return new ResponseEntity<>(
-                    new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.GROUP_ACTIVITIES, RestStatus.FAILURE), HttpStatus.BAD_REQUEST);
+            return RestUtil.accessDeniedResponse();
         }
 
         int page = (requestPage != null) ? requestPage : 0;
@@ -280,7 +278,7 @@ public class GroupRestController {
             Group updatedGroup = groupBroker.load(groupUid);
             return new ResponseEntity<>(new GenericResponseWrapper(OK, RestMessage.MEMBERS_REMOVED, RestStatus.SUCCESS, createGroupWrapper(updatedGroup, user)), OK);
         } catch (AccessDeniedException e) {
-            return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.FORBIDDEN, RestMessage.PERMISSION_DENIED, RestStatus.FAILURE), HttpStatus.FORBIDDEN);
+            return RestUtil.accessDeniedResponse();
         }
     }
 
@@ -299,16 +297,14 @@ public class GroupRestController {
                 byte[] image = file.getBytes();
                 String fileName = ImageUtil.generateFileName(file,request);
                 groupBroker.saveGroupImage(user.getUid(), group.getUid(), fileName, image);
-                responseEntity = new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.OK, RestMessage.UPLOADED, RestStatus.SUCCESS), OK);
-
+                responseEntity = RestUtil.messageOkayResponse(RestMessage.UPLOADED);
             } catch (IOException | IllegalArgumentException e) {
                 log.info("error "+e.getLocalizedMessage());
                 responseEntity = new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.NOT_ACCEPTABLE, RestMessage.INVALID_INPUT,
                         RestStatus.FAILURE), HttpStatus.NOT_ACCEPTABLE);
             }
         } else {
-            responseEntity = new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.NOT_ACCEPTABLE, RestMessage.INVALID_INPUT,
-                    RestStatus.FAILURE), HttpStatus.NOT_ACCEPTABLE);
+            responseEntity = RestUtil.errorResponse(HttpStatus.NOT_ACCEPTABLE, RestMessage.INVALID_INPUT);
         }
 
         return responseEntity;
@@ -325,10 +321,9 @@ public class GroupRestController {
         ResponseEntity<ResponseWrapper> responseEntity;
         if(group.getImageUrl() !=null){
             groupBroker.removeGroupImage(user.getUid(),groupUid);
-            responseEntity = new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.OK, RestMessage.PICTURE_REMOVED, RestStatus.SUCCESS),OK);
-        }else{
-            responseEntity = new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.PICTURE_NOT_FOUND,
-                    RestStatus.SUCCESS),BAD_REQUEST);
+            responseEntity = RestUtil.messageOkayResponse(RestMessage.PICTURE_REMOVED);
+        } else {
+            responseEntity = RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.PICTURE_NOT_FOUND);
         }
         return responseEntity;
     }
@@ -341,9 +336,9 @@ public class GroupRestController {
         ResponseEntity<ResponseWrapper> response;
         try {
             groupBroker.updateName(user.getUid(), groupUid, name);
-            response = new ResponseEntity<>(new ResponseWrapperImpl(OK, RestMessage.GROUP_RENAMED, RestStatus.SUCCESS), OK);
+            response = RestUtil.messageOkayResponse(RestMessage.GROUP_RENAMED);
         } catch (Exception e) {
-            response = new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.FORBIDDEN, RestMessage.PERMISSION_DENIED, RestStatus.FAILURE), HttpStatus.FORBIDDEN);
+            response = RestUtil.accessDeniedResponse();
         }
 
         return response;
@@ -356,9 +351,9 @@ public class GroupRestController {
 	    ResponseEntity<ResponseWrapper> response;
 	    try {
 		    groupBroker.updateDiscoverable(user.getUid(), groupUid, state, user.getPhoneNumber());
-		    response = new ResponseEntity<>(new ResponseWrapperImpl(OK, RestMessage.GROUP_DISCOVERABLE_UPDATED, RestStatus.SUCCESS), OK);
+		    response = RestUtil.messageOkayResponse(RestMessage.GROUP_DISCOVERABLE_UPDATED);
 	    } catch (AccessDeniedException e) {
-		    response = new ResponseEntity<>(new ResponseWrapperImpl(FORBIDDEN, RestMessage.PERMISSION_DENIED, RestStatus.FAILURE), FORBIDDEN);
+		    response = RestUtil.accessDeniedResponse();
 	    }
 	    return response;
     }
@@ -370,23 +365,23 @@ public class GroupRestController {
 		ResponseEntity<ResponseWrapper> response;
 		try {
 			groupBroker.openJoinToken(user.getUid(), groupUid, null);
-			response = new ResponseEntity<>(new ResponseWrapperImpl(OK, RestMessage.GROUP_JOIN_CODE_OPENED, RestStatus.SUCCESS), OK);
+			response = RestUtil.messageOkayResponse(RestMessage.GROUP_JOIN_CODE_OPENED);
 		} catch (AccessDeniedException e) {
-			response = new ResponseEntity<>(new ResponseWrapperImpl(FORBIDDEN, RestMessage.PERMISSION_DENIED, RestStatus.FAILURE), FORBIDDEN);
+			response = RestUtil.accessDeniedResponse();
 		}
 		return response;
 	}
 
 	@RequestMapping(value = "/edit/close_join/{phoneNumber}/{code}", method = RequestMethod.POST)
 	public ResponseEntity<ResponseWrapper> closeJoinCode(@PathVariable String phoneNumber, @PathVariable String code,
-	                                                      @RequestParam String groupUid) {
+	                                                     @RequestParam String groupUid) {
 		User user = userManagementService.findByInputNumber(phoneNumber);
 		ResponseEntity<ResponseWrapper> response;
 		try {
 			groupBroker.closeJoinToken(user.getUid(), groupUid);
-			response = new ResponseEntity<>(new ResponseWrapperImpl(OK, RestMessage.GROUP_JOIN_CODE_CLOSED, RestStatus.SUCCESS), OK);
+			response = RestUtil.messageOkayResponse(RestMessage.GROUP_JOIN_CODE_CLOSED);
 		} catch (AccessDeniedException e) {
-			response = new ResponseEntity<>(new ResponseWrapperImpl(FORBIDDEN, RestMessage.PERMISSION_DENIED, RestStatus.FAILURE), FORBIDDEN);
+			response = RestUtil.accessDeniedResponse();
 		}
 		return response;
 	}
@@ -394,9 +389,8 @@ public class GroupRestController {
 	@RequestMapping(value = "/edit/fetch_permissions/{phoneNumber}/{code}", method = RequestMethod.POST)
 	public ResponseEntity<ResponseWrapper> fetchPermissions(@PathVariable String phoneNumber, @PathVariable String code,
 	                                                        @RequestParam String groupUid, @RequestParam String roleName) {
-		User user = userManagementService.findByInputNumber(phoneNumber);
-		Group group = groupBroker.load(groupUid);
 
+		Group group = groupBroker.load(groupUid);
 		ResponseEntity<ResponseWrapper> response;
 		try {
 			Set<Permission> permissionsEnabled = permissionBroker.getPermissions(group, roleName);
@@ -406,17 +400,43 @@ public class GroupRestController {
 					.collect(Collectors.toList());
 			response = new ResponseEntity<>(new GenericResponseWrapper(OK, RestMessage.PERMISSIONS_RETURNED, RestStatus.SUCCESS, permissionsDTO), OK);
 		} catch (AccessDeniedException e) {
-			response = new ResponseEntity<>(new ResponseWrapperImpl(FORBIDDEN, RestMessage.PERMISSION_DENIED, RestStatus.FAILURE), FORBIDDEN);
+			response = RestUtil.accessDeniedResponse();
 		}
 		return response;
 	}
 
-	@RequestMapping(value = "/edit/update_permissions/{phoneNumber}/{code}", method = RequestMethod.POST)
-	public ResponseEntity<ResponseWrapper> updatePermissions(@PathVariable String phoneNUmber, @PathVariable String code,
-	                                                         @RequestParam String groupUid, @RequestParam String roleName,
-	                                                         @RequestParam("permissions") List<PermissionDTO> updatedPermissions) {
-		log.info("updating permissions ...");
-		return new ResponseEntity<>(new ResponseWrapperImpl(OK, RestMessage.PERMISSIONS_RETURNED, RestStatus.SUCCESS), OK);
+	@RequestMapping(value = "/edit/update_permissions/{phoneNumber}/{code}/{groupUid}/{roleName}", method = RequestMethod.POST)
+	public ResponseEntity<ResponseWrapper> updatePermissions(@PathVariable String phoneNumber, @PathVariable String code,
+	                                                         @PathVariable String groupUid, @PathVariable String roleName,
+	                                                         @RequestBody List<PermissionDTO> updatedPermissions) {
+		User user = userManagementService.findByInputNumber(phoneNumber);
+		Group group = groupBroker.load(groupUid);
+		ResponseEntity<ResponseWrapper> response;
+
+		try {
+			Map<String, Set<Permission>> analyzedPerms = processUpdatedPermissions(group, roleName, updatedPermissions);
+			groupBroker.updateGroupPermissionsForRole(user.getUid(), groupUid, roleName, analyzedPerms.get("ADDED"), analyzedPerms.get("REMOVED"));
+			response = RestUtil.messageOkayResponse(RestMessage.PERMISSIONS_UPDATED);
+		} catch (AccessDeniedException e) {
+			response = RestUtil.accessDeniedResponse();
+		}
+		return response;
+	}
+
+	@RequestMapping(value = "/edit/change_role/{phoneNumber}/{code}", method = RequestMethod.POST)
+	public ResponseEntity<ResponseWrapper> changeMemberRole(@PathVariable String phoneNumber, @PathVariable String code,
+	                                                        @RequestParam String groupUid, @RequestParam String memberUid,
+	                                                        @RequestParam String roleName) {
+
+		User user = userManagementService.findByInputNumber(phoneNumber);
+		ResponseEntity<ResponseWrapper> response;
+		try {
+			groupBroker.updateMembershipRole(user.getUid(), groupUid, memberUid, roleName);
+			response = RestUtil.messageOkayResponse(RestMessage.MEMBER_ROLE_CHANGED);
+		} catch (AccessDeniedException e) {
+			response = RestUtil.accessDeniedResponse();
+		}
+		return response;
 	}
 
     private GroupResponseWrapper createGroupWrapper(Group group, User caller) {
@@ -441,5 +461,18 @@ public class GroupRestController {
                 searchTerm.substring("*134*1994*".length(), searchTerm.length() - 1) : searchTerm;
     }
 
+	private Map<String, Set<Permission>> processUpdatedPermissions(Group group, String roleName, List<PermissionDTO> permissionDTOs) {
+		Set<Permission> currentPermissions = permissionBroker.getPermissions(group, roleName);
+		Set<Permission> permissionsAdded = new HashSet<>();
+		Set<Permission> permissionsRemoved = new HashSet<>();
+		for (PermissionDTO p : permissionDTOs) {
+			if (currentPermissions.contains(p.getPermission()) && !p.isPermissionEnabled()) {
+				permissionsRemoved.add(p.getPermission());
+			} else if (!currentPermissions.contains(p.getPermission()) && p.isPermissionEnabled()) {
+				permissionsAdded.add(p.getPermission());
+			}
+		}
+		return ImmutableMap.of("ADDED", permissionsAdded, "REMOVED", permissionsRemoved);
+	}
 
 }
