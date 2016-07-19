@@ -55,9 +55,11 @@ public interface LogBookRepository extends JpaRepository<LogBook, Long> {
     // methods for analyzing logbooks (for admin)
     Long countByCreatedDateTimeBetween(Instant start, Instant end);
 
-    // method for searching for todos
-	// todo : maybe refine / just search by assigned users (though this is tricky for todos)
-    List<LogBook> findByParentGroupMembershipsUserAndMessageContainingIgnoreCase(User user, String searchTerm);
+    @Query(value = "select l.* from log_book l " +
+        "inner join group_profile g on l.parent_group_id = g.id " +
+        "inner join group_user_membership m on g.id = m.group_id " +
+        "where m.user_id = ?1 and to_tsvector('english', l.message) @@ to_tsquery('english', ?2)", nativeQuery = true)
+    List<LogBook> findByParentGroupMembershipsUserAndMessageSearchTerm(Long userId, String tsQueryText);
 
     @Transactional
     @Query(value = "select * from log_book l where l.action_by_date is not null and l.completion_percentage < " + LogBook.COMPLETION_PERCENTAGE_BOUNDARY + " and l.number_of_reminders_left_to_send > 0 and (l.action_by_date + l.reminder_minutes * INTERVAL '1 minute') < current_timestamp", nativeQuery = true)

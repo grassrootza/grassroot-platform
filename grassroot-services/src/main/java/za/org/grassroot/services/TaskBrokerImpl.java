@@ -11,6 +11,7 @@ import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.LogBookLogType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.services.util.FullTextSearchUtils;
 
 import java.time.Instant;
 import java.util.*;
@@ -166,10 +167,12 @@ public class TaskBrokerImpl implements TaskBroker {
 
 		Long startTime = System.currentTimeMillis();
 		User user = userRepository.findOneByUid(userUid);
-		List<Event> events = eventRepository.findByParentGroupMembershipsUserAndNameContainingIgnoreCase(user, searchTerm);
+        String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm);
+
+		List<Event> events = eventRepository.findByParentGroupMembershipsUserAndNameSearchTerm(user.getId(), tsQuery);
 		Set<TaskDTO> taskDTOs = resolveEventTaskDtos(events, user, null);
 
-		List<LogBook> toDos = logBookRepository.findByParentGroupMembershipsUserAndMessageContainingIgnoreCase(user, searchTerm);
+        List<LogBook> toDos = logBookRepository.findByParentGroupMembershipsUserAndMessageSearchTerm(user.getId(), tsQuery);
 		Set<TaskDTO> todoTaskDTOs = resolveLogBookTaskDtos(toDos, user, null);
 		taskDTOs.addAll(todoTaskDTOs);
 

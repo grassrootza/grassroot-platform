@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.User;
 
 import java.time.Instant;
@@ -30,13 +31,11 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
 	List<Event> findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(User user, Instant start);
 
-	/*
-	Method to find events that a user is part of and where the title includes a search term
-	 todo: modify to rather use assigned_members, but still pick up if that is empty (i.e., all group or parent members assigned)
-	 todo: also search descriptions
-	 todo: this may be quite slow (i.e., to adjust as part of general tune-up / improvement of these search methods)
-	 */
-	List<Event> findByParentGroupMembershipsUserAndNameContainingIgnoreCase(User user, String searchTerm);
+	@Query(value = "select e.* from event e " +
+			"inner join group_profile g on e.parent_group_id = g.id " +
+			"inner join group_user_membership m on g.id = m.group_id " +
+			"where m.user_id = ?1 and to_tsvector('english', e.name) @@ to_tsquery('english', ?2)", nativeQuery = true)
+	List<Event> findByParentGroupMembershipsUserAndNameSearchTerm(Long userId, String tsQueryText);
 
 	/*
 
