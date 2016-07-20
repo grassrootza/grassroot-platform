@@ -22,6 +22,7 @@ import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
 import za.org.grassroot.services.geo.CenterCalculationResult;
 import za.org.grassroot.services.geo.GeoLocationBroker;
+import za.org.grassroot.services.util.FullTextSearchUtils;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import za.org.grassroot.services.util.TokenGeneratorService;
@@ -791,16 +792,9 @@ public class GroupBrokerImpl implements GroupBroker {
     @Transactional(readOnly = true)
     public List<Group> findPublicGroups(String searchTerm, String searchingUserUid) {
         Objects.requireNonNull(searchingUserUid);
-        User searchUser = userRepository.findOneByUid(searchingUserUid);
-        String modifiedSearchTerm = searchTerm.trim();
-        logger.info("running search : term = {}, user = {}", modifiedSearchTerm, searchUser);
-
-        // note : would likely be more efficient to do this filter in query, but can't get named query to do exclusion
-        // on contains quite right, so ... come back as part of general search implementation
-        List<Group> allGroups = groupRepository.findByGroupNameContainingIgnoreCaseAndDiscoverable(modifiedSearchTerm, true);
-        return allGroups.stream()
-                .filter(group -> !group.hasMember(searchUser))
-                .collect(Collectors.toList());
+        User user = userRepository.findOneByUid(searchingUserUid);
+        String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm);
+        return groupRepository.findDiscoverableGroupsWithNameOrTaskTextWithoutMember(user.getId(), tsQuery);
     }
 
     @Override

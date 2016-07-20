@@ -2,6 +2,7 @@ package za.org.grassroot.services.util;
 
 import com.google.common.collect.Sets;
 
+import java.util.Objects;
 import java.util.Set;
 
 public class FullTextSearchUtils {
@@ -12,6 +13,8 @@ public class FullTextSearchUtils {
 	}
 
 	public static final String encodeAsTsQueryText(String text) {
+		Objects.requireNonNull(text);
+		
 		String[] parts = text.split("\\s+");
 
 		StringBuilder sb = new StringBuilder();
