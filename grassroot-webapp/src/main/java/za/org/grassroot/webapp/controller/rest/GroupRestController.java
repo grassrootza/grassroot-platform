@@ -76,27 +76,37 @@ public class GroupRestController {
 			Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
     @RequestMapping(value = "/create/{phoneNumber}/{code}/{groupName}/{description:.+}", method = RequestMethod.POST)
-    public ResponseEntity<ResponseWrapper> createGroup(@PathVariable String phoneNumber, @PathVariable String code,
-                                                       @PathVariable String groupName, @PathVariable String description,
-                                                       @RequestBody Set<MembershipInfo> membersToAdd) {
-
-        User user = userManagementService.findByInputNumber(phoneNumber);
-
-        Set<MembershipInfo> groupMembers = new HashSet<>(membersToAdd);
-        MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
-        groupMembers.add(creator);
-
-        try {
-            Group group = groupBroker.create(user.getUid(), groupName, null, groupMembers, GroupPermissionTemplate.DEFAULT_GROUP, description, null, true);
-            List<GroupResponseWrapper> groupWrappers = Collections.singletonList(createGroupWrapper(group, user));
-            ResponseWrapper rw = new GenericResponseWrapper(OK, RestMessage.GROUP_CREATED, RestStatus.SUCCESS, groupWrappers);
-            return new ResponseEntity<>(rw, OK);
-        } catch (RuntimeException e) {
-            log.error("Error occurred while creating group: " + e.getMessage(), e);
-            return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.GROUP_NOT_CREATED, RestStatus.FAILURE),
-                    HttpStatus.BAD_REQUEST);
-        }
+    public ResponseEntity<ResponseWrapper> createGroupWithDescription(@PathVariable String phoneNumber, @PathVariable String code,
+                                                                      @PathVariable String groupName, @PathVariable String description,
+                                                                      @RequestBody Set<MembershipInfo> membersToAdd) {
+	    log.info("creating group with description ... name : {}", groupName);
+	    return createGroup(phoneNumber, groupName, description, membersToAdd);
     }
+
+	@RequestMapping(value = "/create/{phoneNumber}/{code}/{groupName:.+}", method = RequestMethod.POST)
+	public ResponseEntity<ResponseWrapper> createGroupWithoutDescription(@PathVariable String phoneNumber, @PathVariable String code,
+	                                                                     @PathVariable String groupName, @RequestBody Set<MembershipInfo> membersToAdd) {
+		log.info("creating group without description ... name : {}", groupName);
+		return createGroup(phoneNumber, groupName, null, membersToAdd);
+	}
+
+	private ResponseEntity<ResponseWrapper> createGroup(final String phoneNumber, final String groupName, final String description,
+	                                                    Set<MembershipInfo> membersToAdd) {
+		User user = userManagementService.findByInputNumber(phoneNumber);
+
+		Set<MembershipInfo> groupMembers = new HashSet<>(membersToAdd);
+		MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
+		groupMembers.add(creator);
+
+		try {
+			Group group = groupBroker.create(user.getUid(), groupName, null, groupMembers, GroupPermissionTemplate.DEFAULT_GROUP, description, null, true);
+			List<GroupResponseWrapper> groupWrappers = Collections.singletonList(createGroupWrapper(group, user));
+			return RestUtil.okayResponseWithData(RestMessage.GROUP_CREATED, groupWrappers);
+		} catch (RuntimeException e) {
+			log.error("Error occurred while creating group: " + e.getMessage(), e);
+			return RestUtil.errorResponse(BAD_REQUEST, RestMessage.GROUP_NOT_CREATED);
+		}
+	}
 
     @RequestMapping(value = "/list/{phoneNumber}/{code}", method = RequestMethod.GET)
     public ResponseEntity<ChangedSinceData<GroupResponseWrapper>> getUserGroups(

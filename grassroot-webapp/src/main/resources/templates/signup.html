@@ -66,7 +66,6 @@
 <div class="header-container" layout:fragment="script-container">
     <script>
         $(document).ready(function () {
-            //$("#mobile-number").intlTelInput();
 
           $( "#register" ).click(function() {
             var phone = $("#mobile-number").val();
@@ -78,12 +77,6 @@
             // console.log("And username now : " + $("#full-mobile-number").val());
             $( "#register-form" ).submit();
           });
-
-
-//            $("#userRegistration").submit(function() {
-//                $("#full-mobile-number").val($("#mobile-number").intlTelInput("getNumber"));
-//                alert(  $("#full-mobile-number").val() );
-//            });
         });
     </script>
 </div>

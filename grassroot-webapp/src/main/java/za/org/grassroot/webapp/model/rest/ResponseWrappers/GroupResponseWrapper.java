@@ -27,6 +27,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
     private String description;
     private String imageUrl;
     private GroupChangeType lastChangeType;
+    private Long lastMajorChangeMillis; // i.e., time last event was created, and/or group modified
     private LocalDateTime dateTime;
 
     private boolean hasTasks;
@@ -61,7 +62,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
         this.lastChangeType = GroupChangeType.getChangeType(event);
         this.description = event.getName();
         this.dateTime = event.getEventDateTimeAtSAST();
-        this.imageUrl =group.getImageUrl();
+        this.lastMajorChangeMillis = event.getCreatedDateTime().toEpochMilli();
     }
 
     public GroupResponseWrapper(Group group, GroupLog groupLog, Role role, boolean hasTasks){
@@ -69,7 +70,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
         this.lastChangeType = GroupChangeType.getChangeType(groupLog);
         this.description = (groupLog.getDescription()!=null) ? groupLog.getDescription() : group.getDescription();
         this.dateTime = groupLog.getCreatedDateTime().atZone(DateTimeUtil.getSAST()).toLocalDateTime();
-        this.imageUrl = group.getImageUrl();
+        this.lastMajorChangeMillis = groupLog.getCreatedDateTime().toEpochMilli();
     }
 
     public String getGroupUid() {
@@ -101,6 +102,8 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
     }
 
     public LocalDateTime getDateTime(){return dateTime;}
+
+    public Long getLastMajorChangeMillis() { return lastMajorChangeMillis; }
 
     public String getJoinCode() { return joinCode; }
 
@@ -142,6 +145,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
         return "GroupResponseWrapper{" +
                 "groupUid='" + groupUid + '\'' +
                 ", lastChangeType=" + lastChangeType +
+                ", lastMajorChangeMillis=" + lastMajorChangeMillis +
                 ", groupName='" + groupName + '\'' +
                 ", members='" + members.size() + '\'' +
                 '}';
