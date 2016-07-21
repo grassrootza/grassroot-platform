@@ -61,7 +61,17 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     /*
     Couple of methods to be able to discover groups, public if user not a member, and their own groups
      */
-    List<Group> findByGroupNameContainingIgnoreCaseAndDiscoverable(String nameFragment, boolean discoverable);
+    @Query(value =
+            "select g.* from group_profile g where " +
+            "g.discoverable = true and " +
+            "g.id not in (select m.group_id from group_user_membership m where m.user_id = ?1) and " +
+            "(" +
+            "to_tsvector('english', g.name) @@ to_tsquery('english', ?2) or " +
+            "g.id in (select e.ancestor_group_id from event e where to_tsvector('english', e.name) @@ to_tsquery('english', ?2)) or " +
+            "g.id in (select l.ancestor_group_id from log_book l where to_tsvector('english', l.message) @@ to_tsquery('english', ?2))" +
+            ")", nativeQuery = true)
+    List<Group> findDiscoverableGroupsWithNameOrTaskTextWithoutMember(Long userId, String tsQuery);
+
     List<Group> findByGroupNameContainingIgnoreCase(String nameFragment);
     List<Group> findByMembershipsUserAndGroupNameContainingIgnoreCaseAndActiveTrue(User user, String searchTerm);
 

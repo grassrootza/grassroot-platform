@@ -304,13 +304,13 @@ public class GroupRepositoryTest {
         testGroup1.setDiscoverable(true);
         testGroup1 = groupRepository.save(testGroup1);
 
-        List<Group> firstList = groupRepository.findByGroupNameContainingIgnoreCaseAndDiscoverable("test", true);
+        List<Group> firstList = groupRepository.findDiscoverableGroupsWithNameOrTaskTextWithoutMember("test", true);
         assertNotNull(firstList);
         assertThat(firstList.size(), is(1));
         assertTrue(firstList.contains(testGroup1));
         assertFalse(firstList.contains(testGroup2));
 
-        List<Group> secondList = groupRepository.findByGroupNameContainingIgnoreCaseAndDiscoverable("1", true);
+        List<Group> secondList = groupRepository.findDiscoverableGroupsWithNameOrTaskTextWithoutMember("1", true);
         assertNotNull(secondList);
         assertThat(secondList.size(), is(1));
         assertTrue(secondList.contains(testGroup1));
