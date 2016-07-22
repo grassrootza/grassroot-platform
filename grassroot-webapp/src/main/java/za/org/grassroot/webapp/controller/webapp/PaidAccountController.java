@@ -140,7 +140,7 @@ public class PaidAccountController extends BaseController {
         if (tokenSearch) {
             model.addAttribute("groupFound", groupBroker.findGroupFromJoinCode(searchTerm));
         } else {
-            model.addAttribute("groupCandidates", groupBroker.findPublicGroups(searchTerm, getUserProfile().getUid()));
+            model.addAttribute("groupCandidates", groupBroker.findPublicGroups(getUserProfile().getUid(), searchTerm, null));
         }
 
         return "paid_account/find_group";

@@ -1,5 +1,6 @@
 package za.org.grassroot.services.geo;
 
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
@@ -22,6 +23,8 @@ public interface GeoLocationBroker {
 	List<User> fetchUsersWithRecordedAverageLocations(LocalDate localDate);
 
 	GroupLocation fetchGroupLocationWithScoreAbove(String groupUid, LocalDate localDate, float score);
+
+	List<GroupLocation> fetchGroupLocationsWithScoreAbove(Set<Group> groups, LocalDate localDate, float score);
 
 	List<double[]> fetchUserLatitudeLongitudeInAvgPeriod(String userUid, LocalDate localDate);
 }

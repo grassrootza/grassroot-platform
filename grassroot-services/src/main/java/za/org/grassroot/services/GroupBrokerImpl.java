@@ -10,7 +10,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.GroupLocation;
+import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.core.domain.notification.EventInfoNotification;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.enums.EventLogType;
@@ -31,6 +33,7 @@ import java.sql.Timestamp;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -39,6 +42,8 @@ import static za.org.grassroot.core.util.DateTimeUtil.*;
 
 @Service
 public class GroupBrokerImpl implements GroupBroker {
+    private static final int DEFAULT_RADIUS = 10000; // 10 km
+    private static final float LOCATION_FILTER_SCORE_MIN = 0.2f;
 
     private final Logger logger = LoggerFactory.getLogger(GroupBrokerImpl.class);
 
@@ -98,9 +103,9 @@ public class GroupBrokerImpl implements GroupBroker {
 	    }
 
 	    User user = userRepository.findOneByUid(userUid);
-        return groupRepository.findByMembershipsUserAndGroupNameContainingIgnoreCaseAndActiveTrue(user, searchTerm);
+        String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm);
+        return groupRepository.findByActiveAndMembershipsUserWithNameContainsText(user.getId(), tsQuery);
     }
-
 
     @Override
     @Transactional
@@ -790,11 +795,74 @@ public class GroupBrokerImpl implements GroupBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Group> findPublicGroups(String searchTerm, String searchingUserUid) {
-        Objects.requireNonNull(searchingUserUid);
-        User user = userRepository.findOneByUid(searchingUserUid);
+    public List<Group> findPublicGroups(String userUid, String searchTerm, GroupLocationFilter locationFilter) {
+        Objects.requireNonNull(userUid);
+
+        logger.info("Finding public groups: userUid={}, searchTerm={}, locationFilter={}", userUid, searchTerm, locationFilter);
+
+        User user = userRepository.findOneByUid(userUid);
         String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm);
-        return groupRepository.findDiscoverableGroupsWithNameOrTaskTextWithoutMember(user.getId(), tsQuery);
+        List<Group> groups = groupRepository.findDiscoverableGroupsWithNameOrTaskTextWithoutMember(user.getId(), tsQuery);
+
+        Predicate<Group> locationPredicate = constructLocationPredicate(user, new HashSet<>(groups), locationFilter);
+        return groups.stream()
+                .filter(locationPredicate)
+                .collect(Collectors.toList());
+    }
+
+    private Predicate<Group> constructLocationPredicate(User user, Set<Group> groups, GroupLocationFilter locationFilter) {
+        if (locationFilter == null) {
+            return group -> true; // always included predicate
+
+        } else {
+            LocalDate localDate = LocalDate.now();
+            GeoLocation center = resolveAreaCenter(locationFilter.getCenter(), user, localDate);
+
+            if (center == null) {
+                return group -> true; // always included predicate if user's location is not found (center is null)
+
+            } else {
+                int radius = resolveRadius(locationFilter.getRadius());
+                List<GroupLocation> groupLocations = groupLocationRepository.findByGroupInAndLocalDateAndScoreGreaterThan(groups, localDate, LOCATION_FILTER_SCORE_MIN);
+                // useful map for quick search of group location; used within following predicate
+                Map<Group, GeoLocation> groupGeoLocations = groupLocations.stream()
+                        .collect(Collectors.toMap(GroupLocation::getGroup, GroupLocation::getLocation));
+
+                return group -> {
+                    GeoLocation geoLocation = groupGeoLocations.get(group);
+                    if (geoLocation == null) {
+                        return locationFilter.isIncludeWithoutLocation();
+
+                    } else {
+                        // is group location within radius ?
+                        int distanceFromCenter = geoLocation.calculateDistanceInMetersFrom(center);
+                        return distanceFromCenter < radius;
+                    }
+                };
+            }
+        }
+    }
+
+    private GeoLocation resolveAreaCenter(GeoLocation centerDefinition, User user, LocalDate localDate) {
+        // if there is no center specified, we try to take user's current location
+        if (centerDefinition == null) {
+            PreviousPeriodUserLocation previousPeriodUserLocation = geoLocationBroker.fetchUserLocation(user.getUid(), localDate);
+            if (previousPeriodUserLocation == null) {
+                return null;
+            }
+            return previousPeriodUserLocation.getLocation();
+
+        } else {
+            return centerDefinition;
+        }
+    }
+
+    private int resolveRadius(Integer radiusDefinition) {
+        if (radiusDefinition == null) {
+            return DEFAULT_RADIUS;
+        } else {
+            return radiusDefinition;
+        }
     }
 
     @Override

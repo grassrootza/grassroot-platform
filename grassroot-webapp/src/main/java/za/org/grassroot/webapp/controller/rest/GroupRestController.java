@@ -157,7 +157,7 @@ public class GroupRestController {
             GroupSearchWrapper groupWrapper = new GroupSearchWrapper(groupByToken, event);
             responseWrapper = new GenericResponseWrapper(OK, RestMessage.GROUP_FOUND, RestStatus.SUCCESS, groupWrapper);
         } else {
-            List<Group> possibleGroups = groupBroker.findPublicGroups(searchTerm, user.getUid());
+            List<Group> possibleGroups = groupBroker.findPublicGroups(user.getUid(), searchTerm, null);
             log.info("searched for possible groups found {}, which are {}", possibleGroups.size(), possibleGroups);
 	        List<GroupSearchWrapper> groups;
             if (!possibleGroups.isEmpty()) {
@@ -220,7 +220,7 @@ public class GroupRestController {
                 groupJoinRequestService.decline(user.getUid(), requestUid);
                 return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.OK, RestMessage.GROUP_JOIN_RESPONSE_PROCESSED, RestStatus.SUCCESS), OK);
             } else {
-                return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.CLIENT_ERROR, RestStatus.FAILURE), OK);
+                return new ResponseEntity<>(new ResponseWrapperImpl(BAD_REQUEST, RestMessage.CLIENT_ERROR, RestStatus.FAILURE), OK);
             }
         } catch (AccessDeniedException e) {
             // since role / permissions / assignment may have changed since request was opened ...
@@ -247,7 +247,7 @@ public class GroupRestController {
         Page<User> pageable = userManagementService.getGroupMembers(group, page, size);
         ResponseWrapper responseWrapper;
         if (page > pageable.getTotalPages()) {
-            responseWrapper = new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.GROUP_ACTIVITIES, RestStatus.FAILURE);
+            responseWrapper = new ResponseWrapperImpl(BAD_REQUEST, RestMessage.GROUP_ACTIVITIES, RestStatus.FAILURE);
         } else {
             List<MembershipResponseWrapper> members = pageable.getContent().stream()
                     .map(u -> new MembershipResponseWrapper(group, u, group.getMembership(u).getRole(), selectedByDefault))
@@ -333,7 +333,7 @@ public class GroupRestController {
             groupBroker.removeGroupImage(user.getUid(),groupUid);
             responseEntity = RestUtil.messageOkayResponse(RestMessage.PICTURE_REMOVED);
         } else {
-            responseEntity = RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.PICTURE_NOT_FOUND);
+            responseEntity = RestUtil.errorResponse(BAD_REQUEST, RestMessage.PICTURE_NOT_FOUND);
         }
         return responseEntity;
     }

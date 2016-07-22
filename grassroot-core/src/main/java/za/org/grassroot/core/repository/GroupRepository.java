@@ -72,8 +72,16 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
             ")", nativeQuery = true)
     List<Group> findDiscoverableGroupsWithNameOrTaskTextWithoutMember(Long userId, String tsQuery);
 
-    List<Group> findByGroupNameContainingIgnoreCase(String nameFragment);
-    List<Group> findByMembershipsUserAndGroupNameContainingIgnoreCaseAndActiveTrue(User user, String searchTerm);
+    @Query(value = "select g.* from group_profile g " +
+            "where to_tsvector('english', g.name) @@ to_tsquery('english', ?2)",
+            nativeQuery = true)
+    List<Group> findByGroupNameContainingIgnoreCase(String nameTsQuery);
+
+    @Query(value = "select g.* from group_profile g " +
+            "inner join group_user_membership m on g.id = m.group_id " +
+            "where g.active = true and m.user_id = ?1 and to_tsvector('english', g.name) @@ to_tsquery('english', ?2)",
+            nativeQuery = true)
+    List<Group> findByActiveAndMembershipsUserWithNameContainsText(Long userId, String nameTsQuery);
 
     /*
     Methods for analytical service, to retrieve and count groups in periods (by created date time)

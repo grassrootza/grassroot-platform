@@ -16,6 +16,7 @@ import za.org.grassroot.core.dto.MaskedUserDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.services.*;
+import za.org.grassroot.services.util.FullTextSearchUtils;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
@@ -168,7 +169,8 @@ public class AdminController extends BaseController {
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping(value = "/admin/groups/search", method = RequestMethod.POST)
     public String findGroup(Model model, @RequestParam(value = "search_term") String searchTerm) {
-        List<Group> possibleGroups = groupRepository.findByGroupNameContainingIgnoreCase(searchTerm);
+        String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm);
+        List<Group> possibleGroups = groupRepository.findByGroupNameContainingIgnoreCase(tsQuery);
         model.addAttribute("possibleGroups", possibleGroups);
         model.addAttribute("roles", roleDescriptions);
         return "admin/groups/search_result";

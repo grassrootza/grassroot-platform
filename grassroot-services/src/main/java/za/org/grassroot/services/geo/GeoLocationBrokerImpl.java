@@ -138,6 +138,11 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 	}
 
 	@Override
+	public List<GroupLocation> fetchGroupLocationsWithScoreAbove(Set<Group> groups, LocalDate localDate, float score) {
+		return groupLocationRepository.findByGroupInAndLocalDateAndScoreGreaterThan(groups, localDate, score);
+	}
+
+	@Override
 	@Transactional(readOnly = true)
 	public List<double[]> fetchUserLatitudeLongitudeInAvgPeriod(String userUid, LocalDate localDate) {
 

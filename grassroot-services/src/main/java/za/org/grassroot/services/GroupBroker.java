@@ -1,6 +1,7 @@
 package za.org.grassroot.services;
 
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
@@ -67,12 +68,15 @@ public interface GroupBroker {
     void updateDiscoverable(String userUid, String groupUid, boolean discoverable, String authUserPhoneNumber);
 
 	/**
-     * Core search method. Finds groups corresponding to the term given, for which the user is not a member
-     * @param searchTerm
-     * @param searchingUserUid
-     * @return
+     * Core search method. Finds discoverable groups corresponding to the term given, for which the user is not a member.
+     * If location filter is null, then no location filtering is performed.
+     *
+     * @param userUid user searcher
+     * @param searchTerm query string
+     * @param locationFilter optional, nullable, location filter options
+     * @return group list
      */
-    List<Group> findPublicGroups(String searchTerm, String searchingUserUid);
+    List<Group> findPublicGroups(String userUid, String searchTerm, GroupLocationFilter locationFilter);
 
     Group findGroupFromJoinCode(String joinCode);
 

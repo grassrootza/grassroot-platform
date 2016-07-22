@@ -130,7 +130,11 @@ public class GroupController extends BaseController {
             model.addAttribute("group", groupByToken);
 	        model.addAttribute("externalGroupFound", true);
         } else {
-	        List<Group> publicGroups = groupBroker.findPublicGroups(term, getUserProfile().getUid());
+            // just for testing since no UI support yet exists...
+//            GroupLocationFilter locationFilter = new GroupLocationFilter(new GeoLocation(45.567641, 18.701211), 30000, true);
+            GroupLocationFilter locationFilter = null;
+
+            List<Group> publicGroups = groupBroker.findPublicGroups(getUserProfile().getUid(), term, locationFilter);
 	        model.addAttribute("groupCandidates", publicGroups);
 	        model.addAttribute("externalGroupFound", !publicGroups.isEmpty());
         }
