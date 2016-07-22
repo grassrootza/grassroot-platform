@@ -139,7 +139,7 @@ public class USSDHomeController extends USSDController {
          */
 
         if (codeHasTrailingDigits(enteredUSSD)) {
-            String trailingDigits = enteredUSSD.substring(hashPosition + 1, enteredUSSD.length() - 1);
+            String trailingDigits = enteredUSSD.substring(hashPosition + 1, enteredUSSD.length()-1);
             openingMenu = processTrailingDigits(trailingDigits, sessionUser);
         } else {
             if (!sessionUser.isHasInitiatedSession()) userManager.setInitiatedSession(sessionUser);
@@ -212,9 +212,9 @@ public class USSDHomeController extends USSDController {
 
         // todo: a switch logic for token ranges
 
-        System.out.println("Processing trailing digits ..." + trailingDigits);
+        log.info("Processing trailing digits ..." + trailingDigits);
 
-        Group groupFromJoinCode = groupBroker.findGroupFromJoinCode(trailingDigits);
+        Group groupFromJoinCode = groupBroker.findGroupFromJoinCode(trailingDigits.trim());
         if (groupFromJoinCode != null) {
             log.info("Found a token with these trailing digits ...");
             if (groupFromJoinCode.isSafetyGroup()) {
@@ -381,11 +381,11 @@ public class USSDHomeController extends USSDController {
     private USSDMenu assemblePanicButtonActivationMenu(User user, Group group) {
         USSDMenu menu;
         if (group.hasMember(user)) {
-            String message = getMessage("safety.activated." + promptKey, user);
+            String message = getMessage(thisSection,"safety.activated",promptKey, user);
             safetyEventBroker.create(user.getUid(), group.getUid());
             menu = new USSDMenu(message);
         } else {
-            menu = new USSDMenu("You currently do not belong to the safety group, What would you like to do?");
+            menu = new USSDMenu(getMessage(thisSection, "safety.not-activated",promptKey, user));
             menu.addMenuOption(USSDSection.SAFETY_GROUP_MANAGER+"join-request"+doSuffix,"Ask to join group");
             menu.addMenuOption(path+startMenu, "Go to main menu");
         }

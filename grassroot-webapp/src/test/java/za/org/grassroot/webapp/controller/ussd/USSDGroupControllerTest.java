@@ -454,7 +454,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     public void newGroupCreateShouldWork() throws Exception {
         resetTestGroup();
         String nameToPass = "test testGroup";
-        String urlToSave = saveGroupMenuWithInput("create-do", testGroup.getUid(), nameToPass);
+        String urlToSave = saveGroupMenuWithInput("create-do", testGroup.getUid(), nameToPass, false);
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(groupBrokerMock.create(testUser.getUid(), nameToPass, null, organizer(testUser), template, null, null, true)).thenReturn(testGroup);
 
@@ -474,7 +474,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         resetTestGroup();
         String newNumbersToPass = "0801234567 010111222"; // second number is invalid
         Set<MembershipInfo> member = ordinaryMember("0801234567");
-        String urlToSave = saveGroupMenuWithInput("add-numbers-do", testGroup.getUid(), newNumbersToPass);
+        String urlToSave = saveGroupMenuWithInput("add-numbers-do", testGroup.getUid(), newNumbersToPass, false);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
@@ -492,7 +492,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     @Test
     public void newGroupFinishingShouldWork() throws Exception {
         resetTestGroup();
-        String urlToSave = saveGroupMenuWithInput("add-numbers-do", testGroup.getUid(), "0");
+        String urlToSave = saveGroupMenuWithInput("add-numbers-do", testGroup.getUid(), "0", false);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         mockMvc.perform(get(path + "add-numbers-do").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString).

@@ -18,7 +18,10 @@ public enum UserLogType {
     USER_SKIPPED_NAME("user preferred not to set name"),
     DEREGISTERED_ANDROID("user android profile deleted"),
     JOIN_REQUEST("user required to approve a join request"),
-    JOINED_SAFETY_GROUP("user added to safety gtoup");
+    JOINED_SAFETY_GROUP("user added to safety group"),
+    ADDED_ADDRESS("user added address"),
+    CHANGED_ADDRESS("user changed address"),
+    REMOVED_ADDRESS("user removed addres");
 
     private final String text;
 

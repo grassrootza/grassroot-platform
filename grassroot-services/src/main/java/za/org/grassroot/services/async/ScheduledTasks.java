@@ -9,6 +9,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.GroupBroker;
+import za.org.grassroot.services.SafetyEventBroker;
 import za.org.grassroot.services.TodoBroker;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 
@@ -41,6 +42,9 @@ public class ScheduledTasks {
     private TodoBroker todoBroker;
 
     @Autowired
+    private SafetyEventBroker safetyEventBroker;
+
+    @Autowired
     private EventRepository eventRepository;
 
     @Autowired
@@ -58,6 +62,9 @@ public class ScheduledTasks {
     @Autowired
     private GroupRepository groupRepository;
 
+    @Autowired
+    private SafetyEventRepository safetyEventRepository;
+
     // @Transactional
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendReminders() {
@@ -74,6 +81,22 @@ public class ScheduledTasks {
 
         logger.info("Sending scheduled reminders...done");
     }
+
+    @Scheduled(fixedRate = 300000)
+    public void sendSafetyReminders(){
+
+        List<SafetyEvent> safetyEvents = safetyEventRepository.findSafetyEvents(Instant.now().minus(1, ChronoUnit.HOURS),
+                Instant.now());
+
+        logger.info("Sending out safety reminders");
+        for(SafetyEvent safetyEvent:safetyEvents){
+            safetyEventBroker.sendReminders(safetyEvent.getUid());
+        }
+    }
+
+
+
+
 
     // @Transactional
     @Scheduled(fixedRate = 60000) //runs every 1 minutes

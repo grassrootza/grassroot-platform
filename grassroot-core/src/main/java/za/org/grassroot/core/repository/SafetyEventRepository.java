@@ -1,9 +1,12 @@
 package za.org.grassroot.core.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.SafetyEvent;
 
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -13,5 +16,17 @@ public interface SafetyEventRepository extends JpaRepository<SafetyEvent, Long> 
 
     SafetyEvent findOneByUid(String uid);
 
-    List<SafetyEvent> findByGroup(Group group);
+    List<SafetyEvent> findByParentGroup(Group group);
+
+
+    @Transactional
+    @Query(value = "select se from SafetyEvent se where se.createdDateTime > ?1 and se.scheduledReminderTime < ?2 and se.active = true")
+    List<SafetyEvent> findSafetyEvents(Instant from, Instant to);
+
+
+
+    @Transactional
+    @Query(value = "select se from SafetyEvent se where se.createdDateTime > ?1 and se.active = true")
+    List<SafetyEvent> DeactivateSafetyEvents(Instant from);
+
 }

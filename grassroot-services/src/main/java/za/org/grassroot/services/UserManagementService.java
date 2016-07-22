@@ -46,6 +46,8 @@ public interface UserManagementService {
 
     boolean userExist(String phoneNumber);
 
+    boolean hasAddress(String uid);
+
     void setSafetyGroup(String userUid, String groupUid);
 
     void setInitiatedSession(User sessionUser);

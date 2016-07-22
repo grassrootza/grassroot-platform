@@ -1,6 +1,8 @@
 package za.org.grassroot.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.SafetyEventLog;
 import za.org.grassroot.core.domain.User;
@@ -12,6 +14,7 @@ import java.util.Objects;
 /**
  * Created by paballo on 2016/07/19.
  */
+@Service
 public class SafetyEventLogBrokerImpl implements SafetyEventLogBroker {
 
     @Autowired
@@ -38,14 +41,16 @@ public class SafetyEventLogBrokerImpl implements SafetyEventLogBroker {
     }
 
     @Override
+    @Transactional
     public void recordResponse(String userUid, String eventUid, SafetyEventLogType safetyEventLogType, boolean response) {
         Objects.nonNull(userUid);
         Objects.nonNull(eventUid);
 
-        create(userUid, eventUid, safetyEventLogType, response, null);
+        create(userUid, eventUid, safetyEventLogType, response, "");
     }
 
     @Override
+    @Transactional
     public void recordValidity(String userUid, String safetyEventUid, String validity) {
         Objects.nonNull(userUid);
         Objects.nonNull(safetyEventUid);
@@ -62,7 +67,8 @@ public class SafetyEventLogBrokerImpl implements SafetyEventLogBroker {
 
 
     @Override
-    public boolean userRecordedResponse(String userUid, String safetyEventUid) {
+    @Transactional
+    public boolean hasRecordedResponse(String userUid, String safetyEventUid) {
         Objects.nonNull(userUid);
         Objects.nonNull(safetyEventUid);
         User user = userManagementService.load(userUid);

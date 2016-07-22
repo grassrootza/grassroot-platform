@@ -14,9 +14,7 @@ public interface SafetyEventLogBroker {
 
     void recordValidity(String userUid, String safetyEventUid, String validity);
 
-    boolean userRecordedResponse(String userUid, String safetyEventUid);
-
-
+    boolean hasRecordedResponse(String userUid, String safetyEventUid);
 
 
 

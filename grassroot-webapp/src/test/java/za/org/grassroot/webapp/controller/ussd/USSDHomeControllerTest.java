@@ -163,6 +163,8 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
     }
 
+
+
     @Test
     public void voteRequestScreenShouldWorkInAllLanguages() throws Exception {
 

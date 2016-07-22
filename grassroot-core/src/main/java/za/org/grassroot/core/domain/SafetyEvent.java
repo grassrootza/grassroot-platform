@@ -3,14 +3,14 @@ package za.org.grassroot.core.domain;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
-import java.sql.Timestamp;
-import java.time.Instant;
+import java.time.*;
+import java.time.temporal.ChronoUnit;
 
 /**
  * Created by paballo on 2016/07/18.
  */
 @Entity
-@Table(name="safety_event")
+@Table(name = "safety_event")
 public class SafetyEvent {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,8 +21,11 @@ public class SafetyEvent {
     private String uid;
 
 
-    @Column(name = "created_date_time", nullable = false,insertable = true, updatable = false)
+    @Column(name = "created_date_time", nullable = false, insertable = true, updatable = false)
     private Instant createdDateTime;
+
+    @Column(name = "scheduled_reminder_time")
+    private Instant scheduledReminderTime;
 
     @ManyToOne()
     @JoinColumn(name = "activated_by_user", nullable = false, updatable = false)
@@ -32,19 +35,21 @@ public class SafetyEvent {
     @JoinColumn(name = "parent_group_id", nullable = false, updatable = false)
     private Group parentGroup;
 
-    @Column(name = "reminderMinutes")
-    private Integer reminderMinutes;
+    @Column(name = "active")
+    private boolean active;
 
 
-
-    private  SafetyEvent(){
+    private SafetyEvent() {
     }
 
-    public SafetyEvent(User activatedBy, Group parentGroup){
+    public SafetyEvent(User activatedBy, Group parentGroup) {
         this.uid = UIDGenerator.generateId();
         this.createdDateTime = Instant.now();
         this.activatedBy = activatedBy;
         this.parentGroup = parentGroup;
+        this.active =true;
+        //send a reminder after 20 minutes
+        this.scheduledReminderTime = createdDateTime.plus(20, ChronoUnit.MINUTES);
     }
 
     public Long getId() {
@@ -88,11 +93,25 @@ public class SafetyEvent {
         this.parentGroup = parentGroup;
     }
 
-    public Integer getReminderMinutes() {
-        return reminderMinutes;
+
+    public void updateScheduledReminderTime() {
+        this.scheduledReminderTime = scheduledReminderTime.plus(20, ChronoUnit.MINUTES);
     }
 
-    public void setReminderMinutes(Integer reminderMinutes) {
-        this.reminderMinutes = reminderMinutes;
+
+    public Instant getScheduledReminderTime() {
+        return scheduledReminderTime;
+    }
+
+    public void setScheduledReminderTime(Instant scheduledReminderTime) {
+        this.scheduledReminderTime = scheduledReminderTime;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(Boolean active) {
+        this.active = active;
     }
 }

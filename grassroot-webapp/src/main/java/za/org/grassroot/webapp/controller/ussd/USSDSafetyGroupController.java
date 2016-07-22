@@ -16,12 +16,12 @@ import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.SafetyEventBroker;
 import za.org.grassroot.services.SafetyEventLogBroker;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
+import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import za.org.grassroot.webapp.util.USSDGroupUtil;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.util.Set;
 
@@ -46,6 +46,9 @@ public class USSDSafetyGroupController extends USSDController {
     @Autowired
     private SafetyEventBroker safetyEventBroker;
 
+    @Autowired
+    private CacheUtilService cacheUtilService;
+
 
     @Autowired
     private SafetyEventLogBroker safetyEventLogBroker;
@@ -53,9 +56,17 @@ public class USSDSafetyGroupController extends USSDController {
     private static final String
 
             createGroupMenu = "create",
-            createGroupAddNumbers = "add-numbers",
+            createGroupAddRespondents = "add-numbers",
             safetyGroup = "safety",
-            optionsKey = "options";
+            optionsKey = "options",
+            join="join-request",
+            addAddress = "add-address",
+            viewAddress ="view-address",
+            removeAddress="remove-address",
+            changeAddress ="change-address",
+            unsubscribe = "unsubscribe",
+            recordResponse = "record-response",
+            recordValidity ="record-validity";
 
 
     private static final String safetyGroupPath = homePath + safetyGroup + "/";
@@ -72,12 +83,17 @@ public class USSDSafetyGroupController extends USSDController {
             Group group = groupBroker.load(user.getSafetyGroupUid());
             String joiningCode = "*134*1994*" + group.getGroupTokenCode() + "#";
             menu = new USSDMenu(getMessage(thisSection, promptKey, "exists", joiningCode, user));
-            menu.addMenuOption(thisSection.toPath() + "add-address", getMessage(thisSection, optionsKey, "add-address", user));
-            menu.addMenuOption(thisSection.toPath() + createGroupAddNumbers + "?groupUid=" + group.getUid(), getMessage(thisSection, optionsKey, "add-respondents", user));
-            menu.addMenuOption(thisSection.toPath() + "unsubscribe" + "?groupUid=" + group.getUid(), getMessage(thisSection, optionsKey, "leave", user));
+            if(!userManager.hasAddress(user.getUid())) {
+                menu.addMenuOption(thisSection.toPath() + addAddress,
+                        getMessage(thisSection, createGroupMenu + doSuffix, optionsKey + ".address", user));
+            }else{
+                menu.addMenuOption(thisSection.toPath() + viewAddress,
+                        getMessage(thisSection ,promptKey,viewAddress , user));
+            }
+            menu.addMenuOption(thisSection.toPath() + createGroupAddRespondents + "?groupUid=" + group.getUid(), getMessage(thisSection, optionsKey, "add-respondents", user));
+            menu.addMenuOption(thisSection.toPath() + unsubscribe + "?groupUid=" + group.getUid(), getMessage(thisSection, optionsKey, "leave", user));
             menu.addMenuOption(thisSection.toPath() + createGroupMenu, getMessage(thisSection, optionsKey, "create", user));
             menu.addMenuOption(USSDSection.GROUP_MANAGER.toPath() + startMenu, getMessage(thisSection, optionsKey, "back", user));
-
         } else {
             menu = new USSDMenu(getMessage(thisSection, promptKey, "not-exist", user));
             menu.addMenuOption(thisSection.toPath() + createGroupMenu, getMessage(thisSection, optionsKey, "create-yes", user));
@@ -99,8 +115,8 @@ public class USSDSafetyGroupController extends USSDController {
         USSDMenu menu;
         if (user.hasSafetyGroup()) {
             menu = new USSDMenu(getMessage(thisSection, promptKey, "hasgroup", user));
-            menu.addMenuOption(thisSection.toPath() + "unsubscribe-do?groupUid=" + groupUid, "Yes");
-            menu.addMenuOption(thisSection.toPath() + startMenu, "Back");
+            menu.addMenuOption(thisSection.toPath() + unsubscribe+doSuffix+"?groupUid=" + user.getSafetyGroupUid(), "Yes");
+            menu.addMenuOption(thisSection.toPath() + startMenu, "No");
 
         } else {
             menu = ussdGroupUtil.createGroupPrompt(user, thisSection, createGroupMenu + doSuffix);
@@ -116,69 +132,74 @@ public class USSDSafetyGroupController extends USSDController {
                                              @RequestParam(value = groupUidParam, required = false) String groupUid) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(msisdn);
-        Group createdGroup;
+        Group group;
         USSDMenu menu;
         if (!USSDGroupUtil.isValidGroupName(groupName)) {
-            userManager.setLastUssdMenu(user, groupMenus + safetyGroupPath + createGroupMenu);
             menu = ussdGroupUtil.invalidGroupNamePrompt(user, groupName, USSDSection.GROUP_MANAGER, createGroupMenu + doSuffix);
         } else {
-            if (interrupted) {
-                createdGroup = groupBroker.load(groupUid);
-            } else {
-                MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
-                createdGroup = groupBroker.create(user.getUid(), groupName, null, Collections.singleton(creator),
-                        GroupPermissionTemplate.DEFAULT_GROUP, null, null, true);
-                if (createdGroup != null) {
-                    groupBroker.makeSafetyGroup(user.getUid(), createdGroup.getUid());
-                }
-            }
-            String joiningCode = "*134*1994*" + createdGroup.getGroupTokenCode() + "#";
-            userManager.setLastUssdMenu(user, saveGroupMenuWithInput(createGroupMenu + doSuffix, createdGroup.getUid(), groupName));
+            group = (interrupted)? groupBroker.load(groupUid):createGroup(user,groupName);
+            String joiningCode = "*134*1994*" + group.getGroupTokenCode() + "#";
+            userManager.setLastUssdMenu(user, saveGroupMenuWithInput(safetyGroup+createGroupMenu + doSuffix, group.getUid(), groupName, true));
             menu = new USSDMenu(getMessage(thisSection, createGroupMenu + doSuffix, promptKey,
                     new String[]{groupName, joiningCode}, user));
-
-            menu.addMenuOption(groupMenuWithId(thisSection, createGroupAddNumbers, createdGroup.getUid()),
-                    getMessage(thisSection, createGroupMenu + doSuffix, super.optionsKey + "numbers", user));
-            menu.addMenuOption(thisSection.toPath() + "add-address",
-                    getMessage(thisSection, createGroupMenu + doSuffix, super.optionsKey + "address", user));
-
-
+            menu.addMenuOption(groupMenuWithId(thisSection, createGroupAddRespondents, group.getUid()),
+                    getMessage(thisSection, createGroupMenu + doSuffix, optionsKey + ".numbers", user));
+            if(userManager.hasAddress(user.getUid())){
+                menu.addMenuOption(thisSection.toPath() + viewAddress,
+                        getMessage(thisSection ,promptKey,viewAddress , user));
+            }else {
+                menu.addMenuOption(thisSection.toPath() + addAddress,
+                        getMessage(thisSection, createGroupMenu + doSuffix, optionsKey + ".address", user));
+            }
         }
         return menuBuilder(menu);
 
     }
 
 
-    @RequestMapping(value = safetyGroupPath + "add-address")
+    @RequestMapping(value = safetyGroupPath + addAddress)
     @ResponseBody
     public Request addAddress(@RequestParam String msisdn,
-                              @RequestParam(value = userInputParam, required = true) String value,
+                              @RequestParam(value = userInputParam, required = true) String fieldValue,
                               @RequestParam(value = "interrupted", required = false) boolean interrupted,
                               @RequestParam(value = "field", required = false) String field) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(msisdn);
-        return menuBuilder(getAddressMenu(field, user, value));
+        return menuBuilder(getAddressMenu(field, user, fieldValue, false));
     }
 
-    @RequestMapping(value = safetyGroupPath + "change-address")
+    @RequestMapping(value = safetyGroupPath+ viewAddress)
+    @ResponseBody
+    public Request viewAddress(@RequestParam String msisdn) throws URISyntaxException{
+        User user = userManager.findByInputNumber(msisdn);
+        Address address = addressBroker.getUserAddress(user.getUid());
+        String[] fields = new String[]{address.getHouseNumber(), address.getStreetName(), address.getTown()};
+        USSDMenu menu = new USSDMenu(getMessage(thisSection, "address.view", promptKey,fields,user));
+        menu.addMenuOption(thisSection.toPath()+changeAddress+doSuffix,getMessage(thisSection,"address",optionsKey+".change",user));
+        menu.addMenuOption(thisSection.toPath()+removeAddress, getMessage(thisSection,"address",optionsKey+".remove",user));
+
+        return menuBuilder(menu);
+    }
+
+    @RequestMapping(value = safetyGroupPath + changeAddress)
     @ResponseBody
     public Request changeAddress(@RequestParam String msisdn,
-                                 @RequestParam(value = userInputParam, required = true) String value,
+                                 @RequestParam(value = userInputParam, required = true) String fieldValue,
                                  @RequestParam(value = "interrupted", required = false) boolean interrupted,
-                                 @RequestParam(value = "field", required = true) String field) throws URISyntaxException {
+                                 @RequestParam(value = "field", required = false) String field) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(msisdn);
         USSDMenu menu;
-        if (field == null) {
+
+        if ("house".equals(field)) {
             menu = new USSDMenu(getMessage(thisSection, "address", promptKey + ".house", user));
             menu.setFreeText(true);
             menu.setNextURI(thisSection.toPath() + "change-address-do?field=" + "house");
-
-        } else if ("house".equals(field)) {
+        }
+        else if("street".equals(field)){
             menu = new USSDMenu(getMessage(thisSection, "address", promptKey + ".street", user));
             menu.setFreeText(true);
             menu.setNextURI(thisSection.toPath() + "change-address-do?field=" + "street");
-
         } else {
             menu = new USSDMenu(getMessage(thisSection, "address", promptKey + ".town", user));
             menu.setFreeText(true);
@@ -190,87 +211,117 @@ public class USSDSafetyGroupController extends USSDController {
     }
 
 
-    @RequestMapping(value = safetyGroupPath + "change-address-do")
+    @RequestMapping(value = safetyGroupPath + changeAddress +doSuffix)
     @ResponseBody
     public Request changeAddressDo(@RequestParam String msisdn,
-                                   @RequestParam(value = userInputParam, required = true) String value,
+                                   @RequestParam(value = userInputParam, required = true) String fieldValue,
                                    @RequestParam(value = "interrupted", required = false) boolean interrupted,
-                                   @RequestParam(value = "field", required = true) String field) throws URISyntaxException {
+                                   @RequestParam(value = "field", required = false) String field) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(msisdn);
         USSDMenu menu;
-        if ("home".equals(field)) {
-            addressBroker.updateHouseNumber(user.getUid(), value);
+
+        if ("house".equals(field)) {
+            addressBroker.updateHouseNumber(user.getUid(), fieldValue);
         } else if ("street".equals(field)) {
-            addressBroker.updateStreet(user.getUid(), value);
+            addressBroker.updateStreet(user.getUid(), fieldValue);
         } else if ("town".equals(field)) {
-            addressBroker.updateTown(user.getUid(), value);
+            addressBroker.updateTown(user.getUid(), fieldValue);
         }
-        Address address = addressBroker.getUserAddress(user.getUid());
-        String[] confirmFields = new String[]{address.getHouseNumber(), address.getStreetName(), address.getTown()};
-        String confirmPrompt = getMessage(thisSection, "address.confirm", promptKey, confirmFields, user);
-        menu = new USSDMenu(confirmPrompt);
-        menu.addMenuOption(thisSection.toPath() + startMenu,
-                getMessage(thisSection + "." + "address.confirm" + "." + super.optionsKey + "yes", user));
-        menu.addMenuOption(thisSection.toPath() + "change-address?&field=house",
-                getMessage(thisSection + "." + "address.confirm" + "." + super.optionsKey + "change-house", user));
-        menu.addMenuOption(thisSection.toPath() + "change-address?&field=street",
-                getMessage(thisSection + "." + "address.confirm" + "." + super.optionsKey + "change-street", user));
-        menu.addMenuOption(thisSection.toPath() + "change-address?&field=town",
-                getMessage(thisSection + "." + "address.confirm" + "." + super.optionsKey + "change-area", user));
+            Address address = addressBroker.getUserAddress(user.getUid());
+            String[] confirmFields = new String[]{address.getHouseNumber(), address.getStreetName(), address.getTown()};
+            String confirmPrompt = getMessage(thisSection, "address.confirm", promptKey, confirmFields, user);
+            menu = new USSDMenu(confirmPrompt);
+            menu.addMenuOption(thisSection.toPath() + startMenu,
+                    getMessage(thisSection, "address.confirm" ,optionsKey + ".yes", user));
+            menu.addMenuOption(thisSection.toPath() + "change-address?&field=house",
+                    getMessage(thisSection,"address.confirm",optionsKey + ".change-house", user));
+            menu.addMenuOption(thisSection.toPath() + "change-address?&field=street",
+                    getMessage(thisSection,"address.confirm",optionsKey + ".change-street", user));
+            menu.addMenuOption(thisSection.toPath() + "change-address?&field=town",
+                    getMessage(thisSection,"address.confirm",optionsKey + ".change-area", user));
 
         return menuBuilder(menu);
 
+    }
+
+    @RequestMapping(value = safetyGroupPath + removeAddress)
+    @ResponseBody
+
+    //todo consider moving all address handlers to the user controller
+    public Request removeAddress(@RequestParam String msisdn) throws URISyntaxException{
+        User user = userManager.findByInputNumber(msisdn);
+        USSDMenu menu = new USSDMenu(getMessage(thisSection,"address.remove",promptKey,user));
+        menu.addMenuOption(thisSection.toPath() +removeAddress+doSuffix, getMessage(thisSection,"address.remove",optionsKey+".yes", user));
+        menu.addMenuOption(thisSection.toPath()+viewAddress,  getMessage(thisSection,"address.remove",optionsKey+".no", user));
+
+        return menuBuilder(menu);
 
     }
 
-    @RequestMapping(value = safetyGroupPath + createGroupAddNumbers)
+    @RequestMapping(value = safetyGroupPath+removeAddress+doSuffix)
+    @ResponseBody
+    public Request removeAddressDo(@RequestParam String msisdn) throws Exception{
+        User user = userManager.findByInputNumber(msisdn);
+        addressBroker.removeAddress(user.getUid());
+        USSDMenu menu = new USSDMenu(getMessage(thisSection,"address.remove.confirm",promptKey,user));
+        menu.addMenuOption(thisSection.toPath()+addAddress, "Add address");
+        menu.addMenuOption(thisSection.toPath()+startMenu, "Go to safety group menu");
+
+        return menuBuilder(menu);
+    }
+
+    @RequestMapping(value = safetyGroupPath + createGroupAddRespondents)
     @ResponseBody
     public Request createGroupAddNumbersOpeningPrompt(@RequestParam(phoneNumber) String inputNumber,
                                                       @RequestParam(groupUidParam) String groupUid) throws URISyntaxException {
-        User user = userManager.findByInputNumber(inputNumber, saveGroupMenu(createGroupAddNumbers, groupUid));
-        return menuBuilder(new USSDMenu(getMessage(thisSection, createGroupAddNumbers, promptKey, user),
-                groupMenuWithId(thisSection, createGroupAddNumbers + doSuffix, groupUid)));
+        User user = userManager.findByInputNumber(inputNumber, saveGroupMenu(createGroupAddRespondents, groupUid));
+        return menuBuilder(new USSDMenu(getMessage(thisSection, createGroupAddRespondents, promptKey, user),
+                groupMenuWithId(thisSection, createGroupAddRespondents + doSuffix, groupUid)));
     }
 
-    @RequestMapping(value = safetyGroupPath + createGroupAddNumbers + doSuffix)
+    @RequestMapping(value = safetyGroupPath + createGroupAddRespondents + doSuffix)
     @ResponseBody
-    public Request addNumbersToGroup(@RequestParam(value = phoneNumber, required = true) String inputNumber,
-                                     @RequestParam(value = groupUidParam, required = true) String groupUid,
-                                     @RequestParam(value = userInputParam, required = true) String userInput,
-                                     @RequestParam(value = "prior_input", required = false) String priorInput) throws URISyntaxException, UnsupportedEncodingException {
+    public Request addRespondentsToGroup(@RequestParam(value = phoneNumber, required = true) String inputNumber,
+                                         @RequestParam(value = groupUidParam, required = true) String groupUid,
+                                         @RequestParam(value = userInputParam, required = true) String userInput,
+                                         @RequestParam(value = "prior_input", required = false) String priorInput) throws URISyntaxException{
 
         USSDMenu menu;
         final String userResponse = (priorInput == null) ? userInput : priorInput;
         User user = userManager.findByInputNumber(inputNumber,
-                saveGroupMenuWithInput(createGroupAddNumbers + doSuffix, groupUid, userResponse));
+                saveGroupMenuWithInput(safetyGroup+ createGroupAddRespondents + doSuffix, groupUid, userResponse, false));
 
         if (!userResponse.trim().equals("0")) {
             menu = ussdGroupUtil.addNumbersToExistingGroup(user, groupUid, thisSection,
-                    userResponse, createGroupAddNumbers + doSuffix);
+                    userResponse, createGroupAddRespondents + doSuffix);
         } else {
             Group group = groupBroker.load(groupUid);
             Set<User> respondents = group.getMembers();
             for (User respondent : respondents) {
-                userManager.setSafetyGroup(respondent.getUid(), group.getUid());
+                if (!respondent.hasSafetyGroup()) {
+                    userManager.setSafetyGroup(respondent.getUid(), group.getUid());
+                }
             }
-            menu = new USSDMenu("Respondents added");
+            menu = new USSDMenu(getMessage(thisSection,promptKey,"respondents.confirm", user));
             menu.addMenuOption(thisSection.toPath() + startMenu,
-                    getMessage(thisSection, createGroupAddNumbers, super.optionsKey + "home", user));
+                    getMessage(thisSection, createGroupAddRespondents, optionsKey + ".home", user));
+            menu.addMenuOption(startMenu,
+                    getMessage(thisSection, createGroupAddRespondents, optionsKey + ".home", user));
         }
 
         return menuBuilder(menu);
     }
 
 
-    @RequestMapping(value = safetyGroupPath + "unsubscribe")
+    @RequestMapping(value = safetyGroupPath + unsubscribe)
     @ResponseBody
     public Request unsubscribe(@RequestParam(value = phoneNumber) String inputNumber,
                                @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber, null);
 
-        USSDMenu menu = new USSDMenu("Are you sure you want to leave the safety group?");
+        USSDMenu menu = new USSDMenu(getMessage(thisSection,"group",promptKey+".unsubscribe",user));
         menu.addMenuOption(thisSection.toPath() + "unsubscribe-do?groupUid=" + groupUid, "Yes");
         menu.addMenuOption(thisSection.toPath() + startMenu, "Back");
 
@@ -279,7 +330,7 @@ public class USSDSafetyGroupController extends USSDController {
 
     }
 
-    @RequestMapping(value = safetyGroupPath + "unsubscribe" + doSuffix)
+    @RequestMapping(value = safetyGroupPath + unsubscribe + doSuffix)
     @ResponseBody
     public Request unsubscribeDo(@RequestParam(value = phoneNumber) String inputNumber,
                                  @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
@@ -288,107 +339,122 @@ public class USSDSafetyGroupController extends USSDController {
         groupBroker.unsubscribeMember(user.getUid(), groupUid);
         userManager.setSafetyGroup(user.getUid(), null);
 
-        USSDMenu menu = new USSDMenu("You have been unsubscribed from the safety group. What next?");
-        menu.addMenuOption(thisSection.toPath() + createGroupMenu, "Create safety group");
-        menu.addMenuOption(USSDSection.GROUP_MANAGER.toPath() + startMenu, "Go back to group menu");
+        USSDMenu menu = new USSDMenu(getMessage(thisSection, "group", "unsubscribe.confirm", user));
+        menu.addMenuOption(thisSection.toPath() + createGroupMenu, getMessage(thisSection,"group","unsubscribe.option.create", user));
+        menu.addMenuOption(USSDSection.GROUP_MANAGER.toPath() + startMenu, getMessage(thisSection,"group","unsubscribe.option.back", user));
 
         return menuBuilder(menu);
 
     }
 
-    @RequestMapping(value = safetyGroupPath + "join-request" + doSuffix)
+    @RequestMapping(value = safetyGroupPath + join + doSuffix)
     @ResponseBody
     public Request sendJoinRequest(@RequestParam(value = phoneNumber) String inputNumber, @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber, null);
         groupJoinRequestService.open(user.getUid(), groupUid, null);
-        USSDMenu menu = new USSDMenu("Join request sent. What do you want to do?");
-        menu.addMenuOption(USSDSection.GROUP_MANAGER.toPath() + startMenu, "Go to group menu");
-        menu.addMenuOption(USSDSection.BASE.toPath()+startMenu, "Go to main menu");
-        menu.addMenuOption("exit url", "Exit");
+        USSDMenu menu = new USSDMenu(getMessage(thisSection,"group","join.confirm",user));
+        menu.addMenuOption(USSDSection.GROUP_MANAGER.toPath() + startMenu, getMessage(thisSection,"group","join.option.home", user));
+        menu.addMenuOption(startMenu, getMessage(thisSection,"group","join.option.start", user));
+        menu.addMenuOption("exit", "Exit");
 
 
         return menuBuilder(menu);
 
     }
 
-    @RequestMapping(value = safetyGroupPath + "record-response" +doSuffix)
+    @RequestMapping(value = safetyGroupPath + recordResponse+ doSuffix)
     @ResponseBody
     public Request recordResponse(@RequestParam(value = phoneNumber) String inputNumber,
-                                     @RequestParam(value = entityUidParam) String safetyEventUid, @RequestParam("response") boolean responded) throws
+                                  @RequestParam(value = entityUidParam) String safetyEventUid, @RequestParam("response") boolean responded) throws
             URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
-        safetyEventLogBroker.recordResponse(user.getUid(), safetyEventUid, SafetyEventLogType.RESPONSE,responded);
-        String prompt =(responded)?"Was it a real emergency?":"Thank you, your response was recorded. What do want to do?";
+        safetyEventLogBroker.recordResponse(user.getUid(), safetyEventUid, SafetyEventLogType.RESPONSE, responded);
+        String prompt = (responded) ? getMessage(thisSection, "response",promptKey+".yes",user) : getMessage(thisSection,"response",promptKey+".no", user);
         USSDMenu menu = new USSDMenu(prompt);
-        if(responded){
-            menu.addMenuOption(thisSection.toPath()+"record-validity-do?&entityUid=" +safetyEventUid+ "&response=true", "Yes, it was a real emergency?");
-            menu.addMenuOption(thisSection.toPath()+"record-validity-do?&entityUid="+safetyEventUid+"&response=false", "No it was a false alarm");
-        }else{
-            menu.addMenuOption(USSDSection.BASE.toPath() +startMenu, "Go to main Menu");
+        if (responded) {
+            safetyEventBroker.deactivate(safetyEventUid);
+            menu.addMenuOption(thisSection.toPath() + "record-validity-do?entityUid=" + safetyEventUid + "&response=true",
+                    getMessage(thisSection, "response","option.valid",user));
+            menu.addMenuOption(thisSection.toPath() + "record-validity-do?entityUid=" + safetyEventUid + "&response=false",
+                    getMessage(thisSection, "response","option.invalid",user));
+        } else {
+            menu.addMenuOption(startMenu, "Go to main Menu");
         }
-        return  menuBuilder(menu);
+        return menuBuilder(menu);
 
     }
 
-    @RequestMapping(value = safetyGroupPath +"record-validity-do")
+    @RequestMapping(value = safetyGroupPath + recordValidity+doSuffix)
     @ResponseBody
-    public Request recordValidity(@RequestParam(value = phoneNumber) String inputNumber, @RequestParam(value =entityUidParam) String safetyEventUid,
-                                  @RequestParam("response") String validity) throws URISyntaxException{
+    public Request recordValidity(@RequestParam(value = phoneNumber) String inputNumber, @RequestParam(value = entityUidParam) String safetyEventUid,
+                                  @RequestParam("response") String validity) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
         SafetyEvent safetyEvent = safetyEventBroker.load(safetyEventUid);
-        safetyEventLogBroker.recordValidity(user.getUid(),safetyEvent.getUid(),validity);
-        String prompt = "Thank you for attending to the the emergency call. What would you like to do next?";
-
+        safetyEventLogBroker.recordValidity(user.getUid(), safetyEvent.getUid(), validity);
+        String prompt = getMessage(thisSection, "response",promptKey+".yes",user);
         USSDMenu menu = new USSDMenu(prompt);
-        menu.addMenuOption(USSDSection.BASE.toPath() +startMenu, "Go to main Menu");
-        menu.addMenuOption("exit url", "Exit");
+        menu.addMenuOption(startMenu, "Go to main Menu");
 
         return menuBuilder(menu);
 
 
     }
 
-    private USSDMenu getAddressMenu(String field, User user, String value) {
+    private Group createGroup(User user, String groupName ){
+        MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
+       Group group = groupBroker.create(user.getUid(), groupName, null, Collections.singleton(creator),
+                GroupPermissionTemplate.DEFAULT_GROUP, null, null, true);
+        if (group != null) {
+            groupBroker.makeSafetyGroup(user.getUid(), group.getUid());
+        }
+
+        return group;
+
+    }
+
+    private USSDMenu getAddressMenu(String field, User user, String fieldValue, boolean interrupted) {
 
         USSDMenu menu;
+
         if (field == null) {
             menu = new USSDMenu(getMessage(thisSection, "address", promptKey + ".house", user));
             menu.setFreeText(true);
             menu.setNextURI(thisSection.toPath() + "add-address?field=" + "house");
 
         } else if ("house".equals(field)) {
-            addressBroker.adduserAddress(user.getUid(), value, null, null);
+            addressBroker.adduserAddress(user.getUid(),fieldValue, null, null);
             menu = new USSDMenu(getMessage(thisSection, "address", promptKey + ".street", user));
             menu.setFreeText(true);
             menu.setNextURI(thisSection.toPath() + "add-address?field=" + "street");
 
         } else if ("street".equals(field)) {
-            addressBroker.updateStreet(user.getUid(), value);
+            addressBroker.updateStreet(user.getUid(), fieldValue);
             menu = new USSDMenu(getMessage(thisSection, "address", promptKey + ".town", user));
             menu.setFreeText(true);
             menu.setNextURI(thisSection.toPath() + "add-address?field=" + "town");
         } else {
-            addressBroker.updateTown(user.getUid(), value);
+            addressBroker.updateTown(user.getUid(), fieldValue);
             Address address = addressBroker.getUserAddress(user.getUid());
             String[] confirmFields = new String[]{address.getHouseNumber(), address.getStreetName(), address.getTown()};
             String confirmPrompt = getMessage(thisSection, "address.confirm", promptKey, confirmFields, user);
             menu = new USSDMenu(confirmPrompt);
             menu.addMenuOption(thisSection.toPath() + startMenu,
-                    getMessage(thisSection + "." + "address.confirm" + "." + super.optionsKey + "yes", user));
+                    getMessage(thisSection,"address.confirm", optionsKey + ".yes", user));
             menu.addMenuOption(thisSection.toPath() + "change-address?&field=house",
-                    getMessage(thisSection + "." + "address.confirm" + "." + super.optionsKey + "change-house", user));
+                    getMessage(thisSection,"address.confirm",optionsKey + ".change-house", user));
             menu.addMenuOption(thisSection.toPath() + "change-address?&field=street",
-                    getMessage(thisSection + "." + "address.confirm" + "." + super.optionsKey + "change-street", user));
+                    getMessage(thisSection,"address.confirm",optionsKey + ".change-street", user));
             menu.addMenuOption(thisSection.toPath() + "change-address?&field=town",
-                    getMessage(thisSection + "." + "address.confirm" + "." + super.optionsKey + "change-area", user));
+                    getMessage(thisSection,"address.confirm",optionsKey + ".change-area", user));
 
 
         }
         return menu;
 
     }
+
 
 
 }

@@ -10,9 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.services.GroupPage;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
@@ -20,7 +18,6 @@ import za.org.grassroot.services.exception.GroupDeactivationNotAvailableExceptio
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
-import za.org.grassroot.webapp.util.USSDGroupUtil;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
@@ -28,7 +25,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
@@ -149,7 +145,7 @@ public class USSDGroupController extends USSDController {
             }
 
             String joiningCode = "*134*1994*" + createdGroup.getGroupTokenCode() + "#";
-            userManager.setLastUssdMenu(user, saveGroupMenuWithInput(createGroupMenu + doSuffix, createdGroup.getUid(), groupName));
+            userManager.setLastUssdMenu(user, saveGroupMenuWithInput(createGroupMenu + doSuffix, createdGroup.getUid(), groupName, false));
             menu = new USSDMenu(getMessage(thisSection, createGroupMenu + doSuffix, promptKey,
                     new String[]{groupName, joiningCode}, user));
 
@@ -216,7 +212,7 @@ public class USSDGroupController extends USSDController {
         USSDMenu thisMenu;
         final String userResponse = (priorInput == null) ? userInput : priorInput;
         User user = userManager.findByInputNumber(inputNumber,
-                saveGroupMenuWithInput(createGroupAddNumbers + doSuffix, groupUid, userResponse));
+                saveGroupMenuWithInput(createGroupAddNumbers + doSuffix, groupUid, userResponse, false));
 
         if (!userResponse.trim().equals("0")) {
             thisMenu = ussdGroupUtil.addNumbersToExistingGroup(user, groupUid, thisSection,

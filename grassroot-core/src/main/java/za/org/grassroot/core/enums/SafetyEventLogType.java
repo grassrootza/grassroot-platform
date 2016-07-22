@@ -7,5 +7,6 @@ public enum SafetyEventLogType {
     ACTIVATED,
     RESPONSE,
     CANCELLED,
-    VALIDITY, REMINDER
+    VALIDITY,
+    REMINDER
 }

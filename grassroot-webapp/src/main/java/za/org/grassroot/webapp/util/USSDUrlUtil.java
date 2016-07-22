@@ -98,9 +98,14 @@ public class USSDUrlUtil {
         return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupUid=" + groupUid + setInterruptedFlag + params;
     }
 
-    public static String saveGroupMenuWithInput(String menu, String groupUid, String input) {
-        return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupUid=" + groupUid + addInterruptedInput + encodeParameter(input);
+    public static String saveGroupMenuWithInput(String menu, String groupUid, String input, boolean safetyGroup) {
+        if (!safetyGroup) {
+            return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupUid=" + groupUid + addInterruptedInput + encodeParameter(input);
+        } else {
+            return USSDSection.SAFETY_GROUP_MANAGER.toPath() + menu + "?groupUid=" + groupUid + addInterruptedInput + encodeParameter(input);
+        }
     }
+
 
     public static String saveVoteMenu(String menu, String requestUid) {
         return USSDSection.VOTES.toPath() + menu + "?entityUid=" + requestUid + setInterruptedFlag;
@@ -140,25 +145,30 @@ public class USSDUrlUtil {
     public static String groupMenuWithId(String menu, String groupUid) {
         return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupUid=" + groupUid;
     }
+
     public static String groupMenuWithId(USSDSection section, String menu, String groupUid) {
         return section.toPath() + menu + "?groupUid=" + groupUid;
     }
 
-    public static String safetyMenuWithId(String menu,String safetyUid, boolean response){
-        return  USSDSection.SAFETY_GROUP_MANAGER.toPath() +menu+"?entityUid="+safetyUid+"&response="+response;
+    public static String safetyMenuWithId(String menu, String safetyUid, boolean response) {
+        return USSDSection.SAFETY_GROUP_MANAGER.toPath() + menu + "-do" + "?entityUid=" + safetyUid + "&response=" + response;
+    }
+
+    public static String safetyMenuWithId(String menu, String safetyUid, String response) {
+        return USSDSection.SAFETY_GROUP_MANAGER.toPath() + menu + "-do" + "?entityUid=" + safetyUid + "&response=" + response;
     }
 
 
-    public static String groupVisibilityOption(String menu, String groupUid, boolean discoverable){
-       return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupUid=" + groupUid+"&hide="+discoverable;
+    public static String groupVisibilityOption(String menu, String groupUid, boolean discoverable) {
+        return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupUid=" + groupUid + "&hide=" + discoverable;
     }
 
     public static String logViewExistingUrl(String menu, String groupUid, Boolean done, Integer pageNumber) {
         return USSDSection.LOGBOOK.toPath() + menu + "?groupUid=" + groupUid + "&done=" + done + "&pageNumber=" + pageNumber;
     }
 
-    public static String approveRejectRequestMenuUrl(String menu, String userUid, String requestUid){
-        return USSDSection.GROUP_MANAGER.toPath() + menu +"-do" +"?requestUid=" +requestUid +  "&userUid="+userUid;
+    public static String approveRejectRequestMenuUrl(String menu, String userUid, String requestUid) {
+        return USSDSection.GROUP_MANAGER.toPath() + menu + "-do" + "?requestUid=" + requestUid + "&userUid=" + userUid;
     }
 
 }

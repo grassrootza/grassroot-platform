@@ -1,6 +1,7 @@
 package za.org.grassroot.webapp.util;
 
 import com.google.common.collect.ImmutableMap;
+import edu.emory.mathcs.backport.java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -390,6 +391,8 @@ public class USSDGroupUtil extends USSDUtil {
         return listMenu;
 
     }
+
+
 
     private String assembleGroupPrompt(Group group, User user, boolean openToken, boolean skippedSelection) {
 

@@ -22,10 +22,7 @@ import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.enums.UserMessagingPreference;
-import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.repository.LogBookRepository;
-import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.core.repository.UserRequestRepository;
+import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.services.GcmService;
 import za.org.grassroot.services.async.AsyncUserLogger;
@@ -81,6 +78,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
     private SafetyEventLogBroker safetyEventLogBroker;
     @Autowired
     private SafetyEventBroker safetyEventBroker;
+    @Autowired
+    private AddressRepository addressRepository;
 
 
     @Override
@@ -356,6 +355,13 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public boolean userExist(String phoneNumber) {
         return userRepository.existsByPhoneNumber(phoneNumber);
     }
+
+    @Override
+    public boolean hasAddress(String uid) {
+        User user = userRepository.findOneByUid(uid);
+        return addressRepository.findOneByResident(user) !=null;
+    }
+
 
     @Override
     public void setSafetyGroup(String userUid, String groupUid) {

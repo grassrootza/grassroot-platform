@@ -1,5 +1,6 @@
 package za.org.grassroot.services;
 
+import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.SafetyEvent;
 
 import java.util.List;
@@ -13,9 +14,13 @@ public interface SafetyEventBroker {
 
     SafetyEvent load(String safetyEventUid);
 
+    void deactivate(String uid);
+
     List<SafetyEvent> fetchGroupSafetyEvents(String groupUid);
 
     List<SafetyEvent> getOutstandingUserSafetyEventsResponse(String userUid);
+
+    void sendReminders(String uid);
 
 
 

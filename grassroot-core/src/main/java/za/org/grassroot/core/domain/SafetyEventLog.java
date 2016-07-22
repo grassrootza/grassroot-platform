@@ -13,7 +13,7 @@ import java.time.Instant;
 
 @Entity
 @Table(name="safety_event_log")
-public class SafetyEventLog {
+public class SafetyEventLog  implements ActionLog{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,23 +27,25 @@ public class SafetyEventLog {
     private Instant createdDateTime;
 
     @ManyToOne
-    @JoinColumn(name = "safety_event_id", nullable = false, insertable = true)
+    @JoinColumn(name = "safety_event_id", nullable = false)
     private SafetyEvent safetyEvent;
 
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false, insertable = true)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
 
-    @Column(name="false-alarm", nullable = false)
+    @Column(name="false_alarm")
     private String validity;
+
+
+    @Enumerated(EnumType.STRING)
+    @Column(name="safety_event_log_type", nullable = false, length = 50)
+    private SafetyEventLogType safetyEventLogType;
 
     @Column(name ="responded")
     private boolean responded;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name="event_log_type", nullable = false, length = 50)
-    private SafetyEventLogType safetyEventLogType;
 
 
     private SafetyEventLog(){
@@ -53,9 +55,9 @@ public class SafetyEventLog {
     public SafetyEventLog(User user, SafetyEvent safetyEvent, SafetyEventLogType safetyEventLogType, boolean responded, String validity){
         this.uid = UIDGenerator.generateId();
         this.createdDateTime = Instant.now();
+        this.user = user;
         this.safetyEvent = safetyEvent;
         this.responded = responded;
-        this.validity =validity;
         this.safetyEventLogType = safetyEventLogType;
     }
 
