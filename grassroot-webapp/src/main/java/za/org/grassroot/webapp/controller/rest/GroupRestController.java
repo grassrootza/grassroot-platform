@@ -93,19 +93,35 @@ public class GroupRestController {
 	private ResponseEntity<ResponseWrapper> createGroup(final String phoneNumber, final String groupName, final String description,
 	                                                    Set<MembershipInfo> membersToAdd) {
 		User user = userManagementService.findByInputNumber(phoneNumber);
+		Group possibleDuplicate = checkForDuplicateGroup(user.getUid(), groupName);
 
-		Set<MembershipInfo> groupMembers = new HashSet<>(membersToAdd);
-		MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
-		groupMembers.add(creator);
+		if (possibleDuplicate != null) {
+			possibleDuplicate = handleUpdatingDuplicate(possibleDuplicate, user, membersToAdd, description);
+			return RestUtil.okayResponseWithData(RestMessage.GROUP_DUPLICATE_CREATE, Collections.singletonList(createGroupWrapper(possibleDuplicate, user)));
+		} else {
+			Set<MembershipInfo> groupMembers = new HashSet<>(membersToAdd);
+			MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
+			groupMembers.add(creator);
 
-		try {
-			Group group = groupBroker.create(user.getUid(), groupName, null, groupMembers, GroupPermissionTemplate.DEFAULT_GROUP, description, null, true);
-			List<GroupResponseWrapper> groupWrappers = Collections.singletonList(createGroupWrapper(group, user));
-			return RestUtil.okayResponseWithData(RestMessage.GROUP_CREATED, groupWrappers);
-		} catch (RuntimeException e) {
-			log.error("Error occurred while creating group: " + e.getMessage(), e);
-			return RestUtil.errorResponse(BAD_REQUEST, RestMessage.GROUP_NOT_CREATED);
+			try {
+				Group group = groupBroker.create(user.getUid(), groupName, null, groupMembers, GroupPermissionTemplate.DEFAULT_GROUP, description, null, true);
+				List<GroupResponseWrapper> groupWrappers = Collections.singletonList(createGroupWrapper(group, user));
+				return RestUtil.okayResponseWithData(RestMessage.GROUP_CREATED, groupWrappers);
+			} catch (RuntimeException e) {
+				log.error("Error occurred while creating group: " + e.getMessage(), e);
+				return RestUtil.errorResponse(BAD_REQUEST, RestMessage.GROUP_NOT_CREATED);
+			}
 		}
+	}
+
+	private Group handleUpdatingDuplicate(Group duplicate, User creatingUser, Set<MembershipInfo> membersToAdd, String description) {
+		Objects.requireNonNull(duplicate);
+		groupBroker.addMembers(creatingUser.getUid(), duplicate.getUid(), membersToAdd, false);
+		if (description != null && !description.isEmpty()) {
+			groupBroker.updateDescription(creatingUser.getUid(), duplicate.getUid(), description);
+		}
+		duplicate = groupBroker.load(duplicate.getUid());
+		return duplicate;
 	}
 
     @RequestMapping(value = "/list/{phoneNumber}/{code}", method = RequestMethod.GET)
@@ -470,6 +486,12 @@ public class GroupRestController {
         return searchTerm.contains("*134*1994*") ?
                 searchTerm.substring("*134*1994*".length(), searchTerm.length() - 1) : searchTerm;
     }
+
+	private Group checkForDuplicateGroup(final String creatingUserUid, final String groupName) {
+		Objects.requireNonNull(creatingUserUid);
+		Objects.requireNonNull(groupName);
+		return groupBroker.checkForDuplicate(creatingUserUid, groupName.trim());
+	}
 
 	private Map<String, Set<Permission>> processUpdatedPermissions(Group group, String roleName, List<PermissionDTO> permissionDTOs) {
 		Set<Permission> currentPermissions = permissionBroker.getPermissions(group, roleName);

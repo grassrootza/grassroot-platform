@@ -20,7 +20,8 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     /*
     Find the last group created by a specific user
      */
-    Group findFirstByCreatedByUserOrderByIdDesc(User createdByUser);
+    Group findFirstByCreatedByUserAndActiveTrueOrderByIdDesc(User createdByUser);
+    Group findFirstByCreatedByUserAndGroupNameAndCreatedDateTimeAfterAndActiveTrue(User createdByUser, String groupName, Timestamp createdSince); // todo : really need to switch to instant
 
     Group findOneByUid(String uid);
 
@@ -33,12 +34,6 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     List<Group> findByParentOrderByIdAsc(Group parent);
     /*
     Find all the groups that a user is part of, with pagination
-     */
-    List<Group> findByMembershipsUser(User sessionUser);
-    Page<Group> findByMembershipsUser(User sessionUser, Pageable pageable);
-
-    /*
-    Find groups which are active
      */
     List<Group> findByMembershipsUserAndActiveTrue(User user);
     Page<Group> findByMembershipsUserAndActive(User user, Pageable pageable, boolean active);
@@ -55,7 +50,6 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     Find all groups, with pagination--for system admin
      */
     Page<Group> findAll(Pageable pageable);
-    Page<Group> findAllByActiveOrderByIdAsc(boolean active, Pageable pageable);
     Long countByActive(boolean active);
 
     /*
@@ -73,7 +67,7 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     List<Group> findDiscoverableGroupsWithNameOrTaskTextWithoutMember(Long userId, String tsQuery);
 
     @Query(value = "select g.* from group_profile g " +
-            "where to_tsvector('english', g.name) @@ to_tsquery('english', ?2)",
+            "where g.active = true and to_tsvector('english', g.name) @@ to_tsquery('english', ?2)",
             nativeQuery = true)
     List<Group> findByGroupNameContainingIgnoreCase(String nameTsQuery);
 
@@ -110,7 +104,7 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     @Query(value = "Select * from getusergroupswithsize(?1) where active = true", nativeQuery = true)
     List<Object[]> findActiveUserGroupsOrderedByRecentEvent(Long userId);
 
-    @Query(value = "SELECT g FROM Group g WHERE g.id IN (SELECT gl.group.id FROM GroupLog gl WHERE (gl.createdDateTime BETWEEN ?1 AND ?2) AND gl.groupLogType = za.org.grassroot.core.enums.GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE)")
+    @Query(value = "SELECT g FROM Group g WHERE g.active = true AND g.id IN (SELECT gl.group.id FROM GroupLog gl WHERE (gl.createdDateTime BETWEEN ?1 AND ?2) AND gl.groupLogType = za.org.grassroot.core.enums.GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE)")
     List<Group> findGroupsWhereJoinCodeUsedBetween(Instant periodStart, Instant periodEnd);
 
     @Query(value = "SELECT g from Group g WHERE g.createdByUser = ?1 AND g.active = true AND LENGTH(g.groupName) < 2")

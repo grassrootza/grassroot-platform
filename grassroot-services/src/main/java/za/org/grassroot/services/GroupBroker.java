@@ -21,6 +21,8 @@ public interface GroupBroker {
 
     List<Group> searchUsersGroups(String userUid, String searchTerm);
 
+    Group checkForDuplicate(String userUid, String groupName);
+
     /** METHODS FOR CREATING AND EDITING GROUPS **/
 
     Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos,
@@ -122,7 +124,6 @@ public interface GroupBroker {
 
     //todo this needs to be in a separate interface
     Group getGroupByImageUrl(String imageUrl);
-
 
     ChangedSinceData<Group> getActiveGroups(User user, Instant changedSince);
 }

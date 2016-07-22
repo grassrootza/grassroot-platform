@@ -430,7 +430,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     public Group fetchGroupUserMustRename(User user) {
-        Group lastCreatedGroup = groupRepository.findFirstByCreatedByUserOrderByIdDesc(user);
+        Group lastCreatedGroup = groupRepository.findFirstByCreatedByUserAndActiveTrueOrderByIdDesc(user);
         if (lastCreatedGroup != null && lastCreatedGroup.isActive() && !lastCreatedGroup.hasName()
                 && !asyncUserService.hasSkippedNamingGroup(user.getUid(), lastCreatedGroup.getUid()))
             return lastCreatedGroup;

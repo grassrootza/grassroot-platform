@@ -9,6 +9,7 @@ import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
 import java.time.Instant;
@@ -22,13 +23,7 @@ public class PermissionBrokerImpl implements PermissionBroker {
     private GroupRepository groupRepository;
 
     @Autowired
-    private GroupBroker groupBroker;
-
-    @Autowired
-    private EventManagementService eventManagementService;
-
-    @Autowired
-    private EventLogRepository eventLogRepository;
+    private RoleRepository roleRepository;
 
     // major todo: externalize these permissions
 
@@ -204,6 +199,19 @@ public class PermissionBrokerImpl implements PermissionBroker {
     @Override
     public Set<Permission> getProtectedOrganizerPermissions() {
         return protectedOrganizerPermissions;
+    }
+
+    @Override
+    public void validateSystemRole(User user, String roleName) {
+        List<Role> systemRoles = roleRepository.findByNameAndRoleType(roleName, Role.RoleType.STANDARD);
+        if (systemRoles == null || systemRoles.isEmpty()) {
+            throw new UnsupportedOperationException("Error! Attempt to check invalid role");
+        }
+        for (Role role : systemRoles) {
+            if (!user.getStandardRoles().contains(role)) {
+                throw new AccessDeniedException("Error! User " + user.getDisplayName() + " does not have the role " + roleName);
+            }
+        }
     }
 
 }

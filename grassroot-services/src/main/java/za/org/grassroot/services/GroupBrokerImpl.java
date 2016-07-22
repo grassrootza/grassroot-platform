@@ -32,6 +32,7 @@ import za.org.grassroot.services.util.TokenGeneratorService;
 import java.sql.Timestamp;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -105,6 +106,15 @@ public class GroupBrokerImpl implements GroupBroker {
 	    User user = userRepository.findOneByUid(userUid);
         String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm);
         return groupRepository.findByActiveAndMembershipsUserWithNameContainsText(user.getId(), tsQuery);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Group checkForDuplicate(String userUid, String groupName) {
+        // checks if a group with the same name has been created by the same user in the last 10 minutes
+        User user = userRepository.findOneByUid(userUid);
+        return groupRepository.findFirstByCreatedByUserAndGroupNameAndCreatedDateTimeAfterAndActiveTrue(user, groupName,
+                Timestamp.from(Instant.now().minus(20, ChronoUnit.MINUTES)));
     }
 
     @Override
@@ -250,7 +260,7 @@ public class GroupBrokerImpl implements GroupBroker {
         if (!adminUserCalling) {
             permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
         } else {
-            // todo : insert a check on admin user permission here
+            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
 
         logger.info("Adding members: group={}, memberships={}, user={}", group, membershipInfos, user);

@@ -71,6 +71,7 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
         verify(userManagementServiceMock).findByInputNumber(testUserPhone);
         verify(groupBrokerMock).create(sessionTestUser.getUid(), testGroupName, null, membersToAdd, GroupPermissionTemplate.DEFAULT_GROUP, meetingEvent.getDescription(), null, true);
         verify(groupBrokerMock, times(1)).getMostRecentLog(testGroup);
+        verify(groupBrokerMock, times(1)).checkForDuplicate(sessionTestUser.getUid(), testGroupName);
         verifyNoMoreInteractions(groupBrokerMock);
         verifyNoMoreInteractions(userManagementServiceMock);
     }

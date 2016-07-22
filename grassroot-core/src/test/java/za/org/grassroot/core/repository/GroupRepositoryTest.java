@@ -110,7 +110,7 @@ public class GroupRepositoryTest {
 
         Group group2 = new Group("TestGroup2", userToDoTests);
         Group savedGroup2 = groupRepository.save(group2);
-        Group groupFromDb = groupRepository.findFirstByCreatedByUserOrderByIdDesc(userToDoTests);
+        Group groupFromDb = groupRepository.findFirstByCreatedByUserAndActiveTrueOrderByIdDesc(userToDoTests);
         log.debug("latest group........." + groupFromDb.toString());
         assertEquals(savedGroup2.getId(), groupFromDb.getId());
     }
@@ -254,8 +254,6 @@ public class GroupRepositoryTest {
         group2.addMember(user);
         group1 = groupRepository.save(group1);
         group2 = groupRepository.save(group2);
-        List<Group> list1 = groupRepository.findByMembershipsUser(user);
-        assertThat(list1.size(), is(2));
         group2.setActive(false);
         group2 = groupRepository.save(group2);
         List<Group> list2 = groupRepository.findByMembershipsUserAndActiveTrue(user);
@@ -276,9 +274,7 @@ public class GroupRepositoryTest {
         assertThat(pageTest1.hasNext(), is(true));
         testGroups.get(0).setActive(false);
         groupRepository.save(testGroups.get(0));
-        Page<Group> allGroups = groupRepository.findByMembershipsUser(user, new PageRequest(0, 3));
         Page<Group> activeGroups = groupRepository.findByMembershipsUserAndActive(user, new PageRequest(0,3), true);
-        assertTrue(allGroups.hasNext());
         assertFalse(activeGroups.hasNext());
     }
 
