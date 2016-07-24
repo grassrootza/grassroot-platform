@@ -7,9 +7,11 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MaskedUserDTO;
 import za.org.grassroot.core.enums.EventType;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by luke on 2016/02/04.
@@ -64,5 +66,13 @@ public interface AdminService {
     Long countAllLogBooks();
 
     Long countLogBooksRecordedInInterval(LocalDateTime start, LocalDateTime end);
+
+    /*
+    Methods for closer analysis of user sessions etc
+     */
+
+    long getMaxSessionsInLastMonth();
+
+    Map<Integer, Integer> getSessionHistogram(Instant start, Instant end, int interval);
 
 }

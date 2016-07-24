@@ -10,6 +10,7 @@ import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MaskedUserDTO;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DateTimeUtil;
 
@@ -17,9 +18,8 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 
 /**
  * Created by luke on 2016/02/04.
@@ -28,8 +28,13 @@ import java.util.List;
 @Transactional
 public class AdminManager implements AdminService {
 
+    // private static final Logger logger = LoggerFactory.getLogger(AdminManager.class);
+
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private UserLogRepository userLogRepository;
 
     @Autowired
     private GroupRepository groupRepository;
@@ -169,5 +174,39 @@ public class AdminManager implements AdminService {
                                                                end.toInstant(ZoneOffset.UTC));
     }
 
+	/**
+	 * SECTION : Methods to analyze use stats
+     */
+
+    @Override
+    public long getMaxSessionsInLastMonth() {
+        Instant end = Instant.now();
+        Instant start = end.minus(30, ChronoUnit.DAYS);
+        List<Long> result = userLogRepository.getMaxNumberLogsInInterval(start, end, UserLogType.USER_SESSION);
+        return (result == null || result.isEmpty()) ? 0 : result.get(0);
+    }
+
+    @Override
+    public Map<Integer, Integer> getSessionHistogram(Instant start, Instant end, int interval) {
+        Map<Integer, Integer> data = new LinkedHashMap<>();
+        final int max = getMaxSessionsInPeriod(start, end);
+        data.put(1, countSessionsInPeriod(start, end, 1, 1));
+        data.put(2, countSessionsInPeriod(start, end, 2, 2));
+        data.put(10, countSessionsInPeriod(start, end, 3, 10));
+        for (int i = 10; i <= max; i += interval) {
+            data.put(i + interval, countSessionsInPeriod(start, end, i + 1, i + interval));
+        }
+        return data;
+    }
+
+    private int getMaxSessionsInPeriod(Instant start, Instant end) {
+        List<Long> result = userLogRepository.getMaxNumberLogsInInterval(start, end, UserLogType.USER_SESSION);
+        return (result == null || result.isEmpty()) ? 0 : (int) (long) result.get(0);
+    }
+
+    private int countSessionsInPeriod(Instant start, Instant end, int low, int high) {
+        List<String> uids = userLogRepository.fetchUserUidsHavingUserLogTypeCountBetween(start, end, UserLogType.USER_SESSION, low, high);
+        return (uids == null || uids.isEmpty()) ? 0 : uids.size();
+    }
 
 }

@@ -7,6 +7,9 @@
     <meta property="og:title" content="grassroot.org.za"/>
     <meta property="og:image" content="/img/grass.png"/>
     <meta property="og:description" content="The GrassRoot Platform."/>
+
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
 </head>
 
 <body>
@@ -48,8 +51,55 @@
       </form>
     </div>
 
+    <div class="well">
+      <div class="well" style="width:600px;height:250px;" id="graph"></div>
+      <table>
+        <thead>
+          <th>Interval (end point)</th>
+          <th>Number users</th>
+        </thead>
+        <tbody>
+          <tr th:each="row : ${histogramData}">
+            <td th:text="${row.key}">Key</td>
+            <td th:text="${row.value}">Value</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
   </div>
 
 </div>
+
+<div class="header-container" layout:fragment="script-container">
+
+  <script th:inline="javascript">
+
+    /*<![CDATA[*/
+
+    var x = [];
+    var y = [];
+    var fromTh = [[${histogramData}]];
+    for (entry in fromTh) {
+      if (fromTh[entry] != 0) {
+        x.push(entry);
+        y.push(fromTh[entry]);
+      }
+    }
+
+    var data = [
+      {
+        x: x,
+        y: y,
+        type: 'bar'
+      }
+    ];
+    Plotly.newPlot('graph', data);
+
+    /*]]>*/
+
+  </script>
+</div>
+
 </body>
 </html>

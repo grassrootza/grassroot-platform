@@ -93,4 +93,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findNotificationTargetsForEvent(Event event, Class<? extends EventNotification> notificationClass);
 
     List<User> findByPhoneNumberIn(Collection<String> phoneNumbers);
+
 }

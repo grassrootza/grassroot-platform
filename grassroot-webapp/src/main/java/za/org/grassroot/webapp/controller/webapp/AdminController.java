@@ -20,10 +20,13 @@ import za.org.grassroot.services.util.FullTextSearchUtils;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by luke on 2015/10/08.
@@ -112,8 +115,17 @@ public class AdminController extends BaseController {
     @RequestMapping("/admin/users/home")
     public String allUsers(Model model) {
 
-        User user = getUserProfile();
+        Instant end = Instant.now();
+        Instant start = end.minus(30, ChronoUnit.DAYS);
+
         model.addAttribute("totalUserCount", adminService.countAllUsers());
+        model.addAttribute("maxUserSessions", adminService.getMaxSessionsInLastMonth());
+
+        Map<Integer, Integer> sessionHistogram = adminService.getSessionHistogram(start, end, 10);
+        model.addAttribute("histogramData", sessionHistogram);
+
+        log.info("max user sessions in last month: " + adminService.getMaxSessionsInLastMonth());
+        log.info("session histogram : " + sessionHistogram.toString());
 
         return "admin/users/home";
     }

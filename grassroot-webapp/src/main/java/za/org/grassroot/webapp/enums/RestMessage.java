@@ -17,6 +17,7 @@ public enum RestMessage {
     USER_PROFILE,
     USER_GROUPS,
     LOCATION_RECORDED,
+    USER_OKAY,
 
     GROUP_CREATED,
     GROUP_DUPLICATE_CREATE,

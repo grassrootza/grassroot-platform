@@ -21,6 +21,7 @@ import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.*;
+import za.org.grassroot.webapp.util.RestUtil;
 
 import java.time.Instant;
 
@@ -125,8 +126,15 @@ public class UserRestController {
         log.info("Android: Okay invalid code supplied by user={}");
         return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_TOKEN,
                 RestStatus.FAILURE), HttpStatus.UNAUTHORIZED);
+    }
 
-
+    @RequestMapping(value = "/connect/{phoneNumber}/{code}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> checkConnection(@PathVariable String phoneNumber,
+                                                           @PathVariable String code) {
+        // just load the user, to make sure exists (or it will return server error), and send back
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        log.info("reconnected user : " + user.getPhoneNumber());
+        return RestUtil.messageOkayResponse(RestMessage.USER_OKAY);
     }
 
     @RequestMapping(value = "/profile/{phoneNumber}/{code}", method = RequestMethod.GET)
