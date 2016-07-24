@@ -121,28 +121,35 @@ public class GroupController extends BaseController {
     // todo: work out how to prevent a computer just cycling through all possible numbers on the token code (as, e.g., DoS)
 
     @RequestMapping(value = "search")
-    public String searchForGroup(Model model, @RequestParam String term) {
-        String tokenSearch = term.contains("*134*1994*") ?
-                    term.substring("*134*1994*".length(), term.length() - 1) : term;
-        log.info("searching for group ... token to use ... " + tokenSearch);
-        Group groupByToken = groupBroker.findGroupFromJoinCode(tokenSearch);
-        if (groupByToken != null) {
-            model.addAttribute("group", groupByToken);
-	        model.addAttribute("externalGroupFound", true);
-        } else {
-            // just for testing since no UI support yet exists...
-//            GroupLocationFilter locationFilter = new GroupLocationFilter(new GeoLocation(45.567641, 18.701211), 30000, true);
-            GroupLocationFilter locationFilter = null;
+    public String searchForGroup(Model model, @RequestParam String term, HttpServletRequest request) {
 
-            List<Group> publicGroups = groupBroker.findPublicGroups(getUserProfile().getUid(), term, locationFilter);
-	        model.addAttribute("groupCandidates", publicGroups);
-	        model.addAttribute("externalGroupFound", !publicGroups.isEmpty());
+        if (term.isEmpty()) {
+            addMessage(model, MessageType.ERROR, "search.error.empty", request);
+            model.addAttribute("externalGroupFound", false);
+            return "group/results";
+        } else {
+            String tokenSearch = term.contains("*134*1994*") ?
+                    term.substring("*134*1994*".length(), term.length() - 1) : term;
+            log.info("searching for group ... token to use ... " + tokenSearch);
+            Group groupByToken = groupBroker.findGroupFromJoinCode(tokenSearch);
+            if (groupByToken != null) {
+                model.addAttribute("group", groupByToken);
+                model.addAttribute("externalGroupFound", true);
+            } else {
+                // just for testing since no UI support yet exists...
+                // GroupLocationFilter locationFilter = new GroupLocationFilter(new GeoLocation(45.567641, 18.701211), 30000, true);
+                GroupLocationFilter locationFilter = null;
+                List<Group> publicGroups = groupBroker.findPublicGroups(getUserProfile().getUid(), term, locationFilter);
+                model.addAttribute("groupCandidates", publicGroups);
+                model.addAttribute("externalGroupFound", !publicGroups.isEmpty());
+            }
+            final String userUid = getUserProfile().getUid();
+            List<Group> memberGroups = groupBroker.searchUsersGroups(userUid, term);
+            List<TaskDTO> memberTasks = taskBroker.searchForTasks(userUid, term);
+            model.addAttribute("foundGroups", memberGroups);
+            model.addAttribute("foundTasks", memberTasks);
         }
-	    final String userUid = getUserProfile().getUid();
-	    List<Group> memberGroups = groupBroker.searchUsersGroups(userUid, term);
-	    List<TaskDTO> memberTasks = taskBroker.searchForTasks(userUid, term);
-	    model.addAttribute("foundGroups", memberGroups);
-	    model.addAttribute("foundTasks", memberTasks);
+
         return "group/results";
     }
 

@@ -36,7 +36,7 @@
               <input name="term" type="text" class="form-control" id="name" placeholder="" />
             </div>
             <div class="form-group pull-right">
-              <a th:href="@{/home}"><button class="btn btn-default">Back home</button></a>
+              <a th:href="@{/home}" class="btn btn-default">Back home</a>
               <button type="submit" class="btn btn-primary">Search again</button>
             </div>
           </form>
@@ -65,7 +65,7 @@
       </div>
     </div>
 
-    <div th:unless="${groupCandidates == null}">
+    <div th:if="${externalGroupFound}">
       <div class="row">
         <div class="col-md-8 col-md-offset-2">
           <h4>We found <span th:text="${groupCandidates.size()}">X</span> public

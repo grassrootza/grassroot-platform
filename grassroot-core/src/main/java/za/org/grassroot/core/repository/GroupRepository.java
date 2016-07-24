@@ -67,7 +67,7 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     List<Group> findDiscoverableGroupsWithNameOrTaskTextWithoutMember(Long userId, String tsQuery);
 
     @Query(value = "select g.* from group_profile g " +
-            "where g.active = true and to_tsvector('english', g.name) @@ to_tsquery('english', ?2)",
+            "where g.active = true and to_tsvector('english', g.name) @@ to_tsquery('english', ?1)",
             nativeQuery = true)
     List<Group> findByGroupNameContainingIgnoreCase(String nameTsQuery);
 
