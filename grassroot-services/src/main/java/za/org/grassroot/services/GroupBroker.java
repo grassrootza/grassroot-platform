@@ -1,9 +1,9 @@
 package za.org.grassroot.services;
 
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
 import java.time.Instant;
@@ -117,13 +117,11 @@ public interface GroupBroker {
 
     void calculateGroupLocation(String groupUid, LocalDate localDate);
 
-    //save group avatar
+    void setGroupImageToDefault(String userUid, String groupUid, GroupDefaultImage defaultImage, boolean removeCustomImage);
+
     void saveGroupImage(String userUid, String groupUid, String format, byte[] image);
 
-    void removeGroupImage(String userUid, String groupUid);
-
-    //todo this needs to be in a separate interface
-    Group getGroupByImageUrl(String imageUrl);
+    Group getGroupByImageUrl(String imageUrl); //todo this needs to be in a separate interface
 
     ChangedSinceData<Group> getActiveGroups(User user, Instant changedSince);
 }

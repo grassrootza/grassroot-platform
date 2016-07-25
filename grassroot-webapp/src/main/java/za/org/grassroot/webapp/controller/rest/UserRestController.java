@@ -197,7 +197,6 @@ public class UserRestController {
         return new ResponseEntity<>(responseWrapper, HttpStatus.OK);
     }
 
-
     private boolean ifExists(String phoneNumber) {
         return userManagementService.userExist(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
     }

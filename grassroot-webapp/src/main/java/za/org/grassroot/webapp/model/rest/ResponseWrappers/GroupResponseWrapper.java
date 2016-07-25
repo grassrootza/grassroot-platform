@@ -2,6 +2,7 @@ package za.org.grassroot.webapp.model.rest.ResponseWrappers;
 
 import org.springframework.http.MediaType;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.webapp.enums.GroupChangeType;
 import za.org.grassroot.webapp.util.RestUtil;
@@ -26,6 +27,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
     private final Set<Permission> permissions;
     private String description;
     private String imageUrl;
+    private GroupDefaultImage defaultImage;
     private GroupChangeType lastChangeType;
     private Long lastMajorChangeMillis; // i.e., time last event was created, and/or group modified
     private LocalDateTime dateTime;
@@ -45,6 +47,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
         this.hasTasks = hasTasks;
         this.discoverable = group.isDiscoverable();
         this.imageUrl = group.getImageUrl();
+        this.defaultImage = group.getDefaultImage();
 
         if (group.hasValidGroupTokenCode()) {
             this.joinCode = group.getGroupTokenCode();
@@ -116,6 +119,8 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
     public String getImageUrl() {
         return imageUrl;
     }
+
+    public GroupDefaultImage getDefaultImage() { return defaultImage; }
 
     public List<MembershipResponseWrapper> getMembers() { return members; }
 

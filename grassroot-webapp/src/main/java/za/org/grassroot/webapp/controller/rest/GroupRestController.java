@@ -15,6 +15,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.RequestorAlreadyPartOfGroupException;
@@ -311,7 +312,7 @@ public class GroupRestController {
 
     @RequestMapping(value = "/image/upload/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> uploadImage(@PathVariable String phoneNumber, @PathVariable String code, @PathVariable String groupUid,
-                                         @RequestParam("image") MultipartFile file, HttpServletRequest request) {
+                                                       @RequestParam("image") MultipartFile file, HttpServletRequest request) {
         User user = userManagementService.findByInputNumber(phoneNumber);
         Group group = groupBroker.load(groupUid);
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
@@ -322,8 +323,9 @@ public class GroupRestController {
             try {
                 byte[] image = file.getBytes();
                 String fileName = ImageUtil.generateFileName(file,request);
-                groupBroker.saveGroupImage(user.getUid(), group.getUid(), fileName, image);
-                responseEntity = RestUtil.messageOkayResponse(RestMessage.UPLOADED);
+                groupBroker.saveGroupImage(user.getUid(), groupUid, fileName, image);
+	            Group updatedGroup = groupBroker.load(groupUid);
+                responseEntity = RestUtil.okayResponseWithData(RestMessage.UPLOADED, Collections.singletonList(createGroupWrapper(updatedGroup, user)));
             } catch (IOException | IllegalArgumentException e) {
                 log.info("error "+e.getLocalizedMessage());
                 responseEntity = new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.NOT_ACCEPTABLE, RestMessage.INVALID_INPUT,
@@ -337,22 +339,20 @@ public class GroupRestController {
 
     }
 
-    @RequestMapping(value = "/image/remove/{phoneNumber}/{code}/{groupUid}",method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> removeGroupImage(@PathVariable String phoneNumber, @PathVariable String code, @PathVariable String groupUid){
+	@RequestMapping(value = "/image/default/{phoneNumber}/{code}", method = RequestMethod.POST)
+	public ResponseEntity<ResponseWrapper> changeGroupDefault(@PathVariable String phoneNumber, @PathVariable String code,
+	                                                          @RequestParam String groupUid, @RequestParam GroupDefaultImage defaultImage) {
 
-        User user = userManagementService.findByInputNumber(phoneNumber);
-        Group group = groupBroker.load(groupUid);
-        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-
-        ResponseEntity<ResponseWrapper> responseEntity;
-        if(group.getImageUrl() !=null){
-            groupBroker.removeGroupImage(user.getUid(),groupUid);
-            responseEntity = RestUtil.messageOkayResponse(RestMessage.PICTURE_REMOVED);
-        } else {
-            responseEntity = RestUtil.errorResponse(BAD_REQUEST, RestMessage.PICTURE_NOT_FOUND);
-        }
-        return responseEntity;
-    }
+		User user = userManagementService.findByInputNumber(phoneNumber);
+		try {
+			log.info("removing any custom image, and updating default image to : {}", defaultImage);
+			groupBroker.setGroupImageToDefault(user.getUid(), groupUid, defaultImage, true);
+			Group updatedGroup = groupBroker.load(groupUid);
+			return RestUtil.okayResponseWithData(RestMessage.UPLOADED, Collections.singletonList(createGroupWrapper(updatedGroup, user)));
+		} catch (AccessDeniedException e) {
+			return RestUtil.errorResponse(HttpStatus.FORBIDDEN, RestMessage.PERMISSION_DENIED);
+		}
+	}
 
     @RequestMapping(value = "/edit/rename/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> renameGroup(@PathVariable String phoneNumber, @PathVariable String code,

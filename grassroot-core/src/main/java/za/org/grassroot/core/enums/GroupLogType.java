@@ -22,8 +22,9 @@ public enum GroupLogType {
     MESSAGE_SENT("free form message sent"), // todo : maybe consider shifting to an "account log" or similar
     GROUP_MEMBER_ADDED_VIA_JOIN_CODE("group member joined via join code"),
     GROUP_MEMBER_ADDED_AT_CREATION("Group created"),
-    GROUP_AVATAR_UPLOADED("Group image loaded"),
-    GROUP_AVATAR_REMOVED("Group image deleted");
+    GROUP_AVATAR_UPLOADED("Group avatar loaded"),
+    GROUP_AVATAR_REMOVED("Group avatar deleted"),
+    GROUP_DEFAULT_IMAGE_CHANGED("Group default image changed");
 
     private final String text;
 

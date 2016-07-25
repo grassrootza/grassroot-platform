@@ -2,6 +2,7 @@ package za.org.grassroot.core.domain;
 
 //TODO level so that we can block too many levels
 
+import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
@@ -128,6 +129,10 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
     @Column(name="avatar_format")
     private String imageUrl;
 
+    @Column(name="default_image")
+    @Enumerated(EnumType.STRING)
+    private GroupDefaultImage defaultImage;
+
     private Group() {
         // for JPA
     }
@@ -147,6 +152,7 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
         this.parent = parent;
         this.reminderMinutes = 24 * 60; // defaults to a day
         this.description = ""; // at some point may want to add to the constructor
+        this.defaultImage = GroupDefaultImage.SOCIAL_MOVEMENT;
 
         // automatically add 3 default roles
         addRole(BaseRoles.ROLE_GROUP_ORGANIZER);
@@ -483,7 +489,9 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
         this.imageUrl = imageUrl;
     }
 
+    public GroupDefaultImage getDefaultImage() { return defaultImage; }
 
+    public void setDefaultImage(GroupDefaultImage defaultImage) { this.defaultImage = defaultImage; }
 
     public Set<Role> getGroupRoles() {
         if (groupRoles == null) {

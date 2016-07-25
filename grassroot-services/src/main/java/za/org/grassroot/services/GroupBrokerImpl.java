@@ -15,10 +15,7 @@ import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.core.domain.notification.EventInfoNotification;
 import za.org.grassroot.core.dto.GroupTreeDTO;
-import za.org.grassroot.core.enums.EventLogType;
-import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.enums.GroupLogType;
-import za.org.grassroot.core.enums.UserLogType;
+import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
@@ -1088,6 +1085,7 @@ public class GroupBrokerImpl implements GroupBroker {
     }
 
     @Override
+    @Transactional
     public void saveGroupImage(String userUid, String groupUid, String imageUrl, byte[] image) {
         Objects.requireNonNull(groupUid);
         Objects.requireNonNull(imageUrl);
@@ -1098,8 +1096,6 @@ public class GroupBrokerImpl implements GroupBroker {
         group.setImage(image);
         group.setImageUrl(imageUrl);
 
-        groupRepository.save(group);
-
         GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_AVATAR_UPLOADED, group.getId(),
                 "Group avatar uploaded");
         logActionLogsAfterCommit(Collections.singleton(groupLog));
@@ -1107,25 +1103,31 @@ public class GroupBrokerImpl implements GroupBroker {
     }
 
     @Override
-    public void removeGroupImage(String userUid, String groupUid)  {
-        Objects.requireNonNull(groupUid);
-        Objects.requireNonNull(userUid);
-
-        User user = userRepository.findOneByUid(userUid);
-        Group group = groupRepository.findOneByUid(groupUid);
-        group.setImage(null);
-        group.setImageUrl(null);
-
-        groupRepository.save(group);
-
-        GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_AVATAR_REMOVED, group.getId(),
-                "Group avatar removed");
-        logActionLogsAfterCommit(Collections.singleton(groupLog));
+    public Group getGroupByImageUrl(String imageUrl) {
+        return groupRepository.findOneByImageUrl(imageUrl);
     }
 
     @Override
-    public Group getGroupByImageUrl(String imageUrl) {
-        return groupRepository.findOneByImageUrl(imageUrl);
+    @Transactional
+    public void setGroupImageToDefault(String userUid, String groupUid, GroupDefaultImage defaultImage, boolean removeCustomImage) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+        Objects.requireNonNull(defaultImage);
+
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+
+        group.setDefaultImage(defaultImage);
+
+        if (removeCustomImage) {
+            group.setImage(null);
+            group.setImageUrl(null);
+        }
+
+        logActionLogsAfterCommit(Collections.singleton(new GroupLog(group, user, GroupLogType.GROUP_DEFAULT_IMAGE_CHANGED,
+                group.getId(), defaultImage.toString())));
     }
 
     @Override
