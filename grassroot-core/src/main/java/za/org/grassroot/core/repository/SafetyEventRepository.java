@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.SafetyEvent;
+import za.org.grassroot.core.domain.User;
 
 import java.time.Instant;
 import java.util.List;
@@ -16,8 +17,9 @@ public interface SafetyEventRepository extends JpaRepository<SafetyEvent, Long> 
 
     SafetyEvent findOneByUid(String uid);
 
-    List<SafetyEvent> findByParentGroup(Group group);
+    List<SafetyEvent> findByGroup(Group group);
 
+    Long countByActivatedByAndCreatedDateTimeAfterAndFalseAlarm(User user, Instant from, boolean false_alarm);
 
     @Transactional
     @Query(value = "select se from SafetyEvent se where se.createdDateTime > ?1 and se.scheduledReminderTime < ?2 and se.active = true")
@@ -25,8 +27,6 @@ public interface SafetyEventRepository extends JpaRepository<SafetyEvent, Long> 
 
 
 
-    @Transactional
-    @Query(value = "select se from SafetyEvent se where se.createdDateTime > ?1 and se.active = true")
-    List<SafetyEvent> DeactivateSafetyEvents(Instant from);
+
 
 }

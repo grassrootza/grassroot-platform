@@ -151,9 +151,18 @@ public class MessageAssemblingManager implements MessageAssemblingService {
 
     @Override
     public String createSafetyEventMessage(User respondent, User requestor, Address address, boolean reminder) {
-        String[] fields = new String[]{requestor.getDisplayName(), address.getHouseNumber(),address.getStreetName(),address.getTown()};
-        String message = (reminder)? messageSourceAccessor.getMessage("sms.safety.reminder",fields, getUserLocale(requestor)):
-                messageSourceAccessor.getMessage("sms.safety.new",fields, getUserLocale(requestor));
+
+        String[] fields ;
+        String message;
+        if(address!=null) {
+            fields = new String[]{requestor.getDisplayName(), address.getHouseNumber(), address.getStreetName(), address.getTown()};
+            message = (reminder) ? messageSourceAccessor.getMessage("sms.safety.reminder", fields, getUserLocale(requestor)):
+                    messageSourceAccessor.getMessage("sms.safety.new", fields, getUserLocale(requestor));
+        }else{
+            fields = new String[]{requestor.getDisplayName()};
+            message = (reminder) ? messageSourceAccessor.getMessage("sms.safety.reminder.nolocation", fields, getUserLocale(requestor)) :
+                    messageSourceAccessor.getMessage("sms.safety.new.nolocation", fields, getUserLocale(requestor));
+        }
         return message;
     }
 

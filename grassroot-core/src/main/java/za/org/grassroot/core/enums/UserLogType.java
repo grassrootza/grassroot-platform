@@ -23,6 +23,7 @@ public enum UserLogType {
     CHANGED_ADDRESS("user changed address"),
     REMOVED_ADDRESS("user removed addres");
 
+
     private final String text;
 
     private UserLogType(final String text) {

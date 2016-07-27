@@ -29,6 +29,7 @@ public interface GroupBroker {
                  GroupPermissionTemplate groupPermissionTemplate, String description, Integer reminderMinutes, boolean openJoinToken);
 
 
+
     void deactivate(String userUid, String groupUid, boolean checkIfWithinTimeWindow);
 
     boolean isDeactivationAvailable(User user, Group group, boolean checkIfWithinTimeWindow);
@@ -63,7 +64,9 @@ public interface GroupBroker {
                                        Set<Permission> permissionsToRemove);
 
 
-    void makeSafetyGroup(String userUid, String groupUid);
+
+
+    Group makeSafetyGroup(String userUid, String groupUid);
 
     /** METHODS FOR DEALING WITH JOIN TOKENS, PUBLIC SETTINGS, AND SEARCHING **/
 

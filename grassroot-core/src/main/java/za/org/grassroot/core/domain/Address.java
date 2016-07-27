@@ -31,7 +31,7 @@ public class Address {
     private String town;
 
     @Column(name = "created_date_time", nullable = false,insertable = true, updatable = false)
-    private Timestamp createdDateTime;
+    private Instant createdDateTime;
 
     @ManyToOne()
     @JoinColumn(name = "resident_user_id", nullable = false, updatable = false)
@@ -43,7 +43,7 @@ public class Address {
 
     public Address(User resident, String houseNumber, String streetName, String town){
         this.uid = UIDGenerator.generateId();
-        this.createdDateTime = Timestamp.from(Instant.now());
+        this.createdDateTime = Instant.now();
         this.resident = resident;
         this.houseNumber = houseNumber;
         this.streetName = streetName;
@@ -99,11 +99,11 @@ public class Address {
         this.town = town;
     }
 
-    public Timestamp getCreatedDateTime() {
+    public Instant getCreatedDateTime() {
         return createdDateTime;
     }
 
-    public void setCreatedDateTime(Timestamp createdDateTime) {
+    public void setCreatedDateTime(Instant createdDateTime) {
         this.createdDateTime = createdDateTime;
     }
 

@@ -39,6 +39,14 @@ public class USSDUrlUtil {
             setRevisingFlag = "&" + revisingFlag + "=1",
             addInterruptedInput = "&" + interruptedInput + "=";
 
+    /**
+     *
+     * @param menuPrompt
+     * @param existingGroupUri
+     * @param newGroupUri
+     * @param pageNumber
+     * @return
+     */
     public static String paginatedGroupUrl(String menuPrompt, String existingGroupUri, String newGroupUri, Integer pageNumber) {
         String newGroupParameter = (newGroupUri != null) ? "&newUri=" + encodeParameter(newGroupUri) : "";
         return "group_page?prompt=" + encodeParameter(menuPrompt) + "&existingUri=" + encodeParameter(existingGroupUri)

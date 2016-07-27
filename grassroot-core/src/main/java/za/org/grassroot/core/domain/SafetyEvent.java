@@ -32,11 +32,17 @@ public class SafetyEvent {
     private User activatedBy;
 
     @ManyToOne()
-    @JoinColumn(name = "parent_group_id", nullable = false, updatable = false)
-    private Group parentGroup;
+    @JoinColumn(name = "group_id", nullable = false, updatable = false)
+    private Group group;
 
     @Column(name = "active")
     private boolean active;
+
+    @Column(name = "false_alarm")
+    private boolean falseAlarm;
+
+    @Column(name = "responded_to")
+    private boolean respondedTo;
 
 
     private SafetyEvent() {
@@ -46,7 +52,7 @@ public class SafetyEvent {
         this.uid = UIDGenerator.generateId();
         this.createdDateTime = Instant.now();
         this.activatedBy = activatedBy;
-        this.parentGroup = parentGroup;
+        this.group = parentGroup;
         this.active =true;
         //send a reminder after 20 minutes
         this.scheduledReminderTime = createdDateTime.plus(20, ChronoUnit.MINUTES);
@@ -85,12 +91,12 @@ public class SafetyEvent {
         this.activatedBy = activatedBy;
     }
 
-    public Group getParentGroup() {
-        return parentGroup;
+    public Group getGroup() {
+        return group;
     }
 
-    public void setParentGroup(Group parentGroup) {
-        this.parentGroup = parentGroup;
+    public void setGroup(Group group) {
+        this.group = group;
     }
 
 
@@ -113,5 +119,25 @@ public class SafetyEvent {
 
     public void setActive(Boolean active) {
         this.active = active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    public boolean isFalseAlarm() {
+        return falseAlarm;
+    }
+
+    public void setFalseAlarm(boolean falseAlarm) {
+        this.falseAlarm = falseAlarm;
+    }
+
+    public boolean isRespondedTo() {
+        return respondedTo;
+    }
+
+    public void setRespondedTo(boolean respondedTo) {
+        this.respondedTo = respondedTo;
     }
 }

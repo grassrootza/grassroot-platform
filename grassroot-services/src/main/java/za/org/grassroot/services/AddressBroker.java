@@ -13,16 +13,8 @@ public interface AddressBroker {
 
     void updateUserAddress(String userUid, String houseNumber, String street, String town);
 
-    void updateHouseNumber(String userUid, String houseNumber);
-
-    void updateStreet(String userUid, String street);
-
-    void updateTown(String userUid, String town);
-
     void removeAddress(String userUid);
 
-
-    boolean addressExists(String userUid);
 
 
 }

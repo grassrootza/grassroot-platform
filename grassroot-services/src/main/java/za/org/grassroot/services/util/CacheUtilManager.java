@@ -8,10 +8,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -87,6 +89,53 @@ public class CacheUtilManager implements CacheUtilService {
     }
 
     @Override
+    public List<SafetyEvent> getOutstandingSafetyEventResponseForUser(User user) {
+        List<SafetyEvent> outstandingSafetyEvents = null;
+        Cache cache = cacheManager.getCache("userSafetyEvents");
+        //user uid is cache key in this case;
+        String cacheKey = user.getUid();
+        try{
+            outstandingSafetyEvents = (List<SafetyEvent>) cache.get(cacheKey).getObjectValue();
+        }
+        catch (Exception e){
+           log.info("Could not retrieve outstanding events for user {}", user.getPhoneNumber());
+        }
+
+        return outstandingSafetyEvents;
+    }
+
+    @Override
+    public void putSafetyEventResponseForUser(User user, SafetyEvent safetyEvent){
+        //Since we cant use some kind of log for safety events, We put the events here and hope
+        // each gets at least one positive response within an hour of activation before cache is cleared,
+        List<SafetyEvent> safetyEventsUserToRespondTo = null;
+        Cache cache = cacheManager.getCache("userSafetyEvents");
+        String cacheKey = user.getUid();
+        try{
+            safetyEventsUserToRespondTo =(List<SafetyEvent>) cache.get(cacheKey).getObjectValue();
+        }
+        catch (Exception e){
+            log.info("No list of outstanding safety events to respond to, creating list for user {}", user.getPhoneNumber());
+            safetyEventsUserToRespondTo = new ArrayList<>();
+        }
+        safetyEventsUserToRespondTo.add(safetyEvent);
+        cache.put(new Element(cacheKey,safetyEvent));
+
+    }
+
+    @Override
+    public void clearSafetyEventResponseForUser(User user, SafetyEvent safetyEvent){
+        Cache cache = cacheManager.getCache("userSafetyEvents");
+        String cacheKey = user.getUid();
+        List<SafetyEvent> safetyEventsUserToRespondTo =(List<SafetyEvent>) cache.get(cacheKey).getObjectValue();
+        //remove particular safety response and if empty thereafter remove key
+        safetyEventsUserToRespondTo.remove(safetyEvent);
+        if(safetyEventsUserToRespondTo.isEmpty()){
+            cache.remove(cacheKey);
+        }
+    }
+
+    @Override
     public void putOutstandingResponseForUser(User user, EventType eventType, List<Event> outstandingRSVPs) {
         try {
             Cache cache = cacheManager.getCache("userRSVP");
@@ -119,6 +168,7 @@ public class CacheUtilManager implements CacheUtilService {
             log.error(e.toString());
         }
     }
+
 
     @Override
     public String fetchUssdMenuForUser(String phoneNumber) {

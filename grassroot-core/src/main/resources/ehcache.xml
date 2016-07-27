@@ -28,5 +28,10 @@
            eternal="false"
            timeToIdleSeconds="3600">
     </cache>
+    <cache name="userSafetyEvents"
+           maxEntriesLocalHeap="2000"
+           eternal="false"
+           timeToIdleSeconds="3600">
+    </cache>
 
 </ehcache>

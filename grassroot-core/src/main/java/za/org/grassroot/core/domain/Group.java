@@ -81,8 +81,6 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
     @Column(name = "active", nullable = false)
     private boolean active;
 
-    @Column(name="safety_group", nullable = false)
-    private boolean safetyGroup;
 
     /*
     Adding a 'discoverable' field, so group owners can mark if they want others to be able to find them, and a link
@@ -458,15 +456,6 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
     public void setActive(boolean active) {
         this.active = active;
     }
-
-    public boolean isSafetyGroup() {
-        return safetyGroup;
-    }
-
-    public void setSafetyGroup(boolean safetyGroup) {
-        this.safetyGroup = safetyGroup;
-    }
-
 
 
     public boolean isDiscoverable() {

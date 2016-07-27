@@ -20,7 +20,7 @@
         <input type="hidden" name="groupUid" th:value="${group.uid}" />
         <div class="form-group">
           <label class="control-label">Select the parent group:</label>
-          <select name="parentUid" id="parentGroup" class="form-control">
+          <select name="parentUid" id="group" class="form-control">
             <option th:each="parent : ${possibleParents}"
                     th:value="${parent.getUid()}"
                     th:text="${parent.groupName}">Another parent</option>

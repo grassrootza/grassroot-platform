@@ -4,7 +4,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
-import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.TestContextConfiguration;
@@ -20,7 +19,6 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
-import static za.org.grassroot.core.GrassRootApplicationProfiles.INMEMORY;
 
 /**
  * Created by paballo on 2016/07/21.
@@ -58,9 +56,9 @@ public class SafetyEventRepositoryTest {
       User user = userRepository.save(new User("0848875098"));
         Group group = groupRepository.save(new Group("group", user));
         safetyEventRepository.save(new SafetyEvent(user, group));
-        List<SafetyEvent> safetyEvents = safetyEventRepository.findByParentGroup(group);
+        List<SafetyEvent> safetyEvents = safetyEventRepository.findByGroup(group);
         assertNotNull(safetyEvents);
-        assertEquals(safetyEvents.get(0).getParentGroup(),group);
+        assertEquals(safetyEvents.get(0).getGroup(),group);
     }
 
 

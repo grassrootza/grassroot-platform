@@ -74,8 +74,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     private MessageAssemblingService messageAssemblingService;
     @Autowired
     private GcmService gcmService;
-    @Autowired
-    private SafetyEventLogBroker safetyEventLogBroker;
+
     @Autowired
     private SafetyEventBroker safetyEventBroker;
     @Autowired
@@ -359,14 +358,15 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public boolean hasAddress(String uid) {
         User user = userRepository.findOneByUid(uid);
-        return addressRepository.findOneByResident(user) !=null;
+        return addressRepository.findOneByResident(user) != null;
     }
 
 
     @Override
     public void setSafetyGroup(String userUid, String groupUid) {
         User user = userRepository.findOneByUid(userUid);
-        user.setSafetyGroupUid(groupUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+        user.setSafetyGroup(group);
         userRepository.save(user);
     }
 
@@ -396,10 +396,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     public boolean needsToRespondToSafetyEvent(User sessionUser) {
-        if (sessionUser.getSafetyGroupUid() != null) {
-            return safetyEventBroker.getOutstandingUserSafetyEventsResponse(sessionUser.getUid()).size() > 0;
-        }
-        return false;
+        return safetyEventBroker.getOutstandingUserSafetyEventsResponse(sessionUser.getUid()) !=null;
+
     }
 
     @Override

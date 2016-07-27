@@ -41,6 +41,11 @@ public class TokenGeneratorManager implements TokenGeneratorService {
         }
         int maxCodeInt = (int) Math.pow(10, numberOfDigits);
         int rndValue = random.nextInt(maxCodeInt);
+        //exclude 911 as it reserved for safety button activation
+        while(rndValue ==911){
+            rndValue =random.nextInt(maxCodeInt);
+        }
+
         return String.format("%0" + numberOfDigits + "d", rndValue);
     }
 }

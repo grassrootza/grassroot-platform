@@ -85,8 +85,9 @@ public class User implements UserDetails {
     @Column(name = "initiated_session")
     private boolean hasInitiatedSession;
 
-    @Column(name = "safety_group_uid")
-    private String safetyGroupUid;
+    @ManyToOne
+    @JoinColumn(name = "safety_group_id")
+    private Group safetyGroup;
 
     @Version
     private Integer version;
@@ -238,12 +239,12 @@ public class User implements UserDetails {
         }
     }
 
-    public String getSafetyGroupUid() {
-        return safetyGroupUid;
+    public Group getSafetyGroup() {
+        return safetyGroup;
     }
 
-    public void setSafetyGroupUid(String safetyGroupUid) {
-        this.safetyGroupUid = safetyGroupUid;
+    public void setSafetyGroup(Group safetyGroup) {
+        this.safetyGroup = safetyGroup;
     }
 
     public String getUsername() {
@@ -271,7 +272,7 @@ public class User implements UserDetails {
     }
 
     public boolean hasSafetyGroup() {
-        return safetyGroupUid != null;
+        return safetyGroup != null;
     }
 
     public UserMessagingPreference getMessagingPreference() {

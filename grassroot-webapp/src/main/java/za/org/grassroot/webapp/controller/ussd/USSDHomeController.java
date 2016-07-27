@@ -68,6 +68,7 @@ public class USSDHomeController extends USSDController {
 
     private static final String path = homePath;
     private static final USSDSection thisSection = HOME;
+    private static final String safetyCode = "911";
 
     private static final String rsvpMenu = "rsvp",
             renameUserMenu = "rename-start",
@@ -139,7 +140,7 @@ public class USSDHomeController extends USSDController {
          */
 
         if (codeHasTrailingDigits(enteredUSSD)) {
-            String trailingDigits = enteredUSSD.substring(hashPosition + 1, enteredUSSD.length()-1);
+            String trailingDigits = enteredUSSD.substring(hashPosition + 1, enteredUSSD.length() - 1);
             openingMenu = processTrailingDigits(trailingDigits, sessionUser);
         } else {
             if (!sessionUser.isHasInitiatedSession()) userManager.setInitiatedSession(sessionUser);
@@ -214,25 +215,26 @@ public class USSDHomeController extends USSDController {
 
         log.info("Processing trailing digits ..." + trailingDigits);
 
-        Group groupFromJoinCode = groupBroker.findGroupFromJoinCode(trailingDigits.trim());
-        if (groupFromJoinCode != null) {
-            log.info("Found a token with these trailing digits ...");
-            if (groupFromJoinCode.isSafetyGroup()) {
-                returnMenu = assemblePanicButtonActivationMenu(sessionUser, groupFromJoinCode);
-            } else {
-                // todo: remove "findBy" above and consolidate into the service call (which throws the 'cant find error'
-                groupBroker.addMemberViaJoinCode(sessionUser.getUid(), groupFromJoinCode.getUid(), trailingDigits);
+        if(isSafetyActivationCode(trailingDigits)){
+           returnMenu = assemblePanicButtonActivationMenu(sessionUser);
 
-                String prompt = (groupFromJoinCode.hasName()) ?
-                        getMessage(thisSection, startMenu, promptKey + ".group.token.named", groupFromJoinCode.getGroupName(), sessionUser) :
-                        getMessage(thisSection, startMenu, promptKey + ".group.token.unnamed", sessionUser);
-                returnMenu = welcomeMenu(prompt, sessionUser);
+        }else {
+            Group groupFromJoinCode = groupBroker.findGroupFromJoinCode(trailingDigits.trim());
+            if (groupFromJoinCode != null) {
+                log.info("Found a token with these trailing digits ...");
+                    // todo: remove "findBy" above and consolidate into the service call (which throws the 'cant find error'
+                    groupBroker.addMemberViaJoinCode(sessionUser.getUid(), groupFromJoinCode.getUid(), trailingDigits);
+                    String prompt = (groupFromJoinCode.hasName()) ?
+                            getMessage(thisSection, startMenu, promptKey + ".group.token.named", groupFromJoinCode.getGroupName(), sessionUser) :
+                            getMessage(thisSection, startMenu, promptKey + ".group.token.unnamed", sessionUser);
+                    returnMenu = welcomeMenu(prompt, sessionUser);
+                }
+             else {
+                log.info("Whoops, couldn't find the code");
+                returnMenu = welcomeMenu(getMessage(thisSection, startMenu, promptKey + ".unknown.request", sessionUser), sessionUser);
             }
-        } else {
-            log.info("Whoops, couldn't find the code");
-            returnMenu = welcomeMenu(getMessage(thisSection, startMenu, promptKey + ".unknown.request", sessionUser), sessionUser);
-        }
 
+        }
         return returnMenu;
 
     }
@@ -276,7 +278,7 @@ public class USSDHomeController extends USSDController {
                 break;
             case RESPOND_SAFETY:
                 SafetyEvent safetyEvent = safetyEventBroker.getOutstandingUserSafetyEventsResponse(user.getUid()).get(0);
-                openingMenu = assemblePanicButtonActivationResponse(user,safetyEvent);
+                openingMenu = assemblePanicButtonActivationResponse(user, safetyEvent);
                 break;
 
             case NONE:
@@ -378,29 +380,37 @@ public class USSDHomeController extends USSDController {
     }
 
 
-    private USSDMenu assemblePanicButtonActivationMenu(User user, Group group) {
+    private USSDMenu assemblePanicButtonActivationMenu(User user) {
         USSDMenu menu;
-        if (group.hasMember(user)) {
-            String message = getMessage(thisSection,"safety.activated",promptKey, user);
-            safetyEventBroker.create(user.getUid(), group.getUid());
+        if (user.hasSafetyGroup()) {
+
+            boolean isBarred = safetyEventBroker.isUserBarred(user.getUid());
+            String message = (!isBarred) ? getMessage(thisSection, "safety.activated", promptKey, user) : getMessage(thisSection, "safety.barred", promptKey, user);
+            if (!isBarred) safetyEventBroker.create(user.getUid(), user.getSafetyGroup().getUid());
             menu = new USSDMenu(message);
+
         } else {
-            menu = new USSDMenu(getMessage(thisSection, "safety.not-activated",promptKey, user));
-            menu.addMenuOption(USSDSection.SAFETY_GROUP_MANAGER+"join-request"+doSuffix,"Ask to join group");
-            menu.addMenuOption(path+startMenu, "Go to main menu");
+            menu = new USSDMenu(getMessage(thisSection, "safety.not-activated", promptKey, user));
+            menu.addMenuOption(USSDSection.SAFETY_GROUP_MANAGER + "join-request" + doSuffix, "Set an existing group as safety");
+            menu.addMenuOption(USSDSection.SAFETY_GROUP_MANAGER + "join-request" + doSuffix, "Create a new safety group");
+            menu.addMenuOption(path + startMenu, "Go to main menu");
         }
         return menu;
     }
 
-    private USSDMenu assemblePanicButtonActivationResponse(User user, SafetyEvent safetyEvent){
+    private USSDMenu assemblePanicButtonActivationResponse(User user, SafetyEvent safetyEvent) {
 
         String activateByDisplayName = safetyEvent.getActivatedBy().getDisplayName();
         USSDMenu menu = new USSDMenu("Did you respond to the panic alert activated by " + activateByDisplayName + "?");
-        menu.addMenuOption(USSDUrlUtil.safetyMenuWithId("record-response",safetyEvent.getUid(), true), "Yes");
-        menu.addMenuOption(USSDUrlUtil.safetyMenuWithId("record-response",safetyEvent.getUid(), false),"No");
+        menu.addMenuOption(USSDUrlUtil.safetyMenuWithId("record-response", safetyEvent.getUid(), true), "Yes");
+        menu.addMenuOption(USSDUrlUtil.safetyMenuWithId("record-response", safetyEvent.getUid(), false), "No");
 
-        return  menu;
+        return menu;
 
+    }
+
+    private boolean isSafetyActivationCode(String trailingDigits){
+        return (trailingDigits.equals(safetyCode));
     }
 
     /*

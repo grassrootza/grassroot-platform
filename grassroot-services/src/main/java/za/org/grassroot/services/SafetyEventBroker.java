@@ -14,11 +14,13 @@ public interface SafetyEventBroker {
 
     SafetyEvent load(String safetyEventUid);
 
-    void deactivate(String uid);
+    void recordResponse(String userUid, String safetyEventUid, boolean isValid);
 
     List<SafetyEvent> fetchGroupSafetyEvents(String groupUid);
 
     List<SafetyEvent> getOutstandingUserSafetyEventsResponse(String userUid);
+
+    boolean isUserBarred(String uid);
 
     void sendReminders(String uid);
 

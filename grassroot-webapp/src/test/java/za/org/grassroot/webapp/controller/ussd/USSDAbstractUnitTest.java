@@ -70,10 +70,11 @@ public abstract class USSDAbstractUnitTest {
     protected GroupJoinRequestService groupJoinRequestService;
 
     @Mock
-    protected SafetyEventBroker safetyEventBroker;
+    protected SafetyEventBroker safetyEventBrokerMock;
+
 
     @Mock
-    protected AddressBroker addressBroker;
+    protected AddressBroker addressBrokerMock;
 
     @InjectMocks
     protected USSDGroupUtil ussdGroupUtil;

@@ -162,6 +162,7 @@ public class GroupBrokerImpl implements GroupBroker {
         return group;
     }
 
+
     private void logActionLogsAfterCommit(Set<ActionLog> actionLogs) {
         if (!actionLogs.isEmpty()) {
             LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
@@ -618,30 +619,18 @@ public class GroupBrokerImpl implements GroupBroker {
 
     @Override
     @Transactional
-    public void makeSafetyGroup(String userUid, String groupUid) {
+    public Group makeSafetyGroup(String userUid, String groupUid) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
 
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
-        logger.info("Creating safety group");
+        user.setSafetyGroup(group);
 
         permissionBroker.validateGroupPermission(user,group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-        group.setSafetyGroup(true);
-        groupRepository.save(group);
 
-        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-        Set<User> members = group.getMembers();
-        for(User member: members){
-            //todo member might already belong to another group, will have to somehow get permission from said member to leave other safety group and join this one
-            bundle.addLog(new UserLog(member.getUid(), UserLogType.JOINED_SAFETY_GROUP, String.format("Group member part of changed to safety group, group uid : %s", group.getUid()), UNKNOWN));
-            member.setSafetyGroupUid(groupUid);
-            userRepository.save(member);
-        }
-        bundle.addLog(new GroupLog(group, user, GroupLogType.GROUP_UPDATED, null));
-        logsAndNotificationsBroker.storeBundle(bundle);
-
+        return group;
 
     }
 

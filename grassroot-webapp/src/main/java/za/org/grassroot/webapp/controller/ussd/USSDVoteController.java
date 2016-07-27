@@ -88,8 +88,8 @@ public class USSDVoteController extends USSDController {
         } else {
             String groupsExistPrompt = getMessage(thisSection, "group", promptKey, user);
             String groupsDontExistPrompt = getMessage(thisSection, "group", promptKey + "-nogroup", user);
-            menu = ussdGroupUtil.askForGroupNoInlineNew(user, thisSection, groupsExistPrompt, groupsDontExistPrompt,
-                    "issue", groupMenus + "create", null);
+            menu = ussdGroupUtil.askForGroupWithoutNewOption(user, thisSection, groupsExistPrompt, groupsDontExistPrompt,
+                    "issue", groupMenus + "create");
         }
 
         return menuBuilder(menu);
@@ -102,8 +102,8 @@ public class USSDVoteController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber, voteMenus + "new");
         String groupsExistPrompt = getMessage(thisSection, "group", promptKey, user);
         String groupsDontExistPrompt = getMessage(thisSection, "group", promptKey + "-nogroup", user);
-        return menuBuilder(ussdGroupUtil.askForGroupNoInlineNew(user, thisSection, groupsExistPrompt, groupsDontExistPrompt,
-                "issue", groupMenus + "create", null));
+        return menuBuilder(ussdGroupUtil.askForGroupWithoutNewOption(user, thisSection, groupsExistPrompt, groupsDontExistPrompt,
+                "issue", groupMenus + "create"));
     }
 
     /*
