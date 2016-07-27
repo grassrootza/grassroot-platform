@@ -86,8 +86,6 @@ public class UserRestController {
         log.info("Token verification for new user failed");
         ResponseWrapper responseWrapper = new ResponseWrapperImpl(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_TOKEN, RestStatus.FAILURE);
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
-
-
     }
 
     @RequestMapping(value = "/login/{phoneNumber}", method = RequestMethod.GET)

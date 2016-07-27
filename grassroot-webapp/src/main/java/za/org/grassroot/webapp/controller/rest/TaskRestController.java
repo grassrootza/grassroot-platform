@@ -65,6 +65,7 @@ public class TaskRestController {
         User user = userManagementService.loadOrSaveUser(phoneNumber);
 		List<TaskDTO> tasks = taskBroker.fetchUpcomingUserTasks(user.getUid());
         Collections.sort(tasks, Collections.reverseOrder());
+	    logger.info("returning tasks for user : {}", tasks.toString());
         RestMessage message = (tasks.isEmpty()) ? RestMessage.USER_HAS_NO_TASKS : RestMessage.USER_ACTIVITIES;
         ResponseWrapper wrapper = new GenericResponseWrapper(HttpStatus.OK, message, RestStatus.SUCCESS, tasks);
         return new ResponseEntity<>(wrapper, HttpStatus.OK);

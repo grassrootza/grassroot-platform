@@ -77,6 +77,7 @@ public class NotificationRestController {
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         Notification notification = notificationService.loadNotification(uid);
 
+        log.info("updating notification read status for user uid : {}, notification uid : {}", user.getUid(), uid);
         if (!notification.getTarget().equals(user)) {
             throw new AccessControlException("Error! Trying to set another user's notification status");
         }

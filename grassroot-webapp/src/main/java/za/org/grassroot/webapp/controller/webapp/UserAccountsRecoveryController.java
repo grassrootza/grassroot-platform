@@ -113,7 +113,6 @@ public class UserAccountsRecoveryController extends BaseController {
 
     /**
      * @param verificationTokenCode
-     * @todo Add a "isSMSSendingConfigured" method to message integration
      */
     private void temporaryTokenSend(VerificationTokenCode verificationTokenCode) {
         try {

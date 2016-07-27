@@ -86,13 +86,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .anyRequest()
                 .fullyAuthenticated()
                 .and()
-                .rememberMe().tokenRepository(persistentTokenRepository())
-                .tokenValiditySeconds(1209600);
-                        /*.and()
-                                .requiresChannel()
-                                .anyRequest()
-                                .requiresSecure();*/
-
+                .rememberMe()
+                .tokenRepository(persistentTokenRepository())
+                .tokenValiditySeconds(1209600)
+                .useSecureCookie(true);
 
     }
 

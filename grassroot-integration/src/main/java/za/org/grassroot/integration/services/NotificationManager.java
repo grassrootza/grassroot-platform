@@ -41,7 +41,7 @@ public class NotificationManager implements NotificationService{
             Sets.newHashSet(EventInfoNotification.class, EventChangedNotification.class));
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public Notification loadNotification(String uid) {
         Objects.nonNull(uid);
         return notificationRepository.findByUid(uid);
