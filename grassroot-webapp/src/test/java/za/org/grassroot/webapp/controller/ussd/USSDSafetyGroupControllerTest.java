@@ -88,11 +88,10 @@ public class USSDSafetyGroupControllerTest extends USSDAbstractUnitTest {
     public void createGroupShouldWorkWithValidName() throws Exception{
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(groupBrokerMock.create(testUser.getUid(),testGroup.getName(),null,testMembers,template,null,null,true)).thenReturn(testGroup);
-        when(groupBrokerMock.makeSafetyGroup(testUser.getUid(),testGroup.getUid())).thenReturn(testGroup);
         mockMvc.perform(get(path + "create").param(phoneParam, testUserPhone).param(userChoiceParam, "test group")).andExpect(status().isOk());
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone);
         verify(groupBrokerMock,times(1)).create(testUser.getUid(),testGroup.getName(),null,testMembers,template,null,null,true);
-        verify(groupBrokerMock,times(1)).makeSafetyGroup(testUser.getUid(),testGroup.getUid());
+        verify(userManagementServiceMock,times(1)).setSafetyGroup(testUser.getUid(),testGroup.getUid());
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(groupBrokerMock);
 

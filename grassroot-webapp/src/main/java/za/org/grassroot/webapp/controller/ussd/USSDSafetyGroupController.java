@@ -113,7 +113,8 @@ public class USSDSafetyGroupController extends USSDController {
     public Request nominateSafetyGroupDo(@RequestParam String msisdn, @RequestParam(value = groupUidParam, required = true) String groupUid) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(msisdn);
-        Group group = groupBroker.makeSafetyGroup(user.getUid(), groupUid);
+        Group group = groupBroker.load(groupUid);
+        userManager.setSafetyGroup(user.getUid(),groupUid);
         String prompt = getMessage(thisSection, createGroupMenu, promptKey + ".confirm", group.getGroupName(), user);
         USSDMenu menu = new USSDMenu(prompt);
         menu.addMenuOption(thisSection.toPath() + startMenu, "Back");
@@ -147,7 +148,7 @@ public class USSDSafetyGroupController extends USSDController {
         } else {
             Set<MembershipInfo> members = Sets.newHashSet(new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName()));
             Group group = groupBroker.create(user.getUid(), groupName, null, members, GroupPermissionTemplate.DEFAULT_GROUP, null, null, true);
-            groupBroker.makeSafetyGroup(user.getUid(), group.getUid());
+            userManager.setSafetyGroup(user.getUid(), group.getUid());
             menu = new USSDMenu("Safety group created, what would you like to do next?");
             menu.addMenuOption(thisSection.toPath() + createGroupAddRespondents + "?groupUid=" + group.getUid(), getMessage(thisSection, optionsKey, "addrespondents", user));
             menu.addMenuOption(thisSection.toPath() + resetSafetyGroup + "?groupUid=" + group.getUid(), getMessage(thisSection, optionsKey, "leave", user));

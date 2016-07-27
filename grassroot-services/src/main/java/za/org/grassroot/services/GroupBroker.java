@@ -66,8 +66,6 @@ public interface GroupBroker {
 
 
 
-    Group makeSafetyGroup(String userUid, String groupUid);
-
     /** METHODS FOR DEALING WITH JOIN TOKENS, PUBLIC SETTINGS, AND SEARCHING **/
 
     String openJoinToken(String userUid, String groupUid, LocalDateTime expiryDateTime);

@@ -363,11 +363,12 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
 
     @Override
+    @Transactional
     public void setSafetyGroup(String userUid, String groupUid) {
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
         user.setSafetyGroup(group);
-        userRepository.save(user);
+
     }
 
     @Override

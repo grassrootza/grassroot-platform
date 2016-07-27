@@ -617,22 +617,6 @@ public class GroupBrokerImpl implements GroupBroker {
 
     }
 
-    @Override
-    @Transactional
-    public Group makeSafetyGroup(String userUid, String groupUid) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(groupUid);
-
-        User user = userRepository.findOneByUid(userUid);
-        Group group = groupRepository.findOneByUid(groupUid);
-
-        user.setSafetyGroup(group);
-
-        permissionBroker.validateGroupPermission(user,group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-
-        return group;
-
-    }
 
     @Override
     @Transactional
