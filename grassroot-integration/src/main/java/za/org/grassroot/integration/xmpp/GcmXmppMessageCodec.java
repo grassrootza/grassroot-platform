@@ -6,8 +6,8 @@ import org.jivesoftware.smack.packet.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.integration.support.MessageBuilder;
-import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.NotificationType;
+import za.org.grassroot.integration.domain.AndroidClickActionType;
 import za.org.grassroot.integration.domain.GcmEntity;
 
 import java.time.Instant;
@@ -67,18 +67,24 @@ public class GcmXmppMessageCodec {
 	}
 
 	public static Map<String, Object> createDataPart(String notificationUid, String title, String group, String description, Object id,
-															Instant createdDateTime, NotificationType alertType, String entityType) {
+	                                                 Instant createdDateTime, NotificationType alertType, String entityType,
+	                                                 AndroidClickActionType clickAction, int priority) {
 		Map<String, Object> data = new HashMap<>();
 		data.put("title", title);
+
 		if (group != null) {
 			data.put("group", group);
 		}
+
 		data.put("notificationUid", notificationUid);
 		data.put("body", description);
 		data.put("id", id);
 		data.put("created_date_time", createdDateTime);
 		data.put("alert_type", alertType);
 		data.put("entity_type", entityType);
+		data.put("click_action", clickAction);
+		data.put("priority", priority);
+
 		return data;
 	}
 }

@@ -8,14 +8,12 @@ import org.springframework.integration.annotation.Transformer;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.GcmRegistration;
-import za.org.grassroot.core.domain.LogBook;
-import za.org.grassroot.core.domain.Notification;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.repository.GcmRegistrationRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.integration.domain.AndroidClickActionType;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,8 +28,6 @@ public class NotificationToGcmXmppTransformer {
 
     @Autowired
     private GcmRegistrationRepository gcmRegistrationRepository;
-    @Autowired
-    private UserRepository userRepository;
 
     @Transformer(inputChannel = "gcmOutboundChannel", outputChannel = "gcmXmppOutboundChannel")
     public Message<org.jivesoftware.smack.packet.Message> transform(Message<Notification> message) throws Exception {
@@ -122,8 +118,9 @@ public class NotificationToGcmXmppTransformer {
                         notification.getEventLog().getEvent().getUid(),
                         notification.getCreatedDateTime(),
                         notification.getNotificationType(),
-                        notification.getEventLog().getEvent().getEventType().name()
-                );
+                        notification.getEventLog().getEvent().getEventType().name(),
+		                getActionType(notification),
+		                notification.getPriority());
 
             case LOGBOOK:
                 LogBook logBook = notification.getLogBookLog().getLogBook();
@@ -135,20 +132,55 @@ public class NotificationToGcmXmppTransformer {
                         notification.getMessage(),
                         logBook.getUid(),
                         notification.getCreatedDateTime(),
-                        notification.getNotificationType(), TaskType.TODO.name()
-                );
+                        notification.getNotificationType(),
+		                TaskType.TODO.name(),
+		                getActionType(notification),
+		                notification.getPriority());
         }
         return data;
     }
 
-    private String getClickAction(Notification notification) {
-        String clickAction = null;
+    private AndroidClickActionType getActionType(Notification notification) {
+        AndroidClickActionType actionType = null;
         switch (notification.getNotificationType()) {
             case EVENT:
-                return notification.getNotificationType().name();
+	            EventLog eventLog = notification.getEventLog();
+	            switch (eventLog.getEventLogType()) {
+		            case CREATED:
+			            actionType = AndroidClickActionType.TASK_CREATED;
+			            break;
+		            case CHANGE:
+			            actionType = AndroidClickActionType.TASK_CHANGED;
+			            break;
+		            case CANCELLED:
+			            actionType = AndroidClickActionType.TASK_CANCELLED;
+			            break;
+		            case REMINDER:
+			            actionType = AndroidClickActionType.TASK_REMINDER;
+			            break;
+		            default:
+			            actionType = AndroidClickActionType.VIEW_TASK;
+			            break;
+	            }
+                break;
             case LOGBOOK:
-                return TaskType.TODO.name();
+                LogBookLog logBookLog = notification.getLogBookLog();
+	            switch (logBookLog.getType()) {
+		            case CREATED:
+			            actionType = AndroidClickActionType.TASK_CREATED;
+			            break;
+		            case CHANGED:
+			            actionType = AndroidClickActionType.TASK_CHANGED;
+			            break;
+		            case REMINDER_SENT:
+			            actionType = AndroidClickActionType.TASK_REMINDER;
+			            break;
+		            default:
+			            actionType = AndroidClickActionType.VIEW_TASK;
+			            break;
+	            }
+	            break;
         }
-        return clickAction;
+        return actionType;
     }
 }
