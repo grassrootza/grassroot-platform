@@ -112,13 +112,14 @@ public class SafetyEventBrokerImpl implements SafetyEventBroker {
         Group group = safetyEvent.getGroup();
         User requestor = safetyEvent.getActivatedBy();
         for (User member : group.getMembers()) {
-            if (!member.equals(requestor) && !member.equals(respondent)) {
+            if (!member.equals(requestor)) {
                 //send messages to notify members that somebody has responded
                 String message = messageAssemblingService.createSafetyEventReportMessage(member, respondent,safetyEvent,true);
                 smsSendingService.sendSMS(message,member.getPhoneNumber());
                 cacheUtilService.clearSafetyEventResponseForUser(member, safetyEvent);
             }
         }
+
 
     }
 

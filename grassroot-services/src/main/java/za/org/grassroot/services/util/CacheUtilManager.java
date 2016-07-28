@@ -139,8 +139,8 @@ public class CacheUtilManager implements CacheUtilService {
                 iter.remove();
             }
         }
-        log.info("safety event to respond to size after cleating {}", safetyEventsUserToRespondTo.size());
-        cache.put(new Element(cacheKey,safetyEventsUserToRespondTo));
+        log.info("safety event to respond to size after clearing {}", safetyEventsUserToRespondTo.size());
+         cache.put(new Element(cacheKey,safetyEventsUserToRespondTo));
         if(safetyEventsUserToRespondTo.isEmpty()){
             cache.remove(cacheKey);
         }
