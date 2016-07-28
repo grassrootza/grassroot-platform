@@ -128,21 +128,23 @@ public class CacheUtilManager implements CacheUtilService {
     public void clearSafetyEventResponseForUser(User user, SafetyEvent safetyEvent){
         Cache cache = cacheManager.getCache("userSafetyEvents");
         String cacheKey = user.getUid();
-        List<SafetyEvent> safetyEventsUserToRespondTo =(List<SafetyEvent>) cache.get(cacheKey).getObjectValue();
-        //remove particular safety response and if empty thereafter remove key
-        log.info("safety event to respond to size {}", safetyEventsUserToRespondTo.size());
-        safetyEventsUserToRespondTo.remove(safetyEvent);
-        Iterator iter = safetyEventsUserToRespondTo.iterator();
-        while(iter.hasNext()){
-            SafetyEvent event = (SafetyEvent)iter.next();
-            if(safetyEvent.getUid().equals(event.getUid())){
-                iter.remove();
+        if (cache.get(cacheKey) != null) {
+            //remove particular safety response and if empty thereafter remove key
+            List<SafetyEvent> safetyEventsUserToRespondTo = (List<SafetyEvent>) cache.get(cacheKey).getObjectValue();
+            log.info("safety event to respond to size {}", safetyEventsUserToRespondTo.size());
+            safetyEventsUserToRespondTo.remove(safetyEvent);
+            Iterator iter = safetyEventsUserToRespondTo.iterator();
+            while (iter.hasNext()) {
+                SafetyEvent event = (SafetyEvent) iter.next();
+                if (safetyEvent.getUid().equals(event.getUid())) {
+                    iter.remove();
+                }
             }
-        }
-        log.info("safety event to respond to size after clearing {}", safetyEventsUserToRespondTo.size());
-         cache.put(new Element(cacheKey,safetyEventsUserToRespondTo));
-        if(safetyEventsUserToRespondTo.isEmpty()){
-            cache.remove(cacheKey);
+            log.info("safety event to respond to size after clearing {}", safetyEventsUserToRespondTo.size());
+            cache.put(new Element(cacheKey, safetyEventsUserToRespondTo));
+            if (safetyEventsUserToRespondTo.isEmpty()) {
+                cache.remove(cacheKey);
+            }
         }
     }
 

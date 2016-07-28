@@ -372,8 +372,8 @@ public class USSDSafetyGroupController extends USSDController {
             menu.addMenuOption(thisSection.toPath() + "record-validity-do?entityUid=" + safetyEventUid + "&response=0",
                     getMessage(thisSection, "response", "option.invalid", user));
         } else {
-            SafetyEvent safetyEvent = safetyEventBroker.load(safetyEventUid);
-            cacheManager.clearSafetyEventResponseForUser(user,safetyEvent);
+            // SafetyEvent safetyEvent = safetyEventBroker.load(safetyEventUid); // only clear cache when someone records yes/no to validity (to validate by user testing)
+            // cacheManager.clearSafetyEventResponseForUser(user,safetyEvent);
             menu.addMenuOption(startMenu, "Go to main Menu");
         }
         return menuBuilder(menu);

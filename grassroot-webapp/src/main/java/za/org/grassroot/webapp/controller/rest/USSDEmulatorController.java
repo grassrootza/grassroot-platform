@@ -83,7 +83,12 @@ public class USSDEmulatorController extends BaseController {
             logger.info("About to get request object ...");
 	        Request request = getRequestObject(targetUrl);
 	        if (request != null) {
-		        boolean display = (request.options.get(0).display == null) ? true : request.options.get(0).display;
+		        boolean display;
+		        if (request.options != null & !request.options.isEmpty()) {
+			        display = (request.options.get(0).display == null) ? true : request.options.get(0).display;
+		        } else {
+			        display = true;
+		        }
 		        model.addAttribute("display", display);
 		        model.addAttribute("request", request);
 		        return "emulator/view";

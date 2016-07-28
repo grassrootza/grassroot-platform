@@ -217,8 +217,7 @@ public class USSDHomeController extends USSDController {
 
         if(isSafetyActivationCode(trailingDigits)){
            returnMenu = assemblePanicButtonActivationMenu(sessionUser);
-
-        }else {
+        } else {
             Group groupFromJoinCode = groupBroker.findGroupFromJoinCode(trailingDigits.trim());
             if (groupFromJoinCode != null) {
                 log.info("Found a token with these trailing digits ...");
@@ -383,17 +382,16 @@ public class USSDHomeController extends USSDController {
     private USSDMenu assemblePanicButtonActivationMenu(User user) {
         USSDMenu menu;
         if (user.hasSafetyGroup()) {
-
             boolean isBarred = safetyEventBroker.isUserBarred(user.getUid());
             String message = (!isBarred) ? getMessage(thisSection, "safety.activated", promptKey, user) : getMessage(thisSection, "safety.barred", promptKey, user);
             if (!isBarred) safetyEventBroker.create(user.getUid(), user.getSafetyGroup().getUid());
             menu = new USSDMenu(message);
-
         } else {
+            // todo : externalize the option texts
             menu = new USSDMenu(getMessage(thisSection, "safety.not-activated", promptKey, user));
-            menu.addMenuOption(USSDSection.SAFETY_GROUP_MANAGER .toPath()+ "pick-group", "Set an existing group as safety group");
-            menu.addMenuOption(USSDSection.SAFETY_GROUP_MANAGER.toPath() + "new-group" + doSuffix, "Create a new safety group");
-            menu.addMenuOption(path + startMenu, "Go to main menu");
+            menu.addMenuOption(USSDSection.SAFETY_GROUP_MANAGER .toPath()+ "pick-group", "Make existing group my safety group");
+            menu.addMenuOption(USSDSection.SAFETY_GROUP_MANAGER.toPath() + "new-group", "Create new group");
+            menu.addMenuOption(path + startMenu, "Main menu");
         }
         return menu;
     }
