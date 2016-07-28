@@ -179,6 +179,7 @@ public class USSDSafetyGroupController extends USSDController {
         USSDMenu menu = new USSDMenu(getMessage(thisSection, "address.view", promptKey, fields, user));
         menu.addMenuOption(thisSection.toPath() + changeAddress + doSuffix, getMessage(thisSection, "address", optionsKey + ".change", user));
         menu.addMenuOption(thisSection.toPath() + removeAddress, getMessage(thisSection, "address", optionsKey + ".remove", user));
+        menu.addMenuOption(thisSection.toPath() + startMenu, getMessage(thisSection, optionsKey, "back", user));
 
         return menuBuilder(menu);
     }
@@ -251,6 +252,7 @@ public class USSDSafetyGroupController extends USSDController {
         menu.addMenuOption(thisSection.toPath() + "change-address?&field=town",
                 getMessage(thisSection, "address.confirm", optionsKey + ".changearea", user));
 
+
         return menuBuilder(menu);
 
     }
@@ -264,6 +266,7 @@ public class USSDSafetyGroupController extends USSDController {
         USSDMenu menu = new USSDMenu(getMessage(thisSection, "address.remove", promptKey, user));
         menu.addMenuOption(thisSection.toPath() + removeAddress + doSuffix, getMessage(thisSection, "address.remove", optionsKey + ".yes", user));
         menu.addMenuOption(thisSection.toPath() + viewAddress, getMessage(thisSection, "address.remove", optionsKey + ".no", user));
+        menu.addMenuOption(thisSection.toPath()+startMenu, getMessage(thisSection, optionsKey, "back", user));
 
         return menuBuilder(menu);
 
@@ -276,7 +279,7 @@ public class USSDSafetyGroupController extends USSDController {
         addressBroker.removeAddress(user.getUid());
         USSDMenu menu = new USSDMenu(getMessage(thisSection, "address.remove.confirm", promptKey, user));
         menu.addMenuOption(thisSection.toPath() + addAddress, "Add address");
-        menu.addMenuOption(thisSection.toPath() + startMenu, "Go to safety group menu");
+        menu.addMenuOption(thisSection.toPath() + startMenu,getMessage(thisSection, optionsKey, "back", user));
 
         return menuBuilder(menu);
     }
@@ -326,7 +329,7 @@ public class USSDSafetyGroupController extends USSDController {
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, "group", promptKey + ".reset", user));
         menu.addMenuOption(thisSection.toPath() + "reset-do?groupUid=" + groupUid, "Yes");
-        menu.addMenuOption(thisSection.toPath() + startMenu, "Back");
+        menu.addMenuOption(thisSection.toPath() + startMenu, getMessage(thisSection, optionsKey, "back", user));
 
 
         return menuBuilder(menu);
