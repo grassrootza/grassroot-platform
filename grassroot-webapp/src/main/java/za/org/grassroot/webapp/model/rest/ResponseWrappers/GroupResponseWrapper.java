@@ -145,6 +145,19 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
 
     }
 
+    public String printMembers() {
+        StringBuilder sb = new StringBuilder("members : { ");
+        for (MembershipResponseWrapper m : members) {
+            sb.append("(name = ");
+            sb.append(m.getDisplayName());
+            sb.append(", number = ");
+            sb.append(m.getPhoneNumber());
+            sb.append("), ");
+        }
+        sb.append("}");
+        return sb.toString();
+    }
+
     @Override
     public String toString() {
         return "GroupResponseWrapper{" +
@@ -153,6 +166,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
                 ", lastMajorChangeMillis=" + lastMajorChangeMillis +
                 ", groupName='" + groupName + '\'' +
                 ", members='" + members.size() + '\'' +
+                ", members, detail = " + members.toString() + '\'' +
                 '}';
     }
 }

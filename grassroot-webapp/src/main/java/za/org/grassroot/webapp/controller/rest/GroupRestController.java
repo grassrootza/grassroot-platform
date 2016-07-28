@@ -283,16 +283,14 @@ public class GroupRestController {
         Group group = groupBroker.load(groupUid);
         log.info("membersReceived = {}", membersToAdd != null ? membersToAdd.toString() : "null");
 
-        // todo : handle error
         if (membersToAdd != null && !membersToAdd.isEmpty()) {
             groupBroker.addMembers(user.getUid(), group.getUid(), membersToAdd, false);
         }
 
         Group updatedGroup = groupBroker.load(groupUid);
         List<GroupResponseWrapper> groupWrapper = Collections.singletonList(createGroupWrapper(updatedGroup, user));
-        ResponseWrapper rw = new GenericResponseWrapper(OK, RestMessage.MEMBERS_ADDED, RestStatus.SUCCESS, groupWrapper);
-
-        return new ResponseEntity<>(rw, HttpStatus.CREATED);
+	    log.info("returning with members: " + groupWrapper.get(0).printMembers());
+        return RestUtil.okayResponseWithData(RestMessage.MEMBERS_ADDED, groupWrapper);
     }
 
     @RequestMapping(value = "/members/remove/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.POST)
