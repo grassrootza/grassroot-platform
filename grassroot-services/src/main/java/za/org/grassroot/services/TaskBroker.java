@@ -19,6 +19,8 @@ public interface TaskBroker {
 
     List<TaskDTO> fetchUpcomingUserTasks(String userUid);
 
+    ChangedSinceData<TaskDTO> fetchUpcomingTasksAndCancelled(String userUid, Instant changedSince);
+
     List<TaskDTO> searchForTasks(String userUid, String searchTerm);
 
 }

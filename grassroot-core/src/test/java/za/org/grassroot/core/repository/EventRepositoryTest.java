@@ -44,6 +44,9 @@ public class EventRepositoryTest {
     private EventRepository eventRepository;
 
     @Autowired
+    private EventLogRepository eventLogRepository;
+
+    @Autowired
     private GroupRepository groupRepository;
 
     @Autowired
@@ -150,7 +153,6 @@ public class EventRepositoryTest {
         meeting = eventRepository.save(meeting);
         List<Event> list = eventRepository.findAllVotesAfterTimeStamp(Instant.now());
         assertEquals(0,list.size());
-
     }
 
     @Test
@@ -238,6 +240,52 @@ public class EventRepositoryTest {
         assertThat(numberUpcomingEvents1, is(1));
         int numberUpcomingEvents2 = eventRepository.countByParentGroupMembershipsUserAndEventStartDateTimeGreaterThan(user2, Instant.now());
         assertThat(numberUpcomingEvents2, is(0));
+
+    }
+
+    @Test
+    public void shouldFindCancelledEventsForUser() {
+
+	    assertThat(groupRepository.count(), is(0L));
+	    assertThat(userRepository.count(), is(0L));
+	    assertThat(eventRepository.count(), is(0L));
+	    assertThat(eventLogRepository.count(), is(0L));
+
+	    User user = userRepository.save(new User("0710001111"));
+	    User user2 = userRepository.save(new User("0810001111"));
+
+	    Group group = groupRepository.save(new Group("tg1", user));
+	    group.addMember(user);
+	    group = groupRepository.save(group);
+	    Group group2 = groupRepository.save(new Group("tg2", user2));
+	    group2.addMember(user);
+	    group2.addMember(user2);
+	    group2 = groupRepository.save(group2);
+
+	    Instant intervalStart1 = Instant.now().minus(1, ChronoUnit.MINUTES);
+	    Instant intervalStart2 = Instant.now().plus(1, ChronoUnit.MINUTES);
+
+	    Event event1 = new Meeting("count check", Instant.now().plus(2, DAYS), user, group, "someLoc");
+	    Event event2 = new Meeting("count check 2", Instant.now().minus(2, DAYS), user, group2, "someLoc");
+
+	    event1 = eventRepository.save(event1);
+	    event2 = eventRepository.save(event2);
+
+	    eventLogRepository.save(new EventLog(user, event1, EventLogType.CANCELLED));
+
+	    assertThat(eventLogRepository.count(), is(1L));
+	    assertThat(eventRepository.count(), is(2L));
+
+	    List<Event> cancelledEvents1 = eventRepository.findByMemberAndCanceledSince(user, intervalStart1);
+
+	    assertFalse(cancelledEvents1.isEmpty());
+	    assertThat(cancelledEvents1.size(), is(1));
+	    assertTrue(cancelledEvents1.contains(event1));
+	    assertFalse(cancelledEvents1.contains(event2));
+
+	    List<Event> cancelledEvents2 = eventRepository.findByMemberAndCanceledSince(user, intervalStart2);
+
+	    assertTrue(cancelledEvents2.isEmpty());
 
     }
 

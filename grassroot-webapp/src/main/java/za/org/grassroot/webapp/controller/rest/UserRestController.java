@@ -67,6 +67,17 @@ public class UserRestController {
 
     }
 
+    @RequestMapping(value = "/verify/resend/{phoneNumber}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> resendOtp(@PathVariable("phoneNumber") String phoneNumber) {
+        final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
+        try {
+            final String tokenCode = temporaryTokenSend(userManagementService.regenerateUserVerifier(phoneNumber), msisdn); // will be empty in production
+            return RestUtil.okayResponseWithData(RestMessage.VERIFICATION_TOKEN_SENT, tokenCode);
+        } catch (Exception e) {
+            return RestUtil.accessDeniedResponse();
+        }
+    }
+
     @RequestMapping(value = "/verify/{phoneNumber}/{code}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> verify(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code)
             throws Exception {

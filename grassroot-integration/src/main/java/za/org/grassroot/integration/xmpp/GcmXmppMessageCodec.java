@@ -32,7 +32,6 @@ public class GcmXmppMessageCodec {
 	 */
 	public static org.springframework.messaging.Message<Message> encode(String registrationID, String messageId, String messageType) {
 		GcmEntity gcmPayload = new GcmEntity(messageId, registrationID, messageType);
-
 		return constructGcmMessage(gcmPayload);
 	}
 

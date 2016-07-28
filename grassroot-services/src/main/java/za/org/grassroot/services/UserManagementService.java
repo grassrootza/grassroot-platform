@@ -40,6 +40,8 @@ public interface UserManagementService {
 
     String generateAndroidUserVerifier(String phoneNumber, String displayName);
 
+    String regenerateUserVerifier(String phoneNumber);
+
     void setMessagingPreference(String userUid, UserMessagingPreference preference);
 
     boolean userExist(String phoneNumber);

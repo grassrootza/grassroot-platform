@@ -16,6 +16,7 @@ import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrappe
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.MembershipResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
 import za.org.grassroot.core.dto.TaskDTO;
+import za.org.grassroot.webapp.util.RestUtil;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -70,6 +71,18 @@ public class TaskRestController {
         ResponseWrapper wrapper = new GenericResponseWrapper(HttpStatus.OK, message, RestStatus.SUCCESS, tasks);
         return new ResponseEntity<>(wrapper, HttpStatus.OK);
     }
+
+	@RequestMapping(value = "/list/since/{phoneNumber}/{code}", method = RequestMethod.GET)
+	public ResponseEntity<ChangedSinceData<TaskDTO>> getUpcomingTasksAndCancelledForUser(@PathVariable String phoneNumber,
+	                                                                                     @PathVariable String code,
+	                                                                                     @RequestParam(name = "changedSince", required = false) Long changedSinceMillis) {
+
+		User user = userManagementService.findByInputNumber(phoneNumber);
+		Instant changedSince = changedSinceMillis == null ? null : Instant.ofEpochMilli(changedSinceMillis);
+		ChangedSinceData<TaskDTO> changedSinceData = taskBroker.fetchUpcomingTasksAndCancelled(user.getUid(), changedSince);
+		return new ResponseEntity<>(changedSinceData, HttpStatus.OK);
+	}
+
 
     @RequestMapping(value = "/fetch/{phoneNumber}/{code}/{taskUid}/{taskType}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> fetchTask(@PathVariable String phoneNumber, @PathVariable String code,

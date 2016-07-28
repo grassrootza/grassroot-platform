@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -241,6 +242,18 @@ public class UserManager implements UserManagementService, UserDetailsService {
         }
         VerificationTokenCode token = passwordTokenService.generateAndroidVerificationCode(phoneNumber);
         return token.getCode();
+    }
+
+    @Override
+    @Transactional
+    public String regenerateUserVerifier(String phoneNumber) {
+        UserCreateRequest userCreateRequest = userCreateRequestRepository.findByPhoneNumber(phoneNumber);
+        if (userCreateRequest == null) {
+            throw new AccessDeniedException("Error! Trying to resend OTP for user before creating");
+        }
+
+        VerificationTokenCode newTokenCode= passwordTokenService.generateAndroidVerificationCode(phoneNumber);
+        return newTokenCode.getCode();
     }
 
     @Override

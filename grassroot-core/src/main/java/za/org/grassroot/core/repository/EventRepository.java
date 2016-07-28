@@ -60,4 +60,11 @@ where e.canceled = FALSE
 
 	@Query("SELECT e from EventLog el inner join el.event e where e.parentGroup = ?1 and el.eventLogType = 'CANCELLED' AND el.createdDateTime >= ?2")
 	List<Event> findByParentGroupAndCanceledSince(Group group, Instant since);
+
+	@Query("SELECT e from EventLog el " +
+			"inner join el.event e " +
+			"inner join e.parentGroup g " +
+			"inner join g.memberships m " +
+			"where el.eventLogType = 'CANCELLED' and m.user = ?1 and el.createdDateTime >= ?2")
+	List<Event> findByMemberAndCanceledSince(User user, Instant since);
 }

@@ -155,7 +155,25 @@ public class TaskBrokerImpl implements TaskBroker {
         return tasks;
     }
 
-	@Override
+    @Override
+    @Transactional(readOnly = true)
+    public ChangedSinceData<TaskDTO> fetchUpcomingTasksAndCancelled(String userUid, Instant changedSince) {
+        Objects.requireNonNull(userUid);
+        User user = userRepository.findOneByUid(userUid);
+        List<TaskDTO> upcomingTasks = fetchUpcomingUserTasks(userUid);
+        Set<String> cancelledUids = new HashSet<>();
+
+        if (changedSince != null) {
+            List<Event> cancelledSinceEvents = eventRepository.findByMemberAndCanceledSince(user, changedSince);
+            cancelledUids = cancelledSinceEvents.stream()
+                    .map(AbstractEventEntity::getUid)
+                    .collect(Collectors.toSet());
+        }
+
+        return new ChangedSinceData<>(upcomingTasks, cancelledUids);
+    }
+
+    @Override
 	@Transactional(readOnly = true)
 	public List<TaskDTO> searchForTasks(String userUid, String searchTerm) {
 		Objects.requireNonNull(userUid);
