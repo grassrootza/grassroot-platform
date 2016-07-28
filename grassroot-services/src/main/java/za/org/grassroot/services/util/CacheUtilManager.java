@@ -14,6 +14,7 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -119,7 +120,7 @@ public class CacheUtilManager implements CacheUtilService {
             safetyEventsUserToRespondTo = new ArrayList<>();
         }
         safetyEventsUserToRespondTo.add(safetyEvent);
-        cache.put(new Element(cacheKey,safetyEvent));
+        cache.put(new Element(cacheKey,safetyEventsUserToRespondTo));
 
     }
 
@@ -129,7 +130,17 @@ public class CacheUtilManager implements CacheUtilService {
         String cacheKey = user.getUid();
         List<SafetyEvent> safetyEventsUserToRespondTo =(List<SafetyEvent>) cache.get(cacheKey).getObjectValue();
         //remove particular safety response and if empty thereafter remove key
+        log.info("safety event to respond to size {}", safetyEventsUserToRespondTo.size());
         safetyEventsUserToRespondTo.remove(safetyEvent);
+        Iterator iter = safetyEventsUserToRespondTo.iterator();
+        while(iter.hasNext()){
+            SafetyEvent event = (SafetyEvent)iter.next();
+            if(safetyEvent.getUid().equals(event.getUid())){
+                iter.remove();
+            }
+        }
+        log.info("safety event to respond to size after cleating {}", safetyEventsUserToRespondTo.size());
+        cache.put(new Element(cacheKey,safetyEventsUserToRespondTo));
         if(safetyEventsUserToRespondTo.isEmpty()){
             cache.remove(cacheKey);
         }

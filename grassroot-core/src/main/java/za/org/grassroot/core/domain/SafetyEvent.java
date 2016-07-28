@@ -140,4 +140,15 @@ public class SafetyEvent {
     public void setRespondedTo(boolean respondedTo) {
         this.respondedTo = respondedTo;
     }
+
+
+    @Override
+    public String toString() {
+        return "SafetyEvent{" +
+                "id=" + id +
+                ", uid='" + uid + '\'' +
+                ", createdDateTime=" + createdDateTime +
+                ", group=" + group +
+                '}';
+    }
 }

@@ -55,7 +55,7 @@ public class USSDGroupController extends USSDController {
             approveUser = "approve",
             rejectUser = "reject",
             addMemberPrompt = "addnumber", // probably should rename this to prevent confusion w/ above
-            unsubscribePrompt = "reset",
+            unsubscribePrompt = "unsubscribe",
             groupTokenMenu = "token",
             groupVisibility = "visibility",
             mergeGroupMenu = "merge",

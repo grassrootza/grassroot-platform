@@ -156,8 +156,8 @@
         beforeSend : function(xhr) {
           xhr.setRequestHeader(header, token);
         },
-        success : function(responded) {
-          placeMarkers(responded.data);
+        success : function(response) {
+          placeMarkers(response.data);
         },
         error : function(xhr, textStatus, errorThrown) {
           console.log("ERROR! : " + errorThrown);

@@ -260,8 +260,8 @@
         beforeSend : function(xhr) {
           xhr.setRequestHeader(header, token);
         },
-        success : function(responded) {
-          populateAndDisplayTaskModal(responded.data);
+        success : function(response) {
+          populateAndDisplayTaskModal(response.data);
         },
         error : function(xhr, textStatus, errorThrown) {
           console.log("Error! : " + errorThrown);

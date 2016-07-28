@@ -292,10 +292,10 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     @Test
     public void unsubscribePromptShouldWork() throws Exception {
         resetTestGroup();
-        String urlToSave = saveGroupMenu("reset", testGroup.getUid());
+        String urlToSave = saveGroupMenu("unsubscribe", testGroup.getUid());
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
-        mockMvc.perform(get(path + "reset").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
+        mockMvc.perform(get(path + "unsubscribe").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
                 andExpect(status().isOk());
         mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param(userChoiceParam, interruptedChoice)).
                 andExpect(status().isOk());
@@ -308,7 +308,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     public void unsubscribeConfirmShouldWork() throws Exception {
         resetTestGroup();
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
-        mockMvc.perform(get(path + "reset-do").param(phoneParam, testUserPhone).param(groupParam, testGroup.getUid())).
+        mockMvc.perform(get(path + "unsubscribe-do").param(phoneParam, testUserPhone).param(groupParam, testGroup.getUid())).
                 andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
         verifyNoMoreInteractions(userManagementServiceMock);

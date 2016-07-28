@@ -67,7 +67,7 @@ public class USSDGroupUtil extends USSDUtil {
     private static final String invalidNumbers = "error";
     private static final String subjectMenu = "subject",
             existingGroupMenu = "menu",
-            unsubscribePrompt = "reset",
+            unsubscribePrompt = "unsubscribe",
             groupTokenMenu = "token",
             renameGroupPrompt = "rename",
             hideGroup = "hidegroup",
@@ -119,8 +119,6 @@ public class USSDGroupUtil extends USSDUtil {
     }
 
     /**
-     * This method will display a list of groups that a user belongs to
-     *
      * @param sessionUser      currently active user
      * @param section          section of the ussd menu that is currently in view
      * @param promptIfExisting ussd prompt message to display if user belongs to one or more groups
@@ -188,10 +186,10 @@ public class USSDGroupUtil extends USSDUtil {
     /**
      * @param user                 user currently in session
      * @param prompt               ussd prompt
-     * @param urlForExistingGroups
-     * @param urlForNewGroup
-     * @param pageNumber
-     * @param section
+     * @param urlForExistingGroups the url for exisitng groups
+     * @param urlForNewGroup       url for new groups
+     * @param pageNumber           current page
+     * @param section              current section
      * @return
      * @throws URISyntaxException
      */
@@ -215,7 +213,7 @@ public class USSDGroupUtil extends USSDUtil {
                         "Back"); // todo: i18n
             if (urlForNewGroup != null)
                 menu.addMenuOption(urlForNewGroup, getMessage(groupKeyForMessages, "create", "option", user));
-            if (section != null && !section.equals(SAFETY_GROUP_MANAGER))
+            if (user.hasSafetyGroup() && section != null && !section.equals(SAFETY_GROUP_MANAGER))
                 menu.addMenuOption(SAFETY_GROUP_MANAGER.toPath() + "start", getMessage(GROUP_MANAGER.toString() + ".safety.option", user));
         }
 
@@ -226,6 +224,13 @@ public class USSDGroupUtil extends USSDUtil {
         return menu;
     }
 
+    /**
+     * @param menu        the ussd menu to add a list of groups to
+     * @param nextMenuUrl url of the next menu in the sequence
+     * @param groups      a list of groups
+     * @param user        user in session
+     * @return a ussd menu that has a list groups with pagnination
+     */
     public USSDMenu addListOfGroupsToMenu(USSDMenu menu, String nextMenuUrl, List<Group> groups, User user) {
         final String formedUrl = (!nextMenuUrl.contains("?")) ?
                 (nextMenuUrl + groupUidUrlEnding) :
@@ -309,6 +314,7 @@ public class USSDGroupUtil extends USSDUtil {
         return checkForErrorsAndSetPrompt(user, section, new USSDMenu(true), groupUid, enteredNumbers.get(invalidNumbers), returnUrl, false);
     }
 
+
     private USSDMenu checkForErrorsAndSetPrompt(User user, USSDSection section, USSDMenu menu, String groupUid, List<String> invalidNumbers,
                                                 String returnUrl, boolean newGroup) {
         log.info("Inside checkForErrorsAndSetPrompt ... with invalid numbers ... " + invalidNumbers.toString());
@@ -357,10 +363,12 @@ public class USSDGroupUtil extends USSDUtil {
 
         USSDMenu listMenu = new USSDMenu(assembleGroupPrompt(group, user, openToken, skippedSelection));
 
-        if (skippedSelection)
+        if (skippedSelection) {
             listMenu.addMenuOption(GROUP_MANAGER.toPath() + "create", getMessage(GROUP_MANAGER.toKey() + "create.option", user));
-        listMenu.addMenuOption(SAFETY_GROUP_MANAGER.toPath() + "start", getMessage(GROUP_MANAGER.toString() + ".safety.option", user));
+            if (user.hasSafetyGroup())
+                listMenu.addMenuOption(SAFETY_GROUP_MANAGER.toPath() + "start", getMessage(GROUP_MANAGER.toString() + ".safety.option", user));
 
+        }
         if (permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER))
             listMenu.addMenuOption(groupMenuWithId(addMemberPrompt, groupUid), getMessage(menuKey + addMemberPrompt, user));
 
@@ -372,7 +380,9 @@ public class USSDGroupUtil extends USSDUtil {
         } else {
             listMenu.addMenuOption(groupMenuWithId(unsubscribePrompt, groupUid), getMessage(menuKey + unsubscribePrompt, user));
         }
-
+        if (user.hasSafetyGroup()) {
+            listMenu.addMenuOption(SAFETY_GROUP_MANAGER.toPath() + "start", getMessage(GROUP_MANAGER.toString() + ".safety.option", user));
+        }
 
         if (listMenu.getMenuOptions().size() < 4) {
             listMenu.addMenuOption(USSDSection.MEETINGS.toPath() + "start", getMessage(menuKey + "back-mtg", user));
@@ -381,6 +391,7 @@ public class USSDGroupUtil extends USSDUtil {
         listMenu.addMenuOption(skippedSelection ? "start" : GROUP_MANAGER.toPath() + "start", getMessage(menuKey + "back", user));
 
         return listMenu;
+
     }
 
     public USSDMenu advancedGroupOptionsMenu(User user, String groupUid) {

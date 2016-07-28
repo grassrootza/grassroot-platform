@@ -163,6 +163,19 @@ public class USSDSafetyGroupControllerTest extends USSDAbstractUnitTest {
     }
 
     @Test
+    public void pickingExistingGroupShouldWork() throws Exception{
+        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
+        mockMvc.perform(get(path+"pick-group-do").param(phoneParam,testUserPhone).param(groupParam,testGroup.getUid())).andExpect(status().isOk());
+        verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone);
+        verify(groupBrokerMock,times(1)).load(testGroup.getUid());
+        verify(userManagementServiceMock,times(1)).setSafetyGroup(testUser.getUid(),testGroup.getUid());
+        verifyNoMoreInteractions(userManagementServiceMock);
+        verifyNoMoreInteractions(groupBrokerMock);
+
+    }
+
+    @Test
     public void changeAddressShouldWorkWhenFieldIsStreet() throws Exception{
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(addressBrokerMock.getUserAddress(testUser.getUid())).thenReturn(new Address(testUser,"38","Stanley", "JHB"));

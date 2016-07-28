@@ -167,6 +167,17 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     }
 
     @Override
+    public String createFalseSafetyEventActivationMessage(User requestor, long count) {
+        return messageSourceAccessor.getMessage("sms.safety.false", new String[]{
+            String.valueOf(count)},getUserLocale(requestor));
+    }
+
+    @Override
+    public String createBarringMessage(User requestor) {
+        return messageSourceAccessor.getMessage("sms.safety.barred","",getUserLocale(requestor));
+    }
+
+    @Override
     public String createGroupJoinRequestMessage(User user, GroupJoinRequest request) {
         String[] fields = {request.getRequestor().getDisplayName(), request.getGroup().getGroupName()};
         return messageSourceAccessor.getMessage("sms.group.join.request",fields,getUserLocale(user));

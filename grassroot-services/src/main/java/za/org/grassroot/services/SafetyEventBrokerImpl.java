@@ -29,7 +29,7 @@ public class SafetyEventBrokerImpl implements SafetyEventBroker {
 
     private Logger log = LoggerFactory.getLogger(SafetyEventBrokerImpl.class);
 
-    private static final long FALSE_ALARM_THRESHOLD =3;
+    private static final long FALSE_ALARM_THRESHOLD = 3;
 
     @Autowired
     private SafetyEventRepository safetyEventRepository;
@@ -91,9 +91,18 @@ public class SafetyEventBrokerImpl implements SafetyEventBroker {
         Objects.nonNull(userUid);
         Objects.nonNull(safetyEventUid);
         SafetyEvent safetyEvent = safetyEventRepository.findOneByUid(safetyEventUid);
-        safetyEvent.setRespondedTo(true);
-        safetyEvent.setActive(false);
-        safetyEvent.setFalseAlarm(!isValid);
+
+        if (!isValid) {
+            User requestor = safetyEvent.getActivatedBy();
+            long count = safetyEventRepository.countByActivatedByAndCreatedDateTimeAfterAndFalseAlarm(requestor, Instant.now().minus(30, ChronoUnit.DAYS), true);
+            String message;
+            if (count++ > 3) {
+                message = messageAssemblingService.createBarringMessage(safetyEvent.getActivatedBy());
+            } else {
+                message = messageAssemblingService.createFalseSafetyEventActivationMessage(safetyEvent.getActivatedBy(), count);
+            }
+            smsSendingService.sendSMS(message, requestor.getPhoneNumber());
+        }
 
         Group group = safetyEvent.getGroup();
         User requestor = safetyEvent.getActivatedBy();
@@ -102,6 +111,10 @@ public class SafetyEventBrokerImpl implements SafetyEventBroker {
                 cacheUtilService.clearSafetyEventResponseForUser(respondent, safetyEvent);
             }
         }
+
+        safetyEvent.setRespondedTo(true);
+        safetyEvent.setActive(false);
+        safetyEvent.setFalseAlarm(!isValid);
 
     }
 

@@ -1,7 +1,6 @@
 package za.org.grassroot.webapp.controller.ussd;
 
 import com.google.common.collect.Sets;
-import edu.emory.mathcs.backport.java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,12 +18,10 @@ import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import za.org.grassroot.webapp.util.USSDGroupUtil;
-import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.net.URISyntaxException;
 import java.util.Set;
 
-import static java.awt.SystemColor.menu;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 
@@ -59,7 +56,8 @@ public class USSDSafetyGroupController extends USSDController {
             resetSafetyGroup = "reset",
             recordResponse = "record-response",
             recordValidity = "record-validity",
-            nominateGroup = "nominate-group";
+            pickGroup = "pick-group",
+            newGroup ="new-group";
 
 
     private static final String safetyGroupPath = homePath + safetyGroup + "/";
@@ -89,7 +87,7 @@ public class USSDSafetyGroupController extends USSDController {
         } else {
 
             menu = new USSDMenu(getMessage(thisSection, promptKey, "notexist", user));
-            menu.addMenuOption(thisSection.toPath() + nominateGroup, getMessage(thisSection, optionsKey, "createyes", user));
+            menu.addMenuOption(thisSection.toPath() + pickGroup, getMessage(thisSection, optionsKey, "createyes", user));
             menu.addMenuOption(USSDSection.GROUP_MANAGER.toPath() + startMenu, getMessage(thisSection, optionsKey, "createno", user));
         }
 
@@ -97,20 +95,20 @@ public class USSDSafetyGroupController extends USSDController {
 
     }
 
-    @RequestMapping(value = safetyGroupPath + nominateGroup)
+    @RequestMapping(value = safetyGroupPath + pickGroup)
     @ResponseBody
-    public Request nominateSafetyGroup(@RequestParam String msisdn) throws URISyntaxException {
+    public Request pickSafetyGroup(@RequestParam String msisdn) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(msisdn);
-        USSDMenu menu = ussdGroupUtil.askForGroupAllowCreateNew(user, thisSection, nominateGroup + doSuffix, "newgroup",
+        USSDMenu menu = ussdGroupUtil.askForGroupAllowCreateNew(user, thisSection, pickGroup + doSuffix, newGroup,
                 createGroupMenu, null);
 
         return menuBuilder(menu);
     }
 
-    @RequestMapping(value = safetyGroupPath + nominateGroup + doSuffix)
+    @RequestMapping(value = safetyGroupPath + pickGroup + doSuffix)
     @ResponseBody
-    public Request nominateSafetyGroupDo(@RequestParam String msisdn, @RequestParam(value = groupUidParam, required = true) String groupUid) throws URISyntaxException {
+    public Request pickSafetyGroupDo(@RequestParam String msisdn, @RequestParam(value = groupUidParam, required = true) String groupUid) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(msisdn);
         Group group = groupBroker.load(groupUid);
@@ -124,7 +122,7 @@ public class USSDSafetyGroupController extends USSDController {
     }
 
 
-    @RequestMapping(value = safetyGroupPath + "newgroup")
+    @RequestMapping(value = safetyGroupPath + newGroup)
     @ResponseBody
     public Request newGroup(@RequestParam(value = phoneNumber, required = true) String inputNumber) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
@@ -237,7 +235,7 @@ public class USSDSafetyGroupController extends USSDController {
                     addressBroker.updateUserAddress(user.getUid(), null, null, fieldValue);
                     break;
                 default:
-                    throw new IllegalArgumentException("Address field to be changed cannot be null");
+                    throw new IllegalArgumentException("field cannot be null");
             }
         }
         Address address = addressBroker.getUserAddress(user.getUid());
@@ -346,28 +344,14 @@ public class USSDSafetyGroupController extends USSDController {
             userManager.setSafetyGroup(user.getUid(), null);
         }
         USSDMenu menu = new USSDMenu(getMessage(thisSection, "group", "reset.confirm", user));
-        menu.addMenuOption(thisSection.toPath() + "newgroup", getMessage(thisSection, "group", "reset.option.create", user));
-        menu.addMenuOption(thisSection.toPath()+nominateGroup, "Set existing group as safety group");
+        menu.addMenuOption(thisSection.toPath() + newGroup, getMessage(thisSection, "group", "reset.option.create", user));
+        menu.addMenuOption(thisSection.toPath()+ pickGroup, getMessage(thisSection,"group","reset.option.nominate",user));
         menu.addMenuOption(USSDSection.GROUP_MANAGER.toPath() + startMenu, getMessage(thisSection, "group", "reset.option.back", user));
 
         return menuBuilder(menu);
 
     }
 
-    @RequestMapping(value = safetyGroupPath + join + doSuffix)
-    @ResponseBody
-    public Request sendJoinRequest(@RequestParam(value = phoneNumber) String inputNumber, @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
-        User user = userManager.findByInputNumber(inputNumber, null);
-        groupJoinRequestService.open(user.getUid(), groupUid, null);
-        USSDMenu menu = new USSDMenu(getMessage(thisSection, "group", "join.confirm", user));
-        menu.addMenuOption(USSDSection.GROUP_MANAGER.toPath() + startMenu, getMessage(thisSection, "group", "join.option.home", user));
-        menu.addMenuOption(startMenu, getMessage(thisSection, "group", "join.option.start", user));
-        menu.addMenuOption("exit", "Exit");
-
-
-        return menuBuilder(menu);
-
-    }
 
     @RequestMapping(value = safetyGroupPath + recordResponse + doSuffix)
     @ResponseBody
@@ -385,6 +369,8 @@ public class USSDSafetyGroupController extends USSDController {
             menu.addMenuOption(thisSection.toPath() + "record-validity-do?entityUid=" + safetyEventUid + "&response=0",
                     getMessage(thisSection, "response", "option.invalid", user));
         } else {
+            SafetyEvent safetyEvent = safetyEventBroker.load(safetyEventUid);
+            cacheManager.clearSafetyEventResponseForUser(user,safetyEvent);
             menu.addMenuOption(startMenu, "Go to main Menu");
         }
         return menuBuilder(menu);
@@ -399,9 +385,10 @@ public class USSDSafetyGroupController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber);
         //only one will be recorded, the cache will be cleared for others
         safetyEventBroker.recordResponse(user.getUid(), safetyEventUid, validity);
-        String prompt = getMessage(thisSection, "response", promptKey + ".yes", user);
+        String prompt = getMessage(thisSection, "response", promptKey + ".thanks", user);
         USSDMenu menu = new USSDMenu(prompt);
         menu.addMenuOption(startMenu, "Go to main Menu");
+        menu.addMenuOption("exit", "Exit");
 
         return menuBuilder(menu);
 
