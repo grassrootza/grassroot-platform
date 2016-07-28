@@ -162,6 +162,7 @@ public class GroupBrokerImpl implements GroupBroker {
         return group;
     }
 
+
     private void logActionLogsAfterCommit(Set<ActionLog> actionLogs) {
         if (!actionLogs.isEmpty()) {
             LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
@@ -615,6 +616,7 @@ public class GroupBrokerImpl implements GroupBroker {
                 "Changed permissions assigned to " + roleName)));
 
     }
+
 
     @Override
     @Transactional

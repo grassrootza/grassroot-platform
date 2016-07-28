@@ -14,6 +14,8 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.services.EventLogManagementService;
+import za.org.grassroot.services.GroupJoinRequestService;
+import za.org.grassroot.services.SafetyEventBroker;
 import za.org.grassroot.services.TodoBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDResponseTypes;
@@ -21,6 +23,7 @@ import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Option;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import za.org.grassroot.webapp.util.USSDEventUtil;
+import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import javax.annotation.PostConstruct;
 import java.net.URI;
@@ -57,10 +60,15 @@ public class USSDHomeController extends USSDController {
     @Autowired
     private Environment environment;
 
+    @Autowired
+    private SafetyEventBroker safetyEventBroker;
+
+
     private static final Logger log = LoggerFactory.getLogger(USSDHomeController.class);
 
     private static final String path = homePath;
     private static final USSDSection thisSection = HOME;
+    private static final String safetyCode = "911";
 
     private static final String rsvpMenu = "rsvp",
             renameUserMenu = "rename-start",
@@ -73,11 +81,11 @@ public class USSDHomeController extends USSDController {
     private static final String openingMenuKey = String.join(".", Arrays.asList(homeKey, startMenu, optionsKey));
 
     private static final Map<USSDSection, String[]> openingMenuOptions = Collections.unmodifiableMap(Stream.of(
-            new SimpleEntry<>(MEETINGS, new String[] { meetingMenus + startMenu, openingMenuKey + mtgKey}),
-            new SimpleEntry<>(VOTES, new String[] { voteMenus + startMenu, openingMenuKey + voteKey}),
-            new SimpleEntry<>(LOGBOOK, new String[] { logMenus + startMenu, openingMenuKey + logKey}),
-            new SimpleEntry<>(GROUP_MANAGER, new String[] { groupMenus + startMenu, openingMenuKey + groupKey}),
-            new SimpleEntry<>(USER_PROFILE, new String[] { userMenus + startMenu, openingMenuKey + userKey})).
+            new SimpleEntry<>(MEETINGS, new String[]{meetingMenus + startMenu, openingMenuKey + mtgKey}),
+            new SimpleEntry<>(VOTES, new String[]{voteMenus + startMenu, openingMenuKey + voteKey}),
+            new SimpleEntry<>(LOGBOOK, new String[]{logMenus + startMenu, openingMenuKey + logKey}),
+            new SimpleEntry<>(GROUP_MANAGER, new String[]{groupMenus + startMenu, openingMenuKey + groupKey}),
+            new SimpleEntry<>(USER_PROFILE, new String[]{userMenus + startMenu, openingMenuKey + userKey})).
             collect(Collectors.toMap((e) -> e.getKey(), (e) -> e.getValue())));
 
     private static final List<USSDSection> openingSequenceWithGroups = Arrays.asList(
@@ -101,7 +109,7 @@ public class USSDHomeController extends USSDController {
 
         for (USSDSection section : menuSequence) {
             homeMenu.addMenuOption(openingMenuOptions.get(section)[0],
-                                   getMessage(openingMenuOptions.get(section)[1], user));
+                    getMessage(openingMenuOptions.get(section)[1], user));
         }
 
         return homeMenu;
@@ -109,8 +117,8 @@ public class USSDHomeController extends USSDController {
 
     @RequestMapping(value = path + startMenu)
     @ResponseBody
-    public Request startMenu(@RequestParam(value= phoneNumber) String inputNumber,
-                             @RequestParam(value= userInputParam, required=false) String enteredUSSD) throws URISyntaxException {
+    public Request startMenu(@RequestParam(value = phoneNumber) String inputNumber,
+                             @RequestParam(value = userInputParam, required = false) String enteredUSSD) throws URISyntaxException {
 
         Long startTime = System.currentTimeMillis();
 
@@ -155,7 +163,7 @@ public class USSDHomeController extends USSDController {
      */
     @RequestMapping(value = path + startMenu + "_force")
     @ResponseBody
-    public Request forceStartMenu(@RequestParam(value= phoneNumber) String inputNumber) throws URISyntaxException {
+    public Request forceStartMenu(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
 
         return menuBuilder(defaultStartMenu(userManager.loadOrSaveUser(inputNumber)));
 
@@ -188,6 +196,7 @@ public class USSDHomeController extends USSDController {
 
     private USSDResponseTypes neededResponse(User user) {
 
+        if (userManager.needsToRespondToSafetyEvent(user)) return USSDResponseTypes.RESPOND_SAFETY;
         if (userManager.needsToVote(user)) return USSDResponseTypes.VOTE;
         if (userManager.needsToRSVP(user)) return USSDResponseTypes.MTG_RSVP;
         if (userManager.hasIncompleteLogBooks(user.getUid(), daysPastLogbooks)) return USSDResponseTypes.RESPOND_TODO;
@@ -204,23 +213,28 @@ public class USSDHomeController extends USSDController {
 
         // todo: a switch logic for token ranges
 
-        System.out.println("Processing trailing digits ..." + trailingDigits);
+        log.info("Processing trailing digits ..." + trailingDigits);
 
-        Group groupToJoin = groupBroker.findGroupFromJoinCode(trailingDigits);
-        if (groupToJoin != null) {
-            log.info("Found a token with these trailing digits ...");
-            // todo: remove "findBy" above and consolidate into the service call (which throws the 'cant find error'
-            groupBroker.addMemberViaJoinCode(sessionUser.getUid(), groupToJoin.getUid(), trailingDigits);
+        if(isSafetyActivationCode(trailingDigits)){
+           returnMenu = assemblePanicButtonActivationMenu(sessionUser);
 
-            String prompt = (groupToJoin.hasName()) ?
-                    getMessage(thisSection, startMenu, promptKey + ".group.token.named", groupToJoin.getGroupName(), sessionUser) :
-                    getMessage(thisSection, startMenu, promptKey + ".group.token.unnamed", sessionUser);
-            returnMenu = welcomeMenu(prompt, sessionUser);
-        } else {
-            log.info("Whoops, couldn't find the code");
-            returnMenu = welcomeMenu(getMessage(thisSection, startMenu, promptKey + ".unknown.request", sessionUser), sessionUser);
+        }else {
+            Group groupFromJoinCode = groupBroker.findGroupFromJoinCode(trailingDigits.trim());
+            if (groupFromJoinCode != null) {
+                log.info("Found a token with these trailing digits ...");
+                    // todo: remove "findBy" above and consolidate into the service call (which throws the 'cant find error'
+                    groupBroker.addMemberViaJoinCode(sessionUser.getUid(), groupFromJoinCode.getUid(), trailingDigits);
+                    String prompt = (groupFromJoinCode.hasName()) ?
+                            getMessage(thisSection, startMenu, promptKey + ".group.token.named", groupFromJoinCode.getGroupName(), sessionUser) :
+                            getMessage(thisSection, startMenu, promptKey + ".group.token.unnamed", sessionUser);
+                    returnMenu = welcomeMenu(prompt, sessionUser);
+                }
+             else {
+                log.info("Whoops, couldn't find the code");
+                returnMenu = welcomeMenu(getMessage(thisSection, startMenu, promptKey + ".unknown.request", sessionUser), sessionUser);
+            }
+
         }
-
         return returnMenu;
 
     }
@@ -232,7 +246,7 @@ public class USSDHomeController extends USSDController {
     private USSDMenu defaultStartMenu(User sessionUser) throws URISyntaxException {
 
         String welcomeMessage = sessionUser.hasName() ? getMessage(thisSection, startMenu, promptKey + "-named", sessionUser.getName(""), sessionUser) :
-                    getMessage(thisSection, startMenu, promptKey, sessionUser);
+                getMessage(thisSection, startMenu, promptKey, sessionUser);
         return welcomeMenu(welcomeMessage, sessionUser);
 
     }
@@ -262,6 +276,11 @@ public class USSDHomeController extends USSDController {
                         renameGroupAllowInactive(user, group.getUid(), dateFormat.format(group.getCreatedDateTime().toLocalDateTime())) :
                         renameGroupNoInactiveOption(user, group.getUid(), dateFormat.format(group.getCreatedDateTime().toLocalDateTime()));
                 break;
+            case RESPOND_SAFETY:
+                SafetyEvent safetyEvent = safetyEventBroker.getOutstandingUserSafetyEventsResponse(user.getUid()).get(0);
+                openingMenu = assemblePanicButtonActivationResponse(user, safetyEvent);
+                break;
+
             case NONE:
                 openingMenu = defaultStartMenu(user);
                 break;
@@ -279,7 +298,7 @@ public class USSDHomeController extends USSDController {
         log.info("Asking for a vote ... from user " + sessionUser);
         Vote vote = (Vote) eventManager.getOutstandingVotesForUser(sessionUser).get(0);
 
-        final String[] promptFields = new String[]{ vote.getAncestorGroup().getName(""),
+        final String[] promptFields = new String[]{vote.getAncestorGroup().getName(""),
                 vote.getCreatedByUser().nameToDisplay(),
                 vote.getName()};
 
@@ -299,10 +318,10 @@ public class USSDHomeController extends USSDController {
         log.info("Asking for rsvp!");
         Event meeting = eventManager.getOutstandingRSVPForUser(sessionUser).get(0);
 
-        String[] meetingDetails = new String[] { meeting.getAncestorGroup().getName(""),
+        String[] meetingDetails = new String[]{meeting.getAncestorGroup().getName(""),
                 meeting.getCreatedByUser().nameToDisplay(),
                 meeting.getName(),
-                meeting.getEventDateTimeAtSAST().format(dateTimeFormat) };
+                meeting.getEventDateTimeAtSAST().format(dateTimeFormat)};
 
         // if the composed message is longer than 120 characters, we are going to go over, so return a shortened message
         String defaultPrompt = getMessage(thisSection, startMenu, promptKey + "-" + rsvpMenu, meetingDetails, sessionUser);
@@ -326,13 +345,13 @@ public class USSDHomeController extends USSDController {
             String[] promptFields = new String[]{
                     logBook.getParent().getName(),
                     logBook.getMessage(),
-                    logBook.getActionByDateAtSAST().format(dateFormat) };
+                    logBook.getActionByDateAtSAST().format(dateFormat)};
             String prompt = getMessage(thisSection, startMenu, promptKey + ".logbook", promptFields, user);
             String completeUri = "log-complete" + entityUidUrlSuffix + logBook.getUid();
             USSDMenu menu = new USSDMenu(prompt);
             menu.addMenuOptions(new LinkedHashMap<>(optionsYesNo(user, completeUri, completeUri)));
             menu.addMenuOption(completeUri + "&confirmed=unknown",
-                               getMessage(thisSection, startMenu, logKey + "." + optionsKey + "unknown", user));
+                    getMessage(thisSection, startMenu, logKey + "." + optionsKey + "unknown", user));
             return menu;
         }
     }
@@ -344,19 +363,54 @@ public class USSDHomeController extends USSDController {
         return thisMenu;
     }
 
+
     private USSDMenu renameGroupAllowInactive(User user, String groupUid, String dateCreated) {
         USSDMenu thisMenu = new USSDMenu(getMessage(thisSection, startMenu, promptKey + "-group-options", dateCreated, user));
         thisMenu.setFreeText(false);
 
         thisMenu.addMenuOption(promptGroupRename + groupUidUrlSuffix + groupUid,
-                               getMessage(thisSection, startMenu, "group.options.rename", user));
+                getMessage(thisSection, startMenu, "group.options.rename", user));
         thisMenu.addMenuOption(promptConfirmGroupInactive + groupUidUrlSuffix + groupUid,
-                               getMessage(thisSection, startMenu, "group.options.inactive", user));
+                getMessage(thisSection, startMenu, "group.options.inactive", user));
         thisMenu.addMenuOption(groupMenus + "merge" + groupUidUrlSuffix + groupUid,
-                               getMessage(thisSection, startMenu, "group.options.merge", user));
+                getMessage(thisSection, startMenu, "group.options.merge", user));
         thisMenu.addMenuOption(startMenu + "_force", getMessage(thisSection, startMenu, "interrupted.start", user));
 
         return thisMenu;
+    }
+
+
+    private USSDMenu assemblePanicButtonActivationMenu(User user) {
+        USSDMenu menu;
+        if (user.hasSafetyGroup()) {
+
+            boolean isBarred = safetyEventBroker.isUserBarred(user.getUid());
+            String message = (!isBarred) ? getMessage(thisSection, "safety.activated", promptKey, user) : getMessage(thisSection, "safety.barred", promptKey, user);
+            if (!isBarred) safetyEventBroker.create(user.getUid(), user.getSafetyGroup().getUid());
+            menu = new USSDMenu(message);
+
+        } else {
+            menu = new USSDMenu(getMessage(thisSection, "safety.not-activated", promptKey, user));
+            menu.addMenuOption(USSDSection.SAFETY_GROUP_MANAGER .toPath()+ "pick-group", "Set an existing group as safety group");
+            menu.addMenuOption(USSDSection.SAFETY_GROUP_MANAGER.toPath() + "new-group" + doSuffix, "Create a new safety group");
+            menu.addMenuOption(path + startMenu, "Go to main menu");
+        }
+        return menu;
+    }
+
+    private USSDMenu assemblePanicButtonActivationResponse(User user, SafetyEvent safetyEvent) {
+
+        String activateByDisplayName = safetyEvent.getActivatedBy().getDisplayName();
+        USSDMenu menu = new USSDMenu("Did you respond to the panic alert triggered by " + activateByDisplayName + "?");
+        menu.addMenuOption(USSDUrlUtil.safetyMenuWithId("record-response", safetyEvent.getUid(), true), "Yes");
+        menu.addMenuOption(USSDUrlUtil.safetyMenuWithId("record-response", safetyEvent.getUid(), false), "No");
+
+        return menu;
+
+    }
+
+    private boolean isSafetyActivationCode(String trailingDigits){
+        return (trailingDigits.equals(safetyCode));
     }
 
     /*
@@ -365,9 +419,9 @@ public class USSDHomeController extends USSDController {
 
     @RequestMapping(value = path + rsvpMenu)
     @ResponseBody
-    public Request rsvpAndWelcome(@RequestParam(value= phoneNumber) String inputNumber,
-                                  @RequestParam(value= entityUidParam) String meetingUid,
-                                  @RequestParam(value= yesOrNoParam) String attending) throws URISyntaxException {
+    public Request rsvpAndWelcome(@RequestParam(value = phoneNumber) String inputNumber,
+                                  @RequestParam(value = entityUidParam) String meetingUid,
+                                  @RequestParam(value = yesOrNoParam) String attending) throws URISyntaxException {
 
         String welcomeKey;
         User sessionUser = userManager.loadOrSaveUser(inputNumber);
@@ -387,9 +441,9 @@ public class USSDHomeController extends USSDController {
 
     @RequestMapping(value = path + "vote")
     @ResponseBody
-    public Request voteAndWelcome(@RequestParam(value= phoneNumber) String inputNumber,
-                                  @RequestParam(value= entityUidParam) String voteUid,
-                                  @RequestParam(value="response") String response) throws URISyntaxException {
+    public Request voteAndWelcome(@RequestParam(value = phoneNumber) String inputNumber,
+                                  @RequestParam(value = entityUidParam) String voteUid,
+                                  @RequestParam(value = "response") String response) throws URISyntaxException {
 
         User sessionUser = userManager.findByInputNumber(inputNumber);
         Vote vote = (Vote) eventBroker.load(voteUid);
@@ -423,8 +477,8 @@ public class USSDHomeController extends USSDController {
 
     @RequestMapping(value = path + renameUserMenu)
     @ResponseBody
-    public Request renameAndStart(@RequestParam(value= phoneNumber) String inputNumber,
-                                  @RequestParam(value= userInputParam) String userName) throws URISyntaxException {
+    public Request renameAndStart(@RequestParam(value = phoneNumber) String inputNumber,
+                                  @RequestParam(value = userInputParam) String userName) throws URISyntaxException {
 
         User sessionUser = userManager.findByInputNumber(inputNumber);
         String welcomeMessage;
@@ -440,9 +494,9 @@ public class USSDHomeController extends USSDController {
 
     @RequestMapping(value = path + renameGroupAndStart)
     @ResponseBody
-    public Request groupNameAndStart(@RequestParam(value= phoneNumber) String inputNumber,
-                                     @RequestParam(value= groupUidParam) String groupUid,
-                                     @RequestParam(value= userInputParam) String groupName) throws URISyntaxException {
+    public Request groupNameAndStart(@RequestParam(value = phoneNumber) String inputNumber,
+                                     @RequestParam(value = groupUidParam) String groupUid,
+                                     @RequestParam(value = userInputParam) String groupName) throws URISyntaxException {
 
         // todo: use permission model to check if user can actually do this
 
@@ -462,17 +516,17 @@ public class USSDHomeController extends USSDController {
 
     @RequestMapping(value = path + promptGroupRename)
     @ResponseBody
-    public Request askForGroupName(@RequestParam(value=phoneNumber) String inputNumber,
-                                   @RequestParam(value=groupUidParam) String groupUid) throws URISyntaxException {
+    public Request askForGroupName(@RequestParam(value = phoneNumber) String inputNumber,
+                                   @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
         Group group = groupBroker.load(groupUid);
         return menuBuilder(renameGroupNoInactiveOption(userManager.findByInputNumber(inputNumber), groupUid,
-                                                       dateFormat.format(group.getCreatedDateTime().toLocalDateTime())));
+                dateFormat.format(group.getCreatedDateTime().toLocalDateTime())));
     }
 
     @RequestMapping(value = path + promptConfirmGroupInactive)
     @ResponseBody
-    public Request confirmGroupInactive(@RequestParam(value=phoneNumber) String inputNumber,
-                                        @RequestParam(value=groupUidParam) String groupUid) throws URISyntaxException {
+    public Request confirmGroupInactive(@RequestParam(value = phoneNumber) String inputNumber,
+                                        @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
         // todo: another round of checks that this should be allowed
         User user = userManager.findByInputNumber(inputNumber);
         Group group = groupBroker.load(groupUid);
@@ -481,9 +535,9 @@ public class USSDHomeController extends USSDController {
 
         USSDMenu thisMenu = new USSDMenu(getMessage(thisSection, "group", "inactive." + promptKey, sizeOfGroup, user));
         thisMenu.addMenuOption(promptConfirmGroupInactive + doSuffix + groupUidUrlSuffix + groupUid,
-                               getMessage(optionsPrefix + "confirm", user));
+                getMessage(optionsPrefix + "confirm", user));
         thisMenu.addMenuOption(groupMenus + "merge" + groupUidUrlSuffix + groupUid,
-                               getMessage(optionsPrefix + "merge", user));
+                getMessage(optionsPrefix + "merge", user));
         thisMenu.addMenuOption(startMenu + "_force", getMessage(optionsPrefix + "cancel", user));
 
         return menuBuilder(thisMenu);
@@ -491,8 +545,8 @@ public class USSDHomeController extends USSDController {
 
     @RequestMapping(value = path + promptConfirmGroupInactive + doSuffix)
     @ResponseBody
-    public Request setGroupInactiveAndStart(@RequestParam(value=phoneNumber) String inputNumber,
-                                            @RequestParam(value=groupUidParam) String groupUid) throws URISyntaxException {
+    public Request setGroupInactiveAndStart(@RequestParam(value = phoneNumber) String inputNumber,
+                                            @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
         // todo: permission checks
         User sessionUser = userManager.findByInputNumber(inputNumber);
         log.info("At the request of user: " + sessionUser + ", we are setting inactive this group ... " + groupUid);
@@ -508,17 +562,17 @@ public class USSDHomeController extends USSDController {
     // todo: make sure this works with permissions ... by passing in the section
     @RequestMapping(value = path + "group_page")
     @ResponseBody
-    public Request groupPaginationHelper(@RequestParam(value= phoneNumber) String inputNumber,
-                                         @RequestParam(value="prompt") String prompt,
-                                         @RequestParam(value="page") Integer pageNumber,
-                                         @RequestParam(value="existingUri") String existingUri,
-                                         @RequestParam(value="newUri", required=false) String newUri) throws URISyntaxException {
+    public Request groupPaginationHelper(@RequestParam(value = phoneNumber) String inputNumber,
+                                         @RequestParam(value = "prompt") String prompt,
+                                         @RequestParam(value = "page") Integer pageNumber,
+                                         @RequestParam(value = "existingUri") String existingUri,
+                                         @RequestParam(value = "newUri", required = false) String newUri) throws URISyntaxException {
 
         /*
          todo: likely need to add permission checking to the list of parameters, but for now just saying "false"
           */
         return menuBuilder(ussdGroupUtil.userGroupMenuPaginated(userManager.findByInputNumber(inputNumber), prompt, existingUri,
-                                       newUri, pageNumber, null));
+                newUri, pageNumber, null));
 
     }
 
@@ -541,14 +595,14 @@ public class USSDHomeController extends USSDController {
 
     @RequestMapping(value = path + U404)
     @ResponseBody
-    public Request notBuilt(@RequestParam(value= phoneNumber) String inputNumber) throws URISyntaxException {
+    public Request notBuilt(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
         String errorMessage = messageSource.getMessage("ussd.error", null, new Locale("en"));
         return menuBuilder(new USSDMenu(errorMessage, optionsHomeExit(userManager.findByInputNumber(inputNumber))));
     }
 
     @RequestMapping(value = path + "exit")
     @ResponseBody
-    public Request exitScreen(@RequestParam(value= phoneNumber) String inputNumber) throws URISyntaxException {
+    public Request exitScreen(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber, null);
         String exitMessage = getMessage("exit." + promptKey, user);
         return menuBuilder(new USSDMenu(exitMessage));
@@ -557,7 +611,7 @@ public class USSDHomeController extends USSDController {
     @RequestMapping(value = path + "test_question")
     @ResponseBody
     public Request question1() throws URISyntaxException {
-        final Option option = new Option("Yes I can!", 1,1, new URI("http://yourdomain.tld/ussdxml.ashx?file=2"),true);
+        final Option option = new Option("Yes I can!", 1, 1, new URI("http://yourdomain.tld/ussdxml.ashx?file=2"), true);
         return new Request("Can you answer the question?", Collections.singletonList(option));
     }
 

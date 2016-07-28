@@ -1,6 +1,7 @@
 package za.org.grassroot.services.util;
 
 import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -18,7 +19,15 @@ public interface CacheUtilService {
 
     List<Event> getOutstandingResponseForUser(User user, EventType eventType);
 
+    List<SafetyEvent> getOutstandingSafetyEventResponseForUser(User user);
+
+    void putSafetyEventResponseForUser(User user, SafetyEvent safetyEvent);
+
+    void clearSafetyEventResponseForUser(User user, SafetyEvent safetyEvent);
+
     void putOutstandingResponseForUser(User user, EventType eventType, List<Event> outstandingRSVPs);
+
+
 
     void putUssdMenuForUser(String phoneNumber, String urlToCache);
 

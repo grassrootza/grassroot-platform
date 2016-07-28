@@ -42,7 +42,7 @@ public class USSDUserController extends USSDController {
 
         thisMenu.addMenuOption(userMenus + keyName, getMessage(thisSection, startMenu, optionsKey + keyName, sessionUser));
         thisMenu.addMenuOption(userMenus + keyLanguage, getMessage(thisSection, startMenu, optionsKey + keyLanguage, sessionUser));
-       // thisMenu.addMenuOption(userMenus + keyPhone, getMessage(thisSection, startMenu, optionsKey + keyPhone, sessionUser));
+        thisMenu.addMenuOption(keyStart, getMessage(thisSection, startMenu, optionsKey + "back", sessionUser));
 
         return menuBuilder(thisMenu);
     }

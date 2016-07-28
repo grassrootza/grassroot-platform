@@ -68,7 +68,7 @@ public class User implements UserDetails {
     @Column(name = "web")
     private boolean hasWebProfile = false;
 
-    @Column(name ="android")
+    @Column(name = "android")
     private boolean hasAndroidProfile = false;
 
     @Enumerated(EnumType.STRING)
@@ -76,7 +76,7 @@ public class User implements UserDetails {
     private UserMessagingPreference messagingPreference;
 
     @Enumerated(EnumType.STRING)
-    @Column(name ="alert_preference", length = 50)
+    @Column(name = "alert_preference", length = 50)
     private AlertPreference alertPreference;
 
     @Column(name = "enabled")
@@ -85,12 +85,16 @@ public class User implements UserDetails {
     @Column(name = "initiated_session")
     private boolean hasInitiatedSession;
 
+    @ManyToOne
+    @JoinColumn(name = "safety_group_id")
+    private Group safetyGroup;
+
     @Version
     private Integer version;
 
     @OneToMany
     @JoinTable(name = "user_roles",
-            joinColumns        = {@JoinColumn(name = "user_id", referencedColumnName = "id", unique = false)},
+            joinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id", unique = false)},
             inverseJoinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id", unique = false)}
     )
     private Set<Role> standardRoles = new HashSet<>();
@@ -123,6 +127,7 @@ public class User implements UserDetails {
 
     /**
      * We use this static constructor because no-arg constructor should be only used by JPA
+     *
      * @return user
      */
     public static User makeEmpty() {
@@ -191,9 +196,13 @@ public class User implements UserDetails {
         return createdDateTime;
     }
 
-    public Account getAccountAdministered() { return accountAdministered; }
+    public Account getAccountAdministered() {
+        return accountAdministered;
+    }
 
-    public void setAccountAdministered(Account accountAdministered) { this.accountAdministered = accountAdministered; }
+    public void setAccountAdministered(Account accountAdministered) {
+        this.accountAdministered = accountAdministered;
+    }
 
     public Set<Membership> getMemberships() {
         if (memberships == null) {
@@ -205,6 +214,7 @@ public class User implements UserDetails {
     /**
      * This is just used to manually set inverse side of many-to-many relationship when it  is still not saved in db.
      * Afterwards Hibernate takes care to set both sides.
+     *
      * @param membership membership
      */
     public void addMappedByMembership(Membership membership) {
@@ -214,6 +224,7 @@ public class User implements UserDetails {
     /**
      * This is just used to manually set inverse side of many-to-many relationship when it  is still not saved in db.
      * Afterwards Hibernate takes care to set both sides.
+     *
      * @param membership membership
      */
     public void removeMappedByMembership(Membership membership) {
@@ -226,6 +237,14 @@ public class User implements UserDetails {
         if (createdDateTime == null) {
             createdDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis());
         }
+    }
+
+    public Group getSafetyGroup() {
+        return safetyGroup;
+    }
+
+    public void setSafetyGroup(Group safetyGroup) {
+        this.safetyGroup = safetyGroup;
     }
 
     public String getUsername() {
@@ -244,21 +263,33 @@ public class User implements UserDetails {
         this.password = password;
     }
 
-    public boolean isHasWebProfile() { return hasWebProfile; }
+    public boolean isHasWebProfile() {
+        return hasWebProfile;
+    }
 
-    public boolean hasAndroidProfile(){
+    public boolean hasAndroidProfile() {
         return hasAndroidProfile;
     }
 
-    public UserMessagingPreference getMessagingPreference() { return messagingPreference; }
-
-    public void setHasAndroidProfile(boolean hasAndroidProfile){
-        this.hasAndroidProfile =hasAndroidProfile;
+    public boolean hasSafetyGroup() {
+        return safetyGroup != null;
     }
 
-    public void setHasWebProfile(boolean hasWebProfile) { this.hasWebProfile = hasWebProfile; }
+    public UserMessagingPreference getMessagingPreference() {
+        return messagingPreference;
+    }
 
-    public void setMessagingPreference(UserMessagingPreference messagingPreference) { this.messagingPreference = messagingPreference; }
+    public void setHasAndroidProfile(boolean hasAndroidProfile) {
+        this.hasAndroidProfile = hasAndroidProfile;
+    }
+
+    public void setHasWebProfile(boolean hasWebProfile) {
+        this.hasWebProfile = hasWebProfile;
+    }
+
+    public void setMessagingPreference(UserMessagingPreference messagingPreference) {
+        this.messagingPreference = messagingPreference;
+    }
 
     public AlertPreference getAlertPreference() {
         return alertPreference;
@@ -283,7 +314,7 @@ public class User implements UserDetails {
         return new HashSet<>(standardRoles);
     }
 
-    public  void addStandardRole(Role role) {
+    public void addStandardRole(Role role) {
         Objects.requireNonNull(role);
         if (!role.getRoleType().equals(Role.RoleType.STANDARD)) {
             throw new IllegalArgumentException("Cannot add role directly to user that is not of standard type: " + role);
@@ -301,9 +332,13 @@ public class User implements UserDetails {
     been added via being part of another group -- to us in our stats, plus for some use cases (e.g., asking for language)
      */
 
-    public boolean isHasInitiatedSession() { return hasInitiatedSession; }
+    public boolean isHasInitiatedSession() {
+        return hasInitiatedSession;
+    }
 
-    public void setHasInitiatedSession(boolean hasInitiatedSession) { this.hasInitiatedSession = hasInitiatedSession; }
+    public void setHasInitiatedSession(boolean hasInitiatedSession) {
+        this.hasInitiatedSession = hasInitiatedSession;
+    }
 
     @Override
     public Collection<GrantedAuthority> getAuthorities() {
@@ -398,7 +433,9 @@ public class User implements UserDetails {
 
     // can't call this the more natural getName, or any variant, or Spring's getter handling throws a fit
     // refactoring to avoid confusion with property displayName -- point is this returns name, or phone number if no name
-    public String nameToDisplay() { return getName(""); }
+    public String nameToDisplay() {
+        return getName("");
+    }
 
     @Override
     public boolean equals(Object o) {

@@ -8,16 +8,12 @@ import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
-import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.FormatUtil;
 
-import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
-
-import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
 /**
  * Created by aakilomar on 8/24/15.
@@ -151,6 +147,50 @@ public class MessageAssemblingManager implements MessageAssemblingService {
                 eventLog.getMessage()
         };
         return  messageSourceAccessor.getMessage("sms.meeting.confirmation", fields, getUserLocale(organiser));
+    }
+
+    @Override
+    public String createSafetyEventMessage(User respondent, User requestor, Address address, boolean reminder) {
+
+        String[] fields;
+        String message;
+        if(address!=null) {
+            fields = new String[]{requestor.getDisplayName(), address.getHouseNumber(), address.getStreetName(), address.getTown()};
+            message = (reminder) ? messageSourceAccessor.getMessage("sms.safety.reminder", fields, getUserLocale(requestor)):
+                    messageSourceAccessor.getMessage("sms.safety.new", fields, getUserLocale(requestor));
+        }else{
+            fields = new String[]{requestor.getDisplayName()};
+            message = (reminder) ? messageSourceAccessor.getMessage("sms.safety.reminder.nolocation", fields, getUserLocale(requestor)) :
+                    messageSourceAccessor.getMessage("sms.safety.new.nolocation", fields, getUserLocale(requestor));
+        }
+        return message;
+    }
+
+    @Override
+    public String createFalseSafetyEventActivationMessage(User requestor, long count) {
+        return messageSourceAccessor.getMessage("sms.safety.false", new String[]{
+            String.valueOf(count)},getUserLocale(requestor));
+    }
+
+    @Override
+    public String createSafetyEventReportMessage(User user, User respondent, SafetyEvent safetyEvent, boolean respondedTo) {
+        String fields[];
+        String message;
+        if(respondedTo){
+            fields = new String[]{safetyEvent.getActivatedBy().getDisplayName(),respondent.getDisplayName()};
+            message = (!safetyEvent.isFalseAlarm())?messageSourceAccessor.getMessage("sms.safety.valid",fields,getUserLocale(user)):
+                    messageSourceAccessor.getMessage("sms.safety.invalid",fields,getUserLocale(user));
+        }else{
+            //todo trigger this message after an hour if the safetyevent was not responded to
+            fields = new String[]{safetyEvent.getActivatedBy().getDisplayName()};
+            message = messageSourceAccessor.getMessage("sms.safety.noresponse",fields,getUserLocale(user));
+        }
+        return message;
+    }
+
+    @Override
+    public String createBarringMessage(User requestor) {
+        return messageSourceAccessor.getMessage("sms.safety.barred","",getUserLocale(requestor));
     }
 
     @Override

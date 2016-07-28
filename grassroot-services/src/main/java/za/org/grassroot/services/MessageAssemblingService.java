@@ -2,7 +2,6 @@ package za.org.grassroot.services;
 
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
-import za.org.grassroot.core.dto.UserDTO;
 
 import java.util.List;
 import java.util.Locale;
@@ -35,6 +34,14 @@ public interface MessageAssemblingService {
     String createWelcomeMessage(String messageId, User user);
 
     String createMeetingAttendanceConfirmationMessage(User organiser, User member, EventLog eventLog);
+
+    String createSafetyEventMessage(User respondent, User requestor, Address address, boolean reminder);
+
+    String createFalseSafetyEventActivationMessage(User requestor, long count);
+
+    String createSafetyEventReportMessage(User user, User respondent, SafetyEvent safetyEvent, boolean respondedTo);
+
+    String createBarringMessage(User requestor);
 
     String createGroupJoinRequestMessage(User user, GroupJoinRequest request);
 

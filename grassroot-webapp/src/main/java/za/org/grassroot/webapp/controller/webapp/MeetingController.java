@@ -203,7 +203,7 @@ public class MeetingController extends BaseController {
             model.addAttribute("action", "remind");
             model.addAttribute("includeSubGroups", meeting.isIncludeSubGroups());
 
-            String groupLanguage = meeting.getParentGroup().getDefaultLanguage();
+            String groupLanguage = meeting.getGroup().getDefaultLanguage();
             log.info("Composing dummy message for confirmation ... Group language is ... " + groupLanguage);
             String message = (groupLanguage == null || groupLanguage.trim().equals("")) ?
                     eventManagementService.getDefaultLocaleReminderMessage(getUserProfile(), meeting) :

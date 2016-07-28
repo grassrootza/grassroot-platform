@@ -26,6 +26,7 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     Group findOneByUid(String uid);
 
     Group findOneByImageUrl(String imageUrl);
+
     /*
     Get the sub-groups for a specific group
     one level only
@@ -101,7 +102,7 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     @Query(value = "with distinct_root as (select distinct q1.root, q1.id as member from (select g.id, getroot(g.id) as root from group_profile g, group_user_membership gu where gu.user_id = ?1 and gu.group_id = g.id  ) as q1) select distinct (getchildren(root)).*, root  from distinct_root order by root,parent", nativeQuery = true)
     List<Object[]> getGroupMemberTree(Long userId);
 
-    @Query(value = "Select * from getusergroupswithsize(?1) where active = true", nativeQuery = true)
+    @Query(value = "Select * from getusergroupswithsize(?1) where active = true" , nativeQuery = true)
     List<Object[]> findActiveUserGroupsOrderedByRecentEvent(Long userId);
 
     @Query(value = "SELECT g FROM Group g WHERE g.active = true AND g.id IN (SELECT gl.group.id FROM GroupLog gl WHERE (gl.createdDateTime BETWEEN ?1 AND ?2) AND gl.groupLogType = za.org.grassroot.core.enums.GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE)")

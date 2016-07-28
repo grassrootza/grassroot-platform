@@ -112,6 +112,7 @@ public class USSDToDoController extends USSDController {
         }
         thisMenu.addMenuOption(logMenus + listEntriesMenu + "?done=false", getMessage(thisSection, startMenu, optionsKey + "incomplete", user));
         thisMenu.addMenuOption(logMenus + groupMenu + "?new=false&completed=true", getMessage(thisSection, startMenu, optionsKey + "old", user));
+        thisMenu.addMenuOption(startMenu, getMessage(thisSection,startMenu,optionsKey+"back", user));
         return menuBuilder(thisMenu);
     }
 
@@ -124,13 +125,13 @@ public class USSDToDoController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber);
 
         if (newEntry) {
-            return menuBuilder(ussdGroupUtil.askForGroupNoInlineNew(user, thisSection, subjectMenu));
+            return menuBuilder(ussdGroupUtil.askForGroupWithoutNewOption(user, thisSection, subjectMenu));
         } else {
             List<GroupDTO> groups = permissionBroker.getActiveGroupDTOs(user, null);
             if (groups.size() == 1) {
                 return listEntriesMenu(user.getPhoneNumber(), groups.get(0).getUid(), completed, 0);
             } else {
-                return menuBuilder(ussdGroupUtil.askForGroupNoInlineNew(user, thisSection, listEntriesMenu + "?done=" + completed,
+                return menuBuilder(ussdGroupUtil.askForGroupWithoutNewOption(user, thisSection, listEntriesMenu + "?done=" + completed,
                                                                 getMessage(thisSection, groupMenu, promptKey + ".existing", user)));
             }
         }

@@ -22,10 +22,7 @@ import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.enums.UserMessagingPreference;
-import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.repository.LogBookRepository;
-import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.core.repository.UserRequestRepository;
+import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.services.GcmService;
 import za.org.grassroot.services.async.AsyncUserLogger;
@@ -77,7 +74,12 @@ public class UserManager implements UserManagementService, UserDetailsService {
     private MessageAssemblingService messageAssemblingService;
     @Autowired
     private GcmService gcmService;
-    
+
+    @Autowired
+    private SafetyEventBroker safetyEventBroker;
+    @Autowired
+    private AddressRepository addressRepository;
+
 
     @Override
     public User load(String userUid) {
@@ -155,7 +157,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             User userToUpdate = loadOrSaveUser(phoneNumber);
             if (userToUpdate.hasAndroidProfile() && userToUpdate.getMessagingPreference().equals(UserMessagingPreference.ANDROID_APP)) {
                 log.warn("User already has android profile");
-                throw new UserExistsException("User '"  + userProfile.getUsername() + "' already has a android profile!");
+                throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a android profile!");
             }
 
             userToUpdate.setUsername(phoneNumber);
@@ -191,24 +193,24 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public User deleteAndroidUserProfile(User user)  {
+    public User deleteAndroidUserProfile(User user) {
 
         if (!user.hasAndroidProfile()) {
-            throw  new NoSuchProfileException();
+            throw new NoSuchProfileException();
         }
-            user.setHasAndroidProfile(false);
-            user.setMessagingPreference(UserMessagingPreference.SMS);
-            user.setHasInitiatedSession(true);
+        user.setHasAndroidProfile(false);
+        user.setMessagingPreference(UserMessagingPreference.SMS);
+        user.setHasInitiatedSession(true);
 
-            try {
-                user = userRepository.saveAndFlush(user);
-                gcmService.unregisterUser(user);
-                asyncUserService.recordUserLog(user.getUid(), UserLogType.DEREGISTERED_ANDROID, "User android profile deleted");
-            } catch (final Exception e) {
-                e.printStackTrace();
-                log.warn(e.getMessage());
-            }
-            return user;
+        try {
+            user = userRepository.saveAndFlush(user);
+            gcmService.unregisterUser(user);
+            asyncUserService.recordUserLog(user.getUid(), UserLogType.DEREGISTERED_ANDROID, "User android profile deleted");
+        } catch (final Exception e) {
+            e.printStackTrace();
+            log.warn(e.getMessage());
+        }
+        return user;
 
     }
 
@@ -345,12 +347,28 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     public Page<User> getGroupMembers(Group group, int pageNumber, int pageSize) {
-        return userRepository.findByGroupsPartOf(group, new PageRequest(pageNumber,pageSize));
+        return userRepository.findByGroupsPartOf(group, new PageRequest(pageNumber, pageSize));
     }
 
     @Override
     public boolean userExist(String phoneNumber) {
         return userRepository.existsByPhoneNumber(phoneNumber);
+    }
+
+    @Override
+    public boolean hasAddress(String uid) {
+        User user = userRepository.findOneByUid(uid);
+        return addressRepository.findOneByResident(user) != null;
+    }
+
+
+    @Override
+    @Transactional
+    public void setSafetyGroup(String userUid, String groupUid) {
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+        user.setSafetyGroup(group);
+
     }
 
     @Override
@@ -375,6 +393,12 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public boolean needsToVote(User sessionUser) {
         log.info("Checking if vote outstanding for user: " + sessionUser);
         return eventManagementService.getOutstandingVotesForUser(sessionUser).size() > 0;
+    }
+
+    @Override
+    public boolean needsToRespondToSafetyEvent(User sessionUser) {
+        return safetyEventBroker.getOutstandingUserSafetyEventsResponse(sessionUser.getUid()) !=null;
+
     }
 
     @Override
@@ -425,7 +449,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         UserLog userLog = new UserLog(sessionUser.getUid(), UserLogType.INITIATED_USSD, "First USSD active session", UserInterfaceType.UNKNOWN);
         bundle.addLog(userLog);
 
-        String[] welcomeMessageIds = new String[] {
+        String[] welcomeMessageIds = new String[]{
                 "sms.welcome.1",
                 "sms.welcome.2",
                 "sms.welcome.3"

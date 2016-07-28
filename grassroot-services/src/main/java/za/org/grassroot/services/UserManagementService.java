@@ -46,6 +46,10 @@ public interface UserManagementService {
 
     boolean userExist(String phoneNumber);
 
+    boolean hasAddress(String uid);
+
+    void setSafetyGroup(String userUid, String groupUid);
+
     void setInitiatedSession(User sessionUser);
 
     boolean isPartOfActiveGroups(User user);
@@ -81,6 +85,8 @@ public interface UserManagementService {
     boolean needsToRSVP(User sessionUser);
 
     boolean needsToVote(User sessionUser);
+
+    boolean needsToRespondToSafetyEvent(User sessionUser);
 
     boolean hasIncompleteLogBooks(String userUid, long daysInPast);
     

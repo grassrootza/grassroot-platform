@@ -133,7 +133,7 @@ public class USSDGroupControllerIT extends USSDAbstractIT {
                 .build().toUri();
         executeQuery(addUsers);
         User testUser = userManager.findByInputNumber("27799814669", null);
-        final URI removeUser = testPhoneUri(groupPath + "unsubscribe-do").queryParam(groupParam,testGroup.getId()).queryParam(USSDUrlUtil.userInputParam, testUser.getPhoneNumber())
+        final URI removeUser = testPhoneUri(groupPath + "reset-do").queryParam(groupParam,testGroup.getId()).queryParam(USSDUrlUtil.userInputParam, testUser.getPhoneNumber())
                 .build().toUri();
         executeQuery(removeUser);
 
