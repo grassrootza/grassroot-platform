@@ -112,6 +112,7 @@ public class USSDToDoController extends USSDController {
         }
         thisMenu.addMenuOption(logMenus + listEntriesMenu + "?done=false", getMessage(thisSection, startMenu, optionsKey + "incomplete", user));
         thisMenu.addMenuOption(logMenus + groupMenu + "?new=false&completed=true", getMessage(thisSection, startMenu, optionsKey + "old", user));
+        thisMenu.addMenuOption(startMenu, getMessage(thisSection,startMenu,optionsKey+"back", user));
         return menuBuilder(thisMenu);
     }
 

@@ -39,6 +39,8 @@ public interface MessageAssemblingService {
 
     String createFalseSafetyEventActivationMessage(User requestor, long count);
 
+    String createSafetyEventReportMessage(User user, User respondent, SafetyEvent safetyEvent, boolean respondedTo);
+
     String createBarringMessage(User requestor);
 
     String createGroupJoinRequestMessage(User user, GroupJoinRequest request);

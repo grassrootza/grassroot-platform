@@ -152,7 +152,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     @Override
     public String createSafetyEventMessage(User respondent, User requestor, Address address, boolean reminder) {
 
-        String[] fields ;
+        String[] fields;
         String message;
         if(address!=null) {
             fields = new String[]{requestor.getDisplayName(), address.getHouseNumber(), address.getStreetName(), address.getTown()};
@@ -170,6 +170,22 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     public String createFalseSafetyEventActivationMessage(User requestor, long count) {
         return messageSourceAccessor.getMessage("sms.safety.false", new String[]{
             String.valueOf(count)},getUserLocale(requestor));
+    }
+
+    @Override
+    public String createSafetyEventReportMessage(User user, User respondent, SafetyEvent safetyEvent, boolean respondedTo) {
+        String fields[];
+        String message;
+        if(respondedTo){
+            fields = new String[]{safetyEvent.getActivatedBy().getDisplayName(),respondent.getDisplayName()};
+            message = (!safetyEvent.isFalseAlarm())?messageSourceAccessor.getMessage("sms.safety.valid",fields,getUserLocale(user)):
+                    messageSourceAccessor.getMessage("sms.safety.invalid",fields,getUserLocale(user));
+        }else{
+            //todo trigger this message after an hour if the safetyevent was not responded to
+            fields = new String[]{safetyEvent.getActivatedBy().getDisplayName()};
+            message = messageSourceAccessor.getMessage("sms.safety.noresponse",fields,getUserLocale(user));
+        }
+        return message;
     }
 
     @Override

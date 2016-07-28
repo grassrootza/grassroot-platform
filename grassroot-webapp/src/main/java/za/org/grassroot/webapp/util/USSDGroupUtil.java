@@ -220,6 +220,7 @@ public class USSDGroupUtil extends USSDUtil {
         if (USSDSection.GROUP_MANAGER.equals(section) && (!groupBroker.fetchGroupsWithOneCharNames(user, 2).isEmpty())) {
             menu.addMenuOption(section.toPath() + "clean", getMessage(groupKeyForMessages, "clean", "option", user));
         }
+        menu.addMenuOption("start", getMessage(groupKeyForMessages,"menu", optionsKey +"back", user));
 
         return menu;
     }
@@ -389,6 +390,7 @@ public class USSDGroupUtil extends USSDUtil {
         }
 
         listMenu.addMenuOption(skippedSelection ? "start" : GROUP_MANAGER.toPath() + "start", getMessage(menuKey + "back", user));
+        listMenu.addMenuOption("start", getMessage(groupKeyForMessages,"menu", optionsKey+"back", user));
 
         return listMenu;
 

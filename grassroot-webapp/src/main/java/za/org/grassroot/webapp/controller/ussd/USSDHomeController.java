@@ -196,9 +196,9 @@ public class USSDHomeController extends USSDController {
 
     private USSDResponseTypes neededResponse(User user) {
 
+        if (userManager.needsToRespondToSafetyEvent(user)) return USSDResponseTypes.RESPOND_SAFETY;
         if (userManager.needsToVote(user)) return USSDResponseTypes.VOTE;
         if (userManager.needsToRSVP(user)) return USSDResponseTypes.MTG_RSVP;
-        if (userManager.needsToRespondToSafetyEvent(user)) return USSDResponseTypes.RESPOND_SAFETY;
         if (userManager.hasIncompleteLogBooks(user.getUid(), daysPastLogbooks)) return USSDResponseTypes.RESPOND_TODO;
         if (userManager.needsToRenameSelf(user)) return USSDResponseTypes.RENAME_SELF;
         if (userManager.fetchGroupUserMustRename(user) != null) return USSDResponseTypes.NAME_GROUP;
@@ -401,7 +401,7 @@ public class USSDHomeController extends USSDController {
     private USSDMenu assemblePanicButtonActivationResponse(User user, SafetyEvent safetyEvent) {
 
         String activateByDisplayName = safetyEvent.getActivatedBy().getDisplayName();
-        USSDMenu menu = new USSDMenu("Did you respond to the panic alert activated by " + activateByDisplayName + "?");
+        USSDMenu menu = new USSDMenu("Did you respond to the panic alert triggered by " + activateByDisplayName + "?");
         menu.addMenuOption(USSDUrlUtil.safetyMenuWithId("record-response", safetyEvent.getUid(), true), "Yes");
         menu.addMenuOption(USSDUrlUtil.safetyMenuWithId("record-response", safetyEvent.getUid(), false), "No");
 

@@ -85,6 +85,7 @@ public class USSDVoteController extends USSDController {
                 menu.addMenuOption(voteMenus + "open", getMessage(thisSection, startMenu, optionsKey + "open", user));
             if (hasVotesToView <= 0)
                 menu.addMenuOption(voteMenus + "old", getMessage(thisSection, startMenu, optionsKey + "old", user));
+            menu.addMenuOption("start", getMessage(USSDSection.VOTES,"start","options.back",user));
         } else {
             String groupsExistPrompt = getMessage(thisSection, "group", promptKey, user);
             String groupsDontExistPrompt = getMessage(thisSection, "group", promptKey + "-nogroup", user);

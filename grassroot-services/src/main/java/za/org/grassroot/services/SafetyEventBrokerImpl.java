@@ -91,6 +91,11 @@ public class SafetyEventBrokerImpl implements SafetyEventBroker {
         Objects.nonNull(userUid);
         Objects.nonNull(safetyEventUid);
         SafetyEvent safetyEvent = safetyEventRepository.findOneByUid(safetyEventUid);
+        User respondent = userRepository.findOneByUid(userUid);
+
+        safetyEvent.setRespondedTo(true);
+        safetyEvent.setActive(false);
+        safetyEvent.setFalseAlarm(!isValid);
 
         if (!isValid) {
             User requestor = safetyEvent.getActivatedBy();
@@ -106,15 +111,14 @@ public class SafetyEventBrokerImpl implements SafetyEventBroker {
 
         Group group = safetyEvent.getGroup();
         User requestor = safetyEvent.getActivatedBy();
-        for (User respondent : group.getMembers()) {
-            if (!respondent.equals(requestor)) {
-                cacheUtilService.clearSafetyEventResponseForUser(respondent, safetyEvent);
+        for (User member : group.getMembers()) {
+            if (!member.equals(requestor) && !member.equals(respondent)) {
+                //send messages to notify members that somebody has responded
+                String message = messageAssemblingService.createSafetyEventReportMessage(member, respondent,safetyEvent,true);
+                smsSendingService.sendSMS(message,member.getPhoneNumber());
+                cacheUtilService.clearSafetyEventResponseForUser(member, safetyEvent);
             }
         }
-
-        safetyEvent.setRespondedTo(true);
-        safetyEvent.setActive(false);
-        safetyEvent.setFalseAlarm(!isValid);
 
     }
 
