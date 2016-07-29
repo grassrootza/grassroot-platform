@@ -3,6 +3,7 @@ package za.org.grassroot.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Address;
@@ -71,7 +72,8 @@ public class SafetyEventBrokerImpl implements SafetyEventBroker {
             if (!respondent.equals(requestor)) {
                 cacheUtilService.putSafetyEventResponseForUser(respondent, safetyEvent);
                 String message = messageAssemblingService.createSafetyEventMessage(respondent, requestor, address, false);
-                smsSendingService.sendSMS(message, respondent.getPhoneNumber());
+                sendMessage(respondent,message);
+             //   smsSendingService.sendSMS(message, respondent.getPhoneNumber());
             }
         }
 
@@ -106,7 +108,10 @@ public class SafetyEventBrokerImpl implements SafetyEventBroker {
             } else {
                 message = messageAssemblingService.createFalseSafetyEventActivationMessage(safetyEvent.getActivatedBy(), count);
             }
-            smsSendingService.sendSMS(message, requestor.getPhoneNumber());
+
+            sendMessage(requestor, message);
+          //
+            //  smsSendingService.sendSMS(message, requestor.getPhoneNumber());
         }
 
         Group group = safetyEvent.getGroup();
@@ -115,7 +120,8 @@ public class SafetyEventBrokerImpl implements SafetyEventBroker {
             if (!member.equals(requestor)) {
                 //send messages to notify members that somebody has responded
                 String message = messageAssemblingService.createSafetyEventReportMessage(member, respondent,safetyEvent,true);
-                smsSendingService.sendSMS(message,member.getPhoneNumber());
+                sendMessage(member,message);
+              //  smsSendingService.sendSMS(message,member.getPhoneNumber());
                 cacheUtilService.clearSafetyEventResponseForUser(member, safetyEvent);
             }
         }
@@ -175,6 +181,12 @@ public class SafetyEventBrokerImpl implements SafetyEventBroker {
             }
         }
 
+    }
+
+    @Async
+    //methods annotated with async must be public
+    public void sendMessage(User user, String message){
+        smsSendingService.sendSMS(message,user.getPhoneNumber());
     }
 
 }

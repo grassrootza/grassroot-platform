@@ -30,9 +30,11 @@ public class UnreadNotificationHandlerImpl implements UnreadNotificationHandler 
     @Transactional
     public void processUnreadNotifications() {
         logger.info("Processing unread notifications ...");
+        Instant time = Instant.now();
         Instant timeToCheck = Instant.now().minus(10, ChronoUnit.MINUTES);
+
         List<Notification> unreadNotifications = notificationRepository
-                .findFirst100ByReadFalseAndCreatedDateTimeGreaterThan(timeToCheck);
+                .findFirst100ByReadFalseAndNextAttemptTimeBeforeAndCreatedDateTimeGreaterThan(time, timeToCheck);
         if (unreadNotifications.size() > 0) {
             logger.info("Sending {} unread notifications", unreadNotifications.size());
         }

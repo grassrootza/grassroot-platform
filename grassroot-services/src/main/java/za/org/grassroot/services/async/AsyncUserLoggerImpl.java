@@ -40,7 +40,6 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
     public void recordUserLog(String userUid, UserLogType userLogType, String description) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(userLogType);
-
         UserLog userLog = new UserLog(userUid, userLogType, description, UNKNOWN);
         userLogRepository.saveAndFlush(userLog);
     }
