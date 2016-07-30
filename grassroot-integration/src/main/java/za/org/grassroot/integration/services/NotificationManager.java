@@ -19,9 +19,11 @@ import za.org.grassroot.core.domain.notification.LogBookNotification;
 import za.org.grassroot.core.dto.NotificationDTO;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.repository.NotificationRepository;
+import za.org.grassroot.core.repository.UserRepository;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by paballo on 2016/04/07.
@@ -30,6 +32,9 @@ import java.util.*;
 @Service
 public class NotificationManager implements NotificationService{
     private final Logger logger = LoggerFactory.getLogger(NotificationManager.class);
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired
     private NotificationRepository notificationRepository;
@@ -59,7 +64,6 @@ public class NotificationManager implements NotificationService{
         List<NotificationDTO> notificationDTOs = new ArrayList<>();
         for (String uid : notificationUids) {
             Notification notification = notificationRepository.findByUid(uid);
-
             if (eventLogTypesToIncludeInList.contains(notification.getClass())) {
                 Event event = ((EventNotification) notification).getEvent();
                 notificationDTOs.add(new NotificationDTO(notification, event));
@@ -69,6 +73,25 @@ public class NotificationManager implements NotificationService{
                 notificationDTOs.add(new NotificationDTO(notification,logBook));
             }
         }
+        return notificationDTOs;
+    }
+
+    @Override
+    public List<NotificationDTO> fetchNotificationsSince(String userUid, Instant createdSince) {
+        Objects.requireNonNull(userUid);
+        User user = userRepository.findOneByUid(userUid);
+        List<Notification> notifications;
+        if (createdSince != null) {
+            notifications = notificationRepository.findByTargetAndCreatedDateTimeGreaterThan(user, createdSince);
+        } else {
+            notifications = notificationRepository.findByTarget(user);
+        }
+
+        // todo : sort these
+        List<NotificationDTO> notificationDTOs = notifications.stream()
+                .filter(NotificationDTO::isNotificationOfTypeForDTO)
+                .map(NotificationDTO::convertToDto)
+                .collect(Collectors.toList());
 
         return notificationDTOs;
     }

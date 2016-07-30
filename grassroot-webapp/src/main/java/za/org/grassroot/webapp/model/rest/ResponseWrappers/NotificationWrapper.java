@@ -23,6 +23,12 @@ public class NotificationWrapper {
     private Integer previousPage;
     private  Integer totalPages;
 
+    public NotificationWrapper(List<NotificationDTO> listOfDTOs) {
+        this.notifications = listOfDTOs;
+        this.totalPages = 1;
+        this.pageNumber = 1;
+    }
+
     public NotificationWrapper(Page<Notification> page, List<NotificationDTO> listOfDTOs) {
 
         this.notifications = listOfDTOs;

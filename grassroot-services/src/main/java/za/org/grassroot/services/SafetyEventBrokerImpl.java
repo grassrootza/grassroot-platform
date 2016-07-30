@@ -125,8 +125,6 @@ public class SafetyEventBrokerImpl implements SafetyEventBroker {
                 cacheUtilService.clearSafetyEventResponseForUser(member, safetyEvent);
             }
         }
-
-
     }
 
     @Override

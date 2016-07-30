@@ -88,8 +88,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .rememberMe()
                 .tokenRepository(persistentTokenRepository())
-                .tokenValiditySeconds(1209600)
-                .useSecureCookie(true);
+                .tokenValiditySeconds(1209600);
+                // .useSecureCookie(true);
 
     }
 

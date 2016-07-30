@@ -176,12 +176,12 @@ public class GroupRestController {
         } else {
             List<Group> possibleGroups = groupBroker.findPublicGroups(user.getUid(), searchTerm, null);
             log.info("searched for possible groups found {}, which are {}", possibleGroups.size(), possibleGroups);
-	        List<GroupSearchWrapper> groups;
+	        List<GroupSearchWrapper> groupSearchWrappers;
             if (!possibleGroups.isEmpty()) {
-                groups = possibleGroups.stream()
+                groupSearchWrappers = possibleGroups.stream()
                         .map(group -> new GroupSearchWrapper(group, eventManagementService.getMostRecentEvent(group)))
                         .collect(Collectors.toList());
-                responseWrapper = new GenericResponseWrapper(OK, RestMessage.POSSIBLE_GROUP_MATCHES, RestStatus.SUCCESS, groups);
+                responseWrapper = new GenericResponseWrapper(OK, RestMessage.POSSIBLE_GROUP_MATCHES, RestStatus.SUCCESS, groupSearchWrappers);
             } else {
                 responseWrapper = new ResponseWrapperImpl(OK, RestMessage.NO_GROUP_MATCHING_TERM_FOUND, RestStatus.FAILURE);
             }

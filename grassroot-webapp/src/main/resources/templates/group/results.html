@@ -27,7 +27,7 @@
   <!-- public groups search -->
   <div class="well">
 
-    <div th:unless="${externalGroupFound}">
+    <div th:unless="${externalGroupsFound}">
       <div class="row">
         <div class="col-md-6 col-md-offset-3">
           <p>Sorry, we couldn't find any public groups matching that name or join code.</p>
@@ -44,61 +44,65 @@
       </div>
     </div>
 
-    <div th:if="${group != null}">
-      <div class="row">
-        <div class="col-md-6 col-md-offset-3">
-          <p>Found! You entered the join code for "<span th:text="${group.groupName}">name</span>",
-            created by <span th:text="${group.createdByUser.nameToDisplay()}">person</span>, with
-            <span th:text="${group.memberships.size()}">X</span> members.</p>
+    <div th:if="${externalGroupsFound}">
+
+      <div th:if="${group != null}">
+        <div class="row">
+          <div class="col-md-6 col-md-offset-3">
+            <p>Found! You entered the join code for "<span th:text="${group.groupName}">name</span>",
+              created by <span th:text="${group.createdByUser.nameToDisplay()}">person</span>, with
+              <span th:text="${group.memberships.size()}">X</span> members.</p>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-6 col-md-offset-3">
+            <form th:action="@{join/token}" method="post">
+              <input type="hidden" name="groupUid" th:value="${group.uid}" />
+              <input type="hidden" name="token" th:value="${group.groupTokenCode}" />
+              <div class="form-group text-center">
+                <button type="submit" class="btn btn-default btn-block">Join this group</button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
-      <div class="row">
-        <div class="col-md-6 col-md-offset-3">
-          <form th:action="@{join/token}" method="post">
-            <input type="hidden" name="groupUid" th:value="${group.uid}" />
-            <input type="hidden" name="token" th:value="${group.groupTokenCode}" />
-            <div class="form-group text-center">
-              <button type="submit" class="btn btn-default btn-block">Join this group</button>
+
+      <div th:if="${groupCandidates != null}">
+        <div class="row">
+          <div class="col-md-8 col-md-offset-2">
+            <h4>We found <span th:text="${groupCandidates.size()}">X</span> public
+              <span th:text="${groupCandidates.size() > 1}? 'groups' : 'group'">groups</span> matching your search term.</h4>
+            <p>Clicking "request to join" by an group will sent a message to the approver for the group.You will be notified if your request is approved.</p>
+          </div>
+          <div class="col-md-8 col-md-offset-2">
+            <div class="list-group">
+            <div  th:each="group,iterStat : ${groupCandidates}">
+              <div class="list-group-item">
+                <div class="row">
+                  <div class="col-md-6">
+                    <h4  class="list-group-item-heading">
+                      Group: "<span th:text="${group.getName('')}" class="text-primary">Group name</span>"
+                    </h4>
+                    <div class="least-content">
+                      <p class="list-group-item-text">Est. <span th:text="${#calendars.format(group.getCreatedDateTime(),'dd MMMM yyyy')}">13 May 2011</span></p>
+                    </div>
+                  </div>
+                  <div class="col-md-3 pull-right">
+                    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#joinModal"
+                            th:attr="data-uid=${group.uid}">
+                      <b>Ask to join group</b>
+                    </button>
+                  </div>
+                </div>
+                <div class="list-group-separator"></div>
+              </div>
             </div>
-          </form>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <div th:if="${externalGroupFound}">
-      <div class="row">
-        <div class="col-md-8 col-md-offset-2">
-          <h4>We found <span th:text="${groupCandidates.size()}">X</span> public
-            <span th:text="${groupCandidates.size() > 1}? 'groups' : 'group'">groups</span> matching your search term.</h4>
-          <p>Clicking "request to join" by an group will sent a message to the approver for the group.You will be notified if your request is approved.</p>
-        </div>
-        <div class="col-md-8 col-md-offset-2">
-          <div class="list-group">
-          <div  th:each="group,iterStat : ${groupCandidates}">
-            <div class="list-group-item">
-              <div class="row">
-                <div class="col-md-6">
-                  <h4  class="list-group-item-heading">
-                    Group: "<span th:text="${group.getName('')}" class="text-primary">Group name</span>"
-                  </h4>
-                  <div class="least-content">
-                    <p class="list-group-item-text">Est. <span th:text="${#calendars.format(group.getCreatedDateTime(),'dd MMMM yyyy')}">13 May 2011</span></p>
-                  </div>
-                </div>
-                <div class="col-md-3 pull-right">
-                  <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#joinModal"
-                          th:attr="data-uid=${group.uid}">
-                    <b>Ask to join group</b>
-                  </button>
-                </div>
-              </div>
-              <div class="list-group-separator"></div>
-            </div>
-          </div>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- user's own groups and events search -->

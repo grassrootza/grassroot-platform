@@ -1,13 +1,20 @@
 package za.org.grassroot.core.dto;
 
+import com.google.common.collect.Sets;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.notification.EventChangedNotification;
+import za.org.grassroot.core.domain.notification.EventInfoNotification;
+import za.org.grassroot.core.domain.notification.EventNotification;
+import za.org.grassroot.core.domain.notification.LogBookNotification;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
+import java.util.Set;
 
 /**
  * Created by paballo on 2016/04/13.
@@ -23,6 +30,25 @@ public class NotificationDTO {
     private String entityType;
     private boolean delivered;
     private boolean read;
+
+    private static final Set<Class<? extends Notification>> validTypesForDTO = Collections.unmodifiableSet(
+            Sets.newHashSet(LogBookNotification.class, EventInfoNotification.class, EventChangedNotification.class));
+
+    public static boolean isNotificationOfTypeForDTO(Notification notification) {
+        return validTypesForDTO.contains(notification.getClass());
+    }
+
+    public static NotificationDTO convertToDto(Notification notification) {
+        if (notification instanceof EventNotification) {
+            Event event = ((EventNotification) notification).getEvent();
+            return new NotificationDTO(notification, event);
+        } else if(notification instanceof LogBookNotification){
+            LogBook logBook = ((LogBookNotification) notification).getLogBook();
+            return new NotificationDTO(notification,logBook);
+        } else {
+            throw new IllegalArgumentException("Error! Notification DTO called on unsupported notification type");
+        }
+    }
 
     public NotificationDTO(Notification notification, Event event) {
         this.uid = notification.getUid();
@@ -76,9 +102,6 @@ public class NotificationDTO {
     public String getNotificationType() {
         return notificationType;
     }
-
-
-
 
     public boolean isDelivered() {
         return delivered;

@@ -5,6 +5,7 @@ import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.NotificationDTO;
 
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -17,6 +18,8 @@ public interface NotificationService {
 	Page<Notification> getNotificationsByTarget(User target, int pageNumber, int pageSize);
 
 	List<NotificationDTO> fetchNotificationDTOs(List<String> notificationUids);
+
+	List<NotificationDTO> fetchNotificationsSince(String userUid, Instant createdSince);
 
 	void updateNotificationReadStatus(String notificationUid, boolean read);
 

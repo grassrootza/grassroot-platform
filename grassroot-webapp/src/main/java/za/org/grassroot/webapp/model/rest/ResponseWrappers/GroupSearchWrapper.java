@@ -9,14 +9,14 @@ import za.org.grassroot.core.domain.Group;
 public class GroupSearchWrapper {
     private String id;
     private String groupName;
-    private String description = "Group has no event";
+    private String description;
     private String groupCreator;
     private Integer count;
 
     public GroupSearchWrapper(Group group, Event event){
         this.id =group.getUid();
         this.groupName = group.getGroupName();
-        this.description = (event!=null)?event.getName():description;
+        this.description = group.getDescription() == null ? "Group has no public description" : group.getDescription();
         this.groupCreator = group.getCreatedByUser().getDisplayName();
         this.count = group.getMemberships().size();
 

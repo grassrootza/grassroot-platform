@@ -19,8 +19,10 @@ import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrappe
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.NotificationWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
+import za.org.grassroot.webapp.util.RestUtil;
 
 import java.security.AccessControlException;
+import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -60,13 +62,24 @@ public class NotificationRestController {
             responseWrapper = new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.NOTIFICATIONS, RestStatus.FAILURE);
         } else {
             List<String> notificationUid = pageable.getContent().stream().map(n -> n.getUid()).collect(Collectors.toList());
-            log.info("notificaton_uid size={}",notificationUid.size());
             List<NotificationDTO> notificationDTOList = notificationService.fetchNotificationDTOs(notificationUid);
-            log.info("notificationDTOList sizr ={}", notificationDTOList.size());
+            log.info("notificationDTOList size ={}", notificationDTOList.size());
             NotificationWrapper notificationWrapper = new NotificationWrapper(pageable, notificationDTOList);
             responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.NOTIFICATIONS, RestStatus.SUCCESS, notificationWrapper);
         }
         return new ResponseEntity<>(responseWrapper,HttpStatus.valueOf(responseWrapper.getCode()));
+
+    }
+
+    @RequestMapping(value = "/list/since/{phoneNumber}/{code}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> getNotificationsSince(@PathVariable String phoneNumber, @PathVariable String code,
+                                                                 @RequestParam(value = "createdSince", required = false) Long createdSince) {
+
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        Instant intervalStart = createdSince == null ? null : Instant.ofEpochMilli(createdSince);
+        List<NotificationDTO> notificationDTOs = notificationService.fetchNotificationsSince(user.getUid(), intervalStart);
+        NotificationWrapper wrapper = new NotificationWrapper(notificationDTOs);
+        return RestUtil.okayResponseWithData(RestMessage.NOTIFICATIONS, wrapper);
 
     }
 

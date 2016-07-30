@@ -134,14 +134,14 @@ public class GroupController extends BaseController {
             Group groupByToken = groupBroker.findGroupFromJoinCode(tokenSearch);
             if (groupByToken != null) {
                 model.addAttribute("group", groupByToken);
-                model.addAttribute("externalGroupFound", true);
+                model.addAttribute("externalGroupsFound", true);
             } else {
                 // just for testing since no UI support yet exists...
                 // GroupLocationFilter locationFilter = new GroupLocationFilter(new GeoLocation(45.567641, 18.701211), 30000, true);
                 GroupLocationFilter locationFilter = null;
                 List<Group> publicGroups = groupBroker.findPublicGroups(getUserProfile().getUid(), term, locationFilter);
                 model.addAttribute("groupCandidates", publicGroups);
-                model.addAttribute("externalGroupFound", !publicGroups.isEmpty());
+                model.addAttribute("externalGroupsFound", !publicGroups.isEmpty());
             }
             final String userUid = getUserProfile().getUid();
             List<Group> memberGroups = groupBroker.searchUsersGroups(userUid, term);
