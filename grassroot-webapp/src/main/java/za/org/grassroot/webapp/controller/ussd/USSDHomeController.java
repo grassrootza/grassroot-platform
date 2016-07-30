@@ -143,7 +143,8 @@ public class USSDHomeController extends USSDController {
             String trailingDigits = enteredUSSD.substring(hashPosition + 1, enteredUSSD.length() - 1);
             openingMenu = processTrailingDigits(trailingDigits, sessionUser);
         } else {
-            if (!sessionUser.isHasInitiatedSession()) userManager.setInitiatedSession(sessionUser);
+            if (!sessionUser.isHasInitiatedSession())
+                userManager.setInitiatedSession(sessionUser);
             USSDResponseTypes neededResponse = neededResponse(sessionUser);
 
             if (!neededResponse.equals(USSDResponseTypes.NONE)) {
@@ -215,20 +216,19 @@ public class USSDHomeController extends USSDController {
 
         log.info("Processing trailing digits ..." + trailingDigits);
 
-        if(isSafetyActivationCode(trailingDigits)){
-           returnMenu = assemblePanicButtonActivationMenu(sessionUser);
+        if (isSafetyActivationCode(trailingDigits)) {
+            returnMenu = assemblePanicButtonActivationMenu(sessionUser);
         } else {
             Group groupFromJoinCode = groupBroker.findGroupFromJoinCode(trailingDigits.trim());
             if (groupFromJoinCode != null) {
                 log.info("Found a token with these trailing digits ...");
-                    // todo: remove "findBy" above and consolidate into the service call (which throws the 'cant find error'
-                    groupBroker.addMemberViaJoinCode(sessionUser.getUid(), groupFromJoinCode.getUid(), trailingDigits);
-                    String prompt = (groupFromJoinCode.hasName()) ?
-                            getMessage(thisSection, startMenu, promptKey + ".group.token.named", groupFromJoinCode.getGroupName(), sessionUser) :
-                            getMessage(thisSection, startMenu, promptKey + ".group.token.unnamed", sessionUser);
-                    returnMenu = welcomeMenu(prompt, sessionUser);
-                }
-             else {
+                // todo: remove "findBy" above and consolidate into the service call (which throws the 'cant find error'
+                groupBroker.addMemberViaJoinCode(sessionUser.getUid(), groupFromJoinCode.getUid(), trailingDigits);
+                String prompt = (groupFromJoinCode.hasName()) ?
+                        getMessage(thisSection, startMenu, promptKey + ".group.token.named", groupFromJoinCode.getGroupName(), sessionUser) :
+                        getMessage(thisSection, startMenu, promptKey + ".group.token.unnamed", sessionUser);
+                returnMenu = welcomeMenu(prompt, sessionUser);
+            } else {
                 log.info("Whoops, couldn't find the code");
                 returnMenu = welcomeMenu(getMessage(thisSection, startMenu, promptKey + ".unknown.request", sessionUser), sessionUser);
             }
@@ -389,7 +389,7 @@ public class USSDHomeController extends USSDController {
         } else {
             // todo : externalize the option texts
             menu = new USSDMenu(getMessage(thisSection, "safety.not-activated", promptKey, user));
-            menu.addMenuOption(USSDSection.SAFETY_GROUP_MANAGER .toPath()+ "pick-group", "Make existing group my safety group");
+            menu.addMenuOption(USSDSection.SAFETY_GROUP_MANAGER.toPath() + "pick-group", "Make existing group my safety group");
             menu.addMenuOption(USSDSection.SAFETY_GROUP_MANAGER.toPath() + "new-group", "Create new group");
             menu.addMenuOption(path + startMenu, "Main menu");
         }
@@ -407,7 +407,7 @@ public class USSDHomeController extends USSDController {
 
     }
 
-    private boolean isSafetyActivationCode(String trailingDigits){
+    private boolean isSafetyActivationCode(String trailingDigits) {
         return (trailingDigits.equals(safetyCode));
     }
 

@@ -60,6 +60,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 			logger.info("Storing {} notifications", notifications.size());
 		}
 		for (Notification notification : notifications) {
+			logger.info("in log broker", notification.getNextAttemptTime());
 			// logger.info("Saving notification: {}", notification); removing for now as generates _many_ logs
 			notificationRepository.save(notification);
 		}

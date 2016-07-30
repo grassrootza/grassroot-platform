@@ -25,5 +25,5 @@ public interface NotificationRepository extends JpaRepository<Notification,Long>
     List<Notification> findFirst50ByNextAttemptTimeBeforeOrderByNextAttemptTimeAsc(Instant time);
 
     @Transactional(readOnly = true)
-    List<Notification> findFirst100ByReadFalseAndCreatedDateTimeGreaterThan(Instant time);
+    List<Notification> findFirst100ByReadFalseAndNextAttemptTimeBeforeAndCreatedDateTimeGreaterThan(Instant nextAttemptTime, Instant createdDateTime);
 }

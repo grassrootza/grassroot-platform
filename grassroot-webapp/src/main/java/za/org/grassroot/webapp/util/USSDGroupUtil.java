@@ -390,7 +390,7 @@ public class USSDGroupUtil extends USSDUtil {
         }
 
         listMenu.addMenuOption(skippedSelection ? "start" : GROUP_MANAGER.toPath() + "start", getMessage(menuKey + "back", user));
-        listMenu.addMenuOption("start", getMessage(groupKeyForMessages,"menu", optionsKey+"back", user));
+       // listMenu.addMenuOption("start", getMessage(groupKeyForMessages,"menu", optionsKey+"back", user));
 
         return listMenu;
 

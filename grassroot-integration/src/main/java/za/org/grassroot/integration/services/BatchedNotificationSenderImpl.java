@@ -31,6 +31,7 @@ public class BatchedNotificationSenderImpl implements BatchedNotificationSender 
 			logger.debug("Sending {} registered notification(s)", notifications.size());
 		}
 		for (Notification notification : notifications) {
+			logger.info("notification time" + notification.getNextAttemptTime());
 			notificationService.sendNotification(notification.getUid());
 		}
 	}
