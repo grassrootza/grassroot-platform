@@ -381,7 +381,7 @@ public class USSDGroupUtil extends USSDUtil {
         } else {
             listMenu.addMenuOption(groupMenuWithId(unsubscribePrompt, groupUid), getMessage(menuKey + unsubscribePrompt, user));
         }
-        if (user.hasSafetyGroup()) {
+        if (user.hasSafetyGroup() && group.equals(user.getSafetyGroup())) {
             listMenu.addMenuOption(SAFETY_GROUP_MANAGER.toPath() + "start", getMessage(GROUP_MANAGER.toString() + ".safety.option", user));
         }
 
