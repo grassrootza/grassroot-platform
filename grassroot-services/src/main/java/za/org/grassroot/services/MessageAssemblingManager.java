@@ -177,7 +177,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         String fields[];
         String message;
         if(respondedTo){
-            fields = new String[]{safetyEvent.getActivatedBy().getDisplayName(),respondent.getDisplayName()};
+            fields = new String[]{respondent.getDisplayName(),safetyEvent.getActivatedBy().getDisplayName()};
             message = (!safetyEvent.isFalseAlarm())?messageSourceAccessor.getMessage("sms.safety.valid",fields,getUserLocale(user)):
                     messageSourceAccessor.getMessage("sms.safety.invalid",fields,getUserLocale(user));
         }else{

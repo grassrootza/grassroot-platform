@@ -391,7 +391,7 @@ public class USSDHomeController extends USSDController {
             menu = new USSDMenu(getMessage(thisSection, "safety.not-activated", promptKey, user));
             menu.addMenuOption(USSDSection.SAFETY_GROUP_MANAGER.toPath() + "pick-group", "Make existing group my safety group");
             menu.addMenuOption(USSDSection.SAFETY_GROUP_MANAGER.toPath() + "new-group", "Create new group");
-            menu.addMenuOption(path + startMenu, "Main menu");
+            menu.addMenuOption(startMenu, "Main menu");
         }
         return menu;
     }
