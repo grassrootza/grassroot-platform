@@ -363,7 +363,6 @@ public class USSDSafetyGroupController extends USSDController {
             URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
-        //Thank the user for replying
         String prompt = (responded) ? getMessage(thisSection, "response", promptKey + ".yes", user) : getMessage(thisSection, "response", promptKey + ".no", user);
         USSDMenu menu = new USSDMenu(prompt);
         if (responded) {
