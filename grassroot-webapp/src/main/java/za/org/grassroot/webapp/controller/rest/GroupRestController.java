@@ -34,6 +34,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.OK;
 
 /**
@@ -352,7 +353,31 @@ public class GroupRestController {
 		}
 	}
 
-    @RequestMapping(value = "/edit/rename/{phoneNumber}/{code}", method = RequestMethod.POST)
+	@RequestMapping(value = "/edit/multi/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.POST)
+	public ResponseEntity<ResponseWrapper> combinedEdits(@PathVariable String phoneNumber, @PathVariable String code,
+	                                                     @PathVariable String groupUid,
+	                                                     @RequestParam(value = "name", required = false) String name,
+	                                                     @RequestParam(value = "membersToRemove", required = false) List<String> membersToRemove) {
+		User user = userManagementService.findByInputNumber(phoneNumber);
+		Group group = groupBroker.load(groupUid);
+		try {
+			// todo : maybe combine several of these, to preserve atomicity
+			log.info("processing a couple of edits ... for group : " + group.getName());
+			if (membersToRemove != null && !membersToRemove.isEmpty()) {
+				groupBroker.removeMembers(user.getUid(), groupUid, new HashSet<>(membersToRemove));
+			}
+			if (name != null && !name.trim().isEmpty() && !name.equals(group.getGroupName())) {
+				groupBroker.updateName(user.getUid(), groupUid, name);
+			}
+			Group updatedGroup = groupBroker.load(group.getUid());
+			return RestUtil.okayResponseWithData(RestMessage.UPDATED, Collections.singletonList(createGroupWrapper(updatedGroup, user)));
+		} catch (AccessDeniedException e) {
+			return RestUtil.errorResponse(HttpStatus.FORBIDDEN, RestMessage.PERMISSION_DENIED);
+		}
+	}
+
+
+	@RequestMapping(value = "/edit/rename/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> renameGroup(@PathVariable String phoneNumber, @PathVariable String code,
                                                        @RequestParam String groupUid, @RequestParam String name) {
 

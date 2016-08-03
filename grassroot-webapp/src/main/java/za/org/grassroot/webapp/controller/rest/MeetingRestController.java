@@ -148,7 +148,6 @@ public class MeetingRestController {
         } else {
             responseWrapper = new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.PAST_DUE, RestStatus.FAILURE);
         }
-
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
     }
 
