@@ -162,6 +162,24 @@ public class USSDGroupUtil extends USSDUtil {
         return menu;
     }
 
+    public USSDMenu showUserCreatedGroupsForSafetyFeature(User user, USSDSection section, String urlForExistingGroups, Integer pageNumber) throws URISyntaxException {
+
+        GroupPage groupsPartOf = new GroupPage(groupBroker.fetchUserCreatedGroups(user), pageNumber, PAGE_LENGTH);
+        final String prompt = getMessage(section, groupKeyForMessages, promptKey + ".existing", user);
+        USSDMenu menu = new USSDMenu(prompt);
+        menu = addListOfGroupsToMenu(menu, section, urlForExistingGroups, groupsPartOf.getContent(), user);
+        if (groupsPartOf.hasNext())
+            menu.addMenuOption(USSDUrlUtil.paginatedGroupUrl(prompt, urlForExistingGroups, null, pageNumber + 1),
+                    "More groups");
+        if (groupsPartOf.hasPrevious()) {
+            menu.addMenuOption(USSDUrlUtil.paginatedGroupUrl(prompt, urlForExistingGroups, null, pageNumber - 1), "Back");
+        } else {
+            menu.addMenuOption(section.toPath() + "start", "Back");
+        }
+        return menu;
+
+    }
+
     // helper method which will use some defaults
     public USSDMenu askForGroupWithoutNewOption(User user, USSDSection section, String menuIfExisting) throws URISyntaxException {
         final String promptIfExisting = getMessage(section, groupKeyForMessages, promptKey, user);
@@ -220,7 +238,7 @@ public class USSDGroupUtil extends USSDUtil {
         if (USSDSection.GROUP_MANAGER.equals(section) && (!groupBroker.fetchGroupsWithOneCharNames(user, 2).isEmpty())) {
             menu.addMenuOption(section.toPath() + "clean", getMessage(groupKeyForMessages, "clean", "option", user));
         }
-        menu.addMenuOption("start", getMessage(groupKeyForMessages,"menu", optionsKey +"back", user));
+        menu.addMenuOption("start", getMessage(groupKeyForMessages, "menu", optionsKey + "back", user));
 
         return menu;
     }
@@ -390,7 +408,7 @@ public class USSDGroupUtil extends USSDUtil {
         }
 
         listMenu.addMenuOption(skippedSelection ? "start" : GROUP_MANAGER.toPath() + "start", getMessage(menuKey + "back", user));
-       // listMenu.addMenuOption("start", getMessage(groupKeyForMessages,"menu", optionsKey+"back", user));
+        // listMenu.addMenuOption("start", getMessage(groupKeyForMessages,"menu", optionsKey+"back", user));
 
         return listMenu;
 

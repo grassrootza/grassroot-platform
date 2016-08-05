@@ -1,6 +1,7 @@
 package za.org.grassroot.services;
 
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.GroupDefaultImage;
@@ -121,6 +122,8 @@ public interface GroupBroker {
     List<Event> retrieveGroupEvents(Group group, EventType eventType, Instant periodStart, Instant periodEnd);
 
     List<Group> fetchGroupsWithOneCharNames(User creatingUser, int sizeThreshold);
+
+    List<GroupDTO> fetchUserCreatedGroups(User user);
 
     void calculateGroupLocation(String groupUid, LocalDate localDate);
 

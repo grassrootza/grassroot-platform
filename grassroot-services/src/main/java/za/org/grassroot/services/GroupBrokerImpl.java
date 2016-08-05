@@ -14,6 +14,7 @@ import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.core.domain.notification.EventInfoNotification;
+import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
@@ -1162,6 +1163,15 @@ public class GroupBrokerImpl implements GroupBroker {
 				.filter(group -> group.getMembers().size() <= sizeThreshold)
 				.sorted(Collections.reverseOrder())
 				.collect(Collectors.toList());
+    }
+
+    @Override
+    public List<GroupDTO> fetchUserCreatedGroups(User user) {
+        Objects.nonNull(user);
+        List<Group> groups = groupRepository.findByMembershipsUserAndActiveTrue(user);
+        return groups.stream().filter(group -> group.getCreatedByUser().equals(user))
+                .map(GroupDTO::new).collect(Collectors.toList());
+
     }
 
     @Override

@@ -100,9 +100,7 @@ public class USSDSafetyGroupController extends USSDController {
     public Request pickSafetyGroup(@RequestParam String msisdn) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(msisdn);
-        USSDMenu menu = ussdGroupUtil.askForGroupAllowCreateNew(user, thisSection, pickGroup + doSuffix, newGroup,
-                createGroupMenu, null);
-
+        USSDMenu menu = ussdGroupUtil.showUserCreatedGroupsForSafetyFeature(user, thisSection, pickGroup + doSuffix, 0);
         return menuBuilder(menu);
     }
 

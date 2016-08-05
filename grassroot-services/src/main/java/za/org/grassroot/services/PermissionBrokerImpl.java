@@ -29,69 +29,69 @@ public class PermissionBrokerImpl implements PermissionBroker {
 
     private static final Set<Permission> defaultOrdinaryMemberPermissions =
             constructPermissionSet(Collections.emptySet(),
-                                   Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS,
-                                   Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING,
-                                   Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE,
-                                   Permission.GROUP_PERMISSION_READ_UPCOMING_EVENTS,
-                                   Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS,
-                                   Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY,
-                                   Permission.GROUP_PERMISSION_CLOSE_OPEN_LOGBOOK);
+                    Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS,
+                    Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING,
+                    Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE,
+                    Permission.GROUP_PERMISSION_READ_UPCOMING_EVENTS,
+                    Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS,
+                    Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY,
+                    Permission.GROUP_PERMISSION_CLOSE_OPEN_LOGBOOK);
 
     private static final Set<Permission> defaultCommitteeMemberPermissions =
             constructPermissionSet(defaultOrdinaryMemberPermissions,
-                                   Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER,
-                                   Permission.GROUP_PERMISSION_FORCE_ADD_MEMBER,
-                                   Permission.GROUP_PERMISSION_CREATE_SUBGROUP,
-                                   Permission.GROUP_PERMISSION_AUTHORIZE_SUBGROUP,
-                                   Permission.GROUP_PERMISSION_DELEGATE_SUBGROUP_CREATION);
+                    Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER,
+                    Permission.GROUP_PERMISSION_FORCE_ADD_MEMBER,
+                    Permission.GROUP_PERMISSION_CREATE_SUBGROUP,
+                    Permission.GROUP_PERMISSION_AUTHORIZE_SUBGROUP,
+                    Permission.GROUP_PERMISSION_DELEGATE_SUBGROUP_CREATION);
 
     private static final Set<Permission> defaultGroupOrganizerPermissions =
             constructPermissionSet(defaultCommitteeMemberPermissions,
-                                   Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER,
-                                   Permission.GROUP_PERMISSION_AUTHORIZE_SUBGROUP,
-                                   Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER,
-                                   Permission.GROUP_PERMISSION_FORCE_ADD_MEMBER,
-                                   Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS,
-                                   Permission.GROUP_PERMISSION_DELINK_SUBGROUP,
-                                   Permission.GROUP_PERMISSION_FORCE_DELETE_MEMBER,
-                                   Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE,
-                                   Permission.GROUP_PERMISSION_FORCE_PERMISSION_CHANGE);
+                    Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER,
+                    Permission.GROUP_PERMISSION_AUTHORIZE_SUBGROUP,
+                    Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER,
+                    Permission.GROUP_PERMISSION_FORCE_ADD_MEMBER,
+                    Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS,
+                    Permission.GROUP_PERMISSION_DELINK_SUBGROUP,
+                    Permission.GROUP_PERMISSION_FORCE_DELETE_MEMBER,
+                    Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE,
+                    Permission.GROUP_PERMISSION_FORCE_PERMISSION_CHANGE);
 
     // closed group structure ... again, externalize
     private static final Set<Permission> closedOrdinaryMemberPermissions =
             constructPermissionSet(Collections.emptySet(),
-                                   Permission.GROUP_PERMISSION_READ_UPCOMING_EVENTS);
+                    Permission.GROUP_PERMISSION_READ_UPCOMING_EVENTS);
 
     private static final Set<Permission> closedCommitteeMemberPermissions =
             constructPermissionSet(defaultOrdinaryMemberPermissions,
-                                   Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS,
-                                   Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING,
-                                   Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE,
-                                   Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS,
-                                   Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY,
-                                   Permission.GROUP_PERMISSION_CLOSE_OPEN_LOGBOOK);
+                    Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS,
+                    Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING,
+                    Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE,
+                    Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS,
+                    Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY,
+                    Permission.GROUP_PERMISSION_CLOSE_OPEN_LOGBOOK);
 
     private static final Set<Permission> closedGroupOrganizerPermissions =
             constructPermissionSet(defaultCommitteeMemberPermissions,
-                                   Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER,
-                                   Permission.GROUP_PERMISSION_FORCE_ADD_MEMBER,
-                                   Permission.GROUP_PERMISSION_CREATE_SUBGROUP,
-                                   Permission.GROUP_PERMISSION_AUTHORIZE_SUBGROUP,
-                                   Permission.GROUP_PERMISSION_DELEGATE_SUBGROUP_CREATION,
-                                   Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER,
-                                   Permission.GROUP_PERMISSION_FORCE_ADD_MEMBER,
-                                   Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS,
-                                   Permission.GROUP_PERMISSION_DELINK_SUBGROUP,
-                                   Permission.GROUP_PERMISSION_FORCE_DELETE_MEMBER,
-                                   Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE,
-                                   Permission.GROUP_PERMISSION_FORCE_PERMISSION_CHANGE);
+                    Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER,
+                    Permission.GROUP_PERMISSION_FORCE_ADD_MEMBER,
+                    Permission.GROUP_PERMISSION_CREATE_SUBGROUP,
+                    Permission.GROUP_PERMISSION_AUTHORIZE_SUBGROUP,
+                    Permission.GROUP_PERMISSION_DELEGATE_SUBGROUP_CREATION,
+                    Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER,
+                    Permission.GROUP_PERMISSION_FORCE_ADD_MEMBER,
+                    Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS,
+                    Permission.GROUP_PERMISSION_DELINK_SUBGROUP,
+                    Permission.GROUP_PERMISSION_FORCE_DELETE_MEMBER,
+                    Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE,
+                    Permission.GROUP_PERMISSION_FORCE_PERMISSION_CHANGE);
 
     // a couple of permissions that we don't let users remove from organizers (since then no one can change them)
     private static final Set<Permission> protectedOrganizerPermissions =
             constructPermissionSet(Collections.emptySet(),
-                                   Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS,
-                                   Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE,
-                                   Permission.GROUP_PERMISSION_FORCE_PERMISSION_CHANGE);
+                    Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS,
+                    Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE,
+                    Permission.GROUP_PERMISSION_FORCE_PERMISSION_CHANGE);
 
 
     private static final Set<Permission> constructPermissionSet(Set<Permission> baseSet, Permission... permissions) {
@@ -138,7 +138,7 @@ public class PermissionBrokerImpl implements PermissionBroker {
     public boolean isGroupPermissionAvailable(User user, Group group, Permission requiredPermission) {
         return user.getMemberships().stream().anyMatch(membership ->
                 membership.getGroup().equals(group) &&
-                (requiredPermission == null || membership.getRole().getPermissions().contains(requiredPermission)));
+                        (requiredPermission == null || membership.getRole().getPermissions().contains(requiredPermission)));
     }
 
     @Override
@@ -156,18 +156,19 @@ public class PermissionBrokerImpl implements PermissionBroker {
         return new GroupPage(getActiveGroupDTOs(user, requiredPermission), pageNumber, pageSize);
     }
 
+
     @Override
     @Transactional(readOnly = true)
     public List<GroupDTO> getActiveGroupDTOs(User user, Permission requiredPermission) {
 
         // we use a list here because the sorting matter
-        List<Object[]> listObjArray =  groupRepository.findActiveUserGroupsOrderedByRecentEvent(user.getId());
+        List<Group> groups = groupRepository.findActiveUserGroupsOrderedByRecentActivity(user.getId());
         final boolean filterByPermission = (requiredPermission != null);
 
         // todo: the permission checking version of this defeats some of the purpose, by getting all the groups anyway, so, rethink
         List<GroupDTO> list = new ArrayList<>();
-        for (Object[] objArray : listObjArray) {
-            GroupDTO groupDTO = new GroupDTO(objArray);
+        for (Group group : groups) {
+            GroupDTO groupDTO = new GroupDTO(group);
             if (filterByPermission) {
                 for (Membership membership : user.getMemberships()) {
                     if (membership.getGroup().getUid().equals(groupDTO.getUid()) && membership.getRole().getPermissions().contains(requiredPermission))
@@ -179,6 +180,7 @@ public class PermissionBrokerImpl implements PermissionBroker {
         }
 
         return list;
+
     }
 
     @Override

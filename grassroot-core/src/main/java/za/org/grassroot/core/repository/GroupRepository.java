@@ -25,6 +25,7 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
 
     Group findOneByUid(String uid);
 
+
     Group findOneByImageUrl(String imageUrl);
 
     /*
@@ -104,6 +105,15 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
 
     @Query(value = "Select * from getusergroupswithsize(?1) where active = true" , nativeQuery = true)
     List<Object[]> findActiveUserGroupsOrderedByRecentEvent(Long userId);
+
+    @Query(value ="SELECT group_profile.*, greatest(latest_group_change, latest_event) as latest_activity from group_profile " +
+            " left join group_user_membership membership on (group_profile.id = membership.group_id and group_profile.active=true and membership.user_id=?1) " +
+            "  left outer join" +
+            " (select group_id, max(created_date_time) as latest_group_change from group_log group by group_id) as group_log on (group_log.group_id=group_profile.id) " +
+            "  left outer join" +
+            "   (select parent_group_id, max(created_date_time) as latest_event from event group by parent_group_id) as event on (event.parent_group_id=group_profile.id) order by latest_activity desc; " +
+            "     ", nativeQuery = true)
+    List<Group> findActiveUserGroupsOrderedByRecentActivity(Long userId);
 
     @Query(value = "SELECT g FROM Group g WHERE g.active = true AND g.id IN (SELECT gl.group.id FROM GroupLog gl WHERE (gl.createdDateTime BETWEEN ?1 AND ?2) AND gl.groupLogType = za.org.grassroot.core.enums.GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE)")
     List<Group> findGroupsWhereJoinCodeUsedBetween(Instant periodStart, Instant periodEnd);
