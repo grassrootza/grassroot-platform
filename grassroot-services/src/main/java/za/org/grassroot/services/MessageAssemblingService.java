@@ -2,6 +2,7 @@ package za.org.grassroot.services;
 
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
+import za.org.grassroot.core.enums.EventRSVPResponse;
 
 import java.util.List;
 import java.util.Locale;
@@ -16,6 +17,8 @@ public interface MessageAssemblingService {
     String createEventChangedMessage(User user, Event event);
 
     String createEventCancelledMessage(User user, Event event);
+
+    String createEventResponseMessage(User user, Event event, EventRSVPResponse rsvpResponse);
 
     String createLogBookReminderMessage(User user, LogBook logBook);
 
