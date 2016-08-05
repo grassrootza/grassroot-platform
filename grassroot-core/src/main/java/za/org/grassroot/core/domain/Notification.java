@@ -74,6 +74,9 @@ public abstract class Notification implements Serializable {
 	@Column(name = "message")
 	protected String message;
 
+	@Transient
+	public int priority;
+
 	public abstract NotificationType getNotificationType();
 
 	protected Notification() {
@@ -189,6 +192,9 @@ public abstract class Notification implements Serializable {
 		return DEFAULT_PRIORITY;
 	};
 
+	public void setPriority(int priority){
+		this.priority = priority;
+	}
 	/**
 	 * Locale utilities
 	 */

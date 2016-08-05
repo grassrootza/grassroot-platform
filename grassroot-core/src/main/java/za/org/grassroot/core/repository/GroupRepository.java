@@ -107,7 +107,7 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     List<Object[]> findActiveUserGroupsOrderedByRecentEvent(Long userId);
 
     @Query(value ="SELECT group_profile.*, greatest(latest_group_change, latest_event) as latest_activity from group_profile " +
-            " left join group_user_membership membership on (group_profile.id = membership.group_id and group_profile.active=true and membership.user_id=?1) " +
+            " inner join group_user_membership as membership on (group_profile.id = membership.group_id and group_profile.active=true and membership.user_id=?1) " +
             "  left outer join" +
             " (select group_id, max(created_date_time) as latest_group_change from group_log group by group_id) as group_log on (group_log.group_id=group_profile.id) " +
             "  left outer join" +

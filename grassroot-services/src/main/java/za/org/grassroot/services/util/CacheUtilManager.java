@@ -16,6 +16,7 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Created by aakilomar on 11/2/15.
@@ -93,10 +94,11 @@ public class CacheUtilManager implements CacheUtilService {
     public List<SafetyEvent> getOutstandingSafetyEventResponseForUser(User user) {
         List<SafetyEvent> outstandingSafetyEvents = null;
         Cache cache = cacheManager.getCache("userSafetyEvents");
-        //user uid is cache key in this case;
         String cacheKey = user.getUid();
         try{
-            outstandingSafetyEvents = (List<SafetyEvent>) cache.get(cacheKey).getObjectValue();
+            if(cache.isKeyInCache(cacheKey)) {
+                outstandingSafetyEvents = (List<SafetyEvent>) cache.get(cacheKey).getObjectValue();
+            }
         }
         catch (Exception e){
            log.info("Could not retrieve outstanding events for user {}", user.getPhoneNumber());

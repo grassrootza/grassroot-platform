@@ -6,12 +6,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.notification.EventInfoNotification;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.util.CacheUtilService;
+import za.org.grassroot.services.util.LogsAndNotificationsBroker;
+import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
 import java.util.List;
@@ -38,6 +42,13 @@ public class EventLogManager implements EventLogManagementService {
 
     @Autowired
     GroupRepository groupRepository;
+
+
+    @Autowired
+    private LogsAndNotificationsBroker logsAndNotificationsBroker;
+
+    @Autowired
+    private MessageAssemblingService messageAssemblingService;
 
     @Autowired
     CacheUtilService cacheUtilService;
@@ -71,10 +82,10 @@ public class EventLogManager implements EventLogManagementService {
     @Transactional
     public void rsvpForEvent(Event event, User user, EventRSVPResponse rsvpResponse) {
         log.trace("rsvpForEvent...event..." + event.getId() + "...user..." + user.getPhoneNumber() +
-                          "...rsvp..." + rsvpResponse.toString());
+                "...rsvp..." + rsvpResponse.toString());
 
-        if (!userRsvpForEvent(event,user)) {
-            createEventLog(EventLogType.RSVP, event.getUid(), user.getUid(), rsvpResponse.toString());
+        if (!userRsvpForEvent(event, user)) {
+            EventLog eventLog = createEventLog(EventLogType.RSVP, event.getUid(), user.getUid(), rsvpResponse.toString());
             // clear rsvp cache for user
             cacheUtilService.clearRsvpCacheForUser(user, event.getEventType());
 
@@ -88,6 +99,10 @@ public class EventLogManager implements EventLogManagementService {
                     log.info("rsvpForEvent...everyone has voted... sending out results for {}", event.getName());
                     event.setEventStartDateTime(Instant.now());
                 }
+            } else {
+                generateEventResponseMessage(event, eventLog, rsvpResponse);
+
+
             }
         } else if (event.getEventStartDateTime().isAfter(Instant.now())) {
             // allow the user to change their rsvp / vote as long as meeting is open
@@ -95,7 +110,10 @@ public class EventLogManager implements EventLogManagementService {
             eventLog.setMessage(rsvpResponse.toString());
             log.info("rsvpForEvent... changing response to {} on eventLog {}", rsvpResponse.toString(), eventLog);
             eventLogRepository.saveAndFlush(eventLog); // todo: shouldn't need this, but it's not persisting (cleaning needed)
+            generateEventResponseMessage(event, eventLog, rsvpResponse);
+
         }
+
     }
 
     @Override
@@ -134,6 +152,17 @@ public class EventLogManager implements EventLogManagementService {
         }
         log.info("getVoteResultsForEvent...returning..." + totals.toString());
         return totals;
+    }
+
+    private void generateEventResponseMessage(Event event, EventLog eventLog, EventRSVPResponse rsvpResponse) {
+        if (event.getCreatedByUser().getMessagingPreference().equals(UserMessagingPreference.ANDROID_APP)) {
+            String message = messageAssemblingService.createEventResponseMessage(event.getCreatedByUser(), event, rsvpResponse);
+            Notification notification = new EventInfoNotification(event.getCreatedByUser(), message, eventLog);
+            notification.setPriority(0); //todo use ordinal value of alertpreference constant or create an enum for priority values?
+            LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+            bundle.addNotification(notification);
+            logsAndNotificationsBroker.storeBundle(bundle);
+        }
     }
 
 //    private void recursiveTotalsAdd(Event event, Group parentGroup, ResponseTotalsDTO rsvpTotalsDTO ) {
