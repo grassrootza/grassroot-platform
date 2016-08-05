@@ -25,9 +25,9 @@ public class GroupDTO {
         this.active = group.isActive();
         this.created_date_time = group.getCreatedDateTime();
         this.groupName = group.getGroupName();
-        this.group_size = -1;
+        this.group_size = group.getMembers().size();
         this.description = group.getDescription();
-        // we leave out group size as, if we need it, then use the query
+        
     }
 
     private GroupDTO(){

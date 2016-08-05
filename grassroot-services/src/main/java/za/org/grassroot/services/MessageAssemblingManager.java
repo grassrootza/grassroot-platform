@@ -155,11 +155,11 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         String[] fields;
         String message;
         if(address!=null) {
-            fields = new String[]{requestor.getDisplayName(), address.getHouseNumber(), address.getStreetName(), address.getTown()};
+            fields = new String[]{requestor.nameToDisplay(), address.getHouseNumber(), address.getStreetName(), address.getTown()};
             message = (reminder) ? messageSourceAccessor.getMessage("sms.safety.reminder", fields, getUserLocale(requestor)):
                     messageSourceAccessor.getMessage("sms.safety.new", fields, getUserLocale(requestor));
         }else{
-            fields = new String[]{requestor.getDisplayName()};
+            fields = new String[]{requestor.nameToDisplay()};
             message = (reminder) ? messageSourceAccessor.getMessage("sms.safety.reminder.nolocation", fields, getUserLocale(requestor)) :
                     messageSourceAccessor.getMessage("sms.safety.new.nolocation", fields, getUserLocale(requestor));
         }
@@ -177,12 +177,12 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         String fields[];
         String message;
         if(respondedTo){
-            fields = new String[]{respondent.getDisplayName(),safetyEvent.getActivatedBy().getDisplayName()};
+            fields = new String[]{respondent.nameToDisplay(),safetyEvent.getActivatedBy().getDisplayName()};
             message = (!safetyEvent.isFalseAlarm())?messageSourceAccessor.getMessage("sms.safety.valid",fields,getUserLocale(user)):
                     messageSourceAccessor.getMessage("sms.safety.invalid",fields,getUserLocale(user));
         }else{
             //todo trigger this message after an hour if the safetyevent was not responded to
-            fields = new String[]{safetyEvent.getActivatedBy().getDisplayName()};
+            fields = new String[]{safetyEvent.getActivatedBy().nameToDisplay()};
             message = messageSourceAccessor.getMessage("sms.safety.noresponse",fields,getUserLocale(user));
         }
         return message;
@@ -252,10 +252,12 @@ public class MessageAssemblingManager implements MessageAssemblingService {
             location = meeting.getEventLocation();
         }
 
+        String message = event.getName();
+        message = (message.contains("&"))?message.replace("&", "and"):message;
         String[] eventVariables = new String[]{
                 salutation,
                 event.getCreatedByUser().nameToDisplay(),
-                event.getName(),
+                message,
                 location,
                 dateString,
                 FormatUtil.formatDoubleToString(yes),

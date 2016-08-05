@@ -241,7 +241,6 @@ public class USSDMeetingController extends USSDController {
         // todo: add error and exception handling
 
         User user = userManager.findByInputNumber(inputNumber, saveMeetingMenu(placeMenu, mtgRequestUid, revising));
-        userInput = userInput.replace("&", "and");
         if (!interrupted) eventUtil.updateEventRequest(user.getUid(), mtgRequestUid, priorMenu, userInput);
 
         String promptMessage = getMessage(thisSection, placeMenu, promptKey, user);
