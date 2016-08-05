@@ -101,7 +101,8 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
                 .addPathPatterns("/api/vote/**")
                 .addPathPatterns("/api/meeting/**")
                 .addPathPatterns("/api/notification")
-                .excludePathPatterns("/api/group/search");
+                .excludePathPatterns("/api/group/search")
+                .excludePathPatterns("/api/language/test/**");
     }
 
     @Override

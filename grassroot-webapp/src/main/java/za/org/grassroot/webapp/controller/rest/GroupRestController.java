@@ -357,17 +357,36 @@ public class GroupRestController {
 	public ResponseEntity<ResponseWrapper> combinedEdits(@PathVariable String phoneNumber, @PathVariable String code,
 	                                                     @PathVariable String groupUid,
 	                                                     @RequestParam(value = "name", required = false) String name,
-	                                                     @RequestParam(value = "membersToRemove", required = false) List<String> membersToRemove) {
+	                                                     @RequestParam(value = "resetImage", required = false) boolean resetToDefaultImage,
+	                                                     @RequestParam(value = "dfltImageName", required = false) GroupDefaultImage defaultImage,
+	                                                     @RequestParam(value = "changePublicPrivate", required = false) boolean changePublicPrivate,
+	                                                     @RequestParam(value = "isPublic", required = false) boolean isPublic,
+	                                                     @RequestParam(value = "closeJoinCode", required = false) boolean closeJoinCode,
+	                                                     @RequestParam(value = "membersToRemove", required = false) List<String> membersToRemove,
+	                                                     @RequestParam(value = "organizersToAdd", required = false) List<String> organizersToAdd) {
+
 		User user = userManagementService.findByInputNumber(phoneNumber);
 		Group group = groupBroker.load(groupUid);
+		// todo : combine several of these, to preserve atomicity, and increase speed, though note this is a low-use-case (but still)
 		try {
-			// todo : maybe combine several of these, to preserve atomicity
 			log.info("processing a couple of edits ... for group : " + group.getName());
 			if (membersToRemove != null && !membersToRemove.isEmpty()) {
 				groupBroker.removeMembers(user.getUid(), groupUid, new HashSet<>(membersToRemove));
 			}
 			if (name != null && !name.trim().isEmpty() && !name.equals(group.getGroupName())) {
 				groupBroker.updateName(user.getUid(), groupUid, name);
+			}
+			if (resetToDefaultImage) {
+				groupBroker.setGroupImageToDefault(user.getUid(), groupUid, defaultImage, true);
+			}
+			if (changePublicPrivate) {
+				groupBroker.updateDiscoverable(user.getUid(), groupUid, isPublic, user.getPhoneNumber());
+			}
+			if (closeJoinCode) {
+				groupBroker.closeJoinToken(user.getUid(), groupUid);
+			}
+			if (organizersToAdd != null && !organizersToAdd.isEmpty()) {
+				groupBroker.updateMembersToRole(user.getUid(), groupUid, new HashSet<>(organizersToAdd), BaseRoles.ROLE_GROUP_ORGANIZER);
 			}
 			Group updatedGroup = groupBroker.load(group.getUid());
 			return RestUtil.okayResponseWithData(RestMessage.UPDATED, Collections.singletonList(createGroupWrapper(updatedGroup, user)));

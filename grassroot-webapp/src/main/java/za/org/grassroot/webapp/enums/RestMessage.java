@@ -95,6 +95,9 @@ public enum RestMessage {
 
     UPLOADED,
     PICTURE_REMOVED,
-    PICTURE_NOT_FOUND;
+    PICTURE_NOT_FOUND,
+
+    DATE_TIME_PARSED,
+    DATE_TIME_FAILED
 
 }

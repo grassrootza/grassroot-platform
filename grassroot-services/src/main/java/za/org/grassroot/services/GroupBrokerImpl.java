@@ -460,6 +460,27 @@ public class GroupBrokerImpl implements GroupBroker {
 
     @Override
     @Transactional
+    public void updateMembersToRole(String userUid, String groupUid, Set<String> memberUids, String roleName) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+        Objects.requireNonNull(memberUids);
+
+        if (memberUids.contains(userUid))
+            throw new IllegalArgumentException("A user cannot change ther own role: memberUid = " + userUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+
+        Role newRole = group.getRole(roleName);
+        group.getMemberships().stream()
+                .filter(membership -> memberUids.contains(membership.getUser().getUid()))
+                .forEach(m -> m.setRole(newRole));
+    }
+
+    @Override
+    @Transactional
     public void updateMembers(String userUid, String groupUid, Set<MembershipInfo> modifiedMembers) {
 
         // note: a simpler way to do this might be to in effect replace the members, but then will create issues with logging
