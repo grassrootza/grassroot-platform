@@ -13,27 +13,23 @@ import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.dto.TaskDTO;
-import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.services.*;
+import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.webapp.enums.RestMessage;
-import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.MeetingRsvpsDTO;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.EventWrapper;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
 import za.org.grassroot.webapp.util.LocalDateTimePropertyEditor;
+import za.org.grassroot.webapp.util.RestUtil;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.Set;
-
-import static za.org.grassroot.core.util.DateTimeUtil.getPreferredRestFormat;
 
 /**
  * Created by paballo on 2016/03/21.
@@ -94,15 +90,15 @@ public class MeetingRestController {
         EventReminderType reminderType = reminderMinutes == -1 ? EventReminderType.GROUP_CONFIGURED : EventReminderType.CUSTOM;
 
         // todo : decide what to do with event reminder types
-        Meeting meeting = eventBroker.createMeeting(user.getUid(), parentUid, JpaEntityType.GROUP, title, eventStartDateTime,
-                                                    location, false, true, false, reminderType, reminderMinutes, description,
-                                                    assignedMemberUids);
-        TaskDTO createdMeeting = taskBroker.load(user.getUid(), meeting.getUid(), TaskType.MEETING);
-
-        ResponseWrapper responseWrapper = new GenericResponseWrapper(HttpStatus.CREATED, RestMessage.MEETING_CREATED,
-                                                                     RestStatus.SUCCESS, Collections.singletonList(createdMeeting));
-
-        return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
+        try {
+            Meeting meeting = eventBroker.createMeeting(user.getUid(), parentUid, JpaEntityType.GROUP, title, eventStartDateTime,
+                    location, false, true, false, reminderType, reminderMinutes, description,
+                    assignedMemberUids);
+            TaskDTO createdMeeting = taskBroker.load(user.getUid(), meeting.getUid(), TaskType.MEETING);
+            return RestUtil.okayResponseWithData(RestMessage.MEETING_CREATED, Collections.singletonList(createdMeeting));
+        } catch (EventStartTimeNotInFutureException e) {
+	        return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.TIME_CANNOT_BE_IN_THE_PAST);
+        }
     }
 
     @RequestMapping(value = "/update/{phoneNumber}/{code}/{meetingUid}", method = RequestMethod.POST)
@@ -123,6 +119,7 @@ public class MeetingRestController {
             TaskDTO updatedTask =  taskBroker.load(user.getUid(), meetingUid, TaskType.MEETING);
             responseEntity = new ResponseEntity<>(updatedTask, HttpStatus.OK);
         } catch (IllegalStateException e) {
+		    // todo : need this to be more intelligent
             responseEntity = new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
@@ -137,20 +134,18 @@ public class MeetingRestController {
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         Meeting meeting = eventBroker.loadMeeting(meetingUid);
         String trimmedResponse = response.toLowerCase().trim();
-        ResponseWrapper responseWrapper;
+        ResponseEntity<ResponseWrapper> responseWrapper;
         if (meeting.isCanceled()) {
-            responseWrapper = new ResponseWrapperImpl(HttpStatus.NOT_FOUND, RestMessage.MEETING_CANCELLED, RestStatus.FAILURE);
+	        responseWrapper = RestUtil.errorResponse(HttpStatus.CONFLICT, RestMessage.MEETING_ALREADY_CANCELLED);
         } else if (isOpen(meeting)) {
             eventLogManagementService.rsvpForEvent(meeting, user, EventRSVPResponse.fromString(trimmedResponse));
             TaskDTO updatedTask = taskBroker.load(user.getUid(), meetingUid, TaskType.MEETING);
-            responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.RSVP_SENT,
-                                                         RestStatus.SUCCESS, Collections.singletonList(updatedTask));
+            responseWrapper = RestUtil.okayResponseWithData(RestMessage.RSVP_SENT, Collections.singletonList(updatedTask));
         } else {
-            responseWrapper = new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.PAST_DUE, RestStatus.FAILURE);
+            responseWrapper = RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.PAST_DUE);
         }
-        return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
+        return responseWrapper;
     }
-
 
     @RequestMapping(value = "/view/{id}/{phoneNumber}/{code}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> view(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code, @PathVariable("id") String id) {
@@ -158,10 +153,7 @@ public class MeetingRestController {
         Meeting meeting = eventBroker.loadMeeting(id);
         ResponseTotalsDTO totals = eventLogManagementService.getResponseCountForEvent(meeting);
         EventWrapper eventWrapper = new EventWrapper(meeting, user, totals, eventLogRepository);
-        ResponseWrapper responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.MEETING_DETAILS, RestStatus.SUCCESS,
-                eventWrapper);
-
-        return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
+	    return RestUtil.okayResponseWithData(RestMessage.MEETING_DETAILS, eventWrapper);
     }
 
     @RequestMapping(value = "/rsvps/{phoneNumber}/{code}/{meetingUid}", method = RequestMethod.GET)
@@ -188,23 +180,22 @@ public class MeetingRestController {
     }
 
     @RequestMapping(value = "/cancel/{phoneNumber}/{code}", method = RequestMethod.POST)
-    public ResponseEntity<ResponseWrapper> cancelVote(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code, @RequestParam("uid") String meetingUid){
+    public ResponseEntity<ResponseWrapper> cancelMeeting(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code, @RequestParam("uid") String meetingUid){
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         String userUid = user.getUid();
         Event event = eventBroker.load(meetingUid);
-        ResponseWrapper responseWrapper;
+        ResponseEntity<ResponseWrapper> responseWrapper;
         if(!event.isCanceled()){
             eventBroker.cancel(userUid,meetingUid);
-            responseWrapper = new  ResponseWrapperImpl(HttpStatus.OK, RestMessage.MEETING_CANCELLED, RestStatus.SUCCESS);
+            responseWrapper = RestUtil.messageOkayResponse(RestMessage.MEETING_CANCELLED);
         }else{
-            responseWrapper = new  ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.MEETING_ALREADY_CANCELLED, RestStatus.FAILURE);
+            responseWrapper = RestUtil.errorResponse(HttpStatus.CONFLICT, RestMessage.MEETING_ALREADY_CANCELLED);
         }
-        return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
+        return responseWrapper;
     }
 
     private boolean isOpen(Event event) {
-        return event.getEventStartDateTime().isAfter(Instant.now());
+	    return event.getEventStartDateTime().isAfter(Instant.now());
     }
-
 
 }

@@ -49,6 +49,9 @@ public class TaskBrokerImpl implements TaskBroker {
     @Autowired
     private TodoBroker todoBroker;
 
+    @Autowired
+    private PermissionBroker permissionBroker;
+
     @Override
     @Transactional(readOnly = true)
     public TaskDTO load(String userUid, String taskUid, TaskType type) {
@@ -112,6 +115,8 @@ public class TaskBrokerImpl implements TaskBroker {
 
         User user = userRepository.findOneByUid(userUid);
         Group group = groupBroker.load(groupUid);
+
+        permissionBroker.validateGroupPermission(user, group, null);
 
         Set<String> removedUids = new HashSet<>();
 

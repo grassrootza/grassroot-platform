@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.GroupDefaultImage;
+import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.RequestorAlreadyPartOfGroupException;
@@ -34,7 +35,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.OK;
 
 /**
@@ -111,7 +111,11 @@ public class GroupRestController {
 				return RestUtil.okayResponseWithData(RestMessage.GROUP_CREATED, groupWrappers);
 			} catch (RuntimeException e) {
 				log.error("Error occurred while creating group: " + e.getMessage(), e);
-				return RestUtil.errorResponse(BAD_REQUEST, RestMessage.GROUP_NOT_CREATED);
+				if (e instanceof InvalidPhoneNumberException) {
+					return RestUtil.errorResponseWithData(RestMessage.GROUP_BAD_PHONE_NUMBER, e.getMessage());
+				} else {
+					return RestUtil.errorResponse(BAD_REQUEST, RestMessage.GROUP_NOT_CREATED);
+				}
 			}
 		}
 	}
@@ -285,13 +289,23 @@ public class GroupRestController {
         log.info("membersReceived = {}", membersToAdd != null ? membersToAdd.toString() : "null");
 
         if (membersToAdd != null && !membersToAdd.isEmpty()) {
-            groupBroker.addMembers(user.getUid(), group.getUid(), membersToAdd, false);
+            try {
+	            groupBroker.addMembers(user.getUid(), group.getUid(), membersToAdd, false);
+	            Group updatedGroup = groupBroker.load(groupUid);
+	            List<GroupResponseWrapper> groupWrapper = Collections.singletonList(createGroupWrapper(updatedGroup, user));
+	            log.info("returning with members: " + groupWrapper.get(0).printMembers());
+	            return RestUtil.okayResponseWithData(RestMessage.MEMBERS_ADDED, groupWrapper);
+            } catch (Exception e) {
+	            if (e instanceof InvalidPhoneNumberException) {
+		            return RestUtil.errorResponseWithData(RestMessage.GROUP_BAD_PHONE_NUMBER, e.getMessage());
+	            } else {
+		            return RestUtil.errorResponse(BAD_REQUEST, RestMessage.INVALID_INPUT);
+	            }
+            }
+        } else {
+	        return RestUtil.okayResponseWithData(RestMessage.NO_MEMBERS_SENT, createGroupWrapper(group, user));
         }
 
-        Group updatedGroup = groupBroker.load(groupUid);
-        List<GroupResponseWrapper> groupWrapper = Collections.singletonList(createGroupWrapper(updatedGroup, user));
-	    log.info("returning with members: " + groupWrapper.get(0).printMembers());
-        return RestUtil.okayResponseWithData(RestMessage.MEMBERS_ADDED, groupWrapper);
     }
 
     @RequestMapping(value = "/members/remove/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.POST)
@@ -327,11 +341,11 @@ public class GroupRestController {
                 responseEntity = RestUtil.okayResponseWithData(RestMessage.UPLOADED, Collections.singletonList(createGroupWrapper(updatedGroup, user)));
             } catch (IOException | IllegalArgumentException e) {
                 log.info("error "+e.getLocalizedMessage());
-                responseEntity = new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.NOT_ACCEPTABLE, RestMessage.INVALID_INPUT,
+                responseEntity = new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.NOT_ACCEPTABLE, RestMessage.BAD_PICTURE_FORMAT,
                         RestStatus.FAILURE), HttpStatus.NOT_ACCEPTABLE);
             }
         } else {
-            responseEntity = RestUtil.errorResponse(HttpStatus.NOT_ACCEPTABLE, RestMessage.INVALID_INPUT);
+            responseEntity = RestUtil.errorResponse(HttpStatus.NOT_ACCEPTABLE, RestMessage.PICTURE_NOT_RECEIVED);
         }
 
         return responseEntity;
@@ -405,7 +419,7 @@ public class GroupRestController {
         try {
             groupBroker.updateName(user.getUid(), groupUid, name);
             response = RestUtil.messageOkayResponse(RestMessage.GROUP_RENAMED);
-        } catch (Exception e) {
+        } catch (AccessDeniedException e) {
             response = RestUtil.accessDeniedResponse();
         }
 

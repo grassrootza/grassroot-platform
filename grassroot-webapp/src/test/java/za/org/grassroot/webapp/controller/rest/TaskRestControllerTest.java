@@ -38,11 +38,11 @@ public class TaskRestControllerTest extends RestAbstractUnitTest {
 
     @Test
     public void gettingTasksShouldWork() throws Exception {
-        when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(taskBrokerMock.fetchGroupTasks(sessionTestUser.getUid(), testGroup.getUid(), null)).
                 thenReturn(new ChangedSinceData<>(taskList, Collections.EMPTY_SET));
         mockMvc.perform(get(path + "/list/{phoneNumber}/{code}/{id}", testUserPhone, testUserCode, testGroup.getUid())).andExpect(status().is2xxSuccessful());
-        verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
+        verify(userManagementServiceMock).findByInputNumber(testUserPhone);
         verify(taskBrokerMock, times(1)).fetchGroupTasks(sessionTestUser.getUid(), testGroup.getUid(), null);
     }
 

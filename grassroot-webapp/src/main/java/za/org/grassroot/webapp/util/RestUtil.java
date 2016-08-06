@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.OK;
 
@@ -70,6 +71,11 @@ public class RestUtil {
 
 	public static ResponseEntity<ResponseWrapper> okayResponseWithData(RestMessage message, Object data) {
 		return new ResponseEntity<>(new GenericResponseWrapper(OK, message, RestStatus.SUCCESS, data), OK);
+	}
+
+	public static ResponseEntity<ResponseWrapper> errorResponseWithData(RestMessage message, Object data) {
+		GenericResponseWrapper error = new GenericResponseWrapper(BAD_REQUEST, message, RestStatus.FAILURE, data);
+		return new ResponseEntity<>(error, BAD_REQUEST);
 	}
 
 }

@@ -6,16 +6,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.LogBook;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.enums.RestMessage;
-import za.org.grassroot.webapp.enums.RestStatus;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.MembershipResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
-import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import java.time.Instant;
@@ -52,24 +53,26 @@ public class TaskRestController {
 																	   @PathVariable("parentUid") String parentUid,
 																	   @RequestParam(name = "changedSince", required = false) Long changedSinceMillis) {
 
-        User user = userManagementService.loadOrSaveUser(phoneNumber);
+        User user = userManagementService.findByInputNumber(phoneNumber);
 		Instant changedSince = changedSinceMillis == null ? null : Instant.ofEpochMilli(changedSinceMillis);
-		ChangedSinceData<TaskDTO> changedSinceData = taskBroker.fetchGroupTasks(user.getUid(), parentUid, changedSince);
-        return new ResponseEntity<>(changedSinceData, HttpStatus.OK);
+		try {
+			ChangedSinceData<TaskDTO> changedSinceData = taskBroker.fetchGroupTasks(user.getUid(), parentUid, changedSince);
+			return new ResponseEntity<>(changedSinceData, HttpStatus.OK);
+		} catch (AccessDeniedException e) {
+			return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+		}
     }
 
     @RequestMapping(value = "/list/{phoneNumber}/{code}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> getAllUpcomingTasksForUser(
 			@PathVariable String phoneNumber,
 			@PathVariable String code) {
-        // todo: should really start storing UID on phone and pass that back here
         User user = userManagementService.loadOrSaveUser(phoneNumber);
 		List<TaskDTO> tasks = taskBroker.fetchUpcomingUserTasks(user.getUid());
         Collections.sort(tasks, Collections.reverseOrder());
 	    logger.info("returning tasks for user : {}", tasks.toString());
         RestMessage message = (tasks.isEmpty()) ? RestMessage.USER_HAS_NO_TASKS : RestMessage.USER_ACTIVITIES;
-        ResponseWrapper wrapper = new GenericResponseWrapper(HttpStatus.OK, message, RestStatus.SUCCESS, tasks);
-        return new ResponseEntity<>(wrapper, HttpStatus.OK);
+        return RestUtil.okayResponseWithData(message, tasks);
     }
 
 	@RequestMapping(value = "/list/since/{phoneNumber}/{code}", method = RequestMethod.GET)
@@ -90,11 +93,15 @@ public class TaskRestController {
 
         logger.info("fetching task, phoneNumber={}, taskType={}, taskUid={}", phoneNumber, taskType, taskUid);
         User user = userManagementService.findByInputNumber(phoneNumber);
-        TaskType type = TaskType.valueOf(taskType);
-        TaskDTO task = taskBroker.load(user.getUid(), taskUid, type);
-        ResponseWrapper wrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.TASK_DETAILS, RestStatus.SUCCESS,
-                                                             Collections.singletonList(task));
-        return new ResponseEntity<>(wrapper, HttpStatus.OK);
+        try {
+	        TaskType type = TaskType.valueOf(taskType);
+	        TaskDTO task = taskBroker.load(user.getUid(), taskUid, type);
+	        return RestUtil.okayResponseWithData(RestMessage.TASK_DETAILS, Collections.singletonList(task));
+        } catch (AccessDeniedException e) {
+	        return RestUtil.accessDeniedResponse();
+        } catch (NullPointerException e) {
+	        return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.TASK_NOT_FOUND);
+        }
     }
 
     @RequestMapping(value = "/assigned/{phoneNumber}/{code}/{taskUid}/{taskType}", method = RequestMethod.GET)

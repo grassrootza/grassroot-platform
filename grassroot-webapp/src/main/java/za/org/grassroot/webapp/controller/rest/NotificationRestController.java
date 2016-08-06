@@ -57,18 +57,17 @@ public class NotificationRestController {
         Page<Notification> pageable = notificationService.getNotificationsByTarget(user, page, size);
         log.info("getNotifications ... user has {} notifications in total", pageable.getTotalElements());
 
-        ResponseWrapper responseWrapper;
+        ResponseEntity<ResponseWrapper> responseWrapper;
         if (page > pageable.getTotalPages()) {
-            responseWrapper = new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.NOTIFICATIONS, RestStatus.FAILURE);
+            responseWrapper = RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.NOTIFICATIONS_FINISHED);
         } else {
             List<String> notificationUid = pageable.getContent().stream().map(n -> n.getUid()).collect(Collectors.toList());
             List<NotificationDTO> notificationDTOList = notificationService.fetchNotificationDTOs(notificationUid);
             log.info("notificationDTOList size ={}", notificationDTOList.size());
             NotificationWrapper notificationWrapper = new NotificationWrapper(pageable, notificationDTOList);
-            responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.NOTIFICATIONS, RestStatus.SUCCESS, notificationWrapper);
+            responseWrapper = RestUtil.okayResponseWithData(RestMessage.NOTIFICATIONS, notificationWrapper);
         }
-        return new ResponseEntity<>(responseWrapper,HttpStatus.valueOf(responseWrapper.getCode()));
-
+        return responseWrapper;
     }
 
     @RequestMapping(value = "/list/since/{phoneNumber}/{code}", method = RequestMethod.GET)
@@ -92,26 +91,21 @@ public class NotificationRestController {
 
         log.info("updating notification read status for user uid : {}, notification uid : {}", user.getUid(), uid);
         if (!notification.getTarget().equals(user)) {
-            throw new AccessControlException("Error! Trying to set another user's notification status");
+            return RestUtil.accessDeniedResponse();
         }
 
-        ResponseWrapper responseWrapper;
-        if(notification.isRead()) {
+        if (notification.isRead()) {
             log.info("Trying to update notification when already read");
-            responseWrapper = new ResponseWrapperImpl(HttpStatus.ALREADY_REPORTED, RestMessage.ALREADY_UPDATED, RestStatus.FAILURE);
+            return RestUtil.errorResponse(HttpStatus.ALREADY_REPORTED, RestMessage.ALREADY_UPDATED);
         } else {
-            notificationService.updateNotificationReadStatus(uid,true);
-            responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.NOTIFICATION_UPDATED, RestStatus.SUCCESS);
+            notificationService.updateNotificationReadStatus(uid, true);
+            return RestUtil.messageOkayResponse(RestMessage.NOTIFICATION_UPDATED);
         }
-        return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
-
     }
 
     @ExceptionHandler(NotificationAlreadyUpdatedException.class)
     public ResponseEntity<ResponseWrapper> handleException(){
-
         ResponseWrapper responseWrapper = new ResponseWrapperImpl(HttpStatus.CONFLICT, RestMessage.ALREADY_UPDATED, RestStatus.FAILURE);
         return  new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
-
     }
 }

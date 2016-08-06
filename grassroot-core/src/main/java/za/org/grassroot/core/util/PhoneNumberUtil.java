@@ -11,7 +11,6 @@ import java.util.regex.Pattern;
 
 /**
  * @author Lesetse Kimwaga
- * todo: use a different name so we don't have to include the full path of the Google libraries?
  */
 
 public class PhoneNumberUtil {
@@ -26,22 +25,11 @@ public class PhoneNumberUtil {
             if (phoneNumberUtil.isValidNumber(phoneNumber)) {
                 return phoneNumberUtil.format(phoneNumber, com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat.E164).replace("+", "");
             } else {
-                throw new RuntimeException("Could not format phone number '" + inputString + "'");
+                throw new InvalidPhoneNumberException(inputString);
             }
 
         } catch (NumberParseException e) {
-            throw new RuntimeException("Could not format phone number '" + inputString + "'");
-        }
-    }
-
-    public static String formattedNumber(String storedNumber) {
-        com.google.i18n.phonenumbers.PhoneNumberUtil util = com.google.i18n.phonenumbers.PhoneNumberUtil.getInstance();
-        try {
-            Phonenumber.PhoneNumber zaNumber = util.parse(storedNumber, "ZA");
-            return util.format(zaNumber, com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat.NATIONAL);
-        } catch (NumberParseException e) {
-            log.info("Error parsing stored number! Returning the number given to us");
-            return storedNumber;
+            throw new InvalidPhoneNumberException(inputString);
         }
     }
 
@@ -70,8 +58,6 @@ public class PhoneNumberUtil {
     public static String invertPhoneNumber(String storedNumber) {
         return invertPhoneNumber(storedNumber, "");
     }
-
-
 
     public static Map<String, List<String>> splitPhoneNumbers(String userResponse) {
 
@@ -109,27 +95,6 @@ public class PhoneNumberUtil {
         returnMap.put("error", errorNumbers);
         return returnMap;
     }
-
-    public static String convertPhoneNumberFragment(String inputString) {
-
-        /* Small helper method called from admin web app, so that admin user can enter a fragment of a natural number
-        such as '081' and that can be used in the search. Note, can't use Google PhoneNumberUtil here because it can't
-        handle short strings, so doing this slightly manually. At some point we'll need to make not just this but the
-        whole complex of methods around this much more complex.
-         */
-
-        String convertedFragment;
-        int countryCode = com.google.i18n.phonenumbers.PhoneNumberUtil.getInstance().getCountryCodeForRegion("ZA");
-
-        if (inputString.charAt(0) == '0')
-            convertedFragment = inputString.replaceFirst("0", String.valueOf(countryCode));
-        else
-            convertedFragment = inputString;
-
-        return convertedFragment;
-
-    }
-
 
     /*
     Helper function especially for web input where we can use validators to check and return
