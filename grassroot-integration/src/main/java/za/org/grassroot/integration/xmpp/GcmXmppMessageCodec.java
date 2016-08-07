@@ -19,9 +19,13 @@ import java.util.Map;
  * org.springframework.integration.xmpp.outbound.ChatMessageSendingMessageHandler.
  */
 public class GcmXmppMessageCodec {
+
 	private static final Logger logger = LoggerFactory.getLogger(GcmXmppMessageCodec.class);
+
 	private static final ObjectMapper mapper = new ObjectMapper();
 	private static final String DEFAULT_ACTION = "NOTIFICATION";
+
+	private static final String notificationIcon = "@drawable/app_icon";
 
 	private GcmXmppMessageCodec() {
 		// utility
@@ -38,16 +42,20 @@ public class GcmXmppMessageCodec {
 	public static org.springframework.messaging.Message<Message> encode(String registrationID, String messageId, String collapseKey,
 																		String title, String body, String clickAction, Map<String, Object> dataPart) {
 		logger.info("Generated collapseKey " + collapseKey);
-		Map<String, Object> notificatonPart = (clickAction != null)? createNotificatonPart(title, body, clickAction):
-				createNotificatonPart(title, body, DEFAULT_ACTION);
+
+		Map<String, Object> notificatonPart = (clickAction != null) ?
+				createNotificationPart(title, body, clickAction):
+				createNotificationPart(title, body, DEFAULT_ACTION);
+
 		GcmEntity gcmPayload = new GcmEntity(messageId, registrationID, collapseKey, dataPart, notificatonPart);
 		return constructGcmMessage(gcmPayload);
 	}
 
-	private static Map<String, Object> createNotificatonPart(String title, String body, String clickAction) {
+	private static Map<String, Object> createNotificationPart(String title, String body, String clickAction) {
 		Map<String, Object> data = new HashMap<>();
 		data.put("title", title);
 		data.put("body", body);
+		data.put("icon", notificationIcon);
 		data.put("click_action", clickAction);
 		return data;
 	}

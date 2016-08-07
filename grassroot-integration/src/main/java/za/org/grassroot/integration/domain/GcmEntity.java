@@ -15,6 +15,7 @@ public class GcmEntity {
     @JsonProperty("message_id")
     private String messageId;
     private String to;
+
     @JsonProperty("collapse_key")
     private String collapseKey;
     @JsonProperty("time_to_live")
@@ -23,6 +24,7 @@ public class GcmEntity {
     private boolean delayWhileIdle = false;
     @JsonProperty("delivery_receipt_requested")
     private boolean deliveryReceiptRequested =true;
+
     private Map<String,Object> notification;
     private Map<String,Object> data;
     @JsonProperty("message_type")
@@ -37,7 +39,7 @@ public class GcmEntity {
         this.messageType = messageType;
     }
 
-    public GcmEntity(String messageId, String to, String collapseKey, Map<String,Object> data, Map<String,Object> notification){
+    public GcmEntity(String messageId, String to, String collapseKey, Map<String,Object> data, Map<String,Object> notification) {
         this.messageId = messageId;
         this.to = to;
         this.collapseKey = collapseKey;
