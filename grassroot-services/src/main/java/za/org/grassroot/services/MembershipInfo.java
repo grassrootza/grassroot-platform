@@ -2,7 +2,6 @@ package za.org.grassroot.services;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
@@ -73,6 +72,10 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
     // need to use PhoneNumberUtil here to make sure return number with country code (or vice versa)
 
     public String getPhoneNumberWithCCode() { return PhoneNumberUtil.convertPhoneNumber(phoneNumber); }
+
+    public String getPhoneNumberWithoutCCode() { return PhoneNumberUtil.invertPhoneNumber(phoneNumber); }
+
+    public String getNationalFormattedNumber() { return PhoneNumberUtil.formattedNumber(phoneNumber); }
 
     @Override
     public boolean equals(Object o) {
