@@ -17,7 +17,7 @@ public class PhoneNumberUtil {
 
     private static final Logger log = LoggerFactory.getLogger(PhoneNumberUtil.class);
 
-    public static String convertPhoneNumber(String inputString) {
+    public static String convertPhoneNumber(String inputString) throws InvalidPhoneNumberException {
         try {
             com.google.i18n.phonenumbers.PhoneNumberUtil phoneNumberUtil = com.google.i18n.phonenumbers.PhoneNumberUtil.getInstance();
             Phonenumber.PhoneNumber phoneNumber = phoneNumberUtil.parse(inputString, "ZA");
@@ -27,7 +27,6 @@ public class PhoneNumberUtil {
             } else {
                 throw new InvalidPhoneNumberException(inputString);
             }
-
         } catch (NumberParseException e) {
             throw new InvalidPhoneNumberException(inputString);
         }
@@ -57,6 +56,17 @@ public class PhoneNumberUtil {
 
     public static String invertPhoneNumber(String storedNumber) {
         return invertPhoneNumber(storedNumber, "");
+    }
+
+    public static String formattedNumber(String storedNumber) {
+        com.google.i18n.phonenumbers.PhoneNumberUtil util = com.google.i18n.phonenumbers.PhoneNumberUtil.getInstance();
+        try {
+                Phonenumber.PhoneNumber zaNumber = util.parse(storedNumber, "ZA");
+                return util.format(zaNumber, com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat.NATIONAL);
+        } catch (NumberParseException e) {
+                log.info("Error parsing stored number! Returning the number given to us");
+                return storedNumber;
+        }
     }
 
     public static Map<String, List<String>> splitPhoneNumbers(String userResponse) {

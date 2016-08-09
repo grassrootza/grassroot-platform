@@ -34,14 +34,15 @@ public class NotificationToGcmXmppTransformer {
         Notification notification = message.getPayload();
 
         Message<org.jivesoftware.smack.packet.Message> gcmMessage = constructGcmMessage(notification);
-        log.info("Message with id " + notification.getUid() + " transformed to " + gcmMessage.getPayload().toXML().toString());
+        log.info("Message with id {}, transformed to {}", notification.getUid(),
+		        gcmMessage != null && gcmMessage.getPayload() != null ? gcmMessage.getPayload().toXML().toString() : "null");
         return gcmMessage;
     }
 
     @Transactional
     private Message<org.jivesoftware.smack.packet.Message> constructGcmMessage(Notification notification) throws JsonProcessingException {
-        GcmRegistration gcmRegistration = gcmRegistrationRepository.findByUser(notification.getTarget());
 
+	    GcmRegistration gcmRegistration = gcmRegistrationRepository.findByUser(notification.getTarget());
         // todo : move this to somewhere earlier
         if (gcmRegistration == null) {
             // this sometimes happens with bad connections : throwing here ensures picker will try notification again

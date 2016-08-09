@@ -100,9 +100,9 @@ public class EventLogManager implements EventLogManagementService {
                     event.setEventStartDateTime(Instant.now());
                 }
             } else {
-                generateEventResponseMessage(event, eventLog, rsvpResponse);
-
-
+                if (!user.equals(event.getCreatedByUser())) {
+                    generateEventResponseMessage(event, eventLog, rsvpResponse);
+                }
             }
         } else if (event.getEventStartDateTime().isAfter(Instant.now())) {
             // allow the user to change their rsvp / vote as long as meeting is open
@@ -110,8 +110,9 @@ public class EventLogManager implements EventLogManagementService {
             eventLog.setMessage(rsvpResponse.toString());
             log.info("rsvpForEvent... changing response to {} on eventLog {}", rsvpResponse.toString(), eventLog);
             eventLogRepository.saveAndFlush(eventLog); // todo: shouldn't need this, but it's not persisting (cleaning needed)
-            generateEventResponseMessage(event, eventLog, rsvpResponse);
-
+            if (!user.equals(event.getCreatedByUser())) {
+                generateEventResponseMessage(event, eventLog, rsvpResponse);
+            }
         }
 
     }

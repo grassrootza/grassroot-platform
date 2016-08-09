@@ -288,25 +288,41 @@ public class GroupRestController {
         Group group = groupBroker.load(groupUid);
         log.info("membersReceived = {}", membersToAdd != null ? membersToAdd.toString() : "null");
 
-        if (membersToAdd != null && !membersToAdd.isEmpty()) {
-            try {
-	            groupBroker.addMembers(user.getUid(), group.getUid(), membersToAdd, false);
-	            Group updatedGroup = groupBroker.load(groupUid);
-	            List<GroupResponseWrapper> groupWrapper = Collections.singletonList(createGroupWrapper(updatedGroup, user));
-	            log.info("returning with members: " + groupWrapper.get(0).printMembers());
-	            return RestUtil.okayResponseWithData(RestMessage.MEMBERS_ADDED, groupWrapper);
-            } catch (Exception e) {
-	            if (e instanceof InvalidPhoneNumberException) {
-		            return RestUtil.errorResponseWithData(RestMessage.GROUP_BAD_PHONE_NUMBER, e.getMessage());
-	            } else {
-		            return RestUtil.errorResponse(BAD_REQUEST, RestMessage.INVALID_INPUT);
-	            }
-            }
-        } else {
-	        return RestUtil.okayResponseWithData(RestMessage.NO_MEMBERS_SENT, createGroupWrapper(group, user));
-        }
+	    try {
+		    RestMessage returnMessage;
+		    List<GroupResponseWrapper> groupWrapper;
+		    if (membersToAdd != null && !membersToAdd.isEmpty()) {
+			    List<String> invalidNumbers = findInvalidNumbers(membersToAdd);
+			    if (invalidNumbers.size() == membersToAdd.size()) {
+				    throw new InvalidPhoneNumberException(String.join(" ", invalidNumbers));
+			    }
+			    groupBroker.addMembers(user.getUid(), group.getUid(), membersToAdd, false);
+			    GroupResponseWrapper updatedGroup = createGroupWrapper(groupBroker.load(groupUid), user);
+			    updatedGroup.setInvalidNumbers(invalidNumbers);
+			    groupWrapper = Collections.singletonList(updatedGroup);
+			    returnMessage = (invalidNumbers.isEmpty()) ? RestMessage.MEMBERS_ADDED : RestMessage.GROUP_BAD_PHONE_NUMBER;
+	        } else {
+			    returnMessage = RestMessage.NO_MEMBERS_SENT;
+			    groupWrapper = Collections.singletonList(createGroupWrapper(group, user));
+	        }
+		    return RestUtil.okayResponseWithData(returnMessage, groupWrapper);
+
+        } catch (InvalidPhoneNumberException e) {
+		    return RestUtil.errorResponseWithData(RestMessage.GROUP_BAD_PHONE_NUMBER, e.getMessage());
+        } catch (AccessDeniedException e) {
+	        return RestUtil.accessDeniedResponse();
+        } catch (Exception e) {
+		    return RestUtil.errorResponse(BAD_REQUEST, RestMessage.INVALID_INPUT);
+	    }
 
     }
+
+	private List<String> findInvalidNumbers(Set<MembershipInfo> members) {
+		return members.stream()
+				.filter(m -> !m.hasValidPhoneNumber())
+				.map(MembershipInfo::getPhoneNumber)
+				.collect(Collectors.toList());
+	}
 
     @RequestMapping(value = "/members/remove/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> removeMembers(@PathVariable String phoneNumber, @PathVariable String code,
@@ -546,6 +562,7 @@ public class GroupRestController {
 	private Group checkForDuplicateGroup(final String creatingUserUid, final String groupName) {
 		Objects.requireNonNull(creatingUserUid);
 		Objects.requireNonNull(groupName);
+		log.info("Checking for duplicate of group {}, with creating Uid {}", groupName.trim(), creatingUserUid);
 		return groupBroker.checkForDuplicate(creatingUserUid, groupName.trim());
 	}
 

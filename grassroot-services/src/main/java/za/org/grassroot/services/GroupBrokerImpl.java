@@ -18,6 +18,7 @@ import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
 import za.org.grassroot.services.geo.CenterCalculationResult;
@@ -263,9 +264,12 @@ public class GroupBrokerImpl implements GroupBroker {
         }
 
         logger.info("Adding members: group={}, memberships={}, user={}", group, membershipInfos, user);
-        LogsAndNotificationsBundle bundle = addMemberships(user, group, membershipInfos, false);
-
-        logsAndNotificationsBroker.storeBundle(bundle);
+        try {
+            LogsAndNotificationsBundle bundle = addMemberships(user, group, membershipInfos, false);
+            logsAndNotificationsBroker.storeBundle(bundle);
+        } catch (InvalidPhoneNumberException e) {
+            logger.info("Error! Invalid phone number : " + e.getMessage());
+        }
     }
 
     @Override
@@ -322,7 +326,15 @@ public class GroupBrokerImpl implements GroupBroker {
 
     private LogsAndNotificationsBundle addMemberships(User initiator, Group group, Set<MembershipInfo> membershipInfos, boolean duringGroupCreation) {
         // note: User objects should only ever store phone numbers in the msisdn format (i.e, with country code at front, no '+')
-        Set<String> memberPhoneNumbers = membershipInfos.stream().map(MembershipInfo::getPhoneNumberWithCCode).collect(Collectors.toSet());
+
+        Set<MembershipInfo> validNumberMembers = membershipInfos.stream()
+                .filter(MembershipInfo::hasValidPhoneNumber)
+                .collect(Collectors.toSet());
+
+        Set<String> memberPhoneNumbers = validNumberMembers.stream()
+                .map(MembershipInfo::getPhoneNumberWithCCode)
+                .collect(Collectors.toSet());
+
         logger.info("phoneNumbers returned: ...." + memberPhoneNumbers);
         Set<User> existingUsers = new HashSet<>(userRepository.findByPhoneNumberIn(memberPhoneNumbers));
         Map<String, User> existingUserMap = existingUsers.stream().collect(Collectors.toMap(User::getPhoneNumber, user -> user));
@@ -331,7 +343,7 @@ public class GroupBrokerImpl implements GroupBroker {
         Set<User> createdUsers = new HashSet<>();
         Set<Membership> memberships = new HashSet<>();
 
-        for (MembershipInfo membershipInfo : membershipInfos) {
+        for (MembershipInfo membershipInfo : validNumberMembers) {
             // note: splitting this instead of getOrDefault, since that method calls default method even if it finds something, hence spurious user creation
             String phoneNumberWithCCode = membershipInfo.getPhoneNumberWithCCode();
             User user = existingUserMap.get(phoneNumberWithCCode);

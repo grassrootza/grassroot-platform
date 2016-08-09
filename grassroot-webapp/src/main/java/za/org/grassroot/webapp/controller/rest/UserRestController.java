@@ -87,7 +87,9 @@ public class UserRestController {
             userDTO = userManagementService.loadUserCreateRequest(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
             User user = userManagementService.createAndroidUserProfile(userDTO);
             VerificationTokenCode token = passwordTokenService.generateLongLivedCode(user);
-            return RestUtil.okayResponseWithData(RestMessage.USER_REGISTRATION_SUCCESSFUL, new TokenDTO(token));
+            AuthenticationResponseWrapper authWrapper = new AuthenticationResponseWrapper(HttpStatus.OK, RestMessage.USER_REGISTRATION_SUCCESSFUL,
+                    RestStatus.SUCCESS, new TokenDTO(token), user.getDisplayName(), user.getLanguageCode(), false);
+            return new ResponseEntity<>(authWrapper, HttpStatus.OK);
         } else {
             log.info("Token verification for new user failed");
             return RestUtil.errorResponse(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_OTP);

@@ -47,7 +47,7 @@ public class GcmXmppMessageCodec {
 				createNotificationPart(title, body, clickAction):
 				createNotificationPart(title, body, DEFAULT_ACTION);
 
-		GcmEntity gcmPayload = new GcmEntity(messageId, registrationID, collapseKey, dataPart, notificatonPart);
+		GcmEntity gcmPayload = new GcmEntity(messageId, registrationID, collapseKey, dataPart, null);
 		return constructGcmMessage(gcmPayload);
 	}
 

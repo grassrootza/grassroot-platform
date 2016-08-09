@@ -91,6 +91,7 @@ public abstract class Notification implements Serializable {
 		this.createdDateTime = Instant.now();
 		this.nextAttemptTime = createdDateTime; // default is to be sent immediately
 		this.message = Objects.requireNonNull(message);
+		this.priority = DEFAULT_PRIORITY;
 
 		if (actionLog instanceof EventLog) {
 			eventLog = (EventLog) actionLog;
@@ -189,7 +190,7 @@ public abstract class Notification implements Serializable {
 	}
 
 	public int getPriority() {
-		return DEFAULT_PRIORITY;
+		return priority;
 	};
 
 	public void setPriority(int priority){

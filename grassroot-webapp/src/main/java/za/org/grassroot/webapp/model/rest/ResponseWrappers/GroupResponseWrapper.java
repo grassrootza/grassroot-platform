@@ -1,6 +1,6 @@
 package za.org.grassroot.webapp.model.rest.ResponseWrappers;
 
-import org.springframework.http.MediaType;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -8,6 +8,7 @@ import za.org.grassroot.webapp.enums.GroupChangeType;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 /**
  * Created by paballo on 2016/03/01.
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
 
     private final String groupUid;
@@ -36,6 +38,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
     private boolean discoverable;
 
     private List<MembershipResponseWrapper> members;
+    private List<String> invalidNumbers; // for added member / group creation error handling
 
     private GroupResponseWrapper(Group group, Role role, boolean hasTasks) {
         this.groupUid = group.getUid();
@@ -58,6 +61,8 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
         this.members = group.getMemberships().stream()
                 .map(membership -> new MembershipResponseWrapper(group, membership.getUser(), membership.getRole(), false))
                 .collect(Collectors.toList());
+
+        this.invalidNumbers = new ArrayList<>();
     }
 
     public GroupResponseWrapper(Group group, Event event, Role role, boolean hasTasks){
@@ -124,6 +129,14 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
 
     public List<MembershipResponseWrapper> getMembers() { return members; }
 
+    public List<String> getInvalidNumbers() {
+        return invalidNumbers;
+    }
+
+    public void setInvalidNumbers(List<String> invalidNumbers) {
+        this.invalidNumbers = invalidNumbers;
+    }
+
     @Override
     public int compareTo(GroupResponseWrapper g) {
 
@@ -166,7 +179,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
                 ", lastMajorChangeMillis=" + lastMajorChangeMillis +
                 ", groupName='" + groupName + '\'' +
                 ", members='" + members.size() + '\'' +
-                ", members, detail = " + members.toString() + '\'' +
+                ", invalidNumbers='" + (invalidNumbers != null ? invalidNumbers.toString() : "none") + '\'' +
                 '}';
     }
 }

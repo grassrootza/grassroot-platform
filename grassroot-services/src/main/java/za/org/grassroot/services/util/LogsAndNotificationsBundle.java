@@ -1,5 +1,7 @@
 package za.org.grassroot.services.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.domain.Notification;
 
@@ -13,6 +15,9 @@ import java.util.Set;
  * Performs filtering of registering Notifications based on their priority and notification priority of target user.
  */
 public class LogsAndNotificationsBundle {
+
+	private static final Logger logger = LoggerFactory.getLogger(LogsAndNotificationsBundle.class);
+
 	private final Set<ActionLog> logs;
 	private final Set<Notification> notifications;
 
@@ -35,6 +40,8 @@ public class LogsAndNotificationsBundle {
 		for (Notification notification : notifications) {
 			if (isNotificationPrioritySatisfiedByTarget(notification)) {
 				this.notifications.add(notification);
+			} else {
+				logger.info("not adding a notification, because below priority ... ");
 			}
 		}
 	}

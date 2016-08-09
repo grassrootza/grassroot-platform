@@ -6,6 +6,7 @@ import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 
 import java.util.HashSet;
@@ -73,6 +74,19 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
     // need to use PhoneNumberUtil here to make sure return number with country code (or vice versa)
 
     public String getPhoneNumberWithCCode() { return PhoneNumberUtil.convertPhoneNumber(phoneNumber); }
+
+    public String getPhoneNumberWithoutCCode() { return PhoneNumberUtil.invertPhoneNumber(phoneNumber); }
+
+    public String getNationalFormattedNumber() { return PhoneNumberUtil.formattedNumber(phoneNumber); }
+
+    public boolean hasValidPhoneNumber() {
+        try {
+            getPhoneNumberWithCCode();
+            return true;
+        } catch (InvalidPhoneNumberException e) {
+            return false;
+        }
+    }
 
     @Override
     public boolean equals(Object o) {
