@@ -33,6 +33,17 @@ public class PhoneNumberUtil {
         }
     }
 
+    public static String formattedNumber(String storedNumber) {
+        com.google.i18n.phonenumbers.PhoneNumberUtil util = com.google.i18n.phonenumbers.PhoneNumberUtil.getInstance();
+        try {
+            Phonenumber.PhoneNumber zaNumber = util.parse(storedNumber, "ZA");
+            return util.format(zaNumber, com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat.NATIONAL);
+        } catch (NumberParseException e) {
+            log.info("Error parsing stored number! Returning the number given to us");
+            return storedNumber;
+        }
+    }
+
     // moving this here from User object, better placed here
 
     public static String invertPhoneNumber(String storedNumber, String joinString) {
