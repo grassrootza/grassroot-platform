@@ -2,7 +2,6 @@ package za.org.grassroot.services;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
