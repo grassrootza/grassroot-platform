@@ -51,6 +51,7 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
 
         settingUpDummyData(testGroup, groups, membershipInfo, membersToAdd);
         GroupLog groupLog = new GroupLog(testGroup, sessionTestUser, GroupLogType.GROUP_MEMBER_ADDED, 0L, "");
+        membersToAdd.add(new MembershipInfo("27810001234", BaseRoles.ROLE_ORDINARY_MEMBER, "test user"));
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(groupBrokerMock.create(sessionTestUser.getUid(), testGroupName, null, membersToAdd,
@@ -61,7 +62,7 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
                  membersToAdd, testEventDescription);
 
         ObjectMapper mapper = new ObjectMapper();
-        String body = mapper.writeValueAsString(new HashSet<String>());
+        String body = mapper.writeValueAsString(membersToAdd);
 
         mockMvc.perform(post(path + "create/{phoneNumber}/{code}/{groupName}/{description}",
                              testUserPhone, testUserCode, testGroupName, testEventDescription)
