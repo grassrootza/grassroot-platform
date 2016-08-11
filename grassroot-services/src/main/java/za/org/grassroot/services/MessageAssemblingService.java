@@ -63,4 +63,6 @@ public interface MessageAssemblingService {
     Locale getUserLocale(User user);
 
     String[] populateEventFields(Event event, double yes, double no, double abstain, double noReply);
+
+    String createAndroidLinkSms(User user);
 }

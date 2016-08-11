@@ -26,6 +26,7 @@ public class USSDUserController extends USSDController {
 
     private static final String keyStart = "start", keyName = "name";
     private static final String keyLanguage = "language", keyPhone = "phone";
+    private static final String keyLink = "link";
     private static final USSDSection thisSection = USSDSection.USER_PROFILE;
 
     /**
@@ -42,7 +43,9 @@ public class USSDUserController extends USSDController {
 
         thisMenu.addMenuOption(userMenus + keyName, getMessage(thisSection, startMenu, optionsKey + keyName, sessionUser));
         thisMenu.addMenuOption(userMenus + keyLanguage, getMessage(thisSection, startMenu, optionsKey + keyLanguage, sessionUser));
+     //   thisMenu.addMenuOption(userMenus+keyLink+doSuffix, getMessage(thisSection,startMenu,optionsKey+keyLink,sessionUser));
         thisMenu.addMenuOption(keyStart, getMessage(thisSection, startMenu, optionsKey + "back", sessionUser));
+
 
         return menuBuilder(thisMenu);
     }
@@ -114,6 +117,19 @@ public class USSDUserController extends USSDController {
 
         return menuBuilder(new USSDMenu(getMessage(thisSection, keyLanguage + doSuffix, promptKey, sessionUser),
                                         optionsHomeExit(sessionUser)));
+    }
+    @RequestMapping(value = homePath + userMenus + "link" + doSuffix)
+    @ResponseBody
+    public Request userSendAndroidLink(@RequestParam(value= phoneNumber, required=true) String inputNumber) throws URISyntaxException {
+
+        User sessionUser;
+        try {
+            sessionUser = userManager.findByInputNumber(inputNumber);
+            userManager.sendAndroidLinkSms(sessionUser.getUid());
+        }
+        catch (NoSuchElementException e) { return noUserError; }
+        return menuBuilder(new USSDMenu(getMessage(thisSection, keyLink + doSuffix, promptKey, sessionUser),
+                optionsHomeExit(sessionUser)));
     }
 
 }

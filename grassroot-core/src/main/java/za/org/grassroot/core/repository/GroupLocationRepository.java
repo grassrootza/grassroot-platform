@@ -1,6 +1,7 @@
 package za.org.grassroot.core.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 
@@ -13,4 +14,8 @@ public interface GroupLocationRepository extends JpaRepository<GroupLocation, Lo
 	GroupLocation findOneByGroupAndLocalDate(Group group, LocalDate localDate);
 
 	List<GroupLocation> findByGroupInAndLocalDateAndScoreGreaterThan(Set<Group> groups, LocalDate localDate, float score);
+
+	@Query("select distinct gl.group from GroupLocation gl ")
+	List<Group> findAllGroupsWithLocationData();
+
 }

@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.ussd;
 
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,11 +17,14 @@ import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.language.DateTimeParseFailure;
 import za.org.grassroot.services.EventLogManagementService;
 import za.org.grassroot.services.EventRequestBroker;
+import za.org.grassroot.services.MembershipInfo;
+import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import za.org.grassroot.webapp.util.USSDEventUtil;
+import za.org.grassroot.webapp.util.USSDGroupUtil;
 import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.io.IOException;
@@ -39,11 +43,6 @@ import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 @RestController
 public class USSDMeetingController extends USSDController {
 
-    /**
-     * Meeting organizer menus
-     * todo: Various forms of validation and checking throughout
-     * todo: Think of a way to pull together the common method set up stuff (try to load user, get next key)
-     */
 
     @Autowired
     private USSDEventUtil eventUtil;
@@ -63,6 +62,7 @@ public class USSDMeetingController extends USSDController {
 
     private static final String
             newGroupMenu = "newgroup",
+            groupName = "groupName",
             groupHandlingMenu = "group",
             subjectMenu = "subject",
             timeMenu = "time",
@@ -117,8 +117,8 @@ public class USSDMeetingController extends USSDController {
 
         // todo: replace with call to countFutureEvents plus permission filter
         if (newMeeting || !eventManager.userHasEventsToView(user, EventType.MEETING, true)) {
-            returnMenu = ussdGroupUtil.askForGroupAllowCreateNew(user, thisSection, nextMenu(startMenu), newGroupMenu,
-                                                                 groupHandlingMenu, null);
+            returnMenu = ussdGroupUtil.askForGroupAllowCreateNew(user, thisSection, newGroupMenu, newGroupMenu,
+                                                                 groupName, null);
         } else {
             String prompt = getMessage(thisSection, startMenu, promptKey + ".new-old", user);
             String newOption = getMessage(thisSection, startMenu, optionsKey + "new", user);
@@ -141,7 +141,23 @@ public class USSDMeetingController extends USSDController {
     @ResponseBody
     public Request newGroup(@RequestParam(value = phoneNumber, required = true) String inputNumber) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber, meetingMenus + newGroupMenu);
-        return menuBuilder(ussdGroupUtil.createGroupPrompt(user, thisSection, groupHandlingMenu));
+        return menuBuilder(ussdGroupUtil.createGroupPrompt(user, thisSection, "groupName"));
+    }
+
+
+    @RequestMapping(value = path + groupName)
+    @ResponseBody
+    public Request createGroupSetName(@RequestParam(value = phoneNumber, required = true) String inputNumber,
+                                      @RequestParam(value = userInputParam, required = false) String userResponse
+                         ) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber);
+        if (!USSDGroupUtil.isValidGroupName(userResponse) ){
+          return  menuBuilder(ussdGroupUtil.invalidGroupNamePrompt(user, userResponse, thisSection, newGroupMenu));
+        } else {
+            Set<MembershipInfo> members = Sets.newHashSet(new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName()));
+            Group group = groupBroker.create(user.getUid(), userResponse, null, members, GroupPermissionTemplate.DEFAULT_GROUP, null, null, true);
+            return menuBuilder(ussdGroupUtil.addNumbersToGroupPrompt(user, group, thisSection, groupHandlingMenu));
+    }
     }
 
     /*
@@ -169,19 +185,11 @@ public class USSDMeetingController extends USSDController {
 
         String urlToSave = USSDUrlUtil.saveMenuUrlWithInput(thisSection, groupHandlingMenu, includeGroup, userInput);
         log.info("In group handling menu, have saved this URL: " + urlToSave);
-
         User user = userManager.findByInputNumber(inputNumber, urlToSave);
 
         if (!userInput.trim().equals("0")) {
-            thisMenu = new USSDMenu(true);
-            if (groupUid == null || groupUid.equals("")) {
-                String newGroupUid = ussdGroupUtil.addNumbersToNewGroup(user, USSDSection.MEETINGS, thisMenu, userInput, groupHandlingMenu);
-                cacheManager.putUssdMenuForUser(inputNumber, USSDUrlUtil.
-                        saveMenuUrlWithInput(thisSection, groupHandlingMenu, groupUidUrlSuffix + newGroupUid, userInput));
-            } else {
-                thisMenu = ussdGroupUtil.addNumbersToExistingGroup(
+            thisMenu = ussdGroupUtil.addNumbersToExistingGroup(
                         user, groupUid, USSDSection.MEETINGS, userInput, groupHandlingMenu);
-            }
         } else {
             thisMenu = new USSDMenu(true);
             if (groupUid == null) {

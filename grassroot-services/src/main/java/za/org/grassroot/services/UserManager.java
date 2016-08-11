@@ -25,6 +25,8 @@ import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.services.GcmService;
+import za.org.grassroot.integration.services.MessageSendingService;
+import za.org.grassroot.integration.services.SmsSendingService;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.exception.NoSuchProfileException;
 import za.org.grassroot.services.exception.NoSuchUserException;
@@ -79,6 +81,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
     private SafetyEventBroker safetyEventBroker;
     @Autowired
     private AddressRepository addressRepository;
+    @Autowired
+    private SmsSendingService smsSendingService;
 
 
     @Override
@@ -368,6 +372,14 @@ public class UserManager implements UserManagementService, UserDetailsService {
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
         user.setSafetyGroup(group);
+
+    }
+
+    @Override
+    public void sendAndroidLinkSms(String  userUid) {
+        User user = userRepository.findOneByUid(userUid);
+        String message = messageAssemblingService.createAndroidLinkSms(user);
+        smsSendingService.sendSMS(message,user.getPhoneNumber());
 
     }
 
