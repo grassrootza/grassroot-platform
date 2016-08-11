@@ -50,6 +50,8 @@ public interface UserManagementService {
 
     void setSafetyGroup(String userUid, String groupUid);
 
+    void sendAndroidLinkSms(String userUid);
+
     void setInitiatedSession(User sessionUser);
 
     boolean isPartOfActiveGroups(User user);

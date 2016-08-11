@@ -290,6 +290,16 @@ public class USSDGroupUtil extends USSDUtil {
         return thisMenu;
     }
 
+    public USSDMenu addNumbersToGroupPrompt(User user, Group group, USSDSection section, String nextUrl) throws URISyntaxException {
+        log.info("Constructing prompt for new group's name, with url ... " + nextUrl);
+        USSDMenu thisMenu = new USSDMenu(getMessage(section, groupKeyForMessages, promptKey + ".add-numbers", user));
+        String groupIdWithParams = (nextUrl.contains("?")) ? ("&" + groupUidParameter + "=") : groupUidUrlEnding;
+        thisMenu.setFreeText(true);
+        thisMenu.setNextURI(section.toPath() + nextUrl+groupIdWithParams+group.getUid());
+        return thisMenu;
+    }
+
+
     public USSDMenu invalidGroupNamePrompt(User user, String groupName, USSDSection section, String nextUrl) throws URISyntaxException {
         USSDMenu thisMenu = new USSDMenu(getMessage(section, groupKeyForMessages, promptKey + ".invalid-name", groupName, user));
         thisMenu.setFreeText(true);
