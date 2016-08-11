@@ -289,6 +289,12 @@ public class MessageAssemblingManager implements MessageAssemblingService {
 
     }
 
+    @Override
+    public String createAndroidLinkSms(User user) {
+        return messageSourceAccessor.getMessage("sms.link.android", getUserLocale(user));
+
+    }
+
     private String[] populateLogBookFields(LogBook logBook) {
         Group group = logBook.getAncestorGroup();
         String salutation = (group.hasName()) ? group.getGroupName() : "Grassroot";

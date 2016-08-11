@@ -170,7 +170,7 @@ public class ScheduledTasks {
     }
 
     // @Transactional
-    @Scheduled(cron = "0 0 3 * * *") // runs at 3am every day
+   @Scheduled(cron = "0 0 3 * * *") // runs at 3am every day
     public void calculateAggregateLocations() {
         // we had put few types of calculations here in sequence because one depends on
         // other being executed in order...

@@ -37,6 +37,10 @@ public interface AdminService {
 
     int countUsersCreatedWithWebProfileInPeriod(LocalDateTime start, LocalDateTime end);
 
+    int countUsersWithGeoLocationData();
+
+    int countGroupsWithGeoLocationData();
+
     /*
     Methods to return groups
      */

@@ -13,9 +13,11 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.services.geo.GeoLocationBroker;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
@@ -53,6 +55,9 @@ public class AdminManager implements AdminService {
 
 	@Autowired
 	private GroupBroker groupBroker;
+
+    @Autowired
+    private GeoLocationBroker geoLocationBroker;
 
     /*
     Helper functions to mask a list of entities
@@ -99,6 +104,16 @@ public class AdminManager implements AdminService {
     public int countUsersCreatedWithWebProfileInPeriod(LocalDateTime start, LocalDateTime end) {
         return userRepository.
                 countByCreatedDateTimeBetweenAndHasWebProfile(Timestamp.valueOf(start), Timestamp.valueOf(end), true);
+    }
+
+    @Override
+    public int countUsersWithGeoLocationData() {
+        return geoLocationBroker.fetchUsersWithRecordedAverageLocations(LocalDate.now()).size();
+    }
+
+    @Override
+    public int countGroupsWithGeoLocationData() {
+        return geoLocationBroker.fetchGroupsWithRecordedAverageLocations().size();
     }
 
     /**

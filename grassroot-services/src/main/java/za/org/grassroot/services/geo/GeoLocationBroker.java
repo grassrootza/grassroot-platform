@@ -26,5 +26,7 @@ public interface GeoLocationBroker {
 
 	List<GroupLocation> fetchGroupLocationsWithScoreAbove(Set<Group> groups, LocalDate localDate, float score);
 
+	List<Group> fetchGroupsWithRecordedAverageLocations();
+
 	List<double[]> fetchUserLatitudeLongitudeInAvgPeriod(String userUid, LocalDate localDate);
 }
