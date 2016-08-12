@@ -46,8 +46,8 @@ public class Vote extends Event<VoteContainer> {
 	public VoteContainer getParent() {
 		if (parentGroup != null) {
 			return parentGroup;
-		} else if (parentLogBook != null) {
-			return parentLogBook;
+		} else if (parentTodo != null) {
+			return parentTodo;
 		} else if (parentMeeting != null) {
 			return parentMeeting;
 		} else {
@@ -58,8 +58,8 @@ public class Vote extends Event<VoteContainer> {
 	public void setParent(VoteContainer parent) {
 		if (parent instanceof Group) {
 			this.parentGroup = (Group) parent;
-		} else if (parent instanceof LogBook) {
-			this.parentLogBook = (LogBook) parent;
+		} else if (parent instanceof Todo) {
+			this.parentTodo = (Todo) parent;
 		} else if (parent instanceof Meeting) {
 			this.parentMeeting = (Meeting) parent;
 		} else {

@@ -14,6 +14,9 @@ public class Meeting extends Event<MeetingContainer> implements VoteContainer {
 	@Column(name = "location", length = 50)
 	private String eventLocation;
 
+
+
+
 	private Meeting() {
 		// for JPA
 	}
@@ -33,6 +36,8 @@ public class Meeting extends Event<MeetingContainer> implements VoteContainer {
 		setScheduledReminderActive(true);
 		setParent(parent);
 	}
+
+
 
 	public static Meeting makeEmpty(User user) {
 		Meeting meeting = new Meeting();
@@ -62,8 +67,8 @@ public class Meeting extends Event<MeetingContainer> implements VoteContainer {
 	public MeetingContainer getParent() {
 		if (parentGroup != null) {
 			return parentGroup;
-		} else if (parentLogBook != null) {
-			return parentLogBook;
+		} else if (parentTodo != null) {
+			return parentTodo;
 		} else {
 			throw new IllegalStateException("There is no " + MeetingContainer.class.getSimpleName() + " parent defined for " + this);
 		}
@@ -72,8 +77,8 @@ public class Meeting extends Event<MeetingContainer> implements VoteContainer {
 	public void setParent(MeetingContainer parent) {
 		if (parent instanceof Group) {
 			this.parentGroup = (Group) parent;
-		} else if (parent instanceof LogBook) {
-			this.parentLogBook = (LogBook) parent;
+		} else if (parent instanceof Todo) {
+			this.parentTodo = (Todo) parent;
 		} else {
 			throw new UnsupportedOperationException("Unsupported parent: " + parent);
 		}

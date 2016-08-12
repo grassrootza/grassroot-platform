@@ -23,7 +23,7 @@ import java.util.Map;
 
 /**
  * Created by luke on 2015/08/14.
- * todo: Expand -- a lot -- the various methods needed to handle phone number inputs
+ *
  */
 public class USSDController {
 
@@ -38,7 +38,7 @@ public class USSDController {
             userMenus = "user/",
             groupMenus = "group/",
             voteMenus = "vote/",
-            logMenus = "log/",
+            todoMenus = "todo/",
             U404= "error";
     // referencing these from the Util class so can be common across tests etc, but stating here so not cumbersome in sub-classes
     protected static final String
@@ -63,7 +63,7 @@ public class USSDController {
             userKey = USSDSection.USER_PROFILE.toString(),
             groupKey = USSDSection.GROUP_MANAGER.toString(),
             voteKey = USSDSection.VOTES.toString(),
-            logKey = USSDSection.LOGBOOK.toString();
+            logKey = USSDSection.TODO.toString();
     protected static final String
             promptKey = "prompt",
             errorPromptKey = "prompt.error",

@@ -55,7 +55,7 @@ public class EventWrapper {
                 this.defaultReminderMinutes = 0; // todo: fix
                 break;
             case LOGBOOK:
-                this.parentName = ((LogBook) event.getParent()).getMessage();
+                this.parentName = ((Todo) event.getParent()).getMessage();
                 this.defaultReminderMinutes = 0; // todo: fix
                 break;
         }

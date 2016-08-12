@@ -6,7 +6,7 @@ import java.time.Instant;
 @Entity
 @Table(name = "log_book_completion_confirmation",
 		uniqueConstraints = @UniqueConstraint(name = "uk_compl_confirmation_log_book_member", columnNames = {"log_book_id", "member_id"}))
-public class LogBookCompletionConfirmation {
+public class TodoCompletionConfirmation {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "id", nullable = false)
@@ -18,17 +18,17 @@ public class LogBookCompletionConfirmation {
 
 	@ManyToOne(optional = false)
 	@JoinColumn(name = "log_book_id", nullable = false, foreignKey = @ForeignKey(name = "fk_log_book_compl_confirm_log_book"))
-	private LogBook logBook;
+	private Todo todo;
 
 	@Column(name = "completion_time")
 	private Instant completionTime;
 
-	private LogBookCompletionConfirmation() {
+	private TodoCompletionConfirmation() {
 		// for JPA
 	}
 
-	public LogBookCompletionConfirmation(LogBook logBook, User member, Instant completionTime) {
-		this.logBook = logBook;
+	public TodoCompletionConfirmation(Todo todo, User member, Instant completionTime) {
+		this.todo = todo;
 		this.member = member;
 		this.completionTime = completionTime;
 	}
@@ -41,8 +41,8 @@ public class LogBookCompletionConfirmation {
 		return member;
 	}
 
-	public LogBook getLogBook() {
-		return logBook;
+	public Todo getTodo() {
+		return todo;
 	}
 
 
@@ -55,12 +55,12 @@ public class LogBookCompletionConfirmation {
 			return false;
 		}
 
-		LogBookCompletionConfirmation that = (LogBookCompletionConfirmation) o;
+		TodoCompletionConfirmation that = (TodoCompletionConfirmation) o;
 
 		if (!member.equals(that.member)) {
 			return false;
 		}
-		if (!logBook.equals(that.logBook)) {
+		if (!todo.equals(that.todo)) {
 			return false;
 		}
 
@@ -70,15 +70,15 @@ public class LogBookCompletionConfirmation {
 	@Override
 	public int hashCode() {
 		int result = member.hashCode();
-		result = 31 * result + logBook.hashCode();
+		result = 31 * result + todo.hashCode();
 		return result;
 	}
 
 	@Override
 	public String toString() {
-		final StringBuilder sb = new StringBuilder("LogBookCompletionConfirmation{");
+		final StringBuilder sb = new StringBuilder("TodoCompletionConfirmation{");
 		sb.append("member=").append(member.getUsername());
-		sb.append(", logBook=").append(logBook);
+		sb.append(", todo=").append(todo);
 		sb.append(", completionTime=").append(completionTime);
 		sb.append('}');
 		return sb.toString();

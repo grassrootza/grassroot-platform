@@ -21,6 +21,7 @@ import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
+import za.org.grassroot.services.exception.InvalidTokenException;
 import za.org.grassroot.services.geo.CenterCalculationResult;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.util.FullTextSearchUtils;
@@ -205,6 +206,8 @@ public class GroupBrokerImpl implements GroupBroker {
     @Transactional(readOnly = true)
     public boolean isDeactivationAvailable(User user, Group group, boolean checkIfWithinTimeWindow) {
         // todo: Integrate with permission checking -- for now, just checking if group created by user in last 48 hours
+        //todo check with luke if this permission applies or maybe add a new permission for group deletion
+       permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         boolean isUserGroupCreator = group.getCreatedByUser().equals(user);
         if (!checkIfWithinTimeWindow) {
             return isUserGroupCreator;
@@ -278,7 +281,7 @@ public class GroupBrokerImpl implements GroupBroker {
         User user = userRepository.findOneByUid(userUidToAdd);
         Group group = groupRepository.findOneByUid(groupUid);
         if (!tokenPassed.equals(group.getGroupTokenCode()) || Instant.now().isAfter(group.getTokenExpiryDateTime().toInstant()))
-            throw new RuntimeException("Invalid token: " + tokenPassed); // todo: create a custom version
+            throw new InvalidTokenException("Invalid token: " + tokenPassed);
 
         logger.info("Adding a member via token code: group={}, user={}, code={}", group, user, tokenPassed);
         group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER);

@@ -3,8 +3,6 @@ package za.org.grassroot.core.dto;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.collect.ComparisonChain;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.EventLogRepository;
@@ -99,15 +97,15 @@ public class TaskDTO implements Comparable<TaskDTO> {
 
     }
 
-    public TaskDTO(LogBook logBook, User user) {
-        this(user, logBook);
+    public TaskDTO(Todo todo, User user) {
+        this(user, todo);
 
-        this.hasResponded = logBook.isCompletedBy(user);
-        this.reply = getTodoStatus(logBook);
+        this.hasResponded = todo.isCompletedBy(user);
+        this.reply = getTodoStatus(todo);
 
-        this.canAction = canActionOnLogBook(logBook, user);
+        this.canAction = canActionOnLogBook(todo, user);
         this.location = "";
-        this.canEdit = logBook.getCreatedByUser().equals(user); // may adjust in future
+        this.canEdit = todo.getCreatedByUser().equals(user); // may adjust in future
     }
 
     public String getTaskUid() {
@@ -167,11 +165,11 @@ public class TaskDTO implements Comparable<TaskDTO> {
 
 	public boolean isCreatedByUser() { return createdByUser; }
 
-    private String getTodoStatus(LogBook logBook) {
+    private String getTodoStatus(Todo todo) {
 
-        if (logBook.isCompleted()) {
+        if (todo.isCompleted()) {
             return String.valueOf(TodoStatus.COMPLETED);
-        } else if (logBook.getActionByDate().isBefore(Instant.now())) {
+        } else if (todo.getActionByDate().isBefore(Instant.now())) {
             return String.valueOf(TodoStatus.OVERDUE);
         } else {
             return String.valueOf(TodoStatus.PENDING);
@@ -191,10 +189,10 @@ public class TaskDTO implements Comparable<TaskDTO> {
         return false;
     }
 
-    private boolean canActionOnLogBook(LogBook logBook, User user) {
-        if (!logBook.isCompleted() &&
-                (logBook.getAssignedMembers().contains(user)
-                || logBook.getAssignedMembers().isEmpty())) {
+    private boolean canActionOnLogBook(Todo todo, User user) {
+        if (!todo.isCompleted() &&
+                (todo.getAssignedMembers().contains(user)
+                || todo.getAssignedMembers().isEmpty())) {
             return true;
         }
         return false;

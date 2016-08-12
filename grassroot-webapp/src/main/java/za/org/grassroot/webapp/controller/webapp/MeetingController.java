@@ -135,7 +135,7 @@ public class MeetingController extends BaseController {
         if (canAlterDetails) {
             model.addAttribute("reminderOptions", EventReminderType.values());
             model.addAttribute("customReminderOptions", reminderMinuteOptions(false));
-            model.addAttribute("todos", meeting.getLogBooks());
+            model.addAttribute("todos", meeting.getTodos());
         }
 
         if (meeting.getScheduledReminderTime() != null)

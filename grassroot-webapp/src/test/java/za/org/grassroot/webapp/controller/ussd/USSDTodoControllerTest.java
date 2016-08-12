@@ -32,9 +32,9 @@ import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 /**
  * Created by luke on 2015/12/18.
  */
-public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
+public class USSDTodoControllerTest extends USSDAbstractUnitTest {
 
-    private static final Logger log = LoggerFactory.getLogger(USSDLogBookControllerTest.class);
+    private static final Logger log = LoggerFactory.getLogger(USSDTodoControllerTest.class);
 
     public static final String assignUserID = "assignUserUid";
 
@@ -59,7 +59,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
             completedDate = "date_completed",
             confirmCompleteDate = "confirm_date";
 
-    private static final String path = "/ussd/log/";
+    private static final String path = "/ussd/todo/";
 
     @InjectMocks
     USSDToDoController ussdLogBookController;
@@ -129,12 +129,12 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
                 " discuss something important about the community";
         Instant now = Instant.now();
         Group testGroup = new Group("somegroup", testUser);
-        List<LogBook> testLogBooks = Arrays.asList(
-                new LogBook(testUser, testGroup, message, now),
-                new LogBook(testUser, testGroup, message, now),
-                new LogBook(testUser, testGroup, message, now));
+        List<Todo> testTodos = Arrays.asList(
+                new Todo(testUser, testGroup, message, now),
+                new Todo(testUser, testGroup, message, now),
+                new Todo(testUser, testGroup, message, now));
 
-        Page<LogBook> dummyPage = new PageImpl<>(testLogBooks);
+        Page<Todo> dummyPage = new PageImpl<>(testTodos);
         String urlToSave = logViewExistingUrl(listEntriesMenu, testGroup.getUid(), true, 0);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(todoBrokerMock.retrieveGroupLogBooks(testUser.getUid(), testGroup.getUid(), true, 0, 3)).thenReturn(dummyPage);
@@ -151,7 +151,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
     public void askForSubjectShouldWork() throws Exception {
         testUser.setId(dummyId);
         Group dummyGroup = new Group("", testUser);
-        LogBookRequest dummyLogBook = LogBookRequest.makeEmpty(testUser, dummyGroup);
+        TodoRequest dummyLogBook = TodoRequest.makeEmpty(testUser, dummyGroup);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(todoRequestBrokerMock.create(testUser.getUid(), dummyGroup.getUid())).thenReturn(dummyLogBook);
@@ -161,7 +161,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(cacheUtilManagerMock, times(1)).putUssdMenuForUser(testUserPhone, saveLogMenu("subject", dummyLogBook.getUid()));
+        verify(cacheUtilManagerMock, times(1)).putUssdMenuForUser(testUserPhone, saveToDoMenu("subject", dummyLogBook.getUid()));
         verifyNoMoreInteractions(cacheUtilManagerMock);
         verify(todoRequestBrokerMock, times(1)).create(testUser.getUid(), dummyGroup.getUid());
         verifyNoMoreInteractions(todoRequestBrokerMock);
@@ -170,8 +170,8 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
     @Test
     public void askForDueDateShouldWorkAfterInterruption() throws Exception {
 
-        LogBookRequest dummyLogBook = LogBookRequest.makeEmpty(testUser);
-        String urlToSave = saveLogMenu("due_date", dummyLogBook.getUid(), dummyUserInput);
+        TodoRequest dummyLogBook = TodoRequest.makeEmpty(testUser);
+        String urlToSave = saveToDoMenu("due_date", dummyLogBook.getUid(), dummyUserInput);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).
                 thenReturn(testUser);
 
@@ -191,11 +191,11 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
     @Test
     public void askForAssignmentWorksAfterInterruption() throws Exception {
 
-        LogBookRequest dummyLogBook = LogBookRequest.makeEmpty(testUser);
+        TodoRequest dummyLogBook = TodoRequest.makeEmpty(testUser);
 
         String priorInput = "20/1";
 
-        String urlToSave = USSDUrlUtil.saveLogMenu(assignMenu, dummyLogBook.getUid(), priorInput);
+        String urlToSave = USSDUrlUtil.saveToDoMenu(assignMenu, dummyLogBook.getUid(), priorInput);
         String formattedDateString = reformatDateInput(priorInput).trim();
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
 
@@ -215,8 +215,8 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
     @Test
     public void searchUserWorksAfterInterruption() throws Exception {
 
-        LogBook dummyLogBook = LogBook.makeEmpty();
-        String urlToSave = USSDUrlUtil.saveLogMenu(searchUserMenu, dummyLogBook.getUid());
+        Todo dummyLogBook = Todo.makeEmpty();
+        String urlToSave = USSDUrlUtil.saveToDoMenu(searchUserMenu, dummyLogBook.getUid());
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         mockMvc.perform(get(path + searchUserMenu).param(logBookIdParam, String.valueOf(dummyId))
                 .param(phoneParam, testUserPhone).param("prior_input", "1").param("interrupted", String.valueOf(true))
@@ -231,10 +231,10 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
     @Test
     public void askForAssignedUsersWorksWithNumberAfterInterruption() throws Exception {
 
-        LogBook dummyLogBook = LogBook.makeEmpty();
+        Todo dummyLogBook = Todo.makeEmpty();
         dummyLogBook.setId(dummyId);
         dummyLogBook.setParent(new Group("somegroup", testUser));
-        String urlToSave = USSDUrlUtil.saveLogMenu(pickUserMenu, dummyLogBook.getUid(), testUserPhone);
+        String urlToSave = USSDUrlUtil.saveToDoMenu(pickUserMenu, dummyLogBook.getUid(), testUserPhone);
         List<User> dummyPossibleUsers = Arrays.asList(testUser);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(logBookServiceMock.load(dummyId)).thenReturn(dummyLogBook);
@@ -255,14 +255,14 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
         Group testGroup = new Group("testGroup", testUser);
         testGroup.addMember(testUser);
-        LogBookRequest dummyLogBook = LogBookRequest.makeEmpty(testUser, testGroup);
+        TodoRequest dummyLogBook = TodoRequest.makeEmpty(testUser, testGroup);
 
         testUser.setDisplayName("Paballo");
 
         dummyLogBook.setMessage(dummyUserInput);
         dummyLogBook.setActionByDate(Instant.now());
 
-        String urlToSave = saveLogMenu(confirmMenu, dummyLogBook.getUid(), subjectMenu, "revised message", true);
+        String urlToSave = saveToDoMenu(confirmMenu, dummyLogBook.getUid(), subjectMenu, "revised message", true);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(todoRequestBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
@@ -285,7 +285,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
     public void dateProcessingShouldWork() throws Exception {
 
         Group testGroup = new Group("test testGroup", testUser);
-        LogBookRequest dummyLogBook = LogBookRequest.makeEmpty(testUser, testGroup);
+        TodoRequest dummyLogBook = TodoRequest.makeEmpty(testUser, testGroup);
 
         LocalDateTime correctDueDate = LocalDateTime.of(testYear.getValue(), testDay.getMonthValue(), testDay.getDayOfMonth(), 13, 0);
         List<String> bloomVariations = Arrays.asList("%02d-%02d", "%02d %02d", "%02d/%02d", "%d-%d", "%d %d", "%d/%d",
@@ -294,7 +294,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 	    for (String format : bloomVariations) {
 
 	        String date = String.format(format, testDay.getDayOfMonth(), testDay.getMonthValue(), testYear.getValue());
-		    String urlToSave = USSDUrlUtil.saveLogMenu(confirmMenu, dummyLogBook.getUid(), dueDateMenu, date, true);
+		    String urlToSave = USSDUrlUtil.saveToDoMenu(confirmMenu, dummyLogBook.getUid(), dueDateMenu, date, true);
 	        String formattedDateString = reformatDateInput(date).trim();
 
             dummyLogBook.setActionByDate(convertDateStringToLocalDateTime(formattedDateString, 13, 0).toInstant(ZoneOffset.UTC));
@@ -318,7 +318,7 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
     @Test
     public void finishLogBookShouldWork() throws Exception {
 
-        LogBookRequest dummyLogBook = LogBookRequest.makeEmpty(testUser);
+        TodoRequest dummyLogBook = TodoRequest.makeEmpty(testUser);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
 
@@ -334,18 +334,18 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
     @Test
     public void viewEntryMenuWorks() throws Exception {
         Group testGroup = new Group("test testGroup", testUser);
-        LogBook dummyLogBook = new LogBook(testUser, testGroup, "Some logbook subject", Instant.now());
-        dummyLogBook.getAncestorGroup().addMember(testUser);
-        dummyLogBook.addCompletionConfirmation(testUser, Instant.now());
+        Todo dummyTodo = new Todo(testUser, testGroup, "Some logbook subject", Instant.now());
+        dummyTodo.getAncestorGroup().addMember(testUser);
+        dummyTodo.addCompletionConfirmation(testUser, Instant.now());
 
-        when(userManagementServiceMock.findByInputNumber(testUserPhone, saveLogMenu(viewEntryMenu, dummyLogBook.getUid()))).thenReturn(testUser);
-        when(todoBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone, saveToDoMenu(viewEntryMenu, dummyTodo.getUid()))).thenReturn(testUser);
+        when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
 
-        mockMvc.perform(get(path + viewEntryMenu).param(logBookIdParam, dummyLogBook.getUid())
+        mockMvc.perform(get(path + viewEntryMenu).param(logBookIdParam, dummyTodo.getUid())
                 .param(phoneParam, testUserPhone)).andExpect(status().isOk());
 
-        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, saveLogMenu(viewEntryMenu, dummyLogBook.getUid()));
-        verify(todoBrokerMock, times(1)).load(dummyLogBook.getUid());
+        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, saveToDoMenu(viewEntryMenu, dummyTodo.getUid()));
+        verify(todoBrokerMock, times(1)).load(dummyTodo.getUid());
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(todoBrokerMock);
     }
@@ -354,18 +354,18 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
     public void viewLogBookDatesWorksWhenActionInComplete() throws Exception {
 
         Group testGroup = new Group("tg1", testUser);
-        LogBook dummyLogBook = new LogBook(testUser, testGroup, "test logbook", Instant.now().plus(7, ChronoUnit.DAYS));
-        dummyLogBook.getAncestorGroup().addMember(testUser);
-        dummyLogBook.addCompletionConfirmation(testUser, Instant.now());
+        Todo dummyTodo = new Todo(testUser, testGroup, "test logbook", Instant.now().plus(7, ChronoUnit.DAYS));
+        dummyTodo.getAncestorGroup().addMember(testUser);
+        dummyTodo.addCompletionConfirmation(testUser, Instant.now());
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
-        when(todoBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
+        when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
 
-        mockMvc.perform(get(path + viewEntryDates).param(logBookIdParam, dummyLogBook.getUid())
+        mockMvc.perform(get(path + viewEntryDates).param(logBookIdParam, dummyTodo.getUid())
                 .param(phoneParam, testUserPhone)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
-        verify(todoBrokerMock, times(1)).load(dummyLogBook.getUid());
+        verify(todoBrokerMock, times(1)).load(dummyTodo.getUid());
 
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(todoBrokerMock);
@@ -376,17 +376,17 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
     public void viewLogBookDatesWorksWhenActionCompleted() throws Exception {
 
         Group testGroup = new Group("tg2", testUser);
-        LogBook dummyLogBook = new LogBook(testUser, testGroup, "test logbook", Instant.now().minus(7, ChronoUnit.DAYS));
-        dummyLogBook.getAncestorGroup().addMember(testUser);
-        dummyLogBook.addCompletionConfirmation(testUser, Instant.now());
+        Todo dummyTodo = new Todo(testUser, testGroup, "test logbook", Instant.now().minus(7, ChronoUnit.DAYS));
+        dummyTodo.getAncestorGroup().addMember(testUser);
+        dummyTodo.addCompletionConfirmation(testUser, Instant.now());
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
-        when(todoBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
+        when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
 
-        mockMvc.perform(get(path + viewEntryDates).param(logBookIdParam, dummyLogBook.getUid())
+        mockMvc.perform(get(path + viewEntryDates).param(logBookIdParam, dummyTodo.getUid())
                 .param(phoneParam, testUserPhone)).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
-        verify(todoBrokerMock, times(1)).load(dummyLogBook.getUid());
+        verify(todoBrokerMock, times(1)).load(dummyTodo.getUid());
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(todoBrokerMock);
 
@@ -397,18 +397,18 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
         Group testGroup = new Group("tg2", testUser);
         testGroup.addMember(testUser);
-        LogBook dummyLogBook = new LogBook(testUser, testGroup, "test logbook", Instant.now().minus(7, ChronoUnit.DAYS));
+        Todo dummyTodo = new Todo(testUser, testGroup, "test logbook", Instant.now().minus(7, ChronoUnit.DAYS));
 
-        dummyLogBook.addCompletionConfirmation(testUser, Instant.now());
-        dummyLogBook.assignMembers(Collections.singleton(testUser.getUid()));
+        dummyTodo.addCompletionConfirmation(testUser, Instant.now());
+        dummyTodo.assignMembers(Collections.singleton(testUser.getUid()));
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
-        when(todoBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
+        when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
 
         mockMvc.perform(get(path + viewAssignment).param(phoneParam, testUserPhone)
-                .param(logBookIdParam, dummyLogBook.getUid())).andExpect(status().isOk());
+                .param(logBookIdParam, dummyTodo.getUid())).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
-        verify(todoBrokerMock, times(1)).load(dummyLogBook.getUid());
+        verify(todoBrokerMock, times(1)).load(dummyTodo.getUid());
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(todoBrokerMock);
 
@@ -419,18 +419,18 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
         Group testGroup = new Group("tg2", testUser);
         testGroup.addMember(testUser);
-        LogBook dummyLogBook = new LogBook(testUser, testGroup, "test logbook", Instant.now().minus(7, ChronoUnit.DAYS));
+        Todo dummyTodo = new Todo(testUser, testGroup, "test logbook", Instant.now().minus(7, ChronoUnit.DAYS));
 
-        dummyLogBook.addCompletionConfirmation(testUser, Instant.now());
-        dummyLogBook.assignMembers(Collections.singleton(testUser.getUid()));
+        dummyTodo.addCompletionConfirmation(testUser, Instant.now());
+        dummyTodo.assignMembers(Collections.singleton(testUser.getUid()));
 
-        String urlToSave = saveLogMenu(setCompleteMenu, dummyLogBook.getUid());
+        String urlToSave = saveToDoMenu(setCompleteMenu, dummyTodo.getUid());
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        when(todoBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
+        when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
 
         mockMvc.perform(get(path + setCompleteMenu).param(phoneParam, testUserPhone)
-                .param(logBookIdParam, dummyLogBook.getUid())).andExpect(status().isOk());
+                .param(logBookIdParam, dummyTodo.getUid())).andExpect(status().isOk());
         mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
@@ -442,16 +442,16 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
     @Test
     public void selectCompletingUserPromptWorks() throws Exception {
 
-        LogBook dummyLogBook = LogBook.makeEmpty();
-        String urlToSave = saveLogMenu(completingUser, dummyLogBook.getUid());
+        Todo dummyTodo = Todo.makeEmpty();
+        String urlToSave = saveToDoMenu(completingUser, dummyTodo.getUid());
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         mockMvc.perform(get(path + completingUser).param(phoneParam, testUserPhone)
-                .param(logBookIdParam, dummyLogBook.getUid())).andExpect(status().isOk());
+                .param(logBookIdParam, dummyTodo.getUid())).andExpect(status().isOk());
         mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone,
-                saveLogMenu(completingUser, dummyLogBook.getUid()));
+                saveToDoMenu(completingUser, dummyTodo.getUid()));
         verifyNoMoreInteractions(userManagementServiceMock);
     }
 
@@ -460,27 +460,27 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
         Group testGroup = new Group("tg2", testUser);
         testGroup.addMember(testUser);
-        LogBook dummyLogBook = new LogBook(testUser, testGroup, "test logbook", Instant.now().minus(7, ChronoUnit.DAYS));
+        Todo dummyTodo = new Todo(testUser, testGroup, "test logbook", Instant.now().minus(7, ChronoUnit.DAYS));
 
-        dummyLogBook.assignMembers(Collections.singleton(testUser.getUid()));
+        dummyTodo.assignMembers(Collections.singleton(testUser.getUid()));
 
         List<User> testPossibleUsers = Arrays.asList(testUser);
-        String urlToSave = saveLogMenu(pickCompletor, dummyLogBook.getUid(), testUserPhone);
+        String urlToSave = saveToDoMenu(pickCompletor, dummyTodo.getUid(), testUserPhone);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        when(userManagementServiceMock.searchByGroupAndNameNumber(dummyLogBook.getAncestorGroup().getUid(), testUserPhone))
+        when(userManagementServiceMock.searchByGroupAndNameNumber(dummyTodo.getAncestorGroup().getUid(), testUserPhone))
                 .thenReturn(testPossibleUsers);
-        when(todoBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
+        when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
 
-        mockMvc.perform(get(path + pickCompletor).param(phoneParam, testUserPhone).param(logBookIdParam, dummyLogBook.getUid())
+        mockMvc.perform(get(path + pickCompletor).param(phoneParam, testUserPhone).param(logBookIdParam, dummyTodo.getUid())
                                 .param("request", testUserPhone)).andExpect(status().isOk());
         mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1"))
                 .andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone,
-                saveLogMenu(pickCompletor, dummyLogBook.getUid(), testUserPhone));
-        verify(userManagementServiceMock, times(2)).searchByGroupAndNameNumber(dummyLogBook.getAncestorGroup().getUid(), testUserPhone);
-        verify(todoBrokerMock, times(2)).load(dummyLogBook.getUid());
+                saveToDoMenu(pickCompletor, dummyTodo.getUid(), testUserPhone));
+        verify(userManagementServiceMock, times(2)).searchByGroupAndNameNumber(dummyTodo.getAncestorGroup().getUid(), testUserPhone);
+        verify(todoBrokerMock, times(2)).load(dummyTodo.getUid());
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(todoBrokerMock);
 
@@ -489,8 +489,8 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
     @Test
     public void completedDatePromptWorks() throws Exception {
 
-        String logBookUid = LogBook.makeEmpty().getUid();
-        String urlToSave = saveLogMenu(completedDate, logBookUid);
+        String logBookUid = Todo.makeEmpty().getUid();
+        String urlToSave = saveToDoMenu(completedDate, logBookUid);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
 
@@ -508,10 +508,10 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
     @Test
     public void confirmCompletedDateWorks() throws Exception {
 
-        String logBookUid = LogBook.makeEmpty().getUid();
+        String logBookUid = Todo.makeEmpty().getUid();
 
         String priorInput = "20 01";
-        String urlToSave = saveLogMenu(confirmCompleteDate, logBookUid, priorInput);
+        String urlToSave = saveToDoMenu(confirmCompleteDate, logBookUid, priorInput);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
 
@@ -531,21 +531,21 @@ public class USSDLogBookControllerTest extends USSDAbstractUnitTest {
 
         Group testGroup = new Group("tg2", testUser);
         testGroup.addMember(testUser);
-        LogBook dummyLogBook = new LogBook(testUser, testGroup, "test logbook", Instant.now().plus(1, ChronoUnit.DAYS));
+        Todo dummyTodo = new Todo(testUser, testGroup, "test logbook", Instant.now().plus(1, ChronoUnit.DAYS));
 
-        dummyLogBook.assignMembers(Collections.singleton(testUser.getUid()));
-        dummyLogBook.addCompletionConfirmation(testUser, Instant.now());
+        dummyTodo.assignMembers(Collections.singleton(testUser.getUid()));
+        dummyTodo.addCompletionConfirmation(testUser, Instant.now());
         String completed_date = "20/11";
         LocalDateTime correctDateTime = LocalDateTime.of(2016, 11, 20, 13, 0);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
 
         mockMvc.perform(get(path + setCompleteMenu + "-do").param(phoneParam, testUserPhone).
-                param(logBookIdParam, dummyLogBook.getUid()).param("completed_date", completed_date).
+                param(logBookIdParam, dummyTodo.getUid()).param("completed_date", completed_date).
                 param(assignUserID, testUser.getUid())).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
-        verify(todoBrokerMock, times(1)).confirmCompletion(testUser.getUid(), dummyLogBook.getUid(), correctDateTime);
+        verify(todoBrokerMock, times(1)).confirmCompletion(testUser.getUid(), dummyTodo.getUid(), correctDateTime);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(todoBrokerMock);
 

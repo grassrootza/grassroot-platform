@@ -71,8 +71,8 @@ public class MeetingRequest extends EventRequest<MeetingContainer> {
 	public MeetingContainer getParent() {
 		if (parentGroup != null) {
 			return parentGroup;
-		} else if (parentLogBook != null) {
-			return parentLogBook;
+		} else if (parentTodo != null) {
+			return parentTodo;
 		} else {
 			throw new IllegalStateException("There is no " + MeetingContainer.class.getSimpleName() + " parent defined for " + this);
 		}
@@ -81,8 +81,8 @@ public class MeetingRequest extends EventRequest<MeetingContainer> {
 	public void setParent(MeetingContainer parent) {
 		if (parent instanceof Group) {
 			this.parentGroup = (Group) parent;
-		} else if (parent instanceof LogBook) {
-			this.parentLogBook = (LogBook) parent;
+		} else if (parent instanceof Todo) {
+			this.parentTodo = (Todo) parent;
 		} else {
 			throw new UnsupportedOperationException("Unsupported parent: " + parent);
 		}

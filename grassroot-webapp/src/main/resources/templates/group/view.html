@@ -102,11 +102,11 @@
 
 <div layout:fragment="content">
 
-  <div class="col-md-8 col-md-offset-2"> <!-- todo: get this to work -->
+  <div class="col-md-8 col-md-offset-2"> <!-- toDo: get this to work -->
     <div layout:fragment="messages"></div>
   </div>
 
-  <!-- todo : fix the logic here (leave unsubscribe if can't alter -->
+  <!-- toDo : fix the logic here (leave unsubscribe if can't alter -->
   <div class="row">
     <div th:if="${canAlter}" class="row">
       <div class="col-md-2 col-md-offset-5 text-center">
@@ -436,7 +436,7 @@
                     <input type="text" class="form-control" id="new-member-name" name="displayName" />
                   </div>
                   <div class="form-group">
-                    <!-- todo : client-side within-form validation -->
+                    <!-- toDo : client-side within-form validation -->
                     <label for="new-member-phone" class="control-label">Phone number</label>
                     <input type="text" class="form-control" id="new-member-phone" name="phoneNumber" />
                   </div>
@@ -463,7 +463,7 @@
   </div>
 
   <!-- list subgroups -->
-  <!-- todo: maybe create a fragment to display a list of groups, to be used in a bunch of places -->
+  <!-- toDo: maybe create a fragment to display a list of groups, to be used in a bunch of places -->
   <div th:if="${not #lists.isEmpty(subGroups)}">
     <div class="well">
       <div class="row">

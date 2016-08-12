@@ -3,11 +3,11 @@ package za.org.grassroot.core.domain;
 /**
  * Contains info about Log book completion confirmations.
  */
-public class LogBookCompletionStatus {
+public class TodoCompletionStatus {
 	private final int confirmationsCount;
 	private final int membersCount;
 
-	public LogBookCompletionStatus(int confirmationsCount, int membersCount) {
+	public TodoCompletionStatus(int confirmationsCount, int membersCount) {
 		this.confirmationsCount = confirmationsCount;
 		this.membersCount = membersCount;
 	}
@@ -25,7 +25,7 @@ public class LogBookCompletionStatus {
 	}
 	@Override
 	public String toString() {
-		final StringBuilder sb = new StringBuilder("LogBookCompletionStatus{");
+		final StringBuilder sb = new StringBuilder("TodoCompletionStatus{");
 		sb.append("confirmationsCount=").append(confirmationsCount);
 		sb.append(", membersCount=").append(membersCount);
 		sb.append(", percentage=").append(getPercentage()).append('%');

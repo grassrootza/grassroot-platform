@@ -46,7 +46,7 @@ public class AdminManager implements AdminService {
     private VoteRepository voteRepository;
 
     @Autowired
-    private LogBookRepository logBookRepository;
+    private TodoRepository todoRepository;
 
 	@Autowired
 	private RoleRepository roleRepository;
@@ -198,12 +198,12 @@ public class AdminManager implements AdminService {
 
     @Override
     public Long countAllLogBooks() {
-        return logBookRepository.count();
+        return todoRepository.count();
     }
 
     @Override
     public Long countLogBooksRecordedInInterval(LocalDateTime start, LocalDateTime end) {
-        return logBookRepository.countByCreatedDateTimeBetween(start.toInstant(ZoneOffset.UTC),
+        return todoRepository.countByCreatedDateTimeBetween(start.toInstant(ZoneOffset.UTC),
                                                                end.toInstant(ZoneOffset.UTC));
     }
 

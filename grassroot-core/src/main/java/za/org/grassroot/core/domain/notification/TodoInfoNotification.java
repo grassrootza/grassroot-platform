@@ -1,6 +1,6 @@
 package za.org.grassroot.core.domain.notification;
 
-import za.org.grassroot.core.domain.LogBookLog;
+import za.org.grassroot.core.domain.TodoLog;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 
@@ -9,17 +9,15 @@ import javax.persistence.Entity;
 
 @Entity
 @DiscriminatorValue("LOG_BOOK_INFO")
-public class LogBookInfoNotification extends LogBookNotification {
+public class TodoInfoNotification extends TodoNotification {
+	private TodoInfoNotification() {
+		// for JPA
+	}
 	@Override
 	public NotificationDetailedType getNotificationDetailedType() {
 		return null;
 	}
-
-	private LogBookInfoNotification() {
-		// for JPA
-	}
-
-	public LogBookInfoNotification(User target, String message, LogBookLog logBookLog) {
-		super(target, message, logBookLog);
+	public TodoInfoNotification(User target, String message, TodoLog todoLog) {
+		super(target, message, todoLog);
 	}
 }

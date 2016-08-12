@@ -8,7 +8,7 @@ import java.util.Set;
 
 @Entity
 @Table(name = "log_book_request")
-public class LogBookRequest extends AbstractLogBookEntity {
+public class TodoRequest extends AbstractLogBookEntity {
 	@Column(name = "replicate_to_subgroups", nullable = false)
 	private boolean replicateToSubgroups;
 
@@ -19,20 +19,20 @@ public class LogBookRequest extends AbstractLogBookEntity {
 	)
 	private Set<User> assignedMembers = new HashSet<>();
 
-	private LogBookRequest() {
+	private TodoRequest() {
 		// for JPA
 	}
 
-	public static LogBookRequest makeEmpty(User createdByUser, LogBookContainer parent) {
-		LogBookRequest request = new LogBookRequest();
+	public static TodoRequest makeEmpty(User createdByUser, TodoContainer parent) {
+		TodoRequest request = new TodoRequest();
 		request.uid = UIDGenerator.generateId();
 		request.createdByUser = createdByUser;
 		request.setParent(parent);
 		return request;
 	}
 
-	public static LogBookRequest makeEmpty(User createdByUser) {
-		LogBookRequest request = new LogBookRequest();
+	public static TodoRequest makeEmpty(User createdByUser) {
+		TodoRequest request = new TodoRequest();
 		request.uid = UIDGenerator.generateId();
 		request.createdByUser = createdByUser;
 		return request;

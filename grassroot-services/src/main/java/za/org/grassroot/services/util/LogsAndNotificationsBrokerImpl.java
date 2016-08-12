@@ -29,7 +29,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 	private EventLogRepository eventLogRepository;
 
 	@Autowired
-	private LogBookLogRepository logBookLogRepository;
+	private TodoLogRepository todoLogRepository;
 
 	@Autowired
 	private AccountLogRepository accountLogRepository;
@@ -76,8 +76,8 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 		} else if (actionLog instanceof EventLog) {
 			eventLogRepository.save((EventLog) actionLog);
 
-		} else if (actionLog instanceof LogBookLog) {
-			logBookLogRepository.save((LogBookLog) actionLog);
+		} else if (actionLog instanceof TodoLog) {
+			todoLogRepository.save((TodoLog) actionLog);
 
 		} else if (actionLog instanceof AccountLog) {
 			accountLogRepository.save((AccountLog) actionLog);

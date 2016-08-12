@@ -16,7 +16,7 @@ public class UidIdentifiableRepositoryImpl implements UidIdentifiableRepository 
 	@Autowired
 	private EventRepository eventRepository;
 	@Autowired
-	private LogBookRepository logBookRepository;
+	private TodoRepository todoRepository;
 	@Autowired
 	private EntityManager entityManager;
 
@@ -37,7 +37,7 @@ public class UidIdentifiableRepositoryImpl implements UidIdentifiableRepository 
 			case GROUP:
 				return groupRepository.findOneByUid(uid);
 			case LOGBOOK:
-				return logBookRepository.findOneByUid(uid);
+				return todoRepository.findOneByUid(uid);
 			case MEETING:
 			case VOTE:
 				return eventRepository.findOneByUid(uid);

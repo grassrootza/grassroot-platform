@@ -63,7 +63,7 @@ public interface AdminService {
     int countEventsCreatedInInterval(LocalDateTime start, LocalDateTime end, EventType eventType);
 
     /*
-    Methods to analyze LogBook entries (to add masks)
+    Methods to analyze Todo entries (to add masks)
      */
 
     Long countAllLogBooks();

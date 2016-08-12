@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
- * This class should contain all fields common to both LogBook and LogBookRequest entity
+ * This class should contain all fields common to both Todo and TodoRequest entity
  */
 @MappedSuperclass
 public abstract class AbstractLogBookEntity {
@@ -63,7 +63,7 @@ public abstract class AbstractLogBookEntity {
 		// for JPA
 	}
 
-	protected AbstractLogBookEntity(User createdByUser, LogBookContainer parent, String message, Instant actionByDate, int reminderMinutes) {
+	protected AbstractLogBookEntity(User createdByUser, TodoContainer parent, String message, Instant actionByDate, int reminderMinutes) {
 		this.createdByUser = Objects.requireNonNull(createdByUser);
 		setParent(parent);
 		this.message = Objects.requireNonNull(message);
@@ -116,17 +116,17 @@ public abstract class AbstractLogBookEntity {
 		this.reminderMinutes = reminderMinutes;
 	}
 
-	public LogBookContainer getParent() {
+	public TodoContainer getParent() {
 		if (parentGroup != null) {
 			return parentGroup;
 		} else if (parentEvent != null) {
 			return parentEvent;
 		} else {
-			throw new IllegalStateException("There is no " + LogBookContainer.class.getSimpleName() + " parent defined for " + this);
+			throw new IllegalStateException("There is no " + TodoContainer.class.getSimpleName() + " parent defined for " + this);
 		}
 	}
 
-	public void setParent(LogBookContainer parent) {
+	public void setParent(TodoContainer parent) {
 		Objects.requireNonNull(parent);
 		if (parent instanceof Group) {
 			this.parentGroup = (Group) parent;
@@ -146,9 +146,9 @@ public abstract class AbstractLogBookEntity {
 			return false;
 		}
 
-		LogBook logBook = (LogBook) o;
+		Todo todo = (Todo) o;
 
-		if (uid != null ? !uid.equals(logBook.uid) : logBook.uid != null) {
+		if (uid != null ? !uid.equals(todo.uid) : todo.uid != null) {
 			return false;
 		}
 
