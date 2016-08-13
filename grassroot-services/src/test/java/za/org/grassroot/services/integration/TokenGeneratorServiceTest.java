@@ -8,15 +8,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.test.annotation.Repeat;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.GrassRootCoreConfig;
 import za.org.grassroot.GrassRootServicesConfig;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
-import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.VerificationTokenCode;
-import za.org.grassroot.services.util.TokenGeneratorManager;
 import za.org.grassroot.services.util.TokenGeneratorService;
 
 /**

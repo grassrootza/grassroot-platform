@@ -16,8 +16,6 @@ import static org.mockito.Mockito.mock;
 @Component
 public class TestContextConfig {
 
-
-
     @Bean
     public FactoryBean<XMPPConnection> gcmConnection() {
         return new MockitoFactoryBean<>(XMPPConnection.class);

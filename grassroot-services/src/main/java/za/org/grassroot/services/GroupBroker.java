@@ -84,9 +84,10 @@ public interface GroupBroker {
      * @param userUid user searcher
      * @param searchTerm query string
      * @param locationFilter optional, nullable, location filter options
+     * @param restrictToGroupName restricts to just the group name, e.g., if want to display separately
      * @return group list
      */
-    List<Group> findPublicGroups(String userUid, String searchTerm, GroupLocationFilter locationFilter);
+    List<Group> findPublicGroups(String userUid, String searchTerm, GroupLocationFilter locationFilter, boolean restrictToGroupName);
 
     Group findGroupFromJoinCode(String joinCode);
 

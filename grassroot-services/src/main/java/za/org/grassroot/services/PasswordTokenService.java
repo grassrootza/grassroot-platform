@@ -3,32 +3,25 @@ package za.org.grassroot.services;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.core.dto.UserDTO;
+import za.org.grassroot.core.enums.VerificationCodeType;
 
 /**
  * @author Lesetse Kimwaga
  */
 public interface PasswordTokenService {
 
-    VerificationTokenCode generateVerificationCode(User user);
+    VerificationTokenCode generateShortLivedOTP(String phoneNumber);
 
-    VerificationTokenCode generateVerificationCode(String username);
+    VerificationTokenCode generateLongLivedAuthCode(String userUid);
 
-    VerificationTokenCode generateAndroidVerificationCode(String phoneNumber);
+    VerificationTokenCode fetchLongLivedAuthCode(String phoneNumber);
 
+    boolean isShortLivedOtpValid(String phoneNumber, String code);
 
-    //todo: remove in future, only for android purposes
-    VerificationTokenCode getVerificationCode(String phoneNumber);
-
-    boolean isVerificationCodeValid(User user, String code);
-
-    boolean isVerificationCodeValid(UserDTO userDTO, String code);
-
-    boolean isVerificationCodeValid(String username, String code);
+    boolean isLongLiveAuthValid(String phoneNumber, String code);
 
     boolean isExpired(VerificationTokenCode verificationTokenCode);
 
-    VerificationTokenCode generateLongLivedCode(User user);
-
-
+    void expireVerificationCode(String userUid, VerificationCodeType type);
 
 }

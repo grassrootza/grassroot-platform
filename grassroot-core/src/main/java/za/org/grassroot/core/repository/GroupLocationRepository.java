@@ -18,4 +18,7 @@ public interface GroupLocationRepository extends JpaRepository<GroupLocation, Lo
 	@Query("select distinct gl.group from GroupLocation gl ")
 	List<Group> findAllGroupsWithLocationData();
 
+	@Query("select distinct g from GroupLocation gl inner join gl.group g where g IN ?1")
+	List<Group> findAllGroupsWithLocationDataInReferenceSet(Set<Group> groups);
+
 }

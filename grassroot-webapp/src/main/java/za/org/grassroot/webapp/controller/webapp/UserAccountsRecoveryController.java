@@ -1,6 +1,5 @@
 package za.org.grassroot.webapp.controller.webapp;
 
-import org.apache.log4j.spi.LoggerFactory;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -11,11 +10,9 @@ import org.springframework.validation.Validator;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.view.RedirectView;
-import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.integration.services.SmsSendingService;
 import za.org.grassroot.services.PasswordTokenService;
@@ -31,7 +28,7 @@ import javax.servlet.http.HttpServletRequest;
 @Controller
 public class UserAccountsRecoveryController extends BaseController {
 
-    private Logger log = org.slf4j.LoggerFactory.getLogger(UserAccountsRecoveryController.class);
+    private static final Logger log = org.slf4j.LoggerFactory.getLogger(UserAccountsRecoveryController.class);
 
     @Autowired
     private PasswordTokenService  passwordTokenService;
@@ -67,7 +64,7 @@ public class UserAccountsRecoveryController extends BaseController {
 
         VerificationTokenCode verificationTokenCode = null;
         try {
-            verificationTokenCode = passwordTokenService.generateVerificationCode(grassRootID);
+            verificationTokenCode = passwordTokenService.generateShortLivedOTP(grassRootID);
         } catch (Exception e) {
             log.error("Could not generate verification token for {}", grassRootID);
         }

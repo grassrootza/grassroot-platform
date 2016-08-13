@@ -72,7 +72,7 @@ public class UserRestControllerTest extends RestAbstractUnitTest {
         System.out.println(requestJson);
         when(passwordTokenServiceMock.isVerificationCodeValid(testUserDTo,testtokenCode)).thenReturn(true);
         when(userManagementServiceMock.createAndroidUserProfile(testUserDTo)).thenReturn(sessionTestUser);
-        when(passwordTokenServiceMock.generateLongLivedCode(sessionTestUser)).thenReturn(testVerifivationTokenCode);
+        when(passwordTokenServiceMock.generateLongLivedAuthCode(sessionTestUser)).thenReturn(testVerifivationTokenCode);
         mockMvc.perform(post(path+"verify/{code}", testVerifivationTokenCode.getCode()).contentType(APPLICATION_JSON_UTF8).content(requestJson))
                 .andExpect(status().isOk());
 

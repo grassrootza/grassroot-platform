@@ -18,4 +18,6 @@ public interface GroupJoinRequestRepository extends JpaRepository<GroupJoinReque
 
     List<GroupJoinRequest> findByGroupJoinApproverAndStatus(User approver, GroupJoinRequestStatus status, Sort sort);
 
+    List<GroupJoinRequest> findByRequestorAndStatusAndGroupIn(User requestor, GroupJoinRequestStatus status, List<Group> groups);
+
 }

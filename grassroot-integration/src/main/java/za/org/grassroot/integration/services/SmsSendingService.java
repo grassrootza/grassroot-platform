@@ -6,6 +6,8 @@ package za.org.grassroot.integration.services;
 public interface SmsSendingService {
 
     // todo: create a version that returns the result of the SMS as bound object rather than just raw XML
-    public String sendSMS(String message, String destinationNumber);
+    String sendSMS(String message, String destinationNumber);
+
+    void sendPrioritySMS(String message, String destinationNumber);
 
 }

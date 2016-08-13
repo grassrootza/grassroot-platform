@@ -13,6 +13,7 @@ import za.org.grassroot.core.dto.TokenDTO;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.enums.UserMessagingPreference;
+import za.org.grassroot.core.enums.VerificationCodeType;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.services.SmsSendingService;
 import za.org.grassroot.services.PasswordTokenService;
@@ -81,12 +82,12 @@ public class UserRestController {
     public ResponseEntity<ResponseWrapper> verify(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String otpEntered)
             throws Exception {
 
-        UserDTO userDTO = new UserDTO(phoneNumber, null);
-        if (passwordTokenService.isVerificationCodeValid(userDTO, otpEntered)) {
+        if (passwordTokenService.isShortLivedOtpValid(phoneNumber, otpEntered)) {
             log.info("user dto and code verified, now creating user with phoneNumber={}", phoneNumber);
-            userDTO = userManagementService.loadUserCreateRequest(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
+            UserDTO userDTO = userManagementService.loadUserCreateRequest(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
             User user = userManagementService.createAndroidUserProfile(userDTO);
-            VerificationTokenCode token = passwordTokenService.generateLongLivedCode(user);
+            VerificationTokenCode token = passwordTokenService.generateLongLivedAuthCode(user.getUid());
+            passwordTokenService.expireVerificationCode(user.getUid(), VerificationCodeType.SHORT_OTP);
             AuthenticationResponseWrapper authWrapper = new AuthenticationResponseWrapper(HttpStatus.OK, RestMessage.USER_REGISTRATION_SUCCESSFUL,
                     RestStatus.SUCCESS, new TokenDTO(token), user.getDisplayName(), user.getLanguageCode(), false);
             return new ResponseEntity<>(authWrapper, HttpStatus.OK);
@@ -98,15 +99,13 @@ public class UserRestController {
 
     @RequestMapping(value = "/login/{phoneNumber}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> logon(@PathVariable("phoneNumber") String phoneNumber) {
-        ResponseWrapper responseWrapper;
+
         final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
         if (ifExists(msisdn)) {
-            log.info("Logging in user with phoneNumber = {}", msisdn);
             // this will send the token by SMS and return an empty string if in production, or return the token if on staging
             String token = temporaryTokenSend(userManagementService.generateAndroidUserVerifier(msisdn, null), msisdn);
             return RestUtil.okayResponseWithData(RestMessage.VERIFICATION_TOKEN_SENT, token);
         } else {
-            log.info("Android login: user with phoneNumber={} does not exist", phoneNumber);
             return RestUtil.errorResponse(HttpStatus.NOT_FOUND, RestMessage.USER_DOES_NOT_EXIST);
         }
     }
@@ -115,15 +114,16 @@ public class UserRestController {
     public ResponseEntity<ResponseWrapper> authenticate(@PathVariable("phoneNumber") String phoneNumber,
                                                         @PathVariable("code") String token) {
 
-        if (passwordTokenService.isVerificationCodeValid(phoneNumber, token)) {
+        if (passwordTokenService.isShortLivedOtpValid(phoneNumber, token)) {
             log.info("User authentication successful for user with phoneNumber={}", phoneNumber);
             User user = userManagementService.loadOrSaveUser(phoneNumber);
-            if(!user.hasAndroidProfile()){
+            if (!user.hasAndroidProfile()) {
                 userManagementService.createAndroidUserProfile(new UserDTO(user));
             }
             userManagementService.setMessagingPreference(user.getUid(), UserMessagingPreference.ANDROID_APP); // todo : maybe move to gcm registration
-            VerificationTokenCode longLivedToken = passwordTokenService.generateLongLivedCode(user);
+            VerificationTokenCode longLivedToken = passwordTokenService.generateLongLivedAuthCode(user.getUid());
             boolean hasGroups = userManagementService.isPartOfActiveGroups(user);
+            passwordTokenService.expireVerificationCode(user.getUid(), VerificationCodeType.SHORT_OTP);
             AuthenticationResponseWrapper authWrapper = new AuthenticationResponseWrapper(HttpStatus.OK, RestMessage.LOGIN_SUCCESS,
                     RestStatus.SUCCESS, new TokenDTO(longLivedToken), user.getDisplayName(),user.getLanguageCode(), hasGroups);
             return new ResponseEntity<>(authWrapper, HttpStatus.OK);
@@ -140,6 +140,14 @@ public class UserRestController {
         User user = userManagementService.findByInputNumber(phoneNumber);
         log.info("reconnected user : " + user.getPhoneNumber());
         return RestUtil.messageOkayResponse(RestMessage.USER_OKAY);
+    }
+
+    @RequestMapping(value = "/logout/{phoneNumber}/{code}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> logoutUser(@PathVariable String phoneNumber, @PathVariable String code) {
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        userManagementService.setMessagingPreference(user.getUid(), UserMessagingPreference.SMS);
+        passwordTokenService.expireVerificationCode(user.getUid(), VerificationCodeType.LONG_AUTH);
+        return RestUtil.messageOkayResponse(RestMessage.USER_LOGGED_OUT);
     }
 
     @RequestMapping(value="/profile/settings/update/{phoneNumber}/{code}", method = RequestMethod.POST)
@@ -183,8 +191,8 @@ public class UserRestController {
         if (environment.acceptsProfiles("production")) {
             if (token != null && System.getenv("SMSUSER") != null && System.getenv("SMSPASS") != null) {
                 // todo : wire up a message source for this
-                String messageResult = smsSendingService.sendSMS("Grassroot code: " + token, destinationNumber);
-                log.debug("SMS Send result: {}", messageResult);
+                // the priority sender will default to smsuser & smspass if priority account details not found, hence leaving the check on those
+                smsSendingService.sendPrioritySMS("Grassroot code: " + token, destinationNumber);
             } else {
                 log.warn("Did not send verification message. No system messaging configuration found.");
             }
@@ -193,6 +201,4 @@ public class UserRestController {
             return token;
         }
     }
-
-
 }

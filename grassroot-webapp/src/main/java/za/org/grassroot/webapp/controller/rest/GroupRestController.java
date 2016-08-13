@@ -15,11 +15,15 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
+import za.org.grassroot.services.exception.JoinRequestNotOpenException;
 import za.org.grassroot.services.exception.RequestorAlreadyPartOfGroupException;
+import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.GroupJoinRequestDTO;
@@ -31,10 +35,12 @@ import za.org.grassroot.webapp.util.RestUtil;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.OK;
 
 /**
@@ -48,22 +54,25 @@ public class GroupRestController {
     private static final int groupMemberListPageSizeDefault = 20;
 
     @Autowired
-    EventManagementService eventManagementService;
+    private EventManagementService eventManagementService;
 
     @Autowired
-    RoleManagementService roleManagementService;
+    private RoleManagementService roleManagementService;
 
     @Autowired
-    UserManagementService userManagementService;
+    private UserManagementService userManagementService;
 
     @Autowired
-    GroupBroker groupBroker;
+    private GroupBroker groupBroker;
 
     @Autowired
-    PermissionBroker permissionBroker;
+    private PermissionBroker permissionBroker;
 
     @Autowired
     private GroupJoinRequestService groupJoinRequestService;
+
+	@Autowired
+	private GeoLocationBroker geoLocationBroker;
 
 	@Autowired
 	@Qualifier("messageSourceAccessor")
@@ -172,32 +181,58 @@ public class GroupRestController {
     @RequestMapping(value = "/search/{phoneNumber}/{code}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> searchForGroup(@PathVariable String phoneNumber,
                                                           @PathVariable String code,
-                                                          @RequestParam("searchTerm") String searchTerm) {
+                                                          @RequestParam("searchTerm") String searchTerm,
+                                                          @RequestParam(value = "onlySearchNames", required = false) boolean onlySearchNames,
+                                                          @RequestParam(value = "searchByLocation", required = false) boolean searchByLocation,
+                                                          @RequestParam(value = "searchRadius", required = false) Integer searchRadius) {
 
         User user = userManagementService.findByInputNumber(phoneNumber);
 
 	    String tokenSearch = getSearchToken(searchTerm);
         Group groupByToken = groupBroker.findGroupFromJoinCode(tokenSearch);
 
-        ResponseWrapper responseWrapper;
+        ResponseEntity<ResponseWrapper> responseEntity;
         if (groupByToken != null  && !groupByToken.hasMember(user)) {
-            Event event = eventManagementService.getMostRecentEvent(groupByToken);
-            GroupSearchWrapper groupWrapper = new GroupSearchWrapper(groupByToken, event);
-            responseWrapper = new GenericResponseWrapper(OK, RestMessage.GROUP_FOUND, RestStatus.SUCCESS, groupWrapper);
+            responseEntity = RestUtil.okayResponseWithData(RestMessage.GROUP_FOUND, new GroupSearchWrapper(groupByToken));
         } else {
-            List<Group> possibleGroups = groupBroker.findPublicGroups(user.getUid(), searchTerm, null);
-            log.info("searched for possible groups found {}, which are {}", possibleGroups.size(), possibleGroups);
-	        List<GroupSearchWrapper> groupSearchWrappers;
-            if (!possibleGroups.isEmpty()) {
-                groupSearchWrappers = possibleGroups.stream()
-                        .map(group -> new GroupSearchWrapper(group, eventManagementService.getMostRecentEvent(group)))
-                        .collect(Collectors.toList());
-                responseWrapper = new GenericResponseWrapper(OK, RestMessage.POSSIBLE_GROUP_MATCHES, RestStatus.SUCCESS, groupSearchWrappers);
-            } else {
-                responseWrapper = new ResponseWrapperImpl(OK, RestMessage.NO_GROUP_MATCHING_TERM_FOUND, RestStatus.FAILURE);
-            }
+
+	        // the service beans accept null for the filter, in which case they just ignore location, hence doing it this way
+	        // note: excluding groups with no location, to avoid user confusion, but should change in future
+	        GroupLocationFilter filter = null;
+	        if (searchByLocation) {
+		        PreviousPeriodUserLocation lastUserLocation = geoLocationBroker.fetchUserLocation(user.getUid(), LocalDate.now());
+		        log.info("here is the user location : " + lastUserLocation);
+		        filter = lastUserLocation != null ? new GroupLocationFilter(lastUserLocation.getLocation(), searchRadius, false) : null;
+	        }
+
+	        log.info("searching for groups, with search by name only = {}, and with location filter = {}", onlySearchNames, filter);
+	        List<Group> groupsToReturn = groupBroker.findPublicGroups(user.getUid(), searchTerm, filter, onlySearchNames);
+	        if (groupsToReturn == null || groupsToReturn.isEmpty()) {
+		        log.info("found no groups ... returning empty ...");
+		        responseEntity = RestUtil.okayResponseWithData(RestMessage.NO_GROUP_MATCHING_TERM_FOUND, Collections.emptyList());
+	        } else {
+		        // next line is a slightly heavy duty way to handle separating task & name queries, vs a quick string comparison on all
+		        // groups, but (a) ensures no discrepancies in what user sees, and (b) sets up for non-English/case languages
+		        List<Group> possibleGroupsOnlyName = onlySearchNames ? null : groupBroker.findPublicGroups(user.getUid(), searchTerm, null, true);
+
+		        // note : we likely want to switch this to just getting the groups, via a proper JPQL query (first optimization, then maybe above)
+		        List<GroupJoinRequest> openRequests = groupJoinRequestService.getOpenUserRequestsForGroupList(user.getUid(), groupsToReturn);
+		        // similarly, this should likely be incorporated into the return entity from the broker above, hence refactor once past next version
+		        List<Group> groupsWithLocation = geoLocationBroker.fetchGroupsWithRecordedLocationsFromSet(new HashSet<>(groupsToReturn));
+
+		        log.info("searched for possible groups found {}, which are {}, of which {} have locations", groupsToReturn.size(), groupsToReturn,
+				        groupsWithLocation != null ? groupsWithLocation.size() : "null");
+
+		        List<GroupSearchWrapper> groupSearchWrappers = groupsToReturn
+				        .stream()
+				        .map(group -> new GroupSearchWrapper(group, onlySearchNames || possibleGroupsOnlyName.contains(group),
+						        groupsWithLocation.contains(group), openRequests))
+				        .sorted(Comparator.reverseOrder())
+				        .collect(Collectors.toList());
+		        responseEntity = RestUtil.okayResponseWithData(RestMessage.POSSIBLE_GROUP_MATCHES, groupSearchWrappers);
+	        }
         }
-        return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
+        return responseEntity;
     }
 
     @RequestMapping(value = "/join/request/{phoneNumber}/{code}", method = RequestMethod.POST)
@@ -218,6 +253,34 @@ public class GroupRestController {
         }
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
     }
+
+	@RequestMapping(value = "/join/request/cancel/{phoneNumber}/{code}", method = RequestMethod.POST)
+	public ResponseEntity<ResponseWrapper> cancelJoinRequest(@PathVariable String phoneNumber,
+	                                                         @PathVariable String code,
+	                                                         @RequestParam String groupUid) {
+		User user = userManagementService.findByInputNumber(phoneNumber);
+		try {
+			groupJoinRequestService.cancel(user.getUid(), groupUid);
+			return RestUtil.messageOkayResponse(RestMessage.GROUP_JOIN_REQUEST_CANCELLED);
+		} catch (JoinRequestNotOpenException e) {
+			return RestUtil.errorResponse(CONFLICT, RestMessage.GROUP_JOIN_REQUEST_NOT_FOUND);
+		}
+	}
+
+	@RequestMapping(value = "/join/request/remind/{phoneNumber}/{code}", method = RequestMethod.POST)
+	public ResponseEntity<ResponseWrapper> remindOfJoinRequest(@PathVariable String phoneNumber,
+	                                                           @PathVariable String code,
+	                                                           @RequestParam String groupUid) {
+		User user = userManagementService.findByInputNumber(phoneNumber);
+		try {
+			groupJoinRequestService.remind(user.getUid(), groupUid);
+			return RestUtil.messageOkayResponse(RestMessage.GROUP_JOIN_REQUEST_REMIND);
+		} catch (JoinRequestNotOpenException e) {
+			return RestUtil.errorResponse(CONFLICT, RestMessage.GROUP_JOIN_REQUEST_NOT_FOUND);
+		}
+	}
+
+
 
     @RequestMapping(value = "/join/list/{phoneNumber}/{code}", method = RequestMethod.GET)
     public ResponseEntity<List<GroupJoinRequestDTO>> listPendingJoinRequests(@PathVariable String phoneNumber,

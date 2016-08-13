@@ -18,6 +18,7 @@ public enum UserLogType {
     USER_SKIPPED_NAME("user preferred not to set name"),
     DEREGISTERED_ANDROID("user android profile deleted"),
     JOIN_REQUEST("user required to approve a join request"),
+    JOIN_REQUEST_REMINDER("user reminded to response to join request"),
     JOINED_SAFETY_GROUP("user added to safety group"),
     ADDED_ADDRESS("user added address"),
     CHANGED_ADDRESS("user changed address"),

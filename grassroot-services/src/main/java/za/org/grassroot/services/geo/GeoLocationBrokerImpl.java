@@ -150,6 +150,13 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 	}
 
 	@Override
+	public List<Group> fetchGroupsWithRecordedLocationsFromSet(Set<Group> referenceSet) {
+		logger.info("looking for groups in this set : " + referenceSet.toString());
+		return referenceSet.isEmpty() ? new ArrayList<>() :
+				groupLocationRepository.findAllGroupsWithLocationDataInReferenceSet(referenceSet);
+	}
+
+	@Override
 	@Transactional(readOnly = true)
 	public List<double[]> fetchUserLatitudeLongitudeInAvgPeriod(String userUid, LocalDate localDate) {
 

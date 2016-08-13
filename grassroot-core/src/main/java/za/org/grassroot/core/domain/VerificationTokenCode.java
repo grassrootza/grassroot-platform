@@ -1,8 +1,10 @@
 package za.org.grassroot.core.domain;
 
+import za.org.grassroot.core.enums.VerificationCodeType;
+
 import javax.persistence.*;
-import java.sql.Timestamp;
-import java.util.Calendar;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 /**
  * @author Lesetse Kimwaga
@@ -11,20 +13,25 @@ import java.util.Calendar;
 @Table(name = "verification_token_code")
 public class VerificationTokenCode extends BaseEntity {
 
+    @Column(name = "username", nullable = false)
     private String username;
 
     protected String code;
 
-    @Column(name = "creation_date")
-    protected Timestamp createdDateTime;
+    @Column(name = "creation_date", nullable = false)
+    private Instant createdDateTime;
 
     @Column(name = "expiry_date")
-    protected Timestamp expiryDateTime;
+    private Instant expiryDateTime;
 
     @Column(name = "token_access_attempts")
     private int tokenAccessAttempts = 1;
 
-    public VerificationTokenCode() {
+    @Column(name = "token_type", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private VerificationCodeType type;
+
+    private VerificationTokenCode() {
     }
 
     public String getCode() {
@@ -35,10 +42,11 @@ public class VerificationTokenCode extends BaseEntity {
         this.code = code;
     }
 
-    public VerificationTokenCode(String username,String code) {
+    public VerificationTokenCode(String username, String code, VerificationCodeType type) {
         this.code = code;
         this.username = username;
-        updateTimeStamp();
+        this.type = type;
+        updateCreatedDateTime();
     }
 
     public String getUsername() {
@@ -49,17 +57,17 @@ public class VerificationTokenCode extends BaseEntity {
         this.username = username;
     }
 
-    public Timestamp getCreatedDateTime() {
+    public Instant getCreatedDateTime() {
         return createdDateTime;
     }
 
-    public void setCreatedDateTime(Timestamp createdDateTime) {
+    public void setCreatedDateTime(Instant createdDateTime) {
         this.createdDateTime = createdDateTime;
     }
 
-    public Timestamp getExpiryDateTime() { return expiryDateTime; }
+    public Instant getExpiryDateTime() { return expiryDateTime; }
 
-    public void setExpiryDateTime(Timestamp expiryDateTime) { this.expiryDateTime = expiryDateTime; }
+    public void setExpiryDateTime(Instant expiryDateTime) { this.expiryDateTime = expiryDateTime; }
 
     public int getTokenAccessAttempts() {
         return tokenAccessAttempts;
@@ -69,23 +77,31 @@ public class VerificationTokenCode extends BaseEntity {
         this.tokenAccessAttempts = tokenAccessAttempts;
     }
 
-    public void updateTimeStamp() {
-            this.createdDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis());
+    public void updateCreatedDateTime() {
+        this.createdDateTime = Instant.now();
     }
 
-    public  void incrementTokenAttempts()
+    public void incrementTokenAttempts()
     {
        this.tokenAccessAttempts = tokenAccessAttempts + 1;
+    }
+
+    public VerificationCodeType getType() {
+        return type;
+    }
+
+    public void setType(VerificationCodeType type) {
+        this.type = type;
     }
 
     @PreUpdate
     @PrePersist
     public void addTimeStamps() {
         if (createdDateTime == null) {
-            createdDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis());
+            createdDateTime = Instant.now();
         }
         if (expiryDateTime == null) {
-            expiryDateTime = new Timestamp(createdDateTime.getTime() + 5 * 60 * 1000); // default is token lasts 5 mins
+            expiryDateTime = createdDateTime.plus(5, ChronoUnit.MINUTES); // default is token lasts 5 mins
         }
     }
 }

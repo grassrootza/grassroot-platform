@@ -19,6 +19,7 @@ import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.UserRepository;
 
+import javax.annotation.PostConstruct;
 import java.sql.Timestamp;
 import java.time.Instant;
 
@@ -42,6 +43,15 @@ public class SmsSendingManager implements SmsSendingService {
     private String smsGatewayUsername = System.getenv("SMSUSER");
     private String smsGatewayPassword = System.getenv("SMSPASS");
 
+    private String smsPriorityUsername;
+    private String smsPriorityPassword;
+
+    @PostConstruct
+    public void init() {
+        smsPriorityUsername = environment.getProperty("SMSPUSER", smsGatewayUsername);
+        smsPriorityPassword = environment.getProperty("SMSPPASS", smsGatewayPassword);
+    }
+
     @Override
     public String sendSMS(String message, String destinationNumber) {
 
@@ -61,6 +71,19 @@ public class SmsSendingManager implements SmsSendingService {
         }
 
         return null;
+    }
+
+    @Override
+    public void sendPrioritySMS(String message, String destinationNumber) {
+        UriComponentsBuilder gatewayURI = UriComponentsBuilder.newInstance().scheme("https").host(smsGatewayHost);
+
+        gatewayURI.path("send/").queryParam("username", smsPriorityUsername).queryParam("password", smsPriorityPassword);
+        gatewayURI.queryParam("number", destinationNumber);
+        gatewayURI.queryParam("message", message);
+
+        String messageResult = restTemplate.getForObject(gatewayURI.build().toUri(), String.class);
+        log.info("Priority SMS sent, with result ... " + messageResult);
+
     }
 
 }

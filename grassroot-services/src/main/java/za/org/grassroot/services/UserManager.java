@@ -18,14 +18,10 @@ import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.WelcomeNotification;
 import za.org.grassroot.core.dto.UserDTO;
-import za.org.grassroot.core.enums.AlertPreference;
-import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.core.enums.UserLogType;
-import za.org.grassroot.core.enums.UserMessagingPreference;
+import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.services.GcmService;
-import za.org.grassroot.integration.services.MessageSendingService;
 import za.org.grassroot.integration.services.SmsSendingService;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.exception.NoSuchProfileException;
@@ -246,7 +242,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             }
             userCreateRequestRepository.save(userCreateRequest);
         }
-        VerificationTokenCode token = passwordTokenService.generateAndroidVerificationCode(phoneNumber);
+        VerificationTokenCode token = passwordTokenService.generateShortLivedOTP(phoneNumber);
         return token.getCode();
     }
 
@@ -258,7 +254,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             throw new AccessDeniedException("Error! Trying to resend OTP for user before creating");
         }
 
-        VerificationTokenCode newTokenCode= passwordTokenService.generateAndroidVerificationCode(phoneNumber);
+        VerificationTokenCode newTokenCode= passwordTokenService.generateShortLivedOTP(phoneNumber);
         return newTokenCode.getCode();
     }
 
@@ -438,10 +434,11 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
         log.info("Found this user: " + user);
 
-        if (passwordTokenService.isVerificationCodeValid(user, token)) {
+        if (passwordTokenService.isShortLivedOtpValid(user.getPhoneNumber(), token.trim())) {
             String encodedPassword = passwordEncoder.encode(newPassword);
             user.setPassword(encodedPassword);
             user = userRepository.save(user);
+            passwordTokenService.expireVerificationCode(user.getUid(), VerificationCodeType.SHORT_OTP);
         }
         return user;
     }

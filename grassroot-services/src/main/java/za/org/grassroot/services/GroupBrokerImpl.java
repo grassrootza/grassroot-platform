@@ -838,14 +838,15 @@ public class GroupBrokerImpl implements GroupBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Group> findPublicGroups(String userUid, String searchTerm, GroupLocationFilter locationFilter) {
+    public List<Group> findPublicGroups(String userUid, String searchTerm, GroupLocationFilter locationFilter, boolean restrictToGroupName) {
         Objects.requireNonNull(userUid);
 
         logger.info("Finding public groups: userUid={}, searchTerm={}, locationFilter={}", userUid, searchTerm, locationFilter);
 
         User user = userRepository.findOneByUid(userUid);
         String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm);
-        List<Group> groups = groupRepository.findDiscoverableGroupsWithNameOrTaskTextWithoutMember(user.getId(), tsQuery);
+        List<Group> groups = restrictToGroupName ? groupRepository.findDiscoverableGroupsWithNameWithoutMember(user.getId(), tsQuery) :
+                groupRepository.findDiscoverableGroupsWithNameOrTaskTextWithoutMember(user.getId(), tsQuery);
 
         Predicate<Group> locationPredicate = constructLocationPredicate(user, new HashSet<>(groups), locationFilter);
         return groups.stream()

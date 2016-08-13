@@ -48,6 +48,8 @@ public interface MessageAssemblingService {
 
     String createGroupJoinRequestMessage(User user, GroupJoinRequest request);
 
+    String createGroupJoinReminderMessage(User user, GroupJoinRequest request);
+
     String createReplyFailureMessage(User user);
 
     /**

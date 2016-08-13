@@ -41,14 +41,13 @@ public class UserAccountRecoveryValidator implements Validator{
 
         UserAccountRecovery userAccountRecovery = (UserAccountRecovery) target;
 
-        if(!errors.hasErrors())
-        {
+        if(!errors.hasErrors()) {
 
             if(!userAccountRecovery.getNewPassword().equals(userAccountRecovery.getPasswordConfirm())) {
                 errors.rejectValue("passwordConfirm","user.account.recovery.passwordConfirm.notEqual");
             }
 
-            if(!passwordTokenService.isVerificationCodeValid(userAccountRecovery.getUsername(),
+            if(!passwordTokenService.isShortLivedOtpValid(userAccountRecovery.getUsername(),
                     userAccountRecovery.getVerificationCode())) {
                 errors.rejectValue("verificationCode","user.account.recovery.verificationCode.invalid");
             }

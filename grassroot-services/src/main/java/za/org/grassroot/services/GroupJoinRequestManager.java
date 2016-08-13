@@ -15,12 +15,14 @@ import za.org.grassroot.core.enums.GroupJoinRequestStatus;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.services.exception.JoinRequestNotOpenException;
 import za.org.grassroot.services.exception.RequestorAlreadyPartOfGroupException;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 
 @Component
 public class GroupJoinRequestManager implements GroupJoinRequestService {
@@ -142,6 +144,60 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
     }
 
     @Override
+    @Transactional
+    public void cancel(String requestorUid, String groupUid) {
+        Objects.requireNonNull(requestorUid);
+        Objects.requireNonNull(groupUid);
+
+        User user = userRepository.findOneByUid(requestorUid);
+        Group group = groupBroker.load(groupUid);
+
+        GroupJoinRequest request = groupJoinRequestRepository.findByGroupAndRequestorAndStatus(group, user, GroupJoinRequestStatus.PENDING);
+
+        if (request == null) {
+            // e.g., if the request has already been approved but client hasn't updated
+            throw new JoinRequestNotOpenException();
+        }
+
+        Instant time = Instant.now();
+        request.setStatus(GroupJoinRequestStatus.CANCELLED);
+        request.setProcessedTime(time);
+
+        GroupJoinRequestEvent event = new GroupJoinRequestEvent(GroupJoinRequestEventType.CANCELLED, request, user, time);
+        groupJoinRequestEventRepository.save(event);
+    }
+
+    @Override
+    @Transactional
+    public void remind(String requestorUid, String groupUid) {
+        Objects.requireNonNull(requestorUid);
+        Objects.requireNonNull(groupUid);
+
+        User user = userRepository.findOneByUid(requestorUid);
+        Group group = groupBroker.load(groupUid);
+
+        GroupJoinRequest request = groupJoinRequestRepository.findByGroupAndRequestorAndStatus(group, user, GroupJoinRequestStatus.PENDING);
+        if (request == null) {
+            throw new JoinRequestNotOpenException();
+        }
+
+        // in future can use join request event to remember to control how many times users can respond (if see this being abused)
+
+        String message = messageAssemblingService.createGroupJoinReminderMessage(group.getJoinApprover(), request);
+        UserLog userLog = new UserLog(group.getJoinApprover().getUid(), UserLogType.JOIN_REQUEST, "Join request reminder sent, user to respond",
+                UserInterfaceType.UNKNOWN);
+        userLogRepository.save(userLog);
+
+        JoinRequestNotification notification = new JoinRequestNotification(group.getJoinApprover(), message, userLog); // set to priority 0 if starts happening too often
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        bundle.addNotification(notification);
+        logsAndNotificationsBroker.storeBundle(bundle);
+
+        GroupJoinRequestEvent event = new GroupJoinRequestEvent(GroupJoinRequestEventType.REMINDED, request, user, Instant.now());
+        groupJoinRequestEventRepository.save(event);
+    }
+
+    @Override
     public GroupJoinRequest loadRequest(String requestUid) {
         return groupJoinRequestRepository.findOneByUid(requestUid);
     }
@@ -160,5 +216,15 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
         Sort sort = new Sort(Sort.Direction.DESC, "creationTime"); // todo: probably want to do this on multiple fields
         User user = userRepository.findOneByUid(userUid);
         return groupJoinRequestRepository.findByGroupJoinApproverAndStatus(user, GroupJoinRequestStatus.PENDING, sort);
+    }
+
+    @Override
+    @Transactional
+    public List<GroupJoinRequest> getOpenUserRequestsForGroupList(String requestorUid, List<Group> possibleGroups) {
+        Objects.requireNonNull(requestorUid);
+        Objects.requireNonNull(possibleGroups);
+
+        User requestor = userRepository.findOneByUid(requestorUid);
+        return groupJoinRequestRepository.findByRequestorAndStatusAndGroupIn(requestor, GroupJoinRequestStatus.PENDING, possibleGroups);
     }
 }

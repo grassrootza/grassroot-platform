@@ -59,7 +59,7 @@ public class AnalyticsController extends BaseController {
                 users.stream().map(u -> geoLocationBroker.fetchUserLocation(u.getUid(), LocalDate.now())).collect(Collectors.toList()));
         model.addAttribute("userLocations", userLocations);
         model.addAttribute("modelMap",geoStats);
-        return "analytics/geo_stats";
+        return "admin/analytics/geo_stats";
 
     }
 
