@@ -115,8 +115,13 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 		if (mostRecentRecordedAverage == null) {
 			return null;
 		} else {
-			return previousPeriodUserLocationRepository.
-					findByKeyLocalDateAndKeyUserUidIn(localDate, Collections.singleton(userUid)).get(0);
+			List<PreviousPeriodUserLocation> priorLocations = previousPeriodUserLocationRepository.
+					findByKeyLocalDateAndKeyUserUidIn(localDate, Collections.singleton(userUid));
+			if (priorLocations != null && !priorLocations.isEmpty()) {
+				return priorLocations.get(0);
+			} else {
+				return null;
+			}
 		}
 	}
 

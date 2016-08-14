@@ -81,6 +81,7 @@ public class SmsSendingManager implements SmsSendingService {
         gatewayURI.queryParam("number", destinationNumber);
         gatewayURI.queryParam("message", message);
 
+        log.info("Sending priority SMS via URL: " + gatewayURI.toUriString());
         String messageResult = restTemplate.getForObject(gatewayURI.build().toUri(), String.class);
         log.info("Priority SMS sent, with result ... " + messageResult);
 

@@ -18,6 +18,7 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -83,10 +84,20 @@ public class EventBrokerImpl implements EventBroker {
 		User user = userRepository.findOneByUid(userUid);
 		MeetingContainer parent = uidIdentifiableRepository.findOneByUid(MeetingContainer.class, parentType, parentUid);
 
+		if (parentType.equals(JpaEntityType.GROUP)) {
+			Meeting possibleDuplicate = checkForDuplicateMeeting(user, (Group) parent, name, eventStartDateTimeInSystem);
+			if (possibleDuplicate != null) {
+				// todo : hand over to update meeting if anything different in parameters
+				logger.info("Detected duplicate meeting creation, returning the already-created one ... ");
+				return possibleDuplicate;
+			}
+		}
+
 		permissionBroker.validateGroupPermission(user, parent.getThisOrAncestorGroup(), Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
 
 		Meeting meeting = new Meeting(name, eventStartDateTimeInSystem, user, parent, eventLocation,
                                       includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes, description);
+
 		meeting.assignMembers(assignMemberUids);
 
 		// else sometimes reminder setting will be in the past, causing duplication of meetings; defaulting to 1 hours
@@ -114,6 +125,20 @@ public class EventBrokerImpl implements EventBroker {
 		logsAndNotificationsBroker.storeBundle(bundle);
 
 		return meeting;
+	}
+
+	// introducing so that we can check catch & handle duplicate requests (e.g., from malfunctions on Android client offline->queue->sync function)
+	// todo : make generic so that works for any parent container type & for votes too ...
+	@Transactional(readOnly = true)
+	private Meeting checkForDuplicateMeeting(User user, Group group, String name, Instant eventStartDateTimeSystem) {
+		Objects.requireNonNull(user);
+
+		logger.info("Checking for duplicate meeting ...");
+
+		Instant start = eventStartDateTimeSystem.minus(180, ChronoUnit.SECONDS);
+		Instant end = eventStartDateTimeSystem.plus(180, ChronoUnit.SECONDS);
+
+		return meetingRepository.findOneByCreatedByUserAndParentGroupAndNameAndEventStartDateTimeBetweenAndCanceledFalse(user, group, name, start, end);
 	}
 
 	private Set<Notification> constructEventInfoNotifications(Event event, EventLog eventLog) {
