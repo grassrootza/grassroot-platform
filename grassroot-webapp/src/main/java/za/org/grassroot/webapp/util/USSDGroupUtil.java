@@ -87,11 +87,10 @@ public class USSDGroupUtil extends USSDUtil {
 
     /**
      * SECTION 1: menus to ask a user to pick a group, including via pagination
-     * major todo: introduce filtering by permission into these
      */
 
-    public USSDMenu askForGroupAllowCreateNew(User sessionUser, USSDSection section, String nextUrl, String newPrompt,
-                                              String createNewGroup, String nonGroupParams) throws URISyntaxException {
+    public USSDMenu askForGroup(User user, USSDSection section, String urlForExistingGroup, String newPrompt,
+                                String createNewGroup, boolean allowCreateNew) throws URISyntaxException {
 
         /* Two cases:
         (a) user has no groups, so just ask for one and then go to the next page (goes to newGroupMenu)
@@ -101,18 +100,18 @@ public class USSDGroupUtil extends USSDUtil {
 
         USSDMenu groupMenu;
         log.info("Inside askForGroupAllowCreateNew ... newGroupUrl is ..." + createNewGroup);
-        if (!userManager.isPartOfActiveGroups(sessionUser)) {
+        if (!userManager.isPartOfActiveGroups(user)) {
             // case (a), ask for a name and then go to the next menu
-            groupMenu = createGroupPrompt(sessionUser, section, createNewGroup);
-        } else if (section.equals(USSDSection.GROUP_MANAGER) && hasOpenJoinRequests(sessionUser)) {
+            groupMenu = createGroupPrompt(user, section, createNewGroup);
+        } else if (section.equals(USSDSection.GROUP_MANAGER) && hasOpenJoinRequests(user)) {
             // case (b), display first join request
-            groupMenu = showGroupRequests(sessionUser, section);
+            groupMenu = showGroupRequests(user, section);
         } else {
             // case (c), ask for an existing one, with option to prompt for new one
-            String prompt = getMessage(section, groupKeyForMessages, promptKey + ".existing", sessionUser);
-            String existingGroupUri = section.toPath() + nextUrl + ((nonGroupParams == null) ? "" : nonGroupParams);
-            String newGroupUri = section.toPath() + newPrompt + ((nonGroupParams == null) ? "" : nonGroupParams);
-            groupMenu = userGroupMenuPageOne(sessionUser, prompt, existingGroupUri, newGroupUri, section);
+            String prompt = getMessage(section, groupKeyForMessages, promptKey + ".existing", user);
+            String existingGroupUri = section.toPath() + urlForExistingGroup;
+            String newGroupUri = section.toPath() + newPrompt;
+            groupMenu = userGroupMenuPaginated(user, prompt, existingGroupUri, newGroupUri, 0, section);
         }
         return groupMenu;
 
@@ -141,7 +140,7 @@ public class USSDGroupUtil extends USSDUtil {
             groupMenu.addMenuOption("exit", getMessage("exit.option", sessionUser));
         } else {
             String existingGroupUri = section.toPath() + urlIfExisting;
-            groupMenu = userGroupMenuPageOne(sessionUser, promptIfExisting, existingGroupUri, null, section);
+            groupMenu = userGroupMenuPaginated(sessionUser, promptIfExisting, existingGroupUri, null, 0, section);
         }
         return groupMenu;
     }
@@ -194,12 +193,6 @@ public class USSDGroupUtil extends USSDUtil {
         final String urlIfEmpty = GROUP_MANAGER.toPath() + "create";
         return askForGroupWithoutNewOption(user, section, promptIfNotEmpty, promptIfEmpty, menuIfExisting, urlIfEmpty);
     }
-
-    public USSDMenu userGroupMenuPageOne(User user, String prompt, String existingGroupUrl, String newGroupUrl,
-                                         USSDSection section) throws URISyntaxException {
-        return userGroupMenuPaginated(user, prompt, existingGroupUrl, newGroupUrl, 0, section);
-    }
-
 
     /**
      * @param user                 user currently in session
