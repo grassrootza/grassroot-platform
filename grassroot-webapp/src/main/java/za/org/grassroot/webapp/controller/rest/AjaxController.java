@@ -64,7 +64,7 @@ public class AjaxController extends BaseController {
             memberPicker = new MemberPicker(groupBroker.load(parentUid), selected);
         } else if (JpaEntityType.MEETING.equals(type) || JpaEntityType.VOTE.equals(type)) {
             memberPicker = new MemberPicker(eventBroker.load(parentUid), selected);
-        } else if (JpaEntityType.LOGBOOK.equals(type)) {
+        } else if (JpaEntityType.TODO.equals(type)) {
             memberPicker = new MemberPicker(todoBroker.load(parentUid), selected);
         } else {
             return errorResponse();

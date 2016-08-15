@@ -99,7 +99,7 @@ public class Todo extends AbstractLogBookEntity implements Task<TodoContainer>, 
 
     @Override
     public JpaEntityType getJpaEntityType() {
-        return JpaEntityType.LOGBOOK;
+        return JpaEntityType.TODO;
     }
 
     @Override

@@ -1,6 +1,7 @@
 package za.org.grassroot.core.domain;
 
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
@@ -14,8 +15,8 @@ public class Meeting extends Event<MeetingContainer> implements VoteContainer {
 	@Column(name = "location", length = 50)
 	private String eventLocation;
 
-
-
+	@Column(name="importance")
+	private MeetingImportance importance;
 
 	private Meeting() {
 		// for JPA
@@ -36,8 +37,6 @@ public class Meeting extends Event<MeetingContainer> implements VoteContainer {
 		setScheduledReminderActive(true);
 		setParent(parent);
 	}
-
-
 
 	public static Meeting makeEmpty(User user) {
 		Meeting meeting = new Meeting();

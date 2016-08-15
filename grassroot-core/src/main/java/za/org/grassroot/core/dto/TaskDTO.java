@@ -60,7 +60,7 @@ public class TaskDTO implements Comparable<TaskDTO> {
 
         this.createdByUser = task.getCreatedByUser().equals(user);
         this.createdByUserName = task.getCreatedByUser().getDisplayName();
-        this.type = task.getJpaEntityType().equals(JpaEntityType.LOGBOOK) ? TaskType.TODO.name() : task.getJpaEntityType().name();
+        this.type = task.getJpaEntityType().equals(JpaEntityType.TODO) ? TaskType.TODO.name() : task.getJpaEntityType().name();
 
         this.instant = task.getDeadlineTime();
         this.deadlineDateTime = task.getDeadlineTimeAtSAST();

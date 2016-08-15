@@ -36,7 +36,7 @@ public class UidIdentifiableRepositoryImpl implements UidIdentifiableRepository 
 		switch (entityType) {
 			case GROUP:
 				return groupRepository.findOneByUid(uid);
-			case LOGBOOK:
+			case TODO:
 				return todoRepository.findOneByUid(uid);
 			case MEETING:
 			case VOTE:
