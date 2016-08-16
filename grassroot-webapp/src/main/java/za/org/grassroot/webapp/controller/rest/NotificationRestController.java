@@ -9,19 +9,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.dto.NotificationDTO;
+import za.org.grassroot.webapp.model.rest.RequestObjects.NotificationDTO;
 import za.org.grassroot.integration.services.NotificationService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.services.exception.NotificationAlreadyUpdatedException;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.NotificationWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
 import za.org.grassroot.webapp.util.RestUtil;
 
-import java.security.AccessControlException;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -53,7 +51,6 @@ public class NotificationRestController {
         page = (page == null) ? 0 : page;
         size = (size == null) ? pageLength : size;
 
-        log.info("getNotifications ... trying to retrieve pageable");
         Page<Notification> pageable = notificationService.getNotificationsByTarget(user, page, size);
         log.info("getNotifications ... user has {} notifications in total", pageable.getTotalElements());
 
@@ -61,8 +58,11 @@ public class NotificationRestController {
         if (page > pageable.getTotalPages()) {
             responseWrapper = RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.NOTIFICATIONS_FINISHED);
         } else {
-            List<String> notificationUid = pageable.getContent().stream().map(n -> n.getUid()).collect(Collectors.toList());
-            List<NotificationDTO> notificationDTOList = notificationService.fetchNotificationDTOs(notificationUid);
+            List<NotificationDTO> notificationDTOList = pageable.getContent()
+                    .stream()
+                    .filter(NotificationDTO::isNotificationOfTypeForDTO)
+                    .map(NotificationDTO::convertToDto)
+                    .collect(Collectors.toList());
             log.info("notificationDTOList size ={}", notificationDTOList.size());
             NotificationWrapper notificationWrapper = new NotificationWrapper(pageable, notificationDTOList);
             responseWrapper = RestUtil.okayResponseWithData(RestMessage.NOTIFICATIONS, notificationWrapper);
@@ -76,7 +76,12 @@ public class NotificationRestController {
 
         User user = userManagementService.findByInputNumber(phoneNumber);
         Instant intervalStart = createdSince == null ? null : Instant.ofEpochMilli(createdSince);
-        List<NotificationDTO> notificationDTOs = notificationService.fetchNotificationsSince(user.getUid(), intervalStart);
+        List<Notification> notifications = notificationService.fetchNotificationsSince(user.getUid(), intervalStart);
+        List<NotificationDTO> notificationDTOs = notifications
+                .stream()
+                .filter(NotificationDTO::isNotificationOfTypeForDTO)
+                .map(NotificationDTO::convertToDto)
+                .collect(Collectors.toList());
         NotificationWrapper wrapper = new NotificationWrapper(notificationDTOs);
         return RestUtil.okayResponseWithData(RestMessage.NOTIFICATIONS, wrapper);
 

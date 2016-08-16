@@ -8,22 +8,20 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.notification.EventChangedNotification;
 import za.org.grassroot.core.domain.notification.EventInfoNotification;
 import za.org.grassroot.core.domain.notification.EventNotification;
-import za.org.grassroot.core.domain.notification.LogBookNotification;
-import za.org.grassroot.core.dto.NotificationDTO;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.repository.NotificationRepository;
 import za.org.grassroot.core.repository.UserRepository;
 
 import java.time.Instant;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * Created by paballo on 2016/04/07.
@@ -59,41 +57,17 @@ public class NotificationManager implements NotificationService{
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<NotificationDTO> fetchNotificationDTOs(List<String> notificationUids) {
-        List<NotificationDTO> notificationDTOs = new ArrayList<>();
-        for (String uid : notificationUids) {
-            Notification notification = notificationRepository.findByUid(uid);
-            if (eventLogTypesToIncludeInList.contains(notification.getClass())) {
-                Event event = ((EventNotification) notification).getEvent();
-                notificationDTOs.add(new NotificationDTO(notification, event));
-
-            } else if(notification instanceof LogBookNotification){
-                LogBook logBook = ((LogBookNotification) notification).getLogBook();
-                notificationDTOs.add(new NotificationDTO(notification,logBook));
-            }
-        }
-        return notificationDTOs;
-    }
-
-    @Override
-    public List<NotificationDTO> fetchNotificationsSince(String userUid, Instant createdSince) {
+    public List<Notification> fetchNotificationsSince(String userUid, Instant createdSince) {
         Objects.requireNonNull(userUid);
         User user = userRepository.findOneByUid(userUid);
         List<Notification> notifications;
         if (createdSince != null) {
-            notifications = notificationRepository.findByTargetAndCreatedDateTimeGreaterThan(user, createdSince);
+            notifications = notificationRepository.findByTargetAndCreatedDateTimeGreaterThanOrderByCreatedDateTimeDesc(user, createdSince);
         } else {
-            notifications = notificationRepository.findByTarget(user);
+            notifications = notificationRepository.findByTargetOrderByCreatedDateTimeDesc(user);
         }
 
-        // todo : sort these
-        List<NotificationDTO> notificationDTOs = notifications.stream()
-                .filter(NotificationDTO::isNotificationOfTypeForDTO)
-                .map(NotificationDTO::convertToDto)
-                .collect(Collectors.toList());
-
-        return notificationDTOs;
+        return notifications;
     }
 
     @Override

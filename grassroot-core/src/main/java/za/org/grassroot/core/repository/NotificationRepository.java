@@ -17,11 +17,11 @@ public interface NotificationRepository extends JpaRepository<Notification,Long>
 
     Notification findByUid(String uid);
 
-    List<Notification> findByTarget(User target);
+    List<Notification> findByTargetOrderByCreatedDateTimeDesc(User target);
 
     Page<Notification> findByTargetOrderByCreatedDateTimeDesc(User target, Pageable pageable);
 
-    List<Notification> findByTargetAndCreatedDateTimeGreaterThan(User target, Instant start);
+    List<Notification> findByTargetAndCreatedDateTimeGreaterThanOrderByCreatedDateTimeDesc(User target, Instant start);
 
     @Transactional(readOnly = true)
     List<Notification> findFirst50ByNextAttemptTimeBeforeOrderByNextAttemptTimeAsc(Instant time);
