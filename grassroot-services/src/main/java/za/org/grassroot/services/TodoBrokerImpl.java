@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
@@ -19,6 +20,7 @@ import za.org.grassroot.core.repository.UidIdentifiableRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.enums.TodoStatus;
+import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
@@ -84,7 +86,17 @@ public class TodoBrokerImpl implements TodoBroker {
 				userUid, parentType, parentUid, message, actionByDate, reminderMinutes, assignedMemberUids, replicateToSubgroups);
 
 		Instant convertedActionByDate = convertToSystemTime(actionByDate, getSAST());
+
+		if (convertedActionByDate.isBefore(Instant.now())) {
+			throw new EventStartTimeNotInFutureException("Error! Attempt to create todo with due date in the past");
+		}
+
 		LogBook logBook = new LogBook(user, parent, message, convertedActionByDate, reminderMinutes, null, defaultReminders);
+
+		if (!assignedMemberUids.isEmpty()) {
+			assignedMemberUids.add(userUid);
+		}
+
 		logBook.assignMembers(assignedMemberUids);
 		logBook = logBookRepository.save(logBook);
 
@@ -136,6 +148,14 @@ public class TodoBrokerImpl implements TodoBroker {
 		User user = userRepository.findOneByUid(userUid);
 		LogBook logBook = logBookRepository.findOneByUid(logBookUid);
 
+		if (!logBook.getCreatedByUser().equals(user)) { // in future, possibly change to any assigned user, maybe
+			throw new AccessDeniedException("Only user who created todo can change assignment");
+		}
+
+		if (assignMemberUids != null && !assignMemberUids.isEmpty()) {
+			assignMemberUids.add(userUid);
+		}
+
 		logBook.assignMembers(assignMemberUids);
 	}
 
@@ -146,6 +166,10 @@ public class TodoBrokerImpl implements TodoBroker {
 
 		User user = userRepository.findOneByUid(userUid);
 		LogBook logBook = logBookRepository.findOneByUid(logBookUid);
+
+		if (!logBook.getCreatedByUser().equals(user)) {
+			throw new AccessDeniedException("Only user who created todo can change assignment");
+		}
 
 		logBook.removeAssignedMembers(memberUids);
 	}
@@ -295,9 +319,12 @@ public class TodoBrokerImpl implements TodoBroker {
 		logBook.setMessage(message);
 		logBook.setActionByDate(convertedActionByDate);
 		logBook.setReminderMinutes(reminderMinutes);
+
 		if(assignedMemberUids !=null && !assignedMemberUids.isEmpty()){
+			assignedMemberUids.add(userUid);
 			logBook.assignMembers(assignedMemberUids);
 		}
+
 		logBookRepository.save(logBook);
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
@@ -335,24 +362,4 @@ public class TodoBrokerImpl implements TodoBroker {
 				logBook.getCreatedDateTime()).get(0);
 	}
 
-
-
-	/*@Override
-	@Transactional(readOnly = true)
-	public List<LogBook> retrieveParentLogBooks(String userUid, String parentUid, JpaEntityType parentType) {
-		Objects.requireNonNull(userUid);
-		Objects.requireNonNull(parentUid);
-		Objects.requireNonNull(parentType);
-
-		User user = userRepository.findOneByUid(userUid);
-		AssignedMembersContainer parent = uidIdentifiableRepository.findOneByUid(AssignedMembersContainer.class,
-																				 parentType, parentUid);
-
-		// todo: decide if, say, group organizers on ultimate group should be able to access this
-		if (!parent.getAssignedMembers().contains(user))
-			throw new AccessDeniedException("Member is not assigned to this parent, so does not have read access");
-
-		return logBookRepository.findByGroupUidOrEventUid(parentUid, parentUid);
-
-	}*/
 }

@@ -17,6 +17,7 @@ import za.org.grassroot.language.Parser;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.EventRequestBroker;
 import za.org.grassroot.services.async.AsyncUserLogger;
+import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 
@@ -117,22 +118,24 @@ public class USSDEventUtil extends USSDUtil {
             case subjectMenu:
                 eventRequestBroker.updateName(userUid, eventUid, userInput);
                 break;
+
             case placeMenu:
                 eventRequestBroker.updateMeetingLocation(userUid, eventUid, userInput);
                 break;
+
             case dateTimeMenu:
-                // todo: handle errors in processing better (i.e., call parseDateTime in menus, pass here already-processed)
                 userLogger.recordUserInputtedDateTime(userUid, userInput, "meeting-creation:", USSD);
                 eventRequestBroker.updateEventDateTime(userUid, eventUid, parseDateTime(userInput));
                 break;
+
             case timeOnly:
                 EventRequest eventReq = eventRequestBroker.load(eventUid);
                 String reformattedTime = DateTimeUtil.reformatTimeInput(userInput);
                 LocalDateTime newTimestamp = changeTimestampTimes(eventReq.getEventDateTimeAtSAST(), reformattedTime);
-                log.info("This is what we got back ... " + getPreferredDateTimeFormat().format(newTimestamp));
                 userLogger.recordUserInputtedDateTime(userUid, userInput, "meeting-creation-time-only", USSD);
                 eventRequestBroker.updateEventDateTime(userUid, eventUid, newTimestamp);
                 break;
+
             case dateOnly:
                 eventReq = eventRequestBroker.load(eventUid);
                 String reformattedDate = DateTimeUtil.reformatDateInput(userInput);
@@ -145,13 +148,15 @@ public class USSDEventUtil extends USSDUtil {
         }
     }
 
+    public static boolean validateTime(LocalDateTime timestamp) {
+        // do after we update, in case user is changing one at a time
+        return timestamp.isAfter(LocalDateTime.now());
+    }
+
     public void updateExistingEvent(String userUid, String requestUid, String fieldChanged, String newValue) {
         log.info(String.format("Updating the changeRequest on a meeting ... changing %s to %s", fieldChanged, newValue));
         LocalDateTime oldTimestamp, newTimestamp;
         switch (fieldChanged) {
-            /*case subjectMenu:
-                eventRequestBroker.updateName(userUid, requestUid, newValue);
-                break;*/
             case changeMeetingLocation:
                 eventRequestBroker.updateMeetingLocation(userUid, requestUid, newValue);
                 break;

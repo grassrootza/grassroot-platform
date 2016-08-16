@@ -1,15 +1,11 @@
 package za.org.grassroot.services;
 
-import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MaskedUserDTO;
 import za.org.grassroot.core.enums.EventType;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -54,6 +50,9 @@ public interface AdminService {
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     void addMemberToGroup(String adminUserUid, String groupUid, MembershipInfo membershipInfo);
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    void removeMemberFromGroup(String adminUserUid, String groupUid, String memberMsisdn);
 
     /*
     Methods to analyze patterns in events, including RSVP totals

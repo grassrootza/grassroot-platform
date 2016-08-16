@@ -412,11 +412,16 @@ public class GroupBrokerImpl implements GroupBroker {
     public void removeMembers(String userUid, String groupUid, Set<String> memberUids) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
+        Objects.requireNonNull(memberUids);
 
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER);
+
+        if (!memberUids.isEmpty()) {
+            memberUids.remove(userUid); // to make sure user cannot remove themselves (unsubscribe, below, is for that)
+        }
 
         logger.info("Removing members: group={}, memberUids={}, user={}", group, memberUids, user);
 

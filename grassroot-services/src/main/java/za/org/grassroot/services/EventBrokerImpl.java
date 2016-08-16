@@ -12,6 +12,7 @@ import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
@@ -97,6 +98,10 @@ public class EventBrokerImpl implements EventBroker {
 
 		Meeting meeting = new Meeting(name, eventStartDateTimeInSystem, user, parent, eventLocation,
                                       includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes, description);
+
+		if (!assignMemberUids.isEmpty()) {
+			assignMemberUids.add(userUid); // enforces creating user part of meeting, if partial selection
+		}
 
 		meeting.assignMembers(assignMemberUids);
 
@@ -231,14 +236,18 @@ public class EventBrokerImpl implements EventBroker {
 		meeting.updateScheduledReminderTime();
 
 		if (assignedMemberUids != null && !assignedMemberUids.isEmpty()) {
+			assignedMemberUids.add(userUid); // as above, enforce creating user part of meeting
 			if (meeting.isAllGroupMembersAssigned()) {
 				meeting.assignMembers(assignedMemberUids);
 			} else {
 				// todo : maybe move this into a single method in the assigned members container
-				Set<String> existingMemberUids = meeting.getAssignedMembers().stream().map(User::getUid).collect(Collectors.toSet());
-				existingMemberUids.removeAll(assignedMemberUids);
-				meeting.removeAssignedMembers(existingMemberUids);
-				meeting.assignMembers(assignedMemberUids);
+				Set<String> existingMemberUids = meeting.getAssignedMembers()
+						.stream()
+						.map(User::getUid)
+						.collect(Collectors.toSet());
+				existingMemberUids.removeAll(assignedMemberUids); // so have just members not in new set
+				meeting.removeAssignedMembers(existingMemberUids); // remove those
+				meeting.assignMembers(assignedMemberUids); // reset to current
 			}
 		}
 
@@ -282,6 +291,9 @@ public class EventBrokerImpl implements EventBroker {
 		permissionBroker.validateGroupPermission(user, parent.getThisOrAncestorGroup(), Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
 
 		Vote vote = new Vote(name, convertedClosingDateTime, user, parent, includeSubGroups, relayable, description);
+		if (assignMemberUids != null && !assignMemberUids.isEmpty()) {
+			assignMemberUids.add(userUid); // enforce creating user part of vote
+		}
 		vote.assignMembers(assignMemberUids);
 
 		voteRepository.save(vote);
@@ -360,11 +372,10 @@ public class EventBrokerImpl implements EventBroker {
 
     private void validateEventStartTime(Instant eventStartDateTimeInstant) {
 		Instant now = Instant.now();
-		// commenting this out just for now, because parser is unreliable & haven't built recovery means so will annoy users
-		// come back to this soon though
-		/*if (!eventStartDateTime.toInstant().isAfter(now)) {
-			throw new EventStartTimeNotInFutureException("Event start time " + eventStartDateTime + " is not in the future");
-		}*/
+		if (!eventStartDateTimeInstant.isAfter(now)) {
+			throw new EventStartTimeNotInFutureException("Event start time " + eventStartDateTimeInstant.toString() +
+					" is not in the future");
+		}
 	}
 
 	@Override

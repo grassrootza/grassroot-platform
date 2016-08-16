@@ -8,7 +8,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
-import za.org.grassroot.core.domain.geo.UserLocationLog;
 import za.org.grassroot.services.AdminService;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.webapp.controller.BaseController;
@@ -58,7 +57,7 @@ public class AnalyticsController extends BaseController {
         userLocations.addAll(
                 users.stream().map(u -> geoLocationBroker.fetchUserLocation(u.getUid(), LocalDate.now())).collect(Collectors.toList()));
         model.addAttribute("userLocations", userLocations);
-        model.addAttribute("modelMap",geoStats);
+        model.addAttribute("geoStats",geoStats);
         return "admin/analytics/geo_stats";
 
     }

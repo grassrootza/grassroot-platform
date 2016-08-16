@@ -2,12 +2,17 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorator="layout">
 <head>
-    <title>GrassRoot Platform</title>
+    <title>Grassroot Platform</title>
 
     <meta property="og:title" content="grassroot.org.za"/>
     <meta property="og:image" content="/img/grass.png"/>
-    <meta property="og:description" content="The GrassRoot Platform."/>
+    <meta property="og:description" content="The Grassroot Platform."/>
 
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+        google.charts.load('visualization', {packages: ['table', 'map']});
+    </script>
 
 </head>
 
@@ -24,8 +29,7 @@
         <div class="row">
             <h1>GeoLocation stats</h1>
 
-            <div id="table">
-            </div>
+            <div id="table"></div>
             <h1>User Distribution</h1>
             <div id="user_dist"></div>
             <script th:inline="javascript">
@@ -39,11 +43,11 @@
                     data.addColumn('number', 'No Geo Data');
                     data.addRows(2);
                     data.setCell(0, 0, 'Groups');
-                    data.setCell(0, 1, /*[[${modelMap.get('totalGroupsWithGeoData')}]]*/0);
-                    data.setCell(0, 2, /*[[${modelMap.get('totalGroupsWithoutGeoData')}]]*/0);
+                    data.setCell(0, 1, /*[[${geoStats.get('totalGroupsWithGeoData')}]]*/0);
+                    data.setCell(0, 2, /*[[${geoStats.get('totalGroupsWithoutGeoData')}]]*/0);
                     data.setCell(1, 0, 'Users');
-                    data.setCell(1, 1, /*[[${modelMap.get('totalUsersWithGeoData')}]]*/0);
-                    data.setCell(1, 2, /*[[${modelMap.get('totalUsersWithoutGeoData')}]]*/0);
+                    data.setCell(1, 1, /*[[${geoStats.get('totalUsersWithGeoData')}]]*/0);
+                    data.setCell(1, 2, /*[[${geoStats.get('totalUsersWithoutGeoData')}]]*/0);
                     var options = {
                         showRowNumber: false,
                         width: '100%',
@@ -71,11 +75,7 @@
 
                 /*]]>*/
             </script>
-            <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-            <script type="text/javascript" src="https://www.google.com/jsapi"></script>
-            <script type="text/javascript">
-                google.charts.load('visualization', {packages: ['table', 'map']});
-            </script>
+
 
             <script th:inline="javascript"
                     type="text/javascript"

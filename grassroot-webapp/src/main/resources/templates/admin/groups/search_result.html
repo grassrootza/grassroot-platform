@@ -16,12 +16,13 @@
     <div class="row">
       <table class="table table-striped">
         <thead>
-        <th></th>
+          <th></th>
           <th>Group name</th>
           <th>Creating user</th>
           <th>Number of members</th>
           <th>Created date time</th>
           <th>Number of events</th>
+          <th></th>
           <th></th>
           <th></th>
         </thead>
@@ -39,6 +40,10 @@
           <td>
             <button type="button" class="btn btn-default btn-xs" data-toggle="modal" data-target="#addModal"
                     th:attr="data-groupuid=${group.uid}">Add member</button>
+          </td>
+          <td>
+            <button type="button" class="btn btn-default btn-xs" data-toggle="modal" data-target="#removeModal"
+                    th:attr="data-groupuid=${group.uid}">Remove member</button>
           </td>
         </tr>
         </tbody>
@@ -82,6 +87,30 @@
     </div>
   </div>
 
+  <div class="modal fade" id="removeModal" tabindex="-1" role="dialog" aria-labelledby="removeMemberLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="removeMemberLabel">Remove member from group</h4>
+        </div>
+        <form th:action="@{remove}" method="get">
+          <input type="hidden" name="groupUid" id="remGroupUid" value="ABC" />
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="member-phone" class="control-label">Phone number</label>
+              <input type="text" class="form-control" id="member-phone" name="phoneNumber" />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-primary">Remove</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <div class="header-container" layout:fragment="script-container">
@@ -92,6 +121,13 @@
       var modal = $(this);
       console.log("GroupUID: " + uid);
       modal.find('#groupUid').val(uid);
+    })
+
+    $('#removeModal').on('show.bs.modal', function(event) {
+      var button = $(event.relatedTarget);
+      var uid = button.data('groupuid');
+      var modal = $(this);
+      modal.find('#remGroupUid').val(uid);
     })
   </script>
 </div>

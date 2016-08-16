@@ -9,7 +9,6 @@ import za.org.grassroot.webapp.enums.RestStatus;
  */
 public class AuthenticationResponseWrapper extends GenericResponseWrapper {
 
-
     private String displayName;
     private String language;
     private boolean hasGroups;

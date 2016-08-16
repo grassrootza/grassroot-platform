@@ -1,6 +1,5 @@
 package za.org.grassroot.integration.services;
 
-import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.GcmRegistration;
 import za.org.grassroot.core.domain.User;
 

@@ -90,7 +90,6 @@ public class MeetingController extends BaseController {
                                 HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
         // todo: add error handling and validation
-        // todo: check that we have all the needed information and/or add a confirmation screen
 
         log.info("The meeting wrapper as passed back to us: " + meeting.toString());
 

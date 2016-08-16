@@ -21,6 +21,7 @@ import za.org.grassroot.webapp.util.USSDEventUtil;
 import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.net.URISyntaxException;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Iterator;
 import java.util.List;
@@ -190,14 +191,20 @@ public class USSDToDoController extends USSDController {
         if (!interrupted) updateLogBookRequest(user.getUid(), logBookUid, priorMenu, userInput);
         LogBookRequest logBookRequest = todoRequestBroker.load(logBookUid);
 
+        boolean isInFuture = logBookRequest.getActionByDate().isAfter(Instant.now());
+
         String formattedDueDate = dateFormat.format(convertToUserTimeZone(logBookRequest.getActionByDate(), getSAST()));
 
         Group group = (Group) logBookRequest.getParent();
-        String[] promptFields = new String[]{logBookRequest.getMessage(), group.getName(""),
-                formattedDueDate};
+        String[] promptFields = new String[]{logBookRequest.getMessage(), group.getName(""), formattedDueDate};
 
-        USSDMenu menu = new USSDMenu(getMessage(thisSection, confirmMenu, promptKey + ".unassigned", promptFields, user));
-        menu.addMenuOption(returnUrl(send, logBookUid), getMessage(thisSection, confirmMenu, optionsKey + "send", user));
+        final String prompt = isInFuture ? getMessage(thisSection, confirmMenu, promptKey + ".unassigned", promptFields, user)
+                : getMessage(thisSection, confirmMenu, promptKey + ".err.past", formattedDueDate, user);
+
+        USSDMenu menu = new USSDMenu(prompt);
+        if (isInFuture) {
+            menu.addMenuOption(returnUrl(send, logBookUid), getMessage(thisSection, confirmMenu, optionsKey + "send", user));
+        }
         menu.addMenuOption(backUrl(subjectMenu, logBookUid), getMessage(thisSection, confirmMenu, optionsKey + "subject", user));
         menu.addMenuOption(backUrl(dueDateMenu, logBookUid), getMessage(thisSection, confirmMenu, optionsKey + "duedate", user));
         // menu.addMenuOption(backUrl(assignMenu, logBookUid), getMessage(thisSection, confirmMenu, optionsKey + "assign", user));

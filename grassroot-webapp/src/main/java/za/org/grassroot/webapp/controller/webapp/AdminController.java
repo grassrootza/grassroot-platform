@@ -11,7 +11,10 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Account;
+import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MaskedUserDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.GroupRepository;
@@ -215,6 +218,20 @@ public class AdminController extends BaseController {
         addMessage(model, MessageType.SUCCESS, "admin.group.added", request);
         return "admin/groups/search";
 	}
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/admin/groups/remove", method = RequestMethod.GET)
+    public String removeGroupMember(Model model, HttpServletRequest request,
+                                    @RequestParam String groupUid,
+                                    @RequestParam String phoneNumber) {
+        try {
+            adminService.removeMemberFromGroup(getUserProfile().getUid(), groupUid, phoneNumber);
+            addMessage(model, MessageType.SUCCESS, "admin.group.removed", request);
+        } catch (Exception e) {
+            addMessage(model, MessageType.ERROR, "admin.group.removed.error", request);
+        }
+        return "admin/groups/search";
+    }
 
 	@PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
 	@RequestMapping(value = "/admin/groups/role_change", method = RequestMethod.POST)

@@ -4,12 +4,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Role;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MaskedUserDTO;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -55,6 +53,9 @@ public class AdminManager implements AdminService {
 
 	@Autowired
 	private GroupBroker groupBroker;
+
+    @Autowired
+    private GroupLogRepository groupLogRepository;
 
     @Autowired
     private GeoLocationBroker geoLocationBroker;
@@ -133,24 +134,41 @@ public class AdminManager implements AdminService {
     @Override
     @Transactional
     public void deactiveGroup(String adminUserUid, String groupUid) {
-        User user = userRepository.findOneByUid(adminUserUid);
-        Role adminRole = roleRepository.findByName(BaseRoles.ROLE_SYSTEM_ADMIN).get(0);
-	    if (!user.getStandardRoles().contains(adminRole)) {
-		    throw new AccessDeniedException("Error! User does not have admin role");
-	    }
+        validateAdminRole(adminUserUid);
 
-	    Group group = groupRepository.findOneByUid(groupUid);
+        User user = userRepository.findOneByUid(adminUserUid);
+        Group group = groupRepository.findOneByUid(groupUid);
         group.setActive(false);
-        // todo : should probably save a grouplog for this, etc
+
+        groupLogRepository.save(new GroupLog(group, user, GroupLogType.GROUP_REMOVED, null, "Deactivated by system admin"));
     }
 
 	@Override
 	@Transactional
 	public void addMemberToGroup(String adminUserUid, String groupUid, MembershipInfo membershipInfo) {
-		groupBroker.addMembers(adminUserUid, groupUid, Collections.singleton(membershipInfo), true);
+        validateAdminRole(adminUserUid);
+        groupBroker.addMembers(adminUserUid, groupUid, Collections.singleton(membershipInfo), true);
 	}
 
-	/**
+    @Override
+    public void removeMemberFromGroup(String adminUserUid, String groupUid, String memberMsisdn) {
+        // this is a 'quiet' operation, since only ever triggered if receive an "OPT OUT" notification ... hence don't group log etc
+        validateAdminRole(adminUserUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+        User member = userRepository.findByPhoneNumber(memberMsisdn);
+        Membership membership = group.getMembership(member);
+        group.removeMembership(membership);
+    }
+
+    private void validateAdminRole(String adminUserUid) {
+        User admin = userRepository.findOneByUid(adminUserUid);
+        Role adminRole = roleRepository.findByName(BaseRoles.ROLE_SYSTEM_ADMIN).get(0);
+        if (!admin.getStandardRoles().contains(adminRole)) {
+            throw new AccessDeniedException("Error! User does not have admin role");
+        }
+    }
+
+    /**
      * SECTION: METHODS TO HANDLE EVENTS
      */
 

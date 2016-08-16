@@ -4,24 +4,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.EventLog;
-import za.org.grassroot.core.domain.Meeting;
-import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.enums.EventLogType;
-import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.repository.EventLogRepository;
-import za.org.grassroot.core.repository.EventRepository;
-import za.org.grassroot.core.repository.UserRepository;
 
 import javax.annotation.PostConstruct;
-import java.sql.Timestamp;
-import java.time.Instant;
 
 /**
  * Created by luke on 2015/09/09.

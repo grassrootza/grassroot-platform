@@ -114,7 +114,7 @@ public class GroupRestController {
 			} else {
 				log.info("check for numbers in this set : " + membersToAdd);
 				List<String> invalidNumbers = findInvalidNumbers(membersToAdd);
-				if (invalidNumbers.size() == membersToAdd.size()) {
+				if (!membersToAdd.isEmpty() && (invalidNumbers.size() == membersToAdd.size())) {
 					throw new InvalidPhoneNumberException(String.join(",", invalidNumbers));
 				} else {
 					MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
@@ -159,6 +159,8 @@ public class GroupRestController {
                 .map(group -> createGroupWrapper(group, user))
                 .sorted(Collections.reverseOrder())
                 .collect(Collectors.toList());
+
+	    log.info("responding ... group with removed UIDs = " + changedSinceData.getRemovedUids());
 
         ChangedSinceData<GroupResponseWrapper> response = new ChangedSinceData<>(groupWrappers, changedSinceData.getRemovedUids());
         return new ResponseEntity<>(response, OK);
@@ -618,7 +620,7 @@ public class GroupRestController {
         } else {
             responseWrapper = new GroupResponseWrapper(group, groupLog, role, hasTask);
         }
-        log.info("created response wrapper = {}", responseWrapper);
+        // log.info("created response wrapper = {}", responseWrapper);
         return responseWrapper;
 
     }
