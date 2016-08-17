@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.rest;
 
+import edu.emory.mathcs.backport.java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,7 @@ import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -51,7 +53,7 @@ public class NotificationRestController {
         page = (page == null) ? 0 : page;
         size = (size == null) ? pageLength : size;
 
-        Page<Notification> pageable = notificationService.getNotificationsByTarget(user, page, size);
+        Page<Notification> pageable = notificationService.fetchPagedAndroidNotifications(user, page, size);
         log.info("getNotifications ... user has {} notifications in total", pageable.getTotalElements());
 
         ResponseEntity<ResponseWrapper> responseWrapper;
@@ -76,7 +78,7 @@ public class NotificationRestController {
 
         User user = userManagementService.findByInputNumber(phoneNumber);
         Instant intervalStart = createdSince == null ? null : Instant.ofEpochMilli(createdSince);
-        List<Notification> notifications = notificationService.fetchNotificationsSince(user.getUid(), intervalStart);
+        List<Notification> notifications = notificationService.fetchAndroidNotificationsSince(user.getUid(), intervalStart);
         List<NotificationDTO> notificationDTOs = notifications
                 .stream()
                 .filter(NotificationDTO::isNotificationOfTypeForDTO)
@@ -103,8 +105,23 @@ public class NotificationRestController {
             log.info("Trying to update notification when already read");
             return RestUtil.errorResponse(HttpStatus.ALREADY_REPORTED, RestMessage.ALREADY_UPDATED);
         } else {
-            notificationService.updateNotificationReadStatus(uid, true);
+            notificationService.updateNotificationsViewedAndRead(Collections.singleton(uid));
             return RestUtil.messageOkayResponse(RestMessage.NOTIFICATION_UPDATED);
+        }
+    }
+
+    @RequestMapping(value = "/update/read/batch/{phoneNumber}/{code}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> updateViewedStatusBatch(@PathVariable String phoneNumber, @PathVariable String code,
+                                                                   @RequestParam boolean read, @RequestParam List<String> notificationUids) {
+        try {
+            if (notificationUids != null && !notificationUids.isEmpty()) {
+                notificationService.updateNotificationsViewedAndRead(new HashSet<>(notificationUids));
+                return RestUtil.messageOkayResponse(RestMessage.NOTIFICATION_UPDATED);
+            } else {
+                return RestUtil.messageOkayResponse(RestMessage.EMPTY_LIST);
+            }
+        } catch (Exception e) {
+            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.ERROR);
         }
     }
 

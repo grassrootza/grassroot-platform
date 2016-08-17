@@ -1,6 +1,7 @@
 package za.org.grassroot.core.domain.notification;
 
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.NotificationType;
 
 import javax.persistence.JoinColumn;
@@ -19,6 +20,9 @@ public abstract class EventNotification extends Notification {
 		return NotificationType.EVENT;
 	}
 
+	@Override
+	public abstract NotificationDetailedType getNotificationDetailedType();
+
 	protected EventNotification() {
 		// for JPA
 	}
@@ -28,12 +32,12 @@ public abstract class EventNotification extends Notification {
 		sb.append(", event=").append(event);
 	}
 
-	protected EventNotification(User destination, String message, EventLog eventLog) {
-		this(destination, message, eventLog, eventLog.getEvent());
+	protected EventNotification(User destination, String message, EventLog eventLog, boolean forAndroidTL) {
+		this(destination, message, eventLog, eventLog.getEvent(), true);
 	}
 
-	protected EventNotification(User destination, String message, ActionLog actionLog, Event event) {
-		super(destination, message, actionLog);
+	protected EventNotification(User destination, String message, ActionLog actionLog, Event event, boolean forAndroidTL) {
+		super(destination, message, actionLog, forAndroidTL);
 		this.event = Objects.requireNonNull(event);
 	}
 

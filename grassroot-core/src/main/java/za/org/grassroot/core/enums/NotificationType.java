@@ -5,10 +5,13 @@ package za.org.grassroot.core.enums;
  */
 public enum NotificationType {
 
+	// general types
 	EVENT,
 	LOGBOOK,
 	CHAT,
 	ACCOUNT,
 	USER,
 	GENERAL
+
+	//
 }

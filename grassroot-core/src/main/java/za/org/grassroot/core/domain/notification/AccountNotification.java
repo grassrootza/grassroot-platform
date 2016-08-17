@@ -4,6 +4,7 @@ import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.AccountLog;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.NotificationType;
 
 import javax.persistence.JoinColumn;
@@ -21,7 +22,7 @@ public abstract class AccountNotification extends Notification {
 	}
 
 	public AccountNotification(User destination, String message, AccountLog accountLog) {
-		super(destination, message, accountLog);
+		super(destination, message, accountLog, false);
 		this.account = accountLog.getAccount();
 	}
 
@@ -29,6 +30,9 @@ public abstract class AccountNotification extends Notification {
 	public NotificationType getNotificationType() {
 		return NotificationType.ACCOUNT;
 	}
+
+	@Override
+	public abstract NotificationDetailedType getNotificationDetailedType();
 
 	public Account getAccount() {
 		return account;

@@ -1,6 +1,7 @@
 package za.org.grassroot.core.domain.notification;
 
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.NotificationType;
 
 import javax.persistence.JoinColumn;
@@ -18,6 +19,9 @@ public abstract class LogBookNotification extends Notification {
 		return NotificationType.LOGBOOK;
 	}
 
+	@Override
+	public abstract NotificationDetailedType getNotificationDetailedType();
+
 	protected LogBookNotification() {
 		// for JPA
 	}
@@ -32,7 +36,7 @@ public abstract class LogBookNotification extends Notification {
 	}
 
 	protected LogBookNotification(User target, String message, ActionLog actionLog, LogBook logBook) {
-		super(target, message, actionLog);
+		super(target, message, actionLog, true);
 		this.logBook = logBook;
 	}
 

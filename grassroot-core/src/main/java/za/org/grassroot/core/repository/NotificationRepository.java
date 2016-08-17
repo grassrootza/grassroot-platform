@@ -9,6 +9,7 @@ import za.org.grassroot.core.domain.User;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by paballo on 2016/04/07.
@@ -17,11 +18,15 @@ public interface NotificationRepository extends JpaRepository<Notification,Long>
 
     Notification findByUid(String uid);
 
-    List<Notification> findByTargetOrderByCreatedDateTimeDesc(User target);
+    List<Notification> findByUidIn(Set<String> uids);
 
-    Page<Notification> findByTargetOrderByCreatedDateTimeDesc(User target, Pageable pageable);
+    List<Notification> findByTargetAndForAndroidTimelineTrueOrderByCreatedDateTimeDesc(User target);
 
-    List<Notification> findByTargetAndCreatedDateTimeGreaterThanOrderByCreatedDateTimeDesc(User target, Instant start);
+    Page<Notification> findByTargetAndForAndroidTimelineTrueOrderByCreatedDateTimeDesc(User target, Pageable pageable);
+
+    List<Notification> findByTargetAndForAndroidTimelineTrueAndCreatedDateTimeGreaterThanOrderByCreatedDateTimeDesc(User target, Instant start);
+
+    int countByTargetAndViewedOnAndroidFalseAndForAndroidTimelineTrue(User target);
 
     @Transactional(readOnly = true)
     List<Notification> findFirst50ByNextAttemptTimeBeforeOrderByNextAttemptTimeAsc(Instant time);

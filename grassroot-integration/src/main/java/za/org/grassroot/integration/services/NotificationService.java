@@ -6,6 +6,7 @@ import za.org.grassroot.core.domain.User;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by paballo on 2016/04/07.
@@ -14,11 +15,15 @@ public interface NotificationService {
 
 	Notification loadNotification(String uid);
 
-	Page<Notification> getNotificationsByTarget(User target, int pageNumber, int pageSize);
+	Page<Notification> fetchPagedAndroidNotifications(User target, int pageNumber, int pageSize);
 
-	List<Notification> fetchNotificationsSince(String userUid, Instant createdSince);
+	List<Notification> fetchAndroidNotificationsSince(String userUid, Instant createdSince);
 
 	void updateNotificationReadStatus(String notificationUid, boolean read);
+
+	void updateNotificationsViewedAndRead(Set<String> notificationUids);
+
+	int countUnviewedAndroidNotifications(String targetUid);
 
 	void markNotificationAsDelivered(String notificationUid);
 

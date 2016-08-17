@@ -1,13 +1,17 @@
 package za.org.grassroot.core.domain;
 
 
+import com.google.common.collect.Sets;
+import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.NotificationType;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Next attempt time signifies when this notification has to be sent. When it gets delivered,
@@ -71,6 +75,12 @@ public abstract class Notification implements Serializable {
 	@Column(name = "delivered")
 	private boolean delivered = false;
 
+	@Column(name = "for_android_tl")
+	private boolean forAndroidTimeline = false;
+
+	@Column(name = "viewed_android")
+	private boolean viewedOnAndroid = false;
+
 	@Column(name = "message")
 	protected String message;
 
@@ -79,11 +89,13 @@ public abstract class Notification implements Serializable {
 
 	public abstract NotificationType getNotificationType();
 
+	public abstract NotificationDetailedType getNotificationDetailedType();
+
 	protected Notification() {
 		// for JPA
 	}
 
-	protected Notification(User target, String message, ActionLog actionLog) {
+	protected Notification(User target, String message, ActionLog actionLog, boolean forAndroidTL) {
 		this.uid = UIDGenerator.generateId();
 		this.read = false;
 
@@ -92,6 +104,8 @@ public abstract class Notification implements Serializable {
 		this.nextAttemptTime = createdDateTime; // default is to be sent immediately
 		this.message = Objects.requireNonNull(message);
 		this.priority = DEFAULT_PRIORITY;
+
+		this.forAndroidTimeline = forAndroidTL;
 
 		if (actionLog instanceof EventLog) {
 			eventLog = (EventLog) actionLog;
@@ -196,6 +210,29 @@ public abstract class Notification implements Serializable {
 	public void setPriority(int priority){
 		this.priority = priority;
 	}
+
+	public boolean isViewedOnAndroid() {
+		return viewedOnAndroid;
+	}
+
+	public void setViewedOnAndroid(boolean viewedOnAndroid) {
+		this.viewedOnAndroid = viewedOnAndroid;
+	}
+
+	public boolean isForAndroidTimeline() {
+		return forAndroidTimeline;
+	}
+
+	public void setForAndroidTimeline(boolean forAndroidTimeline) {
+		this.forAndroidTimeline = forAndroidTimeline;
+	}
+
+	public void markReadAndViewed() {
+		this.delivered = true;
+		this.read = true;
+		this.viewedOnAndroid = true;
+	}
+
 	/**
 	 * Locale utilities
 	 */

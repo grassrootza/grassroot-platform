@@ -1,6 +1,5 @@
 package za.org.grassroot.integration.services;
 
-import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,15 +9,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.notification.EventChangedNotification;
-import za.org.grassroot.core.domain.notification.EventInfoNotification;
-import za.org.grassroot.core.domain.notification.EventNotification;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.repository.NotificationRepository;
 import za.org.grassroot.core.repository.UserRepository;
 
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -40,9 +35,6 @@ public class NotificationManager implements NotificationService{
     @Autowired
     private MessageSendingService messageSendingService;
 
-    private static final Set<Class<? extends EventNotification>> eventLogTypesToIncludeInList = Collections.unmodifiableSet(
-            Sets.newHashSet(EventInfoNotification.class, EventChangedNotification.class));
-
     @Override
     @Transactional(readOnly = true)
     public Notification loadNotification(String uid) {
@@ -52,19 +44,19 @@ public class NotificationManager implements NotificationService{
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Notification> getNotificationsByTarget(User target, int pageNumber, int pageSize) {
-        return notificationRepository.findByTargetOrderByCreatedDateTimeDesc(target, new PageRequest(pageNumber, pageSize));
+    public Page<Notification> fetchPagedAndroidNotifications(User target, int pageNumber, int pageSize) {
+        return notificationRepository.findByTargetAndForAndroidTimelineTrueOrderByCreatedDateTimeDesc(target, new PageRequest(pageNumber, pageSize));
     }
 
     @Override
-    public List<Notification> fetchNotificationsSince(String userUid, Instant createdSince) {
+    public List<Notification> fetchAndroidNotificationsSince(String userUid, Instant createdSince) {
         Objects.requireNonNull(userUid);
         User user = userRepository.findOneByUid(userUid);
         List<Notification> notifications;
         if (createdSince != null) {
-            notifications = notificationRepository.findByTargetAndCreatedDateTimeGreaterThanOrderByCreatedDateTimeDesc(user, createdSince);
+            notifications = notificationRepository.findByTargetAndForAndroidTimelineTrueAndCreatedDateTimeGreaterThanOrderByCreatedDateTimeDesc(user, createdSince);
         } else {
-            notifications = notificationRepository.findByTargetOrderByCreatedDateTimeDesc(user);
+            notifications = notificationRepository.findByTargetAndForAndroidTimelineTrueOrderByCreatedDateTimeDesc(user);
         }
 
         return notifications;
@@ -75,6 +67,20 @@ public class NotificationManager implements NotificationService{
     public void updateNotificationReadStatus(String notificationUid, boolean read) {
         Notification notification = notificationRepository.findByUid(notificationUid);
         notification.setRead(read);
+    }
+
+    @Override
+    @Transactional
+    public void updateNotificationsViewedAndRead(Set<String> notificationUids) {
+        List<Notification> notifications = notificationRepository.findByUidIn(notificationUids);
+        notifications.forEach(n -> n.markReadAndViewed());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int countUnviewedAndroidNotifications(String targetUid) {
+        User user = userRepository.findOneByUid(targetUid);
+        return notificationRepository.countByTargetAndViewedOnAndroidFalseAndForAndroidTimelineTrue(user);
     }
 
     @Override

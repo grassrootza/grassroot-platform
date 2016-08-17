@@ -114,6 +114,8 @@ public enum RestMessage {
     PICTURE_NOT_FOUND,
 
     DATE_TIME_PARSED,
-    DATE_TIME_FAILED
+    DATE_TIME_FAILED,
+
+    EMPTY_LIST
 
 }

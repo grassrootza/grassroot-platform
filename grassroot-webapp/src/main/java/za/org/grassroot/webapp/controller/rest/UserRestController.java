@@ -9,19 +9,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.VerificationTokenCode;
-import za.org.grassroot.core.dto.TokenDTO;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.enums.VerificationCodeType;
 import za.org.grassroot.core.util.PhoneNumberUtil;
+import za.org.grassroot.integration.services.NotificationService;
 import za.org.grassroot.integration.services.SmsSendingService;
 import za.org.grassroot.services.PasswordTokenService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.webapp.enums.RestMessage;
-import za.org.grassroot.webapp.enums.RestStatus;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.AuthenticationResponseWrapper;
+import za.org.grassroot.webapp.model.rest.ResponseWrappers.AuthWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ProfileSettingsDTO;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
@@ -47,6 +46,9 @@ public class UserRestController {
 
     @Autowired
     private SmsSendingService smsSendingService;
+
+    @Autowired
+    private NotificationService notificationService;
 
     @Autowired
     private Environment environment;
@@ -84,12 +86,13 @@ public class UserRestController {
 
         if (passwordTokenService.isShortLivedOtpValid(phoneNumber, otpEntered)) {
             log.info("user dto and code verified, now creating user with phoneNumber={}", phoneNumber);
+
             UserDTO userDTO = userManagementService.loadUserCreateRequest(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
             User user = userManagementService.createAndroidUserProfile(userDTO);
             VerificationTokenCode token = passwordTokenService.generateLongLivedAuthCode(user.getUid());
             passwordTokenService.expireVerificationCode(user.getUid(), VerificationCodeType.SHORT_OTP);
-            AuthenticationResponseWrapper authWrapper = new AuthenticationResponseWrapper(HttpStatus.OK, RestMessage.USER_REGISTRATION_SUCCESSFUL,
-                    RestStatus.SUCCESS, new TokenDTO(token), user.getDisplayName(), user.getLanguageCode(), false);
+
+            AuthWrapper authWrapper = AuthWrapper.create(true, token, user, false, 0); // by definition, no groups or notiifcations
             return new ResponseEntity<>(authWrapper, HttpStatus.OK);
         } else {
             log.info("Token verification for new user failed");
@@ -121,11 +124,13 @@ public class UserRestController {
                 userManagementService.createAndroidUserProfile(new UserDTO(user));
             }
             userManagementService.setMessagingPreference(user.getUid(), UserMessagingPreference.ANDROID_APP); // todo : maybe move to gcm registration
+
             VerificationTokenCode longLivedToken = passwordTokenService.generateLongLivedAuthCode(user.getUid());
             boolean hasGroups = userManagementService.isPartOfActiveGroups(user);
             passwordTokenService.expireVerificationCode(user.getUid(), VerificationCodeType.SHORT_OTP);
-            AuthenticationResponseWrapper authWrapper = new AuthenticationResponseWrapper(HttpStatus.OK, RestMessage.LOGIN_SUCCESS,
-                    RestStatus.SUCCESS, new TokenDTO(longLivedToken), user.getDisplayName(),user.getLanguageCode(), hasGroups);
+            int notificationCount = notificationService.countUnviewedAndroidNotifications(user.getUid());
+
+            AuthWrapper authWrapper = AuthWrapper.create(false, longLivedToken, user, hasGroups, notificationCount);
             return new ResponseEntity<>(authWrapper, HttpStatus.OK);
         } else {
             log.info("Android: Okay invalid code supplied by user={}");

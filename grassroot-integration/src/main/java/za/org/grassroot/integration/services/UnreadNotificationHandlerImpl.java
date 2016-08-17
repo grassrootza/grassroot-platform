@@ -33,11 +33,13 @@ public class UnreadNotificationHandlerImpl implements UnreadNotificationHandler 
         Instant time = Instant.now();
         Instant timeToCheck = Instant.now().minus(10, ChronoUnit.MINUTES);
 
+        // probably need to distinguish "read" and "view on android ..."
         List<Notification> unreadNotifications = notificationRepository
                 .findFirst100ByReadFalseAndNextAttemptTimeBeforeAndCreatedDateTimeGreaterThan(time, timeToCheck);
         if (unreadNotifications.size() > 0) {
             logger.info("Sending {} unread notifications", unreadNotifications.size());
         }
+
         for (Notification notification : unreadNotifications) {
             logger.info("Routing notification to SMS ...");
             messageSendingManager.sendMessage(UserMessagingPreference.SMS.name(), notification);

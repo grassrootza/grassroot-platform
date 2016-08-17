@@ -2,6 +2,7 @@ package za.org.grassroot.core.domain.notification;
 
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
+import za.org.grassroot.core.enums.NotificationDetailedType;
 
 import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
@@ -20,5 +21,10 @@ public class JoinRequestNotification extends UserNotification {
 
     public JoinRequestNotification(User target, String message, UserLog userLog) {
         super(target, message, userLog);
+    }
+
+    @Override
+    public NotificationDetailedType getNotificationDetailedType() {
+        return NotificationDetailedType.JOINREQUEST;
     }
 }

@@ -1,10 +1,13 @@
 package za.org.grassroot.webapp.model.rest.RequestObjects;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.collect.Sets;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.Task;
 import za.org.grassroot.core.domain.notification.*;
+import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.DateTimeUtil;
 
@@ -18,39 +21,46 @@ import java.util.regex.Pattern;
 /**
  * Created by paballo on 2016/04/13.
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class NotificationDTO {
 
     // private static final Logger logger = LoggerFactory.getLogger(NotificationDTO.class);
 
     private final String uid; // i.e., uid of the notification itself
-    private final String entityUid; // i.e., uid of the event/etc that the logbook was attached to
+    private final String notificationType;
+    private final boolean delivered;
+    private final boolean read;
+    private final boolean viewedAndroid;
 
     private final String groupUid;
     private final String title;
-    private final String message;
-    private final String createdDatetime;
-    private final String deadlineDateTime;
+    private final String imageUrl;
+    private final String defaultImage;
 
-    private final String notificationType;
-    private final String entityType;
-    private final String changeType;
+    private String entityUid; // i.e., uid of the event/etc that the logbook was attached to
+    private String message;
+    private String createdDatetime;
+    private String deadlineDateTime;
 
-    private final boolean delivered;
-    private final boolean read;
+    private String entityType;
+    private String changeType;
+
+    // should start including join request notifications & rsvp totals at some point
+    public static final Set<NotificationDetailedType> notificationsForAndroidList =
+            Collections.unmodifiableSet(Sets.newHashSet(
+                    NotificationDetailedType.LOG_BOOK_INFO,
+                    NotificationDetailedType.LOG_BOOK_REMINDER,
+                    NotificationDetailedType.EVENT_INFO,
+                    NotificationDetailedType.EVENT_CHANGED,
+                    NotificationDetailedType.EVENT_CANCELLED,
+                    NotificationDetailedType.EVENT_REMINDER,
+                    NotificationDetailedType.VOTE_RESULTS,
+                    NotificationDetailedType.MEETING_RSVP_TOTALS));
 
     private final static Pattern dialMatcher = Pattern.compile("([\\.,]\\s[Dd].+\\*134\\*1994#.+)");
 
-    // may want to start including join request notifications at some point
-    private static final Set<Class<? extends Notification>> validTypesForDTO = Collections.unmodifiableSet(
-            Sets.newHashSet(LogBookInfoNotification.class,
-                    LogBookReminderNotification.class,
-                    EventInfoNotification.class,
-                    EventChangedNotification.class,
-                    EventCancelledNotification.class,
-                    VoteResultsNotification.class));
-
     public static boolean isNotificationOfTypeForDTO(Notification notification) {
-        return validTypesForDTO.contains(notification.getClass());
+        return notificationsForAndroidList.contains(notification.getNotificationDetailedType());
     }
 
     public static NotificationDTO convertToDto(Notification notification) {
@@ -65,36 +75,42 @@ public class NotificationDTO {
         }
     }
 
-    public NotificationDTO(Notification notification, Event event) {
+    private NotificationDTO(Notification notification, Task task) {
         this.uid = notification.getUid();
-        this.entityUid = event.getUid();
-        this.title = event.getAncestorGroup().getGroupName();
         this.createdDatetime = convertInstantToStringISO(notification.getCreatedDateTime());
+        this.delivered = notification.isDelivered();
+        this.read = notification.isRead();
+        this.viewedAndroid = notification.isViewedOnAndroid();
+        this.notificationType = notification.getNotificationDetailedType().toString();
+
+        this.title = task.getAncestorGroup().getGroupName();
+        this.groupUid = task.getAncestorGroup().getUid();
+        this.imageUrl = task.getAncestorGroup().getImageUrl();
+        this.defaultImage = task.getAncestorGroup().getDefaultImage().toString();
+    }
+
+    public NotificationDTO(Notification notification, Event event) {
+        this(notification, (Task) event);
+
+        this.entityUid = event.getUid();
         this.deadlineDateTime = convertInstantToStringISO(event.getDeadlineTime());
-        this.groupUid = event.getAncestorGroup().getUid();
+
         final String originalMessage = (notification.getMessage() != null) ? notification.getMessage() : notification.getEventLog().getMessage();
         this.message = stripDialSuffix(stripTitleFromMessage(title, originalMessage));
 
-        this.delivered = notification.isDelivered();
-        this.read = notification.isRead();
-        this.notificationType = notification.getNotificationType().toString();
         this.entityType = event.getEventType().toString();
         this.changeType = notification.getEventLog().getEventLogType().toString();
     }
 
     public NotificationDTO(Notification notification, LogBook logBook){
-        this.uid = notification.getUid();
+        this(notification, (Task) logBook);
+
         this.entityUid = logBook.getUid();
-        this.title = logBook.getAncestorGroup().getGroupName();
-        this.createdDatetime = convertInstantToStringISO(notification.getCreatedDateTime());
         this.deadlineDateTime = convertInstantToStringISO(logBook.getDeadlineTime());
-        this.groupUid = logBook.getAncestorGroup().getUid();
+
         final String originalMessage = (notification.getMessage() != null) ? notification.getMessage() : notification.getLogBookLog().getMessage();
         this.message = stripDialSuffix(stripTitleFromMessage(title, originalMessage));
 
-        this.delivered = notification.isDelivered();
-        this.read = notification.isRead();
-        this.notificationType = notification.getNotificationType().toString();
         this.entityType = TaskType.TODO.toString();
         this.changeType = notification.getLogBookLog().getType().toString();
     }
@@ -162,6 +178,8 @@ public class NotificationDTO {
         return read;
     }
 
+    public boolean isViewedAndroid() { return viewedAndroid; }
+
     public String getGroupUid() {
         return groupUid;
     }
@@ -171,4 +189,12 @@ public class NotificationDTO {
     }
 
     public String getChangeType() { return changeType; }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public String getDefaultImage() {
+        return defaultImage;
+    }
 }
