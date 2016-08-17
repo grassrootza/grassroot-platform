@@ -14,6 +14,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
@@ -98,7 +99,7 @@ public class MeetingController extends BaseController {
                                   meeting.getTitle(), meeting.getEventDateTime(), meeting.getLocation(),
                                   meeting.isIncludeSubGroups(), meeting.isRsvpRequired(), meeting.isRelayable(),
                                   meeting.getReminderType(), meeting.getCustomReminderMinutes(), meeting.getDescription(),
-                                  Collections.emptySet());
+                                  Collections.emptySet(), MeetingImportance.ORDINARY);
 
         addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.creation.success", request);
         redirectAttributes.addAttribute("groupUid", selectedGroupUid);

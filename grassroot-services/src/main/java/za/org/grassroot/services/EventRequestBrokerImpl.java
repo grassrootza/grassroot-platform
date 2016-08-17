@@ -6,13 +6,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.repository.EventRequestRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.exception.EventRequestNotFilledException;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.Set;
@@ -129,7 +128,7 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
 			createdEntityUid = eventBroker.createMeeting(userUid, parent.getUid(), parent.getJpaEntityType(), meetingRequest.getName(),
 					meetingRequest.getEventDateTimeAtSAST(), meetingRequest.getEventLocation(), meetingRequest.isIncludeSubGroups(),
 					rsvpRequired, meetingRequest.isRelayable(), meetingRequest.getReminderType(), meetingRequest.getCustomReminderMinutes(),
-					meetingRequest.getDescription(), assignedMemberUids).getUid();
+					meetingRequest.getDescription(), assignedMemberUids, MeetingImportance.ORDINARY).getUid();
 		} else {
 			VoteRequest voteRequest = (VoteRequest) request;
 			VoteContainer parent = voteRequest.getParent();

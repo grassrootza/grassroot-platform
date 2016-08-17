@@ -8,6 +8,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
+import za.org.grassroot.core.dto.KeywordDTO;
 import za.org.grassroot.services.AdminService;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.webapp.controller.BaseController;
@@ -59,6 +60,18 @@ public class AnalyticsController extends BaseController {
         model.addAttribute("userLocations", userLocations);
         model.addAttribute("geoStats",geoStats);
         return "admin/analytics/geo_stats";
+
+    }
+
+    @RequestMapping("word_stats")
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    public String viewKeywordFequency(Model model) {
+
+        List<KeywordDTO> frequentWords = adminService.getMostFrequentKeyWords();
+        model.addAttribute("frequentWords", frequentWords);
+
+
+        return "admin/analytics/word_stats";
 
     }
 

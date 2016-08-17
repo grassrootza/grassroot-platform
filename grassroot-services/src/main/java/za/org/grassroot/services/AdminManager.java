@@ -5,6 +5,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.dto.KeywordDTO;
 import za.org.grassroot.core.dto.MaskedUserDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.GroupLogType;
@@ -13,6 +14,7 @@ import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 
+import javax.persistence.EntityManager;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -59,6 +61,9 @@ public class AdminManager implements AdminService {
 
     @Autowired
     private GeoLocationBroker geoLocationBroker;
+
+    @Autowired
+    private EntityManager entityManager;
 
     /*
     Helper functions to mask a list of entities
@@ -207,7 +212,23 @@ public class AdminManager implements AdminService {
                                                                end.toInstant(ZoneOffset.UTC));
     }
 
-	/**
+    @Override
+    public List<KeywordDTO> getMostFrequentKeyWords() {
+
+
+        List list = entityManager.createNativeQuery("SELECT word as keyword, nentry as frequency FROM ts_stat('SELECT to_tsvector(''simple'',keyword) FROM (SELECT g.name as keyword\n" +
+                "  FROM group_profile g where g.created_date_time > CURRENT_DATE - INTERVAL ''3 months''\n" +
+                "UNION \n" +
+                "SELECT e.name\n" +
+                "  FROM event e where e.created_date_time > CURRENT_DATE - INTERVAL ''3 months'' UNION Select t.message from log_book t where t.created_date_time > CURRENT_DATE - INTERVAL ''3 months'') as keywords')\n" +
+                "ORDER BY nentry DESC, ndoc DESC, word \n" +
+                "LIMIT 50", KeywordDTO.class)
+                .getResultList();
+
+        return list;
+    }
+
+    /**
 	 * SECTION : Methods to analyze use stats
      */
 

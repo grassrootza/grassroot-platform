@@ -1,6 +1,7 @@
 package za.org.grassroot.services;
 
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.MeetingImportance;
 
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -26,11 +27,12 @@ public interface EventBroker {
 	 * @param customReminderMinutes If the reminder type is custom, the number of minutes in advance to send the reminder
 	 * @param description An optional longer description -- can be null
      * @param assignMemberUids The UIDs of the assigned members. If an empty set, then all members in the parent entity will be assigned.
-     * @return
+     * @param importance
+	 * @return
      */
 	Meeting createMeeting(String userUid, String parentUid, JpaEntityType parentType, String name, LocalDateTime eventStartDateTime, String eventLocation,
 						  boolean includeSubGroups, boolean rsvpRequired, boolean relayable, EventReminderType reminderType,
-						  int customReminderMinutes, String description, Set<String> assignMemberUids);
+						  int customReminderMinutes, String description, Set<String> assignMemberUids, MeetingImportance importance);
 
 	// for commonly updated fields (in particular, the only fields that can be changed via USSD)
 	void updateMeeting(String userUid, String meetingUid, String name, LocalDateTime eventStartDateTime, String eventLocation);

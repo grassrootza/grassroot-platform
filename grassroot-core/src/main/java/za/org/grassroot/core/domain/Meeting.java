@@ -38,6 +38,15 @@ public class Meeting extends Event<MeetingContainer> implements VoteContainer {
 		setParent(parent);
 	}
 
+	public Meeting(String name, Instant startDateTime, User user, MeetingContainer parent, String eventLocation, boolean includeSubGroups,
+				   boolean rsvpRequired, boolean relayable, EventReminderType reminderType, MeetingImportance importance, int customReminderMinutes, String description) {
+		super(startDateTime, user, parent, name, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes, description);
+		this.eventLocation = Objects.requireNonNull(eventLocation);
+		this.importance = Objects.requireNonNull(importance);
+		setScheduledReminderActive(true);
+		setParent(parent);
+	}
+
 	public static Meeting makeEmpty(User user) {
 		Meeting meeting = new Meeting();
 		meeting.uid = UIDGenerator.generateId();
