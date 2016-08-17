@@ -215,7 +215,6 @@ public class AdminManager implements AdminService {
     @Override
     public List<KeywordDTO> getMostFrequentKeyWords() {
 
-
         List list = entityManager.createNativeQuery("SELECT word as keyword, nentry as frequency FROM ts_stat('SELECT to_tsvector(''simple'',keyword) FROM (SELECT g.name as keyword\n" +
                 "  FROM group_profile g where g.created_date_time > CURRENT_DATE - INTERVAL ''3 months''\n" +
                 "UNION \n" +
