@@ -153,6 +153,7 @@ public class EventBrokerImpl implements EventBroker {
 			cacheUtilService.clearRsvpCacheForUser(member, event.getEventType());
 			String message = messageAssemblingService.createEventInfoMessage(member, event);
 			Notification notification = new EventInfoNotification(member, message, eventLog);
+			if(event instanceof Meeting) notification.setPriority(((Meeting) event).getImportance().ordinal());
 			notifications.add(notification);
 		}
 		return notifications;

@@ -72,6 +72,10 @@ public class Meeting extends Event<MeetingContainer> implements VoteContainer {
 		this.eventLocation = eventLocation;
 	}
 
+	public MeetingImportance getImportance() {
+		return importance;
+	}
+
 	public MeetingContainer getParent() {
 		if (parentGroup != null) {
 			return parentGroup;
