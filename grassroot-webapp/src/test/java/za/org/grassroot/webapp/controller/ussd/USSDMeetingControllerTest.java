@@ -26,7 +26,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
 import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
-import static za.org.grassroot.webapp.util.USSDEventUtil.parseDateTime;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 
 /**
@@ -367,7 +366,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         Group testGroup = new Group("gc1", testUser);
         MeetingRequest meetingForTest = MeetingRequest.makeEmpty(testUser, testGroup);
         String requestUid = meetingForTest.getUid();
-        LocalDateTime forTimestamp = parseDateTime("Tomorrow 7am");
+        LocalDateTime forTimestamp = LocalDateTime.now().plusDays(1).plusHours(7);
         meetingForTest.setEventStartDateTime(convertToSystemTime(forTimestamp, getSAST()));
         String urlToSave = saveMeetingMenu("confirm", requestUid, false);
 
@@ -432,7 +431,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         User testUser = new User(testUserPhone);
         Group testGroup = new Group("tg1", testUser);
-        LocalDateTime timestamp = parseDateTime("Tomorrow 9am");
+        LocalDateTime timestamp = LocalDateTime.now().plusDays(1).plusHours(7);
         MeetingRequest meetingForTest = MeetingRequest.makeEmpty(testUser, testGroup);
         meetingForTest.setEventStartDateTime(convertToSystemTime(timestamp, getSAST()));
         String requestUid = meetingForTest.getUid();
@@ -498,7 +497,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
 
-        LocalDateTime forTimestamp = parseDateTime("Tomorrow 7am");
+        LocalDateTime forTimestamp = LocalDateTime.now().plusDays(1).plusHours(7);
         String confirmedTime = forTimestamp.format(DateTimeFormatter.ofPattern("EEE d MMM, h:mm a"));
 
         mockMvc.perform(get(path + "send").param(phoneParam, testUserPhone).param("entityUid", requestUid))
