@@ -28,7 +28,7 @@ public class LearningManager implements LearningService {
 
         try {
             // if not covered in next version of Jackson, use property binder
-            String url = "http://localhost:9000/parse?phrase=" + phrase;
+            String url = "http://52.210.114.216:9000/parse?phrase=" + phrase;
             long start = System.currentTimeMillis();
             // RestTemplate rt = new RestTemplate();
             String s = this.restTemplate.getForObject(url, String.class);
