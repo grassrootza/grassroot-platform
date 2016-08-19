@@ -70,7 +70,6 @@ public class AnalyticsController extends BaseController {
         List<KeywordDTO> frequentWords = adminService.getMostFrequentKeyWords();
         model.addAttribute("frequentWords", frequentWords);
 
-
         return "admin/analytics/word_stats";
 
     }

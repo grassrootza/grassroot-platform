@@ -215,13 +215,18 @@ public class AdminManager implements AdminService {
     @Override
     public List<KeywordDTO> getMostFrequentKeyWords() {
 
-        List list = entityManager.createNativeQuery("SELECT word as keyword, nentry as frequency FROM ts_stat('SELECT to_tsvector(''simple'',keyword) FROM (SELECT g.name as keyword\n" +
-                "  FROM group_profile g where g.created_date_time > CURRENT_DATE - INTERVAL ''3 months''\n" +
-                "UNION \n" +
-                "SELECT e.name\n" +
-                "  FROM event e where e.created_date_time > CURRENT_DATE - INTERVAL ''3 months'' UNION Select t.message from log_book t where t.created_date_time > CURRENT_DATE - INTERVAL ''3 months'') as keywords')\n" +
-                "ORDER BY nentry DESC, ndoc DESC, word \n" +
-                "LIMIT 50", KeywordDTO.class)
+        List list = entityManager.createNativeQuery("SELECT word as keyword, group_name_count, event_name_count, todo_count, nentry " +
+                "  as total_occurence FROM ts_stat(\'SELECT to_tsvector(keyword)  FROM (SELECT g.name as keyword FROM group_profile " +
+                "g where g.created_date_time > " +
+                "CURRENT_DATE - INTERVAL \'\'3 months\'\'UNION ALL  SELECT e.name FROM event e where e.created_date_time > CURRENT_DATE - INTERVAL \'\'3 months\'\' UNION ALL Select t.message " +
+                "from log_book t where t.created_date_time > CURRENT_DATE - INTERVAL \'\'3 months\'\') as keywords\')left outer join (select word as group_name,nentry as group_name_count " +
+                "FROM ts_stat(\'SELECT to_tsvector(keyword) FROM (SELECT g.name as keyword " +
+                " FROM group_profile g where g.created_date_time > CURRENT_DATE - INTERVAL \'\'3 months\'\')  as keywords\'))" +
+                " as groups on(word=group_name) left outer join (select word as event_name,nentry as event_name_count FROM ts_stat(\'SELECT to_tsvector(keyword) " +
+                "  FROM ( SELECT e.name as keyword  FROM event e where e.created_date_time > CURRENT_DATE - INTERVAL \'\'3 months\'\' ) as keywords\')) as events on(word=event_name)" +
+                " left outer join (select word as action_name,nentry  as todo_count FROM ts_stat(\'SELECT to_tsvector(keyword) from(select t.message as keyword from log_book " +
+                "t where t.created_date_time > CURRENT_DATE - INTERVAL \'\'3 months\'\') " +
+                " as keywords\')) as todos on(word=action_name) ORDER BY nentry DESC, ndoc DESC, word limit 50", KeywordDTO.class)
                 .getResultList();
 
         return list;

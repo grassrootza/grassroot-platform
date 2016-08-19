@@ -38,9 +38,14 @@
                     var keyWords = [[${frequentWords}]];
                     var data = new google.visualization.DataTable();
                     data.addColumn('string', 'Keyword');
-                    data.addColumn('number', 'Frequency');
+                    data.addColumn('number', 'Group Names');
+                    data.addColumn('number', 'Events');
+                    data.addColumn('number', 'Actions');
+                    data.addColumn('number', 'Total');
+                    console.log(keyWords);
+
                     for (i = 0; i < keyWords.length; i++) {
-                        data.addRow([keyWords[i].keyword, keyWords[i].frequency]);
+                        data.addRow([keyWords[i].keyword,keyWords[i].groupNameCount, keyWords[i].eventNameCount,keyWords[i].todoCount, keyWords[i].totalOccurence]);
                     }
                     var options = {
                         showRowNumber: false,
