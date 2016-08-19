@@ -190,10 +190,11 @@ public class USSDEventUtil extends USSDUtil {
 
         try {
             parsedDateTime = learningService.parse(passedValue);
+            log.info("Date time processed: " + parsedDateTime.toString());
         } catch (Exception e) {
             throw new DateTimeParseFailure();
         }
-        
+
         return parsedDateTime;
     }
 

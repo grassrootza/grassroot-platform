@@ -16,7 +16,9 @@ import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.util.USSDEventUtil;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -372,6 +374,8 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(eventRequestBrokerMock.load(requestUid)).thenReturn(meetingForTest);
+        when(learningServiceMock.parse("Tomorrow 7am"))
+                .thenReturn(LocalDateTime.of(LocalDate.now().plusDays(1), LocalTime.of(7,0)));
 
         mockMvc.perform(get(path + "confirm").param(phoneParam, testUserPhone).param("entityUid", requestUid).
                 param("prior_menu", "time").param("request", "Tomorrow 7am")).andExpect(status().isOk());
@@ -444,6 +448,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         List<String> nineAmVariations = Arrays.asList("09:00", "09 00", "900", "9:00 am", "9am");
         List<String> onePmVariations = Arrays.asList("13:00", "13 00", "1300", "1:00 pm", "1pm");
 
+        //TODO adjust tests to reflect new parse call to server
         for (String time : nineAmVariations) {
             mockMvc.perform(get(path + "confirm").param(phoneParam, testUserPhone).param("entityUid", requestUid).
                     param("prior_menu", "time_only").param("revising", "1").param("request", time)).andExpect(status().isOk());
@@ -721,6 +726,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(eventRequestBrokerMock.load(changeRequest.getUid())).thenReturn(changeRequest);
+        when(learningServiceMock.parse("09:00")).thenReturn(LocalDateTime.of(LocalDate.now(), LocalTime.of(9, 0)));
 
         for (String[] actions : actionsAndInputs) {
             urlToSave = editingMtgMenuUrl("modify", testMeeting.getUid(), changeRequest.getUid(), actions[0])
