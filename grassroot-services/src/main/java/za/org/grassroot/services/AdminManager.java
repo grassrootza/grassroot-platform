@@ -50,11 +50,11 @@ public class AdminManager implements AdminService {
     @Autowired
     private TodoRepository todoRepository;
 
-	@Autowired
-	private RoleRepository roleRepository;
+    @Autowired
+    private RoleRepository roleRepository;
 
-	@Autowired
-	private GroupBroker groupBroker;
+    @Autowired
+    private GroupBroker groupBroker;
 
     @Autowired
     private GroupLogRepository groupLogRepository;
@@ -124,7 +124,7 @@ public class AdminManager implements AdminService {
 
     /**
      * SECTION: METHODS TO HANDLE GROUPS
-     * */
+     */
 
     @Override
     public Long countActiveGroups() {
@@ -148,12 +148,12 @@ public class AdminManager implements AdminService {
         groupLogRepository.save(new GroupLog(group, user, GroupLogType.GROUP_REMOVED, null, "Deactivated by system admin"));
     }
 
-	@Override
-	@Transactional
-	public void addMemberToGroup(String adminUserUid, String groupUid, MembershipInfo membershipInfo) {
+    @Override
+    @Transactional
+    public void addMemberToGroup(String adminUserUid, String groupUid, MembershipInfo membershipInfo) {
         validateAdminRole(adminUserUid);
         groupBroker.addMembers(adminUserUid, groupUid, Collections.singleton(membershipInfo), true);
-	}
+    }
 
     @Override
     public void removeMemberFromGroup(String adminUserUid, String groupUid, String memberMsisdn) {
@@ -209,31 +209,46 @@ public class AdminManager implements AdminService {
     @Override
     public Long countLogBooksRecordedInInterval(LocalDateTime start, LocalDateTime end) {
         return todoRepository.countByCreatedDateTimeBetween(start.toInstant(ZoneOffset.UTC),
-                                                               end.toInstant(ZoneOffset.UTC));
+                end.toInstant(ZoneOffset.UTC));
     }
 
     @Override
-    public List<KeywordDTO> getMostFrequentKeyWords() {
+    public List<KeywordDTO> getKeywordStats() {
 
-        List list = entityManager.createNativeQuery("SELECT word as keyword, group_name_count, event_name_count, todo_count, nentry " +
-                "  as total_occurence FROM ts_stat(\'SELECT to_tsvector(keyword)  FROM (SELECT g.name as keyword FROM group_profile " +
+        List keywords = entityManager.createNativeQuery("SELECT word as keyword, group_name_count, meeting_name_count, " +
+                "vote_name_count," +
+                " todo_count, nentry " +
+                " as total_occurence FROM ts_stat(\'SELECT to_tsvector(keyword)  FROM (SELECT g.name as keyword FROM " +
+                "group_profile " +
                 "g where g.created_date_time > " +
-                "CURRENT_DATE - INTERVAL \'\'3 months\'\'UNION ALL  SELECT e.name FROM event e where e.created_date_time > CURRENT_DATE - INTERVAL \'\'3 months\'\' UNION ALL Select t.message " +
-                "from log_book t where t.created_date_time > CURRENT_DATE - INTERVAL \'\'3 months\'\') as keywords\')left outer join (select word as group_name,nentry as group_name_count " +
+                "CURRENT_DATE - INTERVAL \'\'3 months\'\'UNION ALL  SELECT e.name FROM event e " +
+                "where e.created_date_time > CURRENT_DATE - INTERVAL \'\'3 months\'\' UNION ALL Select t.message " +
+                "from log_book t where t.created_date_time > CURRENT_DATE - INTERVAL \'\'3 months\'\') as keywords\')" +
+                "left outer join (select word as group_name,nentry as group_name_count " +
                 "FROM ts_stat(\'SELECT to_tsvector(keyword) FROM (SELECT g.name as keyword " +
                 " FROM group_profile g where g.created_date_time > CURRENT_DATE - INTERVAL \'\'3 months\'\')  as keywords\'))" +
-                " as groups on(word=group_name) left outer join (select word as event_name,nentry as event_name_count FROM ts_stat(\'SELECT to_tsvector(keyword) " +
-                "  FROM ( SELECT e.name as keyword  FROM event e where e.created_date_time > CURRENT_DATE - INTERVAL \'\'3 months\'\' ) as keywords\')) as events on(word=event_name)" +
-                " left outer join (select word as action_name,nentry  as todo_count FROM ts_stat(\'SELECT to_tsvector(keyword) from(select t.message as keyword from log_book " +
-                "t where t.created_date_time > CURRENT_DATE - INTERVAL \'\'3 months\'\') " +
-                " as keywords\')) as todos on(word=action_name) ORDER BY nentry DESC, ndoc DESC, word limit 50", KeywordDTO.class)
+                " as groups on(word=group_name) left outer join (select word as meeting_name,nentry as meeting_name_count" +
+                " FROM ts_stat(\'SELECT to_tsvector(keyword) " +
+                "  FROM ( SELECT e.name as keyword  FROM event e where e.created_date_time > CURRENT_DATE - INTERVAL \'\'3 months\'\'  and e.type=\'\'MEETING\'\' )" +
+                " as keywords\')) " +
+                "as meetings on(word=meeting_name)" +
+                "left outer join (select word as vote_name,nentry as vote_name_count" +
+                " FROM ts_stat(\'SELECT to_tsvector(keyword) " +
+                "  FROM ( SELECT e.name as keyword  FROM event e where e.created_date_time > CURRENT_DATE - INTERVAL \'\'3 months\'\' and e.type=\'\'VOTE\'\' )" +
+                " as keywords\')) " +
+                "as votes on(word=vote_name)" +
+                " left outer join (select word as action_name,nentry  as todo_count FROM ts_stat(\'SELECT to_tsvector(keyword)" +
+                " from(select t.message as keyword from log_book t " +
+                "where t.created_date_time > CURRENT_DATE - INTERVAL \'\'3 months\'\') " +
+                " as keywords\')) as todos on(word=action_name) " +
+                "ORDER BY total_occurence DESC, word limit 50", KeywordDTO.class)
                 .getResultList();
 
-        return list;
+        return keywords;
     }
 
     /**
-	 * SECTION : Methods to analyze use stats
+     * SECTION : Methods to analyze use stats
      */
 
     @Override

@@ -71,7 +71,7 @@ public interface AdminService {
 
     Long countLogBooksRecordedInInterval(LocalDateTime start, LocalDateTime end);
 
-    List<KeywordDTO> getMostFrequentKeyWords();
+    List<KeywordDTO> getKeywordStats();
 
     /*
     Methods for closer analysis of user sessions etc

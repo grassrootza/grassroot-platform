@@ -67,7 +67,7 @@ public class AnalyticsController extends BaseController {
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     public String viewKeywordFequency(Model model) {
 
-        List<KeywordDTO> frequentWords = adminService.getMostFrequentKeyWords();
+        List<KeywordDTO> frequentWords = adminService.getKeywordStats();
         model.addAttribute("frequentWords", frequentWords);
 
         return "admin/analytics/word_stats";

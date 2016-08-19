@@ -27,7 +27,7 @@
     <!-- Central text header -->
     <div class="well">
         <div class="row">
-            <h1>Most frequent words</h1>
+            <h1>Keyword Stats</h1>
 
             <div id="table"></div>
             <script th:inline="javascript">
@@ -39,13 +39,14 @@
                     var data = new google.visualization.DataTable();
                     data.addColumn('string', 'Keyword');
                     data.addColumn('number', 'Group Names');
-                    data.addColumn('number', 'Events');
+                    data.addColumn('number', 'Meetings');
+                    data.addColumn('number', 'Votes');
                     data.addColumn('number', 'Actions');
                     data.addColumn('number', 'Total');
                     console.log(keyWords);
 
                     for (i = 0; i < keyWords.length; i++) {
-                        data.addRow([keyWords[i].keyword,keyWords[i].groupNameCount, keyWords[i].eventNameCount,keyWords[i].todoCount, keyWords[i].totalOccurence]);
+                        data.addRow([keyWords[i].keyword,keyWords[i].groupNameCount, keyWords[i].meetingNameCount, keyWords[i].voteNameCount,keyWords[i].todoCount, keyWords[i].totalOccurence]);
                     }
                     var options = {
                         showRowNumber: false,

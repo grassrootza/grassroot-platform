@@ -14,8 +14,10 @@ public class KeywordDTO {
     private String keyword;
     @Column(name = "group_name_count")
     private Integer groupNameCount ;
-    @Column(name = "event_name_count")
-    private Integer eventNameCount;
+    @Column(name = "meeting_name_count")
+    private Integer meetingNameCount;
+    @Column(name = "vote_name_count")
+    private Integer voteNameCount;
     @Column(name = "todo_count")
     private Integer todoCount;
     @Column(name = "total_occurence")
@@ -29,9 +31,11 @@ public class KeywordDTO {
         return groupNameCount != null ? groupNameCount : Integer.valueOf(0);
     }
 
-    public Integer getEventNameCount() {
-        return eventNameCount != null ? eventNameCount : Integer.valueOf(0);
+    public Integer getMeetingNameCount() {
+        return meetingNameCount != null ? meetingNameCount : Integer.valueOf(0);
     }
+
+    public Integer getVoteNameCount() {return voteNameCount != null ? voteNameCount : Integer.valueOf(0); }
 
     public Integer getTodoCount() {
         return todoCount != null ? todoCount : Integer.valueOf(0);
