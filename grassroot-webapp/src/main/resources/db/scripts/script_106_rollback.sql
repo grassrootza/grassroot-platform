@@ -1,0 +1,1 @@
+alter table event drop column importance;
