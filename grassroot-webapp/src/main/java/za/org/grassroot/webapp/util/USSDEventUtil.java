@@ -186,7 +186,15 @@ public class USSDEventUtil extends USSDUtil {
      */
     public LocalDateTime parseDateTime(String passedValue) throws DateTimeParseFailure {
 
-        return learningService.parse(passedValue);
+        LocalDateTime parsedDateTime;
+
+        try {
+            parsedDateTime = learningService.parse(passedValue);
+        } catch (Exception e) {
+            throw new DateTimeParseFailure();
+        }
+        
+        return parsedDateTime;
     }
 
     /**
