@@ -4,38 +4,50 @@ package za.org.grassroot.core.enums;
  * Created by aakilomar on 9/20/15.
  */
 public enum EventRSVPResponse {
-    YES ("Yes"),
-    NO ("No"),
-    NO_RESPONSE ("No response yet"),
-    INVALID_RESPONSE ("Invalid RSVP"),
-    MAYBE ("Maybe");
 
-
+    YES,
+    NO,
+    NO_RESPONSE,
+    INVALID_RESPONSE,
+    MAYBE;
 
     public static EventRSVPResponse fromString(String rsvp) {
-
         if (rsvp != null) {
-            for (EventRSVPResponse r : EventRSVPResponse.values()) {
-                if (rsvp.equalsIgnoreCase(r.response)) {
-                    return r;
-                }
+            switch (rsvp) {
+                case "Yes":
+                case "yes":
+                case "YES":
+                    return YES;
+                case "No":
+                case "no":
+                case "NO":
+                    return NO;
+                case "No response yet":
+                    return NO_RESPONSE;
+                case "Maybe":
+                case "maybe":
+                case "Abstain":
+                case "abstain":
+                    return MAYBE;
+                case "Invalid RSVP":
+                    return INVALID_RESPONSE;
             }
         }
         return EventRSVPResponse.INVALID_RESPONSE;
     }
 
-
-    private final String response;
-
-    private EventRSVPResponse(String s) {
-        response = s;
+    public String getReadableString() {
+        switch(this) {
+            case YES:
+                return "Yes";
+            case NO:
+                return "No";
+            case NO_RESPONSE:
+                return "No response";
+            case MAYBE:
+                return "Abstain";
+        }
+        return "Invalid response";
     }
 
-    public boolean equalsName(String otherResponse) {
-        return (otherResponse == null) ? false : response.equals(otherResponse);
-    }
-
-    public String toString() {
-        return this.response;
-    }
 }

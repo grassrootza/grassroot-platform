@@ -143,9 +143,9 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(redirectedUrl("/vote/view?eventUid=" + testVote.getUid()));
 
         verify(eventBrokerMock, times(1)).load(testVote.getUid());
-        verify(eventLogManagementServiceMock, times(1)).rsvpForEvent(testVote, sessionTestUser, EventRSVPResponse.fromString("yes"));
+        verify(eventLogBrokerMock, times(1)).rsvpForEvent(testVote.getUid(), sessionTestUser.getUid(), EventRSVPResponse.fromString("yes"));
         verifyNoMoreInteractions(eventBrokerMock);
-        verifyNoMoreInteractions(eventLogManagementServiceMock);
+        verifyNoMoreInteractions(eventLogBrokerMock);
     }
 
 

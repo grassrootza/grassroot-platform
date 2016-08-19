@@ -47,7 +47,7 @@ public class VoteController extends BaseController {
     EventManagementService eventManagementService;
 
     @Autowired
-    EventLogManagementService eventLogManagementService;
+    EventLogBroker eventLogBroker;
 
     @RequestMapping("create")
     public String createVote(Model model, @RequestParam(value="groupUid", required = false) String groupUid) {
@@ -162,7 +162,7 @@ public class VoteController extends BaseController {
         User sessionUser = getUserProfile();
         String priorUrl = request.getHeader(HttpHeaders.REFERER);
 
-        eventLogManagementService.rsvpForEvent(vote, sessionUser, EventRSVPResponse.fromString(answer));
+        eventLogBroker.rsvpForEvent(vote.getUid(), sessionUser.getUid(), EventRSVPResponse.fromString(answer));
 
         addMessage(redirectAttributes, MessageType.INFO, "vote.recorded", request);
 

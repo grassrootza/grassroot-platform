@@ -2,21 +2,14 @@ package za.org.grassroot.core.domain;
 
 /**
  * Created by luke on 2015/07/16.
- *
- * Major todo: Add relationship to user who created event
- * Major todo: Add relationship to group that is participating in event
- * Major todo: Construct logic for equals (non-trivial, as same group may have two events at same time ...)
- * Other: All todo's as for User class
- * todo - aakil - add event duration
- * todo - aakil - add logic to trigger sending of notification when minimum data saved and user(s) added - @observer??
- */
+ * */
 
 import za.org.grassroot.core.enums.EventLogType;
+import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
-import java.util.Calendar;
 import java.util.Objects;
 
 @Entity
@@ -46,8 +39,9 @@ public class EventLog implements ActionLog {
     @Column(name="event_log_type", nullable = false, length = 50)
     private EventLogType eventLogType;
 
-    @Column
-    private String message;
+    @Enumerated(EnumType.STRING)
+    @Column(name="response", length = 50)
+    private EventRSVPResponse response;
 
     @Column(name = "start_time_changed")
     private Boolean startTimeChanged; // intended only for logs of type CHANGED
@@ -60,18 +54,18 @@ public class EventLog implements ActionLog {
         // for JPA
     }
 
-    public EventLog(User user, Event event, EventLogType eventLogType, String message, Boolean startTimeChanged) {
+    public EventLog(User user, Event event, EventLogType eventLogType, EventRSVPResponse response, Boolean startTimeChanged) {
         this.uid = UIDGenerator.generateId();
         this.createdDateTime = Instant.now();
         this.user = user;
         this.event = Objects.requireNonNull(event);
         this.eventLogType = Objects.requireNonNull(eventLogType);
-        this.message = message;
+        this.response = response;
         this.startTimeChanged = startTimeChanged;
     }
 
-    public EventLog(User user, Event event, EventLogType eventLogType, String message) {
-        this(user, event, eventLogType, message, null);
+    public EventLog(User user, Event event, EventLogType eventLogType, EventRSVPResponse response) {
+        this(user, event, eventLogType, response, null);
     }
 
     public EventLog(User user, Event event, EventLogType eventLogType) {
@@ -100,12 +94,20 @@ public class EventLog implements ActionLog {
         return eventLogType;
     }
 
-    public String getMessage() {
-        return message;
+    public EventRSVPResponse getResponse() {
+        return response;
+    }
+
+    public boolean hasValidResponse() {
+        return response != null && !response.equals(EventRSVPResponse.INVALID_RESPONSE);
     }
 
     public Boolean getStartTimeChanged() {
         return startTimeChanged;
+    }
+
+    public void setResponse(EventRSVPResponse response) {
+        this.response = response;
     }
 
     @Override
@@ -114,14 +116,10 @@ public class EventLog implements ActionLog {
                 "type=" + eventLogType +
                 ", user=" + user +
                 ", event=" + event +
-                ", message='" + message + '\'' +
+                ", response='" + response + '\'' +
                 ", createdDateTime=" + createdDateTime +
                 ", uid=" + uid +
                 ", id=" + id +
                 '}';
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
     }
 }

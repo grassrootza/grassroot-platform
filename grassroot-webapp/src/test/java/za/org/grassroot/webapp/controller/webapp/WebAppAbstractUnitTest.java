@@ -32,7 +32,7 @@ public abstract class WebAppAbstractUnitTest {
 
     protected MockMvc mockMvc;
     @Mock
-    protected EventLogManagementService eventLogManagementServiceMock;
+    protected EventLogBroker eventLogBrokerMock;
     @Mock
     protected TodoBroker todoBrokerMock;
     @Mock

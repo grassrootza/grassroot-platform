@@ -13,6 +13,7 @@ import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.enums.VerificationCodeType;
+import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.services.NotificationService;
 import za.org.grassroot.integration.services.SmsSendingService;
@@ -58,14 +59,18 @@ public class UserRestController {
     @RequestMapping(value = "/add/{phoneNumber}/{displayName}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> add(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("displayName") String displayName) {
 
-        final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
-        if (!ifExists(msisdn)) {
-            log.info("Creating a verifier for a new user with phoneNumber ={}", phoneNumber);
-            String tokenCode = temporaryTokenSend(userManagementService.generateAndroidUserVerifier(phoneNumber, displayName), msisdn);
-            return RestUtil.okayResponseWithData(RestMessage.VERIFICATION_TOKEN_SENT, tokenCode);
-        } else {
-            log.info("Creating a verifier for user with phoneNumber ={}, user already exists.", phoneNumber);
-            return RestUtil.errorResponse(HttpStatus.CONFLICT, RestMessage.USER_ALREADY_EXISTS);
+        try {
+            final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
+            if (!ifExists(msisdn)) {
+                log.info("Creating a verifier for a new user with phoneNumber ={}", phoneNumber);
+                String tokenCode = temporaryTokenSend(userManagementService.generateAndroidUserVerifier(phoneNumber, displayName), msisdn);
+                return RestUtil.okayResponseWithData(RestMessage.VERIFICATION_TOKEN_SENT, tokenCode);
+            } else {
+                log.info("Creating a verifier for user with phoneNumber ={}, user already exists.", phoneNumber);
+                return RestUtil.errorResponse(HttpStatus.CONFLICT, RestMessage.USER_ALREADY_EXISTS);
+            }
+        } catch (InvalidPhoneNumberException e) {
+            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_MSISDN);
         }
     }
 
@@ -103,13 +108,17 @@ public class UserRestController {
     @RequestMapping(value = "/login/{phoneNumber}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> logon(@PathVariable("phoneNumber") String phoneNumber) {
 
-        final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
-        if (ifExists(msisdn)) {
-            // this will send the token by SMS and return an empty string if in production, or return the token if on staging
-            String token = temporaryTokenSend(userManagementService.generateAndroidUserVerifier(msisdn, null), msisdn);
-            return RestUtil.okayResponseWithData(RestMessage.VERIFICATION_TOKEN_SENT, token);
-        } else {
-            return RestUtil.errorResponse(HttpStatus.NOT_FOUND, RestMessage.USER_DOES_NOT_EXIST);
+        try {
+            final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
+            if (ifExists(msisdn)) {
+                // this will send the token by SMS and return an empty string if in production, or return the token if on staging
+                String token = temporaryTokenSend(userManagementService.generateAndroidUserVerifier(msisdn, null), msisdn);
+                return RestUtil.okayResponseWithData(RestMessage.VERIFICATION_TOKEN_SENT, token);
+            } else {
+                return RestUtil.errorResponse(HttpStatus.NOT_FOUND, RestMessage.USER_DOES_NOT_EXIST);
+            }
+        } catch (InvalidPhoneNumberException e) {
+            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_MSISDN);
         }
     }
 
@@ -125,9 +134,9 @@ public class UserRestController {
             }
             userManagementService.setMessagingPreference(user.getUid(), UserMessagingPreference.ANDROID_APP); // todo : maybe move to gcm registration
 
+            passwordTokenService.expireVerificationCode(user.getUid(), VerificationCodeType.SHORT_OTP);
             VerificationTokenCode longLivedToken = passwordTokenService.generateLongLivedAuthCode(user.getUid());
             boolean hasGroups = userManagementService.isPartOfActiveGroups(user);
-            passwordTokenService.expireVerificationCode(user.getUid(), VerificationCodeType.SHORT_OTP);
             int notificationCount = notificationService.countUnviewedAndroidNotifications(user.getUid());
 
             AuthWrapper authWrapper = AuthWrapper.create(false, longLivedToken, user, hasGroups, notificationCount);

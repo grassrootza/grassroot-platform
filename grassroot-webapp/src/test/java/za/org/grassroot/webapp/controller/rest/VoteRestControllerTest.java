@@ -11,6 +11,7 @@ import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
+import za.org.grassroot.core.enums.EventRSVPResponse;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,10 +31,11 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
 
     private static final Logger log = LoggerFactory.getLogger(VoteRestControllerTest.class);
 
-    @InjectMocks
-    VoteRestController voteRestController;
+    private static final String path = "/api/vote";
 
-    String path = "/api/vote";
+    @InjectMocks
+    private VoteRestController voteRestController;
+
 
     @Before
     public void setUp() {
@@ -70,7 +72,7 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
     public void viewingAVoteShouldWork() throws Exception {
 
         testGroup.addMember(sessionTestUser, new Role("ROLE_GROUP_ORGANIZER", testGroup.getUid()));
-        EventLog eventLog = new EventLog(sessionTestUser, voteEvent, EventLogType.RSVP, "This is a test log");
+        EventLog eventLog = new EventLog(sessionTestUser, voteEvent, EventLogType.RSVP, EventRSVPResponse.YES);
         List<Object[]> list = new ArrayList<>();
         String[] responses = {"1", "2", "3", "4", "5"};
         list.add(responses);
@@ -79,13 +81,13 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.load(voteEvent.getUid())).thenReturn(voteEvent);
         when(eventLogRepositoryMock.findByEventAndUserAndEventLogType(voteEvent, sessionTestUser, EventLogType.RSVP)).thenReturn(eventLog);
-        when(eventLogManagementServiceMock.userRsvpForEvent(voteEvent, sessionTestUser)).thenReturn(true);
-        when(eventLogManagementServiceMock.getVoteResultsForEvent(voteEvent)).thenReturn(rsvpTotalsDTO);
+        when(eventLogBrokerMock.hasUserRespondedToEvent(voteEvent, sessionTestUser)).thenReturn(true);
+        when(eventLogBrokerMock.getVoteResultsForEvent(voteEvent)).thenReturn(rsvpTotalsDTO);
         mockMvc.perform(get(path + "/view/{id}/{phoneNumber}/{code}", voteEvent.getUid(), testUserPhone, testUserCode)).andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
         verify(eventBrokerMock).load(voteEvent.getUid());
         verify(eventLogRepositoryMock).findByEventAndUserAndEventLogType(voteEvent, sessionTestUser, EventLogType.RSVP);
-        verify(eventLogManagementServiceMock).getVoteResultsForEvent(voteEvent);
+        verify(eventLogBrokerMock).getVoteResultsForEvent(voteEvent);
     }
 
     @Test
@@ -93,11 +95,11 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
 
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.load(voteEvent.getUid())).thenReturn(voteEvent);
-        when(eventLogManagementServiceMock.userRsvpForEvent(voteEvent, sessionTestUser)).thenReturn(false);
+        when(eventLogBrokerMock.hasUserRespondedToEvent(voteEvent, sessionTestUser)).thenReturn(false);
         mockMvc.perform(get(path + "/do/{id}/{phoneNumber}/{code}", voteEvent.getUid(), testUserPhone, testUserCode).param("response", "Yes")).andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
         verify(eventBrokerMock).load(voteEvent.getUid());
-        verify(eventLogManagementServiceMock).userRsvpForEvent(voteEvent, sessionTestUser);
+        verify(eventLogBrokerMock).hasUserRespondedToEvent(voteEvent, sessionTestUser);
     }
 
     @Test

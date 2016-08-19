@@ -43,7 +43,7 @@ public class AATIncomingSMSControllerTest extends RestAbstractUnitTest {
         when(eventManagementServiceMock.notifyUnableToProcessEventReply(sessionTestUser)).thenReturn(1);
         when(userManagementServiceMock.needsToVote(sessionTestUser)).thenReturn(false);
         when(userManagementServiceMock.needsToRSVP(sessionTestUser)).thenReturn(true);
-        when(eventManagementServiceMock.getNextOutstandingVote(sessionTestUser)).thenReturn(sessionTestUser.getId());
+        when(eventManagementServiceMock.getOutstandingVotesForUser(sessionTestUser)).thenReturn(Collections.singletonList(meeting));
         when(eventManagementServiceMock.getOutstandingRSVPForUser(sessionTestUser)).thenReturn(meetings);
         mockMvc.perform(get(path+"incoming").param("fn", testUserPhone).param("ms", "yes"))
                 .andExpect(status().isOk());

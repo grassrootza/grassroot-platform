@@ -52,7 +52,7 @@ public class MeetingController extends BaseController {
     private EventManagementService eventManagementService;
 
     @Autowired
-    private EventLogManagementService eventLogManagementService;
+    private EventLogBroker eventLogBroker;
 
     @Autowired
     private AccountManagementService accountManagementService;
@@ -115,7 +115,7 @@ public class MeetingController extends BaseController {
         Meeting meeting = eventBroker.loadMeeting(eventUid);
         User user = getUserProfile();
 
-        ResponseTotalsDTO meetingResponses = eventLogManagementService.getResponseCountForEvent(meeting);
+        ResponseTotalsDTO meetingResponses = eventLogBroker.getResponseCountForEvent(meeting);
         boolean canViewRsvps = meeting.getCreatedByUser().equals(user) || permissionBroker.isGroupPermissionAvailable(
                 user, meeting.getAncestorGroup(), Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS);
         boolean canAlterDetails = meeting.getCreatedByUser().equals(user);
@@ -189,37 +189,6 @@ public class MeetingController extends BaseController {
         return viewMeetingDetails(model, eventUid);
     }
 
-    /*@RequestMapping(value = "reminder", method=RequestMethod.POST)
-    public String confirmReminder(Model model, @ModelAttribute("meeting") Meeting meeting, RedirectAttributes redirectAttributes,
-                               HttpServletRequest request) {
-
-        meeting = (Meeting) eventManagementService.loadEvent(meeting.getId());
-
-        // todo: make sure this is a paid group before allowing it (not just that user is admin)
-        if (request.isUserInRole("ROLE_SYSTEM_ADMIN") || request.isUserInRole("ROLE_ACCOUNT_ADMIN")) {
-
-            model.addAttribute("entityId", meeting.getId());
-            model.addAttribute("action", "remind");
-            model.addAttribute("includeSubGroups", meeting.isIncludeSubGroups());
-
-            String groupLanguage = meeting.getGroup().getDefaultLanguage();
-            log.info("Composing dummy message for confirmation ... Group language is ... " + groupLanguage);
-            String message = (groupLanguage == null || groupLanguage.trim().equals("")) ?
-                    eventManagementService.getDefaultLocaleReminderMessage(getUserProfile(), meeting) :
-                    eventManagementService.getReminderMessageForConfirmation(groupLanguage, getUserProfile(), meeting);
-
-            model.addAttribute("message", message);
-            model.addAttribute("recipients", eventManagementService.getNumberInvitees(meeting));
-            model.addAttribute("cost", eventManagementService.getCostOfMessagesDefault(meeting));
-            return "meeting/remind_confirm";
-
-        } else {
-            // todo: go back to the meeting instead
-            addMessage(redirectAttributes, MessageType.ERROR, "permission.denied.error", request);
-            return "redirect:/home";
-
-        }
-    }*/
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/meeting/remind", method=RequestMethod.POST)
@@ -228,7 +197,7 @@ public class MeetingController extends BaseController {
 
         // todo: check for paid group & for feature enabled
         Meeting meeting = eventBroker.loadMeeting(meetingUid);
-        eventBroker.sendManualReminder( getUserProfile().getUid(), meeting.getUid(), "");
+        eventBroker.sendManualReminder( getUserProfile().getUid(), meeting.getUid());
         addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.reminder.success", request);
         return "redirect:/home";
 
@@ -317,11 +286,11 @@ public class MeetingController extends BaseController {
 
         switch (answer) {
             case "yes":
-                eventLogManagementService.rsvpForEvent(meeting, user, EventRSVPResponse.YES);
+                eventLogBroker.rsvpForEvent(meeting.getUid(), user.getUid(), EventRSVPResponse.YES);
                 addMessage(attributes, MessageType.SUCCESS, "meeting.rsvp.yes", request);
                 break;
             case "no":
-                eventLogManagementService.rsvpForEvent(meeting, user, EventRSVPResponse.NO);
+                eventLogBroker.rsvpForEvent(meeting.getUid(), user.getUid(), EventRSVPResponse.NO);
                 addMessage(attributes, MessageType.ERROR, "meeting.rsvp.no", request);
                 break;
             default:

@@ -63,7 +63,7 @@
             <tr th:each="status : ${rsvpResponses}">
               <td><span th:text="${status.key.nameToDisplay()}">Member name</span></td>
               <td><span th:text="${status.key.phoneNumber}">Phone number</span></td>
-              <td><span th:text="${status.value}">Response</span></td>
+              <td><span th:text="${status.value.getReadableString()}">Response</span></td>
             </tr>
             </tbody>
           </table>

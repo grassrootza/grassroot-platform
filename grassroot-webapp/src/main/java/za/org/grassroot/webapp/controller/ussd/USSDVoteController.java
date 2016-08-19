@@ -16,7 +16,7 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.services.EventLogManagementService;
+import za.org.grassroot.services.EventLogBroker;
 import za.org.grassroot.services.EventRequestBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -48,7 +48,7 @@ public class USSDVoteController extends USSDController {
     private EventRequestBroker eventRequestBroker;
 
     @Autowired
-    private EventLogManagementService eventLogManager;
+    private EventLogBroker eventLogManager;
 
     @Autowired
     private EventLogRepository eventLogRepository;
@@ -287,29 +287,33 @@ public class USSDVoteController extends USSDController {
         if (futureEvent) {
             EventLog userResponse = eventLogRepository.findByEventAndUserAndEventLogType(vote, user, EventLogType.RSVP);
 
+            String responseText;
             List<String> otherResponses;
-            if  (userResponse == null) {
+            if  (userResponse == null || !userResponse.hasValidResponse()) {
+                responseText = "not voted yet";
                 otherResponses = Arrays.asList("yes", "no", "abstain");
             } else {
-                EventRSVPResponse response = EventRSVPResponse.fromString(userResponse.getMessage());
-                switch (response) {
+                switch (userResponse.getResponse()) {
                     case YES:
+                        responseText = "yes";
                         otherResponses = Arrays.asList("no", "abstain");
                         break;
                     case NO:
+                        responseText = "no";
                         otherResponses = Arrays.asList("yes", "abstain");
                         break;
                     case MAYBE:
+                        responseText = "abstain";
                         otherResponses = Arrays.asList("yes", "no");
                         break;
                     default:
+                        responseText = "not voted yet";
                         otherResponses = Arrays.asList("yes", "no", "abstain");
                         break;
                 }
             }
 
             final String suffix = entityUidUrlSuffix + eventUid;
-            final String responseText = (userResponse != null) ? userResponse.getMessage().toLowerCase() : "not voted yet";
             final String[] fields = new String[] { vote.getAncestorGroup().getName(""), vote.getName(),
                     "" + (voteResults.getNumberOfUsers() - voteResults.getNumberNoRSVP()), responseText };
 
@@ -318,8 +322,7 @@ public class USSDVoteController extends USSDController {
                 menu.addMenuOption(voteMenus + "change-vote" + suffix + "&response=" + voteOption,
                                    getMessage(thisSection, "details", optionsKey + "change", voteOption, user));
             }
-            // todo: enable once a bit clearer about use etc
-            // menu.addMenuOption("reminder" + entityUidUrlSuffix + eventUid, getMessage(thisSection, "details", optionsKey + "reminder", user));
+
         } else {
             String[] fields = new String[]{vote.getAncestorGroup().getName(""), vote.getName(), "" + voteResults.getYes(),
                     "" + voteResults.getNo(), "" + voteResults.getMaybe(), "" + voteResults.getNumberNoRSVP()};
@@ -373,7 +376,7 @@ public class USSDVoteController extends USSDController {
             // todo: replace this hack once responses are handled better
             EventRSVPResponse voteResponse = (response.equals("abstain")) ? EventRSVPResponse.MAYBE :
                     EventRSVPResponse.fromString(response);
-            eventLogManager.rsvpForEvent(vote, user, voteResponse);
+            eventLogManager.rsvpForEvent(vote.getUid(), user.getUid(), voteResponse);
             menu = new USSDMenu(getMessage(thisSection, "change", "done", response, user));
         }
 
@@ -405,7 +408,7 @@ public class USSDVoteController extends USSDController {
                                       @RequestParam(value = entityUidParam) String eventUid) throws URISyntaxException {
         // use meeting reminder functions
         User user = userManager.findByInputNumber(inputNumber, null);
-        eventBroker.sendManualReminder(user.getUid(), eventUid, "");
+        eventBroker.sendManualReminder(user.getUid(), eventUid);
         return menuBuilder(new USSDMenu(getMessage(thisSection, "reminder-do", promptKey, user), optionsHomeExit(user)));
     }
 

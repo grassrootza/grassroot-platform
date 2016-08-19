@@ -53,12 +53,6 @@ public interface EventManagementService {
 
     int getNumberInvitees(Event event);
 
-    /*
-    Methods to retrieve information about votes
-     */
-
-    Long getNextOutstandingVote(User sessionUser);
-
     ResponseTotalsDTO getVoteResultsDTO(Event vote);
 
     /*

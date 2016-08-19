@@ -57,7 +57,7 @@ public class EventManager implements EventManagementService {
     UserManagementService userManagementService;
 
     @Autowired
-    EventLogManagementService eventLogManagementService;
+    EventLogBroker eventLogBroker;
 
 
     @Autowired
@@ -77,7 +77,7 @@ public class EventManager implements EventManagementService {
     @Override
     public Map<String, Integer> getMeetingRsvpTotals(Event meeting) {
         Map<String, Integer> results = new HashMap<>();
-        ResponseTotalsDTO totalsDTO = eventLogManagementService.getResponseCountForEvent(meeting);
+        ResponseTotalsDTO totalsDTO = eventLogBroker.getResponseCountForEvent(meeting);
 
         results.put("yes", totalsDTO.getYes());
         results.put("no", totalsDTO.getNo());
@@ -161,7 +161,7 @@ public class EventManager implements EventManagementService {
                                 continue;
                             }
                         }
-                        if (!eventLogManagementService.userRsvpForEvent(event, user)) {
+                        if (!eventLogBroker.hasUserRespondedToEvent(event, user)) {
                             //see if we added it already as the user can be in multiple groups in a group structure
                             if (eventMap.get(event.getId()) == null) {
                                 outstandingRSVPs.add(event);
@@ -285,14 +285,8 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
-    public Long getNextOutstandingVote(User sessionUser) {
-        // todo: rapid check that this will not return null (current use cases are safe, future might not be)
-        return getOutstandingVotesForUser(sessionUser).get(0).getId();
-    }
-
-    @Override
     public ResponseTotalsDTO getVoteResultsDTO(Event vote) {
-        return eventLogManagementService.getVoteResultsForEvent(vote);
+        return eventLogBroker.getVoteResultsForEvent(vote);
     }
 
     @Override

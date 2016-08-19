@@ -95,8 +95,7 @@ public class NotificationDTO {
         this.entityUid = event.getUid();
         this.deadlineDateTime = convertInstantToStringISO(event.getDeadlineTime());
 
-        final String originalMessage = (notification.getMessage() != null) ? notification.getMessage() : notification.getEventLog().getMessage();
-        this.message = stripDialSuffix(stripTitleFromMessage(title, originalMessage));
+        this.message = stripDialSuffix(stripTitleFromMessage(title, notification.getMessage()));
 
         this.entityType = event.getEventType().toString();
         this.changeType = notification.getEventLog().getEventLogType().toString();

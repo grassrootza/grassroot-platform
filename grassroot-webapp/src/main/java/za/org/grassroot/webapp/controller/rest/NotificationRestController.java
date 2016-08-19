@@ -54,9 +54,11 @@ public class NotificationRestController {
         size = (size == null) ? pageLength : size;
 
         Page<Notification> pageable = notificationService.fetchPagedAndroidNotifications(user, page, size);
-        log.info("getNotifications ... user has {} notifications in total", pageable.getTotalElements());
+        log.info("pageable size = {}, from page number = {}, with page size = {}", pageable.getContent().size(),
+                page, size);
 
         ResponseEntity<ResponseWrapper> responseWrapper;
+
         if (page > pageable.getTotalPages()) {
             responseWrapper = RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.NOTIFICATIONS_FINISHED);
         } else {
@@ -65,10 +67,11 @@ public class NotificationRestController {
                     .filter(NotificationDTO::isNotificationOfTypeForDTO)
                     .map(NotificationDTO::convertToDto)
                     .collect(Collectors.toList());
-            log.info("notificationDTOList size ={}", notificationDTOList.size());
+            log.info("number of DTOs created : {}", notificationDTOList.size());
             NotificationWrapper notificationWrapper = new NotificationWrapper(pageable, notificationDTOList);
             responseWrapper = RestUtil.okayResponseWithData(RestMessage.NOTIFICATIONS, notificationWrapper);
         }
+
         return responseWrapper;
     }
 

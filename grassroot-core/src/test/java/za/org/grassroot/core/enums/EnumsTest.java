@@ -34,14 +34,12 @@ public class EnumsTest {
     @Test
     public void testRSVPEnum() {
 
-        assertEquals("Yes",EventRSVPResponse.fromString("yes").toString());
-        assertEquals("Yes",EventRSVPResponse.YES.toString());
-        assertEquals("Maybe",EventRSVPResponse.MAYBE.toString());
-        assertEquals("No",EventRSVPResponse.NO.toString());
-        assertEquals("No",EventRSVPResponse.fromString("no").toString());
-        assertEquals("No response yet",EventRSVPResponse.NO_RESPONSE.toString());
-        assertEquals("Invalid RSVP",EventRSVPResponse.fromString("").toString());
-        assertEquals("Invalid RSVP",EventRSVPResponse.fromString("any junk").toString());
+        assertEquals(EventRSVPResponse.YES,EventRSVPResponse.fromString("yes"));
+        assertEquals(EventRSVPResponse.NO,EventRSVPResponse.fromString("no"));
+        assertEquals(EventRSVPResponse.MAYBE, EventRSVPResponse.fromString("maybe"));
+        assertEquals(EventRSVPResponse.MAYBE, EventRSVPResponse.fromString("abstain"));
+        assertEquals(EventRSVPResponse.INVALID_RESPONSE,EventRSVPResponse.fromString(""));
+        assertEquals(EventRSVPResponse.INVALID_RESPONSE,EventRSVPResponse.fromString("any junk"));
 
     }
 

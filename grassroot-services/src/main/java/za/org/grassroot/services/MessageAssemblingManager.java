@@ -161,11 +161,16 @@ public class MessageAssemblingManager implements MessageAssemblingService {
 
     @Override
     public String createMeetingAttendanceConfirmationMessage(User organiser, User member, EventLog eventLog) {
+        final Meeting meeting = ((Meeting) eventLog.getEvent());
         String[] fields = new String[]{
+                meeting.getAncestorGroup().getName(),
                 member.getDisplayName(),
-                eventLog.getMessage()
+                meeting.getName(),
+                meeting.getEventDateTimeAtSAST().format(shortDateFormatter),
+                meeting.getEventLocation()
         };
-        return messageSourceAccessor.getMessage("sms.meeting.confirmation", fields, getUserLocale(organiser));
+        return messageSourceAccessor.getMessage("sms.meeting.attendance." + eventLog.getResponse().toString().toLowerCase(),
+                fields, getUserLocale(organiser));
     }
 
     @Override

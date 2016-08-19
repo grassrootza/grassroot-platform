@@ -250,7 +250,7 @@ public class USSDHomeControllerIT extends USSDAbstractIT {
         /* As with similar tests elsewhere, these are failing because of strange persistence behaviour
         assertThat(eventManager.getListOfUsersThatRSVPYesForEvent(testMeeting).contains(yesUser), is(true));
         assertThat(eventManager.getListOfUsersThatRSVPNoForEvent(testMeeting).contains(noUser), is(true));
-        assertThat(eventLogManager.userRsvpForEvent(testMeeting, yesUser), is(true));
+        assertThat(eventLogManager.hasUserRespondedToEvent(testMeeting, yesUser), is(true));
         assertThat(eventLogManager.userRsvpNoForEvent(testMeeting, noUser), is(true));*/
 
  //   }

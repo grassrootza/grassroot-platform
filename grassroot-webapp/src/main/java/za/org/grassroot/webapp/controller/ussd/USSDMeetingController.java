@@ -15,7 +15,7 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.language.DateTimeParseFailure;
-import za.org.grassroot.services.EventLogManagementService;
+import za.org.grassroot.services.EventLogBroker;
 import za.org.grassroot.services.EventRequestBroker;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
@@ -52,7 +52,7 @@ public class USSDMeetingController extends USSDController {
     private EventRequestBroker eventRequestBroker;
 
     @Autowired
-    private EventLogManagementService eventLogManagementService;
+    private EventLogBroker eventLogBroker;
 
     @Autowired
     private EventLogRepository eventLogRepository;
@@ -626,7 +626,7 @@ public class USSDMeetingController extends USSDController {
 
         USSDMenu menu;
         if (userResponse != null) {
-            if (("Yes").equalsIgnoreCase(userResponse.getMessage())) {
+            if (EventRSVPResponse.YES.equals(userResponse.getResponse())) {
                 menu = new USSDMenu(getMessage(thisSection, attendeeKey, "rsvpyes." + promptKey, fields, user));
                 menu.addMenuOption(basePath + "no", getMessage(thisSection, attendeeKey, optionsKey + "rsvpno", user));
             } else {
@@ -656,7 +656,7 @@ public class USSDMeetingController extends USSDController {
         final Event event = eventBroker.load(eventUid);
         final EventRSVPResponse userResponse = "yes".equalsIgnoreCase(response) ? EventRSVPResponse.YES : EventRSVPResponse.NO;
 
-        eventLogManagementService.rsvpForEvent(event.getId(), inputNumber, userResponse);
+        eventLogBroker.rsvpForEvent(event.getUid(), user.getUid(), userResponse);
 
         final String key = "att_changed";
         final String suffix = entityUidUrlSuffix + eventUid;

@@ -63,7 +63,7 @@ public class RestAbstractUnitTest
     @Mock
     protected AccountManagementService accountManagementServiceMock;
     @Mock
-    protected EventLogManagementService eventLogManagementServiceMock;
+    protected EventLogBroker eventLogBrokerMock;
     @Mock
     protected EventLogRepository eventLogRepositoryMock;
     @Mock

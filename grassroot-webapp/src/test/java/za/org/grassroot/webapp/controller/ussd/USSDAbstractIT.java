@@ -18,7 +18,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.PhoneNumberUtil;
-import za.org.grassroot.services.EventLogManagementService;
+import za.org.grassroot.services.EventLogBroker;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.GrassRootWebApplicationConfig;
@@ -52,7 +52,7 @@ public class USSDAbstractIT {
     protected EventManagementService eventManager;
 
     @Autowired
-    protected EventLogManagementService eventLogManager;
+    protected EventLogBroker eventLogManager;
 
     @Value("${local.server.port}")
     protected int port;

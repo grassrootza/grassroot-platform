@@ -126,7 +126,7 @@ public class UserRepositoryTest {
         group.addMember(u2);
         group = groupRepository.save(group);
         Event event = eventRepository.save(new Meeting("rsvp event", Instant.now(), u1, group, "someLocation", true));
-        EventLog eventLog = eventLogRepository.save(new EventLog(u1, event, EventLogType.RSVP, EventRSVPResponse.YES.toString()));
+        EventLog eventLog = eventLogRepository.save(new EventLog(u1, event, EventLogType.RSVP, EventRSVPResponse.YES));
         List<User> list = userRepository.findUsersThatRSVPYesForEvent(event);
         log.info("list.size..." + list.size() + "...first user..." + list.get(0).getPhoneNumber());
         assertEquals(u1.getPhoneNumber(),list.get(0).getPhoneNumber());
@@ -136,12 +136,14 @@ public class UserRepositoryTest {
     public void shouldReturnUserThatRSVPNo() {
         User u1 = userRepository.save(new User("0821234570"));
         User u2 = userRepository.save(new User("0821234571"));
+
         Group group = groupRepository.save(new Group("rsvp yes",u1));
         group.addMember(u2);
         group = groupRepository.save(group);
-		Event event = eventRepository.save(new Meeting("rsvp event", Instant.now(), u1, group, "someLocation", true));
-		EventLog eventLog = eventLogRepository.save(new EventLog(u1, event, EventLogType.RSVP, EventRSVPResponse.YES.toString()));
-        EventLog eventLog2 = eventLogRepository.save(new EventLog(u2, event, EventLogType.RSVP, EventRSVPResponse.NO.toString()));
+
+        Event event = eventRepository.save(new Meeting("rsvp event", Instant.now(), u1, group, "someLocation", true));
+		eventLogRepository.save(new EventLog(u1, event, EventLogType.RSVP, EventRSVPResponse.YES));
+        eventLogRepository.save(new EventLog(u2, event, EventLogType.RSVP, EventRSVPResponse.NO));
 
         List<User> list = userRepository.findUsersThatRSVPNoForEvent(event);
         assertEquals(u2.getPhoneNumber(),list.get(0).getPhoneNumber());

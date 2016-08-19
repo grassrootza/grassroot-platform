@@ -6,10 +6,7 @@ import com.google.common.collect.ComparisonChain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.enums.EventLogType;
-import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.enums.TaskType;
-import za.org.grassroot.core.enums.TodoStatus;
+import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 
@@ -93,9 +90,9 @@ public class TaskDTO implements Comparable<TaskDTO> {
         this.description =event.getDescription();
         this.hasResponded = eventLog != null;
 
-        this.reply = (eventLog != null && !eventLog.getMessage().equals("Invalid RSVP")) ?
-                eventLog.getMessage() :
-                String.valueOf(TodoStatus.NO_RESPONSE);
+        this.reply = (eventLog != null && eventLog.hasValidResponse()) ?
+                eventLog.getResponse().toString() :
+                String.valueOf(TodoStatus.NO_RESPONSE); // todo : return completion %
         this.canAction = canActionOnEvent(event, hasResponded);
         this.location = event.getEventType().equals(EventType.MEETING) ? ((Meeting) event).getEventLocation() : "";
         this.canEdit = event.getCreatedByUser().equals(user) && instant.isAfter(Instant.now());

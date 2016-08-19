@@ -17,7 +17,7 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.services.EventBroker;
-import za.org.grassroot.services.EventLogManagementService;
+import za.org.grassroot.services.EventLogBroker;
 import za.org.grassroot.services.TaskBroker;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
@@ -45,7 +45,7 @@ public class VoteRestController {
     private UserManagementService userManagementService;
 
     @Autowired
-    private EventLogManagementService eventLogManagementService;
+    private EventLogBroker eventLogBroker;
 
     @Autowired
     private EventBroker eventBroker;
@@ -100,7 +100,7 @@ public class VoteRestController {
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         Event event = eventBroker.load(voteUid);
-        ResponseTotalsDTO totals = eventLogManagementService.getVoteResultsForEvent(event);
+        ResponseTotalsDTO totals = eventLogBroker.getVoteResultsForEvent(event);
         EventWrapper eventWrapper = new EventWrapper(event, user, totals, eventLogRepository);
         return RestUtil.okayResponseWithData(RestMessage.VOTE_DETAILS, eventWrapper);
     }
@@ -110,7 +110,7 @@ public class VoteRestController {
                                                              @PathVariable String voteUid) {
         User user = userManagementService.findByInputNumber(phoneNumber);
         Event event = eventBroker.load(voteUid); // todo : permission checking on this user!
-        ResponseTotalsDTO totals = eventLogManagementService.getVoteResultsForEvent(event);
+        ResponseTotalsDTO totals = eventLogBroker.getVoteResultsForEvent(event);
         if (totals != null) {
             return new ResponseEntity<>(totals, HttpStatus.OK);
         } else {
@@ -126,10 +126,10 @@ public class VoteRestController {
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         Event event = eventBroker.load(voteUid);
         String trimmedResponse = response.toLowerCase().trim();
-        boolean hasVoted = eventLogManagementService.userRsvpForEvent(event, user);
+        boolean hasVoted = eventLogBroker.hasUserRespondedToEvent(event, user);
         ResponseEntity<ResponseWrapper> responseWrapper;
         if (event.getEventType().equals(EventType.VOTE) && (!hasVoted && isOpen(event))) {
-            eventLogManagementService.rsvpForEvent(event, user, EventRSVPResponse.fromString(trimmedResponse));
+            eventLogBroker.rsvpForEvent(event.getUid(), user.getUid(), EventRSVPResponse.fromString(trimmedResponse));
             TaskDTO updatedTask = taskBroker.load(user.getUid(), voteUid, TaskType.VOTE);
             responseWrapper = RestUtil.okayResponseWithData(RestMessage.VOTE_SENT, Collections.singletonList(updatedTask));
         } else if (hasVoted) {

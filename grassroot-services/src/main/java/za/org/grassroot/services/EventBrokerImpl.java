@@ -36,7 +36,7 @@ public class EventBrokerImpl implements EventBroker {
 	private final Logger logger = LoggerFactory.getLogger(EventBrokerImpl.class);
 
 	@Autowired
-	private EventLogManagementService eventLogManagementService;
+	private EventLogBroker eventLogBroker;
 	@Autowired
 	private EventRepository eventRepository;
 	@Autowired
@@ -117,7 +117,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		meetingRepository.save(meeting);
 
-		eventLogManagementService.rsvpForEvent(meeting, meeting.getCreatedByUser(), EventRSVPResponse.YES);
+		eventLogBroker.rsvpForEvent(meeting.getUid(), meeting.getCreatedByUser().getUid(), EventRSVPResponse.YES);
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
@@ -483,7 +483,7 @@ public class EventBrokerImpl implements EventBroker {
 		EventLog eventLog = new EventLog(null, meeting, EventLogType.RSVP_TOTAL_MESSAGE);
 		bundle.addLog(eventLog);
 
-		ResponseTotalsDTO responseTotalsDTO = eventLogManagementService.getResponseCountForEvent(meeting);
+		ResponseTotalsDTO responseTotalsDTO = eventLogBroker.getResponseCountForEvent(meeting);
 
 		User destination = meeting.getCreatedByUser();
 		String message = messageAssemblingService.createMeetingRsvpTotalMessage(destination, meeting, responseTotalsDTO);
@@ -495,7 +495,7 @@ public class EventBrokerImpl implements EventBroker {
 
 	@Override
 	@Transactional
-	public void sendManualReminder(String userUid, String eventUid, String message) {
+	public void sendManualReminder(String userUid, String eventUid) {
 		Objects.requireNonNull(eventUid);
 
 		User user = userRepository.findOneByUid(userUid);
@@ -505,18 +505,18 @@ public class EventBrokerImpl implements EventBroker {
 			throw new IllegalStateException("Event is canceled: " + event);
 		}
 
-		logger.info("Sending manual reminder for event {} with message {}", event, message);
+		logger.info("Sending manual reminder for event {} with message {}", event);
 		event.setNoRemindersSent(event.getNoRemindersSent() + 1);
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		EventLog eventLog = new EventLog(user, event, EventLogType.MANUAL_REMINDER, message);
+		EventLog eventLog = new EventLog(user, event, EventLogType.MANUAL_REMINDER);
 		bundle.addLog(eventLog);
 
 		Set<User> excludedMembers = findEventReminderExcludedMembers(event);
 		for (User member : getAllEventMembers(event)) {
 			if (!excludedMembers.contains(member)) {
-				Notification notification = new EventReminderNotification(member, message, eventLog);
+				Notification notification = new EventReminderNotification(member, "manually triggered reminder", eventLog);
 				bundle.addNotification(notification);
 			}
 		}
@@ -592,7 +592,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		EventLog eventLog = new EventLog(null, vote, EventLogType.RESULT);
 
-		ResponseTotalsDTO responseTotalsDTO = eventLogManagementService.getVoteResultsForEvent(vote);
+		ResponseTotalsDTO responseTotalsDTO = eventLogBroker.getVoteResultsForEvent(vote);
 		Set<User> voteResultsNotificationSentMembers = new HashSet<>(userRepository.findNotificationTargetsForEvent(
 				vote, VoteResultsNotification.class));
 		for (User member : getAllEventMembers(vote)) {
@@ -621,7 +621,7 @@ public class EventBrokerImpl implements EventBroker {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(eventUid);
 
-		User user = userRepository.findOneByUid(userUid);
+		User user = userRepository.findOneByUid(userUid); // todo : check permissions
 		Event event = eventRepository.findOneByUid(eventUid);
 
 		event.assignMembers(assignMemberUids);

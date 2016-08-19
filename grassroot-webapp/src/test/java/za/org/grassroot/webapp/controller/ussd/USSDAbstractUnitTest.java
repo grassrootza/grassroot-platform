@@ -43,7 +43,7 @@ public abstract class USSDAbstractUnitTest {
     protected EventManagementService eventManagementServiceMock;
 
     @Mock
-    protected EventLogManagementService eventLogManagementServiceMock;
+    protected EventLogBroker eventLogBrokerMock;
 
     @Mock
     protected PermissionBroker permissionBrokerMock;

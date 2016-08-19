@@ -200,8 +200,8 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
                     param("entityUid", "" + vote.getUid()).
                     param("response", "yes")).andExpect(status().isOk());
 
-            verify(eventLogManagementServiceMock, times(1)).rsvpForEvent(vote.getId(), user.getPhoneNumber(),
-                                                                         EventRSVPResponse.fromString("yes"));
+            verify(eventLogBrokerMock, times(1)).rsvpForEvent(vote.getUid(), user.getUid(),
+                                                                         EventRSVPResponse.YES);
         }
     }
 
@@ -234,7 +234,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
                                     .param("entityUid", "" + meeting.getUid())
                                     .param("confirmed", "yes")).andExpect(status().isOk());
 
-            verify(eventLogManagementServiceMock, times(1)).rsvpForEvent(meeting.getId(), user.getPhoneNumber(), EventRSVPResponse.YES);
+            verify(eventLogBrokerMock, times(1)).rsvpForEvent(meeting.getUid(), user.getUid(), EventRSVPResponse.YES);
 
         }
 

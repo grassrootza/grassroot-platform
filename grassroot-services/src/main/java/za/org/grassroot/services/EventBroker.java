@@ -1,10 +1,8 @@
 package za.org.grassroot.services;
 
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.enums.EventType;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Set;
 
 public interface EventBroker {
@@ -53,7 +51,7 @@ public interface EventBroker {
 
 	void sendScheduledReminder(String uid);
 
-	void sendManualReminder(String userUid, String eventUid, String message);
+	void sendManualReminder(String userUid, String eventUid);
 
 	void sendMeetingRSVPsToDate(String meetingUid);
 

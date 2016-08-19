@@ -122,7 +122,7 @@ public class MeetingRepositoryTest {
         assertThat(checkFirst.contains(mtg), is(true));
         assertThat(checkFirst.contains(mtg2), is(true));
 
-        EventLog eventLog = new EventLog(user, mtg, EventLogType.RSVP_TOTAL_MESSAGE, "message");
+        EventLog eventLog = new EventLog(user, mtg, EventLogType.RSVP_TOTAL_MESSAGE);
         eventLogRepository.save(eventLog);
         assertThat(eventLogRepository.count(), is(1L));
 

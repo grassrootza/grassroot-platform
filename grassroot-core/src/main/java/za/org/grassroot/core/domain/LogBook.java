@@ -118,6 +118,7 @@ public class LogBook extends AbstractLogBookEntity implements Task<LogBookContai
         if (completionTime == null && this.completedDate == null) {
             throw new IllegalArgumentException("Completion time cannot be null when there is no completed time registered in logbook: " + this);
         }
+
         // we override current completion time with this latest specified one
         if (completionTime != null) {
             this.completedDate = completionTime;

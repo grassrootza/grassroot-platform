@@ -78,10 +78,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT CASE WHEN COUNT(u) > 0 THEN 'true' ELSE 'false' END FROM User u WHERE u.phoneNumber = ?1")
     Boolean existsByPhoneNumber(String phoneNumber);
 
-    @Query("select u from User u, EventLog el, Event e where e = ?1 and el.event = e and u = el.user and el.eventLogType = za.org.grassroot.core.enums.EventLogType.RSVP and el.message = 'Yes'")
+    @Query("select u from User u, EventLog el, Event e where e = ?1 and el.event = e " +
+            "and u = el.user and el.eventLogType = za.org.grassroot.core.enums.EventLogType.RSVP and el.response = 'YES'")
     List<User> findUsersThatRSVPYesForEvent(Event event);
 
-    @Query("select u from User u, EventLog el, Event e where e = ?1 and el.event = e and u = el.user and el.eventLogType = za.org.grassroot.core.enums.EventLogType.RSVP and el.message = 'No'")
+    @Query("select u from User u, EventLog el, Event e where e = ?1 and el.event = e " +
+            "and u = el.user and el.eventLogType = za.org.grassroot.core.enums.EventLogType.RSVP and el.response = 'NO'")
     List<User> findUsersThatRSVPNoForEvent(Event event);
 
     @Query("select u from User u, EventLog el, Event e where e = ?1 and el.event = e and u = el.user and el.eventLogType = za.org.grassroot.core.enums.EventLogType.RSVP")

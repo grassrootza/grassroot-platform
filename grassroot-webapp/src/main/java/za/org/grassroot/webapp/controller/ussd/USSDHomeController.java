@@ -13,8 +13,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
-import za.org.grassroot.services.EventLogManagementService;
-import za.org.grassroot.services.GroupJoinRequestService;
+import za.org.grassroot.services.EventLogBroker;
 import za.org.grassroot.services.SafetyEventBroker;
 import za.org.grassroot.services.TodoBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
@@ -49,7 +48,7 @@ import static za.org.grassroot.webapp.enums.USSDSection.*;
 public class USSDHomeController extends USSDController {
 
     @Autowired
-    private EventLogManagementService eventLogManagementService;
+    private EventLogBroker eventLogBroker;
 
     @Autowired
     private USSDEventUtil eventUtil;
@@ -422,18 +421,18 @@ public class USSDHomeController extends USSDController {
                                   @RequestParam(value = yesOrNoParam) String attending) throws URISyntaxException {
 
         String welcomeKey;
-        User sessionUser = userManager.loadOrSaveUser(inputNumber);
+        User user = userManager.loadOrSaveUser(inputNumber);
         Meeting meeting = eventBroker.loadMeeting(meetingUid);
 
         if (attending.equals("yes")) {
-            eventLogManagementService.rsvpForEvent(meeting.getId(), inputNumber, EventRSVPResponse.YES);
+            eventLogBroker.rsvpForEvent(meeting.getUid(), user.getUid(), EventRSVPResponse.YES);
             welcomeKey = String.join(".", Arrays.asList(homeKey, startMenu, promptKey, "rsvp-yes"));
         } else {
-            eventLogManagementService.rsvpForEvent(meeting.getId(), inputNumber, EventRSVPResponse.NO);
+            eventLogBroker.rsvpForEvent(meeting.getUid(), user.getUid(), EventRSVPResponse.NO);
             welcomeKey = String.join(".", Arrays.asList(homeKey, startMenu, promptKey, "rsvp-no"));
         }
 
-        return menuBuilder(new USSDMenu(getMessage(welcomeKey, sessionUser), optionsHomeExit(sessionUser)));
+        return menuBuilder(new USSDMenu(getMessage(welcomeKey, user), optionsHomeExit(user)));
 
     }
 
@@ -443,14 +442,14 @@ public class USSDHomeController extends USSDController {
                                   @RequestParam(value = entityUidParam) String voteUid,
                                   @RequestParam(value = "response") String response) throws URISyntaxException {
 
-        User sessionUser = userManager.findByInputNumber(inputNumber);
+        User user = userManager.findByInputNumber(inputNumber);
         Vote vote = (Vote) eventBroker.load(voteUid);
 
         // todo: switch this to uid
-        eventLogManagementService.rsvpForEvent(vote.getId(), inputNumber, EventRSVPResponse.fromString(response));
+        eventLogBroker.rsvpForEvent(vote.getUid(), user.getUid(), EventRSVPResponse.fromString(response));
 
-        String prompt = getMessage(thisSection, startMenu, promptKey + ".vote-recorded", sessionUser);
-        return menuBuilder(new USSDMenu(prompt, optionsHomeExit(sessionUser)));
+        String prompt = getMessage(thisSection, startMenu, promptKey + ".vote-recorded", user);
+        return menuBuilder(new USSDMenu(prompt, optionsHomeExit(user)));
     }
 
     @RequestMapping(value = path + "log-complete")

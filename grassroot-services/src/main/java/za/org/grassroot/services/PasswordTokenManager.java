@@ -92,6 +92,7 @@ public class PasswordTokenManager implements PasswordTokenService {
             token.incrementTokenAttempts();
         }
 
+        verificationTokenCodeRepository.save(token);
         return token;
     }
 
@@ -108,12 +109,8 @@ public class PasswordTokenManager implements PasswordTokenService {
             return false;
         }
 
-        User user = userRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
-        if (user == null) {
-            return false;
-        }
-
-        VerificationTokenCode token = verificationTokenCodeRepository.findByUsernameAndType(user.getUsername(), VerificationCodeType.SHORT_OTP);
+        // need to use directly as phone number, not attempt to get user first, else fails on registration
+        VerificationTokenCode token = verificationTokenCodeRepository.findByUsernameAndType(phoneNumber, VerificationCodeType.SHORT_OTP);
         return token != null && code.equals(token.getCode()) && Instant.now().isBefore(token.getExpiryDateTime());
     }
 
@@ -145,8 +142,8 @@ public class PasswordTokenManager implements PasswordTokenService {
         Objects.requireNonNull(type);
 
         User user = userRepository.findOneByUid(userUid);
-
         VerificationTokenCode token = verificationTokenCodeRepository.findByUsernameAndType(user.getUsername(), type);
+
         if (token != null) {
             token.setExpiryDateTime(Instant.now());
         }

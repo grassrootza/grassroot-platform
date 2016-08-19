@@ -45,7 +45,7 @@ public class MeetingRestController {
     private UserManagementService userManagementService;
 
     @Autowired
-    private EventLogManagementService eventLogManagementService;
+    private EventLogBroker eventLogBroker;
 
     @Autowired
     private EventBroker eventBroker;
@@ -138,7 +138,7 @@ public class MeetingRestController {
         if (meeting.isCanceled()) {
 	        responseWrapper = RestUtil.errorResponse(HttpStatus.CONFLICT, RestMessage.MEETING_ALREADY_CANCELLED);
         } else if (isOpen(meeting)) {
-            eventLogManagementService.rsvpForEvent(meeting, user, EventRSVPResponse.fromString(trimmedResponse));
+            eventLogBroker.rsvpForEvent(meeting.getUid(), user.getUid(), EventRSVPResponse.fromString(trimmedResponse));
             TaskDTO updatedTask = taskBroker.load(user.getUid(), meetingUid, TaskType.MEETING);
             responseWrapper = RestUtil.okayResponseWithData(RestMessage.RSVP_SENT, Collections.singletonList(updatedTask));
         } else {
@@ -151,7 +151,7 @@ public class MeetingRestController {
     public ResponseEntity<ResponseWrapper> view(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code, @PathVariable("id") String id) {
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         Meeting meeting = eventBroker.loadMeeting(id);
-        ResponseTotalsDTO totals = eventLogManagementService.getResponseCountForEvent(meeting);
+        ResponseTotalsDTO totals = eventLogBroker.getResponseCountForEvent(meeting);
         EventWrapper eventWrapper = new EventWrapper(meeting, user, totals, eventLogRepository);
 	    return RestUtil.okayResponseWithData(RestMessage.MEETING_DETAILS, eventWrapper);
     }
@@ -162,7 +162,7 @@ public class MeetingRestController {
         // todo : some permission checking to make sure user can see details
         User user = userManagementService.findByInputNumber(phoneNumber);
         Meeting meeting = eventBroker.loadMeeting(meetingUid);
-        ResponseTotalsDTO totals = eventLogManagementService.getResponseCountForEvent(meeting);
+        ResponseTotalsDTO totals = eventLogBroker.getResponseCountForEvent(meeting);
 
         log.info("here are the rsvp totals: {}", totals);
 

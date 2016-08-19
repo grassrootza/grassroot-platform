@@ -10,6 +10,7 @@ import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
+import za.org.grassroot.core.enums.EventRSVPResponse;
 
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
@@ -27,11 +28,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class MeetingRestControllerTest extends RestAbstractUnitTest {
 
     @InjectMocks
-    MeetingRestController meetingRestController;
+    private MeetingRestController meetingRestController;
 
-    String path = "/api/meeting";
-    EventLog testEventLog = new EventLog(sessionTestUser, meetingEvent, EventLogType.CREATED, "test notification");
-    ResponseTotalsDTO testResponseTotalsDTO = new ResponseTotalsDTO();
+    private static final String path = "/api/meeting";
+
+    private ResponseTotalsDTO testResponseTotalsDTO = new ResponseTotalsDTO();
 
     @Before
     public void setUp() {
@@ -97,15 +98,15 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.loadMeeting(meetingEvent.getUid())).thenReturn(meetingEvent);
         when(eventLogRepositoryMock.findByEventAndUserAndEventLogType(meetingEvent, sessionTestUser, EventLogType.RSVP))
-                .thenReturn(new EventLog(sessionTestUser, meetingEvent, EventLogType.RSVP, "test notification"));
-        when(eventLogManagementServiceMock.userRsvpForEvent(meetingEvent, sessionTestUser)).thenReturn(false);
-        when(eventLogManagementServiceMock.getResponseCountForEvent(meetingEvent)).thenReturn(testResponseTotalsDTO);
+                .thenReturn(new EventLog(sessionTestUser, meetingEvent, EventLogType.RSVP, EventRSVPResponse.YES));
+        when(eventLogBrokerMock.hasUserRespondedToEvent(meetingEvent, sessionTestUser)).thenReturn(false);
+        when(eventLogBrokerMock.getResponseCountForEvent(meetingEvent)).thenReturn(testResponseTotalsDTO);
         mockMvc.perform(get(path + "/view/{id}/{phoneNumber}/{code}", meetingEvent.getUid(), testUserPhone, testUserCode))
                 .andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
         verify(eventBrokerMock).loadMeeting(meetingEvent.getUid());
         verify(eventLogRepositoryMock).findByEventAndUserAndEventLogType(meetingEvent, sessionTestUser, EventLogType.RSVP);
-        verify(eventLogManagementServiceMock).getResponseCountForEvent(meetingEvent);
+        verify(eventLogBrokerMock).getResponseCountForEvent(meetingEvent);
 
     }
 }

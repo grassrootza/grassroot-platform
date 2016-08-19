@@ -12,37 +12,34 @@ import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.UserMessagingPreference;
-import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.repository.EventLogRepository;
+import za.org.grassroot.core.repository.EventRepository;
+import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 
-/**
- * Created by aakilomar on 8/26/15.
- */
 @Component
-public class EventLogManager implements EventLogManagementService {
+public class EventLogBrokerImpl implements EventLogBroker {
 
-    private Logger log = LoggerFactory.getLogger(EventLogManager.class);
-
-    @Autowired
-    EventLogRepository eventLogRepository;
+    private Logger log = LoggerFactory.getLogger(EventLogBrokerImpl.class);
 
     @Autowired
-    EventRepository eventRepository;
+    private EventLogRepository eventLogRepository;
 
     @Autowired
-    VoteRepository voteRepository;
+    private EventRepository eventRepository;
 
     @Autowired
-    UserRepository userRepository;
+    private UserRepository userRepository;
 
     @Autowired
-    GroupRepository groupRepository;
-
+    private GroupRepository groupRepository;
 
     @Autowired
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
@@ -51,11 +48,11 @@ public class EventLogManager implements EventLogManagementService {
     private MessageAssemblingService messageAssemblingService;
 
     @Autowired
-    CacheUtilService cacheUtilService;
+    private CacheUtilService cacheUtilService;
 
     @Override
     @Transactional
-    public EventLog createEventLog(EventLogType eventLogType, String eventUid, String userUid, String message) {
+    public EventLog createEventLog(EventLogType eventLogType, String eventUid, String userUid, EventRSVPResponse message) {
         Event event = eventRepository.findOneByUid(eventUid);
         log.info("Creating event log, with event={}", event);
         User user = userRepository.findOneByUid(userUid);
@@ -64,35 +61,27 @@ public class EventLogManager implements EventLogManagementService {
     }
 
     @Override
-    public void rsvpForEvent(Long eventId, Long userId, String strRsvpResponse) {
-        rsvpForEvent(eventId, userId, EventRSVPResponse.fromString(strRsvpResponse));
-    }
-
-    @Override
-    public void rsvpForEvent(Long eventId, Long userId, EventRSVPResponse rsvpResponse) {
-        rsvpForEvent(eventRepository.findOne(eventId), userRepository.findOne(userId), rsvpResponse);
-    }
-
-    @Override
-    public void rsvpForEvent(Long eventId, String phoneNumber, EventRSVPResponse rsvpResponse) {
-        rsvpForEvent(eventRepository.findOne(eventId), userRepository.findByPhoneNumber(phoneNumber), rsvpResponse);
-    }
-
-    @Override
     @Transactional
-    public void rsvpForEvent(Event event, User user, EventRSVPResponse rsvpResponse) {
+    public void rsvpForEvent(String eventUid, String userUid, EventRSVPResponse rsvpResponse) {
+
+        Objects.requireNonNull(eventUid);
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(rsvpResponse);
+
+        User user = userRepository.findOneByUid(userUid);
+        Event event = eventRepository.findOneByUid(eventUid);
+
         log.trace("rsvpForEvent...event..." + event.getId() + "...user..." + user.getPhoneNumber() +
                 "...rsvp..." + rsvpResponse.toString());
 
-        if (!userRsvpForEvent(event, user)) {
-            EventLog eventLog = createEventLog(EventLogType.RSVP, event.getUid(), user.getUid(), rsvpResponse.toString());
+        if (!hasUserRespondedToEvent(event, user)) {
+            EventLog eventLog = createEventLog(EventLogType.RSVP, event.getUid(), user.getUid(), rsvpResponse);
             // clear rsvp cache for user
             cacheUtilService.clearRsvpCacheForUser(user, event.getEventType());
 
             // see if everyone voted, if they did expire the vote so that the results are sent out
-            // todo: consider adding a "prior closing date time" or some other way to trigger this
 
-            if (event.getEventType() == EventType.VOTE) {
+            if (event.getEventType().equals(EventType.VOTE)) {
                 ResponseTotalsDTO rsvpTotalsDTO = getVoteResultsForEvent(event);
                 log.info("rsvpForEvent... response total DTO for vote : " + rsvpTotalsDTO.toString());
                 if (rsvpTotalsDTO.getNumberNoRSVP() < 1) {
@@ -107,7 +96,7 @@ public class EventLogManager implements EventLogManagementService {
         } else if (event.getEventStartDateTime().isAfter(Instant.now())) {
             // allow the user to change their rsvp / vote as long as meeting is open
             EventLog eventLog = eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.RSVP);
-            eventLog.setMessage(rsvpResponse.toString());
+            eventLog.setResponse(rsvpResponse);
             log.info("rsvpForEvent... changing response to {} on eventLog {}", rsvpResponse.toString(), eventLog);
             eventLogRepository.saveAndFlush(eventLog); // todo: shouldn't need this, but it's not persisting (cleaning needed)
             if (!user.equals(event.getCreatedByUser())) {
@@ -118,7 +107,7 @@ public class EventLogManager implements EventLogManagementService {
     }
 
     @Override
-    public boolean userRsvpForEvent(Event event, User user) {
+    public boolean hasUserRespondedToEvent(Event event, User user) {
         EventLog rsvpEventLog = eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.RSVP);
         return rsvpEventLog != null;
     }

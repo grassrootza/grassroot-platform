@@ -43,7 +43,7 @@ public class OutboundRouterTest {
     public void routingToSmsShouldWork() throws Exception{
       //  EventLog eventLog = new EventLog(new User(""), new Meeting("Dummy Meeting", Instant.now(), new User("433"), null, "johannesburg"), EventLogType.TEST, "message", UserMessagingPreference.SMS);
 
-        EventLog eventLog = new EventLog(new User(""), Meeting.makeEmpty(new User("")), EventLogType.TEST,"message");
+        EventLog eventLog = new EventLog(new User(""), Meeting.makeEmpty(new User("")), EventLogType.TEST);
 
         Notification payload = new EventCancelledNotification(new User("42342342"), "blah", eventLog);
         Message<Notification> message = MessageBuilder.withPayload(payload)
@@ -55,7 +55,7 @@ public class OutboundRouterTest {
     @Test
     public void routingToGcmShouldWork() throws Exception{
 
-        EventLog eventLog = new EventLog(new User(""), Meeting.makeEmpty(new User("")), EventLogType.TEST,"message");
+        EventLog eventLog = new EventLog(new User(""), Meeting.makeEmpty(new User("")), EventLogType.TEST);
 
      //   EventLog eventLog = new EventLog(new User(""), new Meeting("Dummy Meeting", Instant.now(), new User("433"), null, "johannesburg"),
           //      EventLogType.TEST, "message",
@@ -70,7 +70,7 @@ public class OutboundRouterTest {
 
     @Test
     public void routingToSmsShouldWorkWhenRouteIsNull() throws Exception{
-        EventLog eventLog = new EventLog(new User(""), Meeting.makeEmpty(new User("")), EventLogType.TEST,"message");
+        EventLog eventLog = new EventLog(new User(""), Meeting.makeEmpty(new User("")), EventLogType.TEST);
 
         Notification payload = new EventCancelledNotification(new User("42342342"), "blah", eventLog);
         Message<Notification> message = MessageBuilder.withPayload(payload).build();
