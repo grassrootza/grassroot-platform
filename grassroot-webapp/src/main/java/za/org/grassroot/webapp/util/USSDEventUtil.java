@@ -6,14 +6,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.EventRequest;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.language.DateGroup;
+import za.org.grassroot.integration.services.LearningManager;
+import za.org.grassroot.integration.services.LearningService;
 import za.org.grassroot.language.DateTimeParseFailure;
-import za.org.grassroot.language.Parser;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.EventRequestBroker;
 import za.org.grassroot.services.async.AsyncUserLogger;
@@ -24,11 +25,8 @@ import za.org.grassroot.webapp.enums.USSDSection;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.time.temporal.ChronoUnit;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -55,6 +53,9 @@ public class USSDEventUtil extends USSDUtil {
 
     @Autowired
     private AsyncUserLogger userLogger;
+
+    @Autowired
+    private LearningService learningService;
 
     private static final String entityUidParameter =  "entityUid";
     private static final String entityUidFirstParam = "?" + entityUidParameter + "=";
@@ -183,27 +184,10 @@ public class USSDEventUtil extends USSDUtil {
      * @param passedValue
      * @return LocalDateTime of most likely match; if no match, returns the current date time rounded up to next hour
      */
-    public static LocalDateTime parseDateTime(String passedValue) throws DateTimeParseFailure {
+    public LocalDateTime parseDateTime(String passedValue) throws DateTimeParseFailure {
 
-        LocalDateTime parsedDateTime;
-
-        try {
-
-            Parser parser = new Parser();
-            DateGroup firstDateGroup = parser.parse(passedValue).iterator().next();
-            if (firstDateGroup != null) {
-                Date parsedDate = firstDateGroup.getDates().iterator().next();
-                parsedDateTime = parsedDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-                log.info("Date time processed: " + parsedDateTime.toString());
-            } else {
-                parsedDateTime = LocalDateTime.now().plus(1, ChronoUnit.HOURS).truncatedTo(ChronoUnit.HOURS);
-            }
-
-            return parsedDateTime;
-
-        } catch (Exception e) {
-            throw new DateTimeParseFailure();
-        }
+        log.info("url: {}", "http://localhost:9000/parse?phrase=" + passedValue);
+        return learningService.parse(passedValue);
     }
 
     /**
