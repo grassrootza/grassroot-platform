@@ -368,7 +368,8 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         Group testGroup = new Group("gc1", testUser);
         MeetingRequest meetingForTest = MeetingRequest.makeEmpty(testUser, testGroup);
         String requestUid = meetingForTest.getUid();
-        LocalDateTime forTimestamp = LocalDateTime.now().plusDays(1).plusHours(7);
+
+        LocalDateTime forTimestamp = LocalDateTime.of(LocalDate.now().plusDays(1), LocalTime.of(7, 0));
         meetingForTest.setEventStartDateTime(convertToSystemTime(forTimestamp, getSAST()));
         String urlToSave = saveMeetingMenu("confirm", requestUid, false);
 
@@ -435,7 +436,9 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         User testUser = new User(testUserPhone);
         Group testGroup = new Group("tg1", testUser);
-        LocalDateTime timestamp = LocalDateTime.now().plusDays(1).plusHours(7);
+
+        LocalDateTime timestamp = LocalDateTime.of(LocalDate.now().plusDays(1), LocalTime.of(9, 0));
+
         MeetingRequest meetingForTest = MeetingRequest.makeEmpty(testUser, testGroup);
         meetingForTest.setEventStartDateTime(convertToSystemTime(timestamp, getSAST()));
         String requestUid = meetingForTest.getUid();
@@ -448,7 +451,6 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         List<String> nineAmVariations = Arrays.asList("09:00", "09 00", "900", "9:00 am", "9am");
         List<String> onePmVariations = Arrays.asList("13:00", "13 00", "1300", "1:00 pm", "1pm");
 
-        //TODO adjust tests to reflect new parse call to server
         for (String time : nineAmVariations) {
             mockMvc.perform(get(path + "confirm").param(phoneParam, testUserPhone).param("entityUid", requestUid).
                     param("prior_menu", "time_only").param("revising", "1").param("request", time)).andExpect(status().isOk());
@@ -460,6 +462,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         }
 
         // not doing the full range of checks as those are tested above, here just verifying no extraneous calls
+        log.info("heere is the timestamp at present = " + timestamp.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
         verify(eventRequestBrokerMock, times(nineAmVariations.size())).updateEventDateTime(testUser.getUid(), requestUid, timestamp);
         verify(eventRequestBrokerMock, times(onePmVariations.size())).updateEventDateTime(testUser.getUid(), requestUid, timestamp);
     }
