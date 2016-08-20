@@ -14,6 +14,7 @@ import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.EventLogRepository;
+import za.org.grassroot.integration.domain.SeloParseDateTimeFailure;
 import za.org.grassroot.language.DateTimeParseFailure;
 import za.org.grassroot.services.EventLogBroker;
 import za.org.grassroot.services.EventRequestBroker;
@@ -321,7 +322,7 @@ public class USSDMeetingController extends USSDController {
         if (!interrupted) {
             try {
                 eventUtil.updateEventRequest(user.getUid(), mtgRequestUid, priorMenu, userInput);
-            } catch (DateTimeParseFailure e) {
+            } catch (SeloParseDateTimeFailure e) {
                 cacheManager.putUssdMenuForUser(user.getPhoneNumber(), saveMeetingMenu(priorMenu, mtgRequestUid, false));
                 return handleDateTimeParseFailure(user, priorMenu, mtgRequestUid);
             }

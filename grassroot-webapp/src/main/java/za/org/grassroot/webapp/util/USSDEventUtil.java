@@ -6,19 +6,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.EventRequest;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.integration.services.LearningManager;
+import za.org.grassroot.integration.domain.SeloParseDateTimeFailure;
 import za.org.grassroot.integration.services.LearningService;
-import za.org.grassroot.language.DateTimeParseFailure;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.EventRequestBroker;
 import za.org.grassroot.services.async.AsyncUserLogger;
-import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 
@@ -32,7 +29,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import static za.org.grassroot.core.enums.UserInterfaceType.USSD;
-import static za.org.grassroot.core.util.DateTimeUtil.*;
+import static za.org.grassroot.core.util.DateTimeUtil.getPreferredDateTimeFormat;
 import static za.org.grassroot.webapp.enums.USSDSection.MEETINGS;
 import static za.org.grassroot.webapp.enums.USSDSection.VOTES;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.paginatedEventUrl;
@@ -184,7 +181,7 @@ public class USSDEventUtil extends USSDUtil {
      * @param passedValue
      * @return LocalDateTime of most likely match; if no match, returns the current date time rounded up to next hour
      */
-    public LocalDateTime parseDateTime(String passedValue) throws DateTimeParseFailure {
+    public LocalDateTime parseDateTime(String passedValue) throws SeloParseDateTimeFailure {
 
         LocalDateTime parsedDateTime;
 
@@ -192,7 +189,7 @@ public class USSDEventUtil extends USSDUtil {
             parsedDateTime = learningService.parse(passedValue);
             log.info("Date time processed: " + parsedDateTime.toString());
         } catch (Exception e) {
-            throw new DateTimeParseFailure();
+            throw new SeloParseDateTimeFailure();
         }
 
         return parsedDateTime;
