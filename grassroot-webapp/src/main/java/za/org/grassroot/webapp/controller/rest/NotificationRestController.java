@@ -104,7 +104,7 @@ public class NotificationRestController {
             return RestUtil.accessDeniedResponse();
         }
 
-        if (notification.isRead()) {
+        if (notification.isRead() && notification.isViewedOnAndroid()) {
             log.info("Trying to update notification when already read");
             return RestUtil.errorResponse(HttpStatus.ALREADY_REPORTED, RestMessage.ALREADY_UPDATED);
         } else {
