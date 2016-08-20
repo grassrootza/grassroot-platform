@@ -11,6 +11,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.integration.services.LearningService;
 import za.org.grassroot.services.TodoBroker;
 import za.org.grassroot.services.TodoRequestBroker;
 import za.org.grassroot.services.PermissionBroker;
@@ -52,6 +53,9 @@ public class USSDToDoController extends USSDController {
 
     @Autowired
     private TodoRequestBroker todoRequestBroker;
+
+    @Autowired
+    private LearningService learningService;
 
     private static final USSDSection thisSection = USSDSection.LOGBOOK;
     private static final String path = homePath + logMenus;
@@ -473,7 +477,7 @@ public class USSDToDoController extends USSDController {
                 try {
                     dueDateTime = DateTimeUtil.convertDateStringToLocalDateTime(formattedDateString, stdHour, stdMinute);
                 } catch (Exception e) {
-                    dueDateTime = USSDEventUtil.parseDateTime(formattedDateString);
+                    dueDateTime = learningService.parse(formattedDateString);
                 }
                 todoRequestBroker.updateDueDate(userUid, logBookRequestUid, dueDateTime);
                 break;

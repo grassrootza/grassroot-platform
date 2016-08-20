@@ -2,11 +2,13 @@ package za.org.grassroot.webapp.controller.rest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import za.org.grassroot.integration.services.LearningService;
 import za.org.grassroot.language.DateTimeParseFailure;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
@@ -25,10 +27,13 @@ public class LanguageRestController {
 
 	private static final Logger logger = LoggerFactory.getLogger(LanguageRestController.class);
 
+	@Autowired
+	private LearningService learningService;
+
 	@RequestMapping("/test/natty")
 	public ResponseEntity<ResponseWrapper> getNattyInterpretation(@RequestParam String inputString) {
 		try {
-			LocalDateTime dateTime = USSDEventUtil.parseDateTime(inputString);
+			LocalDateTime dateTime = learningService.parse(inputString);
 			logger.info("got as input = {}, parsed as = {}", inputString, dateTime.format(DateTimeFormatter.ISO_DATE_TIME));
 			return RestUtil.okayResponseWithData(RestMessage.DATE_TIME_PARSED, dateTime);
 		} catch (DateTimeParseFailure e) {

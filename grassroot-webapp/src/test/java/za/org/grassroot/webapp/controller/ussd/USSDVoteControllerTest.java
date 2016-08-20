@@ -215,6 +215,9 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, interruptedUrl)).thenReturn(testUser);
         when(eventRequestBrokerMock.load(requestUid)).thenReturn(testVote);
+        when(learningServiceMock.parse("Tomorrow 5pm"))
+                .thenReturn(LocalDateTime.of(LocalDate.now().plusDays(1), LocalTime.of(17, 0)));
+
 
         mockMvc.perform(get(path + "confirm").param(phoneParam, testUserPhone).param("entityUid", requestUid).
                 param("request", "1").param("field", "standard").param("time", "instant")).andExpect(status().isOk());

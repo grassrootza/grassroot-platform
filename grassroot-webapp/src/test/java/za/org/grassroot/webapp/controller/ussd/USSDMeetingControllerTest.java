@@ -16,7 +16,9 @@ import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.util.USSDEventUtil;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -26,7 +28,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
 import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
-import static za.org.grassroot.webapp.util.USSDEventUtil.parseDateTime;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 
 /**
@@ -367,12 +368,14 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         Group testGroup = new Group("gc1", testUser);
         MeetingRequest meetingForTest = MeetingRequest.makeEmpty(testUser, testGroup);
         String requestUid = meetingForTest.getUid();
-        LocalDateTime forTimestamp = parseDateTime("Tomorrow 7am");
+        LocalDateTime forTimestamp = LocalDateTime.now().plusDays(1).plusHours(7);
         meetingForTest.setEventStartDateTime(convertToSystemTime(forTimestamp, getSAST()));
         String urlToSave = saveMeetingMenu("confirm", requestUid, false);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(eventRequestBrokerMock.load(requestUid)).thenReturn(meetingForTest);
+        when(learningServiceMock.parse("Tomorrow 7am"))
+                .thenReturn(LocalDateTime.of(LocalDate.now().plusDays(1), LocalTime.of(7,0)));
 
         mockMvc.perform(get(path + "confirm").param(phoneParam, testUserPhone).param("entityUid", requestUid).
                 param("prior_menu", "time").param("request", "Tomorrow 7am")).andExpect(status().isOk());
@@ -432,7 +435,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         User testUser = new User(testUserPhone);
         Group testGroup = new Group("tg1", testUser);
-        LocalDateTime timestamp = parseDateTime("Tomorrow 9am");
+        LocalDateTime timestamp = LocalDateTime.now().plusDays(1).plusHours(7);
         MeetingRequest meetingForTest = MeetingRequest.makeEmpty(testUser, testGroup);
         meetingForTest.setEventStartDateTime(convertToSystemTime(timestamp, getSAST()));
         String requestUid = meetingForTest.getUid();
@@ -445,6 +448,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         List<String> nineAmVariations = Arrays.asList("09:00", "09 00", "900", "9:00 am", "9am");
         List<String> onePmVariations = Arrays.asList("13:00", "13 00", "1300", "1:00 pm", "1pm");
 
+        //TODO adjust tests to reflect new parse call to server
         for (String time : nineAmVariations) {
             mockMvc.perform(get(path + "confirm").param(phoneParam, testUserPhone).param("entityUid", requestUid).
                     param("prior_menu", "time_only").param("revising", "1").param("request", time)).andExpect(status().isOk());
@@ -498,7 +502,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
 
-        LocalDateTime forTimestamp = parseDateTime("Tomorrow 7am");
+        LocalDateTime forTimestamp = LocalDateTime.now().plusDays(1).plusHours(7);
         String confirmedTime = forTimestamp.format(DateTimeFormatter.ofPattern("EEE d MMM, h:mm a"));
 
         mockMvc.perform(get(path + "send").param(phoneParam, testUserPhone).param("entityUid", requestUid))
@@ -722,6 +726,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(eventRequestBrokerMock.load(changeRequest.getUid())).thenReturn(changeRequest);
+        when(learningServiceMock.parse("09:00")).thenReturn(LocalDateTime.of(LocalDate.now(), LocalTime.of(9, 0)));
 
         for (String[] actions : actionsAndInputs) {
             urlToSave = editingMtgMenuUrl("modify", testMeeting.getUid(), changeRequest.getUid(), actions[0])
