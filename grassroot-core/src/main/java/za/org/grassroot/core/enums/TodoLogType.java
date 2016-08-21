@@ -1,6 +1,6 @@
 package za.org.grassroot.core.enums;
 
-public enum LogBookLogType {
+public enum TodoLogType {
 	CREATED,
 	CHANGED,
 	REMINDER_SENT

@@ -10,7 +10,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.LogBook;
+import za.org.grassroot.core.domain.Todo;
 import za.org.grassroot.core.domain.User;
 
 import javax.transaction.Transactional;
@@ -30,10 +30,10 @@ import static org.junit.Assert.*;
 @SpringApplicationConfiguration(classes = TestContextConfiguration.class)
 @Transactional
 @ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
-public class LogBookRepositoryTest {
+public class TodoRepositoryTest {
 
     @Autowired
-    LogBookRepository logBookRepository;
+    TodoRepository todoRepository;
 
     @Autowired
     GroupRepository groupRepository;
@@ -49,9 +49,9 @@ public class LogBookRepositoryTest {
         User user = userRepository.save(new User("001111141"));
         Group group = groupRepository.save(new Group("test logbook", user));
         Group groupUnrelated = groupRepository.save(new Group("not related logbook", user));
-        LogBook lb1 = logBookRepository.save(new LogBook(user, group, "just do it", addHoursFromNow(2)));
-        LogBook lbUnrelated = logBookRepository.save(new LogBook(user, groupUnrelated, "just do it too", addHoursFromNow(2)));
-        List<LogBook> list = logBookRepository.findByParentGroup(group);
+        Todo lb1 = todoRepository.save(new Todo(user, group, "just do it", addHoursFromNow(2)));
+        Todo lbUnrelated = todoRepository.save(new Todo(user, groupUnrelated, "just do it too", addHoursFromNow(2)));
+        List<Todo> list = todoRepository.findByParentGroup(group);
         assertEquals(1,list.size());
         assertEquals(lb1.getId(),list.get(0).getId());
     }
@@ -62,8 +62,8 @@ public class LogBookRepositoryTest {
         User user = userRepository.save(new User("001111142"));
         Group group = groupRepository.save(new Group("test logbook", user));
         Group groupUnrelated = groupRepository.save(new Group("not related logbook", user));
-        LogBook lb1 = logBookRepository.save(new LogBook(user, group, "just do it", addHoursFromNow(2)));
-        LogBook lbUnrelated = logBookRepository.save(new LogBook(user, groupUnrelated, "just do it too", addHoursFromNow(2)));
+        Todo lb1 = todoRepository.save(new Todo(user, group, "just do it", addHoursFromNow(2)));
+        Todo lbUnrelated = todoRepository.save(new Todo(user, groupUnrelated, "just do it too", addHoursFromNow(2)));
     }
 
     @Test
@@ -71,9 +71,9 @@ public class LogBookRepositoryTest {
 
         User user = userRepository.save(new User("001111143"));
         Group group = groupRepository.save(new Group("test logbook", user));
-        LogBook lb1 = logBookRepository.save(new LogBook(user, group,"just do it", addHoursFromNow(2)));
-        LogBook lb2 = logBookRepository.save(new LogBook(user, group, "just do it too", addHoursFromNow(2)));
-        lb1 = logBookRepository.save(lb1);
+        Todo lb1 = todoRepository.save(new Todo(user, group,"just do it", addHoursFromNow(2)));
+        Todo lb2 = todoRepository.save(new Todo(user, group, "just do it too", addHoursFromNow(2)));
+        lb1 = todoRepository.save(lb1);
     }
 
 /*
@@ -81,13 +81,13 @@ public class LogBookRepositoryTest {
 
         User user = userRepository.save(new User("001111144"));
         Group group = groupRepository.save(new Group("test logbook", user));
-        LogBook lb1 = logBookRepository.save(new LogBook(user, group, "just do it", addHoursFromNow(2), 60, null, 3));
-        LogBook lb2 = logBookRepository.save(new LogBook(user, group, "not assigned", addHoursFromNow(2)));
-        List<LogBook> list = logBookRepository.findByAssignedMembersAndActionByDateGreaterThan(user, Instant.now());
+        Todo lb1 = todoRepository.save(new Todo(user, group, "just do it", addHoursFromNow(2), 60, null, 3));
+        Todo lb2 = todoRepository.save(new Todo(user, group, "not assigned", addHoursFromNow(2)));
+        List<Todo> list = todoRepository.findByAssignedMembersAndActionByDateGreaterThan(user, Instant.now());
         assertEquals(1,list.size());
 //        lb2.setAssignedToUser(user);
-        lb2 = logBookRepository.save(lb2);
-        list = logBookRepository.findByAssignedMembersAndActionByDateGreaterThan(user, Instant.now());
+        lb2 = todoRepository.save(lb2);
+        list = todoRepository.findByAssignedMembersAndActionByDateGreaterThan(user, Instant.now());
         assertEquals(2,list.size());
     }
 */
@@ -100,19 +100,19 @@ public class LogBookRepositoryTest {
         group.addMember(user);
         groupRepository.save(group);
 
-        LogBook lb1 = new LogBook(user, group, "assigned 1", addHoursFromNow(2), 60, null, 3);
-        LogBook lb2 = new LogBook(user, group, "not assigned", addHoursFromNow(2), 60, null, 3);
+        Todo lb1 = new Todo(user, group, "assigned 1", addHoursFromNow(2), 60, null, 3);
+        Todo lb2 = new Todo(user, group, "not assigned", addHoursFromNow(2), 60, null, 3);
         lb1.assignMembers(Collections.singleton(user.getUid()));
 
-        logBookRepository.save(lb1);
-        logBookRepository.save(lb2);
+        todoRepository.save(lb1);
+        todoRepository.save(lb2);
 
         Sort sort = new Sort(Sort.Direction.DESC, "actionByDate");
-        List<LogBook> list = logBookRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(user, Instant.now(), Instant.MAX, 50, sort);
+        List<Todo> list = todoRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(user, Instant.now(), Instant.MAX, 50, sort);
         assertEquals(0, list.size());
         lb1.addCompletionConfirmation(user, Instant.now());
-        logBookRepository.save(lb1);
-        list = logBookRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(user, Instant.now(), Instant.MAX, 50, sort);
+        todoRepository.save(lb1);
+        list = todoRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(user, Instant.now(), Instant.MAX, 50, sort);
         assertEquals(1,list.size());
     }
 
@@ -136,24 +136,24 @@ public class LogBookRepositoryTest {
         Instant dueDate1 = LocalDateTime.now().plusHours(2).toInstant(ZoneOffset.UTC);
         Instant dueDate2 = LocalDateTime.now().plusMonths(2).toInstant(ZoneOffset.UTC);
 
-        LogBook lbParent = logBookRepository.save(new LogBook(user, groupParent, message, dueDate1));
+        Todo lbParent = todoRepository.save(new Todo(user, groupParent, message, dueDate1));
 
-        List<LogBook> replicatedEntries = new ArrayList<>();
+        List<Todo> replicatedEntries = new ArrayList<>();
         for (Group group : subGroups) {
-            LogBook lbChild = new LogBook(user, group, message, dueDate1, 60, groupParent, 3);
-            logBookRepository.save(lbChild);
+            Todo lbChild = new Todo(user, group, message, dueDate1, 60, groupParent, 3);
+            todoRepository.save(lbChild);
             replicatedEntries.add(lbChild);
         }
 
         // todo: change logbook design so replication references logbook entry, not group, then don't need the
         // todo: (contd) query checking date & time (which is not going to work) or message (which risks false returns in real life)
 
-        List<LogBook> replicatedEntries2 = new ArrayList<>();
-        LogBook lbParent2 = logBookRepository.save(new LogBook(user, groupParent, message, dueDate2));
+        List<Todo> replicatedEntries2 = new ArrayList<>();
+        Todo lbParent2 = todoRepository.save(new Todo(user, groupParent, message, dueDate2));
         for (Group group : subGroups)
-            replicatedEntries2.add(logBookRepository.save(new LogBook(user, group, message, dueDate2, 60, groupParent, 3)));
+            replicatedEntries2.add(todoRepository.save(new Todo(user, group, message, dueDate2, 60, groupParent, 3)));
 
-        List<LogBook> entriesFromDb = logBookRepository.
+        List<Todo> entriesFromDb = todoRepository.
                 findByReplicatedGroupAndMessageAndActionByDateOrderByParentGroupIdAsc(groupParent, message, dueDate1);
 
         assertEquals(entriesFromDb.size(), replicatedEntries.size());
@@ -161,7 +161,7 @@ public class LogBookRepositoryTest {
             assertEquals(entriesFromDb.get(i), replicatedEntries.get(i));
 
         List<Group> subGroupsFromEntries = new ArrayList<>();
-        for (LogBook lb : entriesFromDb)
+        for (Todo lb : entriesFromDb)
             subGroupsFromEntries.add(groupRepository.findOne(((Group)lb.getParent()).getId()));
 
         assertFalse(subGroupsFromEntries.contains(groupParent));
@@ -170,14 +170,14 @@ public class LogBookRepositoryTest {
         assertTrue(subGroupsFromEntries.contains(group4));
         assertFalse(subGroupsFromEntries.contains(group5));
 
-        List<LogBook> entriesFromDb2 = logBookRepository.
+        List<Todo> entriesFromDb2 = todoRepository.
                 findByReplicatedGroupAndMessageAndActionByDateOrderByParentGroupIdAsc(groupParent, message, lbParent2.getActionByDate());
         assertEquals(entriesFromDb2, replicatedEntries2);
 
-        int numberReplicatedEntries1 = logBookRepository.countReplicatedEntries(groupParent, message, lbParent.getActionByDate());
+        int numberReplicatedEntries1 = todoRepository.countReplicatedEntries(groupParent, message, lbParent.getActionByDate());
         assertEquals(numberReplicatedEntries1, entriesFromDb.size());
 
-        int numberReplicatedEntries2 = logBookRepository.countReplicatedEntries(groupParent, message, lbParent2.getActionByDate());
+        int numberReplicatedEntries2 = todoRepository.countReplicatedEntries(groupParent, message, lbParent2.getActionByDate());
         assertEquals(numberReplicatedEntries2, entriesFromDb2.size());
     }
 }

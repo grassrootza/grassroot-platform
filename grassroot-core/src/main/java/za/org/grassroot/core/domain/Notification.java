@@ -55,7 +55,7 @@ public abstract class Notification implements Serializable {
 
 	@ManyToOne
 	@JoinColumn(name = "log_book_log_id")
-	private LogBookLog logBookLog;
+	private TodoLog todoLog;
 
 	@ManyToOne
 	@JoinColumn(name = "group_log_id", foreignKey = @ForeignKey(name = "fk_notification_group_log"))
@@ -111,8 +111,8 @@ public abstract class Notification implements Serializable {
 			eventLog = (EventLog) actionLog;
 		} else if (actionLog instanceof GroupLog) {
 			groupLog = (GroupLog) actionLog;
-		} else if (actionLog instanceof LogBookLog) {
-			logBookLog = (LogBookLog) actionLog;
+		} else if (actionLog instanceof TodoLog) {
+			todoLog = (TodoLog) actionLog;
 		} else if (actionLog instanceof AccountLog) {
 			accountLog = (AccountLog) actionLog;
 		} else if (actionLog instanceof UserLog) {
@@ -154,8 +154,8 @@ public abstract class Notification implements Serializable {
 		return eventLog;
 	}
 
-	public LogBookLog getLogBookLog() {
-		return logBookLog;
+	public TodoLog getTodoLog() {
+		return todoLog;
 	}
 
 	public GroupLog getGroupLog() {

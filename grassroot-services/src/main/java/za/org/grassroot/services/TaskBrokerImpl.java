@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.EventLogType;
-import za.org.grassroot.core.enums.LogBookLogType;
+import za.org.grassroot.core.enums.TodoLogType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.util.FullTextSearchUtils;
@@ -38,13 +38,13 @@ public class TaskBrokerImpl implements TaskBroker {
     private EventRepository eventRepository;
 
     @Autowired
-    private LogBookRepository logBookRepository;
+    private TodoRepository todoRepository;
 
     @Autowired
     private EventLogRepository eventLogRepository;
 
     @Autowired
-    private LogBookLogRepository logBookLogRepository;
+    private TodoLogRepository todoLogRepository;
 
     @Autowired
     private TodoBroker todoBroker;
@@ -69,8 +69,8 @@ public class TaskBrokerImpl implements TaskBroker {
                 taskToReturn = new TaskDTO(event, user, eventLogRepository);
                 break;
             case TODO:
-                LogBook logBook = todoBroker.load(taskUid);
-                taskToReturn = new TaskDTO(logBook, user);
+                Todo todo = todoBroker.load(taskUid);
+                taskToReturn = new TaskDTO(todo, user);
                 break;
             default:
                 taskToReturn = null;
@@ -97,9 +97,9 @@ public class TaskBrokerImpl implements TaskBroker {
         }
 
         // todo : hmm, actually, we may want this to find all incomplete actions, but to consider / adjust in future
-        List<LogBook> logBooks = logBookRepository.findByParentGroupAndCompletionPercentageLessThanAndActionByDateGreaterThan(group, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, start);
-        for (LogBook logBook : logBooks) {
-            taskDtos.add(new TaskDTO(logBook, user));
+        List<Todo> todos = todoRepository.findByParentGroupAndCompletionPercentageLessThanAndActionByDateGreaterThan(group, Todo.COMPLETION_PERCENTAGE_BOUNDARY, start);
+        for (Todo todo : todos) {
+            taskDtos.add(new TaskDTO(todo, user));
         }
 
         List<TaskDTO> tasks = new ArrayList<>(taskDtos);
@@ -129,8 +129,8 @@ public class TaskBrokerImpl implements TaskBroker {
         }
         Set<TaskDTO> taskDtos = resolveEventTaskDtos(events, user, changedSince);
 
-        List<LogBook> logBooks = logBookRepository.findByParentGroup(group);
-        Set<TaskDTO> logBookTaskDtos = resolveLogBookTaskDtos(logBooks, user, changedSince);
+        List<Todo> todos = todoRepository.findByParentGroup(group);
+        Set<TaskDTO> logBookTaskDtos = resolveLogBookTaskDtos(todos, user, changedSince);
         taskDtos.addAll(logBookTaskDtos);
 
         List<TaskDTO> tasks = new ArrayList<>(taskDtos);
@@ -150,8 +150,8 @@ public class TaskBrokerImpl implements TaskBroker {
         List<Event> events = eventRepository.findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(user, now);
         Set<TaskDTO> taskDtos = resolveEventTaskDtos(events, user, null);
 
-        List<LogBook> logBooks = logBookRepository.findByParentGroupMembershipsUserAndActionByDateGreaterThan(user, now);
-        Set<TaskDTO> logBookTaskDtos = resolveLogBookTaskDtos(logBooks, user, null);
+        List<Todo> todos = todoRepository.findByParentGroupMembershipsUserAndActionByDateGreaterThan(user, now);
+        Set<TaskDTO> logBookTaskDtos = resolveLogBookTaskDtos(todos, user, null);
         taskDtos.addAll(logBookTaskDtos);
 
         List<TaskDTO> tasks = new ArrayList<>(taskDtos);
@@ -195,8 +195,8 @@ public class TaskBrokerImpl implements TaskBroker {
 		List<Event> events = eventRepository.findByParentGroupMembershipsUserAndNameSearchTerm(user.getId(), tsQuery);
 		Set<TaskDTO> taskDTOs = resolveEventTaskDtos(events, user, null);
 
-        List<LogBook> toDos = logBookRepository.findByParentGroupMembershipsUserAndMessageSearchTerm(user.getId(), tsQuery);
-		Set<TaskDTO> todoTaskDTOs = resolveLogBookTaskDtos(toDos, user, null);
+        List<Todo> todos = todoRepository.findByParentGroupMembershipsUserAndMessageSearchTerm(user.getId(), tsQuery);
+		Set<TaskDTO> todoTaskDTOs = resolveLogBookTaskDtos(todos, user, null);
 		taskDTOs.addAll(todoTaskDTOs);
 
 		List<TaskDTO> tasks = new ArrayList<>(taskDTOs);
@@ -217,11 +217,11 @@ public class TaskBrokerImpl implements TaskBroker {
         return taskDtos;
     }
 
-    private Set<TaskDTO> resolveLogBookTaskDtos(List<LogBook> logBooks, User user, Instant changedSince) {
+    private Set<TaskDTO> resolveLogBookTaskDtos(List<Todo> todos, User user, Instant changedSince) {
         Set<TaskDTO> taskDtos = new HashSet<>();
-        for (LogBook logBook : logBooks) {
-            if (changedSince == null || isLogBookAddedOrUpdatedSince(logBook, changedSince)) {
-                taskDtos.add(new TaskDTO(logBook, user));
+        for (Todo todo : todos) {
+            if (changedSince == null || isLogBookAddedOrUpdatedSince(todo, changedSince)) {
+                taskDtos.add(new TaskDTO(todo, user));
             }
         }
         return taskDtos;
@@ -246,13 +246,13 @@ public class TaskBrokerImpl implements TaskBroker {
         return false;
     }
 
-    private boolean isLogBookAddedOrUpdatedSince(LogBook logBook, Instant changedSince) {
-        if (logBook.getCreatedDateTime().isAfter(changedSince)) {
+    private boolean isLogBookAddedOrUpdatedSince(Todo todo, Instant changedSince) {
+        if (todo.getCreatedDateTime().isAfter(changedSince)) {
             return true;
         }
         // to be honest, it can be that some change (CHANGED log) didn't affect the information that was presented before on UI,
         // but it is no big harm to return same data again compared to benefits in code simplicity
-        LogBookLog lastChangeLog = logBookLogRepository.findFirstByLogBookAndTypeOrderByCreatedDateTimeDesc(logBook, LogBookLogType.CHANGED);
+        TodoLog lastChangeLog = todoLogRepository.findFirstByTodoAndTypeOrderByCreatedDateTimeDesc(todo, TodoLogType.CHANGED);
         if (lastChangeLog != null && lastChangeLog.getCreatedDateTime().isAfter(changedSince)) {
             return true;
         }

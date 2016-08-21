@@ -12,7 +12,6 @@ import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
-import za.org.grassroot.services.enums.TodoStatus;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
 
@@ -513,8 +512,8 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         List<Event> dummyEvents = Arrays.asList(
                 new Meeting("someMeeting", Instant.now(), sessionTestUser, testGroup, "someLoc"),
                 new Vote("someMeeting", Instant.now(), sessionTestUser, testGroup));
-        List<LogBook> dummyLogbooks = Arrays.asList(new LogBook(sessionTestUser, testGroup, "Do stuff", LocalDateTime.now().plusDays(2L).toInstant(ZoneOffset.ofHours(0))),
-                                                  new LogBook(sessionTestUser, testGroup, "Do more stuff", LocalDateTime.now().plusDays(5L).toInstant(ZoneOffset.ofHours(0))));
+        List<Todo> dummyLogbooks = Arrays.asList(new Todo(sessionTestUser, testGroup, "Do stuff", LocalDateTime.now().plusDays(2L).toInstant(ZoneOffset.ofHours(0))),
+                                                  new Todo(sessionTestUser, testGroup, "Do more stuff", LocalDateTime.now().plusDays(5L).toInstant(ZoneOffset.ofHours(0))));
         List<GroupLog> dummyGroupLogs = Arrays.asList(new GroupLog(testGroup, sessionTestUser, GroupLogType.GROUP_MEMBER_ADDED, 0L, "guy joined"),
                                                       new GroupLog(testGroup, sessionTestUser, GroupLogType.GROUP_MEMBER_REMOVED, 0L, "other guy left"));
         List<LocalDate> dummyMonths = Arrays.asList(LocalDate.now(), LocalDate.now().minusMonths(1L));
@@ -560,7 +559,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         testGroup.addMember(sessionTestUser);
 
         List<Event> dummyEvents = Collections.singletonList(new Meeting("someMeeting", Instant.now(), sessionTestUser, testGroup, "someLoc"));
-        List<LogBook> dummyLogBooks = Collections.singletonList(new LogBook(sessionTestUser, testGroup, "do stuff", LocalDateTime.now().toInstant(ZoneOffset.ofHours(0))));
+        List<Todo> dummyTodos = Collections.singletonList(new Todo(sessionTestUser, testGroup, "do stuff", LocalDateTime.now().toInstant(ZoneOffset.ofHours(0))));
         List<GroupLog> dummyGroupLogs = Collections.singletonList(new GroupLog(testGroup, sessionTestUser, GroupLogType.GROUP_MEMBER_ADDED, 0L));
         List<LocalDate> dummyMonths = Arrays.asList(LocalDate.now(), LocalDate.now().minusMonths(1L));
 
@@ -574,7 +573,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, testGroup, null)).thenReturn(true);
         when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
         when(eventManagementServiceMock.getGroupEventsInPeriod(testGroup, start, end)).thenReturn(dummyEvents);
-        when(todoBrokerMock.getTodosInPeriod(testGroup, start, end)).thenReturn(dummyLogBooks);
+        when(todoBrokerMock.getTodosInPeriod(testGroup, start, end)).thenReturn(dummyTodos);
         when(groupBrokerMock.getLogsForGroup(testGroup, start, end)).thenReturn(dummyGroupLogs);
         when(groupBrokerMock.getMonthsGroupActive(testGroup.getUid())).thenReturn(dummyMonths);
 
@@ -582,7 +581,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
                 andExpect(view().name("group/history")).
                 andExpect(model().attribute("group", hasProperty("uid", is(testGroup.getUid())))).
                 andExpect(model().attribute("eventsInPeriod", is(dummyEvents))).
-                andExpect(model().attribute("logBooksInPeriod", is(dummyLogBooks))).
+                andExpect(model().attribute("logBooksInPeriod", is(dummyTodos))).
                 andExpect(model().attribute("groupLogsInPeriod", is(dummyGroupLogs))).
                 andExpect(model().attribute("monthsToView", is(dummyMonths)));
 

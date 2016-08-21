@@ -65,7 +65,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Autowired
     private UserRequestRepository userCreateRequestRepository;
     @Autowired
-    private LogBookRepository logBookRepository;
+    private TodoRepository todoRepository;
     @Autowired
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
     @Autowired
@@ -416,9 +416,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
         User user = userRepository.findOneByUid(userUid);
         Instant start = Instant.now().minus(daysInPast, ChronoUnit.DAYS);
         Instant end = Instant.now();
-        List<LogBook> logBooks = logBookRepository.findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThan(
-                user, start, end, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, new Sort(Sort.Direction.DESC, "createdDateTime"));
-        return logBooks.stream().anyMatch(logBook -> !logBook.isCompletedBy(user));
+        List<Todo> todos = todoRepository.findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThan(
+                user, start, end, Todo.COMPLETION_PERCENTAGE_BOUNDARY, new Sort(Sort.Direction.DESC, "createdDateTime"));
+        return todos.stream().anyMatch(logBook -> !logBook.isCompletedBy(user));
     }
 
     /*

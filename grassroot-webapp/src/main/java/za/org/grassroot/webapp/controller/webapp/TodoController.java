@@ -120,7 +120,7 @@ public class TodoController extends BaseController {
         }
 
         Long startTime = System.currentTimeMillis();
-        LogBook created = todoBroker.create(getUserProfile().getUid(), logBookEntry.getParentEntityType(), logBookEntry.getParentUid(),
+        Todo created = todoBroker.create(getUserProfile().getUid(), logBookEntry.getParentEntityType(), logBookEntry.getParentUid(),
                                                logBookEntry.getMessage(), logBookEntry.getActionByDate(), logBookEntry.getReminderMinutes(),
                                                logBookEntry.isReplicateToSubGroups(), assignedUids);
         log.info("Time to create, store, logbooks: {} msecs", System.currentTimeMillis() - startTime);
@@ -135,7 +135,7 @@ public class TodoController extends BaseController {
     public String recordEntryWithMeetingParent(Model model, @ModelAttribute("logBook") TodoWrapper logBook,
                                                HttpServletRequest request, RedirectAttributes attributes) {
 
-        LogBook created = todoBroker.create(getUserProfile().getUid(), logBook.getParentEntityType(),
+        Todo created = todoBroker.create(getUserProfile().getUid(), logBook.getParentEntityType(),
                                                logBook.getParentUid(), logBook.getMessage(), logBook.getActionByDate(),
                                                logBook.getReminderMinutes(), false, Collections.emptySet());
 
@@ -159,7 +159,7 @@ public class TodoController extends BaseController {
         model.addAttribute("group", group);
         model.addAttribute("incompleteEntries", todoBroker.loadGroupLogBooks(group.getUid(), false, TodoStatus.INCOMPLETE));
 
-        List<LogBook> completedEntries = todoBroker.loadGroupLogBooks(group.getUid(), false, TodoStatus.COMPLETE);
+        List<Todo> completedEntries = todoBroker.loadGroupLogBooks(group.getUid(), false, TodoStatus.COMPLETE);
         model.addAttribute("completedEntries", completedEntries);
         log.info("Got back this many complete entries ... " + completedEntries.size());
 
@@ -174,18 +174,18 @@ public class TodoController extends BaseController {
 
         log.info("Finding details about logbook entry with Id ..." + logBookUid);
 
-        LogBook logBookEntry = todoBroker.load(logBookUid);
+        Todo todoEntry = todoBroker.load(logBookUid);
 
-        log.info("Retrieved logBook entry with these details ... " + logBookEntry);
+        log.info("Retrieved logBook entry with these details ... " + todoEntry);
 
-        model.addAttribute("entry", logBookEntry);
-        model.addAttribute("parent", logBookEntry.getParent());
-        model.addAttribute("creatingUser", logBookEntry.getCreatedByUser());
-        model.addAttribute("isComplete", logBookEntry.isCompleted());
+        model.addAttribute("entry", todoEntry);
+        model.addAttribute("parent", todoEntry.getParent());
+        model.addAttribute("creatingUser", todoEntry.getCreatedByUser());
+        model.addAttribute("isComplete", todoEntry.isCompleted());
 
-        if (todoBroker.hasReplicatedEntries(logBookEntry)) {
+        if (todoBroker.hasReplicatedEntries(todoEntry)) {
             log.info("Found replicated entries ... adding them to model");
-            List<LogBook> replicatedEntries = todoBroker.getAllReplicatedEntriesFromParent(logBookEntry);
+            List<Todo> replicatedEntries = todoBroker.getAllReplicatedEntriesFromParent(todoEntry);
             log.info("Here are the replicated entries ... " + replicatedEntries);
             List<Group> relevantSubGroups = todoBroker.retrieveGroupsFromLogBooks(replicatedEntries);
             model.addAttribute("hasReplicatedEntries", true);
@@ -194,11 +194,11 @@ public class TodoController extends BaseController {
             log.info("Here are the groups ... " + relevantSubGroups);
         }
 
-        if (logBookEntry.getReplicatedGroup() != null) {
+        if (todoEntry.getReplicatedGroup() != null) {
             log.info("This one is replicated from a parent logBook entry ...");
-            LogBook parentEntry = todoBroker.getParentTodoEntry(logBookEntry);
+            Todo parentEntry = todoBroker.getParentTodoEntry(todoEntry);
             model.addAttribute("parentEntry", parentEntry);
-            model.addAttribute("parentEntryGroup", logBookEntry.getReplicatedGroup());
+            model.addAttribute("parentEntryGroup", todoEntry.getReplicatedGroup());
         }
 
         return "log/details";
@@ -207,10 +207,10 @@ public class TodoController extends BaseController {
     @RequestMapping("complete")
     public String completeTodoForm(Model model, @RequestParam String logBookUid) {
 
-        LogBook logBookEntry = todoBroker.load(logBookUid);
-        model.addAttribute("entry", logBookEntry);
-        Set<User> assignedMembers = (logBookEntry.isAllGroupMembersAssigned()) ?
-                logBookEntry.getAncestorGroup().getMembers() : logBookEntry.getAssignedMembers();
+        Todo todoEntry = todoBroker.load(logBookUid);
+        model.addAttribute("entry", todoEntry);
+        Set<User> assignedMembers = (todoEntry.isAllGroupMembersAssigned()) ?
+                todoEntry.getAncestorGroup().getMembers() : todoEntry.getAssignedMembers();
         model.addAttribute("assignedMembers", assignedMembers);
 
         return "log/complete";
@@ -228,16 +228,16 @@ public class TodoController extends BaseController {
 		        : LocalDateTime.now();
 
 	    String sessionUserUid = getUserProfile().getUid();
-        LogBook logBook = todoBroker.load(logBookUid);
+        Todo todo = todoBroker.load(logBookUid);
 
         if (setCompletedDate) {
-	        todoBroker.confirmCompletion(sessionUserUid, logBook.getUid(), completedDate);
+	        todoBroker.confirmCompletion(sessionUserUid, todo.getUid(), completedDate);
         } else {
-	        todoBroker.confirmCompletion(sessionUserUid, logBook.getUid(), LocalDateTime.now());
+	        todoBroker.confirmCompletion(sessionUserUid, todo.getUid(), LocalDateTime.now());
         }
 
         addMessage(model, MessageType.SUCCESS, "log.completed.done", request);
-        Group group = (Group) logBook.getParent();
+        Group group = (Group) todo.getParent();
         return viewGroupLogBook(model, group.getUid());
     }
 
@@ -245,20 +245,20 @@ public class TodoController extends BaseController {
     @RequestMapping("modify")
     public String modifyTodo(Model model, @RequestParam(value="logBookUid") String logBookUid) {
 
-        LogBook logBook = todoBroker.load(logBookUid);
-        Group group = (Group) logBook.getParent();
+        Todo todo = todoBroker.load(logBookUid);
+        Group group = (Group) todo.getParent();
         if (!group.getMembers().contains(getUserProfile())) throw new AccessDeniedException("");
 
-        model.addAttribute("logBook", logBook);
+        model.addAttribute("todo", todo);
         model.addAttribute("group", group);
         model.addAttribute("groupMembers", group.getMembers());
-        model.addAttribute("reminderTime", reminderTimeDescriptions().get(logBook.getReminderMinutes()));
+        model.addAttribute("reminderTime", reminderTimeDescriptions().get(todo.getReminderMinutes()));
         model.addAttribute("reminderTimeOptions", reminderTimeDescriptions());
 
         // todo: implement this using new design
 /*
-        if (logBook.getAssignedToUser() != null)
-            model.addAttribute("assignedUser", logBook.getAssignedToUser());
+        if (todo.getAssignedToUser() != null)
+            model.addAttribute("assignedUser", todo.getAssignedToUser());
 */
 
         return "log/modify";
@@ -266,35 +266,35 @@ public class TodoController extends BaseController {
 
     // todo: permission checking
     @RequestMapping(value = "modify", method = RequestMethod.POST)
-    public String changeTodoEntry(Model model, @ModelAttribute("logBook") LogBook logBook,
+    public String changeTodoEntry(Model model, @ModelAttribute("todo") Todo todo,
                                   @RequestParam(value = "assignToUser", required = false) boolean assignToUser, HttpServletRequest request) {
 
-        // may consider doing some of this in services layer, but main point is can't just use logBook entity passed
+        // may consider doing some of this in services layer, but main point is can't just use todo entity passed
         // back from form as thymeleaf whacks all the attributes we don't explicitly code into hidden inputs
 
-        LogBook savedLogBook = todoBroker.load(logBook.getUid());
-        if (!logBook.getMessage().equals(savedLogBook.getMessage()))
-            savedLogBook.setMessage(logBook.getMessage());
+        Todo savedTodo = todoBroker.load(todo.getUid());
+        if (!todo.getMessage().equals(savedTodo.getMessage()))
+            savedTodo.setMessage(todo.getMessage());
 
-        if (!logBook.getActionByDate().equals(savedLogBook.getActionByDate()))
-            savedLogBook.setActionByDate(logBook.getActionByDate());
+        if (!todo.getActionByDate().equals(savedTodo.getActionByDate()))
+            savedTodo.setActionByDate(todo.getActionByDate());
 
-        if (logBook.getReminderMinutes() != savedLogBook.getReminderMinutes())
-            savedLogBook.setReminderMinutes(logBook.getReminderMinutes());
+        if (todo.getReminderMinutes() != savedTodo.getReminderMinutes())
+            savedTodo.setReminderMinutes(todo.getReminderMinutes());
 
         log.info("Are we going to assigned this to a user? ... " + assignToUser);
         // todo: implement this using new design
 /*
         if (!assignToUser)
-            savedLogBook.setAssignedToUser(null);
+            savedTodo.setAssignedToUser(null);
         else
-            savedLogBook.setAssignedToUser(logBook.getAssignedToUser());
+            savedTodo.setAssignedToUser(todo.getAssignedToUser());
 */
 
-        savedLogBook = todoBroker.update(savedLogBook);
+        savedTodo = todoBroker.update(savedTodo);
 
         addMessage(model, MessageType.SUCCESS, "log.modified.done", request);
-        return viewTodoDetails(model, savedLogBook.getUid());
+        return viewTodoDetails(model, savedTodo.getUid());
     }
 
     private Map<Integer, String> reminderTimeDescriptions() {

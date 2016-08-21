@@ -11,7 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Created by Siyanda Mzam on 2016/03/23.
  */
-public class LogBookRestControllerTest extends RestAbstractUnitTest {
+public class TodoRestControllerTest extends RestAbstractUnitTest {
 
     @InjectMocks
     TodoRestController logBookRestController;
@@ -26,11 +26,11 @@ public class LogBookRestControllerTest extends RestAbstractUnitTest {
     @Test
     public void settingCompleteShouldWork() throws Exception {
 
-        testLogBook.setId(6L);
+        TEST_TO_DO.setId(6L);
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
-        when(todoBrokerMock.load(testLogBook.getUid())).thenReturn(testLogBook);
-        mockMvc.perform(get(path + "/complete/{phoneNumber}/{code}/{id}", testUserPhone, testUserCode, testLogBook.getUid())).andExpect(status().is2xxSuccessful());
+        when(todoBrokerMock.load(TEST_TO_DO.getUid())).thenReturn(TEST_TO_DO);
+        mockMvc.perform(get(path + "/complete/{phoneNumber}/{code}/{id}", testUserPhone, testUserCode, TEST_TO_DO.getUid())).andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
-        verify(todoBrokerMock).load(testLogBook.getUid());
+        verify(todoBrokerMock).load(TEST_TO_DO.getUid());
     }
 }

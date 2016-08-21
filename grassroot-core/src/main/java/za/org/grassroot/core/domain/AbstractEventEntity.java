@@ -78,7 +78,7 @@ public abstract class AbstractEventEntity {
 
 	@ManyToOne
 	@JoinColumn(name = "parent_log_book_id")
-	protected LogBook parentLogBook;
+	protected Todo parentTodo;
 
 	protected AbstractEventEntity() {
 		// for JPA

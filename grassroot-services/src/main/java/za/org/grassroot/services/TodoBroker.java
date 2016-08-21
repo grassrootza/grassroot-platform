@@ -3,7 +3,7 @@ package za.org.grassroot.services;
 import org.springframework.data.domain.Page;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
-import za.org.grassroot.core.domain.LogBook;
+import za.org.grassroot.core.domain.Todo;
 import za.org.grassroot.services.enums.TodoStatus;
 
 import java.time.LocalDateTime;
@@ -11,12 +11,12 @@ import java.util.List;
 import java.util.Set;
 
 public interface TodoBroker {
-	LogBook load(String logBookUid);
+	Todo load(String logBookUid);
 
-	LogBook update(LogBook todo);
+	Todo update(Todo todo);
 
-	LogBook create(String userUid, JpaEntityType parentType, String parentUid, String message, LocalDateTime actionByDate,
-				   int reminderMinutes, boolean replicateToSubgroups, Set<String> assignedMemberUids);
+	Todo create(String userUid, JpaEntityType parentType, String parentUid, String message, LocalDateTime actionByDate,
+				int reminderMinutes, boolean replicateToSubgroups, Set<String> assignedMemberUids);
 
 	void assignMembers(String userUid, String logBookUid, Set<String> assignMemberUids);
 
@@ -41,26 +41,26 @@ public interface TodoBroker {
 	 * @param pageSize The page size
      * @return
      */
-	Page<LogBook> retrieveGroupLogBooks(String userUid, String groupUid, boolean entriesComplete, int pageNumber, int pageSize);
+	Page<Todo> retrieveGroupLogBooks(String userUid, String groupUid, boolean entriesComplete, int pageNumber, int pageSize);
 
-	List<LogBook> getTodosInPeriod(Group group, LocalDateTime periodStart, LocalDateTime periodEnd);
+	List<Todo> getTodosInPeriod(Group group, LocalDateTime periodStart, LocalDateTime periodEnd);
 
-	List<Group> retrieveGroupsFromLogBooks(List<LogBook> logBooks);
+	List<Group> retrieveGroupsFromLogBooks(List<Todo> todos);
 
-	List<LogBook> loadGroupLogBooks(String groupUid, boolean futureLogBooksOnly, TodoStatus status);
+	List<Todo> loadGroupLogBooks(String groupUid, boolean futureLogBooksOnly, TodoStatus status);
 
 	// todo: we need some sort of logic here for not showing users the same logbook over and over
-	LogBook fetchLogBookForUserResponse(String userUid, long daysInPast, boolean assignedLogBooksOnly);
+	Todo fetchLogBookForUserResponse(String userUid, long daysInPast, boolean assignedLogBooksOnly);
 
-	LogBook update(String userUid, String uid, String message, LocalDateTime actionByDate, int reminderMinutes, Set<String> assignnedMemberUids);
+	Todo update(String userUid, String uid, String message, LocalDateTime actionByDate, int reminderMinutes, Set<String> assignnedMemberUids);
 
 	/**
 	 * Methods to handle "replicaed" todos (i.e., that cascade down subgroups)
 	 */
 
-	boolean hasReplicatedEntries(LogBook logBook);
+	boolean hasReplicatedEntries(Todo todo);
 
-	List<LogBook> getAllReplicatedEntriesFromParent(LogBook logBook);
+	List<Todo> getAllReplicatedEntriesFromParent(Todo todo);
 
-	LogBook getParentTodoEntry(LogBook logBook);
+	Todo getParentTodoEntry(Todo todo);
 }

@@ -42,8 +42,8 @@
       <div class="row">
         <div class="col-md-6 col-md-offset-3">
           <ul class="list-group">
-            <li class="list-group-item" th:each="logBook : ${todos}">
-              <a th:href="@{/log/details(logBookUid=${logBook.uid})}"><span th:text="${logBook.message}">Text</span></a>
+            <li class="list-group-item" th:each="todo : ${todos}">
+              <a th:href="@{/log/details(logBookUid=${todo.uid})}"><span th:text="${todo.message}">Text</span></a>
             </li>
           </ul>
         </div>

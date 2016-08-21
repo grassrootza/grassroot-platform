@@ -17,7 +17,7 @@ import java.util.Set;
                 @Index(name = "idx_log_book_group_id", columnList = "parent_group_id"),
                 @Index(name = "idx_log_book_retries_left", columnList = "number_of_reminders_left_to_send"),
                 @Index(name = "idx_log_book_replicated_group_id", columnList = "replicated_group_id")})
-public class LogBook extends AbstractLogBookEntity implements Task<LogBookContainer>, VoteContainer, MeetingContainer {
+public class Todo extends AbstractLogBookEntity implements Task<TodoContainer>, VoteContainer, MeetingContainer {
     public static final double COMPLETION_PERCENTAGE_BOUNDARY = 50;
 
     @Column(name="completed_date")
@@ -44,29 +44,29 @@ public class LogBook extends AbstractLogBookEntity implements Task<LogBookContai
    	@JoinColumn(name = "ancestor_group_id", nullable = false)
    	private Group ancestorGroup;
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "logBook", orphanRemoval = true)
-    private Set<LogBookCompletionConfirmation> completionConfirmations = new HashSet<>();
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "todo", orphanRemoval = true)
+    private Set<TodoCompletionConfirmation> completionConfirmations = new HashSet<>();
 
-    private LogBook() {
+    private Todo() {
         // for JPA
     }
 
-    public LogBook(User createdByUser, LogBookContainer parent, String message, Instant actionByDate) {
+    public Todo(User createdByUser, TodoContainer parent, String message, Instant actionByDate) {
         this(createdByUser, parent, message, actionByDate, 60, null, 3);
     }
 
-    public LogBook(User createdByUser, LogBookContainer parent, String message, Instant actionByDate, int reminderMinutes,
-                   Group replicatedGroup, int numberOfRemindersLeftToSend) {
+    public Todo(User createdByUser, TodoContainer parent, String message, Instant actionByDate, int reminderMinutes,
+                Group replicatedGroup, int numberOfRemindersLeftToSend) {
         super(createdByUser, parent, message, actionByDate, reminderMinutes);
         this.ancestorGroup = parent.getThisOrAncestorGroup();
         this.replicatedGroup = replicatedGroup;
         this.numberOfRemindersLeftToSend = numberOfRemindersLeftToSend;
     }
 
-    public static LogBook makeEmpty() {
-        LogBook logBook = new LogBook();
-        logBook.uid = UIDGenerator.generateId();
-        return logBook;
+    public static Todo makeEmpty() {
+        Todo todo = new Todo();
+        todo.uid = UIDGenerator.generateId();
+        return todo;
     }
 
     public void setId(Long id) {
@@ -99,7 +99,7 @@ public class LogBook extends AbstractLogBookEntity implements Task<LogBookContai
 
     @Override
     public JpaEntityType getJpaEntityType() {
-        return JpaEntityType.LOGBOOK;
+        return JpaEntityType.TODO;
     }
 
     @Override
@@ -128,7 +128,7 @@ public class LogBook extends AbstractLogBookEntity implements Task<LogBookContai
         if (!members.contains(member)) {
             throw new IllegalArgumentException("User " + member + " is not a member of log book: " + this);
         }
-        LogBookCompletionConfirmation confirmation = new LogBookCompletionConfirmation(this, member, completionTime);
+        TodoCompletionConfirmation confirmation = new TodoCompletionConfirmation(this, member, completionTime);
         boolean confirmationAdded = this.completionConfirmations.add(confirmation);
 
         this.completionPercentage = calculateCompletionStatus().getPercentage();
@@ -136,7 +136,7 @@ public class LogBook extends AbstractLogBookEntity implements Task<LogBookContai
         return confirmationAdded;
     }
 
-    public LogBookCompletionStatus calculateCompletionStatus() {
+    public TodoCompletionStatus calculateCompletionStatus() {
         Set<User> members = getMembers();
         int membersCount = members.size();
         // we count only those confirmations that are from users that
@@ -144,7 +144,7 @@ public class LogBook extends AbstractLogBookEntity implements Task<LogBookContai
         long confirmationsCount = completionConfirmations.stream()
                 .filter(confirmation -> members.contains(confirmation.getMember()))
                 .count();
-        return new LogBookCompletionStatus((int) confirmationsCount, membersCount);
+        return new TodoCompletionStatus((int) confirmationsCount, membersCount);
     }
 
     public boolean isCompleted() {
@@ -167,7 +167,7 @@ public class LogBook extends AbstractLogBookEntity implements Task<LogBookContai
 
     @Override
     public String toString() {
-        return "LogBook{" +
+        return "Todo{" +
                 "id=" + id +
                 ", uid=" + uid +
                 ", completedDate=" + completedDate +

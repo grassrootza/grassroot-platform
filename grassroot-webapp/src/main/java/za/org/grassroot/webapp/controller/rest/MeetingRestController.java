@@ -14,6 +14,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.services.*;
@@ -93,7 +94,7 @@ public class MeetingRestController {
         try {
             Meeting meeting = eventBroker.createMeeting(user.getUid(), parentUid, JpaEntityType.GROUP, title, eventStartDateTime,
                     location, false, true, false, reminderType, reminderMinutes, description,
-                    assignedMemberUids);
+                    assignedMemberUids, MeetingImportance.ORDINARY);
             TaskDTO createdMeeting = taskBroker.load(user.getUid(), meeting.getUid(), TaskType.MEETING);
             return RestUtil.okayResponseWithData(RestMessage.MEETING_CREATED, Collections.singletonList(createdMeeting));
         } catch (EventStartTimeNotInFutureException e) {

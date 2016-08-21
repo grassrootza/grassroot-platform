@@ -1,11 +1,9 @@
 package za.org.grassroot.core.domain;
 
-import za.org.grassroot.core.enums.EventLogType;
-import za.org.grassroot.core.enums.LogBookLogType;
+import za.org.grassroot.core.enums.TodoLogType;
 
 import javax.persistence.*;
 import java.time.Instant;
-import java.util.Date;
 import java.util.Objects;
 
 /**
@@ -14,7 +12,7 @@ import java.util.Objects;
 @Entity
 @Table(name = "log_book_log",
 		indexes = {@Index(name = "idx_log_book_log_logbook_id", columnList = "log_book_id")})
-public class LogBookLog implements ActionLog {
+public class TodoLog implements ActionLog {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,7 +25,7 @@ public class LogBookLog implements ActionLog {
 
 	@ManyToOne
 	@JoinColumn(name = "log_book_id", nullable = false)
-	private LogBook logBook;
+	private Todo todo;
 
 	@Column(name = "message")
 	private String message;
@@ -38,21 +36,21 @@ public class LogBookLog implements ActionLog {
 
 	@Enumerated(EnumType.STRING)
 	@Column(name="type", nullable = false, length = 50)
- 	private LogBookLogType type;
+ 	private TodoLogType type;
 
-	private LogBookLog() {
+	private TodoLog() {
 		// for JPA only
 	}
 
-	public LogBookLog(LogBookLogType type, User user, LogBook logBook, String message) {
+	public TodoLog(TodoLogType type, User user, Todo todo, String message) {
 		this.type = Objects.requireNonNull(type);
-		this.logBook = Objects.requireNonNull(logBook);
+		this.todo = Objects.requireNonNull(todo);
 		this.message = message;
 		this.user = user;
 		this.createdDateTime = Instant.now();
 	}
 
-	public LogBookLogType getType() {
+	public TodoLogType getType() {
 		return type;
 	}
 
@@ -64,8 +62,8 @@ public class LogBookLog implements ActionLog {
 		return createdDateTime;
 	}
 
-	public LogBook getLogBook() {
-		return logBook;
+	public Todo getTodo() {
+		return todo;
 	}
 
 	public User getUser() {
@@ -78,9 +76,9 @@ public class LogBookLog implements ActionLog {
 
 	@Override
 	public String toString() {
-		final StringBuilder sb = new StringBuilder("LogBookLog{");
+		final StringBuilder sb = new StringBuilder("TodoLog{");
 		sb.append("type=").append(type);
-		sb.append(", logBook=").append(logBook);
+		sb.append(", todo=").append(todo);
 		sb.append(", user=").append(user);
 		sb.append(", createdDateTime=").append(createdDateTime);
 		sb.append(", id=").append(id);

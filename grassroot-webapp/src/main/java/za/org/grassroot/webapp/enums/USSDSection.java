@@ -9,7 +9,7 @@ public enum USSDSection {
     HOME ("home"),
     MEETINGS ("mtg"),
     VOTES ("vote"),
-    LOGBOOK ("log"),
+    TODO("todo"),
     GROUP_MANAGER ("group"),
     SAFETY_GROUP_MANAGER("safety"),
     USER_PROFILE ("user"),

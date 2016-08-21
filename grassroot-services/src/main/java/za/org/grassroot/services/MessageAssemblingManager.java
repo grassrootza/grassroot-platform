@@ -83,27 +83,27 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     }
 
     @Override
-    public String createLogBookReminderMessage(User user, LogBook logBook) {
+    public String createLogBookReminderMessage(User user, Todo todo) {
         Locale locale = getUserLocale(user);
-        String[] args = populateLogBookFields(logBook);
+        String[] args = populateLogBookFields(todo);
         return messageSourceAccessor.getMessage("sms.logbook.reminder", args, locale);
     }
 
     @Override
-    public String createLogBookInfoNotificationMessage(User target, LogBook logBook) {
+    public String createLogBookInfoNotificationMessage(User target, Todo todo) {
         Locale locale = getUserLocale(target);
-        String[] args = populateLogBookFields(logBook);
-        String messageKey = logBook.isAllGroupMembersAssigned() ? "sms.logbook.new.notassigned" :
-                (logBook.getAssignedMembers().size()) == 1 ? "sms.logbook.new.assigned.one" : "sms.logbook.new.assigned.many";
+        String[] args = populateLogBookFields(todo);
+        String messageKey = todo.isAllGroupMembersAssigned() ? "sms.logbook.new.notassigned" :
+                (todo.getAssignedMembers().size()) == 1 ? "sms.logbook.new.assigned.one" : "sms.logbook.new.assigned.many";
         return messageSourceAccessor.getMessage(messageKey, args, locale);
     }
 
     @Override
-    public String createLogBookUpdateNotificationMessage(User target, LogBook logBook) {
+    public String createLogBookUpdateNotificationMessage(User target, Todo todo) {
         Locale locale = getUserLocale(target);
-        String[] args = populateLogBookFields(logBook);
-        String messageKey = logBook.isAllGroupMembersAssigned() ? "sms.logbook.update.notassigned" :
-                (logBook.getAssignedMembers().size()) == 1 ? "sms.logbook.update.assigned.one" : "sms.logbook.update.assigned.many";
+        String[] args = populateLogBookFields(todo);
+        String messageKey = todo.isAllGroupMembersAssigned() ? "sms.logbook.update.notassigned" :
+                (todo.getAssignedMembers().size()) == 1 ? "sms.logbook.update.assigned.one" : "sms.logbook.update.assigned.many";
         return messageSourceAccessor.getMessage(messageKey, args, locale);
 
     }
@@ -305,17 +305,17 @@ public class MessageAssemblingManager implements MessageAssemblingService {
 
     }
 
-    private String[] populateLogBookFields(LogBook logBook) {
-        Group group = logBook.getAncestorGroup();
+    private String[] populateLogBookFields(Todo todo) {
+        Group group = todo.getAncestorGroup();
         String salutation = (group.hasName()) ? group.getGroupName() : "Grassroot";
         DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
-        String dateString = sdf.format(logBook.getActionByDateAtSAST());
-        String assignment = (logBook.getAssignedMembers().size() == 1) ?
-                logBook.getAssignedMembers().iterator().next().getDisplayName() : String.valueOf(logBook.getAssignedMembers().size());
+        String dateString = sdf.format(todo.getActionByDateAtSAST());
+        String assignment = (todo.getAssignedMembers().size() == 1) ?
+                todo.getAssignedMembers().iterator().next().getDisplayName() : String.valueOf(todo.getAssignedMembers().size());
 
         String[] variables = new String[]{
                 salutation,
-                logBook.getMessage(),
+                todo.getMessage(),
                 dateString,
                 assignment
         };

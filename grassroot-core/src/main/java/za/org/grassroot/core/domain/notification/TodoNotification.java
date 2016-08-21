@@ -9,10 +9,10 @@ import javax.persistence.ManyToOne;
 import javax.persistence.MappedSuperclass;
 
 @MappedSuperclass
-public abstract class LogBookNotification extends Notification {
+public abstract class TodoNotification extends Notification {
 	@ManyToOne
 	@JoinColumn(name = "log_book_id")
-	private LogBook logBook;
+	private Todo todo;
 
 	@Override
 	public NotificationType getNotificationType() {
@@ -22,25 +22,26 @@ public abstract class LogBookNotification extends Notification {
 	@Override
 	public abstract NotificationDetailedType getNotificationDetailedType();
 
-	protected LogBookNotification() {
+
+	protected TodoNotification() {
 		// for JPA
 	}
 
 	@Override
 	protected void appendToString(StringBuilder sb) {
-		sb.append(", logBook=").append(logBook);
+		sb.append(", todo=").append(todo);
 	}
 
-	protected LogBookNotification(User target, String message, LogBookLog logBookLog) {
-		this(target, message, logBookLog, logBookLog.getLogBook());
+	protected TodoNotification(User target, String message, TodoLog todoLog) {
+		this(target, message, todoLog, todoLog.getTodo());
 	}
 
-	protected LogBookNotification(User target, String message, ActionLog actionLog, LogBook logBook) {
+	protected TodoNotification(User target, String message, ActionLog actionLog, Todo todo) {
 		super(target, message, actionLog, true);
-		this.logBook = logBook;
+		this.todo = todo;
 	}
 
-	public LogBook getLogBook() {
-		return logBook;
+	public Todo getTodo() {
+		return todo;
 	}
 }

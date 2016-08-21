@@ -54,8 +54,8 @@ public class EventWrapper {
                 this.parentName = ((Vote) event.getParent()).getName();
                 this.defaultReminderMinutes = 0; // todo: fix
                 break;
-            case LOGBOOK:
-                this.parentName = ((LogBook) event.getParent()).getMessage();
+            case TODO:
+                this.parentName = ((Todo) event.getParent()).getMessage();
                 this.defaultReminderMinutes = 0; // todo: fix
                 break;
         }

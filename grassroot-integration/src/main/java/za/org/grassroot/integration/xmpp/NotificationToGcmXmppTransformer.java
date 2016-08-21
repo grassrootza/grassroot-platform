@@ -12,7 +12,6 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.repository.GcmRegistrationRepository;
-import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.integration.domain.AndroidClickActionType;
 
 import java.util.HashMap;
@@ -71,8 +70,8 @@ public class NotificationToGcmXmppTransformer {
                 break;
 
             case LOGBOOK:
-                LogBook logBook = notification.getLogBookLog().getLogBook();
-                title = logBook.getAncestorGroup().getGroupName();
+                Todo todo = notification.getTodoLog().getTodo();
+                title = todo.getAncestorGroup().getGroupName();
                 body = notification.getMessage();
                 break;
 
@@ -101,8 +100,8 @@ public class NotificationToGcmXmppTransformer {
                 return sb.append(notification.getEventLog().getEvent().getUid()).append("_").append(groupName).toString();
 
             case LOGBOOK:
-                return sb.append(notification.getLogBookLog().getLogBook().getUid()).append("_").
-                        append(notification.getLogBookLog().getLogBook().getAncestorGroup().getGroupName()).toString();
+                return sb.append(notification.getTodoLog().getTodo().getUid()).append("_").
+                        append(notification.getTodoLog().getTodo().getAncestorGroup().getGroupName()).toString();
         }
         return null;
     }
@@ -125,14 +124,14 @@ public class NotificationToGcmXmppTransformer {
 		                notification.getPriority());
 
             case LOGBOOK:
-                LogBook logBook = notification.getLogBookLog().getLogBook();
+                Todo todo = notification.getTodoLog().getTodo();
 
                 return GcmXmppMessageCodec.createDataPart(
                         notification.getUid(),
-                        logBook.getAncestorGroup().getGroupName(),
+                        todo.getAncestorGroup().getGroupName(),
                         null,
                         notification.getMessage(),
-                        logBook.getUid(),
+                        todo.getUid(),
                         notification.getCreatedDateTime(),
                         notification.getNotificationType(),
 		                TaskType.TODO.name(),
@@ -166,8 +165,8 @@ public class NotificationToGcmXmppTransformer {
 	            }
                 break;
             case LOGBOOK:
-                LogBookLog logBookLog = notification.getLogBookLog();
-	            switch (logBookLog.getType()) {
+                TodoLog todoLog = notification.getTodoLog();
+	            switch (todoLog.getType()) {
 		            case CREATED:
 			            actionType = AndroidClickActionType.TASK_CREATED;
 			            break;

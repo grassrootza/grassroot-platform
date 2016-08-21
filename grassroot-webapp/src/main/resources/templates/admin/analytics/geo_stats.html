@@ -2,18 +2,17 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorator="layout">
 <head>
-    <title>Grassroot Platform</title>
+    <title>GrassRoot Platform</title>
 
     <meta property="og:title" content="grassroot.org.za"/>
     <meta property="og:image" content="/img/grass.png"/>
-    <meta property="og:description" content="The Grassroot Platform."/>
+    <meta property="og:description" content="The GrassRoot Platform."/>
 
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
     <script type="text/javascript">
         google.charts.load('visualization', {packages: ['table', 'map']});
     </script>
-
 </head>
 
 <body>
@@ -34,9 +33,7 @@
             <div id="user_dist"></div>
             <script th:inline="javascript">
                 /*<![CDATA[*/
-
                 function drawTable() {
-
                     var data = new google.visualization.DataTable();
                     data.addColumn('string', '');
                     data.addColumn('number', 'Geo Data');
@@ -57,36 +54,30 @@
                     table.draw(data, options);
                 }
                 function drawMap() {
-
                     var locations = [[${userLocations}]];
                     var data = new google.visualization.DataTable();
                     data.addColumn('number', 'Lat');
                     data.addColumn('number', 'Long');
-                    console.log(locations.length)
+                    console.log(locations);
                     for (i = 0; i < locations.length; i++) {
+                        console.log(locations[i]);
+                        console.log(locations[i].location.latitude);
                         data.addRow([locations[i].location.latitude, locations[i].location.longitude]);
                     }
-
                     var map = new google.visualization.Map(document.getElementById('user_dist'));
                     map.draw(data, {showTip: true});
                 }
                 google.charts.setOnLoadCallback(drawTable);
                 google.charts.setOnLoadCallback(drawMap);
-
                 /*]]>*/
             </script>
-
 
             <script th:inline="javascript"
                     type="text/javascript"
                     src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBTOpvEVWiDrYreCljbpxA1pyAW99YBCOY&amp;callback=drawMap"
                     async="async" defer="defer"/>
-
-
         </div>
     </div>
-
-
 </div>
 </body>
 </html>

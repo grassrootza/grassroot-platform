@@ -21,7 +21,7 @@ import java.util.Set;
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "type", discriminatorType = DiscriminatorType.STRING)
 public abstract class Event<P extends UidIdentifiable> extends AbstractEventEntity
-		implements LogBookContainer, Task<P>, Serializable {
+		implements TodoContainer, Task<P>, Serializable {
 
 	@Column(name = "canceled")
 	private boolean canceled;
@@ -59,7 +59,7 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 	private Set<User> assignedMembers = new HashSet<>();
 
 	@OneToMany(mappedBy = "parentEvent")
-	private Set<LogBook> logBooks = new HashSet<>();
+	private Set<Todo> todos = new HashSet<>();
 
 	@ManyToOne
 	@JoinColumn(name = "ancestor_group_id", nullable = false)
@@ -154,12 +154,11 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 		this.assignedMembers = assignedMembersCollection;
 	}
 
-	@Override
-	public Set<LogBook> getLogBooks() {
-		if (logBooks == null) {
-			logBooks = new HashSet<>();
+	public Set<Todo> getTodos() {
+		if (todos == null) {
+			todos = new HashSet<>();
 		}
-		return logBooks;
+		return todos;
 	}
 
 	// STRANGE: dunno why this <User> generics is not recognized by rest of code!?

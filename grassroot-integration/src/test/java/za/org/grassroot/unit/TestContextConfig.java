@@ -5,11 +5,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.xmpp.config.XmppConnectionFactoryBean;
 import za.org.grassroot.core.repository.GcmRegistrationRepository;
-import za.org.grassroot.core.repository.LogBookRepository;
+import za.org.grassroot.core.repository.TodoRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.integration.services.GcmService;
 import za.org.grassroot.integration.services.NotificationService;
-import za.org.grassroot.integration.services.SmsSendingManager;
 import za.org.grassroot.integration.services.SmsSendingService;
 
 import static org.mockito.Mockito.mock;
@@ -26,8 +25,8 @@ public class TestContextConfig {
     }
 
     @Bean
-    public FactoryBean<LogBookRepository> logbookRepository() {
-        return new MockitoFactoryBean<>(LogBookRepository.class);
+    public FactoryBean<TodoRepository> logbookRepository() {
+        return new MockitoFactoryBean<>(TodoRepository.class);
     }
 
     @Bean

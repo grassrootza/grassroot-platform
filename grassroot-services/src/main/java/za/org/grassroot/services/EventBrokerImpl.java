@@ -11,6 +11,7 @@ import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.util.CacheUtilService;
@@ -69,15 +70,15 @@ public class EventBrokerImpl implements EventBroker {
 		return meetingRepository.findOneByUid(meetingUid);
 	}
 
-	@Override
-	@Transactional
-	public Meeting createMeeting(String userUid, String parentUid, JpaEntityType parentType, String name, LocalDateTime eventStartDateTime, String eventLocation,
-															  boolean includeSubGroups, boolean rsvpRequired, boolean relayable, EventReminderType reminderType,
-															  int customReminderMinutes, String description, Set<String> assignMemberUids) {
-		Objects.requireNonNull(userUid);
-		Objects.requireNonNull(parentUid);
-		Objects.requireNonNull(parentType);
-		Objects.requireNonNull(assignMemberUids);
+    @Override
+    @Transactional
+    public Meeting createMeeting(String userUid, String parentUid, JpaEntityType parentType, String name, LocalDateTime eventStartDateTime, String eventLocation,
+								 boolean includeSubGroups, boolean rsvpRequired, boolean relayable, EventReminderType reminderType,
+								 int customReminderMinutes, String description, Set<String> assignMemberUids, MeetingImportance importance) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(parentUid);
+        Objects.requireNonNull(parentType);
+        Objects.requireNonNull(assignMemberUids);
 
 		Instant eventStartDateTimeInSystem = convertToSystemTime(eventStartDateTime, getSAST());
 		validateEventStartTime(eventStartDateTimeInSystem);
@@ -152,6 +153,7 @@ public class EventBrokerImpl implements EventBroker {
 			cacheUtilService.clearRsvpCacheForUser(member, event.getEventType());
 			String message = messageAssemblingService.createEventInfoMessage(member, event);
 			Notification notification = new EventInfoNotification(member, message, eventLog);
+			if(event instanceof Meeting) notification.setPriority(((Meeting) event).getImportance().ordinal());
 			notifications.add(notification);
 		}
 		return notifications;
