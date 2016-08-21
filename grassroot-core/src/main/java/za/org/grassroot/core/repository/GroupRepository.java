@@ -11,7 +11,6 @@ import org.springframework.data.jpa.repository.Query;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 
@@ -21,7 +20,7 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     Find the last group created by a specific user
      */
     Group findFirstByCreatedByUserAndActiveTrueOrderByIdDesc(User createdByUser);
-    Group findFirstByCreatedByUserAndGroupNameAndCreatedDateTimeAfterAndActiveTrue(User createdByUser, String groupName, Timestamp createdSince); // todo : really need to switch to instant
+    Group findFirstByCreatedByUserAndGroupNameAndCreatedDateTimeAfterAndActiveTrue(User createdByUser, String groupName, Instant createdSince);
 
     Group findOneByUid(String uid);
 
@@ -46,7 +45,7 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     Find a group by a code
      */
     Group findByGroupTokenCode(String groupTokenCode);
-    Group findByGroupTokenCodeAndTokenExpiryDateTimeAfter(String groupTokenCode, Timestamp expiryTime);
+    Group findByGroupTokenCodeAndTokenExpiryDateTimeAfter(String groupTokenCode, Instant expiryTime);
 
     /*
     Find all groups, with pagination--for system admin
@@ -88,7 +87,7 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     /*
     Methods for analytical service, to retrieve and count groups in periods (by created date time)
      */
-    int countByCreatedDateTimeBetweenAndActive(Timestamp periodStart, Timestamp periodEnd, boolean active);
+    int countByCreatedDateTimeBetweenAndActive(Instant periodStart, Instant periodEnd, boolean active);
 
     /*
     Find the max(groupTokenCode) in table

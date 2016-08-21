@@ -17,8 +17,7 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import javax.transaction.Transactional;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -54,8 +53,6 @@ public class AccountManager implements AccountManagementService {
 
    	@Autowired
    	private LogsAndNotificationsBroker logsAndNotificationsBroker;
-
-    private String accountAdminRole = "ROLE_ACCOUNT_ADMIN";
 
 
     @Override
@@ -111,7 +108,7 @@ public class AccountManager implements AccountManagementService {
         user.setAccountAdministered(account);
         User savedUser = userManagementService.save(user);
         log.info("User account admin set ... User: " + savedUser.toString());
-        return roleManagementService.addStandardRoleToUser(accountAdminRole, savedUser);
+        return roleManagementService.addStandardRoleToUser(BaseRoles.ROLE_ACCOUNT_ADMIN, savedUser);
     }
 
     @Override
@@ -139,7 +136,6 @@ public class AccountManager implements AccountManagementService {
             throw new GroupAlreadyPaidForException();
         PaidGroup paidGroup = paidGroupRepository.save(new PaidGroup(group, account, addingUser));
         account.addPaidGroup(paidGroup);
-        account = accountRepository.save(account);
         group.setPaidFor(true);
         return group;
         // return groupManagementService.saveGroup(group, true, "Set paid for", addingUser.getId());
@@ -158,7 +154,7 @@ public class AccountManager implements AccountManagementService {
     public Account removeGroupFromAccount(Account account, PaidGroup paidGroupRecord, User removingUser) {
         Group group = paidGroupRecord.getGroup();
 
-        paidGroupRecord.setExpireDateTime(Timestamp.valueOf(LocalDateTime.now()));
+        paidGroupRecord.setExpireDateTime(Instant.now());
         paidGroupRecord.setRemovedByUser(removingUser);
 
         account.removePaidGroup(paidGroupRecord);

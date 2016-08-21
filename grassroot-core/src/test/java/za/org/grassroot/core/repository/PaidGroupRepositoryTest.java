@@ -18,9 +18,7 @@ import za.org.grassroot.core.domain.PaidGroup;
 import za.org.grassroot.core.domain.User;
 
 import javax.transaction.Transactional;
-import java.sql.Timestamp;
-import java.util.Calendar;
-import java.util.Date;
+import java.time.Instant;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -109,14 +107,14 @@ public class PaidGroupRepositoryTest {
         paidGroupRepository.save(paidGroup);
         PaidGroup paidGroupFromDb = paidGroupRepository.findAll().iterator().next();
         assertNotNull(paidGroupFromDb);
-        paidGroupFromDb.setExpireDateTime(new Timestamp(Calendar.getInstance().getTimeInMillis()));
+        paidGroupFromDb.setExpireDateTime(Instant.now());
         paidGroupFromDb.setRemovedByUser(testUser);
         paidGroupRepository.save(paidGroupFromDb);
         PaidGroup paidGroupFromDb1 = paidGroupRepository.findAll().iterator().next();
         assertNotNull(paidGroupFromDb1);
         assertEquals(paidGroupFromDb.getId(), paidGroupFromDb1.getId());
         assertEquals(paidGroupFromDb1.getRemovedByUser(), testUser);
-        assertTrue(paidGroupFromDb1.getExpireDateTime().getTime() < Calendar.getInstance().getTimeInMillis());
+        assertTrue(paidGroupFromDb1.getExpireDateTime().isBefore(Instant.now()));
     }
 
     @Test
@@ -127,15 +125,15 @@ public class PaidGroupRepositoryTest {
 
         PaidGroup paidGroup = paidGroupRepository.save(new PaidGroup(testGroup, testAccount, testUser));
         PaidGroup paidGroup2 = paidGroupRepository.save(new PaidGroup(testGroup, testAccount2, testUser));
-        List<PaidGroup> firstFind = paidGroupRepository.findByExpireDateTimeGreaterThan(new Date());
+        List<PaidGroup> firstFind = paidGroupRepository.findByExpireDateTimeGreaterThan(Instant.now());
         assertNotNull(firstFind);
         assertThat(firstFind.size(), is(2));
         assertTrue(firstFind.contains(paidGroup));
         assertTrue(firstFind.contains(paidGroup2));
-        paidGroup2.setExpireDateTime(new Timestamp(Calendar.getInstance().getTimeInMillis()));
+        paidGroup2.setExpireDateTime(Instant.now());
         paidGroup2.setRemovedByUser(testUser);
         paidGroup2 = paidGroupRepository.save(paidGroup2);
-        List<PaidGroup> secondFind = paidGroupRepository.findByExpireDateTimeGreaterThan(new Date());
+        List<PaidGroup> secondFind = paidGroupRepository.findByExpireDateTimeGreaterThan(Instant.now());
         assertNotNull(secondFind);
         assertThat(secondFind.size(), is(1));
         assertTrue(secondFind.contains(paidGroup));
@@ -181,7 +179,7 @@ public class PaidGroupRepositoryTest {
         PaidGroup paidGroup2 = paidGroupRepository.save(new PaidGroup(testGroup, testAccount2, testUser));
         List<PaidGroup> firstList = paidGroupRepository.findByGroupOrderByExpireDateTimeDesc(testGroup);
         assertThat(firstList.size(), is(2));
-        paidGroup1.setExpireDateTime(new Timestamp(Calendar.getInstance().getTimeInMillis()));
+        paidGroup1.setExpireDateTime(Instant.now());
         paidGroup1.setRemovedByUser(testUser);
         paidGroupRepository.save(paidGroup1);
         List<PaidGroup> secondList = paidGroupRepository.findByGroupOrderByExpireDateTimeDesc(testGroup);

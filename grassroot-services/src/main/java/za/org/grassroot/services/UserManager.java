@@ -388,7 +388,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Transactional(readOnly = true)
     public boolean needsToRenameSelf(User user) {
         return !user.hasName() && (!asyncUserService.hasSkippedName(user.getUid())
-                && user.getCreatedDateTime().toInstant().isBefore(Instant.now().minus(3, ChronoUnit.MINUTES)));
+                && user.getCreatedDateTime().isBefore(Instant.now().minus(3, ChronoUnit.MINUTES)));
     }
 
     @Override

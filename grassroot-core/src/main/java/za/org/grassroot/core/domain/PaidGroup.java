@@ -1,10 +1,10 @@
 package za.org.grassroot.core.domain;
 
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
-import java.sql.Timestamp;
-import java.util.Calendar;
+import java.time.Instant;
 
 /**
  * Created by luke on 2015/10/20.
@@ -26,7 +26,7 @@ public class PaidGroup {
      */
     @Basic
     @Column(name="created_date_time", insertable = true, updatable = false)
-    private Timestamp createdDateTime;
+    private Instant createdDateTime;
 
     /*
     Since this is a record for a specific duration of time, we have many-to-one on groups (so, one group can be paid
@@ -42,7 +42,7 @@ public class PaidGroup {
 
     @Basic
     @Column(name="active_date_time")
-    private Timestamp activeDateTime;
+    private Instant activeDateTime;
 
     @ManyToOne
     @JoinColumn(name="user_added_id")
@@ -54,7 +54,7 @@ public class PaidGroup {
 
     @Basic
     @Column(name="expire_date_time")
-    private Timestamp expireDateTime;
+    private Instant expireDateTime;
 
     /*
     Constructors
@@ -70,7 +70,7 @@ public class PaidGroup {
     @PrePersist
     public void updateTimeStamps() {
         if (createdDateTime == null) {
-            createdDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis());
+            createdDateTime = Instant.now();
         }
     }
 
@@ -81,8 +81,8 @@ public class PaidGroup {
         this.account = account;
         this.addedByUser = addedByUser;
 
-        this.activeDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis());
-        this.expireDateTime = Timestamp.valueOf("2999-12-31 23:59:59");
+        this.activeDateTime = Instant.now();
+        this.expireDateTime = DateTimeUtil.getVeryLongAwayInstant();
 
     }
 
@@ -90,7 +90,7 @@ public class PaidGroup {
     Constructor with custom active and expiry dates
      */
 
-    public PaidGroup(Group group, Account account, User addedByUser, Timestamp activeDateTime, Timestamp expireDateTime) {
+    public PaidGroup(Group group, Account account, User addedByUser, Instant activeDateTime, Instant expireDateTime) {
 
         this.uid = UIDGenerator.generateId();
         this.group = group;
@@ -116,7 +116,7 @@ public class PaidGroup {
 
     public String getUid() { return uid; }
 
-    public Timestamp getCreatedDateTime() {
+    public Instant getCreatedDateTime() {
         return createdDateTime;
     }
 
@@ -130,7 +130,7 @@ public class PaidGroup {
 
     public void setAccount(Account account) { this.account = account; } // we may want to reassign a group at some point
 
-    public Timestamp getActiveDateTime() {
+    public Instant getActiveDateTime() {
         return activeDateTime;
     }
 
@@ -140,13 +140,13 @@ public class PaidGroup {
 
     public void setRemovedByUser(User removedByUser) { this.removedByUser = removedByUser; }
 
-    public void setActiveDateTime(Timestamp activeDateTime) { this.activeDateTime = activeDateTime; }
+    public void setActiveDateTime(Instant activeDateTime) { this.activeDateTime = activeDateTime; }
 
-    public Timestamp getExpireDateTime() {
+    public Instant getExpireDateTime() {
         return expireDateTime;
     }
 
-    public void setExpireDateTime(Timestamp expireDateTime) { this.expireDateTime = expireDateTime; }
+    public void setExpireDateTime(Instant expireDateTime) { this.expireDateTime = expireDateTime; }
 
     @Override
     public boolean equals(Object o) {

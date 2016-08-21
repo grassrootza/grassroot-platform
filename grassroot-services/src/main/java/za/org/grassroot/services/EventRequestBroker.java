@@ -4,7 +4,6 @@ import za.org.grassroot.core.domain.EventRequest;
 import za.org.grassroot.core.domain.MeetingRequest;
 import za.org.grassroot.core.domain.VoteRequest;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
 public interface EventRequestBroker {

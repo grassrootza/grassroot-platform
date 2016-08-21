@@ -1,10 +1,10 @@
 package za.org.grassroot.core.dto;
 
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.util.DateTimeUtil;
 
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.util.List;
+import java.time.Instant;
+import java.time.ZonedDateTime;
 
 /**
  * Created by paballo on 2016/02/15.
@@ -14,7 +14,7 @@ public class GroupDTO {
     private Long id;
     private String uid;
     private boolean active;
-    private Timestamp created_date_time;
+    private Instant created_date_time;
     private String description;
     private String groupName;
     private int group_size;
@@ -38,7 +38,7 @@ public class GroupDTO {
         id = Long.parseLong(objArray[0].toString());
         uid = objArray[1].toString();
         active = (Boolean) objArray[4];
-        created_date_time = (Timestamp) objArray[2];
+        created_date_time = (Instant) objArray[2];
         groupName = objArray[3].toString();
         group_size = (Integer) objArray[5];
     }
@@ -47,8 +47,12 @@ public class GroupDTO {
         return active;
     }
 
-    public Timestamp getCreatedDateTime() {
+    public Instant getCreatedDateTime() {
         return created_date_time;
+    }
+
+    public ZonedDateTime getCreatedDateTimeAtSAST() {
+        return DateTimeUtil.convertToUserTimeZone(created_date_time, DateTimeUtil.getSAST());
     }
 
     public String getGroupName() {

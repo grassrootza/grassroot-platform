@@ -19,7 +19,6 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.util.LocalDateTimePropertyEditor;
-import za.org.grassroot.webapp.util.SqlTimestampPropertyEditor;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
@@ -64,7 +63,6 @@ public class BaseController {
 
     @InitBinder
     protected void initBinder(HttpServletRequest request, ServletRequestDataBinder binder) {
-        binder.registerCustomEditor(java.sql.Timestamp.class, new SqlTimestampPropertyEditor());
         binder.registerCustomEditor(java.time.LocalDateTime.class, new LocalDateTimePropertyEditor());
     }
 

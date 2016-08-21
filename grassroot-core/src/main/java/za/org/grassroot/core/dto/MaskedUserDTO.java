@@ -3,7 +3,7 @@ package za.org.grassroot.core.dto;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.MaskingUtil;
 
-import java.sql.Timestamp;
+import java.time.Instant;
 
 /**
  * Created by luke on 2016/02/04.
@@ -17,7 +17,7 @@ public class MaskedUserDTO {
     private String displayName;
     private String phoneNumber;
     private String languageCode;
-    private Timestamp createdDateTime;
+    private Instant createdDateTime;
 
     private boolean hasInitiatedSession;
     private boolean webProfile;
@@ -62,7 +62,7 @@ public class MaskedUserDTO {
         return languageCode;
     }
 
-    public Timestamp getCreatedDateTime() {
+    public Instant getCreatedDateTime() {
         return createdDateTime;
     }
 

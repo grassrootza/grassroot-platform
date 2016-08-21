@@ -199,7 +199,7 @@
                 <span th:text="${group.getGroupSize()}"></span> Members
               </span>
               <small class="clearfix">
-                Est. <span th:text="${#calendars.format(group.getCreatedDateTime(),'d MMM yyyy')}">13 May 2011</span>
+                Est. <span th:text="${#temporals.format(group.getCreatedDateTimeAtSAST(),'d MMM yyyy')}">13 May 2011</span>
               </small>
             </li>
           </ul>

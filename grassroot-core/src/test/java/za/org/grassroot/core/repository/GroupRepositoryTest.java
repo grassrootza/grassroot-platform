@@ -18,12 +18,9 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.GroupLogType;
 
 import javax.transaction.Transactional;
-import java.sql.Timestamp;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -190,12 +187,12 @@ public class GroupRepositoryTest {
         User user = userRepository.save(new User("3335551111"));
         Group group = groupRepository.save(new Group("tg", user));
         String token = String.valueOf(groupRepository.getMaxTokenValue());
-        Timestamp testDate1 = Timestamp.valueOf(LocalDateTime.now().plusHours(12L));
-        Timestamp testDate2 = Timestamp.valueOf(LocalDateTime.now().plusHours(24L));
-        Timestamp testDate3 = Timestamp.valueOf(LocalDateTime.now().plusHours(36L));
+        Instant testDate1 = Instant.now().plus(12L, ChronoUnit.HOURS);
+        Instant testDate2 = Instant.now().plus(24L, ChronoUnit.HOURS);
+        Instant testDate3 = Instant.now().plus(36L, ChronoUnit.HOURS);
 
         group.setGroupTokenCode(token);
-        group.setTokenExpiryDateTime(new Timestamp(testDate2.getTime()));
+        group.setTokenExpiryDateTime(testDate2);
         groupRepository.save(group);
         Group group1 = groupRepository.findByGroupTokenCodeAndTokenExpiryDateTimeAfter(token, testDate1);
         Group group2 = groupRepository.findByGroupTokenCodeAndTokenExpiryDateTimeAfter(token, testDate3);
@@ -203,7 +200,7 @@ public class GroupRepositoryTest {
         assertEquals(group1, group);
         assertNull(group2);
 
-        group.setTokenExpiryDateTime(new Timestamp(testDate3.getTime()));
+        group.setTokenExpiryDateTime(testDate3);
         groupRepository.save(group);
         Group group3 = groupRepository.findByGroupTokenCodeAndTokenExpiryDateTimeAfter(token, testDate2);
         assertNotNull(group3);
@@ -215,17 +212,17 @@ public class GroupRepositoryTest {
         User user = userRepository.save(new User("3335550000"));
         Group group = groupRepository.save(new Group("tg", user));
         String token = String.valueOf(groupRepository.getMaxTokenValue());
-        Timestamp testDate1 = Timestamp.valueOf(LocalDateTime.now().plusHours(12L));
-        Timestamp testDate2 = Timestamp.valueOf(LocalDateTime.now().plusHours(24L));
+        Instant testDate1 = Instant.now().plus(12L, ChronoUnit.HOURS);
+        Instant testDate2 = Instant.now().plus(24L, ChronoUnit.HOURS);
 
         group.setGroupTokenCode(token);
-        group.setTokenExpiryDateTime(new Timestamp(testDate2.getTime()));
+        group.setTokenExpiryDateTime(testDate2);
         groupRepository.save(group);
         Group group1 = groupRepository.findByGroupTokenCodeAndTokenExpiryDateTimeAfter(token, testDate1);
         assertNotNull(group1);
         assertEquals(group, group1);
 
-        group.setTokenExpiryDateTime(new Timestamp(Calendar.getInstance().getTimeInMillis()));
+        group.setTokenExpiryDateTime(Instant.now());
         Group group2 = groupRepository.findByGroupTokenCodeAndTokenExpiryDateTimeAfter(token, testDate1);
         assertNull(group2);
 

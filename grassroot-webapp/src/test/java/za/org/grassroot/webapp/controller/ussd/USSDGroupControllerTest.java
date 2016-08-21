@@ -13,11 +13,12 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -195,7 +196,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     public void groupExistingTokenMenuShouldWork() throws Exception{
         resetTestGroup();
         testGroup.setGroupTokenCode("123");
-        testGroup.setTokenExpiryDateTime(Timestamp.valueOf(LocalDateTime.now().plusDays(3)));
+        testGroup.setTokenExpiryDateTime(Instant.now().plus(3, ChronoUnit.DAYS));
         when(userManagementServiceMock.findByInputNumber(testUserPhone, saveGroupMenu("token", testGroup.getUid()))).thenReturn(testUser);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         mockMvc.perform(get(path + "token").param(phoneParam, testUserPhone).param(groupParam, testGroup.getUid())).
@@ -210,13 +211,13 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     @Test
     public void extendTokenShouldWork() throws Exception {
         resetTestGroup();
-        testGroup.setTokenExpiryDateTime(Timestamp.valueOf(LocalDateTime.now()));
+        testGroup.setTokenExpiryDateTime(Instant.now());
         when(userManagementServiceMock.findByInputNumber(testUserPhone, saveGroupMenu("token-extend", testGroup.getUid()))).thenReturn(testUser);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         mockMvc.perform(get(path + "token-extend").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString)).
                 andExpect(status().isOk());
-        testGroup.setTokenExpiryDateTime(Timestamp.from(Instant.now().plus(72, ChronoUnit.HOURS)));
+        testGroup.setTokenExpiryDateTime(Instant.now().plus(72, ChronoUnit.HOURS));
         mockMvc.perform(get(path + "token-extend").param(phoneParam, testUserPhone).param(groupParam, testGroupIdString).
                 param("days", "3")).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, saveGroupMenu("token-extend", testGroup.getUid()));
@@ -343,7 +344,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         resetTestGroup();
         String urlToSave = saveGroupMenu("merge", testGroup.getUid());
         Group unnamedTestGroup = new Group("", testUser);
-        unnamedTestGroup.setCreatedDateTime(Timestamp.valueOf(LocalDateTime.now()));
+        unnamedTestGroup.setCreatedDateTime(Instant.now());
         Set<Group> testList = new HashSet<>(Arrays.asList(unnamedTestGroup, new Group("tg1", testUser), new Group("tg2", testUser)));
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(groupBrokerMock.mergeCandidates(testUser.getUid(), testGroup.getUid())).thenReturn(testList);

@@ -14,9 +14,7 @@ import za.org.grassroot.core.domain.Vote;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.services.GroupPage;
 
-import java.sql.Timestamp;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -147,7 +145,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         Group testGroup = new Group(testGroupName, new User("27601110000"));
 
         testGroup.setGroupTokenCode("111");
-        testGroup.setTokenExpiryDateTime(Timestamp.valueOf(LocalDateTime.now().plus(1, ChronoUnit.WEEKS)));
+        testGroup.setTokenExpiryDateTime(Instant.now().plus(7, ChronoUnit.DAYS));
 
         when(userManagementServiceMock.loadOrSaveUser(phoneForTests)).thenReturn(testUser);
         when(groupBrokerMock.findGroupFromJoinCode("111")).thenReturn(testGroup);
@@ -250,7 +248,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         testUser.setHasInitiatedSession(true);
         Group testGroup = new Group("", testUser);
         testGroup.setId(0L);
-        testGroup.setCreatedDateTime(Timestamp.valueOf(LocalDateTime.now()));
+        testGroup.setCreatedDateTime(Instant.now());
 
         when(userManagementServiceMock.loadOrSaveUser(phoneForTests)).thenReturn(testUser);
         when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);

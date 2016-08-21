@@ -10,7 +10,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.notification.EventNotification;
 
-import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -64,13 +64,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     User findByUsername(String username);
 
-    int countByCreatedDateTimeBetween(Timestamp start, Timestamp end);
+    int countByCreatedDateTimeBetween(Instant start, Instant end);
 
     int countByHasInitiatedSession(boolean hasInitiatedSession);
-    int countByCreatedDateTimeBetweenAndHasInitiatedSession(Timestamp start, Timestamp end, boolean hasInitiatedSession);
+    int countByCreatedDateTimeBetweenAndHasInitiatedSession(Instant start, Instant end, boolean hasInitiatedSession);
 
     int countByHasWebProfile(boolean webProfile);
-    int countByCreatedDateTimeBetweenAndHasWebProfile(Timestamp start, Timestamp end, boolean webProfile);
+    int countByCreatedDateTimeBetweenAndHasWebProfile(Instant start, Instant end, boolean webProfile);
 
     /*
     See if the phone number exists, before adding it

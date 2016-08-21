@@ -10,13 +10,16 @@ import org.springframework.test.web.servlet.MvcResult;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.GroupLogType;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
 
-import java.sql.Timestamp;
-import java.time.*;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -275,7 +278,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
         Group group = new Group("someGroupname", new User("234345345"));
         group.setGroupTokenCode("12345");
-        group.setTokenExpiryDateTime(Timestamp.valueOf(LocalDateTime.now().plusYears(1L)));
+        group.setTokenExpiryDateTime(DateTimeUtil.convertToSystemTime(LocalDateTime.now().plusYears(1L), DateTimeUtil.getSAST()));
 
         when(groupBrokerMock.load(group.getUid())).thenReturn(group);
         when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);

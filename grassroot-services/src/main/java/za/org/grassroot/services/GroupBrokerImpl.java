@@ -18,6 +18,7 @@ import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
@@ -29,7 +30,6 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import za.org.grassroot.services.util.TokenGeneratorService;
 
-import java.sql.Timestamp;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -114,7 +114,7 @@ public class GroupBrokerImpl implements GroupBroker {
         // checks if a group with the same name has been created by the same user in the last 10 minutes
         User user = userRepository.findOneByUid(userUid);
         return groupRepository.findFirstByCreatedByUserAndGroupNameAndCreatedDateTimeAfterAndActiveTrue(user, groupName,
-                Timestamp.from(Instant.now().minus(20, ChronoUnit.MINUTES)));
+                Instant.now().minus(20, ChronoUnit.MINUTES));
     }
 
     @Override
@@ -212,7 +212,7 @@ public class GroupBrokerImpl implements GroupBroker {
         if (!checkIfWithinTimeWindow) {
             return isUserGroupCreator;
         } else {
-            Instant deactivationTimeThreshold = group.getCreatedDateTime().toInstant().plus(Duration.ofHours(48));
+            Instant deactivationTimeThreshold = group.getCreatedDateTime().plus(Duration.ofHours(48));
             boolean isGroupMalformed = (group.getGroupName() == null || group.getGroupName().length() < 2)
 		            && group.getMembers().size() <= 2;
 	        return isUserGroupCreator && (isGroupMalformed || Instant.now().isBefore(deactivationTimeThreshold));
@@ -280,7 +280,7 @@ public class GroupBrokerImpl implements GroupBroker {
     public void addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed) {
         User user = userRepository.findOneByUid(userUidToAdd);
         Group group = groupRepository.findOneByUid(groupUid);
-        if (!tokenPassed.equals(group.getGroupTokenCode()) || Instant.now().isAfter(group.getTokenExpiryDateTime().toInstant()))
+        if (!tokenPassed.equals(group.getGroupTokenCode()) || Instant.now().isAfter(group.getTokenExpiryDateTime()))
             throw new InvalidTokenException("Invalid token: " + tokenPassed);
 
         logger.info("Adding a member via token code: group={}, user={}, code={}", group, user, tokenPassed);
@@ -736,8 +736,9 @@ public class GroupBrokerImpl implements GroupBroker {
     }
 
     private JoinTokenOpeningResult openJoinTokenInternal(User user, Group group, LocalDateTime expiryDateTime) {
-        LocalDateTime currentExpiry = (group.getTokenExpiryDateTime() != null) ? group.getTokenExpiryDateTime().toLocalDateTime() : null;
-        final LocalDateTime endOfCentury = getVeryLongTimeAway();
+
+        final Instant currentExpiry = (group.getTokenExpiryDateTime() != null) ? group.getTokenExpiryDateTime() : null;
+        final Instant expirySystemTime = DateTimeUtil.convertToSystemTime(expiryDateTime, DateTimeUtil.getSAST());
 
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
@@ -747,11 +748,11 @@ public class GroupBrokerImpl implements GroupBroker {
 
         // if there is already a valid token we are just changing expiry and returning it
         String token, logMessage;
-        if (currentExpiry != null && currentExpiry.isAfter(LocalDateTime.now())) {
+        if (currentExpiry != null && currentExpiry.isAfter(Instant.now())) {
             if (!temporary) {
-                group.setTokenExpiryDateTime(Timestamp.valueOf(endOfCentury));
+                group.setTokenExpiryDateTime(getVeryLongAwayInstant());
             } else if (expiryDateTime != null) {
-                group.setTokenExpiryDateTime(Timestamp.valueOf(expiryDateTime));
+                group.setTokenExpiryDateTime(expirySystemTime);
             }
             token = group.getGroupTokenCode();
             logMessage = temporary ? String.format("Changed group joining code closing time to %s", expiryDateTime.format(DateTimeFormatter.ISO_DATE_TIME))
@@ -759,8 +760,7 @@ public class GroupBrokerImpl implements GroupBroker {
         } else {
             logger.info("Generating a group join code that is open ...");
             token = tokenGeneratorService.getNextToken();
-            LocalDateTime expiry = (temporary) ? expiryDateTime : endOfCentury;
-            group.setTokenExpiryDateTime(Timestamp.valueOf(expiry));
+            group.setTokenExpiryDateTime((temporary) ? expirySystemTime : getVeryLongAwayInstant());
             group.setGroupTokenCode(token);
             logMessage = temporary ?
                     String.format("Created join code, %s, with closing time %s", token, expiryDateTime.format(DateTimeFormatter.ISO_DATE_TIME)) :
@@ -811,7 +811,7 @@ public class GroupBrokerImpl implements GroupBroker {
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
         group.setGroupTokenCode(null);
-        group.setTokenExpiryDateTime(Timestamp.from(Instant.now()));
+        group.setTokenExpiryDateTime(Instant.now());
 
         GroupLog groupLog = new GroupLog(group, user, GroupLogType.TOKEN_CHANGED, 0L, "Group join code closed");
         logActionLogsAfterCommit(Collections.singleton(groupLog));
@@ -921,7 +921,7 @@ public class GroupBrokerImpl implements GroupBroker {
     public Group findGroupFromJoinCode(String joinCode) {
         Group groupToReturn = groupRepository.findByGroupTokenCode(joinCode);
         if (groupToReturn == null) return null;
-        if (groupToReturn.getTokenExpiryDateTime().before(Timestamp.valueOf(LocalDateTime.now()))) return null;
+        if (groupToReturn.getTokenExpiryDateTime().isBefore(Instant.now())) return null;
         return groupToReturn;
     }
 
@@ -1040,7 +1040,7 @@ public class GroupBrokerImpl implements GroupBroker {
         Group group = groupRepository.findOneByUid(groupUid);
         Event latestEvent = eventRepository.findTopByParentGroupAndEventStartDateTimeNotNullOrderByEventStartDateTimeDesc(group);
         return (latestEvent != null) ? latestEvent.getEventDateTimeAtSAST() :
-                group.getCreatedDateTime().toLocalDateTime();
+                LocalDateTime.ofInstant(group.getCreatedDateTime(), getSAST());
     }
 
     private LocalDateTime getLastTimeGroupModified(String groupUid) {
@@ -1048,14 +1048,14 @@ public class GroupBrokerImpl implements GroupBroker {
         // todo: change groupLog to use localdatetime
         GroupLog latestGroupLog = groupLogRepository.findFirstByGroupOrderByCreatedDateTimeDesc(group);
         return (latestGroupLog != null) ? LocalDateTime.ofInstant(latestGroupLog.getCreatedDateTime(), getSAST()) :
-                group.getCreatedDateTime().toLocalDateTime();
+                LocalDateTime.ofInstant(group.getCreatedDateTime(), getSAST());
     }
 
     @Override
     public List<LocalDate> getMonthsGroupActive(String groupUid) {
         // todo: make this somewhat more sophisticated, including checking for active/inactive months, paid months etc
         Group group = groupRepository.findOneByUid(groupUid);
-        LocalDate groupStartDate = group.getCreatedDateTime().toLocalDateTime().toLocalDate();
+        LocalDate groupStartDate = LocalDateTime.ofInstant(group.getCreatedDateTime(), getSAST()).toLocalDate();
         LocalDate today = LocalDate.now();
         LocalDate monthIterator = LocalDate.of(groupStartDate.getYear(), groupStartDate.getMonth(), 1);
         List<LocalDate> months = new ArrayList<>();
@@ -1080,10 +1080,10 @@ public class GroupBrokerImpl implements GroupBroker {
         Sort sort = new Sort(Sort.Direction.ASC, "EventStartDateTime");
         Instant beginning, end;
         if (periodStart == null && periodEnd == null) {
-            beginning = group.getCreatedDateTime().toInstant();
+            beginning = group.getCreatedDateTime();
             end = convertToSystemTime(getVeryLongTimeAway(), getSAST());
         } else if (periodStart == null) { // since first condition is false, means period end is not null
-            beginning = group.getCreatedDateTime().toInstant();
+            beginning = group.getCreatedDateTime();
             end = periodEnd;
         } else if (periodEnd == null) { // since first & second conditions false, means period start is not null
             beginning = periodStart;

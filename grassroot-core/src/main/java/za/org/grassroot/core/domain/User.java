@@ -7,10 +7,12 @@ import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
-import java.sql.Timestamp;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.util.*;
+import java.time.temporal.ChronoUnit;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.util.PhoneNumberUtil.invertPhoneNumber;
@@ -54,7 +56,7 @@ public class User implements UserDetails {
     private String languageCode;
 
     @Column(name = "created_date_time", insertable = true, updatable = false)
-    private Timestamp createdDateTime;
+    private Instant createdDateTime;
 
     @Column(name = "user_name", length = 50, unique = true)
     private String username;
@@ -121,7 +123,7 @@ public class User implements UserDetails {
         this.displayName = displayName;
         this.languageCode = "en";
         this.messagingPreference = UserMessagingPreference.SMS; // as default
-        this.createdDateTime = Timestamp.from(Instant.now());
+        this.createdDateTime = Instant.now();
         this.alertPreference = AlertPreference.NOTIFY_ALL_EVENTS;
     }
 
@@ -192,7 +194,7 @@ public class User implements UserDetails {
         this.languageCode = languageCode;
     }
 
-    public Timestamp getCreatedDateTime() {
+    public Instant getCreatedDateTime() {
         return createdDateTime;
     }
 
@@ -235,7 +237,7 @@ public class User implements UserDetails {
     @PrePersist
     public void updateTimeStamps() {
         if (createdDateTime == null) {
-            createdDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis());
+            createdDateTime = Instant.now();
         }
     }
 
@@ -413,8 +415,8 @@ public class User implements UserDetails {
 
     public boolean needsToRenameSelf(Integer timeLimit) {
         if (hasName()) return false;
-        Timestamp minutesAgo = Timestamp.valueOf(LocalDateTime.now().minusMinutes(timeLimit));
-        return (createdDateTime != null && createdDateTime.before(minutesAgo));
+        Instant minutesAgo = Instant.now().minus(timeLimit, ChronoUnit.MINUTES);
+        return (createdDateTime != null && createdDateTime.isBefore(minutesAgo));
     }
 
     public boolean hasName() {

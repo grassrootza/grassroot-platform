@@ -1,6 +1,5 @@
 package za.org.grassroot.webapp.controller.ussd;
 
-import edu.emory.mathcs.backport.java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +24,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Set;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
@@ -219,7 +219,7 @@ public class USSDGroupController extends USSDController {
                     userResponse, createGroupAddNumbers + doSuffix);
         } else { // stop asking for numbers, reset interrupt prompt and give options to go back
             Group group = groupBroker.load(groupUid);
-            String prompt = (group.getGroupTokenCode() != null && Instant.now().isBefore(group.getTokenExpiryDateTime().toInstant())) ?
+            String prompt = (group.getGroupTokenCode() != null && Instant.now().isBefore(group.getTokenExpiryDateTime())) ?
                     getMessage(thisSection, createGroupAddNumbers, promptKey + ".done.token", group.getGroupTokenCode(), user) :
                     getMessage(thisSection, createGroupAddNumbers, promptKey + ".done", user);
             thisMenu = new USSDMenu(prompt);
@@ -359,7 +359,7 @@ public class USSDGroupController extends USSDController {
 
         if (sessionGroup.hasValidGroupTokenCode()) {
             String tokenCode = sessionGroup.getGroupTokenCode();
-            boolean indefiniteToken = sessionGroup.getTokenExpiryDateTime().equals(DateTimeUtil.getVeryLongTimestamp());
+            boolean indefiniteToken = sessionGroup.getTokenExpiryDateTime().equals(DateTimeUtil.getVeryLongAwayInstant());
             tokenMenu = new USSDMenu(getMessage(thisSection, groupTokenMenu, promptKey + ".exists", tokenCode, sessionUser));
             if (!indefiniteToken) tokenMenu.addMenuOption(groupMenuWithId(groupTokenMenu + "-extend", groupUid),
                     getMessage(thisSection, groupTokenMenu, optionsKey + "extend", sessionUser));
@@ -470,7 +470,7 @@ public class USSDGroupController extends USSDController {
         User sessionUser = userManager.findByInputNumber(inputNumber, saveGroupMenu(addMemberPrompt, groupUid));
         String promptMessage;
 
-        if (group.getGroupTokenCode() != null && Instant.now().isBefore(group.getTokenExpiryDateTime().toInstant())) {
+        if (group.getGroupTokenCode() != null && Instant.now().isBefore(group.getTokenExpiryDateTime())) {
             promptMessage = getMessage(thisSection, addMemberPrompt, promptKey + ".token", group.getGroupTokenCode(), sessionUser);
         } else {
             promptMessage = getMessage(thisSection, addMemberPrompt, promptKey, sessionUser);
@@ -680,7 +680,8 @@ public class USSDGroupController extends USSDController {
         User user = userManager.findByInputNumber(msisdn);
 	    Group group = groupBroker.fetchGroupsWithOneCharNames(user, 2).get(0);
 
-	    String createdDate = group.getCreatedDateTime().toLocalDateTime().format(DateTimeFormatter.ofPattern("d MMM"));
+	    String createdDate = DateTimeUtil.convertToUserTimeZone(group.getCreatedDateTime(), DateTimeUtil.getSAST())
+                .format(DateTimeFormatter.ofPattern("d MMM"));
 	    String prompt = getMessage(thisSection, invalidGroups, promptKey, new String[] { group.getGroupName(), createdDate, String.valueOf(group.getMembers().size()) }, user);
 	    USSDMenu menu = new USSDMenu(prompt);
 	    menu.addMenuOption(groupMenuWithId(renameGroupPrompt, group.getUid()), getMessage(thisSection, invalidGroups, optionsKey + "rename", user));

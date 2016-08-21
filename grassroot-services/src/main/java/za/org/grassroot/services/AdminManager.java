@@ -11,17 +11,18 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.*;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 
 import javax.persistence.EntityManager;
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+
+import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
+import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
 /**
  * Created by luke on 2016/02/04.
@@ -87,7 +88,8 @@ public class AdminManager implements AdminService {
 
     @Override
     public int countUsersCreatedInInterval(LocalDateTime start, LocalDateTime end) {
-        return userRepository.countByCreatedDateTimeBetween(Timestamp.valueOf(start), Timestamp.valueOf(end));
+        return userRepository.countByCreatedDateTimeBetween(convertToSystemTime(start, getSAST()),
+                convertToSystemTime(end, getSAST()));
     }
 
     @Override
@@ -98,7 +100,8 @@ public class AdminManager implements AdminService {
     @Override
     public int countUsersCreatedAndInitiatedInPeriod(LocalDateTime start, LocalDateTime end) {
         return userRepository.
-                countByCreatedDateTimeBetweenAndHasInitiatedSession(Timestamp.valueOf(start), Timestamp.valueOf(end), true);
+                countByCreatedDateTimeBetweenAndHasInitiatedSession(convertToSystemTime(start, getSAST()),
+                        convertToSystemTime(end, getSAST()), true);
     }
 
     @Override
@@ -109,7 +112,8 @@ public class AdminManager implements AdminService {
     @Override
     public int countUsersCreatedWithWebProfileInPeriod(LocalDateTime start, LocalDateTime end) {
         return userRepository.
-                countByCreatedDateTimeBetweenAndHasWebProfile(Timestamp.valueOf(start), Timestamp.valueOf(end), true);
+                countByCreatedDateTimeBetweenAndHasWebProfile(convertToSystemTime(start, getSAST()),
+                        convertToSystemTime(end, getSAST()), true);
     }
 
     @Override
@@ -133,7 +137,8 @@ public class AdminManager implements AdminService {
 
     @Override
     public int countGroupsCreatedInInterval(LocalDateTime start, LocalDateTime end) {
-        return groupRepository.countByCreatedDateTimeBetweenAndActive(Timestamp.valueOf(start), Timestamp.valueOf(end), true);
+        return groupRepository.countByCreatedDateTimeBetweenAndActive(convertToSystemTime(start, getSAST()),
+                convertToSystemTime(end, getSAST()), true);
     }
 
     @Override
@@ -188,8 +193,8 @@ public class AdminManager implements AdminService {
 
     @Override
     public int countEventsCreatedInInterval(LocalDateTime start, LocalDateTime end, EventType eventType) {
-        Instant intervalStart = DateTimeUtil.convertToSystemTime(start, DateTimeUtil.getSAST());
-        Instant intervalEnd = DateTimeUtil.convertToSystemTime(end, DateTimeUtil.getSAST());
+        Instant intervalStart = convertToSystemTime(start, getSAST());
+        Instant intervalEnd = convertToSystemTime(end, getSAST());
         if (eventType.equals(EventType.MEETING)) {
             return meetingRepository.countByCreatedDateTimeBetween(intervalStart, intervalEnd);
         } else {

@@ -4,8 +4,7 @@ import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.io.Serializable;
-import java.sql.Timestamp;
-import java.util.Calendar;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -29,7 +28,7 @@ public class Account implements Serializable {
 
     @Basic
     @Column(name="created_date_time", insertable = true, updatable = false)
-    private Timestamp createdDateTime;
+    private Instant createdDateTime;
 
     /*
     Doing this as one-to-many from account to users, rather than the inverse, because we are (much) more likely to have
@@ -78,7 +77,7 @@ public class Account implements Serializable {
     @PrePersist
     public void updateTimeStamps() {
         if (createdDateTime == null) {
-            createdDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis());
+            createdDateTime = Instant.now();
         }
     }
 
@@ -135,11 +134,11 @@ public class Account implements Serializable {
 
     public String getUid() { return uid; }
 
-    public Timestamp getCreatedDateTime() {
+    public Instant getCreatedDateTime() {
         return createdDateTime;
     }
 
-    public void setCreatedDateTime(Timestamp createdDateTime) { this.createdDateTime = createdDateTime; }
+    public void setCreatedDateTime(Instant createdDateTime) { this.createdDateTime = createdDateTime; }
 
     public Set<User> getAdministrators() {
         return administrators;

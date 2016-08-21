@@ -3,7 +3,6 @@ package za.org.grassroot.core.domain;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
-import java.sql.Timestamp;
 import java.time.Instant;
 
 /**

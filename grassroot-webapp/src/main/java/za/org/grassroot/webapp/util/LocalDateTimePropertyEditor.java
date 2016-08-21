@@ -1,9 +1,6 @@
 package za.org.grassroot.webapp.util;
 
 import java.beans.PropertyEditorSupport;
-import java.sql.Timestamp;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -16,7 +13,6 @@ public class LocalDateTimePropertyEditor extends PropertyEditorSupport{
     public static final String DEFAULT_DATE_PATTERN = "dd/MM/yyyy h:mm a";
 
     private final DateTimeFormatter simpleDateFormat;
-
 
     public LocalDateTimePropertyEditor() {
         this.simpleDateFormat = DateTimeFormatter.ofPattern(DEFAULT_DATE_PATTERN);

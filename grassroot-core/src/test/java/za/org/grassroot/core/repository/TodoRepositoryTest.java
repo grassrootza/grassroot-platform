@@ -12,6 +12,7 @@ import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Todo;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.transaction.Transactional;
 import java.time.Instant;
@@ -33,13 +34,13 @@ import static org.junit.Assert.*;
 public class TodoRepositoryTest {
 
     @Autowired
-    TodoRepository todoRepository;
+    private TodoRepository todoRepository;
 
     @Autowired
-    GroupRepository groupRepository;
+    private GroupRepository groupRepository;
 
     @Autowired
-    UserRepository userRepository;
+    private UserRepository userRepository;
 
     private Instant addHoursFromNow(int hours) { return Instant.now().plus(hours, ChronoUnit.HOURS); }
 
@@ -108,11 +109,13 @@ public class TodoRepositoryTest {
         todoRepository.save(lb2);
 
         Sort sort = new Sort(Sort.Direction.DESC, "actionByDate");
-        List<Todo> list = todoRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(user, Instant.now(), Instant.MAX, 50, sort);
+        List<Todo> list = todoRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(user, Instant.now(),
+                DateTimeUtil.getVeryLongAwayInstant(), 50, sort);
         assertEquals(0, list.size());
         lb1.addCompletionConfirmation(user, Instant.now());
         todoRepository.save(lb1);
-        list = todoRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(user, Instant.now(), Instant.MAX, 50, sort);
+        list = todoRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(user, Instant.now(),
+                DateTimeUtil.getVeryLongAwayInstant(), 50, sort);
         assertEquals(1,list.size());
     }
 

@@ -28,12 +28,14 @@ import javax.annotation.PostConstruct;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.LocalDateTime;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.AbstractMap.SimpleEntry;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
+import static za.org.grassroot.core.util.DateTimeUtil.convertToUserTimeZone;
+import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 import static za.org.grassroot.webapp.enums.USSDSection.*;
 
 /**
@@ -271,8 +273,10 @@ public class USSDHomeController extends USSDController {
             case NAME_GROUP:
                 Group group = userManager.fetchGroupUserMustRename(user);
                 openingMenu = (groupBroker.isDeactivationAvailable(user, group, true)) ?
-                        renameGroupAllowInactive(user, group.getUid(), dateFormat.format(group.getCreatedDateTime().toLocalDateTime())) :
-                        renameGroupNoInactiveOption(user, group.getUid(), dateFormat.format(group.getCreatedDateTime().toLocalDateTime()));
+                        renameGroupAllowInactive(user, group.getUid(),
+                                dateFormat.format(convertToUserTimeZone(group.getCreatedDateTime(), getSAST()))) :
+                        renameGroupNoInactiveOption(user, group.getUid(),
+                                dateFormat.format(convertToUserTimeZone(group.getCreatedDateTime(), getSAST())));
                 break;
             case RESPOND_SAFETY:
                 SafetyEvent safetyEvent = safetyEventBroker.getOutstandingUserSafetyEventsResponse(user.getUid()).get(0);
@@ -517,7 +521,7 @@ public class USSDHomeController extends USSDController {
                                    @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
         Group group = groupBroker.load(groupUid);
         return menuBuilder(renameGroupNoInactiveOption(userManager.findByInputNumber(inputNumber), groupUid,
-                dateFormat.format(group.getCreatedDateTime().toLocalDateTime())));
+                dateFormat.format(convertToUserTimeZone(group.getCreatedDateTime(), getSAST()))));
     }
 
     @RequestMapping(value = path + promptConfirmGroupInactive)

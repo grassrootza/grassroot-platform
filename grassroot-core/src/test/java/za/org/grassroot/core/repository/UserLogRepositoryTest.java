@@ -14,8 +14,9 @@ import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
+import za.org.grassroot.core.util.DateTimeUtil;
 
-import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -67,19 +68,19 @@ public class UserLogRepositoryTest {
     @Test
     public void shouldRetrieveLogsInInterval() {
         assertThat(userLogRepository.count(), is(0L));
-        Timestamp twoMonths = Timestamp.valueOf(LocalDateTime.now().minusMonths(2L));
-        Timestamp oneMonth = Timestamp.valueOf(LocalDateTime.now().minusMonths(1L));
-        Timestamp now = Timestamp.valueOf(LocalDateTime.now());
+        Instant twoMonths = DateTimeUtil.convertToSystemTime(LocalDateTime.now().minusMonths(2L), DateTimeUtil.getSAST());
+        Instant oneMonth = DateTimeUtil.convertToSystemTime(LocalDateTime.now().minusMonths(1L), DateTimeUtil.getSAST());
+        Instant now = Instant.now();
         Sort sort = new Sort(Sort.Direction.ASC, "creationTime");
 
         User testUser = new User("0605550000");
         testUser = userRepository.save(testUser);
         UserLog createdLog = new UserLog(testUser.getUid(), CREATED_IN_DB, "Created the user", UNKNOWN);
-        createdLog.setCreationTime(twoMonths.toInstant());
+        createdLog.setCreationTime(twoMonths);
         UserLog firstUssd = new UserLog(testUser.getUid(), INITIATED_USSD, "First USSD session", UNKNOWN);
-        firstUssd.setCreationTime(oneMonth.toInstant());
+        firstUssd.setCreationTime(oneMonth);
         UserLog createdWeb = new UserLog(testUser.getUid(), CREATED_WEB, "Created web profile", UNKNOWN);
-        createdWeb.setCreationTime(now.toInstant());
+        createdWeb.setCreationTime(now);
 
         createdLog = userLogRepository.save(createdLog);
         firstUssd = userLogRepository.save(firstUssd);

@@ -6,7 +6,6 @@ import za.org.grassroot.core.enums.GroupLogType;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
-import java.util.Date;
 import java.util.Objects;
 
 @Entity

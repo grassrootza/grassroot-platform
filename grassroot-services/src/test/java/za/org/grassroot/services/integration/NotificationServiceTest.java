@@ -19,7 +19,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Date;
+import java.time.Instant;
 import java.util.Locale;
 import java.util.logging.Logger;
 
@@ -55,7 +55,7 @@ public class NotificationServiceTest {
     public void shouldGetMessageTemplate() {
         String template = "welcome.test";
         String[] msgObjects = new String[]{
-                new Date().toString(),
+                Instant.now().toString(),
                 "Is this working?"
         };
         String message = messageSourceAccessor.getMessage(template, msgObjects, Locale.ENGLISH);

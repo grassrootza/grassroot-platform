@@ -7,7 +7,6 @@ import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Timestamp;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -42,9 +41,7 @@ public class DateTimeUtil {
     public static LocalDateTime getVeryLongTimeAway() {
         return veryLongTimeAway;
     }
-    public static Timestamp getVeryLongTimestamp() {
-        return Timestamp.valueOf(veryLongTimeAway);
-    }
+    public static Instant getVeryLongAwayInstant() { return veryLongTimeAway.toInstant(ZoneOffset.UTC); }
     public static Instant getEarliestInstant() { return earliestInstant; }
 
     private static final ZoneId zoneSAST = ZoneId.of("Africa/Johannesburg");

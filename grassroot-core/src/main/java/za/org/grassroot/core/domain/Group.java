@@ -1,15 +1,18 @@
 package za.org.grassroot.core.domain;
 
-//TODO level so that we can block too many levels
-
 import za.org.grassroot.core.enums.GroupDefaultImage;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.io.Serializable;
-import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.*;
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -28,7 +31,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     private String groupName;
 
     @Column(name = "created_date_time", insertable = true, updatable = false)
-    private Timestamp createdDateTime;
+    private Instant createdDateTime;
 
     @ManyToOne()
     @JoinColumn(name = "created_by_user", nullable = false, updatable = false)
@@ -48,7 +51,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     private String groupTokenCode;
 
     @Column(name = "token_code_expiry", nullable = true, insertable = true, updatable = true)
-    private Timestamp tokenExpiryDateTime;
+    private Instant tokenExpiryDateTime;
 
     @Version
     private Integer version;
@@ -146,7 +149,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         this.uid = UIDGenerator.generateId();
         this.groupName = Objects.requireNonNull(groupName);
         this.createdByUser = Objects.requireNonNull(createdByUser);
-        this.createdDateTime = Timestamp.from(Instant.now());
+        this.createdDateTime = Instant.now();
         this.active = true;
         this.discoverable = true; // make groups discoverable by default
         this.joinApprover = createdByUser; // discoverable groups need a join approver, defaulting to creating user
@@ -203,11 +206,15 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         this.id = id;
     }
 
-    public Timestamp getCreatedDateTime() {
+    public Instant getCreatedDateTime() {
         return createdDateTime;
     }
 
-    public void setCreatedDateTime(Timestamp createdDateTime) {
+    public ZonedDateTime getCreatedDateTimeAtSAST() {
+        return DateTimeUtil.convertToUserTimeZone(createdDateTime, DateTimeUtil.getSAST());
+    }
+
+    public void setCreatedDateTime(Instant createdDateTime) {
         this.createdDateTime = createdDateTime;
     }
 
@@ -376,17 +383,17 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         this.groupTokenCode = groupTokenCode;
     }
 
-    public Timestamp getTokenExpiryDateTime() {
+    public Instant getTokenExpiryDateTime() {
         return tokenExpiryDateTime;
     }
 
-    public void setTokenExpiryDateTime(Timestamp tokenExpiryDateTime) {
+    public void setTokenExpiryDateTime(Instant tokenExpiryDateTime) {
         this.tokenExpiryDateTime = tokenExpiryDateTime;
     }
 
     public boolean hasValidGroupTokenCode() {
         return (groupTokenCode != null && groupTokenCode.trim() != "") &&
-                (tokenExpiryDateTime != null && tokenExpiryDateTime.toInstant().isAfter(Instant.now()));
+                (tokenExpiryDateTime != null && tokenExpiryDateTime.isAfter(Instant.now()));
     }
 
     public Set<Event> getEvents() {
@@ -513,7 +520,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     @PrePersist
     public void updateTimeStamps() {
         if (createdDateTime == null) {
-            createdDateTime = new Timestamp(Calendar.getInstance().getTimeInMillis());
+            createdDateTime = Instant.now();
         }
     }
 
@@ -593,7 +600,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         if (uid.equals(group.getUid())) {
             return 0;
         } else {
-            Timestamp otherCreatedDateTime = group.getCreatedDateTime();
+            Instant otherCreatedDateTime = group.getCreatedDateTime();
             return createdDateTime.compareTo(otherCreatedDateTime);
         }
     }

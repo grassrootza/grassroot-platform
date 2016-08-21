@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.GroupDTO;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
@@ -15,8 +16,8 @@ import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 
 import java.net.URISyntaxException;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -78,7 +79,7 @@ public class USSDGroupUtil extends USSDUtil {
             advancedGroupMenu = "advanced",
             listGroupMembers = "list"; // actually just gives a count
 
-    public static final SimpleDateFormat unnamedGroupDate = new SimpleDateFormat("d MMM");
+    public static final DateTimeFormatter unnamedGroupDate = DateTimeFormatter.ofPattern("d MMM");
 
     private static final Map<USSDSection, Permission> SectionPermissionMap = ImmutableMap.of(
             USSDSection.MEETINGS, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING,
@@ -249,7 +250,9 @@ public class USSDGroupUtil extends USSDUtil {
                 (nextMenuUrl + "&" + groupUidParameter + "=");
         for (Group group : groups) {
             String name = (group.hasName()) ? group.getGroupName() :
-                    getMessage(groupKeyForMessages, "unnamed", "label", unnamedGroupDate.format(group.getCreatedDateTime()), user);
+                    getMessage(groupKeyForMessages, "unnamed", "label",
+                            unnamedGroupDate.format(DateTimeUtil.convertToUserTimeZone(group.getCreatedDateTime(), DateTimeUtil.getSAST())),
+                            user);
             menu.addMenuOption(formedUrl + group.getUid(), name);
         }
         return menu;
@@ -381,7 +384,7 @@ public class USSDGroupUtil extends USSDUtil {
         final Group group = groupBroker.load(groupUid);
         final String menuKey = GROUP_MANAGER.toKey() + existingGroupMenu + "." + optionsKey;
 
-        final boolean openToken = group.getGroupTokenCode() != null && Instant.now().isBefore(group.getTokenExpiryDateTime().toInstant());
+        final boolean openToken = group.getGroupTokenCode() != null && Instant.now().isBefore(group.getTokenExpiryDateTime());
 
         USSDMenu listMenu = new USSDMenu(assembleGroupPrompt(group, user, openToken, skippedSelection));
 
@@ -420,7 +423,7 @@ public class USSDGroupUtil extends USSDUtil {
     public USSDMenu advancedGroupOptionsMenu(User user, String groupUid) {
 
         Group group = groupBroker.load(groupUid);
-        boolean openToken = group.getGroupTokenCode() != null && Instant.now().isBefore(group.getTokenExpiryDateTime().toInstant());
+        boolean openToken = group.getGroupTokenCode() != null && Instant.now().isBefore(group.getTokenExpiryDateTime());
 
         USSDMenu listMenu = new USSDMenu(assembleGroupPrompt(group, user, openToken, false));
         final String menuKey = GROUP_MANAGER.toKey() + advancedGroupMenu + "." + optionsKey;

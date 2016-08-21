@@ -13,7 +13,7 @@
 <div layout:fragment="overview">
   <div class="row no-padding no-margins">
     <h5 class="text-center">
-      Created on <span th:text="${#calendars.format(group.getCreatedDateTime(),'d MMM yyyy')}">Some date</span>
+      Created on <span th:text="${#temporals.format(group.getCreatedDateTimeAtSAST(),'d MMM yyyy')}">Some date</span>
       (<a th:href="@{/group/history(groupUid=${group.uid})}">view history</a>)
     </h5>
     <h5 class="text-center" th:if="${canAlter}">
