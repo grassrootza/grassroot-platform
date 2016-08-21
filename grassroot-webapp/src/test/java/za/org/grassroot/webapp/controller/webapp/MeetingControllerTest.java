@@ -9,6 +9,7 @@ import org.springframework.http.MediaType;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.time.Instant;
@@ -93,7 +94,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         verify(eventBrokerMock, times(1)).createMeeting(sessionTestUser.getUid(), dummyGroup.getUid(), JpaEntityType.GROUP, "test meeting",
                                                         oneDayAway.atZone(DateTimeUtil.getSAST()).toLocalDateTime(),
                                                         "some place", false, true, false, EventReminderType.CUSTOM, 60,
-                                                        "", Collections.emptySet());
+                                                        "", Collections.emptySet(), MeetingImportance.ORDINARY);
 
         verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(userManagementServiceMock);

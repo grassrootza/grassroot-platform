@@ -5,6 +5,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.dto.KeywordDTO;
 import za.org.grassroot.core.dto.MaskedUserDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.GroupLogType;
@@ -13,6 +14,7 @@ import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 
+import javax.persistence.EntityManager;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -46,19 +48,22 @@ public class AdminManager implements AdminService {
     private VoteRepository voteRepository;
 
     @Autowired
-    private LogBookRepository logBookRepository;
+    private TodoRepository todoRepository;
 
-	@Autowired
-	private RoleRepository roleRepository;
+    @Autowired
+    private RoleRepository roleRepository;
 
-	@Autowired
-	private GroupBroker groupBroker;
+    @Autowired
+    private GroupBroker groupBroker;
 
     @Autowired
     private GroupLogRepository groupLogRepository;
 
     @Autowired
     private GeoLocationBroker geoLocationBroker;
+
+    @Autowired
+    private EntityManager entityManager;
 
     /*
     Helper functions to mask a list of entities
@@ -119,7 +124,7 @@ public class AdminManager implements AdminService {
 
     /**
      * SECTION: METHODS TO HANDLE GROUPS
-     * */
+     */
 
     @Override
     public Long countActiveGroups() {
@@ -143,12 +148,12 @@ public class AdminManager implements AdminService {
         groupLogRepository.save(new GroupLog(group, user, GroupLogType.GROUP_REMOVED, null, "Deactivated by system admin"));
     }
 
-	@Override
-	@Transactional
-	public void addMemberToGroup(String adminUserUid, String groupUid, MembershipInfo membershipInfo) {
+    @Override
+    @Transactional
+    public void addMemberToGroup(String adminUserUid, String groupUid, MembershipInfo membershipInfo) {
         validateAdminRole(adminUserUid);
         groupBroker.addMembers(adminUserUid, groupUid, Collections.singleton(membershipInfo), true);
-	}
+    }
 
     @Override
     public void removeMemberFromGroup(String adminUserUid, String groupUid, String memberMsisdn) {
@@ -198,17 +203,52 @@ public class AdminManager implements AdminService {
 
     @Override
     public Long countAllLogBooks() {
-        return logBookRepository.count();
+        return todoRepository.count();
     }
 
     @Override
     public Long countLogBooksRecordedInInterval(LocalDateTime start, LocalDateTime end) {
-        return logBookRepository.countByCreatedDateTimeBetween(start.toInstant(ZoneOffset.UTC),
-                                                               end.toInstant(ZoneOffset.UTC));
+        return todoRepository.countByCreatedDateTimeBetween(start.toInstant(ZoneOffset.UTC),
+                end.toInstant(ZoneOffset.UTC));
     }
 
-	/**
-	 * SECTION : Methods to analyze use stats
+    @Override
+    public List<KeywordDTO> getKeywordStats() {
+
+        List keywords = entityManager.createNativeQuery("SELECT word as keyword, group_name_count, meeting_name_count, " +
+                "vote_name_count," +
+                " todo_count, nentry " +
+                " as total_occurence FROM ts_stat(\'SELECT to_tsvector(keyword)  FROM (SELECT g.name as keyword FROM " +
+                "group_profile " +
+                "g where g.created_date_time > " +
+                "CURRENT_DATE - INTERVAL \'\'3 months\'\'UNION ALL  SELECT e.name FROM event e " +
+                "where e.created_date_time > CURRENT_DATE - INTERVAL \'\'3 months\'\' UNION ALL Select t.message " +
+                "from log_book t where t.created_date_time > CURRENT_DATE - INTERVAL \'\'3 months\'\') as keywords\')" +
+                "left outer join (select word as group_name,nentry as group_name_count " +
+                "FROM ts_stat(\'SELECT to_tsvector(keyword) FROM (SELECT g.name as keyword " +
+                " FROM group_profile g where g.created_date_time > CURRENT_DATE - INTERVAL \'\'3 months\'\')  as keywords\'))" +
+                " as groups on(word=group_name) left outer join (select word as meeting_name,nentry as meeting_name_count" +
+                " FROM ts_stat(\'SELECT to_tsvector(keyword) " +
+                "  FROM ( SELECT e.name as keyword  FROM event e where e.created_date_time > CURRENT_DATE - INTERVAL \'\'3 months\'\'  and e.type=\'\'MEETING\'\' )" +
+                " as keywords\')) " +
+                "as meetings on(word=meeting_name)" +
+                "left outer join (select word as vote_name,nentry as vote_name_count" +
+                " FROM ts_stat(\'SELECT to_tsvector(keyword) " +
+                "  FROM ( SELECT e.name as keyword  FROM event e where e.created_date_time > CURRENT_DATE - INTERVAL \'\'3 months\'\' and e.type=\'\'VOTE\'\' )" +
+                " as keywords\')) " +
+                "as votes on(word=vote_name)" +
+                " left outer join (select word as action_name,nentry  as todo_count FROM ts_stat(\'SELECT to_tsvector(keyword)" +
+                " from(select t.message as keyword from log_book t " +
+                "where t.created_date_time > CURRENT_DATE - INTERVAL \'\'3 months\'\') " +
+                " as keywords\')) as todos on(word=action_name) " +
+                "ORDER BY total_occurence DESC, word limit 50", KeywordDTO.class)
+                .getResultList();
+
+        return keywords;
+    }
+
+    /**
+     * SECTION : Methods to analyze use stats
      */
 
     @Override

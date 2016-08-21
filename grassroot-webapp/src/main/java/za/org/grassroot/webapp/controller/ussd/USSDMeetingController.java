@@ -15,7 +15,6 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.integration.domain.SeloParseDateTimeFailure;
-import za.org.grassroot.language.DateTimeParseFailure;
 import za.org.grassroot.services.EventLogBroker;
 import za.org.grassroot.services.EventRequestBroker;
 import za.org.grassroot.services.MembershipInfo;
@@ -141,7 +140,7 @@ public class USSDMeetingController extends USSDController {
     @ResponseBody
     public Request newGroup(@RequestParam(value = phoneNumber, required = true) String inputNumber) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber, meetingMenus + newGroupMenu);
-        return menuBuilder(ussdGroupUtil.createGroupPrompt(user, thisSection, "groupName"));
+        return menuBuilder(ussdGroupUtil.createGroupPrompt(user, thisSection, groupName));
     }
 
 
@@ -152,7 +151,7 @@ public class USSDMeetingController extends USSDController {
                          ) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
         if (!USSDGroupUtil.isValidGroupName(userResponse) ){
-          return  menuBuilder(ussdGroupUtil.invalidGroupNamePrompt(user, userResponse, thisSection, newGroupMenu));
+          return  menuBuilder(ussdGroupUtil.invalidGroupNamePrompt(user, userResponse, thisSection, groupName));
         } else {
             Set<MembershipInfo> members = Sets.newHashSet(new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName()));
             Group group = groupBroker.create(user.getUid(), userResponse, null, members, GroupPermissionTemplate.DEFAULT_GROUP, null, null, true);
@@ -314,10 +313,10 @@ public class USSDMeetingController extends USSDController {
                                   @RequestParam(value = userInputParam, required = false) String userInput,
                                   @RequestParam(value = "interrupted", required = false) boolean interrupted) throws URISyntaxException {
 
-        // todo: handle error if date parser finds nothing (e.g., user made a mistake and entered "J" or similar)
 
         User user = userManager.findByInputNumber(inputNumber, saveMeetingMenu(confirmMenu, mtgRequestUid, false));
         boolean isTimePast = false;
+
 
         if (!interrupted) {
             try {

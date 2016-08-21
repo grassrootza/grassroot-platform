@@ -9,7 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.LogBook;
+import za.org.grassroot.core.domain.Todo;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.TaskType;
@@ -118,8 +118,8 @@ public class TaskRestController {
 			    users = event.getAssignedMembers();
 			    break;
 		    case TODO:
-			    LogBook logBook = todoBroker.load(taskUid);
-			    users = logBook.getAssignedMembers();
+			    Todo todo = todoBroker.load(taskUid);
+			    users = todo.getAssignedMembers();
 			    break;
 		    default:
 			    throw new UnsupportedOperationException("Error! Trying to fetch assigned members for unknown task type");

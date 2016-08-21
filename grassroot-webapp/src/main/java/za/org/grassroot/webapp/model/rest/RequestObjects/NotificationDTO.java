@@ -3,10 +3,11 @@ package za.org.grassroot.webapp.model.rest.RequestObjects;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.collect.Sets;
 import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.LogBook;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.Task;
-import za.org.grassroot.core.domain.notification.*;
+import za.org.grassroot.core.domain.Todo;
+import za.org.grassroot.core.domain.notification.EventNotification;
+import za.org.grassroot.core.domain.notification.TodoNotification;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -67,9 +68,9 @@ public class NotificationDTO {
         if (notification instanceof EventNotification) {
             Event event = ((EventNotification) notification).getEvent();
             return new NotificationDTO(notification, event);
-        } else if(notification instanceof LogBookNotification){
-            LogBook logBook = ((LogBookNotification) notification).getLogBook();
-            return new NotificationDTO(notification,logBook);
+        } else if(notification instanceof TodoNotification){
+            Todo todo = ((TodoNotification) notification).getTodo();
+            return new NotificationDTO(notification,todo);
         } else {
             throw new IllegalArgumentException("Error! Notification DTO called on unsupported notification type");
         }
@@ -101,17 +102,17 @@ public class NotificationDTO {
         this.changeType = notification.getEventLog().getEventLogType().toString();
     }
 
-    public NotificationDTO(Notification notification, LogBook logBook){
-        this(notification, (Task) logBook);
+    public NotificationDTO(Notification notification, Todo todo){
+        this(notification, (Task) todo);
 
-        this.entityUid = logBook.getUid();
-        this.deadlineDateTime = convertInstantToStringISO(logBook.getDeadlineTime());
+        this.entityUid = todo.getUid();
+        this.deadlineDateTime = convertInstantToStringISO(todo.getDeadlineTime());
 
-        final String originalMessage = (notification.getMessage() != null) ? notification.getMessage() : notification.getLogBookLog().getMessage();
+        final String originalMessage = (notification.getMessage() != null) ? notification.getMessage() : notification.getTodoLog().getMessage();
         this.message = stripDialSuffix(stripTitleFromMessage(title, originalMessage));
 
         this.entityType = TaskType.TODO.toString();
-        this.changeType = notification.getLogBookLog().getType().toString();
+        this.changeType = notification.getTodoLog().getType().toString();
     }
 
     private String convertInstantToStringISO(Instant instant) {

@@ -82,15 +82,15 @@ public class USSDHomeController extends USSDController {
     private static final Map<USSDSection, String[]> openingMenuOptions = Collections.unmodifiableMap(Stream.of(
             new SimpleEntry<>(MEETINGS, new String[]{meetingMenus + startMenu, openingMenuKey + mtgKey}),
             new SimpleEntry<>(VOTES, new String[]{voteMenus + startMenu, openingMenuKey + voteKey}),
-            new SimpleEntry<>(LOGBOOK, new String[]{logMenus + startMenu, openingMenuKey + logKey}),
+            new SimpleEntry<>(TODO, new String[]{todoMenus + startMenu, openingMenuKey + logKey}),
             new SimpleEntry<>(GROUP_MANAGER, new String[]{groupMenus + startMenu, openingMenuKey + groupKey}),
             new SimpleEntry<>(USER_PROFILE, new String[]{userMenus + startMenu, openingMenuKey + userKey})).
             collect(Collectors.toMap((e) -> e.getKey(), (e) -> e.getValue())));
 
     private static final List<USSDSection> openingSequenceWithGroups = Arrays.asList(
-            MEETINGS, VOTES, LOGBOOK, GROUP_MANAGER, USER_PROFILE);
+            MEETINGS, VOTES, TODO, GROUP_MANAGER, USER_PROFILE);
     private static final List<USSDSection> openingSequenceWithoutGroups = Arrays.asList(
-            USER_PROFILE, GROUP_MANAGER, MEETINGS, VOTES, LOGBOOK);
+            USER_PROFILE, GROUP_MANAGER, MEETINGS, VOTES, TODO);
 
     private static final long daysPastLogbooks = 5; // just check for logbooks that crossed deadline in last ~week
 
@@ -334,18 +334,18 @@ public class USSDHomeController extends USSDController {
 
     private USSDMenu assembleLogBookMenu(User user) {
         log.info("User has an incomplete logbook needing a response!");
-        LogBook logBook = todoBroker.fetchLogBookForUserResponse(user.getUid(), daysPastLogbooks, false);
+        Todo todo = todoBroker.fetchLogBookForUserResponse(user.getUid(), daysPastLogbooks, false);
 
-        if (logBook == null) {
+        if (todo == null) {
             log.info("For some reason, should have found a logbook to respond to, but didnt, user = {}", user);
             return welcomeMenu(getMessage(thisSection, startMenu, promptKey, user), user);
         } else {
             String[] promptFields = new String[]{
-                    logBook.getParent().getName(),
-                    logBook.getMessage(),
-                    logBook.getActionByDateAtSAST().format(dateFormat)};
+                    todo.getParent().getName(),
+                    todo.getMessage(),
+                    todo.getActionByDateAtSAST().format(dateFormat)};
             String prompt = getMessage(thisSection, startMenu, promptKey + ".logbook", promptFields, user);
-            String completeUri = "log-complete" + entityUidUrlSuffix + logBook.getUid();
+            String completeUri = "log-complete" + entityUidUrlSuffix + todo.getUid();
             USSDMenu menu = new USSDMenu(prompt);
             menu.addMenuOptions(new LinkedHashMap<>(optionsYesNo(user, completeUri, completeUri)));
             menu.addMenuOption(completeUri + "&confirmed=unknown",

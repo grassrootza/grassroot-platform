@@ -10,6 +10,7 @@ import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
+import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 
 import java.time.format.DateTimeFormatter;
@@ -48,7 +49,7 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.createMeeting(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP,
                                            testEventTitle, testDateTime, testEventLocation, false, true, false,
-                                           EventReminderType.GROUP_CONFIGURED, -1, testEventDescription, membersToAdd))
+                                           EventReminderType.GROUP_CONFIGURED, -1, testEventDescription, membersToAdd, MeetingImportance.ORDINARY))
                 .thenReturn(meetingEvent);
 
         mockMvc.perform(post(path + "/create/{phoneNumber}/{code}/{parentUid}", testUserPhone, testUserCode, testGroup.getUid())
@@ -62,7 +63,7 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
         verify(eventBrokerMock).createMeeting(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP,
                                               testEventTitle, testDateTime, testEventLocation, false, true, false,
-                                              EventReminderType.GROUP_CONFIGURED, -1, testEventDescription, membersToAdd);
+                                              EventReminderType.GROUP_CONFIGURED, -1, testEventDescription, membersToAdd, MeetingImportance.ORDINARY);
     }
 
     @Test

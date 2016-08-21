@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "group_profile") // quoting table name in case "group" is a reserved keyword
-public class Group implements LogBookContainer, VoteContainer, MeetingContainer, Serializable, Comparable<Group> {
+public class Group implements TodoContainer, VoteContainer, MeetingContainer, Serializable, Comparable<Group> {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
@@ -98,14 +98,14 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
     private String description;
 
     @OneToMany(mappedBy = "parentGroup")
-    private Set<LogBook> logBooks = new HashSet<>();
+    private Set<Todo> todos = new HashSet<>();
 
 	/**
      * These are all descendant logbooks contained maybe in other non-group entities beneath this group.
      * This does not include logbooks under subgroups!!!
      */
     @OneToMany(mappedBy = "ancestorGroup")
-    private Set<LogBook> descendantLogBooks = new HashSet<>();
+    private Set<Todo> descendantTodos = new HashSet<>();
 
     @OneToMany(mappedBy = "parentGroup")
     private Set<Event> events = new HashSet<>();
@@ -543,12 +543,11 @@ public class Group implements LogBookContainer, VoteContainer, MeetingContainer,
         return JpaEntityType.GROUP;
     }
 
-    @Override
-    public Set<LogBook> getLogBooks() {
-        if (logBooks == null) {
-            logBooks = new HashSet<>();
+    public Set<Todo> getTodos() {
+        if (todos == null) {
+            todos = new HashSet<>();
         }
-        return logBooks;
+        return todos;
     }
 
     @Override

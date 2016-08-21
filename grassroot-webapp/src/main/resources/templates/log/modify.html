@@ -15,7 +15,7 @@
   <div layout:fragment="messages"></div>
   <div class="well">
 
-    <form th:object="${logBook}" th:action="@{/log/modify}" method="post" autocomplete="off" class="form-horizontal">
+    <form th:object="${todo}" th:action="@{/log/modify}" method="post" autocomplete="off" class="form-horizontal">
       <input type="hidden" th:field="*{id}" th:value="*{id}" />
       <div class="form-group">
         <label for="group" class="col-md-2 control-label">Group: </label>
@@ -50,7 +50,7 @@
         <div class="col-md-4" id="remindertime">
           <p th:each="entry : ${reminderTimeOptions}">
             <input type="radio" th:field="*{reminderMinutes}" th:value="${entry.getKey()}"
-                   th:selected="${logBook.reminderMinutes == entry.getKey()}"/><span th:text="${entry.getValue()}"></span>
+                   th:selected="${todo.reminderMinutes == entry.getKey()}"/><span th:text="${entry.getValue()}"></span>
           </p>
           <!-- <p><input type="radio" th:field="*{reminderMinutes}" value="-60"/>On due date</p>
           <p><input type="radio" th:field="*{reminderMinutes}" value="-1440"/>One day before</p>
@@ -97,7 +97,7 @@
 
     $(document).ready(function() {
 
-      var defTime = new Date(/*[[${logBook.actionByDate}]]*/);
+      var defTime = new Date(/*[[${todo.actionByDate}]]*/);
 
       $('#datepicker').datetimepicker({
         format: 'DD/MM/YYYY h:mm A',

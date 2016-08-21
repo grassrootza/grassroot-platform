@@ -54,7 +54,7 @@ public class ScheduledTasks {
     private MeetingRepository meetingRepository;
 
     @Autowired
-    private LogBookRepository logBookRepository;
+    private TodoRepository todoRepository;
 
     @Autowired
     private GeoLocationBroker geoLocationBroker;
@@ -155,16 +155,16 @@ public class ScheduledTasks {
     // @Transactional
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendTodoReminders() {
-        List<LogBook> logBooks = logBookRepository.findAllLogBooksForReminding();
-        if (!logBooks.isEmpty()) {
-            logger.info("Sending scheduled reminders for {} logbooks", logBooks.size());
+        List<Todo> todos = todoRepository.findAllLogBooksForReminding();
+        if (!todos.isEmpty()) {
+            logger.info("Sending scheduled reminders for {} logbooks", todos.size());
         }
 
-        for (LogBook logBook : logBooks) {
+        for (Todo todo : todos) {
             try {
-                todoBroker.sendScheduledReminder(logBook.getUid());
+                todoBroker.sendScheduledReminder(todo.getUid());
             } catch (Throwable th) {
-                logger.error("Error while sending reminder for logger book " + logBook + ": " + th.getMessage(), th);
+                logger.error("Error while sending reminder for logger book " + todo + ": " + th.getMessage(), th);
             }
         }
     }

@@ -10,7 +10,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.ServletRequestDataBinder;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.JpaEntityType;
-import za.org.grassroot.core.domain.LogBook;
+import za.org.grassroot.core.domain.Todo;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.TaskType;
@@ -63,11 +63,11 @@ public class TodoRestController {
                                                        @PathVariable("code") String code, @PathVariable("id") String id) {
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
-        LogBook logBook = todoBroker.load(id);
+        Todo todo = todoBroker.load(id);
 
         ResponseWrapper responseWrapper;
         // todo : rather check for whether user has set this completed
-        if (!logBook.isCompleted()){
+        if (!todo.isCompleted()){
             todoBroker.confirmCompletion(user.getUid(), id, LocalDateTime.now()); // todo: watch timezones on this
             TaskDTO updatedTask = taskBroker.load(user.getUid(), id, TaskType.TODO);
             return RestUtil.okayResponseWithData(RestMessage.TODO_SET_COMPLETED, Collections.singletonList(updatedTask));
@@ -80,17 +80,17 @@ public class TodoRestController {
     public ResponseEntity<ResponseWrapper> getAssignedMemberList(String phoneNumber, String code,@PathVariable("uid") String uid){
 
         User callingUser = userManagementService.findByInputNumber(phoneNumber);
-        LogBook logBook = todoBroker.load(uid);
+        Todo todo = todoBroker.load(uid);
 
-        if (!logBook.getAssignedMembers().contains(callingUser)) {
+        if (!todo.getAssignedMembers().contains(callingUser)) {
             try {
-                permissionBroker.validateGroupPermission(callingUser, logBook.getAncestorGroup(), null); // i.e., not in ancestor group ... but maybe change in future
+                permissionBroker.validateGroupPermission(callingUser, todo.getAncestorGroup(), null); // i.e., not in ancestor group ... but maybe change in future
             } catch (AccessDeniedException e) {
                 return RestUtil.accessDeniedResponse();
             }
         }
 
-        Set<User> users = logBook.isAllGroupMembersAssigned() ? new HashSet<>() : logBook.getAssignedMembers();
+        Set<User> users = todo.isAllGroupMembersAssigned() ? new HashSet<>() : todo.getAssignedMembers();
         List<MembershipResponseWrapper> assignedMembers = new ArrayList<>();
         for(User user: users) {
             assignedMembers.add(new MembershipResponseWrapper(user));
@@ -116,7 +116,7 @@ public class TodoRestController {
 
         // todo : handle negative reminderMinutes
         try {
-            LogBook lb = todoBroker.create(user.getUid(), JpaEntityType.GROUP, parentUid, title, dueDate, reminderMinutes,
+            Todo lb = todoBroker.create(user.getUid(), JpaEntityType.GROUP, parentUid, title, dueDate, reminderMinutes,
                     false, assignedMemberUids);
             TaskDTO createdTask = taskBroker.load(user.getUid(), lb.getUid(), TaskType.TODO);
             return RestUtil.okayResponseWithData(RestMessage.TODO_CREATED, Collections.singletonList(createdTask));

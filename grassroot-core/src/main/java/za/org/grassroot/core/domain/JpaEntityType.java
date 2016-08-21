@@ -4,5 +4,5 @@ public enum JpaEntityType {
 	GROUP,
 	MEETING,
 	VOTE,
-	LOGBOOK
+	TODO
 }

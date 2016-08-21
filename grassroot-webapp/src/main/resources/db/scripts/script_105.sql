@@ -1,4 +1,4 @@
-﻿UPDATE event_log SET message = 'YES' WHERE message = 'Yes';
+UPDATE event_log SET message = 'YES' WHERE message = 'Yes';
 UPDATE event_log SET message = 'NO' where message = 'No';
 UPDATE event_log SET message = 'MAYBE' where message = 'Maybe';
 UPDATE event_log SET message = 'INVALID_RESPONSE' where message = 'Invalid RSVP';

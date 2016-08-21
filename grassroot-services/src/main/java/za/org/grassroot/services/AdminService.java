@@ -1,6 +1,7 @@
 package za.org.grassroot.services;
 
 import org.springframework.security.access.prepost.PreAuthorize;
+import za.org.grassroot.core.dto.KeywordDTO;
 import za.org.grassroot.core.dto.MaskedUserDTO;
 import za.org.grassroot.core.enums.EventType;
 
@@ -63,12 +64,14 @@ public interface AdminService {
     int countEventsCreatedInInterval(LocalDateTime start, LocalDateTime end, EventType eventType);
 
     /*
-    Methods to analyze LogBook entries (to add masks)
+    Methods to analyze Todo entries (to add masks)
      */
 
     Long countAllLogBooks();
 
     Long countLogBooksRecordedInInterval(LocalDateTime start, LocalDateTime end);
+
+    List<KeywordDTO> getKeywordStats();
 
     /*
     Methods for closer analysis of user sessions etc

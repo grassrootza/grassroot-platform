@@ -83,7 +83,7 @@ public class USSDGroupUtil extends USSDUtil {
     private static final Map<USSDSection, Permission> SectionPermissionMap = ImmutableMap.of(
             USSDSection.MEETINGS, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING,
             USSDSection.VOTES, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE,
-            USSDSection.LOGBOOK, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
+            USSDSection.TODO, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
 
     /**
      * SECTION 1: menus to ask a user to pick a group, including via pagination
@@ -360,9 +360,9 @@ public class USSDGroupUtil extends USSDUtil {
                 nextUrl = "vote/time" + USSDUrlUtil.entityUidUrlSuffix + requestUid;
                 menu = new USSDMenu(getMessage(section, "issue", promptKey + ".skipped", group.getDisplayName(""), user), nextUrl);
                 break;
-            case LOGBOOK:
+            case TODO:
                 String logBookUid = todoRequestBroker.create(user.getUid(), group.getUid()).getUid();
-                cacheManager.putUssdMenuForUser(user.getPhoneNumber(), saveLogMenu(subjectMenu, logBookUid));
+                cacheManager.putUssdMenuForUser(user.getPhoneNumber(), saveToDoMenu(subjectMenu, logBookUid));
                 nextUrl = "log/due_date" + USSDUrlUtil.logbookIdUrlSuffix + logBookUid;
                 menu = new USSDMenu(getMessage(section, subjectMenu, promptKey + ".skipped", group.getDisplayName(""), user), nextUrl);
                 break;
@@ -467,7 +467,7 @@ public class USSDGroupUtil extends USSDUtil {
     }
 
     private boolean hasOpenJoinRequests(User user) {
-        return groupJoinRequestService.getOpenRequestsForUser(user.getUid()).size() > 0;
+        return !groupJoinRequestService.getOpenRequestsForUser(user.getUid()).isEmpty();
     }
 
 

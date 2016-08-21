@@ -123,21 +123,21 @@ public class USSDUrlUtil {
         return USSDSection.VOTES.toPath() + menu + "?entityUid=" + requestUid + setRevisingFlag;
     }
 
-    public static String saveLogMenu(String menu, String logBookUid) {
-        return USSDSection.LOGBOOK.toPath() + menu + "?logbookUid=" + logBookUid + setInterruptedFlag;
+    public static String saveToDoMenu(String menu, String logBookUid) {
+        return USSDSection.TODO.toPath() + menu + "?logbookUid=" + logBookUid + setInterruptedFlag;
     }
 
-    public static String saveLogMenu(String menu, String logBookUid, String priorInput) {
-        return saveLogMenu(menu, logBookUid) + addInterruptedInput + encodeParameter(priorInput);
+    public static String saveToDoMenu(String menu, String logBookUid, String priorInput) {
+        return saveToDoMenu(menu, logBookUid) + addInterruptedInput + encodeParameter(priorInput);
     }
 
     // todo: use this above, or figure out a more elegant way around it
-    public static String saveLogMenu(String menu, String logBookUid, String priorInput, boolean encodeInput) {
-        return saveLogMenu(menu, logBookUid) + addInterruptedInput + (encodeInput ? encodeParameter(priorInput) : priorInput);
+    public static String saveToDoMenu(String menu, String logBookUid, String priorInput, boolean encodeInput) {
+        return saveToDoMenu(menu, logBookUid) + addInterruptedInput + (encodeInput ? encodeParameter(priorInput) : priorInput);
     }
 
-    public static String saveLogMenu(String menu, String logBookUid, String previousMenu, String priorInput, boolean encodeInput) {
-        return saveLogMenu(menu, logBookUid, priorInput, encodeInput) + "&prior_menu=" + previousMenu;
+    public static String saveToDoMenu(String menu, String logBookUid, String previousMenu, String priorInput, boolean encodeInput) {
+        return saveToDoMenu(menu, logBookUid, priorInput, encodeInput) + "&prior_menu=" + previousMenu;
 
     }
 
@@ -172,7 +172,7 @@ public class USSDUrlUtil {
     }
 
     public static String logViewExistingUrl(String menu, String groupUid, Boolean done, Integer pageNumber) {
-        return USSDSection.LOGBOOK.toPath() + menu + "?groupUid=" + groupUid + "&done=" + done + "&pageNumber=" + pageNumber;
+        return USSDSection.TODO.toPath() + menu + "?groupUid=" + groupUid + "&done=" + done + "&pageNumber=" + pageNumber;
     }
 
     public static String approveRejectRequestMenuUrl(String menu, String userUid, String requestUid) {

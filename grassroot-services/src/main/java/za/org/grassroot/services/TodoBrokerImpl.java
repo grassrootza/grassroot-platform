@@ -11,11 +11,11 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.notification.LogBookInfoNotification;
-import za.org.grassroot.core.domain.notification.LogBookReminderNotification;
-import za.org.grassroot.core.enums.LogBookLogType;
+import za.org.grassroot.core.domain.notification.TodoInfoNotification;
+import za.org.grassroot.core.domain.notification.TodoReminderNotification;
+import za.org.grassroot.core.enums.TodoLogType;
 import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.repository.LogBookRepository;
+import za.org.grassroot.core.repository.TodoRepository;
 import za.org.grassroot.core.repository.UidIdentifiableRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -49,7 +49,7 @@ public class TodoBrokerImpl implements TodoBroker {
 	@Autowired
 	private GroupRepository groupRepository;
 	@Autowired
-	private LogBookRepository logBookRepository;
+	private TodoRepository todoRepository;
 	@Autowired
 	private MessageAssemblingService messageAssemblingService;
 	@Autowired
@@ -58,19 +58,19 @@ public class TodoBrokerImpl implements TodoBroker {
 	private PermissionBroker permissionBroker;
 
 	@Override
-	public LogBook load(String logBookUid) {
-		return logBookRepository.findOneByUid(logBookUid);
+	public Todo load(String logBookUid) {
+		return todoRepository.findOneByUid(logBookUid);
 	}
 
 	@Override
-	public LogBook update(LogBook todo) {
-		return logBookRepository.save(todo);
+	public Todo update(Todo todo) {
+		return todoRepository.save(todo);
 	}
 
 	@Override
 	@Transactional
-	public LogBook create(String userUid, JpaEntityType parentType, String parentUid, String message, LocalDateTime actionByDate, int reminderMinutes,
-						  boolean replicateToSubgroups, Set<String> assignedMemberUids) {
+	public Todo create(String userUid, JpaEntityType parentType, String parentUid, String message, LocalDateTime actionByDate, int reminderMinutes,
+					   boolean replicateToSubgroups, Set<String> assignedMemberUids) {
 
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(parentType);
@@ -80,7 +80,7 @@ public class TodoBrokerImpl implements TodoBroker {
 		Objects.requireNonNull(assignedMemberUids);
 
 		User user = userRepository.findOneByUid(userUid);
-		LogBookContainer parent = uidIdentifiableRepository.findOneByUid(LogBookContainer.class, parentType, parentUid);
+		TodoContainer parent = uidIdentifiableRepository.findOneByUid(TodoContainer.class, parentType, parentUid);
 
 		logger.info("Creating new log book: userUid={}, parentType={}, parentUid={}, message={}, actionByDate={}, reminderMinutes={}, assignedMemberUids={}, replicateToSubgroups={}",
 				userUid, parentType, parentUid, message, actionByDate, reminderMinutes, assignedMemberUids, replicateToSubgroups);
@@ -91,51 +91,51 @@ public class TodoBrokerImpl implements TodoBroker {
 			throw new EventStartTimeNotInFutureException("Error! Attempt to create todo with due date in the past");
 		}
 
-		LogBook logBook = new LogBook(user, parent, message, convertedActionByDate, reminderMinutes, null, defaultReminders);
+		Todo todo = new Todo(user, parent, message, convertedActionByDate, reminderMinutes, null, defaultReminders);
 
 		if (!assignedMemberUids.isEmpty()) {
 			assignedMemberUids.add(userUid);
 		}
 
-		logBook.assignMembers(assignedMemberUids);
-		logBook = logBookRepository.save(logBook);
+		todo.assignMembers(assignedMemberUids);
+		todo = todoRepository.save(todo);
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-		LogBookLog logBookLog = new LogBookLog(LogBookLogType.CREATED, user, logBook, null);
-		bundle.addLog(logBookLog);
+		TodoLog todoLog = new TodoLog(TodoLogType.CREATED, user, todo, null);
+		bundle.addLog(todoLog);
 
-		Set<Notification> notifications = constructLogBookRecordedNotifications(logBook, logBookLog);
+		Set<Notification> notifications = constructLogBookRecordedNotifications(todo, todoLog);
 		bundle.addNotifications(notifications);
 
 		logsAndNotificationsBroker.storeBundle(bundle);
 
 		// replication means this could get _very_ expensive, so we probably want to move this to async once it starts being used
 		if (replicateToSubgroups && parent.getJpaEntityType().equals(JpaEntityType.GROUP)) {
-			replicateLogBookToSubgroups(user, logBook, actionByDate);
+			replicateLogBookToSubgroups(user, todo, actionByDate);
 		}
 
-		return logBook;
+		return todo;
 	}
 
-	private Set<Notification> constructLogBookRecordedNotifications(LogBook logBook, LogBookLog logBookLog) {
+	private Set<Notification> constructLogBookRecordedNotifications(Todo todo, TodoLog todoLog) {
 		Set<Notification> notifications = new HashSet<>();
 		// the "recorded" notification gets sent to all users in parent, not just assigned (to re-evaluate in future)
-		for (User member : logBook.getParent().getMembers()) {
-			String message = messageAssemblingService.createLogBookInfoNotificationMessage(member, logBook);
-			Notification notification = new LogBookInfoNotification(member, message, logBookLog);
+		for (User member : todo.getParent().getMembers()) {
+			String message = messageAssemblingService.createLogBookInfoNotificationMessage(member, todo);
+			Notification notification = new TodoInfoNotification(member, message, todoLog);
 			notifications.add(notification);
 		}
 		return notifications;
 	}
 
-	private void replicateLogBookToSubgroups(User user, LogBook logBook, LocalDateTime actionByDate) {
-		Group group = logBook.getAncestorGroup();
+	private void replicateLogBookToSubgroups(User user, Todo todo, LocalDateTime actionByDate) {
+		Group group = todo.getAncestorGroup();
 		// note: getGroupAndSubGroups is a much faster method (a recursive query) than getSubGroups, hence use it and just skip parent
 		List<Group> groupAndSubGroups = groupRepository.findGroupAndSubGroupsById(group.getId());
 		for (Group subGroup : groupAndSubGroups) {
 			if (!group.equals(subGroup)) {
-				create(user.getUid(), JpaEntityType.GROUP, subGroup.getUid(), logBook.getMessage(), actionByDate,
-					   logBook.getReminderMinutes(), true, new HashSet<>());
+				create(user.getUid(), JpaEntityType.GROUP, subGroup.getUid(), todo.getMessage(), actionByDate,
+					   todo.getReminderMinutes(), true, new HashSet<>());
 			}
 		}
 	}
@@ -146,9 +146,9 @@ public class TodoBrokerImpl implements TodoBroker {
 		Objects.requireNonNull(logBookUid);
 
 		User user = userRepository.findOneByUid(userUid);
-		LogBook logBook = logBookRepository.findOneByUid(logBookUid);
+		Todo todo = todoRepository.findOneByUid(logBookUid);
 
-		if (!logBook.getCreatedByUser().equals(user)) { // in future, possibly change to any assigned user, maybe
+		if (!todo.getCreatedByUser().equals(user)) { // in future, possibly change to any assigned user, maybe
 			throw new AccessDeniedException("Only user who created todo can change assignment");
 		}
 
@@ -156,7 +156,7 @@ public class TodoBrokerImpl implements TodoBroker {
 			assignMemberUids.add(userUid);
 		}
 
-		logBook.assignMembers(assignMemberUids);
+		todo.assignMembers(assignMemberUids);
 	}
 
 	@Override
@@ -165,13 +165,13 @@ public class TodoBrokerImpl implements TodoBroker {
 		Objects.requireNonNull(logBookUid);
 
 		User user = userRepository.findOneByUid(userUid);
-		LogBook logBook = logBookRepository.findOneByUid(logBookUid);
+		Todo todo = todoRepository.findOneByUid(logBookUid);
 
-		if (!logBook.getCreatedByUser().equals(user)) {
+		if (!todo.getCreatedByUser().equals(user)) {
 			throw new AccessDeniedException("Only user who created todo can change assignment");
 		}
 
-		logBook.removeAssignedMembers(memberUids);
+		todo.removeAssignedMembers(memberUids);
 	}
 
 	@Override
@@ -181,15 +181,15 @@ public class TodoBrokerImpl implements TodoBroker {
 		Objects.requireNonNull(logBookUid);
 
 		User user = userRepository.findOneByUid(userUid);
-		LogBook logBook = logBookRepository.findOneByUid(logBookUid);
+		Todo todo = todoRepository.findOneByUid(logBookUid);
 
-		logger.info("Confirming completion logbook={}, completion time={}, user={}", logBook, completionTime, user);
+		logger.info("Confirming completion logbook={}, completion time={}, user={}", todo, completionTime, user);
 
 		Instant completionInstant = completionTime == null ? null : convertToSystemTime(completionTime, getSAST());
-		boolean confirmationRegistered = logBook.addCompletionConfirmation(user, completionInstant);
+		boolean confirmationRegistered = todo.addCompletionConfirmation(user, completionInstant);
 		if (!confirmationRegistered) {
 			// should error be raised when member already registered completions !?
-			logger.info("Completion confirmation already exists for member {} and log book {}", user, logBook);
+			logger.info("Completion confirmation already exists for member {} and log book {}", user, todo);
 		}
 		return confirmationRegistered;
 	}
@@ -200,28 +200,28 @@ public class TodoBrokerImpl implements TodoBroker {
 	public void sendScheduledReminder(String logBookUid) {
 		Objects.requireNonNull(logBookUid);
 
-		LogBook logBook = logBookRepository.findOneByUid(logBookUid);
+		Todo todo = todoRepository.findOneByUid(logBookUid);
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-		LogBookLog logBookLog = new LogBookLog(LogBookLogType.REMINDER_SENT, null, logBook, null);
+		TodoLog todoLog = new TodoLog(TodoLogType.REMINDER_SENT, null, todo, null);
 
-		Set<User> members = logBook.isAllGroupMembersAssigned() ? logBook.getAncestorGroup().getMembers() : logBook.getAssignedMembers();
+		Set<User> members = todo.isAllGroupMembersAssigned() ? todo.getAncestorGroup().getMembers() : todo.getAssignedMembers();
 		for (User member : members) {
-			String message = messageAssemblingService.createLogBookReminderMessage(member, logBook);
-			Notification notification = new LogBookReminderNotification(member, message, logBookLog);
+			String message = messageAssemblingService.createLogBookReminderMessage(member, todo);
+			Notification notification = new TodoReminderNotification(member, message, todoLog);
 			bundle.addNotification(notification);
 		}
 
 		// we only want to include log if there are some notifications
 		if (!bundle.getNotifications().isEmpty()) {
-			bundle.addLog(logBookLog);
+			bundle.addLog(todoLog);
 		}
 
 		// reduce number of reminders to send and calculate new reminder minutes
-		logBook.setNumberOfRemindersLeftToSend(logBook.getNumberOfRemindersLeftToSend() - 1);
-		if (logBook.getReminderMinutes() < 0) {
-			logBook.setReminderMinutes(DateTimeUtil.numberOfMinutesForDays(7));
+		todo.setNumberOfRemindersLeftToSend(todo.getNumberOfRemindersLeftToSend() - 1);
+		if (todo.getReminderMinutes() < 0) {
+			todo.setReminderMinutes(DateTimeUtil.numberOfMinutesForDays(7));
 		} else {
-			logBook.setReminderMinutes(logBook.getReminderMinutes() + DateTimeUtil.numberOfMinutesForDays(7));
+			todo.setReminderMinutes(todo.getReminderMinutes() + DateTimeUtil.numberOfMinutesForDays(7));
 		}
 
 		logsAndNotificationsBroker.storeBundle(bundle);
@@ -229,10 +229,10 @@ public class TodoBrokerImpl implements TodoBroker {
 
 	@Override
 	@Transactional(readOnly = true)
-	public Page<LogBook> retrieveGroupLogBooks(String userUid, String groupUid, boolean entriesComplete, int pageNumber, int pageSize) {
+	public Page<Todo> retrieveGroupLogBooks(String userUid, String groupUid, boolean entriesComplete, int pageNumber, int pageSize) {
 		Objects.requireNonNull(userUid);
 
-		Page<LogBook> page;
+		Page<Todo> page;
 		Pageable pageable = new PageRequest(pageNumber, pageSize);
 		User user = userRepository.findOneByUid(userUid);
 
@@ -240,15 +240,15 @@ public class TodoBrokerImpl implements TodoBroker {
 			Group group = groupRepository.findOneByUid(groupUid);
 			permissionBroker.validateGroupPermission(user, group, null); // make sure user is part of group
 			if (entriesComplete) {
-				page = logBookRepository.findByParentGroupAndCompletionPercentageGreaterThanEqualOrderByActionByDateDesc(group, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, pageable);
+				page = todoRepository.findByParentGroupAndCompletionPercentageGreaterThanEqualOrderByActionByDateDesc(group, Todo.COMPLETION_PERCENTAGE_BOUNDARY, pageable);
 			} else {
-				page = logBookRepository.findByParentGroupAndCompletionPercentageLessThanOrderByActionByDateDesc(group, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, pageable);
+				page = todoRepository.findByParentGroupAndCompletionPercentageLessThanOrderByActionByDateDesc(group, Todo.COMPLETION_PERCENTAGE_BOUNDARY, pageable);
 			}
 		} else {
 			if (entriesComplete) {
-				page = logBookRepository.findByParentGroupMembershipsUserAndCompletionPercentageGreaterThanEqualOrderByActionByDateDesc(user, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, pageable);
+				page = todoRepository.findByParentGroupMembershipsUserAndCompletionPercentageGreaterThanEqualOrderByActionByDateDesc(user, Todo.COMPLETION_PERCENTAGE_BOUNDARY, pageable);
 			} else {
-				page = logBookRepository.findByParentGroupMembershipsUserAndCompletionPercentageLessThanOrderByActionByDateDesc(user, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, pageable);
+				page = todoRepository.findByParentGroupMembershipsUserAndCompletionPercentageLessThanOrderByActionByDateDesc(user, Todo.COMPLETION_PERCENTAGE_BOUNDARY, pageable);
 			}
 		}
 
@@ -256,22 +256,22 @@ public class TodoBrokerImpl implements TodoBroker {
 	}
 
 	@Override
-	public List<LogBook> getTodosInPeriod(Group group, LocalDateTime periodStart, LocalDateTime periodEnd) {
+	public List<Todo> getTodosInPeriod(Group group, LocalDateTime periodStart, LocalDateTime periodEnd) {
 		Sort sort = new Sort(Sort.Direction.ASC, "createdDateTime");
 		Instant start = convertToSystemTime(periodStart, getSAST());
 		Instant end = convertToSystemTime(periodEnd, getSAST());
-		return logBookRepository.findByParentGroupAndCreatedDateTimeBetween(group, start, end, sort);
+		return todoRepository.findByParentGroupAndCreatedDateTimeBetween(group, start, end, sort);
 	}
 
 	@Override
-	public List<Group> retrieveGroupsFromLogBooks(List<LogBook> logBooks) {
-		return logBooks.stream()
+	public List<Group> retrieveGroupsFromLogBooks(List<Todo> todos) {
+		return todos.stream()
 				.filter(logBook -> logBook.getParent().getJpaEntityType().equals(JpaEntityType.GROUP))
 				.map(logBook -> (Group) logBook.getParent())
 				.collect(Collectors.toList());
 	}
 
-	public List<LogBook> loadGroupLogBooks(String groupUid, boolean futureLogBooksOnly, TodoStatus status) {
+	public List<Todo> loadGroupLogBooks(String groupUid, boolean futureLogBooksOnly, TodoStatus status) {
 		Objects.requireNonNull(groupUid);
 
 		Group group = groupRepository.findOneByUid(groupUid);
@@ -279,87 +279,87 @@ public class TodoBrokerImpl implements TodoBroker {
 
 		switch (status) {
 			case COMPLETE:
-				return logBookRepository.findByParentGroupAndCompletionPercentageGreaterThanEqualAndActionByDateGreaterThan(group, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, start);
+				return todoRepository.findByParentGroupAndCompletionPercentageGreaterThanEqualAndActionByDateGreaterThan(group, Todo.COMPLETION_PERCENTAGE_BOUNDARY, start);
 			case INCOMPLETE:
-				return logBookRepository.findByParentGroupAndCompletionPercentageLessThanAndActionByDateGreaterThan(group, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, start);
+				return todoRepository.findByParentGroupAndCompletionPercentageLessThanAndActionByDateGreaterThan(group, Todo.COMPLETION_PERCENTAGE_BOUNDARY, start);
 			case BOTH:
-				return logBookRepository.findByParentGroupAndActionByDateGreaterThan(group, start);
+				return todoRepository.findByParentGroupAndActionByDateGreaterThan(group, start);
 			default:
-				return logBookRepository.findByParentGroupAndActionByDateGreaterThan(group, start);
+				return todoRepository.findByParentGroupAndActionByDateGreaterThan(group, start);
 		}
 	}
 
 	@Override
 	@Transactional(readOnly = true)
-	public LogBook fetchLogBookForUserResponse(String userUid, long daysInPast, boolean assignedLogBooksOnly) {
-		LogBook lbToReturn;
+	public Todo fetchLogBookForUserResponse(String userUid, long daysInPast, boolean assignedLogBooksOnly) {
+		Todo lbToReturn;
 		User user = userRepository.findOneByUid(userUid);
 		Instant end = Instant.now();
 		Instant start = Instant.now().minus(daysInPast, ChronoUnit.DAYS);
 		Sort sort = new Sort(Sort.Direction.ASC, "actionByDate"); // so the most overdue come up first
 
 		if (!assignedLogBooksOnly) {
-			List<LogBook> userLbs = logBookRepository.
-					findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThan(user, start, end, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, sort);
+			List<Todo> userLbs = todoRepository.
+					findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThan(user, start, end, Todo.COMPLETION_PERCENTAGE_BOUNDARY, sort);
 			lbToReturn = (userLbs.isEmpty()) ? null : userLbs.get(0);
 		} else {
-			List<LogBook> userLbs = logBookRepository.
-					findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageLessThan(user, start, end, LogBook.COMPLETION_PERCENTAGE_BOUNDARY, sort);
+			List<Todo> userLbs = todoRepository.
+					findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageLessThan(user, start, end, Todo.COMPLETION_PERCENTAGE_BOUNDARY, sort);
 			lbToReturn = (userLbs.isEmpty()) ? null : userLbs.get(0);
 		}
 		return lbToReturn;
 	}
 
 	@Override
-	public LogBook update(String userUid, String uid, String message, LocalDateTime actionByDate, int reminderMinutes, Set<String> assignedMemberUids) {
+	public Todo update(String userUid, String uid, String message, LocalDateTime actionByDate, int reminderMinutes, Set<String> assignedMemberUids) {
 
 		Instant convertedActionByDate = convertToSystemTime(actionByDate, getSAST());
-		LogBook logBook = logBookRepository.findOneByUid(uid);
+		Todo todo = todoRepository.findOneByUid(uid);
 		User user = userRepository.findOneByUid(userUid);
-		logBook.setMessage(message);
-		logBook.setActionByDate(convertedActionByDate);
-		logBook.setReminderMinutes(reminderMinutes);
+		todo.setMessage(message);
+		todo.setActionByDate(convertedActionByDate);
+		todo.setReminderMinutes(reminderMinutes);
 
 		if(assignedMemberUids !=null && !assignedMemberUids.isEmpty()){
 			assignedMemberUids.add(userUid);
-			logBook.assignMembers(assignedMemberUids);
+			todo.assignMembers(assignedMemberUids);
 		}
 
-		logBookRepository.save(logBook);
+		todoRepository.save(todo);
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-		LogBookLog logBookLog = new LogBookLog(LogBookLogType.CHANGED, user, logBook, null);
-		bundle.addLog(logBookLog);
+		TodoLog todoLog = new TodoLog(TodoLogType.CHANGED, user, todo, null);
+		bundle.addLog(todoLog);
 
-		Set<Notification> notifications = constructLogBookRecordedNotifications(logBook, logBookLog);
+		Set<Notification> notifications = constructLogBookRecordedNotifications(todo, todoLog);
 		bundle.addNotifications(notifications);
 
 		logsAndNotificationsBroker.storeBundle(bundle);
 
 
-		return logBook;
+		return todo;
 
 	}
 
 	@Override
-	public boolean hasReplicatedEntries(LogBook logBook) {
-		return logBookRepository.countReplicatedEntries(logBook.getAncestorGroup(), logBook.getMessage(), logBook.getCreatedDateTime()) != 0;
+	public boolean hasReplicatedEntries(Todo todo) {
+		return todoRepository.countReplicatedEntries(todo.getAncestorGroup(), todo.getMessage(), todo.getCreatedDateTime()) != 0;
 	}
 
 	@Override
-	public List<LogBook> getAllReplicatedEntriesFromParent(LogBook logBook) {
-		return logBookRepository.findByReplicatedGroupAndMessageAndActionByDateOrderByParentGroupIdAsc(logBook.getAncestorGroup(), logBook.getMessage(),
-				logBook.getActionByDate());
+	public List<Todo> getAllReplicatedEntriesFromParent(Todo todo) {
+		return todoRepository.findByReplicatedGroupAndMessageAndActionByDateOrderByParentGroupIdAsc(todo.getAncestorGroup(), todo.getMessage(),
+				todo.getActionByDate());
 	}
 
 	@Override
-	public LogBook getParentTodoEntry(LogBook logBook) {
-		Group parentLogBookGroup = logBook.getReplicatedGroup();
+	public Todo getParentTodoEntry(Todo todo) {
+		Group parentLogBookGroup = todo.getReplicatedGroup();
 		if (parentLogBookGroup == null) {
 			return null;
 		}
-		else return logBookRepository.findByParentGroupAndMessageAndCreatedDateTime(parentLogBookGroup, logBook.getMessage(),
-				logBook.getCreatedDateTime()).get(0);
+		else return todoRepository.findByParentGroupAndMessageAndCreatedDateTime(parentLogBookGroup, todo.getMessage(),
+				todo.getCreatedDateTime()).get(0);
 	}
 
 }
