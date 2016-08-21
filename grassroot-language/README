@@ -1,9 +1,0 @@
-This module is based on Natty, a natural language date parser written in Java.
-Natty's principal author is Joe Stelmach, and in its original form can be found
-here: http://natty.joestelmach.com.
-
-The module included here has made some changes in Natty's grammar to handle
-date and time formats by our users, the most noticeable such change being
-that days tend to precede months, rather than vice versa.
-
-The Natty license is included here as "LICENSE".

@@ -11,6 +11,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.integration.domain.SeloParseDateTimeFailure;
 import za.org.grassroot.integration.services.LearningService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.TodoBroker;
@@ -23,6 +24,7 @@ import za.org.grassroot.webapp.util.USSDUrlUtil;
 import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -472,10 +474,15 @@ public class USSDToDoController extends USSDController {
             case dueDateMenu:
                 String formattedDateString =  reformatDateInput(value);
                 LocalDateTime dueDateTime;
+                // todo : clean this up
                 try {
                     dueDateTime = DateTimeUtil.convertDateStringToLocalDateTime(formattedDateString, stdHour, stdMinute);
                 } catch (Exception e) {
-                    dueDateTime = learningService.parse(formattedDateString);
+                    try {
+                        dueDateTime = learningService.parse(formattedDateString);
+                    } catch (SeloParseDateTimeFailure t) {
+                        dueDateTime = LocalDateTime.now().plus(1, ChronoUnit.WEEKS);
+                    }
                 }
                 todoRequestBroker.updateDueDate(userUid, logBookRequestUid, dueDateTime);
                 break;

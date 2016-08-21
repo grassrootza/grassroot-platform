@@ -37,7 +37,6 @@
         <module>grassroot-core</module>
         <module>grassroot-integration</module>
         <module>grassroot-services</module>
-        <module>grassroot-language</module>
     </modules>
     <dependencies>
         <dependency>
