@@ -139,7 +139,8 @@ public class AdminManager implements AdminService {
     @Override
     public int countUsersCreatedWithAndroidProfileInPeriod(LocalDateTime start, LocalDateTime end) {
         return userRepository.
-                countByCreatedDateTimeBetweenAndHasAndroidProfile(Timestamp.valueOf(start), Timestamp.valueOf(end), true);
+                countByCreatedDateTimeBetweenAndHasAndroidProfile(convertToSystemTime(start, getSAST()),
+                        convertToSystemTime(end, getSAST()), true);
     }
 
     /**
