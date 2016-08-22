@@ -14,4 +14,7 @@ public interface PreviousPeriodUserLocationRepository extends JpaRepository<Prev
 
 	@Transactional(readOnly = true)
 	List<PreviousPeriodUserLocation> findByKeyLocalDateAndKeyUserUidIn(LocalDate localDate, Set<String> userUids);
+
+	@Transactional(readOnly = true)
+	List<PreviousPeriodUserLocation> findByKeyUserUidIn(Set<String> userUids);
 }

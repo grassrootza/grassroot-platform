@@ -70,6 +70,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     int countByCreatedDateTimeBetweenAndHasInitiatedSession(Instant start, Instant end, boolean hasInitiatedSession);
 
     int countByHasWebProfile(boolean webProfile);
+    int countByHasAndroidProfile(boolean androidProfile);
+
+    int countByCreatedDateTimeBetweenAndHasAndroidProfile(Instant start, Instant end, boolean androidProfile);
     int countByCreatedDateTimeBetweenAndHasWebProfile(Instant start, Instant end, boolean webProfile);
 
     /*

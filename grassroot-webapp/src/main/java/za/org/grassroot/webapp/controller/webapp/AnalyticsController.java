@@ -13,7 +13,13 @@ import za.org.grassroot.services.AdminService;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.Period;
+import java.time.chrono.ChronoLocalDate;
+import java.time.temporal.Temporal;
+import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -56,7 +62,7 @@ public class AnalyticsController extends BaseController {
         List<PreviousPeriodUserLocation> userLocations = new ArrayList<>();
         users = geoLocationBroker.fetchUsersWithRecordedAverageLocations(LocalDate.now());
         userLocations.addAll(
-                users.stream().map(u -> geoLocationBroker.fetchUserLocation(u.getUid(), LocalDate.now())).collect(Collectors.toList()));
+                users.stream().map(u -> geoLocationBroker.fetchUserLocation(u.getUid())).collect(Collectors.toList()));
         model.addAttribute("userLocations", userLocations);
         model.addAttribute("geoStats",geoStats);
         return "admin/analytics/geo_stats";
@@ -67,7 +73,7 @@ public class AnalyticsController extends BaseController {
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     public String viewKeywordFequency(Model model) {
 
-        List<KeywordDTO> frequentWords = adminService.getKeywordStats();
+        List<KeywordDTO> frequentWords = adminService.getKeywordStats(LocalDateTime.now().minusDays(90));
         model.addAttribute("frequentWords", frequentWords);
 
         return "admin/analytics/word_stats";

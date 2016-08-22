@@ -14,12 +14,16 @@ import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 
 import javax.persistence.EntityManager;
+import javax.persistence.TemporalType;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+
+import static java.util.Calendar.DATE;
 
 import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
 import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
@@ -109,6 +113,7 @@ public class AdminManager implements AdminService {
         return userRepository.countByHasWebProfile(true);
     }
 
+
     @Override
     public int countUsersCreatedWithWebProfileInPeriod(LocalDateTime start, LocalDateTime end) {
         return userRepository.
@@ -124,6 +129,17 @@ public class AdminManager implements AdminService {
     @Override
     public int countGroupsWithGeoLocationData() {
         return geoLocationBroker.fetchGroupsWithRecordedAverageLocations().size();
+    }
+
+    @Override
+    public int countUsersThatHaveAndroidProfile(){
+        return userRepository.countByHasAndroidProfile(true);
+    }
+
+    @Override
+    public int countUsersCreatedWithAndroidProfileInPeriod(LocalDateTime start, LocalDateTime end) {
+        return userRepository.
+                countByCreatedDateTimeBetweenAndHasAndroidProfile(Timestamp.valueOf(start), Timestamp.valueOf(end), true);
     }
 
     /**
@@ -218,34 +234,35 @@ public class AdminManager implements AdminService {
     }
 
     @Override
-    public List<KeywordDTO> getKeywordStats() {
+    public List<KeywordDTO> getKeywordStats(LocalDateTime localDate) {
 
+        Date fromDate = java.sql.Timestamp.valueOf(localDate);
         List keywords = entityManager.createNativeQuery("SELECT word as keyword, group_name_count, meeting_name_count, " +
                 "vote_name_count," +
                 " todo_count, nentry " +
                 " as total_occurence FROM ts_stat(\'SELECT to_tsvector(keyword)  FROM (SELECT g.name as keyword FROM " +
                 "group_profile " +
-                "g where g.created_date_time > " +
-                "CURRENT_DATE - INTERVAL \'\'3 months\'\'UNION ALL  SELECT e.name FROM event e " +
-                "where e.created_date_time > CURRENT_DATE - INTERVAL \'\'3 months\'\' UNION ALL Select t.message " +
-                "from log_book t where t.created_date_time > CURRENT_DATE - INTERVAL \'\'3 months\'\') as keywords\')" +
+                "g where g.created_date_time > '\'" + fromDate +
+                " \'\' UNION ALL  SELECT e.name FROM event e " +
+                "where e.created_date_time > '\'" +fromDate +"\'\' UNION ALL Select t.message " +
+                "from log_book t where t.created_date_time > '\'" +fromDate  +"\'\') as keywords\')" +
                 "left outer join (select word as group_name,nentry as group_name_count " +
                 "FROM ts_stat(\'SELECT to_tsvector(keyword) FROM (SELECT g.name as keyword " +
-                " FROM group_profile g where g.created_date_time > CURRENT_DATE - INTERVAL \'\'3 months\'\')  as keywords\'))" +
+                " FROM group_profile g where g.created_date_time > '\'" +fromDate + "\'\')as keywords\'))" +
                 " as groups on(word=group_name) left outer join (select word as meeting_name,nentry as meeting_name_count" +
                 " FROM ts_stat(\'SELECT to_tsvector(keyword) " +
-                "  FROM ( SELECT e.name as keyword  FROM event e where e.created_date_time > CURRENT_DATE - INTERVAL \'\'3 months\'\'  and e.type=\'\'MEETING\'\' )" +
+                "  FROM ( SELECT e.name as keyword  FROM event e where e.created_date_time > '\'" +fromDate+"\'\' and e.type=\'\'MEETING\'\' )" +
                 " as keywords\')) " +
                 "as meetings on(word=meeting_name)" +
                 "left outer join (select word as vote_name,nentry as vote_name_count" +
                 " FROM ts_stat(\'SELECT to_tsvector(keyword) " +
-                "  FROM ( SELECT e.name as keyword  FROM event e where e.created_date_time > CURRENT_DATE - INTERVAL \'\'3 months\'\' and e.type=\'\'VOTE\'\' )" +
+                "  FROM ( SELECT e.name as keyword  FROM event e where e.created_date_time > '\'"+fromDate + "\'\' and e.type=\'\'VOTE\'\' )" +
                 " as keywords\')) " +
                 "as votes on(word=vote_name)" +
                 " left outer join (select word as action_name,nentry  as todo_count FROM ts_stat(\'SELECT to_tsvector(keyword)" +
                 " from(select t.message as keyword from log_book t " +
-                "where t.created_date_time > CURRENT_DATE - INTERVAL \'\'3 months\'\') " +
-                " as keywords\')) as todos on(word=action_name) " +
+                "where t.created_date_time > '\'" +fromDate +
+                "\'\')as keywords\')) as todos on(word=action_name) " +
                 "ORDER BY total_occurence DESC, word limit 50", KeywordDTO.class)
                 .getResultList();
 
