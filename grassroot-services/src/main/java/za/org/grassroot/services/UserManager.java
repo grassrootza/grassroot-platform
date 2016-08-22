@@ -472,7 +472,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             // notification sending delay of 2days
             Instant sendTime = Instant.now().plus(48, ChronoUnit.HOURS);
 
-            if(sendTime.get(ChronoField.HOUR_OF_DAY) >= 21 || sendTime.get(ChronoField.CLOCK_HOUR_OF_DAY) < 8) {
+            if(sendTime.get(ChronoField.HOUR_OF_DAY) >= 21 || sendTime.get(ChronoField.HOUR_OF_DAY) < 8) {
                 if (sendTime.get(ChronoField.HOUR_OF_DAY) >= 21) {
                     long difference = sendTime.get(ChronoField.HOUR_OF_DAY) - 21;
                     sendTime = sendTime.minus(difference + 1, ChronoUnit.HOURS);
