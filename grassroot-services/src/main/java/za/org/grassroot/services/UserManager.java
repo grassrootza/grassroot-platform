@@ -33,13 +33,11 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.Temporal;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Lesetse Kimwaga
@@ -470,19 +468,20 @@ public class UserManager implements UserManagementService, UserDetailsService {
             String message = messageAssemblingService.createWelcomeMessage(welcomeMessageId, sessionUser);
             WelcomeNotification notification = new WelcomeNotification(sessionUser, message, userLog);
             // notification sending delay of 2days
-            Instant sendTime = Instant.now().plus(48, ChronoUnit.HOURS);
+            ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(Instant.now().plus(48, ChronoUnit.HOURS),TimeZone.getTimeZone("Africa/Johannesburg").toZoneId());
+            if(zonedDateTime.get(ChronoField.HOUR_OF_DAY) >= 21 || zonedDateTime.get(ChronoField.HOUR_OF_DAY) < 8) {
+                if (zonedDateTime.get(ChronoField.HOUR_OF_DAY) >= 21) {
+                    long difference = zonedDateTime.get(ChronoField.HOUR_OF_DAY) - 21;
+                    zonedDateTime = zonedDateTime.minus(difference + 1, ChronoUnit.HOURS);
 
-            if(sendTime.get(ChronoField.HOUR_OF_DAY) >= 21 || sendTime.get(ChronoField.HOUR_OF_DAY) < 8) {
-                if (sendTime.get(ChronoField.HOUR_OF_DAY) >= 21) {
-                    long difference = sendTime.get(ChronoField.HOUR_OF_DAY) - 21;
-                    sendTime = sendTime.minus(difference + 1, ChronoUnit.HOURS);
+                } else if (zonedDateTime.get(ChronoField.HOUR_OF_DAY) < 8) {
+                    long difference = 8 -  zonedDateTime.get(ChronoField.HOUR_OF_DAY);
+                    zonedDateTime = zonedDateTime.plus(difference, ChronoUnit.HOURS);
 
-                } else if (sendTime.get(ChronoField.HOUR_OF_DAY) < 8) {
-                    long difference = 8 -  sendTime.get(ChronoField.HOUR_OF_DAY);
-                    sendTime = sendTime.plus(difference, ChronoUnit.HOURS);
                 }
             }
-            notification.setNextAttemptTime(sendTime);
+            notification.setNextAttemptTime(zonedDateTime.toInstant());
+            log.info("time" + zonedDateTime.toInstant());
             bundle.addNotification(notification);
         }
 
