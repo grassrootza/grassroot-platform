@@ -20,6 +20,8 @@ public interface GeoLocationBroker {
 
 	PreviousPeriodUserLocation fetchUserLocation(String userUid, LocalDate localDate);
 
+	PreviousPeriodUserLocation fetchUserLocation(String userUid);
+
 	List<User> fetchUsersWithRecordedAverageLocations(LocalDate localDate);
 
 	GroupLocation fetchGroupLocationWithScoreAbove(String groupUid, LocalDate localDate, float score);

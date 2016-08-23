@@ -70,6 +70,7 @@ public class USSDHomeController extends USSDController {
     private static final String path = homePath;
     private static final USSDSection thisSection = HOME;
     private static final String safetyCode = "911";
+    private static final String sendMeLink = "123";
 
     private static final String rsvpMenu = "rsvp",
             renameUserMenu = "rename-start",
@@ -216,9 +217,10 @@ public class USSDHomeController extends USSDController {
         // todo: a switch logic for token ranges
 
         log.info("Processing trailing digits ..." + trailingDigits);
-
         if (isSafetyActivationCode(trailingDigits)) {
             returnMenu = assemblePanicButtonActivationMenu(sessionUser);
+        } else if (isSendMeAndroindLink(trailingDigits)) {
+            returnMenu = assembleSendMeAndroidLinkMenu(sessionUser);
         } else {
             Group groupFromJoinCode = groupBroker.findGroupFromJoinCode(trailingDigits.trim());
             if (groupFromJoinCode != null) {
@@ -399,6 +401,12 @@ public class USSDHomeController extends USSDController {
         return menu;
     }
 
+    private USSDMenu assembleSendMeAndroidLinkMenu(User user) {
+        userManager.sendAndroidLinkSms(user.getUid());
+        String message = getMessage(thisSection, "link.android", promptKey, user);
+        return new USSDMenu(message);
+    }
+
     private USSDMenu assemblePanicButtonActivationResponse(User user, SafetyEvent safetyEvent) {
 
         String activateByDisplayName = safetyEvent.getActivatedBy().getDisplayName();
@@ -413,6 +421,11 @@ public class USSDHomeController extends USSDController {
     private boolean isSafetyActivationCode(String trailingDigits) {
         return (trailingDigits.equals(safetyCode));
     }
+
+    private boolean isSendMeAndroindLink(String trailingDigits) {
+        return (trailingDigits).equals(sendMeLink);
+    }
+
 
     /*
     Menus to process responses to votes and RSVPs,

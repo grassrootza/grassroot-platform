@@ -90,6 +90,11 @@ public class AdminController extends BaseController {
         model.addAttribute("countWebLastMonth", adminService.countUsersCreatedWithWebProfileInPeriod(month, now));
         model.addAttribute("countWebTotal", adminService.countUsersThatHaveWebProfile());
 
+
+        model.addAttribute("countAndroidLastWeek", adminService.countUsersCreatedWithAndroidProfileInPeriod(week, now));
+        model.addAttribute("countAndroidLastMonth", adminService.countUsersCreatedWithAndroidProfileInPeriod(month, now));
+        model.addAttribute("countAndroidTotal", adminService.countUsersThatHaveAndroidProfile());
+
         model.addAttribute("groupsLastWeek", adminService.countGroupsCreatedInInterval(week, now));
         model.addAttribute("groupsLastMonth", adminService.countGroupsCreatedInInterval(month, now));
         model.addAttribute("groupsTotal", adminService.countActiveGroups());

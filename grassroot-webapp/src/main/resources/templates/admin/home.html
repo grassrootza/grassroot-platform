@@ -38,6 +38,7 @@
           <th>Users added</th>
           <th>Initiated USSD</th>
           <th>Created Web profile</th>
+          <th>Created Android profile</th>
           <th>Groups created</th>
           <th>Meetings called</th>
           <th>Votes called</th>
@@ -49,6 +50,7 @@
             <td><span th:text="${countLastWeek}">X</span></td>
             <td><span th:text="${countUssdLastWeek}">X</span></td>
             <td><span th:text="${countWebLastWeek}">X</span></td>
+            <td><span th:text="${countAndroidLastWeek}">X</span></td>
             <td><span th:text="${groupsLastWeek}">Z</span></td>
             <td><span th:text="${meetingsLastWeek}">Z</span></td>
             <td><span th:text="${votesLastWeek}">Z</span></td>
@@ -59,6 +61,7 @@
             <td><span th:text="${countLastMonth}">Y</span></td>
             <td><span th:text="${countUssdLastMonth}">X</span></td>
             <td><span th:text="${countWebLastMonth}">X</span></td>
+            <td><span th:text="${countAndroidLastMonth}">X</span></td>
             <td><span th:text="${groupsLastMonth}">Z</span></td>
             <td><span th:text="${meetingsLastMonth}">Z</span></td>
             <td><span th:text="${votesLastMonth}">Z</span></td>
@@ -69,6 +72,7 @@
             <td><span th:text="${userCount}">Z</span></td>
             <td><span th:text="${countUssdTotal}">X</span></td>
             <td><span th:text="${countWebTotal}">X</span></td>
+            <td><span th:text="${countAndroidTotal}">X</span></td>
             <td><span th:text="${groupsTotal}">X</span></td>
             <td><span th:text="${meetingsTotal}">X</span></td>
             <td><span th:text="${votesTotal}">X</span></td>

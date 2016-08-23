@@ -3,6 +3,7 @@ package za.org.grassroot.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.support.InstantiationStrategy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -32,11 +33,11 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.time.temporal.Temporal;
+import java.util.*;
 
 /**
  * @author Lesetse Kimwaga
@@ -254,7 +255,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             throw new AccessDeniedException("Error! Trying to resend OTP for user before creating");
         }
 
-        VerificationTokenCode newTokenCode= passwordTokenService.generateShortLivedOTP(phoneNumber);
+        VerificationTokenCode newTokenCode = passwordTokenService.generateShortLivedOTP(phoneNumber);
         return newTokenCode.getCode();
     }
 
@@ -372,10 +373,10 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public void sendAndroidLinkSms(String  userUid) {
+    public void sendAndroidLinkSms(String userUid) {
         User user = userRepository.findOneByUid(userUid);
         String message = messageAssemblingService.createAndroidLinkSms(user);
-        smsSendingService.sendSMS(message,user.getPhoneNumber());
+        smsSendingService.sendSMS(message, user.getPhoneNumber());
 
     }
 
@@ -405,7 +406,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     public boolean needsToRespondToSafetyEvent(User sessionUser) {
-        return safetyEventBroker.getOutstandingUserSafetyEventsResponse(sessionUser.getUid()) !=null;
+        return safetyEventBroker.getOutstandingUserSafetyEventsResponse(sessionUser.getUid()) != null;
 
     }
 
@@ -467,7 +468,20 @@ public class UserManager implements UserManagementService, UserDetailsService {
             String message = messageAssemblingService.createWelcomeMessage(welcomeMessageId, sessionUser);
             WelcomeNotification notification = new WelcomeNotification(sessionUser, message, userLog);
             // notification sending delay of 2days
-            notification.setNextAttemptTime(Instant.now().plus(48, ChronoUnit.HOURS));
+            ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(Instant.now().plus(48, ChronoUnit.HOURS),TimeZone.getTimeZone("Africa/Johannesburg").toZoneId());
+            if(zonedDateTime.get(ChronoField.HOUR_OF_DAY) >= 21 || zonedDateTime.get(ChronoField.HOUR_OF_DAY) < 8) {
+                if (zonedDateTime.get(ChronoField.HOUR_OF_DAY) >= 21) {
+                    long difference = zonedDateTime.get(ChronoField.HOUR_OF_DAY) - 21;
+                    zonedDateTime = zonedDateTime.minus(difference + 1, ChronoUnit.HOURS);
+
+                } else if (zonedDateTime.get(ChronoField.HOUR_OF_DAY) < 8) {
+                    long difference = 8 -  zonedDateTime.get(ChronoField.HOUR_OF_DAY);
+                    zonedDateTime = zonedDateTime.plus(difference, ChronoUnit.HOURS);
+
+                }
+            }
+            notification.setNextAttemptTime(zonedDateTime.toInstant());
+            log.info("time" + zonedDateTime.toInstant());
             bundle.addNotification(notification);
         }
 

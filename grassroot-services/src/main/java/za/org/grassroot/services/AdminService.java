@@ -6,6 +6,7 @@ import za.org.grassroot.core.dto.MaskedUserDTO;
 import za.org.grassroot.core.enums.EventType;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,10 @@ public interface AdminService {
     int countUsersWithGeoLocationData();
 
     int countGroupsWithGeoLocationData();
+
+    int countUsersThatHaveAndroidProfile();
+
+    int countUsersCreatedWithAndroidProfileInPeriod(LocalDateTime start, LocalDateTime end);
 
     /*
     Methods to return groups
@@ -71,7 +76,7 @@ public interface AdminService {
 
     Long countLogBooksRecordedInInterval(LocalDateTime start, LocalDateTime end);
 
-    List<KeywordDTO> getKeywordStats();
+    List<KeywordDTO> getKeywordStats(LocalDateTime from);
 
     /*
     Methods for closer analysis of user sessions etc

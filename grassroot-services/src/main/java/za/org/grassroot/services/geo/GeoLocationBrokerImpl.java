@@ -126,6 +126,22 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 	}
 
 	@Override
+	public PreviousPeriodUserLocation fetchUserLocation(String userUid) {
+		LocalDate mostRecentRecordedAverage = findFirstDateWithAvgLocationForUserBefore(LocalDate.now(), userUid);
+		if (mostRecentRecordedAverage == null) {
+			return null;
+		} else {
+			List<PreviousPeriodUserLocation> priorLocations = previousPeriodUserLocationRepository.
+					findByKeyUserUidIn(Collections.singleton(userUid));
+			if (priorLocations != null && !priorLocations.isEmpty()) {
+				return priorLocations.get(0);
+			} else {
+				return null;
+			}
+		}
+	}
+
+	@Override
 	public List<User> fetchUsersWithRecordedAverageLocations(LocalDate localDate) {
 		return findUsersWithAverageLocationBefore(localDate);
 	}
