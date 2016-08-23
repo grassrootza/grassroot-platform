@@ -7,13 +7,13 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "log_book_request")
-public class TodoRequest extends AbstractLogBookEntity {
+@Table(name = "action_todo_request")
+public class TodoRequest extends AbstractTodoEntity {
 	@Column(name = "replicate_to_subgroups", nullable = false)
 	private boolean replicateToSubgroups;
 
 	@ManyToMany(cascade = CascadeType.ALL)
-	@JoinTable(name = "log_book_request_assigned_members",
+	@JoinTable(name = "action_todo_request_assigned_members",
 			joinColumns = @JoinColumn(name = "log_book_request_id", nullable = false),
 			inverseJoinColumns = @JoinColumn(name = "user_id", nullable = false)
 	)

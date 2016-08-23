@@ -6,13 +6,17 @@ import za.org.grassroot.core.util.UIDGenerator;
 import javax.persistence.*;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 
 /**
- * This class should contain all fields common to both Todo and TodoRequest entity
+ * This class should contain all fields common to both to-do and TodoRequest entity
  */
 @MappedSuperclass
-public abstract class AbstractLogBookEntity {
+public abstract class AbstractTodoEntity {
+
+	public static final int DEFAULT_REMINDER_MINUTES = -1440;
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "id", nullable = false)
@@ -27,6 +31,13 @@ public abstract class AbstractLogBookEntity {
 	@ManyToOne(cascade = CascadeType.ALL, optional = false)
 	@JoinColumn(name = "created_by_user_id", nullable = false)
 	protected User createdByUser;
+
+	/*
+	Version used by hibernate to resolve conflicting updates. Do not update set it, it is for Hibernate only
+     */
+
+	@Version
+	private Integer version;
 
 	// -------------------------------------------------------------
 	// THESE SHOULD BE OF PRIVATE VISIBILITY; BECAUSE EVERYONE ELSE
@@ -52,26 +63,36 @@ public abstract class AbstractLogBookEntity {
 
 	/*
 	Minus value will send a reminder before actionByDate, Plus value will send a reminder x minutes after
-	actionByDate
+	actionByDate. Note ... now that it's fixed, this shares a lot with event, so consider abstracting to task
 	*/
 	@Column(name = "reminder_minutes")
 	protected int reminderMinutes;
 
-	private static final int DEFAULT_REMINDER_MINUTES = -1440;
+	@Column(name = "scheduled_reminder_time")
+	private Instant scheduledReminderTime;
 
-	protected AbstractLogBookEntity() {
+	@Column(name = "reminder_active")
+	private boolean reminderActive;
+
+	protected AbstractTodoEntity() {
 		// for JPA
 	}
 
-	protected AbstractLogBookEntity(User createdByUser, TodoContainer parent, String message, Instant actionByDate, int reminderMinutes) {
-		this.createdByUser = Objects.requireNonNull(createdByUser);
-		setParent(parent);
-		this.message = Objects.requireNonNull(message);
-		this.actionByDate = Objects.requireNonNull(actionByDate);
-		this.reminderMinutes = reminderMinutes == 0 ? DEFAULT_REMINDER_MINUTES : reminderMinutes;
+	protected AbstractTodoEntity(User createdByUser, TodoContainer parent, String message, Instant actionByDate,
+	                             int reminderMinutes, boolean reminderActive) {
 
 		this.uid = UIDGenerator.generateId();
+		this.createdByUser = Objects.requireNonNull(createdByUser);
+		setParent(parent);
+
+		this.message = Objects.requireNonNull(message);
+		this.actionByDate = Objects.requireNonNull(actionByDate);
 		this.createdDateTime = Instant.now();
+
+		this.reminderMinutes = reminderMinutes;
+		this.reminderActive = reminderActive;
+		calculateScheduledReminderTime();
+
 	}
 
 	public Long getId() {
@@ -80,6 +101,14 @@ public abstract class AbstractLogBookEntity {
 
 	public String getUid() {
 		return uid;
+	}
+
+	public Integer getVersion() {
+		return version;
+	}
+
+	public void setVersion(Integer version) {
+		this.version = version;
 	}
 
 	public Instant getCreatedDateTime() {
@@ -114,6 +143,15 @@ public abstract class AbstractLogBookEntity {
 
 	public void setReminderMinutes(int reminderMinutes) {
 		this.reminderMinutes = reminderMinutes;
+	}
+
+	public Instant getScheduledReminderTime() { return scheduledReminderTime; }
+
+	public void setScheduledReminderTime(Instant scheduledReminderTime) { this.scheduledReminderTime = scheduledReminderTime; }
+
+	public void calculateScheduledReminderTime() {
+		this.scheduledReminderTime = reminderActive ? actionByDate.plus(reminderMinutes, ChronoUnit.MINUTES)
+				: null;
 	}
 
 	public TodoContainer getParent() {

@@ -243,7 +243,7 @@ public class USSDToDoController extends USSDController {
                 USSDUrlUtil.logViewExistingUrl(listEntriesMenu, groupUid, done, pageNumber));
 
         String urlBase = todoMenus + viewEntryMenu + logBookUrlSuffix;
-        Page<Todo> entries = todoBroker.retrieveGroupLogBooks(user.getUid(), groupUid, done, pageNumber, PAGE_LENGTH);
+        Page<Todo> entries = todoBroker.retrieveGroupTodos(user.getUid(), groupUid, done, pageNumber, PAGE_LENGTH);
         boolean canCreateToDos = permissionBroker.getActiveGroupDTOs(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY).isEmpty();
         boolean hasMultipleGroups = permissionBroker.getActiveGroupDTOs(user, null).size() > 1;
 

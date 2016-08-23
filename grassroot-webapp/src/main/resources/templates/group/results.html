@@ -84,7 +84,7 @@
                       Group: "<span th:text="${group.getName('')}" class="text-primary">Group name</span>"
                     </h4>
                     <div class="least-content">
-                      <p class="list-group-item-text">Est. <span th:text="${#calendars.format(group.getCreatedDateTime(),'dd MMMM yyyy')}">13 May 2011</span></p>
+                      <p class="list-group-item-text">Est. <span th:text="${#temporals.format(group.getCreatedDateTimeAtSAST(),'dd MMMM yyyy')}">13 May 2011</span></p>
                     </div>
                   </div>
                   <div class="col-md-3 pull-right">
@@ -122,7 +122,7 @@
                       Group: "<span th:text="${group.getName('')}" class="text-primary">Group name</span>"
                     </h4>
                     <div class="least-content">
-                      <p class="list-group-item-text">Est. <span th:text="${#calendars.format(group.getCreatedDateTime(),'dd MMMM yyyy')}">13 May 2011</span></p>
+                      <p class="list-group-item-text">Est. <span th:text="${#temporals.format(group.getCreatedDateTimeAtSAST(),'dd MMMM yyyy')}">13 May 2011</span></p>
                     </div>
                   </div>
                   <div class="col-md-3 pull-right">

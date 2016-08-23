@@ -55,14 +55,17 @@ public interface TodoRepository extends JpaRepository<Todo, Long> {
     // methods for analyzing logbooks (for admin)
     Long countByCreatedDateTimeBetween(Instant start, Instant end);
 
-    @Query(value = "select l.* from log_book l " +
+    @Query(value = "select l.* from action_todo l " +
         "inner join group_profile g on l.parent_group_id = g.id " +
         "inner join group_user_membership m on g.id = m.group_id " +
         "where m.user_id = ?1 and to_tsvector('english', l.message) @@ to_tsquery('english', ?2)", nativeQuery = true)
     List<Todo> findByParentGroupMembershipsUserAndMessageSearchTerm(Long userId, String tsQueryText);
 
     @Transactional
-    @Query(value = "select * from log_book l where l.action_by_date is not null and l.completion_percentage < " + Todo.COMPLETION_PERCENTAGE_BOUNDARY + " and l.number_of_reminders_left_to_send > 0 and (l.action_by_date + l.reminder_minutes * INTERVAL '1 minute') < current_timestamp", nativeQuery = true)
+    @Query(value = "select * from action_todo l where l.action_by_date is not null " +
+            "and l.completion_percentage < " + Todo.COMPLETION_PERCENTAGE_BOUNDARY + " " +
+            "and l.number_of_reminders_left_to_send > 0 " +
+            "and (l.action_by_date + l.reminder_minutes * INTERVAL '1 minute') < current_timestamp", nativeQuery = true)
     List<Todo> findAllLogBooksForReminding();
 
     @Query(value = "select count(t) from Todo t where t.replicatedGroup=?1 and t.message=?2 and t.actionByDate=?3")

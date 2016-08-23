@@ -28,6 +28,7 @@ public class MembershipResponseWrapper {
     public MembershipResponseWrapper(User user) {
         this.memberUid = user.getUid();
         this.displayName = user.nameToDisplay();
+        this.phoneNumber = user.getPhoneNumber();
     }
 
     public String getMemberUid() {

@@ -738,7 +738,8 @@ public class GroupBrokerImpl implements GroupBroker {
     private JoinTokenOpeningResult openJoinTokenInternal(User user, Group group, LocalDateTime expiryDateTime) {
 
         final Instant currentExpiry = (group.getTokenExpiryDateTime() != null) ? group.getTokenExpiryDateTime() : null;
-        final Instant expirySystemTime = DateTimeUtil.convertToSystemTime(expiryDateTime, DateTimeUtil.getSAST());
+        final Instant expirySystemTime = expiryDateTime == null ? DateTimeUtil.getVeryLongAwayInstant() :
+                DateTimeUtil.convertToSystemTime(expiryDateTime, DateTimeUtil.getSAST());
 
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 

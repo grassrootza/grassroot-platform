@@ -9,12 +9,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.Task;
 import za.org.grassroot.core.domain.Todo;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.enums.RestMessage;
+import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.MembershipResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
@@ -46,6 +48,9 @@ public class TaskRestController {
 
 	@Autowired
 	private TodoBroker todoBroker;
+
+	@Autowired
+	private PermissionBroker permissionBroker;
 
     // calling this "for parent" as in future will use it for any entity that can have sub-tasks, but for now just used for groups
 	@RequestMapping(value = "/list/{phoneNumber}/{code}/{parentUid}", method = RequestMethod.GET)
@@ -105,32 +110,50 @@ public class TaskRestController {
     }
 
     @RequestMapping(value = "/assigned/{phoneNumber}/{code}/{taskUid}/{taskType}", method = RequestMethod.GET)
-    public ResponseEntity<List<MembershipResponseWrapper>> fetchAssignedMembers(@PathVariable String phoneNumber, @PathVariable String code,
-                                                           @PathVariable String taskUid, @PathVariable TaskType taskType) {
+    public ResponseEntity<ResponseWrapper> fetchAssignedMembers(@PathVariable String phoneNumber, @PathVariable String code,
+                                                                       @PathVariable String taskUid, @PathVariable TaskType taskType) {
 	    logger.info("fetching task assigned members, taskType = {}", taskType);
-	    User user = userManagementService.findByInputNumber(phoneNumber);
-	    // todo : think about whether we need permissions here
+	    User requestingUser = userManagementService.findByInputNumber(phoneNumber);
+
+	    Task task;
 	    Set<User> users;
+
 	    switch (taskType) {
 		    case MEETING:
 		    case VOTE:
 			    Event event = eventBroker.load(taskUid);
 			    users = event.getAssignedMembers();
+			    task = event;
 			    break;
 		    case TODO:
 			    Todo todo = todoBroker.load(taskUid);
 			    users = todo.getAssignedMembers();
+			    task = todo;
 			    break;
 		    default:
-			    throw new UnsupportedOperationException("Error! Trying to fetch assigned members for unknown task type");
+			    logger.error("Error! Trying to fetch assigned members for unknown task type");
+			    return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_ENTITY_TYPE);
 	    }
 
 	    List<MembershipResponseWrapper> assignedMembers = new ArrayList<>();
-	    for(User u: users){
-		    assignedMembers.add(new MembershipResponseWrapper(u));
+
+	    if (!users.contains(requestingUser)) {
+		    try {
+			    permissionBroker.validateGroupPermission(requestingUser, task.getAncestorGroup(), null);
+		    } catch (AccessDeniedException e) {
+			    return RestUtil.accessDeniedResponse();
+		    }
+	    } else {
+		    // so the calling user is returned at the top of the list and is not duplicated
+		    users.remove(requestingUser);
+		    assignedMembers.add(new MembershipResponseWrapper(requestingUser));
 	    }
 
-	    return new ResponseEntity<>(assignedMembers, HttpStatus.OK);
+	    users.stream()
+			    .sorted((u1, u2) -> u1.nameToDisplay().compareTo(u2.nameToDisplay()))
+			    .forEach(u -> assignedMembers.add(new MembershipResponseWrapper(u)));
+
+	    return RestUtil.okayResponseWithData(RestMessage.GROUP_MEMBERS, assignedMembers);
     }
 
 

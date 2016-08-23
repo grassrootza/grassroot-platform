@@ -1,7 +1,7 @@
 package za.org.grassroot.core.domain;
 
 /**
- * Contains info about Log book completion confirmations.
+ * Contains info about to-do completion confirmations.
  */
 public class TodoCompletionStatus {
 	private final int confirmationsCount;

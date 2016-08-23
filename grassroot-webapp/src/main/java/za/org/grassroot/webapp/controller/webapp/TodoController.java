@@ -90,7 +90,7 @@ public class TodoController extends BaseController {
 
             entryWrapper.setAssignmentType("group");
             entryWrapper.setReminderType(EventReminderType.GROUP_CONFIGURED);
-            entryWrapper.setReminderMinutes(-60);
+            entryWrapper.setReminderMinutes(AbstractTodoEntity.DEFAULT_REMINDER_MINUTES);
 
             model.addAttribute("entry", entryWrapper);
             return "log/create";
@@ -100,19 +100,19 @@ public class TodoController extends BaseController {
     }
 
     @RequestMapping(value = "record", method = RequestMethod.POST)
-    public String recordTodo(@ModelAttribute("entry") TodoWrapper logBookEntry,
+    public String recordTodo(@ModelAttribute("entry") TodoWrapper todoEntry,
                              HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
-        log.info("TodoWrapper received, looks like: {}", logBookEntry.toString());
+        log.info("TodoWrapper received, looks like: {}", todoEntry.toString());
 
-        if (logBookEntry.getReminderType().equals(EventReminderType.GROUP_CONFIGURED)) {
-            int convertedMinutes = -(groupBroker.load(logBookEntry.getParentUid()).getReminderMinutes());
-            logBookEntry.setReminderMinutes(convertedMinutes);
+        if (todoEntry.getReminderType().equals(EventReminderType.GROUP_CONFIGURED)) {
+            int convertedMinutes = -(groupBroker.load(todoEntry.getParentUid()).getReminderMinutes());
+            todoEntry.setReminderMinutes(convertedMinutes);
         }
 
         Set<String> assignedUids;
-        if ("members".equals(logBookEntry.getAssignmentType())) {
-            MemberPicker listOfMembers = logBookEntry.getMemberPicker();
+        if ("members".equals(todoEntry.getAssignmentType())) {
+            MemberPicker listOfMembers = todoEntry.getMemberPicker();
             log.info("The memberUids are : ..." + Joiner.on(", ").join(listOfMembers.getSelectedUids()));
             assignedUids = listOfMembers.getSelectedUids();
         } else {
@@ -120,9 +120,10 @@ public class TodoController extends BaseController {
         }
 
         Long startTime = System.currentTimeMillis();
-        Todo created = todoBroker.create(getUserProfile().getUid(), logBookEntry.getParentEntityType(), logBookEntry.getParentUid(),
-                                               logBookEntry.getMessage(), logBookEntry.getActionByDate(), logBookEntry.getReminderMinutes(),
-                                               logBookEntry.isReplicateToSubGroups(), assignedUids);
+        todoBroker.create(getUserProfile().getUid(), todoEntry.getParentEntityType(), todoEntry.getParentUid(),
+                todoEntry.getMessage(), todoEntry.getActionByDate(), todoEntry.getReminderMinutes(),
+                todoEntry.isReplicateToSubGroups(), assignedUids);
+
         log.info("Time to create, store, logbooks: {} msecs", System.currentTimeMillis() - startTime);
 
         addMessage(redirectAttributes, MessageType.SUCCESS, "log.creation.success", request);
@@ -132,12 +133,12 @@ public class TodoController extends BaseController {
     }
 
     @RequestMapping(value = "record/meeting", method = RequestMethod.POST)
-    public String recordEntryWithMeetingParent(Model model, @ModelAttribute("logBook") TodoWrapper logBook,
+    public String recordEntryWithMeetingParent(Model model, @ModelAttribute("logBook") TodoWrapper todo,
                                                HttpServletRequest request, RedirectAttributes attributes) {
 
-        Todo created = todoBroker.create(getUserProfile().getUid(), logBook.getParentEntityType(),
-                                               logBook.getParentUid(), logBook.getMessage(), logBook.getActionByDate(),
-                                               logBook.getReminderMinutes(), false, Collections.emptySet());
+        Todo created = todoBroker.create(getUserProfile().getUid(), todo.getParentEntityType(),
+                todo.getParentUid(), todo.getMessage(), todo.getActionByDate(),
+                todo.getReminderMinutes(), false, Collections.emptySet());
 
         addMessage(attributes, MessageType.SUCCESS, "log.creation.success", request);
         attributes.addAttribute("logBookUid", created.getUid());
@@ -157,9 +158,9 @@ public class TodoController extends BaseController {
 
         Group group = groupBroker.load(groupUid);
         model.addAttribute("group", group);
-        model.addAttribute("incompleteEntries", todoBroker.loadGroupLogBooks(group.getUid(), false, TodoStatus.INCOMPLETE));
+        model.addAttribute("incompleteEntries", todoBroker.loadGroupTodos(group.getUid(), false, TodoStatus.INCOMPLETE));
 
-        List<Todo> completedEntries = todoBroker.loadGroupLogBooks(group.getUid(), false, TodoStatus.COMPLETE);
+        List<Todo> completedEntries = todoBroker.loadGroupTodos(group.getUid(), false, TodoStatus.COMPLETE);
         model.addAttribute("completedEntries", completedEntries);
         log.info("Got back this many complete entries ... " + completedEntries.size());
 
@@ -187,7 +188,7 @@ public class TodoController extends BaseController {
             log.info("Found replicated entries ... adding them to model");
             List<Todo> replicatedEntries = todoBroker.getAllReplicatedEntriesFromParent(todoEntry);
             log.info("Here are the replicated entries ... " + replicatedEntries);
-            List<Group> relevantSubGroups = todoBroker.retrieveGroupsFromLogBooks(replicatedEntries);
+            List<Group> relevantSubGroups = todoBroker.retrieveGroupsFromTodos(replicatedEntries);
             model.addAttribute("hasReplicatedEntries", true);
             model.addAttribute("replicatedEntries", replicatedEntries);
             model.addAttribute("replicatedGroups", relevantSubGroups);

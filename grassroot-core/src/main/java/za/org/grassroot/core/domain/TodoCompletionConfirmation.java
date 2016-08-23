@@ -4,8 +4,8 @@ import javax.persistence.*;
 import java.time.Instant;
 
 @Entity
-@Table(name = "log_book_completion_confirmation",
-		uniqueConstraints = @UniqueConstraint(name = "uk_compl_confirmation_log_book_member", columnNames = {"log_book_id", "member_id"}))
+@Table(name = "action_todo_completion_confirmation",
+		uniqueConstraints = @UniqueConstraint(name = "uk_compl_confirmation_action_todo_member", columnNames = {"log_book_id", "member_id"}))
 public class TodoCompletionConfirmation {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -338,7 +338,7 @@ public class USSDHomeController extends USSDController {
 
     private USSDMenu assembleLogBookMenu(User user) {
         log.info("User has an incomplete logbook needing a response!");
-        Todo todo = todoBroker.fetchLogBookForUserResponse(user.getUid(), daysPastLogbooks, false);
+        Todo todo = todoBroker.fetchTodoForUserResponse(user.getUid(), daysPastLogbooks, false);
 
         if (todo == null) {
             log.info("For some reason, should have found a logbook to respond to, but didnt, user = {}", user);

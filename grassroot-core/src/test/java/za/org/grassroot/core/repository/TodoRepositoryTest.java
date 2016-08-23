@@ -101,8 +101,8 @@ public class TodoRepositoryTest {
         group.addMember(user);
         groupRepository.save(group);
 
-        Todo lb1 = new Todo(user, group, "assigned 1", addHoursFromNow(2), 60, null, 3);
-        Todo lb2 = new Todo(user, group, "not assigned", addHoursFromNow(2), 60, null, 3);
+        Todo lb1 = new Todo(user, group, "assigned 1", addHoursFromNow(2), 60, null, 3, true);
+        Todo lb2 = new Todo(user, group, "not assigned", addHoursFromNow(2), 60, null, 3, true);
         lb1.assignMembers(Collections.singleton(user.getUid()));
 
         todoRepository.save(lb1);
@@ -143,7 +143,7 @@ public class TodoRepositoryTest {
 
         List<Todo> replicatedEntries = new ArrayList<>();
         for (Group group : subGroups) {
-            Todo lbChild = new Todo(user, group, message, dueDate1, 60, groupParent, 3);
+            Todo lbChild = new Todo(user, group, message, dueDate1, 60, groupParent, 3, true);
             todoRepository.save(lbChild);
             replicatedEntries.add(lbChild);
         }
@@ -154,7 +154,7 @@ public class TodoRepositoryTest {
         List<Todo> replicatedEntries2 = new ArrayList<>();
         Todo lbParent2 = todoRepository.save(new Todo(user, groupParent, message, dueDate2));
         for (Group group : subGroups)
-            replicatedEntries2.add(todoRepository.save(new Todo(user, group, message, dueDate2, 60, groupParent, 3)));
+            replicatedEntries2.add(todoRepository.save(new Todo(user, group, message, dueDate2, 60, groupParent, 3, true)));
 
         List<Todo> entriesFromDb = todoRepository.
                 findByReplicatedGroupAndMessageAndActionByDateOrderByParentGroupIdAsc(groupParent, message, dueDate1);

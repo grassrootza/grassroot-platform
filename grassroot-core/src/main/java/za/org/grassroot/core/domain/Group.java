@@ -210,7 +210,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         return createdDateTime;
     }
 
-    public ZonedDateTime getCreatedDateTimeAtSAST() {
+    public ZonedDateTime getCreatedDateTimeAtSAST() { // used in Thymeleaf
         return DateTimeUtil.convertToUserTimeZone(createdDateTime, DateTimeUtil.getSAST());
     }
 

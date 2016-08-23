@@ -63,7 +63,7 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
             "(" +
             "to_tsvector('english', g.name) @@ to_tsquery('english', ?2) or " +
             "g.id in (select e.ancestor_group_id from event e where to_tsvector('english', e.name) @@ to_tsquery('english', ?2)) or " +
-            "g.id in (select l.ancestor_group_id from log_book l where to_tsvector('english', l.message) @@ to_tsquery('english', ?2))" +
+            "g.id in (select l.ancestor_group_id from action_todo l where to_tsvector('english', l.message) @@ to_tsquery('english', ?2))" +
             ")", nativeQuery = true)
     List<Group> findDiscoverableGroupsWithNameOrTaskTextWithoutMember(Long userId, String tsQuery);
 

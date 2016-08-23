@@ -96,10 +96,12 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.load(voteEvent.getUid())).thenReturn(voteEvent);
         when(eventLogBrokerMock.hasUserRespondedToEvent(voteEvent, sessionTestUser)).thenReturn(false);
-        mockMvc.perform(get(path + "/do/{id}/{phoneNumber}/{code}", voteEvent.getUid(), testUserPhone, testUserCode).param("response", "Yes")).andExpect(status().is2xxSuccessful());
+        mockMvc.perform(get(path + "/do/{id}/{phoneNumber}/{code}", voteEvent.getUid(), testUserPhone, testUserCode)
+                .param("response", "YES"))
+                .andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
         verify(eventBrokerMock).load(voteEvent.getUid());
-        verify(eventLogBrokerMock).hasUserRespondedToEvent(voteEvent, sessionTestUser);
+        verify(eventLogBrokerMock).rsvpForEvent(voteEvent.getUid(), sessionTestUser.getUid(), EventRSVPResponse.YES);
     }
 
     @Test

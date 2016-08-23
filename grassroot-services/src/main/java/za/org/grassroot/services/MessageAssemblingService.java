@@ -20,11 +20,11 @@ public interface MessageAssemblingService {
 
     String createEventResponseMessage(User user, Event event, EventRSVPResponse rsvpResponse);
 
-    String createLogBookReminderMessage(User user, Todo todo);
+    String createTodoReminderMessage(User user, Todo todo);
 
-    String createLogBookInfoNotificationMessage(User target, Todo todo);
+    String createTodoRecordedNotificationMessage(User target, Todo todo);
 
-    String createLogBookUpdateNotificationMessage(User target, Todo todo);
+    String createTodoUpdateNotificationMessage(User target, Todo todo);
 
     String createVoteResultsMessage(User user, Vote event, double yes, double no, double abstain, double noReply);
 

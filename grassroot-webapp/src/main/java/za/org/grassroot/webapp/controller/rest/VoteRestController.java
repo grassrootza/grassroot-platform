@@ -126,14 +126,14 @@ public class VoteRestController {
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         Event event = eventBroker.load(voteUid);
         String trimmedResponse = response.toLowerCase().trim();
-        boolean hasVoted = eventLogBroker.hasUserRespondedToEvent(event, user);
+        // boolean hasVoted = eventLogBroker.hasUserRespondedToEvent(event, user);
         ResponseEntity<ResponseWrapper> responseWrapper;
-        if (event.getEventType().equals(EventType.VOTE) && (!hasVoted && isOpen(event))) {
+        if (event.getEventType().equals(EventType.VOTE) && isOpen(event)) {
             eventLogBroker.rsvpForEvent(event.getUid(), user.getUid(), EventRSVPResponse.fromString(trimmedResponse));
             TaskDTO updatedTask = taskBroker.load(user.getUid(), voteUid, TaskType.VOTE);
             responseWrapper = RestUtil.okayResponseWithData(RestMessage.VOTE_SENT, Collections.singletonList(updatedTask));
-        } else if (hasVoted) {
-            responseWrapper = RestUtil.errorResponse(HttpStatus.CONFLICT, RestMessage.USER_HAS_ALREADY_VOTED);
+        // } else if (hasVoted) {
+        //    responseWrapper = RestUtil.errorResponse(HttpStatus.CONFLICT, RestMessage.USER_HAS_ALREADY_VOTED);
         } else {
             responseWrapper = RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.VOTE_CLOSED);
         }

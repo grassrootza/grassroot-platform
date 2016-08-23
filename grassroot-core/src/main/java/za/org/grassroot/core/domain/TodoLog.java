@@ -10,8 +10,8 @@ import java.util.Objects;
  * Created by aakilomar on 12/3/15.
  */
 @Entity
-@Table(name = "log_book_log",
-		indexes = {@Index(name = "idx_log_book_log_logbook_id", columnList = "log_book_id")})
+@Table(name = "action_todo_log",
+		indexes = {@Index(name = "idx_action_todo_log_actiontodo_id", columnList = "log_book_id")})
 public class TodoLog implements ActionLog {
 
 	@Id

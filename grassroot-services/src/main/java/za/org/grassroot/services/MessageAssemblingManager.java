@@ -83,14 +83,14 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     }
 
     @Override
-    public String createLogBookReminderMessage(User user, Todo todo) {
+    public String createTodoReminderMessage(User user, Todo todo) {
         Locale locale = getUserLocale(user);
         String[] args = populateLogBookFields(todo);
         return messageSourceAccessor.getMessage("sms.logbook.reminder", args, locale);
     }
 
     @Override
-    public String createLogBookInfoNotificationMessage(User target, Todo todo) {
+    public String createTodoRecordedNotificationMessage(User target, Todo todo) {
         Locale locale = getUserLocale(target);
         String[] args = populateLogBookFields(todo);
         String messageKey = todo.isAllGroupMembersAssigned() ? "sms.logbook.new.notassigned" :
@@ -99,7 +99,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     }
 
     @Override
-    public String createLogBookUpdateNotificationMessage(User target, Todo todo) {
+    public String createTodoUpdateNotificationMessage(User target, Todo todo) {
         Locale locale = getUserLocale(target);
         String[] args = populateLogBookFields(todo);
         String messageKey = todo.isAllGroupMembersAssigned() ? "sms.logbook.update.notassigned" :

@@ -101,7 +101,8 @@ public class TaskDTO implements Comparable<TaskDTO> {
         this(user, todo);
 
         this.hasResponded = todo.isCompletedBy(user);
-        this.reply = getTodoStatus(todo);
+        this.reply = hasResponded ? String.valueOf(TodoStatus.COMPLETED)
+                : getTodoStatus(todo);
 
         this.canAction = canActionOnLogBook(todo, user);
         this.location = "";
@@ -177,14 +178,14 @@ public class TaskDTO implements Comparable<TaskDTO> {
 
     }
 
+    // for the moment, users can change their vote after casting it
     private boolean canActionOnEvent(Event event, boolean hasResponded) {
         boolean isOpen = event.getEventStartDateTime().isAfter(Instant.now());
+        // slight redundancy here but may introduce alternate logics here in future, hence
         if (event.getEventType().equals(EventType.MEETING) && isOpen) {
             return true;
-        } else {
-            if (event.getEventType().equals(EventType.VOTE) && (isOpen && !hasResponded)) {
-                return true;
-            }
+        } else if (event.getEventType().equals(EventType.VOTE) && (isOpen)) {
+            return true;
         }
         return false;
     }

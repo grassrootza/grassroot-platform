@@ -131,6 +131,7 @@ public class GroupRestController {
 		} catch (InvalidPhoneNumberException e) {
 			return RestUtil.errorResponseWithData(RestMessage.GROUP_BAD_PHONE_NUMBER, e.getMessage());
 		} catch (RuntimeException e) {
+			e.printStackTrace();
 			return RestUtil.errorResponse(BAD_REQUEST, RestMessage.GROUP_NOT_CREATED);
 		}
 	}

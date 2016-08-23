@@ -13,30 +13,26 @@ import za.org.grassroot.core.domain.Todo;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.TaskType;
-import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.TaskBroker;
 import za.org.grassroot.services.TodoBroker;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.MembershipResponseWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.LocalDateTimePropertyEditor;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
-/**
- * Created by aakilomar on 9/5/15.
- */
 @RestController
-@RequestMapping(value = "/api/logbook")
+@RequestMapping(value = { "/api/todo", "/api/logbook" })
 public class TodoRestController {
 
     private static final Logger log = LoggerFactory.getLogger(TodoRestController.class);
 
-    // todo : move a bunch of this to a superclass
     @InitBinder
     public void initBinder(ServletRequestDataBinder binder) {
         binder.registerCustomEditor(LocalDateTime.class, new LocalDateTimePropertyEditor(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
@@ -51,9 +47,6 @@ public class TodoRestController {
     @Autowired
     private TaskBroker taskBroker;
 
-    @Autowired
-    private PermissionBroker permissionBroker;
-
     @RequestMapping(value ="/complete/{phoneNumber}/{code}/{id}", method =  RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> setComplete(@PathVariable("phoneNumber") String phoneNumber,
                                                        @PathVariable("code") String code, @PathVariable("id") String id) {
@@ -61,10 +54,8 @@ public class TodoRestController {
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         Todo todo = todoBroker.load(id);
 
-        ResponseWrapper responseWrapper;
-        // todo : rather check for whether user has set this completed
-        if (!todo.isCompleted()){
-            todoBroker.confirmCompletion(user.getUid(), id, LocalDateTime.now()); // todo: watch timezones on this
+        if (!todo.isCompletedBy(user)) {
+            todoBroker.confirmCompletion(user.getUid(), id, LocalDateTime.now());
             TaskDTO updatedTask = taskBroker.load(user.getUid(), id, TaskType.TODO);
             return RestUtil.okayResponseWithData(RestMessage.TODO_SET_COMPLETED, Collections.singletonList(updatedTask));
         } else {
@@ -72,31 +63,8 @@ public class TodoRestController {
         }
     }
 
-    @RequestMapping(value = "/assigned/{phoneNumber}/{code}/{uid}", method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> getAssignedMemberList(String phoneNumber, String code,@PathVariable("uid") String uid){
-
-        User callingUser = userManagementService.findByInputNumber(phoneNumber);
-        Todo todo = todoBroker.load(uid);
-
-        if (!todo.getAssignedMembers().contains(callingUser)) {
-            try {
-                permissionBroker.validateGroupPermission(callingUser, todo.getAncestorGroup(), null); // i.e., not in ancestor group ... but maybe change in future
-            } catch (AccessDeniedException e) {
-                return RestUtil.accessDeniedResponse();
-            }
-        }
-
-        Set<User> users = todo.isAllGroupMembersAssigned() ? new HashSet<>() : todo.getAssignedMembers();
-        List<MembershipResponseWrapper> assignedMembers = new ArrayList<>();
-        for(User user: users) {
-            assignedMembers.add(new MembershipResponseWrapper(user));
-        }
-        return RestUtil.okayResponseWithData(RestMessage.GROUP_MEMBERS, assignedMembers);
-
-    }
-
     @RequestMapping(value = "/create/{phoneNumber}/{code}/{parentUid}", method = RequestMethod.POST)
-    public ResponseEntity<ResponseWrapper> createLogbook(@PathVariable String phoneNumber, @PathVariable String code,
+    public ResponseEntity<ResponseWrapper> createTodo(@PathVariable String phoneNumber, @PathVariable String code,
                                                          @PathVariable String parentUid,
                                                          @RequestParam String title,
                                                          @RequestParam String description,
@@ -112,17 +80,18 @@ public class TodoRestController {
 
         // todo : handle negative reminderMinutes
         try {
-            Todo lb = todoBroker.create(user.getUid(), JpaEntityType.GROUP, parentUid, title, dueDate, reminderMinutes,
+            Todo todo = todoBroker.create(user.getUid(), JpaEntityType.GROUP,
+                    parentUid, title, dueDate, reminderMinutes,
                     false, assignedMemberUids);
-            TaskDTO createdTask = taskBroker.load(user.getUid(), lb.getUid(), TaskType.TODO);
+            TaskDTO createdTask = taskBroker.load(user.getUid(), todo.getUid(), TaskType.TODO);
             return RestUtil.okayResponseWithData(RestMessage.TODO_CREATED, Collections.singletonList(createdTask));
         } catch (AccessDeniedException e) {
             return RestUtil.accessDeniedResponse();
         }
     }
 
-    @RequestMapping(value ="update/{phoneNumber}/{code}/{uid}", method = RequestMethod.POST)
-     public ResponseEntity<ResponseWrapper> updateLogbook(@PathVariable String phoneNumber, @PathVariable String code,
+    @RequestMapping(value ="/update/{phoneNumber}/{code}/{uid}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> updateTodo(@PathVariable String phoneNumber, @PathVariable String code,
                                                           @PathVariable String uid,
                                                           @RequestParam String title,
                                                           @RequestParam LocalDateTime dueDate,
@@ -130,11 +99,23 @@ public class TodoRestController {
                                                           @RequestParam(value="members", required = false) Set<String> members) {
 
         User user = userManagementService.findByInputNumber(phoneNumber);
-
         try {
             todoBroker.update(user.getUid(), uid, title, dueDate, reminderMinutes, members);
             TaskDTO taskDTO = taskBroker.load(user.getUid(), uid, TaskType.TODO);
             return RestUtil.okayResponseWithData(RestMessage.TODO_UPDATED, taskDTO);
+        } catch (AccessDeniedException e) {
+            return RestUtil.accessDeniedResponse();
+        }
+    }
+
+    @RequestMapping(value = "/cancel/{phoneNumber}/{code}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> cancelTodo(@PathVariable String phoneNumber, @PathVariable String code,
+                                                      @RequestParam String todoUid) {
+
+        try {
+            User user = userManagementService.findByInputNumber(phoneNumber);
+            todoBroker.cancel(user.getUid(), todoUid);
+            return RestUtil.messageOkayResponse(RestMessage.TODO_CANCELLED);
         } catch (AccessDeniedException e) {
             return RestUtil.accessDeniedResponse();
         }

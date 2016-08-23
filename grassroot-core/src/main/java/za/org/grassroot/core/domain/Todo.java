@@ -12,13 +12,18 @@ import java.util.Set;
  * Created by aakilomar on 12/3/15.
  */
 @Entity
-@Table(name = "log_book",
+@Table(name = "action_todo",
         indexes = {
-                @Index(name = "idx_log_book_group_id", columnList = "parent_group_id"),
-                @Index(name = "idx_log_book_retries_left", columnList = "number_of_reminders_left_to_send"),
-                @Index(name = "idx_log_book_replicated_group_id", columnList = "replicated_group_id")})
-public class Todo extends AbstractLogBookEntity implements Task<TodoContainer>, VoteContainer, MeetingContainer {
+                @Index(name = "idx_action_todo_group_id", columnList = "parent_group_id"),
+                @Index(name = "idx_action_todo_retries_left", columnList = "number_of_reminders_left_to_send"),
+                @Index(name = "idx_action_todo_replicated_group_id", columnList = "replicated_group_id")})
+public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, VoteContainer, MeetingContainer {
+
     public static final double COMPLETION_PERCENTAGE_BOUNDARY = 50;
+    public static final int DEFAULT_NUMBER_REMINDERS = 2;
+
+    @Column(name = "cancelled")
+    protected boolean cancelled;
 
     @Column(name="completed_date")
     private Instant completedDate;
@@ -34,7 +39,7 @@ public class Todo extends AbstractLogBookEntity implements Task<TodoContainer>, 
    	private Group replicatedGroup;
 
     @ManyToMany(cascade = CascadeType.ALL)
-    @JoinTable(name = "log_book_assigned_members",
+    @JoinTable(name = "action_todo_assigned_members",
             joinColumns = @JoinColumn(name = "log_book_id", nullable = false),
             inverseJoinColumns = @JoinColumn(name = "user_id", nullable = false)
     )
@@ -52,15 +57,16 @@ public class Todo extends AbstractLogBookEntity implements Task<TodoContainer>, 
     }
 
     public Todo(User createdByUser, TodoContainer parent, String message, Instant actionByDate) {
-        this(createdByUser, parent, message, actionByDate, 60, null, 3);
+        this(createdByUser, parent, message, actionByDate, 60, null, DEFAULT_NUMBER_REMINDERS, true);
     }
 
     public Todo(User createdByUser, TodoContainer parent, String message, Instant actionByDate, int reminderMinutes,
-                Group replicatedGroup, int numberOfRemindersLeftToSend) {
-        super(createdByUser, parent, message, actionByDate, reminderMinutes);
+                Group replicatedGroup, int numberOfRemindersLeftToSend, boolean reminderActive) {
+        super(createdByUser, parent, message, actionByDate, reminderMinutes, reminderActive);
         this.ancestorGroup = parent.getThisOrAncestorGroup();
         this.replicatedGroup = replicatedGroup;
         this.numberOfRemindersLeftToSend = numberOfRemindersLeftToSend;
+        this.cancelled = false;
     }
 
     public static Todo makeEmpty() {
@@ -146,6 +152,10 @@ public class Todo extends AbstractLogBookEntity implements Task<TodoContainer>, 
                 .count();
         return new TodoCompletionStatus((int) confirmationsCount, membersCount);
     }
+
+    public boolean isCancelled() { return cancelled; }
+
+    public void setCancelled(boolean cancelled) { this.cancelled = cancelled; }
 
     public boolean isCompleted() {
         return calculateCompletionStatus().getPercentage() >= COMPLETION_PERCENTAGE_BOUNDARY;
