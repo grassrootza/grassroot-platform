@@ -97,7 +97,7 @@ public class TaskBrokerImpl implements TaskBroker {
         }
 
         // todo : hmm, actually, we may want this to find all incomplete actions, but to consider / adjust in future
-        List<Todo> todos = todoRepository.findByParentGroupAndCompletionPercentageLessThanAndActionByDateGreaterThan(group, Todo.COMPLETION_PERCENTAGE_BOUNDARY, start);
+        List<Todo> todos = todoRepository.findByParentGroupAndCompletionPercentageLessThanAndActionByDateGreaterThanAndCancelledFalse(group, Todo.COMPLETION_PERCENTAGE_BOUNDARY, start);
         for (Todo todo : todos) {
             taskDtos.add(new TaskDTO(todo, user));
         }
@@ -129,7 +129,7 @@ public class TaskBrokerImpl implements TaskBroker {
         }
         Set<TaskDTO> taskDtos = resolveEventTaskDtos(events, user, changedSince);
 
-        List<Todo> todos = todoRepository.findByParentGroup(group);
+        List<Todo> todos = todoRepository.findByParentGroupAndCancelledFalse(group);
         Set<TaskDTO> logBookTaskDtos = resolveLogBookTaskDtos(todos, user, changedSince);
         taskDtos.addAll(logBookTaskDtos);
 
@@ -150,7 +150,7 @@ public class TaskBrokerImpl implements TaskBroker {
         List<Event> events = eventRepository.findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(user, now);
         Set<TaskDTO> taskDtos = resolveEventTaskDtos(events, user, null);
 
-        List<Todo> todos = todoRepository.findByParentGroupMembershipsUserAndActionByDateGreaterThan(user, now);
+        List<Todo> todos = todoRepository.findByParentGroupMembershipsUserAndActionByDateGreaterThanAndCancelledFalse(user, now);
         Set<TaskDTO> logBookTaskDtos = resolveLogBookTaskDtos(todos, user, null);
         taskDtos.addAll(logBookTaskDtos);
 

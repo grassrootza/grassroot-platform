@@ -26,13 +26,17 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
     private final String role;
     private final String joinCode;
     private final Integer groupMemberCount;
+    private Long lastMajorChangeMillis; // i.e., time last event was created, and/or group modified
+
     private final Set<Permission> permissions;
+
     private String description;
+    private GroupChangeType lastChangeType;
+    private String lastChangeDescription;
+    private LocalDateTime dateTime;
+
     private String imageUrl;
     private GroupDefaultImage defaultImage;
-    private GroupChangeType lastChangeType;
-    private Long lastMajorChangeMillis; // i.e., time last event was created, and/or group modified
-    private LocalDateTime dateTime;
 
     private boolean hasTasks;
     private boolean discoverable;
@@ -51,6 +55,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
         this.discoverable = group.isDiscoverable();
         this.imageUrl = group.getImageUrl();
         this.defaultImage = group.getDefaultImage();
+        this.description = group.getDescription();
 
         if (group.hasValidGroupTokenCode()) {
             this.joinCode = group.getGroupTokenCode();
@@ -68,7 +73,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
     public GroupResponseWrapper(Group group, Event event, Role role, boolean hasTasks){
         this(group, role, hasTasks);
         this.lastChangeType = GroupChangeType.getChangeType(event);
-        this.description = event.getName();
+        this.lastChangeDescription = event.getName();
         this.dateTime = event.getEventDateTimeAtSAST();
         this.lastMajorChangeMillis = event.getCreatedDateTime().toEpochMilli();
     }
@@ -76,7 +81,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
     public GroupResponseWrapper(Group group, GroupLog groupLog, Role role, boolean hasTasks){
         this(group, role, hasTasks);
         this.lastChangeType = GroupChangeType.getChangeType(groupLog);
-        this.description = (groupLog.getDescription()!=null) ? groupLog.getDescription() : group.getDescription();
+        this.lastChangeDescription = (groupLog.getDescription()!=null) ? groupLog.getDescription() : group.getDescription();
         this.dateTime = groupLog.getCreatedDateTime().atZone(DateTimeUtil.getSAST()).toLocalDateTime();
         this.lastMajorChangeMillis = groupLog.getCreatedDateTime().toEpochMilli();
     }
@@ -116,6 +121,8 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
     public String getJoinCode() { return joinCode; }
 
     public GroupChangeType getLastChangeType() { return lastChangeType; }
+
+    public String getLastChangeDescription() { return lastChangeDescription; }
 
     public boolean isHasTasks() { return hasTasks; }
 

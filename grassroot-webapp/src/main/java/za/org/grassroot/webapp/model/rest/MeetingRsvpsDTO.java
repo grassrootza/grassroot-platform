@@ -1,18 +1,26 @@
 package za.org.grassroot.webapp.model.rest;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import za.org.grassroot.core.domain.Meeting;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by luke on 2016/06/09.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MeetingRsvpsDTO {
+
+    private static final Logger logger = LoggerFactory.getLogger(MeetingRsvpsDTO.class);
 
     private String meetingUid;
 
@@ -23,7 +31,7 @@ public class MeetingRsvpsDTO {
 
     private boolean canViewRsvps;
 
-    private HashMap<String, String> rsvpResponses;
+    private LinkedHashMap<String, String> rsvpResponses;
 
     public MeetingRsvpsDTO(String meetingUid, ResponseTotalsDTO totals) {
         this.meetingUid = meetingUid;
@@ -32,15 +40,35 @@ public class MeetingRsvpsDTO {
         this.numberNo = totals.getNo();
         this.numberNoReply = totals.getNumberNoRSVP();
         this.canViewRsvps = false;
-        this.rsvpResponses = new HashMap<>();
+        this.rsvpResponses = new LinkedHashMap<>();
     }
 
     public MeetingRsvpsDTO(String meetingUid, ResponseTotalsDTO totals, Map<User, EventRSVPResponse> details) {
         this(meetingUid, totals);
         this.canViewRsvps = true;
-        for (User u : details.keySet()) {
-            this.rsvpResponses.put(u.nameToDisplay(), details.get(u).toString());
-        }
+        this.rsvpResponses = sortRsvpResponses(details);
+    }
+
+    private LinkedHashMap<String, String> sortRsvpResponses(Map<User, EventRSVPResponse> details) {
+
+        LinkedHashMap<String, String> result = new LinkedHashMap<>();
+
+	    logger.info("event rsvp details = {}", details);
+
+	    final Comparator<Map.Entry<User, EventRSVPResponse>> byRsvpResponse =
+                Comparator.comparing(Map.Entry::getValue);
+        final Comparator<Map.Entry<User, EventRSVPResponse>> byUserName =
+                Comparator.comparing(Map.Entry::getKey);
+
+        // note : using map and collector might be better here, though which collector, and function reference, mean leave till later
+	    details.entrySet()
+                .stream()
+                .sorted(byRsvpResponse.thenComparing(byUserName))
+                .forEach(entry -> result.put(entry.getKey().nameToDisplay(), entry.getValue().toString()));
+
+	    logger.info("Sorted entry set : " + result.toString());
+
+        return result;
     }
 
     public String getMeetingUid() {

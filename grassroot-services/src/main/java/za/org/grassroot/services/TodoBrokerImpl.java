@@ -258,13 +258,13 @@ public class TodoBrokerImpl implements TodoBroker {
 			Group group = groupRepository.findOneByUid(groupUid);
 			permissionBroker.validateGroupPermission(user, group, null); // make sure user is part of group
 			if (entriesComplete) {
-				page = todoRepository.findByParentGroupAndCompletionPercentageGreaterThanEqualOrderByActionByDateDesc(group, Todo.COMPLETION_PERCENTAGE_BOUNDARY, pageable);
+				page = todoRepository.findByParentGroupAndCompletionPercentageGreaterThanEqualAndCancelledFalseOrderByActionByDateDesc(group, Todo.COMPLETION_PERCENTAGE_BOUNDARY, pageable);
 			} else {
-				page = todoRepository.findByParentGroupAndCompletionPercentageLessThanOrderByActionByDateDesc(group, Todo.COMPLETION_PERCENTAGE_BOUNDARY, pageable);
+				page = todoRepository.findByParentGroupAndCompletionPercentageLessThanAndCancelledFalseOrderByActionByDateDesc(group, Todo.COMPLETION_PERCENTAGE_BOUNDARY, pageable);
 			}
 		} else {
 			if (entriesComplete) {
-				page = todoRepository.findByParentGroupMembershipsUserAndCompletionPercentageGreaterThanEqualOrderByActionByDateDesc(user, Todo.COMPLETION_PERCENTAGE_BOUNDARY, pageable);
+				page = todoRepository.findByParentGroupMembershipsUserAndCompletionPercentageGreaterThanEqualAndCancelledFalseOrderByActionByDateDesc(user, Todo.COMPLETION_PERCENTAGE_BOUNDARY, pageable);
 			} else {
 				page = todoRepository.findByParentGroupMembershipsUserAndCompletionPercentageLessThanOrderByActionByDateDesc(user, Todo.COMPLETION_PERCENTAGE_BOUNDARY, pageable);
 			}
@@ -297,13 +297,13 @@ public class TodoBrokerImpl implements TodoBroker {
 
 		switch (status) {
 			case COMPLETE:
-				return todoRepository.findByParentGroupAndCompletionPercentageGreaterThanEqualAndActionByDateGreaterThan(group, Todo.COMPLETION_PERCENTAGE_BOUNDARY, start);
+				return todoRepository.findByParentGroupAndCompletionPercentageGreaterThanEqualAndActionByDateGreaterThanAndCancelledFalse(group, Todo.COMPLETION_PERCENTAGE_BOUNDARY, start);
 			case INCOMPLETE:
-				return todoRepository.findByParentGroupAndCompletionPercentageLessThanAndActionByDateGreaterThan(group, Todo.COMPLETION_PERCENTAGE_BOUNDARY, start);
+				return todoRepository.findByParentGroupAndCompletionPercentageLessThanAndActionByDateGreaterThanAndCancelledFalse(group, Todo.COMPLETION_PERCENTAGE_BOUNDARY, start);
 			case BOTH:
-				return todoRepository.findByParentGroupAndActionByDateGreaterThan(group, start);
+				return todoRepository.findByParentGroupAndActionByDateGreaterThanAndCancelledFalse(group, start);
 			default:
-				return todoRepository.findByParentGroupAndActionByDateGreaterThan(group, start);
+				return todoRepository.findByParentGroupAndActionByDateGreaterThanAndCancelledFalse(group, start);
 		}
 	}
 
@@ -318,7 +318,7 @@ public class TodoBrokerImpl implements TodoBroker {
 
 		if (!assignedTodosOnly) {
 			List<Todo> userLbs = todoRepository.
-					findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThan(user, start, end, Todo.COMPLETION_PERCENTAGE_BOUNDARY, sort);
+					findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThanAndCancelledFalse(user, start, end, Todo.COMPLETION_PERCENTAGE_BOUNDARY, sort);
 			lbToReturn = (userLbs.isEmpty()) ? null : userLbs.get(0);
 		} else {
 			List<Todo> userLbs = todoRepository.

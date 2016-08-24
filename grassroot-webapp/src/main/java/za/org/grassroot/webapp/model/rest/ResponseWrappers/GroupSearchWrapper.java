@@ -1,32 +1,41 @@
 package za.org.grassroot.webapp.model.rest.ResponseWrappers;
 
-import za.org.grassroot.core.domain.Event;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.GroupJoinRequest;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 
 /**
  * Created by paballo on 2016/03/16.
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class GroupSearchWrapper implements Comparable<GroupSearchWrapper> {
+
+    protected static final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("EEE, d MMM");
+
     private String id;
     private String groupName;
     private String description;
     private String groupCreator;
-    private Integer count;
+    private Integer memberCount;
+
     private boolean termInName;
     private boolean hasOpenRequest;
     private boolean hasLocationData;
 
+    private String createdDate;
+
     public GroupSearchWrapper(Group group) {
         this.id =group.getUid();
         this.groupName = group.getGroupName();
-        this.description = group.getDescription() == null ? "Group has no public description" : group.getDescription();
+        this.description = group.getDescription();
         this.groupCreator = group.getCreatedByUser().getDisplayName();
-        this.count = group.getMemberships().size();
+        this.memberCount = group.getMemberships().size();
         this.hasOpenRequest = false;
+        this.createdDate = group.getCreatedDateTimeAtSAST().format(dateFormat);
     }
 
     public GroupSearchWrapper(Group group, boolean termInName, boolean hasLocationData, List<GroupJoinRequest> openRequestsForPossibleGroups) {
@@ -52,8 +61,8 @@ public class GroupSearchWrapper implements Comparable<GroupSearchWrapper> {
         return groupCreator;
     }
 
-    public Integer getCount() {
-        return count;
+    public Integer getMemberCount() {
+        return memberCount;
     }
 
     public boolean isTermInName() {
@@ -66,6 +75,14 @@ public class GroupSearchWrapper implements Comparable<GroupSearchWrapper> {
 
     public boolean isHasLocationData() {
         return hasLocationData;
+    }
+
+    public String getCreatedDate() {
+        return createdDate;
+    }
+
+    public void setCreatedDate(String createdDate) {
+        this.createdDate = createdDate;
     }
 
     @Override

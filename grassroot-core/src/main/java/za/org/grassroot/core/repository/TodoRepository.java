@@ -22,13 +22,14 @@ public interface TodoRepository extends JpaRepository<Todo, Long> {
 
     // todo: this amount of complex query methods is bad; should redesign in some way
     // todo: (maybe using Spring Data JPA Specification to compose the query programmatically !?)
+
     /*
     Retrieve all logbook entries for all the groups of a particular user
      */
-    List<Todo> findByParentGroupMembershipsUserAndActionByDateGreaterThan(User user, Instant start);
-    List<Todo> findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThan(User user, Instant start, Instant end, double maxCompletionPercentage, Sort sort);
+    List<Todo> findByParentGroupMembershipsUserAndActionByDateGreaterThanAndCancelledFalse(User user, Instant start);
+    List<Todo> findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThanAndCancelledFalse(User user, Instant start, Instant end, double maxCompletionPercentage, Sort sort);
 
-    Page<Todo> findByParentGroupMembershipsUserAndCompletionPercentageGreaterThanEqualOrderByActionByDateDesc(User user, double minCompletionPercentage, Pageable pageable);
+    Page<Todo> findByParentGroupMembershipsUserAndCompletionPercentageGreaterThanEqualAndCancelledFalseOrderByActionByDateDesc(User user, double minCompletionPercentage, Pageable pageable);
     Page<Todo> findByParentGroupMembershipsUserAndCompletionPercentageLessThanOrderByActionByDateDesc(User user, double maxCompletionPercentage, Pageable pageable);
 
     /*
@@ -40,16 +41,17 @@ public interface TodoRepository extends JpaRepository<Todo, Long> {
     /*
     Retrieve logbook entries for a group (with variants)
      */
-    List<Todo> findByParentGroup(Group group);
+    List<Todo> findByParentGroupAndCancelledFalse(Group group);
     List<Todo> findByParentGroupAndCreatedDateTimeBetween(Group group, Instant start, Instant end, Sort sort);
+    List<Todo> findByParentGroupAndActionByDateGreaterThanAndCancelledFalse(Group group, Instant dueDate);
+    List<Todo> findByParentGroupAndCompletionPercentageGreaterThanEqualAndActionByDateGreaterThanAndCancelledFalse(Group group, double minCompletionPercentage, Instant dueDate);
+    List<Todo> findByParentGroupAndCompletionPercentageLessThanAndActionByDateGreaterThanAndCancelledFalse(Group group, double maxCompletionPercentage, Instant dueDate);
+
+    Page<Todo> findByParentGroupAndCompletionPercentageGreaterThanEqualAndCancelledFalseOrderByActionByDateDesc(Group group, double minCompletionPercentage, Pageable pageable);
+    Page<Todo> findByParentGroupAndCompletionPercentageLessThanAndCancelledFalseOrderByActionByDateDesc(Group group, double maxCompletionPercentage, Pageable pageable);
+
+    // methods for handling replication
     List<Todo> findByParentGroupAndMessageAndCreatedDateTime(Group group, String message, Instant createdDateTime);
-    List<Todo> findByParentGroupAndActionByDateGreaterThan(Group group, Instant dueDate);
-    List<Todo> findByParentGroupAndCompletionPercentageGreaterThanEqualAndActionByDateGreaterThan(Group group, double minCompletionPercentage, Instant dueDate);
-    List<Todo> findByParentGroupAndCompletionPercentageLessThanAndActionByDateGreaterThan(Group group, double maxCompletionPercentage, Instant dueDate);
-
-    Page<Todo> findByParentGroupAndCompletionPercentageGreaterThanEqualOrderByActionByDateDesc(Group group, double minCompletionPercentage, Pageable pageable);
-    Page<Todo> findByParentGroupAndCompletionPercentageLessThanOrderByActionByDateDesc(Group group, double maxCompletionPercentage, Pageable pageable);
-
     List<Todo> findByReplicatedGroupAndMessageAndActionByDateOrderByParentGroupIdAsc(Group replicatedGroup, String message, Instant actionByDateTime);
 
     // methods for analyzing logbooks (for admin)

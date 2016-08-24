@@ -52,7 +52,7 @@ public class TodoRepositoryTest {
         Group groupUnrelated = groupRepository.save(new Group("not related logbook", user));
         Todo lb1 = todoRepository.save(new Todo(user, group, "just do it", addHoursFromNow(2)));
         Todo lbUnrelated = todoRepository.save(new Todo(user, groupUnrelated, "just do it too", addHoursFromNow(2)));
-        List<Todo> list = todoRepository.findByParentGroup(group);
+        List<Todo> list = todoRepository.findByParentGroupAndCancelledFalse(group);
         assertEquals(1,list.size());
         assertEquals(lb1.getId(),list.get(0).getId());
     }

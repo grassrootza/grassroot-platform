@@ -29,7 +29,7 @@ import static za.org.grassroot.core.util.PhoneNumberUtil.invertPhoneNumber;
 
 @Entity
 @Table(name = "user_profile")  //table name needs to be quoted in SQL because 'user' is a reserved keyword
-public class User implements UserDetails {
+public class User implements UserDetails, Comparable<User> {
     private static final int DEFAULT_NOTIFICATION_PRIORITY = 1;
 
     @Id
@@ -471,4 +471,17 @@ public class User implements UserDetails {
         return sb.toString();
     }
 
+    @Override
+    public int compareTo(User user) {
+        if (uid.equals(user.getUid())) {
+            return 0;
+        } else {
+            if (displayName != null && user.getDisplayName() != null) {
+                return displayName.compareTo(user.getDisplayName());
+            } else {
+                // note : this may be strange depending on Ascii values
+                return phoneNumber.compareTo(user.getPhoneNumber());
+            }
+        }
+    }
 }

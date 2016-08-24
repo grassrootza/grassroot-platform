@@ -3,7 +3,6 @@ package za.org.grassroot.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.support.InstantiationStrategy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -36,7 +35,6 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.Temporal;
 import java.util.*;
 
 /**
@@ -417,7 +415,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         User user = userRepository.findOneByUid(userUid);
         Instant start = Instant.now().minus(daysInPast, ChronoUnit.DAYS);
         Instant end = Instant.now();
-        List<Todo> todos = todoRepository.findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThan(
+        List<Todo> todos = todoRepository.findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThanAndCancelledFalse(
                 user, start, end, Todo.COMPLETION_PERCENTAGE_BOUNDARY, new Sort(Sort.Direction.DESC, "createdDateTime"));
         return todos.stream().anyMatch(logBook -> !logBook.isCompletedBy(user));
     }
