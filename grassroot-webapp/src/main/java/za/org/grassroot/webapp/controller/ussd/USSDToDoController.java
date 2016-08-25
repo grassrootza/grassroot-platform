@@ -11,6 +11,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.integration.domain.SeloApiCallFailure;
 import za.org.grassroot.integration.domain.SeloParseDateTimeFailure;
 import za.org.grassroot.integration.services.LearningService;
 import za.org.grassroot.services.PermissionBroker;
@@ -480,7 +481,7 @@ public class USSDToDoController extends USSDController {
                 } catch (Exception e) {
                     try {
                         dueDateTime = learningService.parse(formattedDateString);
-                    } catch (SeloParseDateTimeFailure t) {
+                    } catch (SeloParseDateTimeFailure|SeloApiCallFailure t) {
                         dueDateTime = LocalDateTime.now().plus(1, ChronoUnit.WEEKS);
                     }
                 }

@@ -1,4 +1,5 @@
 ALTER TABLE action_todo ADD COLUMN version INTEGER DEFAULT 0;
+ALTER TABLE action_todo_request ADD COLUMN version INTEGER DEFAULT 0;
 
 ALTER SEQUENCE log_book_id_seq RENAME TO action_todo_id_seq;
 ALTER SEQUENCE log_book_log_id_seq RENAME TO action_todo_log_id_seq;
