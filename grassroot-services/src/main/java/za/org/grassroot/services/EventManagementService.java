@@ -1,7 +1,9 @@
 package za.org.grassroot.services;
 
 import org.springframework.data.domain.Page;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
@@ -9,7 +11,6 @@ import za.org.grassroot.core.enums.EventType;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * @author Lesetse Kimwaga

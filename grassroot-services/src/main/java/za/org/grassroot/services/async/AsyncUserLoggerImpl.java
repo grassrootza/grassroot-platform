@@ -13,9 +13,7 @@ import za.org.grassroot.core.repository.UserLogRepository;
 import za.org.grassroot.services.util.CacheUtilService;
 
 import java.time.Instant;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
 import static za.org.grassroot.core.enums.UserInterfaceType.UNKNOWN;
 import static za.org.grassroot.core.enums.UserInterfaceType.USSD;

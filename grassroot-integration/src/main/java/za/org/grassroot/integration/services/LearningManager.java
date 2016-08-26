@@ -7,16 +7,12 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.domain.SeloApiCallFailure;
 import za.org.grassroot.integration.domain.SeloParseDateTimeFailure;
 
 import javax.annotation.PostConstruct;
-import java.io.IOException;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 
 /**
  * Created by shakka on 8/15/16.

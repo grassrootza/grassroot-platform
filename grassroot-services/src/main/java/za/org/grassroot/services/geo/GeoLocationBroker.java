@@ -7,7 +7,6 @@ import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 

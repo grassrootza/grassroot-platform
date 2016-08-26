@@ -17,7 +17,8 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 
-import static za.org.grassroot.core.util.DateTimeUtil.*;
+import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
+import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
 @Service
 public class TodoRequestBrokerImpl implements TodoRequestBroker {

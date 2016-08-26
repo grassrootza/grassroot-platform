@@ -2,8 +2,6 @@ package za.org.grassroot.core.domain;
 
 /**
  * Created by luke on 2015/07/16.
- * <p/>
- * todo - aakil - add event duration
  */
 
 

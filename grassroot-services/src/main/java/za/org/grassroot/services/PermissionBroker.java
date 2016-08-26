@@ -1,15 +1,12 @@
 package za.org.grassroot.services;
 
-import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
-import org.springframework.security.access.AccessDeniedException;
-
-import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 

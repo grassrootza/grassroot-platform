@@ -8,8 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.EventLogType;
-import za.org.grassroot.core.enums.TodoLogType;
 import za.org.grassroot.core.enums.TaskType;
+import za.org.grassroot.core.enums.TodoLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.util.FullTextSearchUtils;
 

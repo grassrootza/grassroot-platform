@@ -1,8 +1,6 @@
 package za.org.grassroot.services;
 
-import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.VerificationTokenCode;
-import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.VerificationCodeType;
 
 /**

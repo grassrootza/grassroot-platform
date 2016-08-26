@@ -1,6 +1,7 @@
 package za.org.grassroot.core.domain.notification;
 
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.EventLog;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 
 import javax.persistence.DiscriminatorValue;

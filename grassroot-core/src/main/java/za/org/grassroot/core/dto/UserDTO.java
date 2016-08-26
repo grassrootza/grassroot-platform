@@ -1,7 +1,6 @@
 package za.org.grassroot.core.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserCreateRequest;
 

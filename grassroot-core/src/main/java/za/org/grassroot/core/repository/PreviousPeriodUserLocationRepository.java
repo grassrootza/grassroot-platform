@@ -5,7 +5,6 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 

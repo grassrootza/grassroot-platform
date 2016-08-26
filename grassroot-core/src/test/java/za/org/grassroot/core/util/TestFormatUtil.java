@@ -7,9 +7,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
-import za.org.grassroot.core.enums.EventRSVPResponse;
-
-import javax.transaction.Transactional;
 
 import static org.junit.Assert.assertEquals;
 

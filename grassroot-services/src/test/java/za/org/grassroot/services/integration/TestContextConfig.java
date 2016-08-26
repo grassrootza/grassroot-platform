@@ -3,10 +3,7 @@ package za.org.grassroot.services.integration;
 import org.jivesoftware.smack.XMPPConnection;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.integration.xmpp.config.XmppConnectionFactoryBean;
 import org.springframework.stereotype.Component;
-import za.org.grassroot.integration.services.NotificationService;
-import za.org.grassroot.integration.services.SmsSendingService;
 
 import static org.mockito.Mockito.mock;
 

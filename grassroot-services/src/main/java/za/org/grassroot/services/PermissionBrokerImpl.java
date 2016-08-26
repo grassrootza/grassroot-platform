@@ -6,13 +6,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.GroupDTO;
-import za.org.grassroot.core.enums.EventLogType;
-import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
-import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 

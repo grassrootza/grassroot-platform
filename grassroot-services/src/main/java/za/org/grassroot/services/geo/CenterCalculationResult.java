@@ -2,8 +2,6 @@ package za.org.grassroot.services.geo;
 
 import za.org.grassroot.core.domain.geo.GeoLocation;
 
-import java.util.Objects;
-
 public class CenterCalculationResult {
 	private final int userCount;
 	private GeoLocation center;

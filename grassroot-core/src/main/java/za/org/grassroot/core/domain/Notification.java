@@ -1,7 +1,6 @@
 package za.org.grassroot.core.domain;
 
 
-import com.google.common.collect.Sets;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.NotificationType;
 import za.org.grassroot.core.util.UIDGenerator;
@@ -9,9 +8,7 @@ import za.org.grassroot.core.util.UIDGenerator;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * Next attempt time signifies when this notification has to be sent. When it gets delivered,

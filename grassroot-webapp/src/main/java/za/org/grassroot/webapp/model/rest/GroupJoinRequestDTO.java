@@ -6,7 +6,6 @@ import za.org.grassroot.core.domain.GroupJoinRequest;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.time.Instant;
-import java.time.format.DateTimeFormatter;
 
 /**
  * Created by luke on 2016/07/09.

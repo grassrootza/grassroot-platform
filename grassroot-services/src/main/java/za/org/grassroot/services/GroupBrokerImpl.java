@@ -238,6 +238,7 @@ public class GroupBrokerImpl implements GroupBroker {
     }
 
     @Override
+    @Transactional
     public void updateDescription(String userUid, String groupUid, String description) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);

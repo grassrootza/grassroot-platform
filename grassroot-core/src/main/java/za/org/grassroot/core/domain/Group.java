@@ -7,7 +7,6 @@ import za.org.grassroot.core.util.UIDGenerator;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.HashSet;
@@ -508,12 +507,6 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
             groupRoles = new HashSet<>();
         }
         return new HashSet<>(groupRoles);
-    }
-
-    // todo: remove later after refactor
-    public void setGroupRoles(Set<Role> groupRoles) {
-        this.groupRoles.clear();
-        this.groupRoles.addAll(groupRoles);
     }
 
     @PreUpdate

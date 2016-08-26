@@ -15,7 +15,6 @@ import org.springframework.integration.xmpp.inbound.ChatMessageListeningEndpoint
 import org.springframework.integration.xmpp.support.DefaultXmppHeaderMapper;
 import org.springframework.integration.xmpp.support.XmppHeaderMapper;
 import org.xmlpull.v1.XmlPullParser;
-import za.org.grassroot.integration.domain.GcmEntity;
 import za.org.grassroot.integration.domain.GcmUpstreamMessage;
 
 import java.io.IOException;

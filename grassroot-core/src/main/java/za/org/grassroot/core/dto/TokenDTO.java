@@ -2,8 +2,6 @@ package za.org.grassroot.core.dto;
 
 import za.org.grassroot.core.domain.VerificationTokenCode;
 
-import java.time.Instant;
-
 /**
  * Created by paballo on 2016/03/13.
  */

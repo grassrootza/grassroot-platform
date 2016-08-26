@@ -15,7 +15,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
@@ -39,9 +38,7 @@ import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.CONFLICT;
-import static org.springframework.http.HttpStatus.OK;
+import static org.springframework.http.HttpStatus.*;
 
 /**
  * Created by paballo.
@@ -509,9 +506,20 @@ public class GroupRestController {
         } catch (AccessDeniedException e) {
             response = RestUtil.accessDeniedResponse();
         }
-
         return response;
     }
+
+	@RequestMapping(value = "/edit/description/{phoneNumber}/{code}", method = RequestMethod.POST)
+	public ResponseEntity<ResponseWrapper> changeGroupDescription(@PathVariable String phoneNumber, @PathVariable String code,
+	                                                              @RequestParam String groupUid, @RequestParam String description) {
+		User user = userManagementService.findByInputNumber(phoneNumber);
+		try {
+			groupBroker.updateDescription(user.getUid(), groupUid, description);
+			return RestUtil.messageOkayResponse(RestMessage.GROUP_DESCRIPTION_CHANGED);
+		} catch (AccessDeniedException e) {
+			return RestUtil.accessDeniedResponse();
+		}
+	}
 
     @RequestMapping(value = "/edit/public_switch/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> switchGroupPublicPrivate(@PathVariable String phoneNumber, @PathVariable String code,

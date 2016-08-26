@@ -9,9 +9,9 @@ import org.springframework.boot.test.WebIntegrationTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
-import za.org.grassroot.webapp.GrassRootWebApplicationConfig;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.webapp.GrassRootWebApplicationConfig;
 import za.org.grassroot.webapp.IntegrationTest;
 
 import static org.hamcrest.MatcherAssert.assertThat;

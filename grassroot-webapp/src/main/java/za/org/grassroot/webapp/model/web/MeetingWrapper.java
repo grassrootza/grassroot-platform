@@ -1,6 +1,7 @@
 package za.org.grassroot.webapp.model.web;
 
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.EventReminderType;
+import za.org.grassroot.core.domain.Meeting;
 
 /**
  * Created by luke on 2016/04/06.

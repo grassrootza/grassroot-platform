@@ -13,12 +13,9 @@ import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.User;
 
 import javax.transaction.Transactional;
-
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 /**
  * Created by paballo on 2016/07/21.

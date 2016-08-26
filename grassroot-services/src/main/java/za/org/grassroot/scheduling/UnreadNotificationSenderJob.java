@@ -4,7 +4,6 @@ import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.context.ApplicationContext;
-import za.org.grassroot.integration.services.BatchedNotificationSender;
 import za.org.grassroot.integration.services.UnreadNotificationHandler;
 
 /**

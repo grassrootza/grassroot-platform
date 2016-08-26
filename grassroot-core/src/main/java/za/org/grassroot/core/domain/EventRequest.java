@@ -3,7 +3,6 @@ package za.org.grassroot.core.domain;
 import za.org.grassroot.core.enums.EventType;
 
 import javax.persistence.*;
-import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.Set;
 

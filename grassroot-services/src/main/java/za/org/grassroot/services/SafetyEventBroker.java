@@ -1,6 +1,5 @@
 package za.org.grassroot.services;
 
-import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.SafetyEvent;
 
 import java.util.List;

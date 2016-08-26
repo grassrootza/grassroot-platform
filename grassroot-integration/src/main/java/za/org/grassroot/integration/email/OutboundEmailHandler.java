@@ -8,7 +8,6 @@ import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.messaging.Message;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.integration.services.NotificationService;
-import za.org.grassroot.integration.services.SmsSendingService;
 
 /**
  * Created by paballo on 2016/06/28.

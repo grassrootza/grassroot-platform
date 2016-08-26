@@ -14,16 +14,12 @@ import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 
 import javax.persistence.EntityManager;
-import javax.persistence.TemporalType;
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-
-import static java.util.Calendar.DATE;
 
 import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
 import static za.org.grassroot.core.util.DateTimeUtil.getSAST;

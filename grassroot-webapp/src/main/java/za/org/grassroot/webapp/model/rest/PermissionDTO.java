@@ -1,6 +1,5 @@
 package za.org.grassroot.webapp.model.rest;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.collect.ImmutableMap;
 import org.springframework.context.support.MessageSourceAccessor;

@@ -1,6 +1,5 @@
 package za.org.grassroot.core.domain.notification;
 
-import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.AccountLog;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.NotificationDetailedType;

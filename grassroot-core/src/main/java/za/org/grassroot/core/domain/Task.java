@@ -11,7 +11,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Common type for Vote, Meeting and Todo.
+ * Common type for Vote, Meeting and To-do.
  * @param <P> parent type
  */
 public interface Task<P extends UidIdentifiable> extends UidIdentifiable {

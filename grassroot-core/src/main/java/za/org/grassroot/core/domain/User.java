@@ -20,12 +20,7 @@ import static za.org.grassroot.core.util.PhoneNumberUtil.invertPhoneNumber;
 //todo: reconsider if language should be nullable, or not null and set to "en" by default (when set not nullable, broke tests)
 
 //todo: add validation to all model classes
-//todo: use java 8 date and time types and a JPA converter instead of Timestamp type
-//todo: createdDateTime should be read-only -  the database should insert this automatically
-//todo: use field annotations rather than getter annotations because then all the annotations will be closer together
-//todo: make these classes immutable - all args constructor and no setters
 //todo: id and createdDateTime fields should not be insertable or updatable
-//todo: extract base class for all entities that has id and createdDateTime
 
 @Entity
 @Table(name = "user_profile")  //table name needs to be quoted in SQL because 'user' is a reserved keyword
@@ -148,7 +143,7 @@ public class User implements UserDetails, Comparable<User> {
 
     public void setId(Long id) {
         this.id = id;
-    }
+    } // todo : remove this
 
     public String getUid() {
         return uid;

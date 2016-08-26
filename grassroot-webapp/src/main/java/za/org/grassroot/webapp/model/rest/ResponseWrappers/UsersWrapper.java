@@ -1,7 +1,6 @@
 package za.org.grassroot.webapp.model.rest.ResponseWrappers;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.springframework.data.domain.Page;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.UserDTO;

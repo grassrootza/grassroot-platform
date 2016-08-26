@@ -17,8 +17,6 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.geo.CenterCalculationResult;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;

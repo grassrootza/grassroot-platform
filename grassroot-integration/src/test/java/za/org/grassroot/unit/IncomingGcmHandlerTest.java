@@ -16,10 +16,8 @@ import za.org.grassroot.integration.config.InfrastructureConfiguration;
 import za.org.grassroot.integration.router.OutboundMessageRouter;
 import za.org.grassroot.integration.services.MessageSendingManager;
 import za.org.grassroot.integration.xmpp.GcmPacketExtension;
-import za.org.grassroot.integration.xmpp.NotificationToGcmXmppTransformer;
 import za.org.grassroot.integration.xmpp.InboundGcmMessageHandler;
-
-import javax.transaction.Transactional;
+import za.org.grassroot.integration.xmpp.NotificationToGcmXmppTransformer;
 
 /**
  * Created by paballo on 2016/04/12.

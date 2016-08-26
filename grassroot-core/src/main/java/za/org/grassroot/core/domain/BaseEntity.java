@@ -3,7 +3,6 @@ package za.org.grassroot.core.domain;
 import com.google.common.base.Objects;
 
 import javax.persistence.*;
-import java.io.Serializable;
 
 /**
  * @author Lesetse Kimwaga

@@ -16,7 +16,6 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Created by aakilomar on 11/2/15.

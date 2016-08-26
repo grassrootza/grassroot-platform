@@ -2,7 +2,6 @@ package za.org.grassroot.core.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 
 import java.util.ArrayList;

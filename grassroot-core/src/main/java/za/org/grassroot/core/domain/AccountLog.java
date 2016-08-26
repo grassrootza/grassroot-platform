@@ -1,8 +1,6 @@
 package za.org.grassroot.core.domain;
 
 import za.org.grassroot.core.enums.AccountLogType;
-import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;

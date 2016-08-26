@@ -1,10 +1,9 @@
 package za.org.grassroot.services.async;
 
-import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.core.enums.UserLogType;
 
 import java.time.Instant;
-import java.util.Set;
 
 /**
  * Created by luke on 2016/02/22.

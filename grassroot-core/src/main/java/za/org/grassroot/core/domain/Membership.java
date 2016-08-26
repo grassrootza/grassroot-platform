@@ -1,9 +1,5 @@
 package za.org.grassroot.core.domain;
 
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Role;
-import za.org.grassroot.core.domain.User;
-
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;

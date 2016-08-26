@@ -3,7 +3,7 @@ package za.org.grassroot.core.domain;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
-import java.time.*;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 /**
