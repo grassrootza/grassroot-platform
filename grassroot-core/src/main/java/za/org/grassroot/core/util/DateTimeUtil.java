@@ -10,8 +10,6 @@ import org.slf4j.LoggerFactory;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.time.temporal.ChronoField;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -24,6 +22,10 @@ public class DateTimeUtil {
 
     private static final Logger log = LoggerFactory.getLogger(DateTimeUtil.class);
 
+    /*
+    Initial set of variabels is for common date / time manipulation
+     */
+
     private static final DateTimeFormatter preferredDateFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy");
     private static final DateTimeFormatter preferredTimeFormat = DateTimeFormatter.ofPattern("HH:mm");
     private static final DateTimeFormatter preferredDateTimeFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
@@ -34,58 +36,16 @@ public class DateTimeUtil {
     private static final LocalDateTime veryLongTimeAway = LocalDateTime.of(2099, 12, 31, 23, 59);
     private static final Instant earliestInstant = LocalDateTime.of(2015, 1, 1, 0 , 0).toInstant(ZoneOffset.UTC);
 
-    public static DateTimeFormatter getPreferredDateFormat() { return preferredDateFormat; }
-    public static DateTimeFormatter getPreferredTimeFormat() { return preferredTimeFormat; }
-    public static DateTimeFormatter getPreferredDateTimeFormat() { return preferredDateTimeFormat; }
-    public static DateTimeFormatter getPreferredRestFormat() { return preferredRestFormat; }
-    public static DateTimeFormatter getWebFormFormat() { return webFormFormat; }
-
-    public static LocalDateTime getVeryLongTimeAway() {
-        return veryLongTimeAway;
-    }
-    public static Instant getVeryLongAwayInstant() { return veryLongTimeAway.toInstant(ZoneOffset.UTC); }
-    public static Instant getEarliestInstant() { return earliestInstant; }
-
     private static final ZoneId zoneSAST = ZoneId.of("Africa/Johannesburg");
     private static final ZoneId zoneSystem = ZoneId.systemDefault();
 
     private static final int latestHourForAutomatedMessages = 20;
     private static final int earliestHourForAutomatedMessage = 8;
     private static final LocalTime latestHour = LocalTime.of(latestHourForAutomatedMessages, 0);
-    private static final LocalTime ealiestHour = LocalTime.of(earliestHourForAutomatedMessage, 0);
-
-    public static Instant convertToSystemTime(LocalDateTime userInput, ZoneId userZoneId) {
-        Objects.requireNonNull(userInput, "Local date time is required");
-        Objects.requireNonNull(userZoneId);
-
-        ZonedDateTime userTime = ZonedDateTime.of(userInput, userZoneId);
-        ZonedDateTime systemTime = userTime.withZoneSameInstant(zoneSystem);
-
-        return systemTime.toInstant();
-    }
-
-    public static ZonedDateTime convertToUserTimeZone(Instant timeInSystem, ZoneId userZoneId) {
-        ZonedDateTime zonedDateTime = timeInSystem.atZone(userZoneId);
-        return zonedDateTime;
-    }
-
-    public static ZoneId getSAST() { return zoneSAST; }
-
-    public static Instant restrictToDaytime(Instant instantToRestrict, ZoneId userZoneId) {
-        ZonedDateTime zonedDateTime = instantToRestrict.atZone(userZoneId);
-        if (zonedDateTime.getHour() <= earliestHourForAutomatedMessage) {
-            zonedDateTime = ZonedDateTime.of(zonedDateTime.toLocalDate(), ealiestHour, userZoneId);
-            return zonedDateTime.toInstant();
-        } else if (zonedDateTime.getHour() >= latestHourForAutomatedMessages) {
-            zonedDateTime = ZonedDateTime.of(zonedDateTime.toLocalDate(), latestHour, userZoneId);
-            return zonedDateTime.toInstant();
-        } else {
-            return instantToRestrict;
-        }
-    }
+    private static final LocalTime earliestHour = LocalTime.of(earliestHourForAutomatedMessage, 0);
 
     /*
-    SECTION : regex for handling preformatted date time (may be able to remove given introduction of Selo & SUTime)
+    some delimiters, patterns for regex, etc (may be able to remove, given Selo / SUTime)
      */
 
     private static final String possibleTimeDelimiters = "[-,:hH]+";
@@ -102,6 +62,50 @@ public class DateTimeUtil {
     private static final Pattern datePatternWithoutYear = Pattern.compile("\\d{1,2}[- /.]\\d{1,2}");
     private static final Pattern datePatternWithoutDelimiters = Pattern.compile("\\d{3,4}");
     private static final Pattern neededDatePattern = Pattern.compile("\\d{2}-\\d{2}-\\d{4}");
+
+    public static Instant convertToSystemTime(LocalDateTime userInput, ZoneId userZoneId) {
+        Objects.requireNonNull(userInput, "Local date time is required");
+        Objects.requireNonNull(userZoneId);
+
+        ZonedDateTime userTime = ZonedDateTime.of(userInput, userZoneId);
+        ZonedDateTime systemTime = userTime.withZoneSameInstant(zoneSystem);
+
+        return systemTime.toInstant();
+    }
+
+    public static ZonedDateTime convertToUserTimeZone(Instant timeInSystem, ZoneId userZoneId) {
+        ZonedDateTime zonedDateTime = timeInSystem.atZone(userZoneId);
+        return zonedDateTime;
+    }
+
+    public static Instant restrictToDaytime(Instant instantToRestrict, ZoneId userZoneId) {
+        ZonedDateTime zonedDateTime = instantToRestrict.atZone(userZoneId);
+        if (zonedDateTime.getHour() <= earliestHourForAutomatedMessage) {
+            zonedDateTime = ZonedDateTime.of(zonedDateTime.toLocalDate(), earliestHour, userZoneId);
+            return zonedDateTime.toInstant();
+        } else if (zonedDateTime.getHour() >= latestHourForAutomatedMessages) {
+            zonedDateTime = ZonedDateTime.of(zonedDateTime.toLocalDate(), latestHour, userZoneId);
+            return zonedDateTime.toInstant();
+        } else {
+            return instantToRestrict;
+        }
+    }
+
+    public static ZoneId getSAST() { return zoneSAST; }
+
+    public static DateTimeFormatter getPreferredDateFormat() { return preferredDateFormat; }
+    public static DateTimeFormatter getPreferredTimeFormat() { return preferredTimeFormat; }
+    public static DateTimeFormatter getPreferredDateTimeFormat() { return preferredDateTimeFormat; }
+    public static DateTimeFormatter getPreferredRestFormat() { return preferredRestFormat; }
+
+    public static DateTimeFormatter getWebFormFormat() { return webFormFormat; }
+    public static LocalDateTime getVeryLongTimeAway() { return veryLongTimeAway;}
+    public static Instant getVeryLongAwayInstant() { return veryLongTimeAway.toInstant(ZoneOffset.UTC); }
+    public static Instant getEarliestInstant() { return earliestInstant; }
+
+    /*
+    SECTION : regex for handling preformatted date time (may be able to remove given introduction of Selo & SUTime)
+     */
 
     /**
      * Helper method to deal with messy user input of a time string, more strict but also more likely to be accurate than

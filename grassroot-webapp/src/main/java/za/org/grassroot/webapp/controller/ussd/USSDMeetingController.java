@@ -25,7 +25,6 @@ import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import za.org.grassroot.webapp.util.USSDEventUtil;
 import za.org.grassroot.webapp.util.USSDGroupUtil;
-import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -76,7 +75,6 @@ public class USSDMeetingController extends USSDController {
     private static final String
             manageMeetingMenu = "manage",
             viewMeetingDetails = "details",
-            changeDateAndTime = "changeDateTime",
             changeMeetingLocation = "changeLocation",
             cancelMeeting = "cancel",
             newTime = "new_time",
@@ -179,10 +177,10 @@ public class USSDMeetingController extends USSDController {
         USSDMenu thisMenu;
 
         // if priorInput exists, we have been interrupted, so use that as userInput, else use what is passed as 'request'
-        String userInput = (priorInput != null) ? USSDUrlUtil.decodeParameter(priorInput) : userResponse;
+        String userInput = (priorInput != null) ? decodeParameter(priorInput) : userResponse;
         String includeGroup = (groupUid != null && !groupUid.equals("")) ? groupUidUrlSuffix + groupUid : ""; // there is no case where eventId is not null but groupId is
 
-        String urlToSave = USSDUrlUtil.saveMenuUrlWithInput(thisSection, groupHandlingMenu, includeGroup, userInput);
+        String urlToSave = saveMenuUrlWithInput(thisSection, groupHandlingMenu, includeGroup, userInput);
         log.info("In group handling menu, have saved this URL: " + urlToSave);
         User user = userManager.findByInputNumber(inputNumber, urlToSave);
 
@@ -218,16 +216,21 @@ public class USSDMeetingController extends USSDController {
     @RequestMapping(value = path + subjectMenu)
     @ResponseBody
     public Request getSubject(@RequestParam(value = phoneNumber, required = true) String inputNumber,
-                              @RequestParam(value = entityUidParam, required = false) String mtgRequestUid,
+                              @RequestParam(value = entityUidParam, required = false) String passedRequestUid,
                               @RequestParam(value = groupUidParam, required = false) String groupUid,
                               @RequestParam(value = interruptedFlag, required = false) boolean interrupted,
                               @RequestParam(value = "revising", required = false) boolean revising) throws URISyntaxException {
 
         User sessionUser = userManager.findByInputNumber(inputNumber);
 
+        String mtgRequestUid;
         if (!interrupted && !revising) {
+            // i.e., generate request UID if it exists
             MeetingRequest meetingRequest = eventRequestBroker.createEmptyMeetingRequest(sessionUser.getUid(), groupUid);
             mtgRequestUid = meetingRequest.getUid();
+        } else {
+            // i.e., reuse the one that we are passed
+            mtgRequestUid = passedRequestUid;
         }
 
         cacheManager.putUssdMenuForUser(inputNumber, saveMeetingMenu(subjectMenu, mtgRequestUid, revising));
@@ -315,8 +318,6 @@ public class USSDMeetingController extends USSDController {
 
 
         User user = userManager.findByInputNumber(inputNumber, saveMeetingMenu(confirmMenu, mtgRequestUid, false));
-        boolean isTimePast = false;
-
 
         if (!interrupted) {
             try {
@@ -525,14 +526,14 @@ public class USSDMeetingController extends USSDController {
                                  @RequestParam(value = entityUidParam) String eventUid,
                                  @RequestParam(value = requestUidParam) String requestUid,
                                  @RequestParam("action") String action,
-                                 @RequestParam(userInputParam) String userInput,
+                                 @RequestParam(userInputParam) String passedInput,
                                  @RequestParam(value = "prior_input", required = false) String priorInput) throws URISyntaxException {
 
-        userInput = (priorInput == null) ? userInput : priorInput;
+        final String userInput = (priorInput == null) ? passedInput : priorInput;
 
         User user = userManager.findByInputNumber(inputNumber);
         cacheManager.putUssdMenuForUser(inputNumber, editingMtgMenuUrl(modifyConfirm, eventUid, requestUid, action)
-                + "&prior_input=" + USSDUrlUtil.encodeParameter(userInput));
+                + "&prior_input=" + encodeParameter(userInput));
 
         USSDMenu menu;
         final String backUrl = meetingMenus + action + entityUidUrlSuffix + eventUid + "&" + requestUidParam + "=" + requestUid;

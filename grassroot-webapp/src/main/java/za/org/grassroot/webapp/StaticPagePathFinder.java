@@ -57,7 +57,7 @@ public class StaticPagePathFinder {
         String requestMapping = filePath;
         if (requestMapping.endsWith("/index")) {
             requestMapping = requestMapping.replace("/index", "");
-            if (requestMapping.equals("")) {
+            if ("".equals(requestMapping)) {
                 requestMapping = "/";
             }
         }

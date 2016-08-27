@@ -40,10 +40,6 @@ import static za.org.grassroot.webapp.enums.USSDSection.*;
 
 /**
  * Controller for the USSD menu
- * todo: abstract out the messages, so can introduce a dictionary mechanism of some sort to deal with languages
- * todo: avoid hard-coding the URLs in the menus, so we can swap them around later
- * todo: create mini-routines of common menu flows (e.g., create a group) so they can be inserted in multiple flows
- * todo: Check if responses are less than 140 characters before sending
  */
 @RequestMapping(method = GET, produces = MediaType.APPLICATION_XML_VALUE)
 @RestController
@@ -441,7 +437,7 @@ public class USSDHomeController extends USSDController {
         User user = userManager.loadOrSaveUser(inputNumber);
         Meeting meeting = eventBroker.loadMeeting(meetingUid);
 
-        if (attending.equals("yes")) {
+        if ("yes".equals(attending)) {
             eventLogBroker.rsvpForEvent(meeting.getUid(), user.getUid(), EventRSVPResponse.YES);
             welcomeKey = String.join(".", Arrays.asList(homeKey, startMenu, promptKey, "rsvp-yes"));
         } else {
@@ -512,11 +508,9 @@ public class USSDHomeController extends USSDController {
                                      @RequestParam(value = groupUidParam) String groupUid,
                                      @RequestParam(value = userInputParam) String groupName) throws URISyntaxException {
 
-        // todo: use permission model to check if user can actually do this
-
         User user = userManager.findByInputNumber(inputNumber);
         String welcomeMessage;
-        if (groupName.equals("0") || groupName.trim().equals("")) {
+        if ("0".equals(groupName) || "".equals(groupName.trim())) {
             welcomeMessage = getMessage(thisSection, startMenu, promptKey, user);
             userLogger.recordUserLog(user.getUid(), UserLogType.USER_SKIPPED_NAME, groupUid);
         } else {

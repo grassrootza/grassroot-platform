@@ -31,6 +31,7 @@ import javax.servlet.Filter;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.nio.file.InvalidPathException;
 import java.util.Locale;
 
 import static org.springframework.http.HttpStatus.NOT_FOUND;
@@ -117,7 +118,7 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
             }
 
         } catch (IOException e) {
-            throw new RuntimeException("Unable to locate static pages: " + e.getMessage(), e);
+            throw new UnsupportedOperationException("Unable to locate static pages: " + e.getMessage(), e);
         }
     }
     @Override

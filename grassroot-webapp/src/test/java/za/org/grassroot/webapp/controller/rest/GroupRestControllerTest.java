@@ -36,13 +36,13 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
     private static final Logger log = LoggerFactory.getLogger(GroupRestControllerTest.class);
 
     @InjectMocks
-    GroupRestController groupRestController;
+    private GroupRestController groupRestController;
 
-    String path = "/api/group/";
-    List<Group> groups = new ArrayList<>();
-    MembershipInfo membershipInfo = new MembershipInfo(testUserPhone, BaseRoles.ROLE_GROUP_ORGANIZER, sessionTestUser.getDisplayName());
-    Set<MembershipInfo> membersToAdd = Sets.newHashSet();
-    Event event = meetingEvent;
+    private String path = "/api/group/";
+    private List<Group> groups = new ArrayList<>();
+    private MembershipInfo membershipInfo = new MembershipInfo(testUserPhone, BaseRoles.ROLE_GROUP_ORGANIZER, sessionTestUser.getDisplayName());
+    private Set<MembershipInfo> membersToAdd = Sets.newHashSet();
+    private Event event = meetingEvent;
 
     @Before
     public void setUp() {

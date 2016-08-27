@@ -48,8 +48,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
             dueDateMenu = "due_date",
             confirmMenu = "confirm",
             send = "send";
-    private static final String entryTypeMenu = "type",
-            listEntriesMenu = "list",
+    private static final String listEntriesMenu = "list",
             viewEntryMenu = "view",
             viewEntryDates = "view_dates",
             viewAssignment = "view_assigned",
@@ -62,11 +61,10 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
     private static final String path = "/ussd/todo/";
 
     @InjectMocks
-    USSDToDoController ussdLogBookController;
+    private USSDToDoController ussdLogBookController;
 
     @Mock
-    UserRepository userRepository;
-
+    private UserRepository userRepository;
 
     private User testUser;
 

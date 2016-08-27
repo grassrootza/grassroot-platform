@@ -23,10 +23,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class TaskRestControllerTest extends RestAbstractUnitTest {
 
     @InjectMocks
-    TaskRestController taskRestController;
+    private TaskRestController taskRestController;
 
-    String path = "/api/task";
-    List<TaskDTO> taskList;
+    private String path = "/api/task";
+    private List<TaskDTO> taskList;
 
     @Before
     public void setUp() {

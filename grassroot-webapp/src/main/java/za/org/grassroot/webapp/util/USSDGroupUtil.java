@@ -51,13 +51,13 @@ public class USSDGroupUtil extends USSDUtil {
     private TodoRequestBroker todoRequestBroker;
 
     @Autowired
-    PermissionBroker permissionBroker;
+    private PermissionBroker permissionBroker;
 
     @Autowired
-    CacheUtilService cacheManager;
+    private CacheUtilService cacheManager;
 
     @Autowired
-    GroupJoinRequestService groupJoinRequestService;
+    private GroupJoinRequestService groupJoinRequestService;
 
     private static final String groupKeyForMessages = "group";
 
@@ -156,8 +156,8 @@ public class USSDGroupUtil extends USSDUtil {
         String groupName = request.getGroup().getGroupName();
         prompt = getMessage(section.toString(), groupKeyForMessages, promptKey + ".join_request", new String[]{displayName, groupName}, user);
         USSDMenu menu = new USSDMenu(prompt);
-        menu.addMenuOption(USSDUrlUtil.approveRejectRequestMenuUrl("approve", userUid, requestUid), getMessage(section, groupKeyForMessages, optionsKey + "approve", user));
-        menu.addMenuOption(USSDUrlUtil.approveRejectRequestMenuUrl("reject", userUid, requestUid), getMessage(section, groupKeyForMessages, optionsKey + "reject", user));
+        menu.addMenuOption(approveRejectRequestMenuUrl("approve", userUid, requestUid), getMessage(section, groupKeyForMessages, optionsKey + "approve", user));
+        menu.addMenuOption(approveRejectRequestMenuUrl("reject", userUid, requestUid), getMessage(section, groupKeyForMessages, optionsKey + "reject", user));
 
         return menu;
     }
@@ -169,10 +169,10 @@ public class USSDGroupUtil extends USSDUtil {
         USSDMenu menu = new USSDMenu(prompt);
         menu = addListOfGroupsToMenu(menu, section, urlForExistingGroups, groupsPartOf.getContent(), user);
         if (groupsPartOf.hasNext())
-            menu.addMenuOption(USSDUrlUtil.paginatedGroupUrl(prompt, urlForExistingGroups, null, pageNumber + 1),
+            menu.addMenuOption(paginatedGroupUrl(prompt, urlForExistingGroups, null, pageNumber + 1),
                     "More groups");
         if (groupsPartOf.hasPrevious()) {
-            menu.addMenuOption(USSDUrlUtil.paginatedGroupUrl(prompt, urlForExistingGroups, null, pageNumber - 1), "Back");
+            menu.addMenuOption(paginatedGroupUrl(prompt, urlForExistingGroups, null, pageNumber - 1), "Back");
         } else {
             menu.addMenuOption(section.toPath() + "start", "Back");
         }
@@ -218,10 +218,10 @@ public class USSDGroupUtil extends USSDUtil {
         } else {
             menu = addListOfGroupsToMenu(menu, section, urlForExistingGroups, groupsPartOf.getContent(), user);
             if (groupsPartOf.hasNext())
-                menu.addMenuOption(USSDUrlUtil.paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, pageNumber + 1),
+                menu.addMenuOption(paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, pageNumber + 1),
                         "More groups"); // todo: i18n
             if (groupsPartOf.hasPrevious())
-                menu.addMenuOption(USSDUrlUtil.paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, pageNumber - 1),
+                menu.addMenuOption(paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, pageNumber - 1),
                         "Back"); // todo: i18n
             if (urlForNewGroup != null)
                 menu.addMenuOption(urlForNewGroup, getMessage(groupKeyForMessages, "create", "option", user));
@@ -360,13 +360,13 @@ public class USSDGroupUtil extends USSDUtil {
                 VoteRequest voteRequest = eventRequestBroker.createEmptyVoteRequest(user.getUid(), group.getUid());
                 String requestUid = voteRequest.getUid();
                 cacheManager.putUssdMenuForUser(user.getPhoneNumber(), saveVoteMenu("issue", requestUid));
-                nextUrl = "vote/time" + USSDUrlUtil.entityUidUrlSuffix + requestUid;
+                nextUrl = "vote/time" + entityUidUrlSuffix + requestUid;
                 menu = new USSDMenu(getMessage(section, "issue", promptKey + ".skipped", group.getDisplayName(""), user), nextUrl);
                 break;
             case TODO:
                 String logBookUid = todoRequestBroker.create(user.getUid(), group.getUid()).getUid();
                 cacheManager.putUssdMenuForUser(user.getPhoneNumber(), saveToDoMenu(subjectMenu, logBookUid));
-                nextUrl = "log/due_date" + USSDUrlUtil.logbookIdUrlSuffix + logBookUid;
+                nextUrl = "log/due_date" + logbookIdUrlSuffix + logBookUid;
                 menu = new USSDMenu(getMessage(section, subjectMenu, promptKey + ".skipped", group.getDisplayName(""), user), nextUrl);
                 break;
             case GROUP_MANAGER:

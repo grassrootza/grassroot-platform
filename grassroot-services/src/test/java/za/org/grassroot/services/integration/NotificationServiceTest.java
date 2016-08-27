@@ -37,17 +37,17 @@ public class NotificationServiceTest {
     private Logger log = Logger.getLogger(getClass().getCanonicalName());
 
     @Autowired
-    MessageAssemblingService messageAssemblingService;
+    private MessageAssemblingService messageAssemblingService;
 
     @Autowired
     @Qualifier("servicesMessageSourceAccessor")
-    MessageSourceAccessor messageSourceAccessor;
+    private MessageSourceAccessor messageSourceAccessor;
 
     @Autowired
-    UserRepository userRepository;
+    private UserRepository userRepository;
 
     @Autowired
-    EventRepository eventRepository;
+    private EventRepository eventRepository;
 
     //TODO this test as well as the corresponding test welcome.vm should be removed
     //     this is only useful now to test application configuration
@@ -65,7 +65,6 @@ public class NotificationServiceTest {
     @Test
     public void shouldGiveEnglishMessageForMeetingInvite() {
         String message = messageSourceAccessor.getMessage("sms.mtg.send.new", new Object[]{"GrassRoot", "Thabo", "Activism", "The Square", "15 October 2PM"}, Locale.ENGLISH);
-
     }
 
     @Test

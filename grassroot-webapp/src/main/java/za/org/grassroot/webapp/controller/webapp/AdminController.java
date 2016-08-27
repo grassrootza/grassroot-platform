@@ -63,10 +63,10 @@ public class AdminController extends BaseController {
     @Autowired
     private AdminService adminService;
 
-    // todo: move this map somewhere
-/*    private static final Map<String, String> groupRoles = ImmutableMap.of(BaseRoles.ROLE_ORDINARY_MEMBER, "Ordinary member",
-                                                                          BaseRoles.ROLE_COMMITTEE_MEMBER, "Committee member",
-                                                                          BaseRoles.ROLE_GROUP_ORGANIZER, "Group organizer");*/
+    // todo : move this to a common interface
+    private final static List<String[]> roleDescriptions = Arrays.asList(new String[]{BaseRoles.ROLE_ORDINARY_MEMBER, "Ordinary member"},
+            new String[]{BaseRoles.ROLE_COMMITTEE_MEMBER, "Committee member"},
+            new String[]{BaseRoles.ROLE_GROUP_ORGANIZER, "Group organizer"});
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/admin/home")
@@ -144,8 +144,7 @@ public class AdminController extends BaseController {
      */
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/admin/users/view")
-    public String viewUser(Model model, @RequestParam("lookup_field") String lookupField,
-                           @RequestParam("lookup_term") String lookupTerm, HttpServletRequest request) {
+    public String viewUser(Model model, @RequestParam("lookup_term") String lookupTerm, HttpServletRequest request) {
 
         String pageToDisplay;
         List<MaskedUserDTO> foundUsers = adminService.searchByInputNumberOrDisplayName(lookupTerm);
@@ -174,11 +173,6 @@ public class AdminController extends BaseController {
 	/*
 	RESTRUCTURED METHODS TO HANDLE GROUP ADMIN
 	 */
-
-    // todo : move this to a common interface
-    final static List<String[]> roleDescriptions = Arrays.asList(new String[]{BaseRoles.ROLE_ORDINARY_MEMBER, "Ordinary member"},
-            new String[]{BaseRoles.ROLE_COMMITTEE_MEMBER, "Committee member"},
-            new String[]{BaseRoles.ROLE_GROUP_ORGANIZER, "Group organizer"});
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/admin/groups/search")

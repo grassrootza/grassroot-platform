@@ -35,10 +35,15 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Map;
+import java.util.Comparator;
 import java.util.stream.Collectors;
-
-import static org.springframework.http.HttpStatus.*;
 
 /**
  * Created by paballo.
@@ -52,9 +57,6 @@ public class GroupRestController {
 
     @Autowired
     private EventManagementService eventManagementService;
-
-    @Autowired
-    private RoleManagementService roleManagementService;
 
     @Autowired
     private UserManagementService userManagementService;
@@ -129,7 +131,7 @@ public class GroupRestController {
 			return RestUtil.errorResponseWithData(RestMessage.GROUP_BAD_PHONE_NUMBER, e.getMessage());
 		} catch (RuntimeException e) {
 			e.printStackTrace();
-			return RestUtil.errorResponse(BAD_REQUEST, RestMessage.GROUP_NOT_CREATED);
+			return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.GROUP_NOT_CREATED);
 		}
 	}
 
@@ -161,7 +163,7 @@ public class GroupRestController {
 	    log.info("responding ... group with removed UIDs = " + changedSinceData.getRemovedUids());
 
         ChangedSinceData<GroupResponseWrapper> response = new ChangedSinceData<>(groupWrappers, changedSinceData.getRemovedUids());
-        return new ResponseEntity<>(response, OK);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/get/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.GET)
@@ -174,8 +176,8 @@ public class GroupRestController {
         permissionBroker.validateGroupPermission(user, group, null);
 
         List<GroupResponseWrapper> groupWrappers = Collections.singletonList(createGroupWrapper(group, user));
-        ResponseWrapper rw = new GenericResponseWrapper(OK, RestMessage.USER_GROUPS, RestStatus.SUCCESS, groupWrappers);
-        return new ResponseEntity<>(rw, OK);
+        ResponseWrapper rw = new GenericResponseWrapper(HttpStatus.OK, RestMessage.USER_GROUPS, RestStatus.SUCCESS, groupWrappers);
+        return new ResponseEntity<>(rw, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/search/{phoneNumber}/{code}", method = RequestMethod.GET)
@@ -246,7 +248,7 @@ public class GroupRestController {
         try {
             log.info("User " + phoneNumber + "requests to join group with uid " + groupToJoinUid);
             groupJoinRequestService.open(user.getUid(), groupToJoinUid, message);
-            responseWrapper = new ResponseWrapperImpl(OK, RestMessage.GROUP_JOIN_REQUEST_SENT, RestStatus.SUCCESS);
+            responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.GROUP_JOIN_REQUEST_SENT, RestStatus.SUCCESS);
         } catch (RequestorAlreadyPartOfGroupException e) {
             responseWrapper = new ResponseWrapperImpl(HttpStatus.CONFLICT, RestMessage.USER_ALREADY_PART_OF_GROUP,
                     RestStatus.FAILURE);
@@ -263,7 +265,7 @@ public class GroupRestController {
 			groupJoinRequestService.cancel(user.getUid(), groupUid);
 			return RestUtil.messageOkayResponse(RestMessage.GROUP_JOIN_REQUEST_CANCELLED);
 		} catch (JoinRequestNotOpenException e) {
-			return RestUtil.errorResponse(CONFLICT, RestMessage.GROUP_JOIN_REQUEST_NOT_FOUND);
+			return RestUtil.errorResponse(HttpStatus.CONFLICT, RestMessage.GROUP_JOIN_REQUEST_NOT_FOUND);
 		}
 	}
 
@@ -276,7 +278,7 @@ public class GroupRestController {
 			groupJoinRequestService.remind(user.getUid(), groupUid);
 			return RestUtil.messageOkayResponse(RestMessage.GROUP_JOIN_REQUEST_REMIND);
 		} catch (JoinRequestNotOpenException e) {
-			return RestUtil.errorResponse(CONFLICT, RestMessage.GROUP_JOIN_REQUEST_NOT_FOUND);
+			return RestUtil.errorResponse(HttpStatus.CONFLICT, RestMessage.GROUP_JOIN_REQUEST_NOT_FOUND);
 		}
 	}
 
@@ -293,7 +295,7 @@ public class GroupRestController {
                 .sorted(Collections.reverseOrder())
                 .collect(Collectors.toList());
 
-        return new ResponseEntity<>(requestDTOs, OK);
+        return new ResponseEntity<>(requestDTOs, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/join/respond/{phoneNumber}/{code}", method = RequestMethod.POST)
@@ -306,12 +308,12 @@ public class GroupRestController {
             User user = userManagementService.findByInputNumber(phoneNumber);
             if (response.equals("APPROVE")) {
                 groupJoinRequestService.approve(user.getUid(), requestUid);
-                return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.OK, RestMessage.GROUP_JOIN_RESPONSE_PROCESSED, RestStatus.SUCCESS), OK);
+                return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.OK, RestMessage.GROUP_JOIN_RESPONSE_PROCESSED, RestStatus.SUCCESS), HttpStatus.OK);
             } else if (response.equals("DENY")) {
                 groupJoinRequestService.decline(user.getUid(), requestUid);
-                return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.OK, RestMessage.GROUP_JOIN_RESPONSE_PROCESSED, RestStatus.SUCCESS), OK);
+                return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.OK, RestMessage.GROUP_JOIN_RESPONSE_PROCESSED, RestStatus.SUCCESS), HttpStatus.OK);
             } else {
-                return new ResponseEntity<>(new ResponseWrapperImpl(BAD_REQUEST, RestMessage.CLIENT_ERROR, RestStatus.FAILURE), OK);
+                return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.CLIENT_ERROR, RestStatus.FAILURE), HttpStatus.OK);
             }
         } catch (AccessDeniedException e) {
             // since role / permissions / assignment may have changed since request was opened ...
@@ -338,12 +340,12 @@ public class GroupRestController {
         Page<User> pageable = userManagementService.getGroupMembers(group, page, size);
         ResponseWrapper responseWrapper;
         if (page > pageable.getTotalPages()) {
-            responseWrapper = new ResponseWrapperImpl(BAD_REQUEST, RestMessage.GROUP_ACTIVITIES, RestStatus.FAILURE);
+            responseWrapper = new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.GROUP_ACTIVITIES, RestStatus.FAILURE);
         } else {
             List<MembershipResponseWrapper> members = pageable.getContent().stream()
                     .map(u -> new MembershipResponseWrapper(group, u, group.getMembership(u).getRole(), selectedByDefault))
                     .collect(Collectors.toList());
-            responseWrapper = new GenericResponseWrapper(OK, RestMessage.GROUP_MEMBERS, RestStatus.SUCCESS, members);
+            responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.GROUP_MEMBERS, RestStatus.SUCCESS, members);
         }
         return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
     }
@@ -380,7 +382,7 @@ public class GroupRestController {
         } catch (AccessDeniedException e) {
 	        return RestUtil.accessDeniedResponse();
         } catch (Exception e) {
-		    return RestUtil.errorResponse(BAD_REQUEST, RestMessage.INVALID_INPUT);
+		    return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_INPUT);
 	    }
 
     }
@@ -400,7 +402,8 @@ public class GroupRestController {
         try {
             groupBroker.removeMembers(user.getUid(), groupUid, memberUids);
             Group updatedGroup = groupBroker.load(groupUid);
-            return new ResponseEntity<>(new GenericResponseWrapper(OK, RestMessage.MEMBERS_REMOVED, RestStatus.SUCCESS, createGroupWrapper(updatedGroup, user)), OK);
+            return new ResponseEntity<>(new GenericResponseWrapper(HttpStatus.OK, RestMessage.MEMBERS_REMOVED,
+		            RestStatus.SUCCESS, createGroupWrapper(updatedGroup, user)), HttpStatus.OK);
         } catch (AccessDeniedException e) {
             return RestUtil.accessDeniedResponse();
         }
@@ -575,7 +578,7 @@ public class GroupRestController {
 					.map(permission -> new PermissionDTO(permission, group, roleName, permissionsEnabled, messageSourceAccessor))
 					.sorted()
 					.collect(Collectors.toList());
-			response = new ResponseEntity<>(new GenericResponseWrapper(OK, RestMessage.PERMISSIONS_RETURNED, RestStatus.SUCCESS, permissionsDTO), OK);
+			response = new ResponseEntity<>(new GenericResponseWrapper(HttpStatus.OK, RestMessage.PERMISSIONS_RETURNED, RestStatus.SUCCESS, permissionsDTO), HttpStatus.OK);
 		} catch (AccessDeniedException e) {
 			response = RestUtil.accessDeniedResponse();
 		}
