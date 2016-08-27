@@ -29,8 +29,6 @@ public interface GroupBroker {
     Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos,
                  GroupPermissionTemplate groupPermissionTemplate, String description, Integer reminderMinutes, boolean openJoinToken);
 
-
-
     void deactivate(String userUid, String groupUid, boolean checkIfWithinTimeWindow);
 
     boolean isDeactivationAvailable(User user, Group group, boolean checkIfWithinTimeWindow);

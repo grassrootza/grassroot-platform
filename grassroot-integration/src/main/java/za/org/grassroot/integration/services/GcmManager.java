@@ -13,8 +13,9 @@ import java.time.Instant;
  */
 @Service
 public class GcmManager implements GcmService {
+
     @Autowired
-    GcmRegistrationRepository gcmRegistrationRepository;
+    private GcmRegistrationRepository gcmRegistrationRepository;
 
     @Override
     public GcmRegistration load(String uid) {

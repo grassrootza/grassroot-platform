@@ -66,35 +66,29 @@ public class GroupController extends BaseController {
 
     // todo: when cleaning up, figure out how to move these to group wrapper and/or message sources
 
-    List<String[]> permissionTemplates = Arrays.asList(
+    private final List<String[]> permissionTemplates = Arrays.asList(
             new String[]{GroupPermissionTemplate.DEFAULT_GROUP.toString(),
                     "Any member can call a meeting or vote or record a to-do"},
             new String[]{GroupPermissionTemplate.CLOSED_GROUP.toString(),
                     "Only designated members can call a meeting or vote or record a to-do"});
 
-    final static List<String[]> roleDescriptions = Arrays.asList(new String[]{BaseRoles.ROLE_ORDINARY_MEMBER, "Ordinary member"},
+    private final static List<String[]> roleDescriptions = Arrays.asList(new String[]{BaseRoles.ROLE_ORDINARY_MEMBER, "Ordinary member"},
                                                     new String[]{BaseRoles.ROLE_COMMITTEE_MEMBER, "Committee member"},
                                                     new String[]{BaseRoles.ROLE_GROUP_ORGANIZER, "Group organizer"});
 
     // todo: probably move to permissions broker as 'permissions implemented' or something
-    final static List<Permission> permissionsImplemented = Arrays.asList(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS,
+    private final static List<Permission> permissionsImplemented = Arrays.asList(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS,
                                                                        Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING,
                                                                        Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS,
                                                                        Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE,
                                                                        Permission.GROUP_PERMISSION_READ_UPCOMING_EVENTS,
                                                                        Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY,
                                                                        Permission.GROUP_PERMISSION_CLOSE_OPEN_LOGBOOK,
-                                                                       // Permission.GROUP_PERMISSION_FORCE_PERMISSION_CHANGE,
                                                                        Permission.GROUP_PERMISSION_CREATE_SUBGROUP,
-                                                                       // Permission.GROUP_PERMISSION_AUTHORIZE_SUBGROUP,
-                                                                       // Permission.GROUP_PERMISSION_DELEGATE_SUBGROUP_CREATION,
-                                                                       // Permission.GROUP_PERMISSION_DELINK_SUBGROUP,
                                                                        Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER,
-                                                                       // Permission.GROUP_PERMISSION_FORCE_ADD_MEMBER,
                                                                        Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER,
                                                                        Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS,
                                                                        Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE);
-                                                                       // Permission.GROUP_PERMISSION_FORCE_DELETE_MEMBER);
 
 
     /*
@@ -160,7 +154,7 @@ public class GroupController extends BaseController {
 
 	    // dealing with Jquery weirdness that has crept in on Chrome ...
 
-	    if (groupToJoinUid.equals("error")) {
+	    if ("error".equals(groupToJoinUid)) {
 		    addMessage(attributes, MessageType.ERROR, "group.join.request.error", request);
 		    return "redirect:/home";
 	    } else {
@@ -286,6 +280,8 @@ public class GroupController extends BaseController {
 
         Long timeStart, timeEnd;
         GroupPermissionTemplate template = GroupPermissionTemplate.fromString(templateRaw); // todo: set in wrapper
+
+        log.info("creating group ... template = {}", template.toString());
 
         if (bindingResult.hasErrors()) {
             model.addAttribute("groupCreator", groupCreator);
@@ -420,7 +416,6 @@ public class GroupController extends BaseController {
 
     /*
     Methods and views for adding a few members at a time
-    todo: add a view to "move" a member (for formal/larger CSOs)
      */
 
     @RequestMapping(value = "change_multiple")
@@ -568,7 +563,6 @@ public class GroupController extends BaseController {
 
     /*
     Methods to handle group deactivation and group unsubscribe
-    todo: add Spring Security annotations to stop unauthorized users from even accessing the URLs
      */
 
     @RequestMapping(value = "inactive", method = RequestMethod.POST)
@@ -727,15 +721,13 @@ public class GroupController extends BaseController {
                                       @RequestParam(value="confirm_field") String confirmField, RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
         // todo: add error handling
-        if (!confirmField.toLowerCase().equals("merge")) {
+        if (!confirmField.equalsIgnoreCase("merge")) {
             addMessage(redirectAttributes, MessageType.ERROR, "group.merge.error", request);
             return "redirect:/home";
         } else {
             log.info("Merging the groups, leave active set to: {}", leaveActive);
-            Group groupInto = groupBroker.load(groupUidInto);
             Group groupFrom = groupBroker.load(groupUidFrom);
-            Group consolidatedGroup =
-                    groupBroker.merge(getUserProfile().getUid(), groupUidInto, groupUidFrom, leaveActive, true, false, null);
+            Group consolidatedGroup = groupBroker.merge(getUserProfile().getUid(), groupUidInto, groupUidFrom, leaveActive, true, false, null);
             Integer[] userCounts = new Integer[]{groupFrom.getMembers().size(),
                     consolidatedGroup.getMembers().size()};
             redirectAttributes.addAttribute("groupUid", consolidatedGroup.getUid());
@@ -802,7 +794,10 @@ public class GroupController extends BaseController {
     public String viewMemberRoles(Model model, @RequestParam String groupUid) {
         // service layer will take care of checking permissions, but at least here make sure user is in group
         Group group = groupBroker.load(groupUid);
-        if (!isUserPartOfGroup(getUserProfile(), group)) throw new AccessDeniedException("Sorry, you are not a member of this group");
+        User user = userManagementService.load(getUserProfile().getUid());
+
+        if (!isUserPartOfGroup(user, group)) throw new AccessDeniedException("Sorry, you are not a member of this group");
+
         List<MembershipInfo> members = new ArrayList<>(MembershipInfo.createFromMembers(group.getMemberships())); // todo: remember to sort members, by role etc
 
         model.addAttribute("group", group);
@@ -834,9 +829,11 @@ public class GroupController extends BaseController {
     public String viewRolePermissions(Model model, @RequestParam String groupUid) {
 
         Group group = groupBroker.load(groupUid);
-        if (!isUserPartOfGroup(getUserProfile(), group)) throw new AccessDeniedException("Sorry, you are not a member of this group");
+        User user = userManagementService.load(getUserProfile().getUid());
 
-        // need to do this else
+        if (!isUserPartOfGroup(user, group)) throw new AccessDeniedException("Sorry, you are not a member of this group");
+
+        // todo : clean this up
         List<Permission> permissionsHidden = new ArrayList<>(Arrays.asList(Permission.values()));
         permissionsHidden.removeAll(permissionsImplemented);
 
@@ -872,7 +869,6 @@ public class GroupController extends BaseController {
             if (organizer != null && organizer.equals("on")) organizerPermissions.add(permission);
         }
 
-        // todo: make this atomic instead, plus also need to make sure don't overwrite the non implemented stuff
         newPermissionMap.put(BaseRoles.ROLE_ORDINARY_MEMBER, ordinaryPermissions);
         newPermissionMap.put(BaseRoles.ROLE_COMMITTEE_MEMBER, committeePermissions);
         newPermissionMap.put(BaseRoles.ROLE_GROUP_ORGANIZER, organizerPermissions);

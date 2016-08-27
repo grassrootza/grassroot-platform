@@ -443,7 +443,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(flash().attributeExists(BaseController.MessageType.SUCCESS.getMessageKey()))
                 .andExpect(view().name("redirect:/group/view"));
         verify(groupBrokerMock, times(1)).load(testGroupFrom.getUid());
-        verify(groupBrokerMock, times(1)).load(testGroupInto.getUid());
         verify(groupBrokerMock, times(1)).merge(sessionTestUser.getUid(), testGroupInto.getUid(), testGroupFrom.getUid(), true, true, false, null);
         verifyNoMoreInteractions(groupBrokerMock);
 

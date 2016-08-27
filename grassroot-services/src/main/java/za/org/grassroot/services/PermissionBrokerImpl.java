@@ -1,5 +1,7 @@
 package za.org.grassroot.services;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class PermissionBrokerImpl implements PermissionBroker {
+
+    private static final Logger log = LoggerFactory.getLogger(PermissionBrokerImpl.class);
 
     @Autowired
     private GroupRepository groupRepository;
@@ -114,6 +118,7 @@ public class PermissionBrokerImpl implements PermissionBroker {
                 member.setPermissions(defaultOrdinaryMemberPermissions);
                 break;
             case CLOSED_GROUP:
+                log.info("setting permissions for closed group ... looks like = {}", closedGroupOrganizerPermissions.toString());
                 organizer.setPermissions(closedGroupOrganizerPermissions);
                 committee.setPermissions(closedCommitteeMemberPermissions);
                 member.setPermissions(closedOrdinaryMemberPermissions);

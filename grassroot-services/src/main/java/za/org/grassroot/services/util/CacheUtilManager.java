@@ -40,39 +40,6 @@ public class CacheUtilManager implements CacheUtilService {
 
     }
 
-    /*
-    Removing until needed, as allows removal of userManagementService, keeping this strictly interacting with cache
-     */
-    /* @Override
-    @Transactional(readOnly = true)
-    public void clearCacheForAllUsersInGroup(EventDTO event) {
-        log.info("clearCacheForAllUsersInGroup...starting");
-        try {
-            Cache cache = cacheManager.getCache("userRSVP");
-            Set<User> userList;
-            if (event.isIncludeSubGroups()) {
-                Group group = (Group) event.getParent();
-                userList = new HashSet<>(userManagementService.fetchByGroup(group.getUid(), true));
-            } else {
-                // todo: switch this
-                userList = ((Group) event.getParent()).getMembers();
-            }
-            for (User user : userList) {
-                log.info("clearCacheForAllUsersInGroup...user..." + user.getPhoneNumber());
-                String cacheKey = event.getEventType().toString() + "|" + user.getId();
-                log.info("clearCacheForAllUsersInGroup...removing..." + cacheKey);
-                try {
-                    cache.remove(cacheKey);
-                } catch (Exception e2) {
-
-                }
-            }
-        } catch (Exception e) {
-        }
-        log.info("clearCacheForAllUsersInGroup...ending");
-
-    }*/
-
     @Override
     public List<Event> getOutstandingResponseForUser(User user, EventType eventType) {
         List<Event> outstandingRSVPs = null;

@@ -62,7 +62,7 @@ public abstract class AbstractTodoEntity {
 	protected String message;
 
 	/*
-	Minus value will send a reminder before actionByDate, Plus value will send a reminder x minutes after
+	Minus value will send a reminder before actionByDate, Plus value will send a reminder x minutes before
 	actionByDate. Note ... now that it's fixed, this shares a lot with event, so consider abstracting to task
 	*/
 	@Column(name = "reminder_minutes")
@@ -149,9 +149,23 @@ public abstract class AbstractTodoEntity {
 
 	public void setScheduledReminderTime(Instant scheduledReminderTime) { this.scheduledReminderTime = scheduledReminderTime; }
 
+	public boolean isReminderActive() { return reminderActive; }
+
+	public void setReminderActive(boolean reminderActive) { this.reminderActive = reminderActive; }
+
 	public void calculateScheduledReminderTime() {
-		this.scheduledReminderTime = reminderActive ? actionByDate.plus(reminderMinutes, ChronoUnit.MINUTES)
+		this.scheduledReminderTime = reminderActive
+				? DateTimeUtil.restrictToDaytime(actionByDate.minus(reminderMinutes, ChronoUnit.MINUTES), DateTimeUtil.getSAST())
 				: null;
+
+		// if reminder time is already in the past (e.g., set to 1 week but deadline in 5 days), try set it to tomorrow, else set it to deadline
+		if (reminderActive && this.scheduledReminderTime.isBefore(Instant.now())) {
+			if (Instant.now().plus(1, ChronoUnit.DAYS).isBefore(actionByDate)) {
+				this.scheduledReminderTime = DateTimeUtil.restrictToDaytime(Instant.now().plus(1, ChronoUnit.DAYS), DateTimeUtil.getSAST());
+			} else {
+				this.scheduledReminderTime = actionByDate;
+			}
+		}
 	}
 
 	public TodoContainer getParent() {

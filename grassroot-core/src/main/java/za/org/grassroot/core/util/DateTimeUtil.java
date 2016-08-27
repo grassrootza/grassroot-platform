@@ -10,6 +10,8 @@ import org.slf4j.LoggerFactory;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoField;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -47,6 +49,11 @@ public class DateTimeUtil {
     private static final ZoneId zoneSAST = ZoneId.of("Africa/Johannesburg");
     private static final ZoneId zoneSystem = ZoneId.systemDefault();
 
+    private static final int latestHourForAutomatedMessages = 20;
+    private static final int earliestHourForAutomatedMessage = 8;
+    private static final LocalTime latestHour = LocalTime.of(latestHourForAutomatedMessages, 0);
+    private static final LocalTime ealiestHour = LocalTime.of(earliestHourForAutomatedMessage, 0);
+
     public static Instant convertToSystemTime(LocalDateTime userInput, ZoneId userZoneId) {
         Objects.requireNonNull(userInput, "Local date time is required");
         Objects.requireNonNull(userZoneId);
@@ -63,6 +70,23 @@ public class DateTimeUtil {
     }
 
     public static ZoneId getSAST() { return zoneSAST; }
+
+    public static Instant restrictToDaytime(Instant instantToRestrict, ZoneId userZoneId) {
+        ZonedDateTime zonedDateTime = instantToRestrict.atZone(userZoneId);
+        if (zonedDateTime.getHour() <= earliestHourForAutomatedMessage) {
+            zonedDateTime = ZonedDateTime.of(zonedDateTime.toLocalDate(), ealiestHour, userZoneId);
+            return zonedDateTime.toInstant();
+        } else if (zonedDateTime.getHour() >= latestHourForAutomatedMessages) {
+            zonedDateTime = ZonedDateTime.of(zonedDateTime.toLocalDate(), latestHour, userZoneId);
+            return zonedDateTime.toInstant();
+        } else {
+            return instantToRestrict;
+        }
+    }
+
+    /*
+    SECTION : regex for handling preformatted date time (may be able to remove given introduction of Selo & SUTime)
+     */
 
     private static final String possibleTimeDelimiters = "[-,:hH]+";
     private static final String meridian = ".*pm?";

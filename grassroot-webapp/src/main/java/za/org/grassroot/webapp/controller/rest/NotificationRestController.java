@@ -46,20 +46,20 @@ public class NotificationRestController {
 
     @RequestMapping(value = "/list/{phoneNumber}/{code}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> getNotifications(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
-                                                            @RequestParam(value = "page", required = false) Integer page,
-                                                            @RequestParam(value = "size", required = false) Integer size) {
+                                                            @RequestParam(value = "page", required = false) Integer queryPage,
+                                                            @RequestParam(value = "size", required = false) Integer queryPageSize) {
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
-        page = (page == null) ? 0 : page;
-        size = (size == null) ? pageLength : size;
+        final int pageNumber = (queryPage == null) ? 0 : queryPage;
+        final int pageSize = (queryPageSize == null) ? pageLength : queryPageSize;
 
-        Page<Notification> pageable = notificationService.fetchPagedAndroidNotifications(user, page, size);
+        Page<Notification> pageable = notificationService.fetchPagedAndroidNotifications(user, pageNumber, pageSize);
         log.info("pageable size = {}, from page number = {}, with page size = {}", pageable.getContent().size(),
-                page, size);
+                pageNumber, pageSize);
 
         ResponseEntity<ResponseWrapper> responseWrapper;
 
-        if (page > pageable.getTotalPages()) {
+        if (pageNumber > pageable.getTotalPages()) {
             responseWrapper = RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.NOTIFICATIONS_FINISHED);
         } else {
             List<NotificationDTO> notificationDTOList = pageable.getContent()

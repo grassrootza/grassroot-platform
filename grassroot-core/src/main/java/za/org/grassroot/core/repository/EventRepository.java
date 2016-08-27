@@ -51,8 +51,12 @@ where e.canceled = FALSE
 
 	 */
 	@Transactional
-	@Query(value = "select e from Event e where e.canceled = false and eventStartDateTime > ?1 and e.scheduledReminderTime < ?1 and e.scheduledReminderActive = true")
-	List<Event> findEventsForReminders(Instant fromInstant);
+	@Query(value = "select e from Event e " +
+			"where e.canceled = false " +
+			"and e.eventStartDateTime > ?1 " +
+			"and e.scheduledReminderTime < ?1 " +
+			"and e.scheduledReminderActive = true")
+	List<Event> findEventsForReminders(Instant referenceInstant);
 
 	@Query(value = "select v from Vote v where v.eventStartDateTime > ?1 and v.canceled = false")
 	List<Event> findAllVotesAfterTimeStamp(Instant fromInstant);

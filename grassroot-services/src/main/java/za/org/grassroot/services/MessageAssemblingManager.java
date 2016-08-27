@@ -12,6 +12,7 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.FormatUtil;
 
+import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
@@ -86,7 +87,8 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     public String createTodoReminderMessage(User user, Todo todo) {
         Locale locale = getUserLocale(user);
         String[] args = populateLogBookFields(todo);
-        return messageSourceAccessor.getMessage("sms.logbook.reminder", args, locale);
+        final String msgKey = todo.getActionByDate().isAfter(Instant.now()) ? "sms.logbook.reminder" : "sms.todo.reminder.past";
+        return messageSourceAccessor.getMessage(msgKey, args, locale);
     }
 
     @Override
@@ -308,7 +310,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     private String[] populateLogBookFields(Todo todo) {
         Group group = todo.getAncestorGroup();
         String salutation = (group.hasName()) ? group.getGroupName() : "Grassroot";
-        DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
+        DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE, d MMM");
         String dateString = sdf.format(todo.getActionByDateAtSAST());
         String assignment = (todo.getAssignedMembers().size() == 1) ?
                 todo.getAssignedMembers().iterator().next().getDisplayName() : String.valueOf(todo.getAssignedMembers().size());

@@ -146,16 +146,15 @@ public class ScheduledTasks {
 
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendTodoReminders() {
-        List<Todo> todos = todoRepository.findAllLogBooksForReminding();
-        if (!todos.isEmpty()) {
-            logger.info("Sending scheduled reminders for {} logbooks", todos.size());
-        }
+
+        List<Todo> todos = todoRepository.findAllTodosForReminding(Instant.now());
+        logger.info("Sending scheduled reminders for {} todos", todos.size());
 
         for (Todo todo : todos) {
             try {
                 todoBroker.sendScheduledReminder(todo.getUid());
             } catch (Throwable th) {
-                logger.error("Error while sending reminder for logger book " + todo + ": " + th.getMessage(), th);
+                logger.error("Error while sending reminder for todo " + todo + ": " + th.getMessage(), th);
             }
         }
     }

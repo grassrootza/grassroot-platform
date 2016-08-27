@@ -64,11 +64,13 @@ public interface TodoRepository extends JpaRepository<Todo, Long> {
     List<Todo> findByParentGroupMembershipsUserAndMessageSearchTerm(Long userId, String tsQueryText);
 
     @Transactional
-    @Query(value = "select * from action_todo l where l.action_by_date is not null " +
-            "and l.completion_percentage < " + Todo.COMPLETION_PERCENTAGE_BOUNDARY + " " +
-            "and l.number_of_reminders_left_to_send > 0 " +
-            "and (l.action_by_date + l.reminder_minutes * INTERVAL '1 minute') < current_timestamp", nativeQuery = true)
-    List<Todo> findAllLogBooksForReminding();
+    @Query(value = "select td from Todo td " +
+            "where td.cancelled = false " +
+            "and td.completionPercentage < " + Todo.COMPLETION_PERCENTAGE_BOUNDARY + " " +
+            "and td.numberOfRemindersLeftToSend > 0 " +
+            "and td.scheduledReminderTime < ?1 " +
+            "and td.reminderActive = true")
+    List<Todo> findAllTodosForReminding(Instant referenceInstant);
 
     @Query(value = "select count(t) from Todo t where t.replicatedGroup=?1 and t.message=?2 and t.actionByDate=?3")
     int countReplicatedEntries(Group group, String message, Instant actionByDate);

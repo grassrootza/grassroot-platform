@@ -6,6 +6,7 @@ package za.org.grassroot.core.domain;
 
 
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -125,15 +126,10 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 		}
 
         if (this.scheduledReminderTime != null) {
-            final ZoneId userZone = ZoneId.of("Africa/Johannesburg");
-            ZonedDateTime currentDateTime = ZonedDateTime.ofInstant(this.scheduledReminderTime, userZone);
-            if (currentDateTime.getHour() < 7) {
-                // todo: there _must_ be an easier way to do this, but am getting confused by Java 8 zone offsets etc
-                LocalDate reminderDate = currentDateTime.toLocalDate();
-                LocalTime adjustedReminderTime = LocalTime.of(7, 0);
-                ZonedDateTime revisedDateTime = ZonedDateTime.of(reminderDate, adjustedReminderTime, userZone);
-                this.scheduledReminderTime = revisedDateTime.withZoneSameInstant(ZoneId.systemDefault()).toInstant();
-            }
+            this.scheduledReminderTime = DateTimeUtil.restrictToDaytime(this.scheduledReminderTime, DateTimeUtil.getSAST());
+	        if (this.scheduledReminderTime.isAfter(Instant.now())) {
+		        this.scheduledReminderActive = false; // disable it if it's in the future
+	        }
         }
 	}
 

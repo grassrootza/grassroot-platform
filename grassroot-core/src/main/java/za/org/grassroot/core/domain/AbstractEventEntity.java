@@ -208,11 +208,8 @@ public abstract class AbstractEventEntity {
 
 		Event event = (Event) o;
 
-		if (uid != null ? !uid.equals(event.uid) : event.uid != null) {
-			return false;
-		}
+		return uid != null ? uid.equals(event.uid) : event.uid == null;
 
-		return true;
 	}
 
 	@Override

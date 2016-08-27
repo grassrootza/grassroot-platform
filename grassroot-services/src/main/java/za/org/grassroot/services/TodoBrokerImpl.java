@@ -235,11 +235,14 @@ public class TodoBrokerImpl implements TodoBroker {
 		}
 
 		// reduce number of reminders to send and calculate new reminder minutes
+		// to reduce SMS / notification traffic, reducing this to just one day
 		todo.setNumberOfRemindersLeftToSend(todo.getNumberOfRemindersLeftToSend() - 1);
-		if (todo.getReminderMinutes() < 0) {
-			todo.setReminderMinutes(DateTimeUtil.numberOfMinutesForDays(7));
+		if (todo.getNumberOfRemindersLeftToSend() > 0) {
+			// i.e., advance it by 5 days (~ working week).
+			todo.setReminderMinutes(todo.getReminderMinutes() - DateTimeUtil.numberOfMinutesForDays(5));
+			todo.calculateScheduledReminderTime();
 		} else {
-			todo.setReminderMinutes(todo.getReminderMinutes() + DateTimeUtil.numberOfMinutesForDays(7));
+			todo.setReminderActive(false);
 		}
 
 		logsAndNotificationsBroker.storeBundle(bundle);
