@@ -18,14 +18,14 @@ import java.nio.charset.Charset;
 public class UserRestControllerTest extends RestAbstractUnitTest {
 
     @InjectMocks
-    UserRestController userRestController;
+    private UserRestController userRestController;
 
     private static final String testtokenCode = "b1b64a1b-a374-45a1-806b-2abe01a08ac6";
     private static final String path =  "/api/user/";
     public static final MediaType APPLICATION_JSON_UTF8 = new MediaType(MediaType.APPLICATION_JSON.getType(), MediaType.APPLICATION_JSON.getSubtype(), Charset.forName("utf8"));
-    ObjectMapper mapper = new ObjectMapper();
-    ObjectWriter ow = null;
 
+    private ObjectMapper mapper = new ObjectMapper();
+    private ObjectWriter ow = null;
 
     @Before
     public void setUp() {

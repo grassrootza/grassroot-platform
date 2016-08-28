@@ -161,13 +161,13 @@ public class USSDToDoController extends USSDController {
     @RequestMapping(path + dueDateMenu)
     @ResponseBody
     public Request askForDueDate(@RequestParam(value = phoneNumber) String inputNumber,
-                                 @RequestParam(value = userInputParam) String userInput,
+                                 @RequestParam(value = userInputParam) String passedInput,
                                  @RequestParam(value = logBookParam) String logBookUid,
                                  @RequestParam(value = revisingFlag, required = false) boolean revising,
                                  @RequestParam(value = interruptedFlag, required = false) boolean interrupted,
                                  @RequestParam(value = interruptedInput, required = false) String priorInput) throws URISyntaxException {
 
-        userInput = (interrupted) ? priorInput : userInput;
+        final String userInput = (interrupted) ? priorInput : passedInput;
         User user = userManager.findByInputNumber(inputNumber, saveToDoMenu(dueDateMenu, logBookUid, userInput));
         if (!revising) todoRequestBroker.updateMessage(user.getUid(), logBookUid, userInput);
         return menuBuilder(new USSDMenu(menuPrompt(dueDateMenu, user),

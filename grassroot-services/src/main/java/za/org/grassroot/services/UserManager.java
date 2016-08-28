@@ -258,7 +258,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public void setMessagingPreference(String userUid, UserMessagingPreference preference) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(preference);

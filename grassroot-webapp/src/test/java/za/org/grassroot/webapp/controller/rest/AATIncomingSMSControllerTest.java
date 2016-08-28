@@ -20,11 +20,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class AATIncomingSMSControllerTest extends RestAbstractUnitTest {
 
     private static final String path = "/sms/";
-    Event meeting;
+    private Event meeting;
 
     @InjectMocks
-    AATIncomingSMSController aatIncomingSMSController;
-
+    private AATIncomingSMSController aatIncomingSMSController;
 
     @Before
     public void setUp() {

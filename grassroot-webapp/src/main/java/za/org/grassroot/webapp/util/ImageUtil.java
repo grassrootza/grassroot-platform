@@ -42,7 +42,7 @@ public class ImageUtil {
             throw new IllegalArgumentException("Invalid file format Exception");
         }
         String mimeTypeExtension = mimeType.substring(mimeType.indexOf("/") + 1, mimeType.length());
-        mimeTypeExtension = mimeTypeExtension.equals("jpeg") ? "jpg" : mimeTypeExtension;
+        mimeTypeExtension = "jpeg".equals(mimeTypeExtension) ? "jpg" : mimeTypeExtension;
 
         return mimeTypeExtension;
     }

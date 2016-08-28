@@ -306,10 +306,10 @@ public class GroupRestController {
         try {
             log.info("Responding to request, with response = {} and request UID = {}", response, requestUid);
             User user = userManagementService.findByInputNumber(phoneNumber);
-            if (response.equals("APPROVE")) {
+            if ("APPROVE".equals(response)) {
                 groupJoinRequestService.approve(user.getUid(), requestUid);
                 return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.OK, RestMessage.GROUP_JOIN_RESPONSE_PROCESSED, RestStatus.SUCCESS), HttpStatus.OK);
-            } else if (response.equals("DENY")) {
+            } else if ("DENY".equals(response)) {
                 groupJoinRequestService.decline(user.getUid(), requestUid);
                 return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.OK, RestMessage.GROUP_JOIN_RESPONSE_PROCESSED, RestStatus.SUCCESS), HttpStatus.OK);
             } else {

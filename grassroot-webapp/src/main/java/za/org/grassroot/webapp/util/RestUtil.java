@@ -20,7 +20,7 @@ import static org.springframework.http.HttpStatus.*;
  */
 public class RestUtil {
 
-    final static Set<Permission> homeScreenPermissions = Stream.of(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS,
+    private final static Set<Permission> homeScreenPermissions = Stream.of(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS,
                                                                    Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING,
                                                                    Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE,
                                                                    Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY,

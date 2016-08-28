@@ -26,7 +26,6 @@ public class USSDSafetyGroupControllerTest extends USSDAbstractUnitTest {
     private static final String testUserUid = "test-user-unique-id";
     private static final String phoneParam = "msisdn";
     private static final String groupParam = "groupUid";
-    private String testGroupIdString;
 
     private static final String joinCode ="*134*1994*33";
 
@@ -39,9 +38,8 @@ public class USSDSafetyGroupControllerTest extends USSDAbstractUnitTest {
     private Set<MembershipInfo> testMembers = new HashSet<>();
     private GroupPermissionTemplate template = GroupPermissionTemplate.DEFAULT_GROUP;
 
-
     @InjectMocks
-    USSDSafetyGroupController ussdSafetyGroupController;
+    private USSDSafetyGroupController ussdSafetyGroupController;
 
     @Before
     public void setUp() {
@@ -58,7 +56,6 @@ public class USSDSafetyGroupControllerTest extends USSDAbstractUnitTest {
         testGroup.setGroupTokenCode(joinCode);
         safetyEvent = new SafetyEvent(testUser2,testGroup);
         testMembers.add(new MembershipInfo(testUserPhone, BaseRoles.ROLE_GROUP_ORGANIZER, null));
-        testGroupIdString = testGroup.getUid();
 
     }
 

@@ -12,7 +12,6 @@ import za.org.grassroot.core.domain.GcmRegistration;
 import za.org.grassroot.core.domain.User;
 
 import javax.transaction.Transactional;
-import java.time.Instant;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -37,7 +36,7 @@ public class GcmRegistrationRepositoryTest {
     @Test
     public void shouldSaveAndReturnGcmRegistration() throws Exception{
         User user = userRepository.save(new User("0848875097"));
-        gcmRegistrationRepository.save(new GcmRegistration(user, "xx77f", Instant.now()));
+        gcmRegistrationRepository.save(new GcmRegistration(user, "xx77f"));
         GcmRegistration gcmRegistration = gcmRegistrationRepository.findByRegistrationId("xx77f");
         assertNotEquals(null, gcmRegistration);
         assertEquals(gcmRegistration.getRegistrationId(),"xx77f");
@@ -47,7 +46,7 @@ public class GcmRegistrationRepositoryTest {
     @Test
     public void shouldFindByUser() throws Exception{
         User user = userRepository.save(new User("0848875097"));
-        gcmRegistrationRepository.save(new GcmRegistration(user, "xx77f", Instant.now()));
+        gcmRegistrationRepository.save(new GcmRegistration(user, "xx77f"));
         GcmRegistration gcmRegistration = gcmRegistrationRepository.findByUser(user);
         assertNotEquals(null, gcmRegistration);
         assertEquals(gcmRegistration.getUser(),user);
@@ -57,7 +56,7 @@ public class GcmRegistrationRepositoryTest {
     @Test
     public void shouldFindByUid() throws Exception{
         User user = userRepository.save(new User("0848875097"));
-        GcmRegistration gcmRegistration = new GcmRegistration(user, "xx77f", Instant.now());
+        GcmRegistration gcmRegistration = new GcmRegistration(user, "xx77f");
         String uid = gcmRegistration.getUid();
         gcmRegistrationRepository.save(gcmRegistration);
         assertNotEquals(null, gcmRegistrationRepository.findByUid(uid));

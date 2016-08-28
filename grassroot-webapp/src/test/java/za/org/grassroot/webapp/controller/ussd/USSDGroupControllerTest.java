@@ -46,7 +46,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     private GroupPermissionTemplate template = GroupPermissionTemplate.DEFAULT_GROUP;
 
     @InjectMocks
-    USSDGroupController ussdGroupController;
+    private USSDGroupController ussdGroupController;
 
     @Before
     public void setUp() {

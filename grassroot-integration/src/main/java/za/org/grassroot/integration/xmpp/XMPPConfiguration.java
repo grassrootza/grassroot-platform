@@ -51,7 +51,7 @@ public class XMPPConfiguration {
         XmppConnectionFactoryBean connectionFactoryBean = new XmppConnectionFactoryBean();
         connectionFactoryBean.setConnectionConfiguration(connectionConfiguration());
         connectionFactoryBean.setUser(System.getenv("GCM_SENDER_ID"));
-        connectionFactoryBean.setPassword(System.getenv("GCM_KEY"));
+        connectionFactoryBean.setPassword(System.getenv("GCM_KEY")); // todo : switch to environment get
         connectionFactoryBean.setAutoStartup(true);
         log.info("XMPP connection succesfully started up");
         return connectionFactoryBean;

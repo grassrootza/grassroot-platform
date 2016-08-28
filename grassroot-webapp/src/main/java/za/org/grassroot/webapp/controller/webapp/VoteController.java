@@ -44,10 +44,10 @@ public class VoteController extends BaseController {
     private GroupBroker groupBroker;
 
     @Autowired
-    EventManagementService eventManagementService;
+    private EventManagementService eventManagementService;
 
     @Autowired
-    EventLogBroker eventLogBroker;
+    private EventLogBroker eventLogBroker;
 
     @RequestMapping("create")
     public String createVote(Model model, @RequestParam(value="groupUid", required = false) String groupUid) {

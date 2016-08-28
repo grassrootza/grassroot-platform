@@ -22,7 +22,6 @@ public class GcmRestControllerTest extends RestAbstractUnitTest {
 
     private String path = "/api/gcm/";
 
-
    @Before
    public void setUp(){
        mockMvc = MockMvcBuilders.standaloneSetup(gcmRestController).build();
@@ -32,10 +31,10 @@ public class GcmRestControllerTest extends RestAbstractUnitTest {
     @Test
     public void gcmRegistrationShouldWork() throws  Exception{
         GcmRegistration gcmRegistration = new GcmRegistration();
-        when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(gcmServiceMock.registerUser(sessionTestUser, "random")).thenReturn(gcmRegistration);
-        mockMvc.perform(post(path + "register/{phoneNumber}/{code}", testUserPhone, testUserCode).param("registration_id", "random")).andExpect(status().isCreated());
-        verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
+        mockMvc.perform(post(path + "register/{phoneNumber}/{code}", testUserPhone, testUserCode).param("registration_id", "random")).andExpect(status().isOk());
+        verify(userManagementServiceMock).findByInputNumber(testUserPhone);
         verify(gcmServiceMock).registerUser(sessionTestUser,"random");
         verify(userManagementServiceMock).setMessagingPreference(sessionTestUser.getUid(), UserMessagingPreference.ANDROID_APP);
         verifyNoMoreInteractions(userManagementServiceMock);
@@ -43,11 +42,12 @@ public class GcmRestControllerTest extends RestAbstractUnitTest {
 
     }
 
-    @Test
-    public void gcmDeregistrationShouldWork() throws Exception{
-       // when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn();
-     //   when(gcmServiceMock.registerUser(sessionTestUser, "random"));
+    // todo : complete this
+    // @Test
+    // public void gcmDeregistrationShouldWork() throws Exception{
+    // when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn();
+    //   when(gcmServiceMock.registerUser(sessionTestUser, "random"));
 
-    }
+    // }
 
 }

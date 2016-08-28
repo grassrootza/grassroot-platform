@@ -56,7 +56,7 @@ public class NotificationRepositoryTest {
         Group group = groupRepository.save(new Group("test eventlog", user));
         Event event = eventRepository.save(new Meeting("test meeting",Instant.now(),  user, group, "someLoc"));
         EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.CREATED));
-        GcmRegistration gcmRegistration = gcmRegistrationRepository.save(new GcmRegistration(user, "33433", Instant.now()));
+        GcmRegistration gcmRegistration = gcmRegistrationRepository.save(new GcmRegistration(user, "33433"));
         notificationRepository.save(new EventCancelledNotification(user, "blah", eventLog));
         List<Notification> notifications = notificationRepository.findAll();
         assertEquals(1, notifications.size());
@@ -70,7 +70,7 @@ public class NotificationRepositoryTest {
         Group group = groupRepository.save(new Group("test eventlog", user));
         Event event = eventRepository.save(new Meeting("test meeting",Instant.now(),  user, group, "someLoc"));
         EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.CREATED));
-        GcmRegistration gcmRegistration = gcmRegistrationRepository.save(new GcmRegistration(user, "33433", Instant.now()));
+        GcmRegistration gcmRegistration = gcmRegistrationRepository.save(new GcmRegistration(user, "33433"));
         notificationRepository.save(new EventCancelledNotification(user, "blah", eventLog));
         List<Notification> notifications = notificationRepository.findByTargetAndForAndroidTimelineTrueOrderByCreatedDateTimeDesc(user);
         Assert.assertThat(notifications.size(), is(1));

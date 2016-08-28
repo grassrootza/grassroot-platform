@@ -10,9 +10,8 @@ import za.org.grassroot.integration.services.GcmService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.services.exception.NoSuchProfileException;
 import za.org.grassroot.webapp.enums.RestMessage;
-import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
+import za.org.grassroot.webapp.util.RestUtil;
 
 /**
  * Created by paballo on 2016/04/07.
@@ -32,11 +31,11 @@ public class GcmRestController {
     public ResponseEntity<ResponseWrapper> registerForGcm(@PathVariable("phoneNumber") String phoneNumber,
                                                           @PathVariable("code") String code,
                                                           @RequestParam("registration_id") String registrationId) {
-        User user = userManagementService.loadOrSaveUser(phoneNumber);
+
+        User user = userManagementService.findByInputNumber(phoneNumber);
         gcmService.registerUser(user, registrationId);
         userManagementService.setMessagingPreference(user.getUid(), UserMessagingPreference.ANDROID_APP);
-        return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.CREATED, RestMessage.REGISTERED_FOR_PUSH, RestStatus.SUCCESS),
-                HttpStatus.CREATED);
+        return RestUtil.messageOkayResponse(RestMessage.REGISTERED_FOR_PUSH);
 
     }
 
@@ -45,14 +44,12 @@ public class GcmRestController {
             throws NoSuchProfileException{
         User user = userManagementService.loadOrSaveUser(phoneNumber);
         userManagementService.setMessagingPreference(user.getUid(), UserMessagingPreference.SMS);
-        ResponseWrapper responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.DEREGISTERED_FOR_PUSH, RestStatus.SUCCESS);
-        return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
+        return RestUtil.messageOkayResponse(RestMessage.DEREGISTERED_FOR_PUSH);
     }
 
     @ExceptionHandler(NoSuchProfileException.class)
     public ResponseEntity<ResponseWrapper>handleException(){
-        ResponseWrapper responseWrapper = new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.USER_NOT_REGISTERED_FOR_PUSH, RestStatus.FAILURE);
-        return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
+        return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.USER_NOT_REGISTERED_FOR_PUSH);
     }
 
 }

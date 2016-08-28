@@ -28,7 +28,7 @@ public enum UserLogType {
 
     private final String text;
 
-    private UserLogType(final String text) {
+    UserLogType(final String text) {
         this.text = text;
     }
 

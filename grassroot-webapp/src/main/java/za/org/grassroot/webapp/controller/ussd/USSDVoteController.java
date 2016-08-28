@@ -374,7 +374,7 @@ public class USSDVoteController extends USSDController {
             menu = new USSDMenu(getMessage(thisSection, "change", "error", user));
         } else {
             // todo: replace this hack once responses are handled better
-            EventRSVPResponse voteResponse = (response.equals("abstain")) ? EventRSVPResponse.MAYBE :
+            EventRSVPResponse voteResponse = "abstain".equals(response) ? EventRSVPResponse.MAYBE :
                     EventRSVPResponse.fromString(response);
             eventLogManager.rsvpForEvent(vote.getUid(), user.getUid(), voteResponse);
             menu = new USSDMenu(getMessage(thisSection, "change", "done", response, user));

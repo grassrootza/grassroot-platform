@@ -239,23 +239,17 @@ public class TaskBrokerImpl implements TaskBroker {
             return true;
         }
 
-        if (userResponseLog != null && userResponseLog.getCreatedDateTime().isAfter(changedSince)) {
-            return true;
-        }
-
-        return false;
+        return (userResponseLog != null) && (userResponseLog.getCreatedDateTime().isAfter(changedSince));
     }
 
     private boolean isLogBookAddedOrUpdatedSince(Todo todo, Instant changedSince) {
         if (todo.getCreatedDateTime().isAfter(changedSince)) {
             return true;
+        } else {
+            // to be honest, it can be that some change (CHANGED log) didn't affect the information that was presented before on UI,
+            // but it is no big harm to return same data again compared to benefits in code simplicity
+            TodoLog lastChangeLog = todoLogRepository.findFirstByTodoAndTypeOrderByCreatedDateTimeDesc(todo, TodoLogType.CHANGED);
+            return (lastChangeLog != null && lastChangeLog.getCreatedDateTime().isAfter(changedSince));
         }
-        // to be honest, it can be that some change (CHANGED log) didn't affect the information that was presented before on UI,
-        // but it is no big harm to return same data again compared to benefits in code simplicity
-        TodoLog lastChangeLog = todoLogRepository.findFirstByTodoAndTypeOrderByCreatedDateTimeDesc(todo, TodoLogType.CHANGED);
-        if (lastChangeLog != null && lastChangeLog.getCreatedDateTime().isAfter(changedSince)) {
-            return true;
-        }
-        return false;
     }
 }

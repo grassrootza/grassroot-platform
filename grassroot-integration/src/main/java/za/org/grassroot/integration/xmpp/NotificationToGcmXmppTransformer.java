@@ -47,16 +47,6 @@ public class NotificationToGcmXmppTransformer {
     private Message<org.jivesoftware.smack.packet.Message> constructGcmMessage(Notification notification) throws JsonProcessingException {
 
 	    GcmRegistration gcmRegistration = gcmRegistrationRepository.findByUser(notification.getTarget());
-        // todo : move this to somewhere earlier
-        if (gcmRegistration == null) {
-            // this sometimes happens with bad connections : throwing here ensures picker will try notification again
-            // and then this should stop, with preference reset, but maybe try move it earlier
-            User user = notification.getTarget();
-            user.setMessagingPreference(UserMessagingPreference.SMS);
-            log.info("Error! User had no gcm registration but had gcm preference; resetting");
-            return null;
-        }
-
         String registrationID = gcmRegistration.getRegistrationId();
         String messageId = notification.getUid();
 
@@ -166,30 +156,30 @@ public class NotificationToGcmXmppTransformer {
 		switch (type) {
 			case JOIN_REQUEST:
 				return createDataPart(
-						"Join request",
 						getGroupNameFromUserNotification(notification),
 						getGroupUidFromJoinRequestNotification(notification),
+						getRequestUidFromJoinRequestNotification(notification),
 						type.name(),
 						notification);
 			case JOIN_REQUEST_REMINDER:
 				return createDataPart(
-						"Reminder",
 						getGroupNameFromUserNotification(notification),
 						getGroupUidFromJoinRequestNotification(notification),
+						getRequestUidFromJoinRequestNotification(notification),
 						type.name(),
 						notification);
 			case JOIN_REQUEST_APPROVED:
 				return createDataPart(
 						getGroupNameFromUserNotification(notification),
-						getGroupNameFromUserNotification(notification),
 						getGroupUidFromJoinRequestNotification(notification),
+						getRequestUidFromJoinRequestNotification(notification),
 						type.name(),
 						notification);
 			case JOIN_REQUEST_DENIED:
 				return createDataPart(
 						getGroupNameFromUserNotification(notification),
 						getGroupNameFromUserNotification(notification),
-						getGroupUidFromJoinRequestNotification(notification),
+						getRequestUidFromJoinRequestNotification(notification),
 						type.name(),
 						notification);
 			default:
@@ -203,40 +193,35 @@ public class NotificationToGcmXmppTransformer {
 	}
 
 	private String getGroupNameFromUserNotification(UserNotification notification) {
-		switch (notification.getUserLog().getUserLogType()) {
-			case JOIN_REQUEST:
-			case JOIN_REQUEST_REMINDER:
-			case JOIN_REQUEST_APPROVED:
-			case JOIN_REQUEST_DENIED:
-				final String desc = notification.getUserLog().getDescription();
-				final Matcher matchBeg = Pattern.compile("<xgn>").matcher(desc);
-				final Matcher matchEnd = Pattern.compile("</xgn>").matcher(desc);
-				if (matchBeg.find() && matchEnd.find()) {
-					return desc.substring(matchBeg.end(), matchEnd.start());
-				} else {
-					return "Grassroot";
-				}
-			default:
-				return "Grassroot";
+		final String desc = notification.getUserLog().getDescription();
+		final Matcher matchBeg = Pattern.compile("<xgn>").matcher(desc);
+		final Matcher matchEnd = Pattern.compile("</xgn>").matcher(desc);
+		if (matchBeg.find() && matchEnd.find()) {
+			return desc.substring(matchBeg.end(), matchEnd.start());
+		} else {
+			return "Grassroot";
 		}
 	}
 
 	private String getGroupUidFromJoinRequestNotification(UserNotification notification) {
-		switch (notification.getUserLog().getUserLogType()) {
-			case JOIN_REQUEST:
-			case JOIN_REQUEST_REMINDER:
-			case JOIN_REQUEST_APPROVED:
-			case JOIN_REQUEST_DENIED:
-				final String desc = notification.getUserLog().getDescription();
-				final Matcher matchBeg = Pattern.compile("<xuid>").matcher(desc);
-				final Matcher matchEnd = Pattern.compile("</xuid>").matcher(desc);
-				if (matchBeg.find() && matchEnd.find()) {
-					return desc.substring(matchBeg.end(), matchEnd.start());
-				} else {
-					return null;
-				}
-			default:
-				return null;
+		final String desc = notification.getUserLog().getDescription();
+		final Matcher matchBeg = Pattern.compile("<xguid>").matcher(desc);
+		final Matcher matchEnd = Pattern.compile("</xguid>").matcher(desc);
+		if (matchBeg.find() && matchEnd.find()) {
+			return desc.substring(matchBeg.end(), matchEnd.start());
+		} else {
+			return null;
+		}
+	}
+
+	private String getRequestUidFromJoinRequestNotification(UserNotification notification) {
+		final String desc = notification.getUserLog().getDescription();
+		final Matcher matchBeg = Pattern.compile("<xruid>").matcher(desc);
+		final Matcher matchEnd = Pattern.compile("</xruid>").matcher(desc);
+		if (matchBeg.find() && matchEnd.find()) {
+			return desc.substring(matchBeg.end(), matchEnd.start());
+		} else {
+			return null;
 		}
 	}
 

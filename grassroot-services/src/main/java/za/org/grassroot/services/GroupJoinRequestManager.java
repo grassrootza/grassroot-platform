@@ -106,13 +106,19 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
         // as in the note below, using group log for this would duplicate and / or pollute ...
         // depending on volume of use, clear option is to create new group join request type (sep to group & user)
 
-        return descMessage
-                + ", <xgn>"
+        final String data =
+                " <xgn>"
                 + request.getGroup().getName()
                 + "</xgn>, "
-                + "<xuid>"
+                + "<xguid>"
                 + request.getGroup().getUid()
-                + "</xuid>";
+                + "</xguid>"
+                + "<xruid>"
+                + request.getUid()
+                + "</xruid>";
+
+        final int remainingChars = 250 - data.length();
+        return descMessage.length() < remainingChars ? descMessage + data : (descMessage.substring(0, remainingChars) + data);
     }
 
     @Override

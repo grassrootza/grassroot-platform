@@ -296,6 +296,7 @@ public class User implements UserDetails, Comparable<User> {
         this.alertPreference = alertPreference;
     }
 
+    // todo : clean this up vs isEnabled
     public boolean getEnabled() {
         return enabled;
     }

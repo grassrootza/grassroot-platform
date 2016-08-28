@@ -4,6 +4,7 @@ import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
+import java.util.Objects;
 
 /**
  * Created by paballo on 2016/03/29.
@@ -21,20 +22,26 @@ public class GcmRegistration {
     @Column(name = "uid", nullable = false, length = 50)
     private String uid;
 
-    @ManyToOne
+    // note : in future, if we are supporting one user on multiple devices, then this will become many-to-one, but for now this makes it simpler
+    // note : at present, don't map on user side, because that triggers an extra call on any user load, and we just don't need this for 90% of user cases
+    @OneToOne(optional = false)
     private User user;
 
-    @Column(name = "registration_id",insertable = true, nullable = false, unique = true)
+    @Column(name = "registration_id", nullable = false, unique = true)
     private String registrationId;
 
     @Column(name = "creation_time", nullable = false)
     private Instant creationTime;
 
-    public GcmRegistration(User user, String registrationId, Instant creationTime) {
+    public GcmRegistration(User user, String registrationId) {
+        Objects.requireNonNull(registrationId);
+        Objects.requireNonNull(user);
+
         this.uid = UIDGenerator.generateId();
+        this.creationTime = Instant.now();
+
         this.user = user;
         this.registrationId = registrationId;
-        this.creationTime = creationTime;
     }
     public  GcmRegistration(){}
 
@@ -42,19 +49,17 @@ public class GcmRegistration {
         return user;
     }
 
-    public void setUser(String phoneNumber) {
+    public void setUser(User user) {
         this.user = user;
     }
-
-    public void setCreationTime(Instant creationTime){this.creationTime =creationTime;}
 
     public void setRegistrationId(String registrationId){
         this.registrationId =registrationId;
     }
+
     public String getRegistrationId(){
         return this.registrationId;
     }
-
 
     public Long getId() {
         return id;
