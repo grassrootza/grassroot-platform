@@ -1,15 +1,11 @@
 package za.org.grassroot.webapp.controller.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
-import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-
-import java.nio.charset.Charset;
 
 
 /**
@@ -20,18 +16,12 @@ public class UserRestControllerTest extends RestAbstractUnitTest {
     @InjectMocks
     private UserRestController userRestController;
 
-    private static final String testtokenCode = "b1b64a1b-a374-45a1-806b-2abe01a08ac6";
-    private static final String path =  "/api/user/";
-    public static final MediaType APPLICATION_JSON_UTF8 = new MediaType(MediaType.APPLICATION_JSON.getType(), MediaType.APPLICATION_JSON.getSubtype(), Charset.forName("utf8"));
-
     private ObjectMapper mapper = new ObjectMapper();
-    private ObjectWriter ow = null;
 
     @Before
     public void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(userRestController).build();
         mapper.configure(SerializationFeature.WRAP_ROOT_VALUE, false);
-        ow = mapper.writer();
     }
 
     @Test

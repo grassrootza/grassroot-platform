@@ -38,7 +38,7 @@
                                     <span><strong>Member Since</strong></span>
                                 </div>
                                 <div class="col-md-6">
-                                    <p class="list-group-item-text"> <span th:text="${#calendars.format(currentUserProfile.createdDateTime,'dd MMMM yyyy')}"></span></p>
+                                    <p class="list-group-item-text"> <span th:text="${#temporals.format(currentUserProfile.createdDateTime,'dd MMMM yyyy')}"></span></p>
                                 </div>
                             </div>
                         </div>

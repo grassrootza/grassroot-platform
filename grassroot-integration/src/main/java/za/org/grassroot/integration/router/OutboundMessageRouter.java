@@ -2,13 +2,10 @@ package za.org.grassroot.integration.router;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.integration.annotation.Router;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Notification;
-import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.repository.GcmRegistrationRepository;
 
 /**
  * Created by paballo on 2016/04/06.
