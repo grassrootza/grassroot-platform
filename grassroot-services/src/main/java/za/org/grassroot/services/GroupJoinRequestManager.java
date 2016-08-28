@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.JoinRequestNotification;
+import za.org.grassroot.core.domain.notification.JoinRequestResultNotification;
 import za.org.grassroot.core.enums.GroupJoinRequestEventType;
 import za.org.grassroot.core.enums.GroupJoinRequestStatus;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -21,6 +22,7 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -82,8 +84,9 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
         groupJoinRequestRepository.save(request);
 
         String message = messageAssemblingService.createGroupJoinRequestMessage(group.getJoinApprover(), request);
-        UserLog userLog = new UserLog(group.getJoinApprover().getUid(), UserLogType.JOIN_REQUEST, "Join request sent, user to approve",
-                UserInterfaceType.UNKNOWN);
+        // message format allows GCM encoder to retrieve group name without round trip to DB, so keep intact
+        UserLog userLog = new UserLog(group.getJoinApprover().getUid(), UserLogType.JOIN_REQUEST,
+                generateLogMessage("Join request sent, user to approve", request), UserInterfaceType.UNKNOWN);
         userLogRepository.save(userLog);
 
         JoinRequestNotification notification = new JoinRequestNotification(group.getJoinApprover(), message, userLog);
@@ -96,6 +99,20 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
 
         logger.info("Group join request opened: {}", request);
         return request.getUid();
+    }
+
+    private String generateLogMessage(final String descMessage, final GroupJoinRequest request) {
+        // this does not seem great, but alternative is to create new fiels for a highly specific purpose, and
+        // as in the note below, using group log for this would duplicate and / or pollute ...
+        // depending on volume of use, clear option is to create new group join request type (sep to group & user)
+
+        return descMessage
+                + ", <xgn>"
+                + request.getGroup().getName()
+                + "</xgn>, "
+                + "<xuid>"
+                + request.getGroup().getUid()
+                + "</xuid>";
     }
 
     @Override
@@ -121,6 +138,16 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
                 new MembershipInfo(requestingUser.getPhoneNumber(), BaseRoles.ROLE_ORDINARY_MEMBER, requestingUser.getDisplayName());
         groupBroker.addMembers(userUid, groupToJoin.getUid(), Sets.newHashSet(membershipInfo), false);
 
+        // there is a little duplication here as the group broker also creates a group log, but the notification needs a log
+        // and better to duplicate as a different kind than to have duplicate / overlapping group logs
+
+        UserLog userLog = new UserLog(requestingUser.getUid(), UserLogType.JOIN_REQUEST_APPROVED,
+                generateLogMessage("User approved to join group, uid", request), UserInterfaceType.UNKNOWN);
+        final String message = messageAssemblingService.createGroupJoinResultMessage(request, true);
+        JoinRequestResultNotification notification = new JoinRequestResultNotification(requestingUser, message, userLog);
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle(Collections.singleton(userLog), Collections.singleton(notification));
+        logsAndNotificationsBroker.storeBundle(bundle);
+
         GroupJoinRequestEvent event = new GroupJoinRequestEvent(GroupJoinRequestEventType.APPROVED, request, user, time);
         groupJoinRequestEventRepository.save(event);
     }
@@ -138,6 +165,12 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
         request.setStatus(GroupJoinRequestStatus.DECLINED);
         Instant time = Instant.now();
         request.setProcessedTime(time);
+
+        UserLog userLog = new UserLog(request.getRequestor().getUid(), UserLogType.JOIN_REQUEST_DENIED,
+                generateLogMessage("User denied to join group", request), UserInterfaceType.UNKNOWN);
+        final String message = messageAssemblingService.createGroupJoinResultMessage(request, false);
+        JoinRequestResultNotification notification = new JoinRequestResultNotification(request.getRequestor(), message, userLog);
+        logsAndNotificationsBroker.storeBundle(new LogsAndNotificationsBundle(Collections.singleton(userLog), Collections.singleton(notification)));
 
         GroupJoinRequestEvent event = new GroupJoinRequestEvent(GroupJoinRequestEventType.DECLINED, request, user, time);
         groupJoinRequestEventRepository.save(event);
@@ -159,6 +192,7 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
             throw new JoinRequestNotOpenException();
         }
 
+        // todo : generate logs & notifications ?
         Instant time = Instant.now();
         request.setStatus(GroupJoinRequestStatus.CANCELLED);
         request.setProcessedTime(time);
@@ -184,8 +218,8 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
         // in future can use join request event to remember to control how many times users can respond (if see this being abused)
 
         String message = messageAssemblingService.createGroupJoinReminderMessage(group.getJoinApprover(), request);
-        UserLog userLog = new UserLog(group.getJoinApprover().getUid(), UserLogType.JOIN_REQUEST, "Join request reminder sent, user to respond",
-                UserInterfaceType.UNKNOWN);
+        UserLog userLog = new UserLog(group.getJoinApprover().getUid(), UserLogType.JOIN_REQUEST,
+                generateLogMessage("Join request reminder sent, user to respond", request), UserInterfaceType.UNKNOWN);
         userLogRepository.save(userLog);
 
         JoinRequestNotification notification = new JoinRequestNotification(group.getJoinApprover(), message, userLog); // set to priority 0 if starts happening too often

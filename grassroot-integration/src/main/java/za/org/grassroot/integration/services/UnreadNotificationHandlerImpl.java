@@ -33,9 +33,10 @@ public class UnreadNotificationHandlerImpl implements UnreadNotificationHandler 
         Instant time = Instant.now();
         Instant timeToCheck = Instant.now().minus(10, ChronoUnit.MINUTES);
 
-        // probably need to distinguish "read" and "view on android ..."
+        // need to only check for those attempt, else may send before user has chance to view
+        // note : do the check on read, not viewed on android, because we want to preserve that as false but mark to read on SMS send (to avoid repeat deliveries)
         List<Notification> unreadNotifications = notificationRepository
-                .findFirst100ByReadFalseAndNextAttemptTimeBeforeAndCreatedDateTimeGreaterThan(time, timeToCheck);
+                .findFirst100ByReadFalseAndAttemptCountGreaterThanAndNextAttemptTimeBeforeAndCreatedDateTimeGreaterThan(0, time, timeToCheck);
         if (unreadNotifications.size() > 0) {
             logger.info("Sending {} unread notifications", unreadNotifications.size());
         }

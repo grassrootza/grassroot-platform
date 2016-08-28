@@ -32,8 +32,9 @@ public class OutboundMessageRouter {
                 default:
                     log.info("badly form route={}, defaulting to sms channel", route);
                     outputChannel = "smsOutboundChannel";
+                    break;
             }
-        }else{
+        } else {
              log.info("Route not specified defaulting to sms");
              outputChannel = "smsOutboundChannel";
         }

@@ -231,6 +231,13 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         return messageSourceAccessor.getMessage("sms.group.join.request.reminder", fields, getUserLocale(user));
     }
 
+    @Override
+    public String createGroupJoinResultMessage(GroupJoinRequest request, boolean approved) {
+        final String[] fields = { request.getGroup().getName() };
+        return approved ? messageSourceAccessor.getMessage("sms.group.join.approved", fields, getUserLocale(request.getRequestor()))
+                : messageSourceAccessor.getMessage("sms.group.join.denied", fields, getUserLocale(request.getRequestor()));
+    }
+
 
     @Override
     public String createReplyFailureMessage(User user) {

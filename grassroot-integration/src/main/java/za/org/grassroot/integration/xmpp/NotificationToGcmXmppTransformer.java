@@ -6,16 +6,21 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.integration.annotation.Transformer;
 import org.springframework.messaging.Message;
+import org.springframework.security.access.method.P;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.notification.UserNotification;
 import za.org.grassroot.core.enums.TaskType;
+import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.repository.GcmRegistrationRepository;
 import za.org.grassroot.integration.domain.AndroidClickActionType;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Uses za.org.grassroot.integration.xmpp.GcmXmppMessageCodec to create GCM XMPP message from Notification entity.
@@ -30,8 +35,8 @@ public class NotificationToGcmXmppTransformer {
 
     @Transformer(inputChannel = "gcmOutboundChannel", outputChannel = "gcmXmppOutboundChannel")
     public Message<org.jivesoftware.smack.packet.Message> transform(Message<Notification> message) throws Exception {
-        Notification notification = message.getPayload();
 
+	    Notification notification = message.getPayload();
         Message<org.jivesoftware.smack.packet.Message> gcmMessage = constructGcmMessage(notification);
         log.info("Message with id {}, transformed to {}", notification.getUid(),
 		        gcmMessage != null && gcmMessage.getPayload() != null ? gcmMessage.getPayload().toXML().toString() : "null");
@@ -81,7 +86,7 @@ public class NotificationToGcmXmppTransformer {
                 break;
 
             case USER:
-                title = "Grassroot Message";
+                title = getGroupNameFromUserNotification((UserNotification) notification);
                 body = notification.getMessage();
                 break;
 
@@ -97,13 +102,20 @@ public class NotificationToGcmXmppTransformer {
         switch (notification.getNotificationType()) {
             case EVENT:
                 String groupName = notification.getEventLog().getEvent().getAncestorGroup().getGroupName();
-                return sb.append(notification.getEventLog().getEvent().getUid()).append("_").append(groupName).toString();
+                return sb.append(notification.getEventLog().getEvent().getUid())
+		                .append("_")
+		                .append(groupName)
+		                .toString();
 
             case LOGBOOK:
-                return sb.append(notification.getTodoLog().getTodo().getUid()).append("_").
-                        append(notification.getTodoLog().getTodo().getAncestorGroup().getGroupName()).toString();
+                return sb.append(notification.getTodoLog().getTodo().getUid())
+		                .append("_")
+		                .append(notification.getTodoLog().getTodo().getAncestorGroup().getGroupName())
+		                .toString();
+
+	        default:
+		        return null;
         }
-        return null;
     }
 
     private Map<String, Object> createDataPart(Notification notification) {
@@ -111,38 +123,125 @@ public class NotificationToGcmXmppTransformer {
 
         switch (notification.getNotificationType()) {
             case EVENT:
-                return GcmXmppMessageCodec.createDataPart(
-                        notification.getUid(),
-                        notification.getEventLog().getEvent().getAncestorGroup().getGroupName(),
-                        notification.getEventLog().getEvent().getAncestorGroup().getGroupName(),
-                        notification.getMessage(),
-                        notification.getEventLog().getEvent().getUid(),
-                        notification.getCreatedDateTime(),
-                        notification.getNotificationType(),
-                        notification.getEventLog().getEvent().getEventType().name(),
-		                getActionType(notification),
-		                notification.getPriority());
+                return createDataPart(
+		                notification.getEventLog().getEvent().getAncestorGroup().getGroupName(),
+		                notification.getEventLog().getEvent().getAncestorGroup().getGroupName(),
+		                notification.getEventLog().getEvent().getUid(),
+		                notification.getEventLog().getEvent().getEventType().name(),
+		                notification);
 
-            case LOGBOOK:
+	        case LOGBOOK: // todo : switch name to to-do
                 Todo todo = notification.getTodoLog().getTodo();
-
-                return GcmXmppMessageCodec.createDataPart(
-                        notification.getUid(),
-                        todo.getAncestorGroup().getGroupName(),
-                        null,
-                        notification.getMessage(),
-                        todo.getUid(),
-                        notification.getCreatedDateTime(),
-                        notification.getNotificationType(),
+                return createDataPart(
+		                todo.getAncestorGroup().getGroupName(),
+		                null,
+		                todo.getUid(),
 		                TaskType.TODO.name(),
-		                getActionType(notification),
-		                notification.getPriority());
+		                notification);
+	        case USER:
+		        return userNotificationData((UserNotification) notification);
+
+	        default:
+		        return data;
         }
-        return data;
     }
 
+	private Map<String, Object> createDataPart(final String title, final String groupName, final String entityUid,
+	                                           final String entityType, Notification notification) {
+		return GcmXmppMessageCodec.createDataPart(
+				notification.getUid(),
+				title,
+				groupName,
+				notification.getMessage(),
+				entityUid,
+				notification.getCreatedDateTime(),
+				notification.getNotificationType(),
+				entityType,
+				getActionType(notification),
+				notification.getPriority());
+	}
+
+	private Map<String, Object> userNotificationData(UserNotification notification) {
+		final UserLogType type = notification.getUserLog().getUserLogType();
+		switch (type) {
+			case JOIN_REQUEST:
+				return createDataPart(
+						"Join request",
+						getGroupNameFromUserNotification(notification),
+						getGroupUidFromJoinRequestNotification(notification),
+						type.name(),
+						notification);
+			case JOIN_REQUEST_REMINDER:
+				return createDataPart(
+						"Reminder",
+						getGroupNameFromUserNotification(notification),
+						getGroupUidFromJoinRequestNotification(notification),
+						type.name(),
+						notification);
+			case JOIN_REQUEST_APPROVED:
+				return createDataPart(
+						getGroupNameFromUserNotification(notification),
+						getGroupNameFromUserNotification(notification),
+						getGroupUidFromJoinRequestNotification(notification),
+						type.name(),
+						notification);
+			case JOIN_REQUEST_DENIED:
+				return createDataPart(
+						getGroupNameFromUserNotification(notification),
+						getGroupNameFromUserNotification(notification),
+						getGroupUidFromJoinRequestNotification(notification),
+						type.name(),
+						notification);
+			default:
+				return createDataPart(
+						"Grassroot",
+						null,
+						null,
+						type.name(),
+						notification);
+		}
+	}
+
+	private String getGroupNameFromUserNotification(UserNotification notification) {
+		switch (notification.getUserLog().getUserLogType()) {
+			case JOIN_REQUEST:
+			case JOIN_REQUEST_REMINDER:
+			case JOIN_REQUEST_APPROVED:
+			case JOIN_REQUEST_DENIED:
+				final String desc = notification.getUserLog().getDescription();
+				final Matcher matchBeg = Pattern.compile("<xgn>").matcher(desc);
+				final Matcher matchEnd = Pattern.compile("</xgn>").matcher(desc);
+				if (matchBeg.find() && matchEnd.find()) {
+					return desc.substring(matchBeg.end(), matchEnd.start());
+				} else {
+					return "Grassroot";
+				}
+			default:
+				return "Grassroot";
+		}
+	}
+
+	private String getGroupUidFromJoinRequestNotification(UserNotification notification) {
+		switch (notification.getUserLog().getUserLogType()) {
+			case JOIN_REQUEST:
+			case JOIN_REQUEST_REMINDER:
+			case JOIN_REQUEST_APPROVED:
+			case JOIN_REQUEST_DENIED:
+				final String desc = notification.getUserLog().getDescription();
+				final Matcher matchBeg = Pattern.compile("<xuid>").matcher(desc);
+				final Matcher matchEnd = Pattern.compile("</xuid>").matcher(desc);
+				if (matchBeg.find() && matchEnd.find()) {
+					return desc.substring(matchBeg.end(), matchEnd.start());
+				} else {
+					return null;
+				}
+			default:
+				return null;
+		}
+	}
+
     private AndroidClickActionType getActionType(Notification notification) {
-        AndroidClickActionType actionType = null;
+        AndroidClickActionType actionType;
         switch (notification.getNotificationType()) {
             case EVENT:
 	            EventLog eventLog = notification.getEventLog();
@@ -160,7 +259,7 @@ public class NotificationToGcmXmppTransformer {
 			            actionType = AndroidClickActionType.TASK_REMINDER;
 			            break;
 		            default:
-			            actionType = AndroidClickActionType.VIEW_TASK;
+			            actionType = AndroidClickActionType.SHOW_MESSAGE;
 			            break;
 	            }
                 break;
@@ -177,11 +276,28 @@ public class NotificationToGcmXmppTransformer {
 			            actionType = AndroidClickActionType.TASK_REMINDER;
 			            break;
 		            default:
-			            actionType = AndroidClickActionType.VIEW_TASK;
+			            actionType = AndroidClickActionType.SHOW_MESSAGE;
 			            break;
 	            }
 	            break;
+	        case USER:
+		        switch (notification.getUserLog().getUserLogType()) {
+			        case JOIN_REQUEST:
+			        case JOIN_REQUEST_REMINDER:
+				        actionType = AndroidClickActionType.SHOW_JOIN_REQ;
+				        break;
+			        case JOIN_REQUEST_APPROVED:
+				        actionType = AndroidClickActionType.JOIN_APPROVED;
+				        break;
+			        default:
+				        actionType = AndroidClickActionType.SHOW_MESSAGE;
+				        break;
+		        }
+		        break;
+	        default:
+		        actionType = AndroidClickActionType.SHOW_MESSAGE;
         }
+
         return actionType;
     }
 }

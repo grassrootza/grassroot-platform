@@ -64,9 +64,6 @@ public interface GroupBroker {
     void updateGroupPermissionsForRole(String userUid, String groupUid, String roleName, Set<Permission> permissionsToAdd,
                                        Set<Permission> permissionsToRemove);
 
-
-
-
     /** METHODS FOR DEALING WITH JOIN TOKENS, PUBLIC SETTINGS, AND SEARCHING **/
 
     String openJoinToken(String userUid, String groupUid, LocalDateTime expiryDateTime);

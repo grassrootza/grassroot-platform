@@ -2,7 +2,6 @@ package za.org.grassroot.core.enums;
 
 /**
  * Created by luke on 2016/02/22.
- * NB: add new types at the bottom of the enum
  */
 public enum UserLogType {
     CREATED_IN_DB("user entity created"),
@@ -19,6 +18,8 @@ public enum UserLogType {
     DEREGISTERED_ANDROID("user android profile deleted"),
     JOIN_REQUEST("user required to approve a join request"),
     JOIN_REQUEST_REMINDER("user reminded to response to join request"),
+    JOIN_REQUEST_APPROVED("user was approved to join a group"),
+    JOIN_REQUEST_DENIED("user was denied joining a group"),
     JOINED_SAFETY_GROUP("user added to safety group"),
     ADDED_ADDRESS("user added address"),
     CHANGED_ADDRESS("user changed address"),
