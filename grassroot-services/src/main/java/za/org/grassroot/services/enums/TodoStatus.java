@@ -6,5 +6,5 @@ package za.org.grassroot.services.enums;
 public enum TodoStatus {
     COMPLETE,
     INCOMPLETE,
-    BOTH;
+    BOTH
 }

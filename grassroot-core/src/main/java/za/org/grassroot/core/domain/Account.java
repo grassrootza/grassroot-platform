@@ -232,11 +232,8 @@ public class Account implements Serializable {
 
         Account account = (Account) o;
 
-        if (getUid() != null ? !getUid().equals(account.getUid()) : account.getUid() != null) {
-            return false;
-        }
+        return getUid() != null ? getUid().equals(account.getUid()) : account.getUid() == null;
 
-        return true;
     }
 
     @Override

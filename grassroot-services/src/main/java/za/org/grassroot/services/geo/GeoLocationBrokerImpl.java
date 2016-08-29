@@ -99,8 +99,7 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 
 		// should we ask for exact date, or be good with accepting future dates if current one does not exist?
 //		LocalDate previousPeriodLocationLocalDate = findFirstLocalDateInPreviousPeriodLocationsAfterOrEqualsDate(date);
-		LocalDate previousPeriodLocationLocalDate = date; // todo: maybe this is sufficient (to search only for exact date)?
-		List<PreviousPeriodUserLocation> previousPeriodLocations = previousPeriodUserLocationRepository.findByKeyLocalDateAndKeyUserUidIn(previousPeriodLocationLocalDate, userUids);
+		List<PreviousPeriodUserLocation> previousPeriodLocations = previousPeriodUserLocationRepository.findByKeyLocalDateAndKeyUserUidIn(date, userUids);
 
 		List<GeoLocation> locations = previousPeriodLocations.stream().map(PreviousPeriodUserLocation::getLocation).collect(Collectors.toList());
 

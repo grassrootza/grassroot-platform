@@ -200,11 +200,8 @@ public abstract class AbstractTodoEntity {
 
 		Todo todo = (Todo) o;
 
-		if (uid != null ? !uid.equals(todo.uid) : todo.uid != null) {
-			return false;
-		}
+		return uid != null ? uid.equals(todo.uid) : todo.uid == null;
 
-		return true;
 	}
 
 	@Override

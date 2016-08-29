@@ -9,6 +9,6 @@ public enum TodoStatus {
     COMPLETED,
     AWAITING_REPLY,
     ABSTAINED,
-    NO_RESPONSE;
+    NO_RESPONSE
 
 }

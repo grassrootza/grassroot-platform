@@ -60,11 +60,8 @@ public class TodoCompletionConfirmation {
 		if (!member.equals(that.member)) {
 			return false;
 		}
-		if (!todo.equals(that.todo)) {
-			return false;
-		}
+		return todo.equals(that.todo);
 
-		return true;
 	}
 
 	@Override

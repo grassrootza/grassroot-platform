@@ -20,6 +20,7 @@ import za.org.grassroot.core.domain.notification.WelcomeNotification;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.services.GcmService;
 import za.org.grassroot.integration.services.SmsSendingService;
@@ -392,8 +393,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     public boolean needsToRSVP(User sessionUser) {
-        // todo: as noted elsewhere, probably want to optimize this quite aggressively
-        return eventManagementService.getOutstandingRSVPForUser(sessionUser).size() > 0;
+        return !eventManagementService.getOutstandingRSVPForUser(sessionUser).isEmpty();
     }
 
     @Override
@@ -466,7 +466,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             String message = messageAssemblingService.createWelcomeMessage(welcomeMessageId, sessionUser);
             WelcomeNotification notification = new WelcomeNotification(sessionUser, message, userLog);
             // notification sending delay of 2days
-            ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(Instant.now().plus(48, ChronoUnit.HOURS),TimeZone.getTimeZone("Africa/Johannesburg").toZoneId());
+            ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(Instant.now().plus(48, ChronoUnit.HOURS), DateTimeUtil.getSAST());
             if(zonedDateTime.get(ChronoField.HOUR_OF_DAY) >= 21 || zonedDateTime.get(ChronoField.HOUR_OF_DAY) < 8) {
                 if (zonedDateTime.get(ChronoField.HOUR_OF_DAY) >= 21) {
                     long difference = zonedDateTime.get(ChronoField.HOUR_OF_DAY) - 21;
@@ -479,7 +479,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
                 }
             }
             notification.setNextAttemptTime(zonedDateTime.toInstant());
-            log.info("time" + zonedDateTime.toInstant());
             bundle.addNotification(notification);
         }
 

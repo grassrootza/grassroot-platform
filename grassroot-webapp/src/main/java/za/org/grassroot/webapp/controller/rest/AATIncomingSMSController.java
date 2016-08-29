@@ -62,7 +62,7 @@ public class AATIncomingSMSController {
         boolean needsToRsvp = userManager.needsToRSVP(user);
 
         if((needsToVote && needsToRsvp)) {
-            eventManagementService.notifyUnableToProcessEventReply(user);;
+            eventManagementService.notifyUnableToProcessEventReply(user);
         } else {
             if (needsToVote) {
                 List<Event> outstandingVotes = eventManagementService.getOutstandingVotesForUser(user);

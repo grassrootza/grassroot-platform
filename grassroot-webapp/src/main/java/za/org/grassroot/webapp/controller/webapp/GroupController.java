@@ -133,7 +133,7 @@ public class GroupController extends BaseController {
                 // just for testing since no UI support yet exists...
                 // GroupLocationFilter locationFilter = new GroupLocationFilter(new GeoLocation(45.567641, 18.701211), 30000, true);
                 GroupLocationFilter locationFilter = null;
-                List<Group> publicGroups = groupBroker.findPublicGroups(getUserProfile().getUid(), term, locationFilter, false);
+                List<Group> publicGroups = groupBroker.findPublicGroups(getUserProfile().getUid(), term, null, false);
                 model.addAttribute("groupCandidates", publicGroups);
                 model.addAttribute("externalGroupsFound", !publicGroups.isEmpty());
             }
@@ -500,7 +500,7 @@ public class GroupController extends BaseController {
         boolean closedGroup = !(canCallMeetings || canCallVotes || canRecordToDo || canViewMembers);
 
         if (closedGroup) {
-            model.addAttribute("closedGroup", closedGroup);
+            model.addAttribute("closedGroup", true);
         } else {
             model.addAttribute("canCallMeetings", canCallMeetings);
             model.addAttribute("canCallVotes", canCallVotes);

@@ -30,7 +30,7 @@ import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
 @Component
 public class EventManager implements EventManagementService {
 
-    private Logger log = LoggerFactory.getLogger(EventManager.class);
+    private final Logger log = LoggerFactory.getLogger(EventManager.class);
 
     @Autowired
     private EventRepository eventRepository;
@@ -98,18 +98,19 @@ public class EventManager implements EventManagementService {
 
     @Override
     public Map<User, EventRSVPResponse> getRSVPResponses(Event event) {
-        // todo: there is almost certainly a faster/better way to do this
+
         Map<User, EventRSVPResponse> rsvpResponses = new LinkedHashMap<>();
-
-        for (User user : event.getAncestorGroup().getMembers())
+        for(User user:  event.getAncestorGroup().getMembers()) {
+            if (getListOfUsersThatRSVPNoForEvent(event).contains(user)) {
+                rsvpResponses.put(user, EventRSVPResponse.NO);
+                continue;
+            }
+            if (getListOfUsersThatRSVPYesForEvent(event).contains(user)) {
+                rsvpResponses.put(user, EventRSVPResponse.YES);
+                continue;
+            }
             rsvpResponses.put(user, EventRSVPResponse.NO_RESPONSE);
-
-        for (User user : getListOfUsersThatRSVPYesForEvent(event))
-            rsvpResponses.replace(user, EventRSVPResponse.YES);
-
-        for (User user : getListOfUsersThatRSVPNoForEvent(event))
-            rsvpResponses.replace(user, EventRSVPResponse.NO);
-
+        }
         return rsvpResponses;
     }
 

@@ -151,7 +151,6 @@ public class USSDSafetyGroupController extends USSDController {
             menu = new USSDMenu("Safety group created, what would you like to do next?");
             menu.addMenuOption(thisSection.toPath() + createGroupAddRespondents + "?groupUid=" + group.getUid(), getMessage(thisSection, optionsKey, "addrespondents", user));
             menu.addMenuOption(thisSection.toPath() + resetSafetyGroup + "?groupUid=" + group.getUid(), getMessage(thisSection, optionsKey, "leave", user));
-            ;
             menu.addMenuOption(USSDSection.GROUP_MANAGER.toPath() + startMenu, getMessage(thisSection, optionsKey, "back", user));
         }
 

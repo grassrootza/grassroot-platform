@@ -159,11 +159,8 @@ public class PaidGroup {
 
         PaidGroup paidGroup = (PaidGroup) o;
 
-        if (getUid() != null ? !getUid().equals(paidGroup.getUid()) : paidGroup.getUid() != null) {
-            return false;
-        }
+        return getUid() != null ? getUid().equals(paidGroup.getUid()) : paidGroup.getUid() == null;
 
-        return true;
     }
 
     @Override
