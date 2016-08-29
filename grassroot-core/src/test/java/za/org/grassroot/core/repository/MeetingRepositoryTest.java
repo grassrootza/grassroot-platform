@@ -16,7 +16,6 @@ import za.org.grassroot.core.enums.EventLogType;
 
 import javax.transaction.Transactional;
 import java.time.*;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -142,7 +141,7 @@ public class MeetingRepositoryTest {
         group.addMember(user);
         groupRepository.save(group);
 
-        LocalDate yesterday = LocalDate.now().minus(1, ChronoUnit.DAYS);
+        LocalDate yesterday = LocalDate.now().minus(1, DAYS);
         Instant start = convertToSystemTime(LocalDateTime.of(yesterday, LocalTime.MIN), getSAST());
         Instant end = convertToSystemTime(LocalDateTime.of(yesterday, LocalTime.MAX), getSAST());
 

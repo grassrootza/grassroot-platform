@@ -409,6 +409,18 @@ public class GroupRestController {
         }
     }
 
+	@RequestMapping(value = "/members/unsubscribe/{phoneNumber}/{code}", method = RequestMethod.POST)
+	public ResponseEntity<ResponseWrapper> unsubscribe(@PathVariable String phoneNumber, @PathVariable String code,
+	                                                   @RequestParam String groupUid) {
+		User user = userManagementService.findByInputNumber(phoneNumber);
+		try {
+			groupBroker.unsubscribeMember(user.getUid(), groupUid);
+			return RestUtil.messageOkayResponse(RestMessage.MEMBER_UNSUBSCRIBED);
+		} catch (Exception e) { // means user has already been removed
+			return RestUtil.errorResponse(HttpStatus.CONFLICT, RestMessage.MEMBER_ALREADY_LEFT);
+		}
+	}
+
 
     @RequestMapping(value = "/image/upload/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> uploadImage(@PathVariable String phoneNumber, @PathVariable String code, @PathVariable String groupUid,

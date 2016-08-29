@@ -69,7 +69,7 @@ public class GcmXmppMessageCodec {
 			return MessageBuilder.withPayload(xmppMessage).build();
 
 		} catch (JsonProcessingException e) {
-			throw new RuntimeException("Error while trying to encode GCM XMPP message: " + e.getMessage(), e);
+			throw new IllegalArgumentException("Error while trying to encode GCM XMPP message: " + e.getMessage(), e);
 		}
 	}
 

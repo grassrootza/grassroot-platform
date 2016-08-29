@@ -14,6 +14,7 @@ import java.util.Objects;
 @Table(name = "group_join_request_event",
         uniqueConstraints = @UniqueConstraint(name = "uk_group_join_req_event_uid", columnNames = "uid"))
 public class GroupJoinRequestEvent {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
@@ -69,6 +70,8 @@ public class GroupJoinRequestEvent {
     public Instant getOccurrenceTime() {
         return occurrenceTime;
     }
+
+    public GroupJoinRequest getRequest() { return request; }
 
     @Override
     public boolean equals(Object o) {

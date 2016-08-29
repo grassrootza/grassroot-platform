@@ -27,6 +27,6 @@ public class EventInfoNotification extends EventNotification {
 	}
 
 	public EventInfoNotification(User target, String message, EventLog eventLog) {
-		super(target, message, eventLog, true);
+		super(target, message, eventLog);
 	}
 }

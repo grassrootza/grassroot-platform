@@ -571,7 +571,7 @@ public class GroupController extends BaseController {
 
         Group group = groupBroker.load(groupUid);
 
-        if (confirmText.toLowerCase().equals("delete")) {
+        if ("delete".equalsIgnoreCase(confirmText)) {
             groupBroker.deactivate(getUserProfile().getUid(), group.getUid(), true);
             addMessage(redirectAttributes, MessageType.SUCCESS, "group.delete.success", request);
             return "redirect:/home";

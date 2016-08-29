@@ -6,14 +6,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.integration.annotation.Transformer;
 import org.springframework.messaging.Message;
-import org.springframework.security.access.method.P;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.UserNotification;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.UserLogType;
-import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.repository.GcmRegistrationRepository;
 import za.org.grassroot.integration.domain.AndroidClickActionType;
 
@@ -242,6 +240,9 @@ public class NotificationToGcmXmppTransformer {
 			            break;
 		            case REMINDER:
 			            actionType = AndroidClickActionType.TASK_REMINDER;
+			            break;
+		            case RESULT:
+			            actionType = AndroidClickActionType.TASK_RESULTS;
 			            break;
 		            default:
 			            actionType = AndroidClickActionType.SHOW_MESSAGE;

@@ -35,16 +35,16 @@ import static org.junit.Assert.*;
 @ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
 public class GroupRepositoryTest {
 
-    private Logger log = LoggerFactory.getLogger(GroupRepositoryTest.class);
+    private static final Logger log = LoggerFactory.getLogger(GroupRepositoryTest.class);
 
     @Autowired
-    GroupRepository groupRepository;
+    private GroupRepository groupRepository;
 
     @Autowired
-    UserRepository userRepository;
+    private UserRepository userRepository;
 
     @Autowired
-    GroupLogRepository groupLogRepository;
+    private GroupLogRepository groupLogRepository;
 
     @Test
     public void shouldSaveAndRetrieveGroupData() throws Exception {

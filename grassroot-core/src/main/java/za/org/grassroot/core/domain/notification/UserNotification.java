@@ -27,5 +27,6 @@ public abstract class UserNotification extends Notification {
 
 	@Override
 	protected void appendToString(StringBuilder sb) {
+		// required for to string / debugging / inheritance in notification
 	}
 }

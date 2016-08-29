@@ -78,11 +78,9 @@ public class Membership implements Serializable {
         if (getGroup() != null ? !getGroup().equals(that.getGroup()) : that.getGroup() != null) {
             return false;
         }
-        if (getUser() != null ? !getUser().equals(that.getUser()) : that.getUser() != null) {
-            return false;
-        }
 
-        return true;
+        return getUser() != null ? getUser().equals(that.getUser()) : that.getUser() == null;
+
     }
 
     @Override

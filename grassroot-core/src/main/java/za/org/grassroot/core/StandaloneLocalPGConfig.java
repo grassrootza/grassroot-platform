@@ -17,10 +17,10 @@ import javax.sql.DataSource;
 @Profile(GrassRootApplicationProfiles.LOCAL_PG)
 public class StandaloneLocalPGConfig extends DatabaseConfig {
 
-    private Logger log = LoggerFactory.getLogger(getClass().getCanonicalName());
+    private static final Logger log = LoggerFactory.getLogger(StandaloneLocalPGConfig.class);
 
     @Autowired
-    Environment env;
+    private Environment env;
 
     private String dbDriver;
     private String dbUrl;
@@ -31,8 +31,7 @@ public class StandaloneLocalPGConfig extends DatabaseConfig {
     @Override
     public DataSource dataSource() {
         log.info("Running with LOCAL_PG profile");
-        //TODO aakil - will this work when we switch to undertow
-        //TODO also get the properties to work from an external config file
+
         org.apache.tomcat.jdbc.pool.DataSource dataSource = new org.apache.tomcat.jdbc.pool.DataSource();
 
         if (env.getProperty("db.driver") != null && !env.getProperty("db.driver").trim().equals("")) {

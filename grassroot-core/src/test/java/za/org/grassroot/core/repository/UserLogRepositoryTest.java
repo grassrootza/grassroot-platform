@@ -40,10 +40,10 @@ public class UserLogRepositoryTest {
     private static final Logger log = LoggerFactory.getLogger(UserLogRepositoryTest.class);
 
     @Autowired
-    UserRepository userRepository;
+    private UserRepository userRepository;
 
     @Autowired
-    UserLogRepository userLogRepository;
+    private UserLogRepository userLogRepository;
 
     @Test
     public void shouldSaveAndRetrieveUserLogs() {

@@ -188,7 +188,7 @@ public class EventRepositoryTest {
     }
 
     @Test
-    public void ShouldFindEventsByUserAndTimeStamp() {
+    public void shouldFindEventsByUserAndTimeStamp() {
 
         assertThat(eventRepository.count(), is(0L));
         User user = userRepository.save(new User("0831111115"));
@@ -197,14 +197,16 @@ public class EventRepositoryTest {
         group = groupRepository.save(group);
 
         Event event1 = eventRepository.save(new Meeting("test", Instant.now().plus(7, DAYS), user, group, "someLoc"));
-        event1 = eventRepository.save(event1);
+        eventRepository.save(event1);
 
         Event event2 = eventRepository.save(new Vote("test2", Instant.now().minus(7, DAYS), user, group));
-        event2 = eventRepository.save(event2);
+        eventRepository.save(event2);
 
         Event event3 = eventRepository.save(new Meeting("test3", Instant.now().plus(7, DAYS), user, group, "someLoc"));
         event3.setCanceled(true);
-        event3 = eventRepository.save(event3);
+        eventRepository.save(event3);
+
+        // todo : actually test
     }
 
     @Test

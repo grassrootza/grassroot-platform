@@ -6,12 +6,10 @@ import za.org.grassroot.core.enums.NotificationDetailedType;
 
 import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
-import java.time.format.DateTimeFormatter;
 
 @Entity
 @DiscriminatorValue("MEETING_THANKYOU")
 public class MeetingThankYouNotification extends EventNotification {
-	private static final DateTimeFormatter shortDateFormatter = DateTimeFormatter.ofPattern("EEE, d/M");
 
 	@Override
 	public NotificationDetailedType getNotificationDetailedType() {
@@ -23,6 +21,6 @@ public class MeetingThankYouNotification extends EventNotification {
 	}
 
 	public MeetingThankYouNotification(User target, String message, EventLog eventLog) {
-		super(target, message, eventLog, false);
+		super(target, message, eventLog);
 	}
 }

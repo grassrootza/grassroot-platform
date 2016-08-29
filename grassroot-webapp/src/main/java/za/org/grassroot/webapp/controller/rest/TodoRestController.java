@@ -33,11 +33,6 @@ public class TodoRestController {
 
     private static final Logger log = LoggerFactory.getLogger(TodoRestController.class);
 
-    @InitBinder
-    public void initBinder(ServletRequestDataBinder binder) {
-        binder.registerCustomEditor(LocalDateTime.class, new LocalDateTimePropertyEditor(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-    }
-
     @Autowired
     private UserManagementService userManagementService;
 
@@ -46,6 +41,11 @@ public class TodoRestController {
 
     @Autowired
     private TaskBroker taskBroker;
+
+    @InitBinder
+    public void initBinder(ServletRequestDataBinder binder) {
+        binder.registerCustomEditor(LocalDateTime.class, new LocalDateTimePropertyEditor(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+    }
 
     @RequestMapping(value ="/complete/{phoneNumber}/{code}/{id}", method =  RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> setComplete(@PathVariable("phoneNumber") String phoneNumber,

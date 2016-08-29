@@ -12,6 +12,7 @@ public enum AndroidClickActionType {
 	TASK_CANCELLED,
 	SHOW_JOIN_REQ,
 	JOIN_APPROVED,
+	TASK_RESULTS,
 	SHOW_MESSAGE
 
 }

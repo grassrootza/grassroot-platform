@@ -32,7 +32,7 @@ public abstract class EventNotification extends Notification {
 		sb.append(", event=").append(event);
 	}
 
-	protected EventNotification(User destination, String message, EventLog eventLog, boolean forAndroidTL) {
+	protected EventNotification(User destination, String message, EventLog eventLog) {
 		this(destination, message, eventLog, eventLog.getEvent(), true);
 	}
 

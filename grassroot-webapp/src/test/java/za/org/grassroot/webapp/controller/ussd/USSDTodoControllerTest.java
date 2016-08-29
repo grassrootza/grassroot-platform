@@ -3,14 +3,12 @@ package za.org.grassroot.webapp.controller.ussd;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.GroupPage;
 import za.org.grassroot.webapp.util.USSDUrlUtil;
 
@@ -62,9 +60,6 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
 
     @InjectMocks
     private USSDToDoController ussdLogBookController;
-
-    @Mock
-    private UserRepository userRepository;
 
     private User testUser;
 

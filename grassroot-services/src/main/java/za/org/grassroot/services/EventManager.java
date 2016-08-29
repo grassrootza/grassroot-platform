@@ -45,29 +45,19 @@ public class EventManager implements EventManagementService {
     private SmsSendingService smsSendingService;
 
     @Autowired
-    UserRepository userRepository;
+    private UserRepository userRepository;
 
     @Autowired
-    GroupRepository groupRepository;
+    private GroupRepository groupRepository;
 
     @Autowired
-    GroupBroker groupBroker;
+    private EventLogBroker eventLogBroker;
 
     @Autowired
-    UserManagementService userManagementService;
+    private CacheUtilService cacheUtilService;
 
     @Autowired
-    EventLogBroker eventLogBroker;
-
-
-    @Autowired
-    CacheUtilService cacheUtilService;
-
-    @Autowired
-    MessageAssemblingService messageAssemblingService;
-
-    @Autowired
-    GroupLogRepository groupLogRepository;
+    private MessageAssemblingService messageAssemblingService;
 
     @Override
     public Event getMostRecentEvent(Group group) {
@@ -244,6 +234,7 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
+    @SuppressWarnings("unchecked") // given the conversion to page, this is otherwise spurious
     public Page<Event> getEventsUserCanView(User user, EventType type, int pastPresentOrBoth, int pageNumber, int pageSize) {
         // todo: filter for permissions, maybe
         if (pastPresentOrBoth == -1) {

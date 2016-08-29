@@ -21,6 +21,6 @@ public class EventChangedNotification extends EventNotification {
 	}
 
 	public EventChangedNotification(User target, String message, EventLog eventLog) {
-		super(target, message, eventLog, true);
+		super(target, message, eventLog);
 	}
 }

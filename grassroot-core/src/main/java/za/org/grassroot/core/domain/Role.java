@@ -53,15 +53,15 @@ public class Role extends BaseEntity implements GrantedAuthority, Comparable<Rol
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public Set<Permission> getPermissions() {
         if (permissions == null) {
             permissions = new HashSet<>();
         }
         return new HashSet<>(permissions);
+    }
+
+    public void addPermission(Permission permission) {
+        this.permissions.add(permission);
     }
 
     public void removePermission(Permission permission) {
@@ -80,29 +80,8 @@ public class Role extends BaseEntity implements GrantedAuthority, Comparable<Rol
         return groupUid;
     }
 
-    void setGroupUid(String groupUid) {
-        this.groupUid = groupUid;
-    }
-
     public RoleType getRoleType() {
         return roleType;
-    }
-
-    void setRoleType(RoleType roleType) {
-        this.roleType = roleType;
-    }
-
-    public boolean isGroupRole() {
-        return roleType.equals(RoleType.GROUP);
-    }
-//~=================================================================================================================
-
-    public void addPermission(Permission permission) {
-        this.permissions.add(permission);
-    }
-
-    void setGroup(Group group) {
-        this.groupUid = group.getUid();
     }
 
     // looks like toString() method might be used for other purposes, so creating a helper as a descriptor

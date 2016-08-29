@@ -28,11 +28,9 @@ import static org.junit.Assert.assertThat;
 @ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
 public class UserGroupRoleTest {
 
-
-    @Autowired
-    private RoleRepository roleRepository;
     @Autowired
     private GroupRepository groupRepository;
+
     @Autowired
     private UserRepository userRepository;
 

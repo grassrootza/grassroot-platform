@@ -15,6 +15,8 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+// todo : clean up setters in here
+
 @Entity
 @Table(name = "group_profile") // quoting table name in case "group" is a reserved keyword
 public class Group implements TodoContainer, VoteContainer, MeetingContainer, Serializable, Comparable<Group> {
@@ -201,6 +203,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         return id;
     }
 
+    // todo : restructure tests to not require this
     public void setId(Long id) {
         this.id = id;
     }
@@ -213,16 +216,8 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         return DateTimeUtil.convertToUserTimeZone(createdDateTime, DateTimeUtil.getSAST());
     }
 
-    public void setCreatedDateTime(Instant createdDateTime) {
-        this.createdDateTime = createdDateTime;
-    }
-
     public User getCreatedByUser() {
         return this.createdByUser;
-    }
-
-    void setCreatedByUser(User createdByUser) {
-        this.createdByUser = createdByUser;
     }
 
     public Set<Membership> getMemberships() {
@@ -391,7 +386,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     }
 
     public boolean hasValidGroupTokenCode() {
-        return (groupTokenCode != null && groupTokenCode.trim() != "") &&
+        return (groupTokenCode != null && !groupTokenCode.isEmpty()) &&
                 (tokenExpiryDateTime != null && tokenExpiryDateTime.isAfter(Instant.now()));
     }
 
@@ -561,11 +556,8 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
 
         Group group = (Group) o;
 
-        if (getUid() != null ? !getUid().equals(group.getUid()) : group.getUid() != null) {
-            return false;
-        }
+        return (getUid() != null) ? getUid().equals(group.getUid()) : group.getUid() == null;
 
-        return true;
     }
 
     @Override

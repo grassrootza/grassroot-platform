@@ -344,7 +344,6 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         resetTestGroup();
         String urlToSave = saveGroupMenu("merge", testGroup.getUid());
         Group unnamedTestGroup = new Group("", testUser);
-        unnamedTestGroup.setCreatedDateTime(Instant.now());
         Set<Group> testList = new HashSet<>(Arrays.asList(unnamedTestGroup, new Group("tg1", testUser), new Group("tg2", testUser)));
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(groupBrokerMock.mergeCandidates(testUser.getUid(), testGroup.getUid())).thenReturn(testList);
