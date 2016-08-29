@@ -82,7 +82,7 @@ public class USSDUrlUtil {
         // note: this might be more efficient with a URLBuilder or the like, but those (AFAIK) impose fully written paths
         StringBuilder urlBuilder = new StringBuilder(path + "?");
         for (Map.Entry<String, String> parameter : parameters.entrySet())
-            urlBuilder.append(parameter.getKey() + "=" + encodeParameter(parameter.getValue()));
+            urlBuilder.append(parameter.getKey()).append("=").append(encodeParameter(parameter.getValue()));
         return urlBuilder.toString();
     }
 

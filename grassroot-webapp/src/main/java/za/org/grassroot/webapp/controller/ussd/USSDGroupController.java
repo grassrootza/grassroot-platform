@@ -83,10 +83,6 @@ public class USSDGroupController extends USSDController {
                 createGroupMenu, createGroupMenu + doSuffix, true));
     }
 
-    /*
-    Second menu: once the user has selected a group, give them options to name, create join code, add a member, or unsub themselves
-    Major todo: check what permissions the user has and only display options that they can do
-     */
 
     @RequestMapping(value = groupPath + existingGroupMenu)
     @ResponseBody
@@ -153,6 +149,9 @@ public class USSDGroupController extends USSDController {
                     getMessage(thisSection, createGroupMenu + doSuffix, optionsKey + "numbers", user));
             menu.addMenuOption(groupMenuWithId(closeGroupToken, createdGroup.getUid()),
                     getMessage(thisSection, createGroupMenu + doSuffix, optionsKey + "token", user));
+            menu.addMenuOption(groupMenuWithId(closeGroupToken, createdGroup.getUid()),
+                    getMessage(thisSection, createGroupMenu + doSuffix, optionsKey + "token", user));
+
 
         }
         return menuBuilder(menu);
@@ -167,7 +166,6 @@ public class USSDGroupController extends USSDController {
                                                     @RequestParam(groupUidParam) String groupUid,
                                                     @RequestParam(value = "interrupted", required = false) boolean interrupted) throws URISyntaxException {
 
-        // todo: various forms of error and permission checking
         User user = userManager.findByInputNumber(inputNumber, saveGroupMenu(closeGroupToken, groupUid));
         Group group = groupBroker.load(groupUid);
 
@@ -187,11 +185,6 @@ public class USSDGroupController extends USSDController {
         return menuBuilder(menu);
     }
 
-    /*
-    todo: check permissions on user (more simply, that they created the group) to avoid hand hacking through Url
-    Generates a loop, where it keeps asking for additional numbers and adds them to group over and over, until the
-    user enters "0", when wrap up, and ask for the group name.
-     */
 
     @RequestMapping(value = groupPath + createGroupAddNumbers)
     @ResponseBody
@@ -263,10 +256,6 @@ public class USSDGroupController extends USSDController {
         return menuBuilder(menu);
     }
 
-    /*
-    Menu options to rename a group, either existing, or if a new group, to give it a name
-    Major todo: integrate permissions for existing groups
-     */
 
     @RequestMapping(value = groupPath + renameGroupPrompt)
     @ResponseBody
@@ -351,12 +340,10 @@ public class USSDGroupController extends USSDController {
     public Request groupToken(@RequestParam(value = phoneNumber) String inputNumber,
                               @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
 
-        // todo: validate that this user has permission to create a token for this group
 
         User sessionUser = userManager.findByInputNumber(inputNumber, saveGroupMenu(groupTokenMenu, groupUid));
         USSDMenu tokenMenu;
         Group sessionGroup = groupBroker.load(groupUid);
-
         if (sessionGroup.hasValidGroupTokenCode()) {
             String tokenCode = sessionGroup.getGroupTokenCode();
             boolean indefiniteToken = sessionGroup.getTokenExpiryDateTime().equals(DateTimeUtil.getVeryLongAwayInstant());
@@ -428,7 +415,6 @@ public class USSDGroupController extends USSDController {
                                @RequestParam(value = groupUidParam, required = true) String groupUid,
                                @RequestParam(value = yesOrNoParam, required = false) String confirmed) throws URISyntaxException {
 
-        // todo: check the token and group match, and that the user has token admin rights
         User user;
         USSDMenu thisMenu;
 
@@ -439,7 +425,6 @@ public class USSDGroupController extends USSDController {
                     optionsYesNo(user, beginUri + "-close" + endUri));
         } else if ("yes".equals(confirmed)) {
             user = userManager.findByInputNumber(inputNumber, null);
-            // todo: error handling here (bad token, etc., also, security)
             groupBroker.closeJoinToken(user.getUid(), groupUid);
             thisMenu = new USSDMenu(getMessage(thisSection, groupTokenMenu, promptKey + ".close-done", user),
                     optionsHomeExit(user));
@@ -454,7 +439,7 @@ public class USSDGroupController extends USSDController {
 
     /**
      * SECTION: MENUS TO ADD MEMBERS, UNSUBSCRIBE, AND LIST MEMBERS
-     * todo: decide if want some kind of "list members" function (maybe delivered via SMS)?
+     *
      */
 
     @RequestMapping(value = groupPath + addMemberPrompt)
@@ -486,7 +471,6 @@ public class USSDGroupController extends USSDController {
                                     @RequestParam(value = groupUidParam) String groupUid,
                                     @RequestParam(value = userInputParam) String numberToAdd) throws URISyntaxException {
 
-        // todo: make sure this user is part of the group and has permission to add people to it
 
         User sessionUser = userManager.findByInputNumber(inputNumber, null);
         USSDMenu thisMenu = (numberToAdd.trim().equals("0")) ?
@@ -501,8 +485,7 @@ public class USSDGroupController extends USSDController {
     @ResponseBody
     public Request unsubscribeConfirm(@RequestParam(value = phoneNumber) String inputNumber,
                                       @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
-
-        // todo: add in a brief description of group, e.g., who created it
+        
 
         User sessionUser = userManager.findByInputNumber(inputNumber, saveGroupMenu(unsubscribePrompt, groupUid));
 
@@ -517,14 +500,12 @@ public class USSDGroupController extends USSDController {
 
     }
 
-    // todo: security & permissions so we make sure it is the user themselves doing this
     @RequestMapping(value = groupPath + unsubscribePrompt + doSuffix)
     @ResponseBody
     public Request unsubscribeDo(@RequestParam(value = phoneNumber) String inputNumber,
                                  @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
 
         User sessionUser = userManager.findByInputNumber(inputNumber, null);
-        // todo: add error and exception handling, as well as validation and checking (e.g., if user in group, etc)
 
         groupBroker.unsubscribeMember(sessionUser.getUid(), groupUid);
         String returnMessage = getMessage(thisSection, unsubscribePrompt + doSuffix, promptKey, sessionUser);
@@ -542,7 +523,6 @@ public class USSDGroupController extends USSDController {
 
         USSDMenu menu;
         User user = userManager.findByInputNumber(inputNumber, saveGroupMenu(mergeGroupMenu, groupUid));
-        // todo: debug why this is returning inactive groups (service method has active flag)
         Set<Group> mergeCandidates = groupBroker.mergeCandidates(user.getUid(), groupUid);
 
         if (mergeCandidates == null || mergeCandidates.size() == 0) {
@@ -564,8 +544,6 @@ public class USSDGroupController extends USSDController {
                                 @RequestParam(value = groupUidParam) String groupUid1,
                                 @RequestParam(value = "firstGroupSelected") String firstGroupSelected) throws URISyntaxException {
 
-        // todo: specify which one is smaller
-        // todo: check permissions
         User user = userManager.findByInputNumber(inputNumber,
                 saveGroupMenuWithParams(mergeGroupMenu + "-confirm", groupUid1,
                         "&firstGroupSelected=" + firstGroupSelected));

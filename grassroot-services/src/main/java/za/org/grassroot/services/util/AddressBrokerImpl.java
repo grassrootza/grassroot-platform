@@ -62,7 +62,7 @@ public class AddressBrokerImpl implements AddressBroker {
         Address address = addressRepository.findOneByResident(user);
         if (houseNumber != null) address.setHouseNumber(houseNumber);
         if (street != null) address.setStreetName(street);
-        if (town != null) address.setTown(town);;
+        if (town != null) address.setTown(town);
 
         log.info("updating user address");
     }

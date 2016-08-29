@@ -687,7 +687,7 @@ public class GroupBrokerImpl implements GroupBroker {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
 
-        Group group = load(groupUid);;
+        Group group = load(groupUid);
         User user = userRepository.findOneByUid(userUid);
 
         // since this might be called from a parent, via recursion, on which this will throw an error, rather catch & throw
@@ -709,7 +709,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
         if (includeSubGroups) {
             List<Group> subGroups = new ArrayList<>(groupRepository.findByParentAndActiveTrue(group));
-            if (subGroups != null && !subGroups.isEmpty()) {
+            if (!subGroups.isEmpty()) {
                 for (Group subGroup : subGroups)
                     updateGroupDefaultLanguage(userUid, subGroup.getUid(), newLocale, true);
             }
@@ -999,8 +999,8 @@ public class GroupBrokerImpl implements GroupBroker {
         Group group = groupRepository.findOneByUid(groupUid);
 
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
 
-        // todo: may want to check for both update and add members ...
         Set<Group> otherGroups = permissionBroker.getActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         otherGroups.remove(group);
         return otherGroups;
@@ -1046,7 +1046,6 @@ public class GroupBrokerImpl implements GroupBroker {
 
     private LocalDateTime getLastTimeGroupModified(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
-        // todo: change groupLog to use localdatetime
         GroupLog latestGroupLog = groupLogRepository.findFirstByGroupOrderByCreatedDateTimeDesc(group);
         return (latestGroupLog != null) ? LocalDateTime.ofInstant(latestGroupLog.getCreatedDateTime(), getSAST()) :
                 LocalDateTime.ofInstant(group.getCreatedDateTime(), getSAST());

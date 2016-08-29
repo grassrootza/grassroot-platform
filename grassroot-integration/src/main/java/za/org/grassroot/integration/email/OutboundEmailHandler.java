@@ -5,6 +5,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.integration.annotation.MessageEndpoint;
 import org.springframework.integration.annotation.ServiceActivator;
+import org.springframework.mail.MailMessage;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.messaging.Message;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.integration.services.NotificationService;
@@ -23,7 +25,12 @@ public class OutboundEmailHandler {
     private NotificationService notificationService;
 
     @ServiceActivator(inputChannel = "emailOutboundChannel")
-    public void handleMessage(Message<Notification> message) throws Exception {
+    public MailMessage handleMessage(Message<Notification> message) throws Exception {
+
+        MailMessage mailMsg = new SimpleMailMessage();
+
+
+        return mailMsg;
 
     }
 }

@@ -34,13 +34,9 @@ public class GcmMessageListeningEndpoint extends ChatMessageListeningEndpoint {
     public GcmMessageListeningEndpoint(XMPPConnection connection) {
         super(connection);
         ProviderManager.addExtensionProvider(GcmPacketExtension.GCM_ELEMENT_NAME, GcmPacketExtension.GCM_NAMESPACE,
-                new PacketExtensionProvider() {
-                    @Override
-                    public PacketExtension parseExtension(XmlPullParser parser) throws Exception {
-                        String json = parser.nextText();
-                        return new GcmPacketExtension(json);
-                    }
-
+                (PacketExtensionProvider) parser -> {
+                    String json = parser.nextText();
+                    return new GcmPacketExtension(json);
                 });
 
     }

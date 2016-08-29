@@ -561,11 +561,8 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
 
         Group group = (Group) o;
 
-        if (getUid() != null ? !getUid().equals(group.getUid()) : group.getUid() != null) {
-            return false;
-        }
+        return getUid() != null ? getUid().equals(group.getUid()) : group.getUid() == null;
 
-        return true;
     }
 
     @Override

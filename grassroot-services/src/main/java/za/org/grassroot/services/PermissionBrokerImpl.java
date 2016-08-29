@@ -98,9 +98,7 @@ public class PermissionBrokerImpl implements PermissionBroker {
     private static final Set<Permission> constructPermissionSet(Set<Permission> baseSet, Permission... permissions) {
         Set<Permission> set = new HashSet<>();
         set.addAll(baseSet);
-        for (Permission permission : permissions) {
-            set.add(permission);
-        }
+        Collections.addAll(set, permissions);
         return java.util.Collections.unmodifiableSet(set);
     }
 

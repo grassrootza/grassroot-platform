@@ -48,11 +48,8 @@ public class UserAndLocalDateKey implements Serializable {
 		if (!userUid.equals(that.userUid)) {
 			return false;
 		}
-		if (!localDate.equals(that.localDate)) {
-			return false;
-		}
+		return localDate.equals(that.localDate);
 
-		return true;
 	}
 
 	@Override

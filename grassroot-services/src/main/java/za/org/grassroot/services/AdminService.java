@@ -1,7 +1,6 @@
 package za.org.grassroot.services;
 
 import org.springframework.security.access.prepost.PreAuthorize;
-import za.org.grassroot.core.dto.KeywordDTO;
 import za.org.grassroot.core.dto.MaskedUserDTO;
 import za.org.grassroot.core.enums.EventType;
 
@@ -75,7 +74,7 @@ public interface AdminService {
 
     Long countLogBooksRecordedInInterval(LocalDateTime start, LocalDateTime end);
 
-    List<KeywordDTO> getKeywordStats(LocalDateTime from);
+    List getKeywordStats(LocalDateTime from);
 
     /*
     Methods for closer analysis of user sessions etc

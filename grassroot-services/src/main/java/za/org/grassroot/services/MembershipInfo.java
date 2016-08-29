@@ -98,11 +98,8 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
 
         MembershipInfo that = (MembershipInfo) o;
 
-        if (!phoneNumber.equals(that.phoneNumber)) {
-            return false;
-        }
+        return phoneNumber.equals(that.phoneNumber);
 
-        return true;
     }
 
     @Override
