@@ -59,7 +59,7 @@ public class GroupDTO {
         return groupName;
     }
 
-    public String getUid(){return uid;};
+    public String getUid(){return uid;}
 
     public int getGroupSize() {
         return group_size;

@@ -47,11 +47,11 @@ public class EventWrapper {
                 this.defaultReminderMinutes = parent.getReminderMinutes();
                 break;
             case MEETING:
-                this.parentName = ((Meeting) event.getParent()).getName();
+                this.parentName = event.getParent().getName();
                 this.defaultReminderMinutes = 0; // todo: fix
                 break;
             case VOTE:
-                this.parentName = ((Vote) event.getParent()).getName();
+                this.parentName = event.getParent().getName();
                 this.defaultReminderMinutes = 0; // todo: fix
                 break;
             case TODO:

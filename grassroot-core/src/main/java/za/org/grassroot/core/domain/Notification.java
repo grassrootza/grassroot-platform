@@ -202,7 +202,7 @@ public abstract class Notification implements Serializable {
 
 	public int getPriority() {
 		return priority;
-	};
+	}
 
 	public void setPriority(int priority){
 		this.priority = priority;
@@ -249,11 +249,8 @@ public abstract class Notification implements Serializable {
 
 		Notification that = (Notification) o;
 
-		if (uid != null ? !uid.equals(that.uid) : that.uid != null) {
-			return false;
-		}
+		return uid != null ? uid.equals(that.uid) : that.uid == null;
 
-		return true;
 	}
 
 	@Override

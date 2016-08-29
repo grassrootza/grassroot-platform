@@ -183,7 +183,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, firstUrlToSave);
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, secondUrlToSave);
-        verifyNoMoreInteractions(userManagementServiceMock);;
+        verifyNoMoreInteractions(userManagementServiceMock);
         verify(groupBrokerMock, times(1)).addMembers(testUser.getUid(), testGroup.getUid(), ordinaryMember("0801112345"), false);
        // verifyNoMoreInteractions(groupBrokerMock);
 

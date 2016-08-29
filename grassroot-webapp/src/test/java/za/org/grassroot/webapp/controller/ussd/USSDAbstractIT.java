@@ -1,6 +1,7 @@
 package za.org.grassroot.webapp.controller.ussd;
 
 import org.junit.BeforeClass;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -131,6 +132,11 @@ public class USSDAbstractIT {
 
     }
 
+    @Test
+    public void test() throws Exception{
+
+    }
+
     protected UriComponentsBuilder assembleUssdURI(String urlEnding) {
         UriComponentsBuilder baseUri = UriComponentsBuilder.fromUri(base.build().toUri())
                 .path(ussdPath + urlEnding);
@@ -183,5 +189,7 @@ public class USSDAbstractIT {
             super.prepareConnection(connection, httpMethod);
         }
     }
+
+
 
 }

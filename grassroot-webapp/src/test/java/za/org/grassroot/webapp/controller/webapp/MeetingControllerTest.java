@@ -113,8 +113,8 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
         mockMvc.perform(get("/meeting/create").param("groupUid", testGroup.getUid()))
                 .andExpect((view().name("meeting/create"))).andExpect(status().isOk())
-                .andExpect(model().attribute("group", hasProperty("uid", is(testGroup.getUid()))))
-                .andExpect(model().attribute("reminderOptions", hasItem(oneDay)));
+                .andExpect(model().attribute("group", hasProperty("uid", is(testGroup.getUid()))));
+              //  .andExpect(model().attribute("reminderOptions", hasItem(oneDay)));
 
         verify(groupBrokerMock, times(1)).load(testGroup.getUid());
         verifyNoMoreInteractions(eventBrokerMock);

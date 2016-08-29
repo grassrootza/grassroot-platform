@@ -41,9 +41,6 @@ public abstract class EventRequest<P extends UidIdentifiable> extends AbstractEv
 		if (getCreatedByUser() == null) {
 			return false;
 		}
-		if (getEventStartDateTime() == null) {
-			return false;
-		}
-		return true;
+		return getEventStartDateTime() != null;
 	}
 }

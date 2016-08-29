@@ -53,11 +53,8 @@ public class GeoLocation {
 		if (Double.compare(that.latitude, latitude) != 0) {
 			return false;
 		}
-		if (Double.compare(that.longitude, longitude) != 0) {
-			return false;
-		}
+		return Double.compare(that.longitude, longitude) == 0;
 
-		return true;
 	}
 
 	@Override

@@ -194,12 +194,9 @@ public class TaskDTO implements Comparable<TaskDTO> {
     }
 
     private boolean canActionOnLogBook(Todo todo, User user) {
-        if (!todo.isCompleted() &&
+        return !todo.isCompleted() &&
                 (todo.getAssignedMembers().contains(user)
-                || todo.getAssignedMembers().isEmpty())) {
-            return true;
-        }
-        return false;
+                        || todo.getAssignedMembers().isEmpty());
     }
 
 
