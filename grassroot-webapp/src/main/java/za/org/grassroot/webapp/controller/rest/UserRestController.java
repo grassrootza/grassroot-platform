@@ -63,7 +63,7 @@ public class UserRestController {
             final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
             if (!ifExists(msisdn)) {
                 log.info("Creating a verifier for a new user with phoneNumber ={}", phoneNumber);
-                String tokenCode = temporaryTokenSend(userManagementService.generateAndroidUserVerifier(phoneNumber, displayName), msisdn);
+                String tokenCode = temporaryTokenSend(userManagementService.generateAndroidUserVerifier(phoneNumber, displayName), msisdn, false);
                 return RestUtil.okayResponseWithData(RestMessage.VERIFICATION_TOKEN_SENT, tokenCode);
             } else {
                 log.info("Creating a verifier for user with phoneNumber ={}, user already exists.", phoneNumber);
@@ -78,9 +78,10 @@ public class UserRestController {
     public ResponseEntity<ResponseWrapper> resendOtp(@PathVariable("phoneNumber") String phoneNumber) {
         final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
         try {
-            final String tokenCode = temporaryTokenSend(userManagementService.regenerateUserVerifier(phoneNumber), msisdn); // will be empty in production
+            final String tokenCode = temporaryTokenSend(userManagementService.regenerateUserVerifier(phoneNumber), msisdn, true); // will be empty in production
             return RestUtil.okayResponseWithData(RestMessage.VERIFICATION_TOKEN_SENT, tokenCode);
         } catch (Exception e) {
+            log.info("here is the error : " + e.toString());
             return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.OTP_REQ_BEFORE_ADD);
         }
     }
@@ -112,7 +113,7 @@ public class UserRestController {
             final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
             if (ifExists(msisdn)) {
                 // this will send the token by SMS and return an empty string if in production, or return the token if on staging
-                String token = temporaryTokenSend(userManagementService.generateAndroidUserVerifier(msisdn, null), msisdn);
+                String token = temporaryTokenSend(userManagementService.generateAndroidUserVerifier(msisdn, null), msisdn, false);
                 return RestUtil.okayResponseWithData(RestMessage.VERIFICATION_TOKEN_SENT, token);
             } else {
                 return RestUtil.errorResponse(HttpStatus.NOT_FOUND, RestMessage.USER_DOES_NOT_EXIST);
@@ -236,12 +237,12 @@ public class UserRestController {
         return userManagementService.userExist(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
     }
 
-    private String temporaryTokenSend(String token, String destinationNumber) {
+    private String temporaryTokenSend(String token, String destinationNumber, boolean resending) {
         if (environment.acceptsProfiles("production")) {
             if (token != null && System.getenv("SMSUSER") != null && System.getenv("SMSPASS") != null) {
                 // todo : wire up a message source for this
-                // the priority sender will default to smsuser & smspass if priority account details not found, hence leaving the check on those
-                smsSendingService.sendPrioritySMS("Grassroot code: " + token, destinationNumber);
+                final String prefix = resending ? "Grassroot code (resent): " : "Grassroot code: ";
+                smsSendingService.sendPrioritySMS(prefix + token, destinationNumber);
             } else {
                 log.warn("Did not send verification message. No system messaging configuration found.");
             }

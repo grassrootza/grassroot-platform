@@ -249,11 +249,13 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     @Transactional
     public String regenerateUserVerifier(String phoneNumber) {
-        UserCreateRequest userCreateRequest = userCreateRequestRepository.findByPhoneNumber(phoneNumber);
-        if (userCreateRequest == null) {
-            throw new AccessDeniedException("Error! Trying to resend OTP for user before creating");
+        User user = userRepository.findByPhoneNumber(phoneNumber);
+        if (user == null) {
+            UserCreateRequest userCreateRequest = userCreateRequestRepository.findByPhoneNumber(phoneNumber);
+            if (userCreateRequest == null) {
+                throw new AccessDeniedException("Error! Trying to resend OTP for user before creating");
+            }
         }
-
         VerificationTokenCode newTokenCode = passwordTokenService.generateShortLivedOTP(phoneNumber);
         return newTokenCode.getCode();
     }

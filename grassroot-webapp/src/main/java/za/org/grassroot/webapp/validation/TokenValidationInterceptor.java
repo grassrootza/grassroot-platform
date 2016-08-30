@@ -28,24 +28,25 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
 
     // private static final Logger log = LoggerFactory.getLogger(TokenValidationInterceptor.class);
 
-    private ObjectMapper mapper;
-    private ObjectWriter ow;
-    private ResponseWrapper responseWrapper;
-    private String contentType = "application/json";
+    private static final String contentType = "application/json";
 
     @Override
     public boolean preHandle(HttpServletRequest request,
                              HttpServletResponse response, Object handler) throws Exception {
 
         Map pathVariables = (Map) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
+
         String phoneNumber = String.valueOf(pathVariables.get("phoneNumber")).trim();
         String code = String.valueOf(pathVariables.get("code")).trim();
+
         if (passwordTokenService.isLongLiveAuthValid(phoneNumber, code)) {
             return true;
         } else {
-            mapper = new ObjectMapper();
-            ow = mapper.writer();
+            final ObjectMapper mapper = new ObjectMapper();
+            final ObjectWriter ow = mapper.writer();
             VerificationTokenCode tokenCode = passwordTokenService.fetchLongLivedAuthCode(phoneNumber);
+
+            ResponseWrapper responseWrapper;
             if (tokenCode != null && passwordTokenService.isExpired(tokenCode)) {
                 responseWrapper = new ResponseWrapperImpl(HttpStatus.UNAUTHORIZED, RestMessage.TOKEN_EXPIRED,
                         RestStatus.FAILURE);
