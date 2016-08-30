@@ -170,7 +170,7 @@ public class USSDHomeController extends USSDController {
 
     private USSDMenu interruptedPrompt(String inputNumber) {
 
-        String returnUrl = userManager.getLastUssdMenu(inputNumber);
+        String returnUrl = cacheManager.fetchUssdMenuForUser(inputNumber);
         log.info("The user was interrupted somewhere ...Here's the URL: " + returnUrl);
 
         User user = userManager.findByInputNumber(inputNumber);
@@ -187,7 +187,7 @@ public class USSDHomeController extends USSDController {
     }
 
     private boolean userInterrupted(String inputNumber) {
-        return (userManager.getLastUssdMenu(inputNumber) != null);
+        return (cacheManager.fetchUssdMenuForUser(inputNumber) != null);
     }
 
     /* Note: the sequence in which these are checked and returned sets the order of priority of responses */
@@ -422,7 +422,6 @@ public class USSDHomeController extends USSDController {
         return (trailingDigits).equals(sendMeLink);
     }
 
-
     /*
     Menus to process responses to votes and RSVPs,
      */
@@ -496,7 +495,7 @@ public class USSDHomeController extends USSDController {
             welcomeMessage = getMessage(thisSection, startMenu, promptKey, sessionUser);
             userLogger.recordUserLog(sessionUser.getUid(), UserLogType.USER_SKIPPED_NAME, "");
         } else {
-            sessionUser = userManager.setDisplayName(sessionUser, userName);
+            userManager.updateDisplayName(sessionUser.getUid(), userName);
             welcomeMessage = getMessage(thisSection, startMenu, promptKey + "-rename-do", sessionUser.nameToDisplay(), sessionUser);
         }
         return menuBuilder(welcomeMenu(welcomeMessage, sessionUser));

@@ -2,6 +2,7 @@ package za.org.grassroot.core.domain.notification;
 
 import za.org.grassroot.core.domain.AccountLog;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 
 import javax.persistence.DiscriminatorValue;
@@ -16,6 +17,7 @@ public class FreeFormMessageNotification extends AccountNotification {
 
 	public FreeFormMessageNotification(User destination, String message, AccountLog accountLog) {
 		super(destination, message, accountLog);
+		this.priority = AlertPreference.NOTIFY_NEW_AND_REMINDERS.getPriority(); // since this is an account 'product'
 	}
 
 	@Override

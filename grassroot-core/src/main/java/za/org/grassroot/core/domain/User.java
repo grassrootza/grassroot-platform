@@ -8,7 +8,6 @@ import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
@@ -403,17 +402,6 @@ public class User implements UserDetails, Comparable<User> {
     }
 
     //~=================================================================================================================
-
-    /**
-     * Inserting some methods to deal with users not having names -- might want to move to service layer...
-     * May want to switch from a time-based logic on needing to rename to a login count (2nd or 3rd time accessing system)
-     */
-
-    public boolean needsToRenameSelf(Integer timeLimit) {
-        if (hasName()) return false;
-        Instant minutesAgo = Instant.now().minus(timeLimit, ChronoUnit.MINUTES);
-        return (createdDateTime != null && createdDateTime.isBefore(minutesAgo));
-    }
 
     public boolean hasName() {
         return (displayName != null && displayName.trim().length() > 0);

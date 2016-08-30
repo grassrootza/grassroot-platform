@@ -230,6 +230,10 @@ public abstract class Notification implements Serializable {
 		this.viewedOnAndroid = true;
 	}
 
+	public boolean isPrioritySatisfiedByTarget() {
+		return getPriority() >= getTarget().getNotificationPriority();
+	}
+
 	/**
 	 * Locale utilities
 	 */

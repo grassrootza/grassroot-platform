@@ -408,10 +408,10 @@ public class USSDToDoController extends USSDController {
     @ResponseBody
     public Request pickCompletor(@RequestParam(value = phoneNumber) String inputNumber,
                                  @RequestParam(value = logBookParam) String logBookUid,
-                                 @RequestParam(value = userInputParam) String userInput,
+                                 @RequestParam(value = userInputParam) String passedInput,
                                  @RequestParam(value = interruptedFlag, required = false) boolean interrupted,
                                  @RequestParam(value = interruptedInput, required =false) String prior_input) throws URISyntaxException {
-        userInput = interrupted ? prior_input : userInput;
+        final String userInput = interrupted ? prior_input : passedInput;
         User user = userManager.findByInputNumber(inputNumber, saveToDoMenu(pickCompletor, logBookUid, userInput));
         return menuBuilder(pickUserFromGroup(logBookUid, userInput, setCompleteMenu + doSuffix, completingUser, user));
     }

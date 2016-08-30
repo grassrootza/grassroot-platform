@@ -49,8 +49,8 @@ public class NotificationDTO {
     // should start including join request notifications & rsvp totals at some point
     public static final Set<NotificationDetailedType> notificationsForAndroidList =
             Collections.unmodifiableSet(Sets.newHashSet(
-                    NotificationDetailedType.LOG_BOOK_INFO,
-                    NotificationDetailedType.LOG_BOOK_REMINDER,
+                    NotificationDetailedType.TODO_INFO,
+                    NotificationDetailedType.TODO_REMINDER,
                     NotificationDetailedType.EVENT_INFO,
                     NotificationDetailedType.EVENT_CHANGED,
                     NotificationDetailedType.EVENT_CANCELLED,

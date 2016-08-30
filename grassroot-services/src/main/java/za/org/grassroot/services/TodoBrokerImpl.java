@@ -27,10 +27,7 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
@@ -313,22 +310,22 @@ public class TodoBrokerImpl implements TodoBroker {
 	@Override
 	@Transactional(readOnly = true)
 	public Todo fetchTodoForUserResponse(String userUid, long daysInPast, boolean assignedTodosOnly) {
-		Todo lbToReturn;
+		Optional<Todo> lbToReturn;
 		User user = userRepository.findOneByUid(userUid);
 		Instant end = Instant.now();
 		Instant start = Instant.now().minus(daysInPast, ChronoUnit.DAYS);
 		Sort sort = new Sort(Sort.Direction.ASC, "actionByDate"); // so the most overdue come up first
 
-		if (!assignedTodosOnly) {
-			List<Todo> userLbs = todoRepository.
-					findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThanAndCancelledFalse(user, start, end, Todo.COMPLETION_PERCENTAGE_BOUNDARY, sort);
-			lbToReturn = (userLbs.isEmpty()) ? null : userLbs.get(0);
-		} else {
-			List<Todo> userLbs = todoRepository.
-					findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageLessThan(user, start, end, Todo.COMPLETION_PERCENTAGE_BOUNDARY, sort);
-			lbToReturn = (userLbs.isEmpty()) ? null : userLbs.get(0);
-		}
-		return lbToReturn;
+		List<Todo> userLbs = !assignedTodosOnly ?
+				todoRepository.findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThanAndCancelledFalse(user, start, end, Todo.COMPLETION_PERCENTAGE_BOUNDARY, sort)
+				: todoRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageLessThan(user, start, end, Todo.COMPLETION_PERCENTAGE_BOUNDARY, sort);
+
+		lbToReturn = userLbs
+				.stream()
+				.filter(t -> !t.isCompletedBy(user))
+				.findFirst();
+
+		return lbToReturn.isPresent() ? lbToReturn.get() : null;
 	}
 
 	@Override

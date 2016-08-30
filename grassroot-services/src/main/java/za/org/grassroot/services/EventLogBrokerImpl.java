@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.notification.EventInfoNotification;
+import za.org.grassroot.core.domain.notification.EventResponseNotification;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
@@ -147,8 +147,7 @@ public class EventLogBrokerImpl implements EventLogBroker {
     private void generateEventResponseMessage(Event event, EventLog eventLog, EventRSVPResponse rsvpResponse) {
         if (event.getCreatedByUser().getMessagingPreference().equals(UserMessagingPreference.ANDROID_APP)) {
             String message = messageAssemblingService.createEventResponseMessage(event.getCreatedByUser(), event, rsvpResponse);
-            Notification notification = new EventInfoNotification(event.getCreatedByUser(), message, eventLog);
-            notification.setPriority(0); //todo use ordinal value of alertpreference constant or create an enum for priority values?
+            Notification notification = new EventResponseNotification(event.getCreatedByUser(), message, eventLog);
             LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
             bundle.addNotification(notification);
             logsAndNotificationsBroker.storeBundle(bundle);

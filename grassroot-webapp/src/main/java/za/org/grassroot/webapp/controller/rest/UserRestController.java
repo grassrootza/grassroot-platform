@@ -27,6 +27,7 @@ import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import java.time.Instant;
+import java.util.Locale;
 
 /**
  * Created by paballo.
@@ -35,6 +36,7 @@ import java.time.Instant;
 @RequestMapping(value = "/api/user")
 public class UserRestController {
 
+    private static final Logger log = LoggerFactory.getLogger(UserRestController.class);
 
     @Autowired
     private UserManagementService userManagementService;
@@ -53,8 +55,6 @@ public class UserRestController {
 
     @Autowired
     private Environment environment;
-
-    private Logger log = LoggerFactory.getLogger(UserRestController.class);
 
     @RequestMapping(value = "/add/{phoneNumber}/{displayName}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> add(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("displayName") String displayName) {
@@ -185,6 +185,41 @@ public class UserRestController {
         User user = userManagementService.findByInputNumber(phoneNumber);
         ProfileSettingsDTO profileSettingsDTO = new ProfileSettingsDTO(user.getDisplayName(), user.getLanguageCode(), user.getAlertPreference().toString());
         return RestUtil.okayResponseWithData(RestMessage.PROFILE_SETTINGS, profileSettingsDTO);
+    }
+
+    @RequestMapping(value = "/profile/settings/rename/{phoneNumber}/{code}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> renameUser(@PathVariable String phoneNumber, @PathVariable String code,
+                                                      @RequestParam String displayName) {
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        userManagementService.updateDisplayName(user.getUid(), displayName);
+        return RestUtil.messageOkayResponse(RestMessage.PROFILE_SETTINGS_UPDATED);
+    }
+
+    /*
+     note : it might be slightly more efficient to just have the integer directly from the client, _but_ there is some
+     uncertainty about how notification priorities will evolve, and integer meanings within core/services may shift, hence
+     the use of strings for flexibility etc
+      */
+    @RequestMapping(value = "/profile/settings/notify/priority/{phoneNumber}/{code}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> changeNotificationPriority(@PathVariable String phoneNumber, @PathVariable String code,
+                                                                      @RequestParam AlertPreference alertPreference) {
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        userManagementService.updateAlertPreferences(user.getUid(), alertPreference);
+        return RestUtil.messageOkayResponse(RestMessage.PROFILE_SETTINGS_UPDATED);
+    }
+
+    @RequestMapping(value = "/profile/settings/language/{phoneNumber}/{code}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> changeUserLanguage(@PathVariable String phoneNumber, @PathVariable String code,
+                                                              @RequestParam String language) {
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        try {
+            Locale passedLocale = new Locale(language);
+            log.info("received a passed locale ... here it is  :" + passedLocale.toString());
+            userManagementService.updateUserLanguage(user.getUid(), passedLocale);
+            return RestUtil.messageOkayResponse(RestMessage.PROFILE_SETTINGS_UPDATED);
+        } catch (IllegalArgumentException e) {
+            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_LANG_CODE);
+        }
     }
 
     @RequestMapping(value= "/location/{phoneNumber}/{code}/{latitude}/{longitude:.+}", method = RequestMethod.GET)

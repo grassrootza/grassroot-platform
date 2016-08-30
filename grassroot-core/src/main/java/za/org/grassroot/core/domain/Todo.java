@@ -122,7 +122,7 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
         Objects.requireNonNull(member);
 
         if (completionTime == null && this.completedDate == null) {
-            throw new IllegalArgumentException("Completion time cannot be null when there is no completed time registered in logbook: " + this);
+            throw new IllegalArgumentException("Completion time cannot be null when there is no completed time registered in todo: " + this);
         }
 
         // we override current completion time with this latest specified one
@@ -132,8 +132,9 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
 
         Set<User> members = getMembers();
         if (!members.contains(member)) {
-            throw new IllegalArgumentException("User " + member + " is not a member of log book: " + this);
+            throw new IllegalArgumentException("User " + member + " is not assigned to or in the group of this todo: " + this);
         }
+
         TodoCompletionConfirmation confirmation = new TodoCompletionConfirmation(this, member, completionTime);
         boolean confirmationAdded = this.completionConfirmations.add(confirmation);
 

@@ -15,7 +15,7 @@ public class TodoReminderNotification extends TodoNotification {
 	}
 	@Override
 	public NotificationDetailedType getNotificationDetailedType() {
-		return NotificationDetailedType.LOG_BOOK_REMINDER;
+		return NotificationDetailedType.TODO_REMINDER;
 	}
 	public TodoReminderNotification(User target, String message, TodoLog todoLog) {
 		super(target, message, todoLog);

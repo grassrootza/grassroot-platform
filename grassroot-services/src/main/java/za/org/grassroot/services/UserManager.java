@@ -223,6 +223,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         user.setDisplayName(name);
         user.setLanguageCode(language);
         user.setAlertPreference(alertPreference);
+        user.setNotificationPriority(alertPreference.getPriority());
 
         return userRepository.saveAndFlush(user);
     }
@@ -392,7 +393,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     public boolean needsToRSVP(User sessionUser) {
-        // todo: as noted elsewhere, probably want to optimize this quite aggressively
+        // todo: as noted elsewhere, should optimize this to a count query and move to just event broker
         return eventManagementService.getOutstandingRSVPForUser(sessionUser).size() > 0;
     }
 
@@ -405,7 +406,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public boolean needsToRespondToSafetyEvent(User sessionUser) {
         return safetyEventBroker.getOutstandingUserSafetyEventsResponse(sessionUser.getUid()) != null;
-
     }
 
     @Override
@@ -427,10 +427,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public User resetUserPassword(String username, String newPassword, String token) {
 
-        log.info("Inside reset user password ...");
-
         User user = userRepository.findByUsername(PhoneNumberUtil.convertPhoneNumber(username));
-
         log.info("Found this user: " + user);
 
         if (passwordTokenService.isShortLivedOtpValid(user.getPhoneNumber(), token.trim())) {
@@ -508,27 +505,38 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public String getLastUssdMenu(String inputNumber) {
-        return cacheUtilService.fetchUssdMenuForUser(inputNumber);
-    }
+    @Transactional
+    public void updateDisplayName(String userUid, String displayName) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(displayName);
 
-    @Override
-    public User setLastUssdMenu(User sessionUser, String lastUssdMenu) {
-        cacheUtilService.putUssdMenuForUser(sessionUser.getPhoneNumber(), lastUssdMenu);
-        return sessionUser;
-    }
-
-    @Override
-    public User setDisplayName(User user, String displayName) {
+        User user = userRepository.findOneByUid(userUid);
         user.setDisplayName(displayName);
-        return userRepository.save(user);
     }
 
     @Override
-    public User setUserLanguage(User sessionUser, String locale) {
-        sessionUser.setLanguageCode(locale);
-        cacheUtilService.putUserLanguage(sessionUser.getPhoneNumber(), locale);
-        return userRepository.save(sessionUser);
+    @Transactional
+    public void updateUserLanguage(String userUid, Locale locale) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(locale);
+
+        User user = userRepository.findOneByUid(userUid);
+        user.setLanguageCode(locale.getLanguage());
+
+        log.info("set the user language to : {} ", user.getLanguageCode());
+
+        cacheUtilService.putUserLanguage(user.getPhoneNumber(), locale.getLanguage());
+    }
+
+    @Override
+    @Transactional
+    public void updateAlertPreferences(String userUid, AlertPreference alertPreference) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(alertPreference);
+
+        User user = userRepository.findOneByUid(userUid);
+        user.setAlertPreference(alertPreference);
+        user.setNotificationPriority(alertPreference.getPriority());
     }
 
     @Override

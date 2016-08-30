@@ -1,7 +1,5 @@
 package za.org.grassroot.services.util;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.domain.Notification;
 
@@ -16,7 +14,7 @@ import java.util.Set;
  */
 public class LogsAndNotificationsBundle {
 
-	private static final Logger logger = LoggerFactory.getLogger(LogsAndNotificationsBundle.class);
+	// private static final Logger logger = LoggerFactory.getLogger(LogsAndNotificationsBundle.class);
 
 	private final Set<ActionLog> logs;
 	private final Set<Notification> notifications;
@@ -37,18 +35,9 @@ public class LogsAndNotificationsBundle {
 
 	public void addNotifications(Set<Notification> notifications) {
 		Objects.requireNonNull(notifications);
-		for (Notification notification : notifications) {
-			if (isNotificationPrioritySatisfiedByTarget(notification)) {
-				this.notifications.add(notification);
-			} else {
-				logger.info("not adding a notification, because below priority ... ");
-			}
-		}
-	}
-
-	private boolean isNotificationPrioritySatisfiedByTarget(Notification notification) {
-		Objects.requireNonNull(notification, "Notification cannot be null");
-		return notification.getPriority() >= notification.getTarget().getNotificationPriority();
+		notifications.stream()
+				.filter(Notification::isPrioritySatisfiedByTarget)
+				.forEach(this.notifications::add);
 	}
 
 	public void addLog(ActionLog log) {

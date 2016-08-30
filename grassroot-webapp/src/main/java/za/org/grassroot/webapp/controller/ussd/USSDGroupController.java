@@ -130,7 +130,7 @@ public class USSDGroupController extends USSDController {
         Group createdGroup;
         USSDMenu menu;
         if (!isValidGroupName(groupName)) {
-            userManager.setLastUssdMenu(user, groupMenus + createGroupMenu);
+            cacheManager.putUssdMenuForUser(inputNumber, groupMenus + createGroupMenu);
             menu = ussdGroupUtil.invalidGroupNamePrompt(user, groupName, thisSection, createGroupMenu + doSuffix);
         } else {
             if (interrupted) {
@@ -145,7 +145,7 @@ public class USSDGroupController extends USSDController {
             }
 
             String joiningCode = "*134*1994*" + createdGroup.getGroupTokenCode() + "#";
-            userManager.setLastUssdMenu(user, saveGroupMenuWithInput(createGroupMenu + doSuffix, createdGroup.getUid(), groupName, false));
+            cacheManager.putUssdMenuForUser(inputNumber, saveGroupMenuWithInput(createGroupMenu + doSuffix, createdGroup.getUid(), groupName, false));
             menu = new USSDMenu(getMessage(thisSection, createGroupMenu + doSuffix, promptKey,
                     new String[]{groupName, joiningCode}, user));
 

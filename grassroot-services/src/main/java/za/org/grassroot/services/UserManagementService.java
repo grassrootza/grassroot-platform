@@ -12,6 +12,7 @@ import za.org.grassroot.services.exception.UserExistsException;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -36,6 +37,12 @@ public interface UserManagementService {
     User createAndroidUserProfile(UserDTO userDTO) throws UserExistsException;
 
     User updateUserAndroidProfileSettings(User user,String name, String language, AlertPreference alertPreference);
+
+    void updateDisplayName(String userUid, String displayName);
+
+    void updateUserLanguage(String userUid, Locale locale);
+
+    void updateAlertPreferences(String userUid, AlertPreference alertPreference);
 
     String generateAndroidUserVerifier(String phoneNumber, String displayName);
 
@@ -92,14 +99,6 @@ public interface UserManagementService {
     boolean hasIncompleteLogBooks(String userUid, long daysInPast);
     
     User resetUserPassword(String username, String newPassword, String token);
-
-    String getLastUssdMenu(String inputNumber);
-
-    User setLastUssdMenu(User sessionUser, String lastUssdMenu);
-
-    User setDisplayName(User user, String displayName);
-
-    User setUserLanguage(User sessionUser, String locale);
 
     LinkedHashMap<String, String> getImplementedLanguages();
 

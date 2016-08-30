@@ -4,6 +4,7 @@ import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 
 import javax.persistence.DiscriminatorValue;
@@ -24,9 +25,11 @@ public class EventInfoNotification extends EventNotification {
 
 	public EventInfoNotification(User target, String message, GroupLog groupLog, Event event) {
 		super(target, message, groupLog, event, true);
+		this.priority = AlertPreference.NOTIFY_ONLY_NEW.getPriority();
 	}
 
 	public EventInfoNotification(User target, String message, EventLog eventLog) {
 		super(target, message, eventLog);
+		this.priority = AlertPreference.NOTIFY_ONLY_NEW.getPriority();
 	}
 }

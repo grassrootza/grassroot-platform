@@ -27,10 +27,10 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
     private static final Logger log = LoggerFactory.getLogger(AsyncUserLoggerImpl.class);
 
     @Autowired
-    UserLogRepository userLogRepository;
+    private UserLogRepository userLogRepository;
 
     @Autowired
-    CacheUtilService cacheUtilService;
+    private CacheUtilService cacheUtilService;
 
     @Async
     @Override

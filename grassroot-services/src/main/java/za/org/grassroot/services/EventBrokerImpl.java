@@ -3,6 +3,7 @@ package za.org.grassroot.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
@@ -153,9 +154,6 @@ public class EventBrokerImpl implements EventBroker {
 			cacheUtilService.clearRsvpCacheForUser(member, event.getEventType());
 			String message = messageAssemblingService.createEventInfoMessage(member, event);
 			Notification notification = new EventInfoNotification(member, message, eventLog);
-			// revisit this when return to meeting importance (e.g., make null safe, work out ordinal properly (maybe use value), etc
-			/*if(event instanceof Meeting)
-				notification.setPriority(((Meeting) event).getImportance().ordinal());*/
 			notifications.add(notification);
 		}
 		return notifications;
@@ -625,8 +623,13 @@ public class EventBrokerImpl implements EventBroker {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(eventUid);
 
-		User user = userRepository.findOneByUid(userUid); // todo : check permissions
+		User user = userRepository.findOneByUid(userUid);
 		Event event = eventRepository.findOneByUid(eventUid);
+
+		// consider allowing organizers to also add/remove assignment
+		if (!event.getCreatedByUser().equals(user)) {
+			throw new AccessDeniedException("Error! Only user who created meeting can add members");
+		}
 
 		event.assignMembers(assignMemberUids);
 	}
@@ -639,6 +642,10 @@ public class EventBrokerImpl implements EventBroker {
 
 		User user = userRepository.findOneByUid(userUid);
 		Event event = eventRepository.findOneByUid(eventUid);
+
+		if (!event.getCreatedByUser().equals(user)) {
+			throw new AccessDeniedException("Error! Only user who created meeting can remove members");
+		}
 
 		event.removeAssignedMembers(memberUids);
 	}

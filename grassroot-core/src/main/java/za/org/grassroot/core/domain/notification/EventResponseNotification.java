@@ -9,19 +9,20 @@ import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
 
 @Entity
-@DiscriminatorValue("EVENT_CANCELLED")
-public class EventCancelledNotification extends EventNotification {
+@DiscriminatorValue("EVENT_RESPONSE")
+public class EventResponseNotification extends EventNotification {
+
 	@Override
 	public NotificationDetailedType getNotificationDetailedType() {
-		return NotificationDetailedType.EVENT_CANCELLED;
+		return NotificationDetailedType.EVENT_INFO;
 	}
 
-	private EventCancelledNotification() {
+	private EventResponseNotification() {
 		// for JPA
 	}
 
-	public EventCancelledNotification(User target, String message, EventLog eventLog) {
+	public EventResponseNotification(User target, String message, EventLog eventLog) {
 		super(target, message, eventLog);
-		this.priority = AlertPreference.NOTIFY_ONLY_NEW.getPriority(); // since a cancel is pretty important ...
+		this.priority = AlertPreference.NOTIFY_EVERYTHING.getPriority(); // i.e., lowest priority
 	}
 }

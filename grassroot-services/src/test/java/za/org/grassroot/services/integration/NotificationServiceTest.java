@@ -11,9 +11,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.GrassRootServicesConfig;
 import za.org.grassroot.core.GrassRootApplicationProfiles;
-import za.org.grassroot.core.repository.EventRepository;
-import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.services.MessageAssemblingService;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -37,20 +34,12 @@ public class NotificationServiceTest {
     private Logger log = Logger.getLogger(getClass().getCanonicalName());
 
     @Autowired
-    private MessageAssemblingService messageAssemblingService;
-
-    @Autowired
     @Qualifier("servicesMessageSourceAccessor")
     private MessageSourceAccessor messageSourceAccessor;
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private EventRepository eventRepository;
-
     //TODO this test as well as the corresponding test welcome.vm should be removed
     //     this is only useful now to test application configuration
+
     @Test
     public void shouldGetMessageTemplate() {
         String template = "welcome.test";

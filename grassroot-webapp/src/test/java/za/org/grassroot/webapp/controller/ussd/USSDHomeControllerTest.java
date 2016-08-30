@@ -3,8 +3,6 @@ package za.org.grassroot.webapp.controller.ussd;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.Group;
@@ -16,10 +14,7 @@ import za.org.grassroot.services.GroupPage;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -30,7 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
-    private static final Logger log = LoggerFactory.getLogger(USSDHomeControllerTest.class);
+    // private static final Logger log = LoggerFactory.getLogger(USSDHomeControllerTest.class);
 
     private static final String phoneForTests = "27810001111";
     private static final String baseForOthers = "2781000111";
@@ -113,12 +108,12 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
         mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests)).andExpect(status().isOk());
         testUser.setLanguageCode("ts");
-        when(userManagementServiceMock.setUserLanguage(testUser, "ts")).thenReturn(testUser);
         mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests)).
                 andExpect(status().isOk());
 
+        // no longer done here -- check via language menu
+        // verify(userManagementServiceMock, times(1)).updateUserLanguage(testUser.getUid(), new Locale("ts"));
         testUser.setDisplayName(testUserName);
-
     }
 
     @Test
@@ -287,14 +282,13 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
                 andExpect(status().isOk());
 
         testUser.setDisplayName(testUserName); // necessary else when/then doesn't work within controller
-        when(userManagementServiceMock.setDisplayName(testUser, testUserName)).thenReturn(testUser);
 
         mockMvc.perform(get("/ussd/rename-start").param(phoneParameter, phoneForTests).param("request", testUserName)).
                 andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).loadOrSaveUser(phoneForTests);
         verify(userManagementServiceMock, times(1)).findByInputNumber(phoneForTests);
-        verify(userManagementServiceMock, times(1)).setDisplayName(testUser, testUserName);
+        verify(userManagementServiceMock, times(1)).updateDisplayName(testUser.getUid(), testUserName);
 
     }
 

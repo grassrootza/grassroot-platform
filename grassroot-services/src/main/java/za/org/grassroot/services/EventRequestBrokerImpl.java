@@ -3,6 +3,7 @@ package za.org.grassroot.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
@@ -151,8 +152,11 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
         User user = userRepository.findOneByUid(userUid);
         Meeting meeting = eventBroker.loadMeeting(meetingUid);
 
-        // todo: check for permissions (once worked out what to check)
-        MeetingRequest changeRequest = MeetingRequest.makeCopy(meeting);
+		if (!meeting.getCreatedByUser().equals(user)) {
+			throw new AccessDeniedException("Error! Only user who created meeting can change it");
+		}
+
+		MeetingRequest changeRequest = MeetingRequest.makeCopy(meeting);
 		return eventRequestRepository.save(changeRequest);
 	}
 
