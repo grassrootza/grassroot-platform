@@ -33,7 +33,7 @@ public class RoleManager implements RoleManagementService {
      */
     @Override
     public Role createStandardRole(String roleName) {
-        return roleRepository.save(new Role(roleName));
+        return roleRepository.save(new Role(roleName, null));
     }
 
     @Override

@@ -75,10 +75,6 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
         return todo;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
     public Instant getCompletedDate() {
         return completedDate;
     }

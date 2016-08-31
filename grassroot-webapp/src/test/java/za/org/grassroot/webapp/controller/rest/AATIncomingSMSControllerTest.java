@@ -34,7 +34,6 @@ public class AATIncomingSMSControllerTest extends RestAbstractUnitTest {
     public void receiveSMSShouldWorkWithValidInput() throws Exception{
 
         meeting = meetingEvent;
-        meeting.setId(2L);
         meeting.setRsvpRequired(true);
         List<Event> meetings = Collections.singletonList(meeting);
 

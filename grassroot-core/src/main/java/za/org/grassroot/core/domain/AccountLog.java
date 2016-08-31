@@ -100,9 +100,7 @@ public class AccountLog implements ActionLog {
 
         final AccountLog that = (AccountLog) o;
 
-        if (getUid() != null ? !getUid().equals(that.getUid()) : that.getUid() != null) { return false; }
-
-        return true;
+        return getUid() != null ? getUid().equals(that.getUid()) : that.getUid() == null;
     }
 
     @Override

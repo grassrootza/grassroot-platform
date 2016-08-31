@@ -32,6 +32,7 @@ public class VerificationTokenCode extends BaseEntity {
     private VerificationCodeType type;
 
     private VerificationTokenCode() {
+        // for JPA
     }
 
     public String getCode() {

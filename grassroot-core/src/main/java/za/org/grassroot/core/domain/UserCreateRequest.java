@@ -59,9 +59,6 @@ public class UserCreateRequest {
 
     public void setCreationTime(Instant creationTime){this.creationTime =creationTime;}
 
-
-
-
     public Long getId() {
         return id;
     }

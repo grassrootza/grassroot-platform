@@ -167,7 +167,6 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
 //        Event vote = new Event(testUser, EventType.VOTE, true);
         Vote vote = new Vote("are unit tests working?", Instant.now().plus(1, ChronoUnit.HOURS), testUser, testGroup);
-        vote.setId(1L);
 
         List<User> votingUsers = new ArrayList<>(languageUsers);
         votingUsers.add(testUser);
@@ -205,7 +204,6 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         Group testGroup = new Group(testGroupName, testUser);
 
         Meeting meeting = new Meeting("Meeting about testing", Instant.now(), testUser, testGroup, "someLocation");
-        meeting.setId(2L);
 
         List<User> groupMembers = new ArrayList<>(languageUsers);
         groupMembers.add(testUser);

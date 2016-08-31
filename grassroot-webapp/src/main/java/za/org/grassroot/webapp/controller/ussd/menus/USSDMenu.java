@@ -8,15 +8,8 @@ import java.util.Map;
  * Note: Currently assuming that whatever uses this will be well-behaved in passing a linked hash map, i.e., with the
  * menu options in the right order. Need to prominently document that, or add methods to sort/deal with unsorted.
  *
- * todo: figure out how to combine localization in here with insertion of context-dependent strings, such as user
- * names. possibly use a list of strings, and check for each if a localization key, if not, insert? possibly
- *
- * Note: Depending on solution to above, if we use a common key for URL endings and keys in localization files, can simplify constructor
  */
 public class USSDMenu {
-
-    protected static final String BASE_URI_STRING = "http://meeting-organizer.herokuapp.com/ussd/";
-    protected static final String interruptedFlag = "interrupted";
 
     protected String promptMessage;
     protected boolean isFreeText;
@@ -60,12 +53,10 @@ public class USSDMenu {
     // now starting getters and setters
 
     public String getPromptMessage() {
-        // todo : introduce localization here later (or in controller?), for now just returning the prompt
         return promptMessage;
     }
 
     public void setPromptMessage(String promptMessage) {
-        // todo: as above, make this use localization rather than English
         this.promptMessage = promptMessage;
     }
 

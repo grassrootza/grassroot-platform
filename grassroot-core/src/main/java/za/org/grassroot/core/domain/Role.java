@@ -39,10 +39,6 @@ public class Role extends BaseEntity implements GrantedAuthority, Comparable<Rol
         // for JPA
     }
 
-    public Role(String name) {
-        this(name, null);
-    }
-
     public Role(String name, String groupUid) {
         this.name = Objects.requireNonNull(name);
         this.roleType = groupUid == null ? RoleType.STANDARD : RoleType.GROUP;
@@ -82,17 +78,6 @@ public class Role extends BaseEntity implements GrantedAuthority, Comparable<Rol
 
     public RoleType getRoleType() {
         return roleType;
-    }
-
-    // looks like toString() method might be used for other purposes, so creating a helper as a descriptor
-    public String describe() {
-        return "Role{" +
-                "role name='" + name + '\'' +
-                ", groupUid ='" + groupUid + '\'' +
-                ", id=" + id +
-                ", type=" + roleType +
-                ", permissions=" + permissions.toString() +
-                '}';
     }
 
     @Override

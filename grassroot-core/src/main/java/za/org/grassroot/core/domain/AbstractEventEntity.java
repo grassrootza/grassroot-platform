@@ -105,20 +105,12 @@ public abstract class AbstractEventEntity {
 		return id;
 	}
 
-	public void setId(Long id) {
-		this.id = id;
-	}
-
 	public String getUid() {
 		return uid;
 	}
 
 	public Instant getCreatedDateTime() {
 		return createdDateTime;
-	}
-
-	public void setCreatedDateTime(Instant createdDateTime) {
-		this.createdDateTime = createdDateTime;
 	}
 
 	public String getName() {

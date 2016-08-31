@@ -41,7 +41,7 @@ public class RoleRepositoryTest {
     @Test
     @Rollback
     public void testSaveRole() throws Exception {
-        Role role = new Role("CREATE_USER");
+        Role role = new Role("CREATE_USER", null);
         role = roleRepository.save(role);
         assertThat(role.getId(), notNullValue());
     }
@@ -49,7 +49,7 @@ public class RoleRepositoryTest {
     @Test
     @Rollback
     public void testSaveWithPermissions() throws Exception {
-        Role role = new Role("MANAGE_GROUPS");
+        Role role = new Role("MANAGE_GROUPS", null);
         role.addPermission(Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER);
 
         role = roleRepository.save(role);
@@ -62,7 +62,7 @@ public class RoleRepositoryTest {
     @Rollback
     public void testRemovePermission() throws Exception {
 
-        Role role = new Role("MANAGE_GROUPS");
+        Role role = new Role("MANAGE_GROUPS", null);
         role.addPermission(Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER);
         role = roleRepository.save(role);
         assertNotNull(role.getId());
@@ -79,7 +79,7 @@ public class RoleRepositoryTest {
     @Rollback
     public void testDeleteRote() throws Exception {
         assertThat(roleRepository.count(), is(0L));
-        Role role = roleRepository.save(new Role("CREATE_USER"));
+        Role role = roleRepository.save(new Role("CREATE_USER", null));
         assertThat(roleRepository.count(), is(1L));
         roleRepository.delete(role);
         assertThat(roleRepository.count(), is(0L));
@@ -89,7 +89,7 @@ public class RoleRepositoryTest {
     @Rollback
     public void testSaveWithType() throws Exception {
         assertThat(roleRepository.count(), is(0L));
-        Role role = new Role("ROLE_ACCOUNT_ADMIN");
+        Role role = new Role("ROLE_ACCOUNT_ADMIN", null);
         roleRepository.save(role);
         assertThat(roleRepository.count(), is(1L));
         Role roleFromDb = roleRepository.findByNameAndRoleType("ROLE_ACCOUNT_ADMIN", Role.RoleType.STANDARD).get(0);
@@ -102,7 +102,7 @@ public class RoleRepositoryTest {
     public void testFindByName() throws Exception {
         assertThat(roleRepository.count(), is(0L));
         String roleName = "CREATE_USER";
-        Role role = new Role(roleName);
+        Role role = new Role(roleName, null);
         role = roleRepository.save(role);
         Role roleFromDb = roleRepository.findByName(roleName).get(0);
         assertNotNull(roleFromDb);

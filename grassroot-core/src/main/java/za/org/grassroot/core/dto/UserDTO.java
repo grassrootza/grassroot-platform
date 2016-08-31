@@ -34,7 +34,7 @@ public class UserDTO implements Serializable {
         this.firstName = user.getFirstName();
         this.lastName = user.getLastName();
         this.languageCode = user.getLanguageCode();
-        this.enabled = user.getEnabled();
+        this.enabled = user.isEnabled();
         this.id = user.getUid();
     }
 

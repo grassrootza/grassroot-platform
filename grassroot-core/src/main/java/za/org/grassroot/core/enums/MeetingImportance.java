@@ -5,7 +5,8 @@ package za.org.grassroot.core.enums;
  */
 public enum MeetingImportance {
 
-    //todo temp values just to stop hibernate from complaining, will probably change
+    // todo : leave as strings but add integer values (for comparing to notification priorities)
+
     SPECIAL,
     ORDINARY
 

@@ -69,11 +69,10 @@ public class PhoneNumberUtil {
         }
     }
 
+    /*
+    Note: this assumes that the numbers have either a space, or any other non-digit separator between them
+     */
     public static Map<String, List<String>> splitPhoneNumbers(String userResponse) {
-
-        // todo - aakil - if the number is pasted from contacts it might have spaces in it
-        // todo: figure out if possible to have a 00 as delimiter, or just to seperate by 10 digits
-        // todo: generally, take the next step from "any delimiter" to "any logical pattern" for bunching numbers
 
         String userResponseTrimmed = userResponse.replace("\"", ""); // in case the response is passed with quotes around it
 

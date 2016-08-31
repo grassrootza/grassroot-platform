@@ -520,7 +520,6 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         User testUser = new User(testUserPhone);
         Group somegroup = new Group("somegroup", testUser);
         Event testMeeting = new Meeting("someMeeting", Instant.now(), testUser, somegroup, "someLoc");
-        testMeeting.setId(1L);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(eventBrokerMock.load(testMeeting.getUid())).thenReturn(testMeeting);

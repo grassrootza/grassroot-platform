@@ -84,11 +84,7 @@ public class GroupJoinRequestEvent {
 
         GroupJoinRequestEvent that = (GroupJoinRequestEvent) o;
 
-        if (getUid() != null ? !getUid().equals(that.getUid()) : that.getUid() != null) {
-            return false;
-        }
-
-        return true;
+        return getUid() != null ? getUid().equals(that.getUid()) : that.getUid() == null;
     }
 
     @Override

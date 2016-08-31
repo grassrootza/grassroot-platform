@@ -28,7 +28,6 @@ public class TodoRestControllerTest extends RestAbstractUnitTest {
     @Test
     public void settingCompleteShouldWork() throws Exception {
 
-        TEST_TO_DO.setId(6L);
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(todoBrokerMock.load(TEST_TO_DO.getUid())).thenReturn(TEST_TO_DO);
         mockMvc.perform(get(path + "/complete/{phoneNumber}/{code}/{id}", testUserPhone, testUserCode, TEST_TO_DO.getUid())).andExpect(status().is2xxSuccessful());

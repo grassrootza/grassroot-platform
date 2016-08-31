@@ -10,7 +10,7 @@ import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.persistence.*;
 import java.io.Serializable;
-import java.time.*;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.Set;
@@ -157,7 +157,6 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 
 	// STRANGE: dunno why this <User> generics is not recognized by rest of code!?
 	public Set<User> getAllMembers() {
-		// todo: replace this with calling the parent and/or just using assigned members
 		if (isIncludeSubGroups()) {
 			return getAncestorGroup().getMembersWithChildrenIncluded();
 		} else if (isAllGroupMembersAssigned()) {

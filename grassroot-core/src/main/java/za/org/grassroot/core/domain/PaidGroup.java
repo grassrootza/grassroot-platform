@@ -1,10 +1,12 @@
 package za.org.grassroot.core.domain;
 
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
+import java.util.Objects;
 
 /**
  * Created by luke on 2015/10/20.
@@ -62,8 +64,6 @@ public class PaidGroup {
 
     /*
     If we are just passed the group and account, assume that active time is now, expiry time forever
-    todo: check the group has a name, and is otherwise well formed, or else throw an error
-    todo: perform same sort of checks on the account
      */
 
     @PreUpdate
@@ -75,6 +75,17 @@ public class PaidGroup {
     }
 
     public PaidGroup(Group group, Account account, User addedByUser) {
+        Objects.requireNonNull(group);
+        Objects.requireNonNull(account);
+        Objects.requireNonNull(addedByUser);
+
+        if (StringUtils.isEmpty(group.getGroupName())) {
+            throw new IllegalArgumentException("Error! Group must have a name to be paid for");
+        }
+
+        if (StringUtils.isEmpty(account.getAccountName())) {
+            throw new IllegalArgumentException("Error! Account must have a name to pay for group");
+        }
 
         this.uid = UIDGenerator.generateId();
         this.group = group;
@@ -83,21 +94,6 @@ public class PaidGroup {
 
         this.activeDateTime = Instant.now();
         this.expireDateTime = DateTimeUtil.getVeryLongAwayInstant();
-
-    }
-
-    /*
-    Constructor with custom active and expiry dates
-     */
-
-    public PaidGroup(Group group, Account account, User addedByUser, Instant activeDateTime, Instant expireDateTime) {
-
-        this.uid = UIDGenerator.generateId();
-        this.group = group;
-        this.account = account;
-        this.addedByUser = addedByUser;
-        this.activeDateTime = activeDateTime;
-        this.expireDateTime = expireDateTime;
 
     }
 
@@ -159,11 +155,7 @@ public class PaidGroup {
 
         PaidGroup paidGroup = (PaidGroup) o;
 
-        if (getUid() != null ? !getUid().equals(paidGroup.getUid()) : paidGroup.getUid() != null) {
-            return false;
-        }
-
-        return true;
+        return getUid() != null ? getUid().equals(paidGroup.getUid()) : paidGroup.getUid() == null;
     }
 
     @Override

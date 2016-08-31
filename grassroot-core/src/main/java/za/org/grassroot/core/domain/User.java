@@ -286,11 +286,6 @@ public class User implements UserDetails, Comparable<User> {
         this.alertPreference = alertPreference;
     }
 
-    // todo : clean this up vs isEnabled
-    public boolean getEnabled() {
-        return enabled;
-    }
-
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
@@ -370,7 +365,7 @@ public class User implements UserDetails, Comparable<User> {
 
     @Override
     public boolean isEnabled() {
-        return this.getEnabled();
+        return this.enabled;
     }
 
     public Integer getVersion() {

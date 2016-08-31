@@ -153,7 +153,7 @@ public class UserRepositoryTest {
     @Rollback
     public void shouldSaveAddedRole() {
         User user = userRepository.save(new User(number));
-        Role role = roleRepository.save(new Role("TEST_ROLE"));
+        Role role = roleRepository.save(new Role("TEST_ROLE", null));
         user.addStandardRole(role);
         userRepository.save(user);
         User userFromDb = userRepository.findByPhoneNumber(number);
@@ -166,7 +166,7 @@ public class UserRepositoryTest {
     @Rollback
     public void shouldRemoveRole() {
         User user = userRepository.save(new User(number));
-        Role role = roleRepository.save(new Role("TEST_ROLE"));
+        Role role = roleRepository.save(new Role("TEST_ROLE", null));
         user.addStandardRole(role);
         user = userRepository.save(user);
         assertTrue(user.getStandardRoles().contains(role));
@@ -238,8 +238,6 @@ public class UserRepositoryTest {
         testGroup.addMember(user2);
         testGroup.addMember(user3);
         Group testGroupFromDb = groupRepository.save(testGroup);
-
-        List<Long> memberIds = Arrays.asList(user2.getId(), user3.getId());
 
         assertThat(testGroupFromDb.getMemberships().size(), is(3));
         assertTrue(testGroupFromDb.hasMember(testUser));

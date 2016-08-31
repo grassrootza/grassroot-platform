@@ -49,10 +49,6 @@ public class GcmRegistration {
         return user;
     }
 
-    public void setUser(User user) {
-        this.user = user;
-    }
-
     public void setRegistrationId(String registrationId){
         this.registrationId =registrationId;
     }
@@ -80,11 +76,7 @@ public class GcmRegistration {
 
         GcmRegistration that = (GcmRegistration) o;
 
-        if (getUid() != null ? !getUid().equals(that.getUid()) : that.getUid() != null) {
-            return false;
-        }
-
-        return true;
+        return getUid() != null ? getUid().equals(that.getUid()) : that.getUid() == null;
     }
 
     @Override

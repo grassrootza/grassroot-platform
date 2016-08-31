@@ -6,6 +6,7 @@ import javax.persistence.*;
 
 /**
  * @author Lesetse Kimwaga
+ * todo : we may be able to remove this
  */
 @MappedSuperclass
 public abstract class BaseEntity {
