@@ -363,7 +363,6 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     public void confirmConsolidatePromptShouldWork() throws Exception {
         resetTestGroup();
         Group mergingGroup = new Group("tg1", testUser);
-        mergingGroup.setId(2L);
         String urlToSave = saveGroupMenuWithParams("merge-confirm",
                                                    mergingGroup.getUid(), "&firstGroupSelected=" + testGroup.getUid());
 
@@ -386,7 +385,6 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         // todo: also test the exception catch & error menu
         resetTestGroup();
         Group mergingGroup = new Group("tg1", testUser);
-        mergingGroup.setId(2L);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         when(groupBrokerMock.load(mergingGroup.getUid())).thenReturn(mergingGroup);
@@ -420,7 +418,6 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         resetTestGroup();
         testGroup.setActive(true);
         Group errorGroup = new Group("error", testUser);
-        errorGroup.setId(2L);
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         when(groupBrokerMock.load(errorGroup.getUid())).thenReturn(errorGroup); // test exception throwing later
@@ -509,7 +506,6 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
      */
     private void resetTestGroup() {
         testGroup.setGroupName("test testGroup");
-        testGroup.setId(1L);
         testGroup.addMember(testUser);
     }
 

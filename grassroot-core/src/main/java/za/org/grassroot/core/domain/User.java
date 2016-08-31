@@ -16,11 +16,6 @@ import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.util.PhoneNumberUtil.invertPhoneNumber;
 
-//todo: reconsider if language should be nullable, or not null and set to "en" by default (when set not nullable, broke tests)
-
-//todo: add validation to all model classes
-//todo: id and createdDateTime fields should not be insertable or updatable
-
 @Entity
 @Table(name = "user_profile")  //table name needs to be quoted in SQL because 'user' is a reserved keyword
 public class User implements UserDetails, Comparable<User> {
@@ -28,7 +23,7 @@ public class User implements UserDetails, Comparable<User> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false)
+    @Column(name = "id", updatable = false, nullable = false)
     private Long id;
 
     @Column(name = "uid", nullable = false, unique = true)
@@ -49,7 +44,7 @@ public class User implements UserDetails, Comparable<User> {
     @Column(name = "language_code", nullable = true, length = 10)
     private String languageCode;
 
-    @Column(name = "created_date_time", insertable = true, updatable = false)
+    @Column(name = "created_date_time", updatable = false, nullable = false)
     private Instant createdDateTime;
 
     @Column(name = "user_name", length = 50, unique = true)
@@ -139,10 +134,6 @@ public class User implements UserDetails, Comparable<User> {
     public Long getId() {
         return id;
     }
-
-    public void setId(Long id) {
-        this.id = id;
-    } // todo : remove this
 
     public String getUid() {
         return uid;

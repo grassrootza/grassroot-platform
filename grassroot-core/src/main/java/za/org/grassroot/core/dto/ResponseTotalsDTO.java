@@ -1,8 +1,5 @@
 package za.org.grassroot.core.dto;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.Serializable;
 import java.util.List;
 
@@ -11,7 +8,7 @@ import java.util.List;
  */
 public class ResponseTotalsDTO implements Serializable {
 
-    private final static Logger log = LoggerFactory.getLogger(ResponseTotalsDTO.class);
+    // private final static Logger log = LoggerFactory.getLogger(ResponseTotalsDTO.class);
 
     private int yes;
     private int no;
@@ -22,13 +19,14 @@ public class ResponseTotalsDTO implements Serializable {
     public ResponseTotalsDTO() {
     }
 
-    public ResponseTotalsDTO(List<Object[]> listFields) {
+    public ResponseTotalsDTO(List<Object[]> listFields, int totalNotified) {
         Object[] fields = listFields.get(0);
         this.yes = (fields[0] == null) ? 0 : Integer.parseInt(fields[0].toString());
         this.no = (fields[1] == null) ? 0 : Integer.parseInt(fields[1].toString());
         this.maybe = (fields[2] == null) ? 0 : Integer.parseInt(fields[2].toString());
         this.invalid = (fields[3] == null) ? 0 : Integer.parseInt(fields[3].toString());
-        this.numberOfUsers = (fields[4] == null) ? 0 : Integer.parseInt(fields[4].toString());
+        // todo : rather customize the eventlog query (the call to getAllMembers.size may become expensive), but that query will become complex fast
+        this.numberOfUsers = totalNotified;
     }
 
     public int getNumberNoRSVP() {

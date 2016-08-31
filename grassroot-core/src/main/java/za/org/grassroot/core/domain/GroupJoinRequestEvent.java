@@ -78,7 +78,7 @@ public class GroupJoinRequestEvent {
         if (this == o) {
             return true;
         }
-        if (o == null || !(o instanceof GroupJoinRequestEvent)) {
+        if (!(o instanceof GroupJoinRequestEvent)) {
             return false;
         }
 

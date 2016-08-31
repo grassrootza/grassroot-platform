@@ -82,8 +82,6 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
 
     @Test
     public void getUserGroupsShouldWork() throws Exception {
-
-        sessionTestUser.setId(2L);
         GroupLog groupLog = new GroupLog(testGroup, sessionTestUser, GroupLogType.GROUP_ADDED, sessionTestUser.getId());
         testGroup.addMember(sessionTestUser, "ROLE_GROUP_ORGANIZER");
         List<Group> groups = Collections.singletonList(testGroup);

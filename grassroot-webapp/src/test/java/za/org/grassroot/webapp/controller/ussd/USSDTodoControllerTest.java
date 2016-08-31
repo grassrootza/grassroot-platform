@@ -3,8 +3,6 @@ package za.org.grassroot.webapp.controller.ussd;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -32,7 +30,7 @@ import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
  */
 public class USSDTodoControllerTest extends USSDAbstractUnitTest {
 
-    private static final Logger log = LoggerFactory.getLogger(USSDTodoControllerTest.class);
+    // private static final Logger log = LoggerFactory.getLogger(USSDTodoControllerTest.class);
 
     public static final String assignUserID = "assignUserUid";
 
@@ -73,8 +71,6 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
                 .build();
         wireUpMessageSourceAndGroupUtil(ussdLogBookController, ussdGroupUtil);
         testUser = new User(testUserPhone);
-        testUser.setId(dummyId);
-
     }
 
     @Test
@@ -142,7 +138,6 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
 
     @Test
     public void askForSubjectShouldWork() throws Exception {
-        testUser.setId(dummyId);
         Group dummyGroup = new Group("", testUser);
         TodoRequest dummyLogBook = TodoRequest.makeEmpty(testUser, dummyGroup);
 

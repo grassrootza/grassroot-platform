@@ -24,7 +24,7 @@ import java.util.Set;
 
 @Service
 public class NotificationManager implements NotificationService{
-    private final Logger logger = LoggerFactory.getLogger(NotificationManager.class);
+    private final static Logger logger = LoggerFactory.getLogger(NotificationManager.class);
 
     @Autowired
     private UserRepository userRepository;
@@ -117,7 +117,6 @@ public class NotificationManager implements NotificationService{
                 notification.setNextAttemptTime(now.plusSeconds(60 * 15));
                 messageSendingService.sendMessage(notification);
             }
-
         } catch (Exception e) {
             logger.error("Failed to send notification " + notification + ": " + e.getMessage(), e);
         }

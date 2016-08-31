@@ -15,8 +15,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-// todo : clean up setters in here
-
 @Entity
 @Table(name = "group_profile") // quoting table name in case "group" is a reserved keyword
 public class Group implements TodoContainer, VoteContainer, MeetingContainer, Serializable, Comparable<Group> {
@@ -201,11 +199,6 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
 
     public Long getId() {
         return id;
-    }
-
-    // todo : restructure tests to not require this
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public Instant getCreatedDateTime() {
@@ -430,10 +423,6 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         return version;
     }
 
-    public void setVersion(Integer version) {
-        this.version = version;
-    }
-
     public int getReminderMinutes() {
         return reminderMinutes;
     }
@@ -458,7 +447,6 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         this.active = active;
     }
 
-
     public boolean isDiscoverable() {
         return discoverable;
     }
@@ -471,7 +459,6 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
 
     public void setJoinApprover(User joinApprover) { this.joinApprover = joinApprover; }
 
-    // inserting this in the getter, to avoid having to reset group description,
     public String getDescription() { return description; }
 
     public void setDescription(String description) { this.description = description; }

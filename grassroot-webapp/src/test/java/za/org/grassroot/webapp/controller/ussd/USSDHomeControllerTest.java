@@ -242,7 +242,6 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         resetTestUser();
         testUser.setHasInitiatedSession(true);
         Group testGroup = new Group("", testUser);
-        testGroup.setId(0L);
 
         when(userManagementServiceMock.loadOrSaveUser(phoneForTests)).thenReturn(testUser);
         when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);

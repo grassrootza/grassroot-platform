@@ -1,15 +1,15 @@
 package za.org.grassroot.core.enums;
-/*
-N.B. please remember to add new ones at the bottom
-todo : switch this to string based enum, not ordinal
- */
+
 public enum GroupLogType {
+
     GROUP_ADDED("group added"),
     GROUP_REMOVED("group removed"),
     GROUP_UPDATED("group updated"),
     GROUP_RENAMED("group renamed"),
+    GROUP_DESCRIPTION_CHANGED("group description changed"),
     GROUP_MEMBER_ADDED("group member added"),
     GROUP_MEMBER_REMOVED("group member removed"),
+    GROUP_MEMBER_ROLE_CHANGED("group member role changed"),
     SUBGROUP_ADDED("sub-group added"),
     SUBGROUP_REMOVED("sub-group removed"),
     PERMISSIONS_CHANGED("permissions changed"),

@@ -18,7 +18,7 @@ public interface EventLogRepository extends JpaRepository<EventLog, Long> {
     EventLog findOneByUid(String uid);
 
     /*
-    See if the reminder was already sent before sending it
+    todo : make the numberofusers column instead check assigned members table (or count event info notifications)
     */
     @Query(value = "SELECT sum(CASE WHEN response = 'YES' THEN 1 ELSE 0 END) AS yes, " +
             "sum(CASE WHEN response = 'NO' THEN 1 ELSE 0 END) AS no, " +

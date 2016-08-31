@@ -35,14 +35,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.Collections;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Map;
-import java.util.Comparator;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -470,38 +463,20 @@ public class GroupRestController {
 	public ResponseEntity<ResponseWrapper> combinedEdits(@PathVariable String phoneNumber, @PathVariable String code,
 	                                                     @PathVariable String groupUid,
 	                                                     @RequestParam(value = "name", required = false) String name,
+	                                                     @RequestParam(value = "description", required = false) String description,
 	                                                     @RequestParam(value = "resetImage", required = false) boolean resetToDefaultImage,
 	                                                     @RequestParam(value = "dfltImageName", required = false) GroupDefaultImage defaultImage,
 	                                                     @RequestParam(value = "changePublicPrivate", required = false) boolean changePublicPrivate,
 	                                                     @RequestParam(value = "isPublic", required = false) boolean isPublic,
 	                                                     @RequestParam(value = "closeJoinCode", required = false) boolean closeJoinCode,
-	                                                     @RequestParam(value = "membersToRemove", required = false) List<String> membersToRemove,
-	                                                     @RequestParam(value = "organizersToAdd", required = false) List<String> organizersToAdd) {
+	                                                     @RequestParam(value = "membersToRemove", required = false) Set<String> membersToRemove,
+	                                                     @RequestParam(value = "organizersToAdd", required = false) Set<String> organizersToAdd) {
 
 		User user = userManagementService.findByInputNumber(phoneNumber);
-		Group group = groupBroker.load(groupUid);
-		// todo : combine several of these, to preserve atomicity, and increase speed, though note this is a low-use-case (but still)
 		try {
-			log.info("processing a couple of edits ... for group : " + group.getName());
-			if (membersToRemove != null && !membersToRemove.isEmpty()) {
-				groupBroker.removeMembers(user.getUid(), groupUid, new HashSet<>(membersToRemove));
-			}
-			if (name != null && !name.trim().isEmpty() && !name.equals(group.getGroupName())) {
-				groupBroker.updateName(user.getUid(), groupUid, name);
-			}
-			if (resetToDefaultImage) {
-				groupBroker.setGroupImageToDefault(user.getUid(), groupUid, defaultImage, true);
-			}
-			if (changePublicPrivate) {
-				groupBroker.updateDiscoverable(user.getUid(), groupUid, isPublic, user.getPhoneNumber());
-			}
-			if (closeJoinCode) {
-				groupBroker.closeJoinToken(user.getUid(), groupUid);
-			}
-			if (organizersToAdd != null && !organizersToAdd.isEmpty()) {
-				groupBroker.updateMembersToRole(user.getUid(), groupUid, new HashSet<>(organizersToAdd), BaseRoles.ROLE_GROUP_ORGANIZER);
-			}
-			Group updatedGroup = groupBroker.load(group.getUid());
+			groupBroker.combinedEdits(user.getUid(), groupUid, name, description, resetToDefaultImage, defaultImage, isPublic,
+					closeJoinCode, membersToRemove, organizersToAdd);
+			Group updatedGroup = groupBroker.load(groupUid);
 			return RestUtil.okayResponseWithData(RestMessage.UPDATED, Collections.singletonList(createGroupWrapper(updatedGroup, user)));
 		} catch (AccessDeniedException e) {
 			return RestUtil.errorResponse(HttpStatus.FORBIDDEN, RestMessage.PERMISSION_DENIED);

@@ -115,15 +115,16 @@ public class EventLogBrokerImpl implements EventLogBroker {
     @Override
     @Transactional(readOnly = true)
     public ResponseTotalsDTO getResponseCountForEvent(Event event) {
+        ResponseTotalsDTO totals;
         if (!event.isIncludeSubGroups()) {
-            log.info("Assembling count with eventId: {}, groupId: {}", event.getId(), event.getAncestorGroup().getId());
             List<Object[]> groupTotals = eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), event.getAncestorGroup().getId());
-            return new ResponseTotalsDTO(groupTotals);
-        }
-        ResponseTotalsDTO totals = new ResponseTotalsDTO();
-        for (Group group : groupRepository.findGroupAndSubGroupsById(event.getAncestorGroup().getId())) {
-            List<Object[]> groupTotals = eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), group.getId());
-            totals.add(new ResponseTotalsDTO(groupTotals));
+            totals = new ResponseTotalsDTO(groupTotals, event.getAllMembers().size());
+        } else {
+            totals = new ResponseTotalsDTO();
+            for (Group group : groupRepository.findGroupAndSubGroupsById(event.getAncestorGroup().getId())) {
+                List<Object[]> groupTotals = eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), group.getId());
+                totals.add(new ResponseTotalsDTO(groupTotals, group.getMemberships().size()));
+            }
         }
         log.info("getRSVPTotalsForEvent...returning..." + totals.toString());
         return totals;
@@ -133,11 +134,12 @@ public class EventLogBrokerImpl implements EventLogBroker {
     public ResponseTotalsDTO getVoteResultsForEvent(Event event) {
         if (!event.isIncludeSubGroups()) {
             List<Object[]> groupVotes = eventLogRepository.voteTotalsForEventAndGroup(event.getId(), event.getAncestorGroup().getId());
-            return new ResponseTotalsDTO(groupVotes);
+            return new ResponseTotalsDTO(groupVotes, event.getAllMembers().size());
         }
         ResponseTotalsDTO totals = new ResponseTotalsDTO();
         for (Group group : groupRepository.findGroupAndSubGroupsById(event.getAncestorGroup().getId())) {
-            ResponseTotalsDTO groupVotes = new ResponseTotalsDTO(eventLogRepository.voteTotalsForEventAndGroup(event.getId(), group.getId()));
+            ResponseTotalsDTO groupVotes = new ResponseTotalsDTO(eventLogRepository.voteTotalsForEventAndGroup(event.getId(), group.getId()),
+                    event.getAllMembers().size());
             totals.add(groupVotes);
         }
         log.info("getVoteResultsForEvent...returning..." + totals.toString());

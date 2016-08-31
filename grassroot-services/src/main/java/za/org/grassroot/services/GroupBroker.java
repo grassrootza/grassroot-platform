@@ -55,14 +55,19 @@ public interface GroupBroker {
 
     void updateMembershipRole(String userUid, String groupUid, String memberUid, String roleName);
 
-    void updateMembersToRole(String userUid, String groupUid, Set<String> memberUids, String roleName);
-
     void updateMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos);
 
     void updateGroupPermissions(String userUid, String groupUid, Map<String, Set<Permission>> newPermissions);
 
     void updateGroupPermissionsForRole(String userUid, String groupUid, String roleName, Set<Permission> permissionsToAdd,
                                        Set<Permission> permissionsToRemove);
+
+    /*
+    Method for conducting several edits at once, principally if those edits are done offline and sent as a bundle in a queue
+    Passing null (or reference set) to any argument will just cause it to be skipped, as will passing the present value
+     */
+    void combinedEdits(String userUid, String groupUid, String groupName, String description, boolean resetToDefaultImage, GroupDefaultImage defaultImage,
+                       boolean isPublic, boolean toCloseJoinCode, Set<String> membersToRemove, Set<String> organizersToAdd);
 
     /** METHODS FOR DEALING WITH JOIN TOKENS, PUBLIC SETTINGS, AND SEARCHING **/
 

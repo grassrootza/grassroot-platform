@@ -352,7 +352,7 @@ public class USSDMeetingController extends USSDController {
 
         if (isInFuture) {
             thisMenu.addMenuOption(composeBackUri(mtgRequestUid, placeMenu), composeBackMessage(user, placeMenu));
-            thisMenu.addMenuOption(composeBackUri(mtgRequestUid, subjectMenu) + "&groupId=" + meeting.getParent().getId(),
+            thisMenu.addMenuOption(composeBackUri(mtgRequestUid, subjectMenu) + "&groupUid=" + meeting.getParent().getUid(),
                     composeBackMessage(user, subjectMenu));
         }
 

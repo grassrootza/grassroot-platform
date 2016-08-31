@@ -33,7 +33,6 @@ public class AATIncomingSMSControllerTest extends RestAbstractUnitTest {
     @Test
     public void receiveSMSShouldWorkWithValidInput() throws Exception{
 
-        sessionTestUser.setId(1L);
         meeting = meetingEvent;
         meeting.setId(2L);
         meeting.setRsvpRequired(true);

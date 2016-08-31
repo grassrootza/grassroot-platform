@@ -9,6 +9,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.GroupLocation;
@@ -476,29 +477,16 @@ public class GroupBrokerImpl implements GroupBroker {
 
         logger.info("Updating membership role: membership={}, roleName={}, user={}", membership, roleName, user);
 
-        Role role = group.getRole(roleName);
-        membership.setRole(role);
+        Set<ActionLog> actionLogs = changeMembersToRole(user, group, Collections.singleton(memberUid), group.getRole(roleName));
+        logActionLogsAfterCommit(actionLogs);
     }
 
-    @Override
-    @Transactional
-    public void updateMembersToRole(String userUid, String groupUid, Set<String> memberUids, String roleName) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(groupUid);
-        Objects.requireNonNull(memberUids);
-
-        if (memberUids.contains(userUid))
-            throw new IllegalArgumentException("A user cannot change ther own role: memberUid = " + userUid);
-
-        User user = userRepository.findOneByUid(userUid);
-        Group group = groupRepository.findOneByUid(groupUid);
-
-        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-
-        Role newRole = group.getRole(roleName);
-        group.getMemberships().stream()
-                .filter(membership -> memberUids.contains(membership.getUser().getUid()))
-                .forEach(m -> m.setRole(newRole));
+    private Set<ActionLog> changeMembersToRole(User user, Group group, Set<String> memberUids, Role newRole) {
+        return group.getMemberships().stream()
+                .filter(m -> memberUids.contains(m.getUser().getUid()))
+                .peek(m -> m.setRole(newRole))
+                .map(m -> new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ROLE_CHANGED, m.getUser().getId(), newRole.getName()))
+                .collect(Collectors.toSet());
     }
 
     @Override
@@ -658,6 +646,66 @@ public class GroupBrokerImpl implements GroupBroker {
         logActionLogsAfterCommit(Collections.singleton(new GroupLog(group, user, GroupLogType.PERMISSIONS_CHANGED, 0L,
                 "Changed permissions assigned to " + roleName)));
 
+    }
+
+    @Override
+    @Transactional
+    public void combinedEdits(String userUid, String groupUid, String groupName, String description, boolean resetToDefaultImage, GroupDefaultImage defaultImage,
+                              boolean discoverable, boolean toCloseJoinCode, Set<String> membersToRemove, Set<String> organizersToAdd) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+
+        Set<ActionLog> groupLogs = new HashSet<>();
+
+        if (!StringUtils.isEmpty(groupName) && !group.getName().equals(groupName.trim())) {
+            group.setGroupName(groupName);
+            groupLogs.add(new GroupLog(group, user, GroupLogType.GROUP_RENAMED, 0L, groupName));
+        }
+
+        if (!StringUtils.isEmpty(description) && !group.getDescription().equals(description.trim())) {
+            group.setDescription(description);
+            groupLogs.add(new GroupLog(group, user, GroupLogType.GROUP_DESCRIPTION_CHANGED, 0L, description));
+        }
+
+        if (resetToDefaultImage && defaultImage != null) {
+            group.setDefaultImage(defaultImage);
+            group.setImage(null);
+            group.setImageUrl(null);
+            groupLogs.add(new GroupLog(group, user, GroupLogType.GROUP_AVATAR_REMOVED, 0L, defaultImage.toString()));
+        }
+
+        if (group.isDiscoverable() != discoverable) {
+            group.setDiscoverable(discoverable);
+            groupLogs.add(new GroupLog(group, user, GroupLogType.DISCOVERABLE_CHANGED, 0L, "set to " + discoverable));
+        }
+
+        if (toCloseJoinCode) {
+            group.setGroupTokenCode(null);
+            group.setTokenExpiryDateTime(Instant.now());
+            groupLogs.add(new GroupLog(group, user, GroupLogType.TOKEN_CHANGED, 0L, "token closed"));
+        }
+
+        if (membersToRemove != null && !membersToRemove.isEmpty()) {
+            membersToRemove.remove(userUid); // in case (will fail silently if user not part of set)
+            Set<Membership> memberships = group.getMemberships().stream()
+                    .filter(membership -> membersToRemove.contains(membership.getUser().getUid()))
+                    .collect(Collectors.toSet());
+            groupLogs.addAll(removeMemberships(user, group, memberships));
+        }
+
+        if (organizersToAdd != null && !organizersToAdd.isEmpty()) {
+            groupLogs.addAll(changeMembersToRole(user, group, organizersToAdd, group.getRole(BaseRoles.ROLE_GROUP_ORGANIZER)));
+        }
+
+        if (!groupLogs.isEmpty()) {
+            logger.info("Combination of edits done! There are {}, and they are {}", groupLogs.size(), groupLogs);
+            logActionLogsAfterCommit(groupLogs);
+        }
     }
 
 

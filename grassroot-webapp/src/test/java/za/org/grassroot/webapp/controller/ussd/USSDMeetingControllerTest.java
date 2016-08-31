@@ -168,7 +168,6 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         User testUser = new User(testUserPhone);
         Group testGroup = new Group("", testUser);
-        testGroup.setId(1L);
         String firstUrlToSave = saveMenuUrlWithInput(thisSection, "group", "", "0801112345");
         Set<MembershipInfo> members = ordinaryMember("0801112345");
         members.addAll(organizer(testUser));
@@ -195,7 +194,6 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         User testUser = new User(testUserPhone);
         Group testGroup = new Group("", testUser);
-        testGroup.setId(1L);
         String numbersToInput = "0801112345 080111234";
         String urlToSave = saveMenuUrlWithInput(thisSection, "group", "?groupUid=" + testGroup.getUid(), numbersToInput);
         log.info("Testing adding numbers to existing group, with this Url to save ..." + urlToSave);
@@ -275,7 +273,6 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         User testUser = new User(testUserPhone);
         Group testGroup = new Group("gc1", testUser);
-        testGroup.setId(1L);
 
         when(userManagementServiceMock.findByInputNumber(eq(testUserPhone), anyString())).thenReturn(testUser);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);

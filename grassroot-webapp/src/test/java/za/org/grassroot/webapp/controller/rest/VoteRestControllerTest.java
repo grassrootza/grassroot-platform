@@ -76,7 +76,7 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
         List<Object[]> list = new ArrayList<>();
         String[] responses = {"1", "2", "3", "4", "5"};
         list.add(responses);
-        ResponseTotalsDTO rsvpTotalsDTO = new ResponseTotalsDTO(list);
+        ResponseTotalsDTO rsvpTotalsDTO = new ResponseTotalsDTO(list, 5);
 
         when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.load(voteEvent.getUid())).thenReturn(voteEvent);

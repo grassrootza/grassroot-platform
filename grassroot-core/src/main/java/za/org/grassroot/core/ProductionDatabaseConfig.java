@@ -13,7 +13,6 @@ import javax.sql.DataSource;
 @Profile(GrassRootApplicationProfiles.PRODUCTION)
 public class ProductionDatabaseConfig extends  DatabaseConfig {
 
-
     @Override
     public DataSource dataSource() {
 
@@ -21,8 +20,5 @@ public class ProductionDatabaseConfig extends  DatabaseConfig {
         dataSourceBuilder.url(System.getenv("DATABASE_URL"));
         return dataSourceBuilder.build();
     }
-
-
-
 
 }

@@ -105,7 +105,7 @@ public class GroupJoinRequest {
         if (this == o) {
             return true;
         }
-        if (o == null || !(o instanceof GroupJoinRequest)) {
+        if (!(o instanceof GroupJoinRequest)) {
             return false;
         }
 

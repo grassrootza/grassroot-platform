@@ -74,7 +74,7 @@ public class GcmRegistration {
         if (this == o) {
             return true;
         }
-        if (o == null || !(o instanceof GcmRegistration)) {
+        if (!(o instanceof GcmRegistration)) {
             return false;
         }
 

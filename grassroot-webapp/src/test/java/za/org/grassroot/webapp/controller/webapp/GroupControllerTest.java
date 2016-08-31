@@ -37,7 +37,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class GroupControllerTest extends WebAppAbstractUnitTest {
 
     private static final Logger logger = LoggerFactory.getLogger(MeetingControllerTest.class);
-    private static final Long dummyId = 1L;
 
     @InjectMocks
     private GroupController groupController;
@@ -53,18 +52,11 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void viewGroupIndexWorks() throws Exception {
         Group dummyGroup = new Group("Dummy Group2", new User("234345345"));
-        dummyGroup.setId(dummyId);
-
         Group dummySubGroup = new Group("Dummy Group3", new User("234345345"));
 
         dummyGroup.addMember(sessionTestUser);
         Set<Group> subGroups = Collections.singleton(dummySubGroup);
 
-        // todo: new design?
-        Meeting dummyMeeting = null;
-        Vote dummyVote = null;
-        Set<Meeting> dummyMeetings = Collections.singleton(dummyMeeting);
-        Set<Vote> dummyVotes = Collections.singleton(dummyVote);
         TaskDTO dummyTask = null;
         List<TaskDTO> dummyTasks = Collections.singletonList(dummyTask);
 
@@ -84,7 +76,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
         mockMvc.perform(get("/group/view").param("groupUid", dummyGroup.getUid())).
                 andExpect(view().name("group/view")).
-                andExpect(model().attribute("group", hasProperty("id", is(dummyId)))).
+                andExpect(model().attribute("group", hasProperty("groupName", is("Dummy Group2")))).
                 andExpect(model().attribute("groupTasks", hasItem(dummyTask))).
                 andExpect(model().attribute("subGroups", hasItem(dummySubGroup))).
                 andExpect(model().attribute("hasParent", is(false))).
@@ -240,7 +232,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         GroupWrapper groupModifier = new GroupWrapper();
         groupModifier.populate(testGroup);
         groupModifier.setGroupName("Dummy Group");
-        testGroup.setId(dummyId);
         testGroup.addMember(sessionTestUser);
 
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
@@ -258,7 +249,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void newTokenWorks() throws Exception {
         Group testGroup = new Group("Dummy Group", new User("234345345"));
-        testGroup.setId(dummyId);
         testGroup.addMember(sessionTestUser);
 
         when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
@@ -268,7 +258,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         mockMvc.perform(post("/group/token").param("groupUid", testGroup.getUid()))
                 .andExpect(status().isOk())
                 .andExpect(view().name("group/view"))
-                .andExpect(model().attribute("group", hasProperty("id", is(dummyId))));
+                .andExpect(model().attribute("group", hasProperty("groupName", is("Dummy Group"))));
 
         verify(groupBrokerMock, times(1)).openJoinToken(sessionTestUser.getUid(), testGroup.getUid(), null);
     }
@@ -388,10 +378,8 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void consolidateGroupConfirmWorks() throws Exception {
 
-        Group testGroupSmall = new Group("someGroupname", new User("234345345"));
-        testGroupSmall.setId(1L);
-        Group testGroupLarge = new Group("someGroupname", new User("234345345"));
-        testGroupLarge.setId(2L);
+        Group testGroupSmall = new Group("someGroupnameSmall", new User("234345345"));
+        Group testGroupLarge = new Group("someGroupnameLarge", new User("234345345"));
         testGroupLarge.addMember(sessionTestUser);
 
         String[] orderedUids = {testGroupSmall.getUid(), testGroupLarge.getUid()};
@@ -424,13 +412,10 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void groupsConsolidateDoWorks() throws Exception {
         Group testGroupInto = new Group("someGroupname", new User("234345345"));
-
-        testGroupInto.setId(0L);
         testGroupInto.addMember(new User("100001"));
 
         Group testGroupFrom = new Group("someGroupname2", new User("234345345"));
         testGroupFrom.addMember(sessionTestUser);
-        testGroupFrom.setId(1L);
 
         when(groupBrokerMock.load(testGroupFrom.getUid())).thenReturn(testGroupFrom);
         when(groupBrokerMock.merge(sessionTestUser.getUid(), testGroupInto.getUid(), testGroupFrom.getUid(), true, true, false, null))
@@ -508,7 +493,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     public void groupHistoryThisMonthShouldWork() throws Exception {
 
         Group testGroup = new Group("someGroupname", new User("234345345"));
-        testGroup.setId(dummyId);
         testGroup.addMember(sessionTestUser);
 
         List<Event> dummyEvents = Arrays.asList(
@@ -556,8 +540,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     public void groupHistoryLastMonthShouldWork() throws Exception {
 
         Group testGroup = new Group("someGroupname", new User("234345345"));
-
-        testGroup.setId(dummyId);
         testGroup.addMember(sessionTestUser);
 
         List<Event> dummyEvents = Collections.singletonList(new Meeting("someMeeting", Instant.now(), sessionTestUser, testGroup, "someLoc"));

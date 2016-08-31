@@ -32,14 +32,13 @@ public class GrassRootApplication extends SpringApplication {
         int numberActive = 0;
 
         if (environment.acceptsProfiles(GrassRootApplicationProfiles.INMEMORY)) numberActive++;
-        if (environment.acceptsProfiles(GrassRootApplicationProfiles.CLOUDHEROKU)) numberActive++;
         if (environment.acceptsProfiles(GrassRootApplicationProfiles.LOCAL_PG)) numberActive++;
         if (environment.acceptsProfiles(GrassRootApplicationProfiles.STAGING)) numberActive++;
         if (environment.acceptsProfiles(GrassRootApplicationProfiles.PRODUCTION)) numberActive++;
 
         if (numberActive > 1) {
             throw new IllegalStateException(format("Only one of the following profiles may be specified: [%s]",
-                    arrayToCommaDelimitedString(new String[] {GrassRootApplicationProfiles.CLOUDHEROKU, GrassRootApplicationProfiles.INMEMORY, GrassRootApplicationProfiles.LOCAL_PG })));
+                    arrayToCommaDelimitedString(new String[] {GrassRootApplicationProfiles.PRODUCTION, GrassRootApplicationProfiles.INMEMORY, GrassRootApplicationProfiles.LOCAL_PG })));
         }
 
         if (numberActive == 1) {

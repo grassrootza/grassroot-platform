@@ -129,7 +129,6 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
     public void askForIssueShouldWork() throws Exception {
 
         Group testGroup = new Group("tg", testUser);
-        testGroup.setId(1L);
         VoteRequest testVote = VoteRequest.makeEmpty();
         testVote.setName("someVote");
         testVote.setParent(testGroup);

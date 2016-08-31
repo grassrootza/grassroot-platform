@@ -9,7 +9,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import za.org.grassroot.core.HerokuDatabaseConfig;
+import za.org.grassroot.core.ProductionDatabaseConfig;
+import za.org.grassroot.core.StagingDatabaseConfig;
 import za.org.grassroot.core.StandaloneDatabaseConfig;
 import za.org.grassroot.core.StandaloneLocalPGConfig;
 import za.org.grassroot.core.domain.BaseRoles;
@@ -24,7 +25,7 @@ import java.io.IOException;
 @EnableAspectJAutoProxy
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 @ComponentScan("za.org.grassroot")
-@Import({HerokuDatabaseConfig.class, StandaloneDatabaseConfig.class, StandaloneLocalPGConfig.class})
+@Import({StandaloneDatabaseConfig.class, StandaloneLocalPGConfig.class, StagingDatabaseConfig.class, ProductionDatabaseConfig.class})
 
 public class GrassRootCoreConfig {
 
@@ -32,7 +33,6 @@ public class GrassRootCoreConfig {
 	public PasswordEncoder getPasswordEncoder() {
 		return new BCryptPasswordEncoder();
 	}
-
 
 	@Bean(name = "cacheManager")
 	public EhCacheManagerFactoryBean ehCacheManager() throws IOException {

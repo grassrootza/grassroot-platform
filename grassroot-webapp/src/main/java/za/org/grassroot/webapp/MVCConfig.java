@@ -9,7 +9,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.context.support.ResourceBundleMessageSource;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -31,10 +30,9 @@ import javax.servlet.Filter;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.nio.file.InvalidPathException;
 import java.util.Locale;
 
-import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.*;
 
 /**
  *
@@ -136,14 +134,12 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
 
     @Configuration
     public static class ErrorConfig implements EmbeddedServletContainerCustomizer {
-
         @Override
         public void customize(ConfigurableEmbeddedServletContainer factory) {
-            factory.addErrorPages(new ErrorPage(HttpStatus.NOT_FOUND, "/404"));
-            factory.addErrorPages(new ErrorPage(HttpStatus.INTERNAL_SERVER_ERROR, "/500"));
-            factory.addErrorPages(new ErrorPage(HttpStatus.FORBIDDEN, "/403"));
+            factory.addErrorPages(new ErrorPage(NOT_FOUND, "/404"));
+            factory.addErrorPages(new ErrorPage(INTERNAL_SERVER_ERROR, "/500"));
+            factory.addErrorPages(new ErrorPage(FORBIDDEN, "/403"));
         }
-
     }
 
     @Bean (name = "messageSource")

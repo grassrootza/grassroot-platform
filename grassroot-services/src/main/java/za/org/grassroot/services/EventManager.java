@@ -88,17 +88,19 @@ public class EventManager implements EventManagementService {
 
     @Override
     public Map<User, EventRSVPResponse> getRSVPResponses(Event event) {
-        // todo: there is almost certainly a faster/better way to do this
+
         Map<User, EventRSVPResponse> rsvpResponses = new LinkedHashMap<>();
+        List<User> usersAnsweredYes = getListOfUsersThatRSVPYesForEvent(event);
+        List<User> usersAnsweredNo = getListOfUsersThatRSVPNoForEvent(event);
 
-        for (User user : event.getAncestorGroup().getMembers())
-            rsvpResponses.put(user, EventRSVPResponse.NO_RESPONSE);
+        @SuppressWarnings("unchecked") // someting stange with getAllMembers and <user> creates an unchecked warning here (hence suppressing)
+        Set<User> users = new HashSet<>(event.getAllMembers());
+        users.stream().forEach(u -> rsvpResponses.put(u,
+                usersAnsweredYes.contains(u) ? EventRSVPResponse.YES :
+                        usersAnsweredNo.contains(u) ? EventRSVPResponse.NO :
+                                EventRSVPResponse.NO_RESPONSE));
 
-        for (User user : getListOfUsersThatRSVPYesForEvent(event))
-            rsvpResponses.replace(user, EventRSVPResponse.YES);
-
-        for (User user : getListOfUsersThatRSVPNoForEvent(event))
-            rsvpResponses.replace(user, EventRSVPResponse.NO);
+        log.info("worked through stream of {} users, got back a map of size {}", users.size(), rsvpResponses.size());
 
         return rsvpResponses;
     }

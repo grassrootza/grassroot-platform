@@ -15,10 +15,8 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.repository.EventLogRepository;
-import za.org.grassroot.services.EventBroker;
-import za.org.grassroot.services.EventLogBroker;
-import za.org.grassroot.services.TaskBroker;
-import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.services.*;
+import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.EventWrapper;
 import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
@@ -54,6 +52,9 @@ public class VoteRestController {
     private TaskBroker taskBroker;
 
     @Autowired
+    private PermissionBroker permissionBroker;
+
+    @Autowired
     private EventLogRepository eventLogRepository;
 
     @RequestMapping(value = "/create/{id}/{phoneNumber}/{code}", method = RequestMethod.POST)
@@ -84,14 +85,12 @@ public class VoteRestController {
             eventBroker.updateReminderSettings(user.getUid(), vote.getUid(), EventReminderType.CUSTOM,
                     RestUtil.getReminderMinutes(reminderMinutes));
             TaskDTO voteCreated = taskBroker.load(user.getUid(), vote.getUid(), TaskType.VOTE);
-
             return RestUtil.okayResponseWithData(RestMessage.VOTE_CREATED, Collections.singletonList(voteCreated));
         } catch (AccessDeniedException e) {
             return RestUtil.accessDeniedResponse();
-        } catch (RuntimeException e) {
-            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_INPUT);
+        } catch (EventStartTimeNotInFutureException e) {
+            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.TIME_CANNOT_BE_IN_THE_PAST);
         }
-
     }
 
     @RequestMapping(value = "/view/{id}/{phoneNumber}/{code}", method = RequestMethod.GET)
@@ -109,7 +108,10 @@ public class VoteRestController {
     public ResponseEntity<ResponseTotalsDTO> fetchVoteTotals(@PathVariable String phoneNumber, @PathVariable String code,
                                                              @PathVariable String voteUid) {
         User user = userManagementService.findByInputNumber(phoneNumber);
-        Event event = eventBroker.load(voteUid); // todo : permission checking on this user!
+        Event event = eventBroker.load(voteUid);
+
+        permissionBroker.validateGroupPermission(user, event.getAncestorGroup(), null);
+
         ResponseTotalsDTO totals = eventLogBroker.getVoteResultsForEvent(event);
         if (totals != null) {
             return new ResponseEntity<>(totals, HttpStatus.OK);

@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.ServletRequestDataBinder;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
@@ -119,8 +120,9 @@ public class MeetingRestController {
             TaskDTO updatedTask =  taskBroker.load(user.getUid(), meetingUid, TaskType.MEETING);
             responseEntity = new ResponseEntity<>(updatedTask, HttpStatus.OK);
         } catch (IllegalStateException e) {
-		    // todo : need this to be more intelligent
-            responseEntity = new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+		    responseEntity = new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        } catch (AccessDeniedException e) {
+            responseEntity = new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
 
 	    log.info("returning response entity: {}, headers: {}, body: {}", responseEntity.getStatusCode(), responseEntity.getHeaders(), responseEntity.getBody());
@@ -159,9 +161,10 @@ public class MeetingRestController {
     @RequestMapping(value = "/rsvps/{phoneNumber}/{code}/{meetingUid}", method = RequestMethod.GET)
     public ResponseEntity<MeetingRsvpsDTO> listRsvps(@PathVariable String phoneNumber, @PathVariable String code,
                                                      @PathVariable String meetingUid) {
-        // todo : some permission checking to make sure user can see details
+
         User user = userManagementService.findByInputNumber(phoneNumber);
         Meeting meeting = eventBroker.loadMeeting(meetingUid);
+
         ResponseTotalsDTO totals = eventLogBroker.getResponseCountForEvent(meeting);
 
         log.info("here are the rsvp totals: {}", totals);
