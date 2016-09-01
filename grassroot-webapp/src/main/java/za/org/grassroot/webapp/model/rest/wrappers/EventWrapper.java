@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.model.rest.ResponseWrappers;
+package za.org.grassroot.webapp.model.rest.wrappers;
 
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.User;

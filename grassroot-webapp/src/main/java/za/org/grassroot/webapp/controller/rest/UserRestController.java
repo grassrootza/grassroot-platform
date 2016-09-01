@@ -21,9 +21,9 @@ import za.org.grassroot.services.PasswordTokenService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.webapp.enums.RestMessage;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.AuthWrapper;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.ProfileSettingsDTO;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
+import za.org.grassroot.webapp.model.rest.wrappers.AuthWrapper;
+import za.org.grassroot.webapp.model.rest.wrappers.ProfileSettingsDTO;
+import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import java.time.Instant;

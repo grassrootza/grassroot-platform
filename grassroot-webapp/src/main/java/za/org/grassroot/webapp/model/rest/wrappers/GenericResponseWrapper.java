@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.model.rest.ResponseWrappers;
+package za.org.grassroot.webapp.model.rest.wrappers;
 
 import org.springframework.http.HttpStatus;
 import za.org.grassroot.webapp.enums.RestMessage;

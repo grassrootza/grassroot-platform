@@ -19,9 +19,11 @@ public interface GroupJoinRequestService {
 
     GroupJoinRequest loadRequest(String requestUid);
 
-    List<GroupJoinRequest> getOpenRequestsForGroup(String groupUid);
+    // this retrieves requests for which the user is approver
+    List<GroupJoinRequest> getPendingRequestsForUser(String userUid);
 
-    List<GroupJoinRequest> getOpenRequestsForUser(String userUid);
+    // this retrieves requests which the user has sent
+    List<GroupJoinRequest> getPendingRequestsFromUser(String userUid);
 
     List<GroupJoinRequest> getOpenUserRequestsForGroupList(String requestorUid, List<Group> possibleGroups);
     

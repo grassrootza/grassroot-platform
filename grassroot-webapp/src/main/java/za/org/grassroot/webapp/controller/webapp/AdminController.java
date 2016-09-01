@@ -267,9 +267,6 @@ public class AdminController extends BaseController {
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/admin/accounts/create")
     public String createAccountForm(Model model) {
-
-        // todo: additional security checks, given the sensitivity of this
-
         return "admin/accounts/create";
     }
 
@@ -351,16 +348,14 @@ public class AdminController extends BaseController {
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping(value = "/admin/accounts/settings", method = RequestMethod.POST)
     public String changeAccountSettings(Model model, @ModelAttribute Account account) {
-        Account savedAccount = accountManagementService.adjustSettings(account);
+        accountManagementService.adjustSettings(account);
         return adminViewAccount(model, account.getId());
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/admin/designate/group")
     public String designateGroup(Model model) {
-
         return "admin/group";
-
     }
 
 }

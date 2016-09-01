@@ -18,10 +18,10 @@ import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
-import za.org.grassroot.webapp.model.rest.RequestObjects.MemberListRequest;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrapper;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
+import za.org.grassroot.webapp.model.rest.MemberListDTO;
+import za.org.grassroot.webapp.model.rest.wrappers.GenericResponseWrapper;
+import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
+import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapperImpl;
 import za.org.grassroot.webapp.model.web.MemberPicker;
 
 import javax.servlet.http.HttpServletRequest;
@@ -53,7 +53,7 @@ public class AjaxController extends BaseController {
     private GeoLocationBroker geoLocationBroker;
 
     @RequestMapping(value = "/members/list", method = RequestMethod.POST)
-    public ResponseEntity<ResponseWrapper> retrieveParentMembers(@RequestBody MemberListRequest listRequest) {
+    public ResponseEntity<ResponseWrapper> retrieveParentMembers(@RequestBody MemberListDTO listRequest) {
 
         MemberPicker memberPicker;
         final JpaEntityType type = listRequest.getParentEntityType();
@@ -90,7 +90,7 @@ public class AjaxController extends BaseController {
     }
 
     @RequestMapping(value = "/test", method = RequestMethod.POST)
-    public ResponseEntity<ResponseWrapper> logIncomingRequest(@RequestBody MemberListRequest listRequest, HttpServletRequest request) {
+    public ResponseEntity<ResponseWrapper> logIncomingRequest(@RequestBody MemberListDTO listRequest, HttpServletRequest request) {
         log.info("Received a request! It's this: {}", listRequest.toString());
         return new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.FOUND, RestMessage.PARENT_MEMBERS, RestStatus.SUCCESS),
                                     HttpStatus.OK);

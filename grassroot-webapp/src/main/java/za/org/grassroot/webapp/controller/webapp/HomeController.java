@@ -100,7 +100,7 @@ public class HomeController extends BaseController {
         log.info(String.format("Retrieved the user's upcoming tasks ... took %d msecs", System.currentTimeMillis() - startTime2));
 
         Long startTime3 = System.currentTimeMillis();
-        model.addAttribute("joinRequestsPending", groupJoinRequestService.getOpenRequestsForUser(user.getUid()));
+        model.addAttribute("joinRequestsPending", groupJoinRequestService.getPendingRequestsForUser(user.getUid()));
         log.info(String.format("Checking join requests took %d msecs", System.currentTimeMillis() - startTime3));
 
         return new ModelAndView("home", model.asMap());

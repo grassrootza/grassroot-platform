@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.model.rest.ResponseWrappers;
+package za.org.grassroot.webapp.model.rest.wrappers;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.springframework.http.HttpStatus;

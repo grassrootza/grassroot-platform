@@ -18,6 +18,7 @@ import za.org.grassroot.services.ChangedSinceData;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -113,8 +114,10 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
 
     @Test
     public void searchRequestToJoinGroup() throws Exception {
+        GroupJoinRequest testRequest = new GroupJoinRequest(sessionTestUser, testGroup, Instant.now(), "please let me in");
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
-        when(groupJoinRequestServiceMock.open(sessionTestUser.getUid(), testGroup.getUid(), null)).thenReturn(testGroup.getUid());
+        when(groupJoinRequestServiceMock.open(sessionTestUser.getUid(), testGroup.getUid(), "please let me in")).thenReturn(testRequest.getUid());
+        when(groupJoinRequestServiceMock.loadRequest(testRequest.getUid())).thenReturn(testRequest);
         mockMvc.perform(post(path + "join/request/{phoneNumber}/{code}", testUserPhone, testUserCode)
                 .param("uid", testGroup.getUid()).param("message", "please let me in")).andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).findByInputNumber(testUserPhone);

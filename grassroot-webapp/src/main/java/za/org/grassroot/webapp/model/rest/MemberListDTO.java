@@ -1,11 +1,11 @@
-package za.org.grassroot.webapp.model.rest.RequestObjects;
+package za.org.grassroot.webapp.model.rest;
 
 import za.org.grassroot.core.domain.JpaEntityType;
 
 /**
  * Created by luke on 2016/04/28.
  */
-public class MemberListRequest {
+public class MemberListDTO {
 
     private String userUid;
     private String parentUid;
@@ -46,7 +46,7 @@ public class MemberListRequest {
 
     @Override
     public String toString() {
-        return "MemberListRequest{" +
+        return "MemberListDTO{" +
                 "userUid='" + userUid + '\'' +
                 ", parentUid='" + parentUid + '\'' +
                 ", parentEntityType=" + parentEntityType +

@@ -5,9 +5,9 @@ import org.springframework.http.ResponseEntity;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.GenericResponseWrapper;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
+import za.org.grassroot.webapp.model.rest.wrappers.GenericResponseWrapper;
+import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
+import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapperImpl;
 
 import java.util.Set;
 import java.util.stream.Collectors;

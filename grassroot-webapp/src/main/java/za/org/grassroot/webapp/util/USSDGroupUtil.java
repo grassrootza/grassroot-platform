@@ -147,7 +147,7 @@ public class USSDGroupUtil extends USSDUtil {
     }
 
     public USSDMenu showGroupRequests(User user, USSDSection section) {
-        List<GroupJoinRequest> requests = groupJoinRequestService.getOpenRequestsForUser(user.getUid());
+        List<GroupJoinRequest> requests = groupJoinRequestService.getPendingRequestsForUser(user.getUid());
         GroupJoinRequest request = requests.get(0);
         String prompt;
         String userUid = request.getRequestor().getUid();
@@ -470,7 +470,7 @@ public class USSDGroupUtil extends USSDUtil {
     }
 
     private boolean hasOpenJoinRequests(User user) {
-        return !groupJoinRequestService.getOpenRequestsForUser(user.getUid()).isEmpty();
+        return !groupJoinRequestService.getPendingRequestsForUser(user.getUid()).isEmpty();
     }
 
 

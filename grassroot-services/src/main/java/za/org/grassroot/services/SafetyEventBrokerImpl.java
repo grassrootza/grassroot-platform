@@ -27,8 +27,7 @@ import java.util.Objects;
 @Service
 public class SafetyEventBrokerImpl implements SafetyEventBroker {
 
-
-    private Logger log = LoggerFactory.getLogger(SafetyEventBrokerImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(SafetyEventBrokerImpl.class);
 
     private static final long FALSE_ALARM_THRESHOLD = 3;
 

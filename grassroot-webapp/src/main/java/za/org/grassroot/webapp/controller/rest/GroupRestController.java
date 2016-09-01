@@ -23,11 +23,12 @@ import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.JoinRequestNotOpenException;
 import za.org.grassroot.services.exception.RequestorAlreadyPartOfGroupException;
 import za.org.grassroot.services.geo.GeoLocationBroker;
+import za.org.grassroot.webapp.enums.JoinReqType;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.GroupJoinRequestDTO;
 import za.org.grassroot.webapp.model.rest.PermissionDTO;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.*;
+import za.org.grassroot.webapp.model.rest.wrappers.*;
 import za.org.grassroot.webapp.util.ImageUtil;
 import za.org.grassroot.webapp.util.RestUtil;
 
@@ -237,16 +238,15 @@ public class GroupRestController {
                                                               @RequestParam(value = "message") String message) {
 
         User user = userManagementService.findByInputNumber(phoneNumber);
-        ResponseWrapper responseWrapper;
         try {
-            log.info("User " + phoneNumber + "requests to join group with uid " + groupToJoinUid);
-            groupJoinRequestService.open(user.getUid(), groupToJoinUid, message);
-            responseWrapper = new ResponseWrapperImpl(HttpStatus.OK, RestMessage.GROUP_JOIN_REQUEST_SENT, RestStatus.SUCCESS);
+            final String openedRequestUid = groupJoinRequestService.open(user.getUid(), groupToJoinUid, message);
+	        final GroupJoinRequestDTO returnedRequest = new GroupJoinRequestDTO(groupJoinRequestService.loadRequest(openedRequestUid), user);
+            ResponseEntity<ResponseWrapper> response = RestUtil.okayResponseWithData(RestMessage.GROUP_JOIN_REQUEST_SENT, Collections.singletonList(returnedRequest));
+	        log.info("user requested to join group, response = {}", response.toString());
+	        return response;
         } catch (RequestorAlreadyPartOfGroupException e) {
-            responseWrapper = new ResponseWrapperImpl(HttpStatus.CONFLICT, RestMessage.USER_ALREADY_PART_OF_GROUP,
-                    RestStatus.FAILURE);
+	        return RestUtil.errorResponse(HttpStatus.CONFLICT, RestMessage.USER_ALREADY_PART_OF_GROUP);
         }
-        return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
     }
 
 	@RequestMapping(value = "/join/request/cancel/{phoneNumber}/{code}", method = RequestMethod.POST)
@@ -279,12 +279,24 @@ public class GroupRestController {
 
     @RequestMapping(value = "/join/list/{phoneNumber}/{code}", method = RequestMethod.GET)
     public ResponseEntity<List<GroupJoinRequestDTO>> listPendingJoinRequests(@PathVariable String phoneNumber,
-                                                                             @PathVariable String code) {
+                                                                             @PathVariable String code,
+                                                                             @RequestParam(required = false, value = "type") JoinReqType type) {
 
         User user = userManagementService.loadOrSaveUser(phoneNumber);
-        List<GroupJoinRequest> openRequests = new ArrayList<>(groupJoinRequestService.getOpenRequestsForUser(user.getUid()));
-        List<GroupJoinRequestDTO> requestDTOs = openRequests.stream()
-                .map(GroupJoinRequestDTO::new)
+        List<GroupJoinRequest> openRequests = new ArrayList<>();
+
+	    // could do this slightly more elegantly using an unless type construction, but privileging clarity
+	    if (JoinReqType.SENT_REQUEST.equals(type)) {
+		    openRequests.addAll(groupJoinRequestService.getPendingRequestsForUser(user.getUid()));
+	    } else if (JoinReqType.RECEIVED_REQUEST.equals(type)) {
+		    openRequests.addAll(groupJoinRequestService.getPendingRequestsFromUser(user.getUid()));
+	    } else if (type == null) {
+		    openRequests.addAll(groupJoinRequestService.getPendingRequestsForUser(user.getUid()));
+		    openRequests.addAll(groupJoinRequestService.getPendingRequestsFromUser(user.getUid()));
+	    }
+
+	    List<GroupJoinRequestDTO> requestDTOs = openRequests.stream()
+                .map(req -> new GroupJoinRequestDTO(req, user))
                 .sorted(Collections.reverseOrder())
                 .collect(Collectors.toList());
 

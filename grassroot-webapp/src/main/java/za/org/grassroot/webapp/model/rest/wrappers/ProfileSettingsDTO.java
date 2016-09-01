@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.model.rest.ResponseWrappers;
+package za.org.grassroot.webapp.model.rest.wrappers;
 
 /**
  * Created by paballo on 2016/04/19.

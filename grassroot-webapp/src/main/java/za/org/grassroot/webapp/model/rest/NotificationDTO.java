@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.model.rest.RequestObjects;
+package za.org.grassroot.webapp.model.rest;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.collect.Sets;

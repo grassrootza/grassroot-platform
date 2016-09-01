@@ -14,10 +14,10 @@ import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.services.exception.NotificationAlreadyUpdatedException;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
-import za.org.grassroot.webapp.model.rest.RequestObjects.NotificationDTO;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.NotificationWrapper;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapperImpl;
+import za.org.grassroot.webapp.model.rest.NotificationDTO;
+import za.org.grassroot.webapp.model.rest.wrappers.NotificationWrapper;
+import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
+import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapperImpl;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import java.time.Instant;

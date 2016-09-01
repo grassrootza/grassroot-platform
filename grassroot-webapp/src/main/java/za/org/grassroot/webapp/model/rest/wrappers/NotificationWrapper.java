@@ -1,11 +1,11 @@
-package za.org.grassroot.webapp.model.rest.ResponseWrappers;
+package za.org.grassroot.webapp.model.rest.wrappers;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import za.org.grassroot.core.domain.Notification;
-import za.org.grassroot.webapp.model.rest.RequestObjects.NotificationDTO;
+import za.org.grassroot.webapp.model.rest.NotificationDTO;
 
 import java.util.List;
 

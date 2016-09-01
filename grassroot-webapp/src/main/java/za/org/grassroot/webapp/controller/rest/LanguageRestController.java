@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.integration.domain.SeloParseDateTimeFailure;
 import za.org.grassroot.integration.services.LearningService;
 import za.org.grassroot.webapp.enums.RestMessage;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
+import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import java.time.LocalDateTime;

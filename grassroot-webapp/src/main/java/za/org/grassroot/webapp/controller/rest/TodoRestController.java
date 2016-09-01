@@ -17,7 +17,7 @@ import za.org.grassroot.services.TaskBroker;
 import za.org.grassroot.services.TodoBroker;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
-import za.org.grassroot.webapp.model.rest.ResponseWrappers.ResponseWrapper;
+import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.LocalDateTimePropertyEditor;
 import za.org.grassroot.webapp.util.RestUtil;
 
