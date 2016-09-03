@@ -2,7 +2,7 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" xmlns:data="http://www.w3.org/1999/xhtml"
       layout:decorator="layout">
 <head>
-    <title>Grassroot Platform</title>
+    <title>Grassroot</title>
 
   <meta property="og:title" content="grassroot.org.za"/>
   <meta property="og:image" content="/img/grass.png"/>
@@ -17,20 +17,14 @@
 <body>
 
 <div layout:fragment="header">
-    <!--<h2 th:text="#{home.welcome.message}">welcome headline</h2>-->
+  <h1 th:text="#{web.home.banner}" class="text-center">Meet, vote act</h1>
+  <!-- Insert user's name -->
+  <h4 th:text="#{web.home.welcome(${currentUser.displayName})}" class="text-center">Welcome back to Grassroot, Luke</h4>
 </div>
 <div layout:fragment="overview"></div>
 
 <div layout:fragment="content">
     <!-- Central text header -->
-
-  <div class="row">
-    <div class="col-md-12">
-      <h1 th:text="#{web.home.banner}" class="text-center">Meet, vote act</h1>
-      <!-- Insert user's name -->
-      <h4 th:text="#{web.home.welcome(${currentUser.displayName})}" class="text-center">Welcome back to Grassroot, Luke</h4>
-    </div>
-  </div>
 
   <div class="well" th:if="${not #lists.isEmpty(joinRequestsPending)}">
     <div class="row">
@@ -378,30 +372,3 @@
 
 </body>
 </html>
-
-<!-- Trying out the group tree view idea - sql version -->
-
-<!-- <div th:if="${not #lists.isEmpty(groupTreesSql)}">
-  <div class="well">
-    <div class="just-padding">
-      <h3>Groups in tree view:</h3>
-      <div class="list-group list-group-root well">
-        <div th:each="groupTreeSql: ${groupTreesSql}" class="list-group-item">
-          <span th:text="${groupTreeSql.groupName}">Group name</span>
-          <ul th:fragment="fragment_nodeSql(groupTreeSql)">
-            <li th:each="subGroupSql : ${groupTreeSql.Subgroups}" th:inline="text" class="list-group-item">
-              [[${subGroupSql.groupName}]] ([[${subGroupSql.level}]])
-              <ul th:replace="this::fragment_node(${subGroupSql})" th:unless="${groupTreeSql.isTerminal()}"></ul>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-</div> -->
-
-<!-- <div th:fragment="fragment_node(node)">
-  <li th:each="subGroup : ${node.Subgroups}" th:text="${subGroup.groupName}">
-    <span layout:include="this :: fragment_node(${subGroup})"></span>
-  </li>
-</div> -->

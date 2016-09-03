@@ -9,8 +9,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.GrassRootServicesConfig;
-import za.org.grassroot.core.GrassRootApplicationProfiles;
+import za.org.grassroot.GrassrootServicesConfig;
+import za.org.grassroot.core.GrassrootApplicationProfiles;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -26,9 +26,9 @@ import static org.junit.Assert.assertTrue;
  * Created by aakilomar on 8/24/15.
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {GrassRootServicesConfig.class,TestContextConfig.class} )
+@ContextConfiguration(classes = {GrassrootServicesConfig.class,TestContextConfig.class} )
 @Transactional
-@ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
+@ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class NotificationServiceTest {
 
     private Logger log = Logger.getLogger(getClass().getCanonicalName());
@@ -53,43 +53,7 @@ public class NotificationServiceTest {
 
     @Test
     public void shouldGiveEnglishMessageForMeetingInvite() {
-        String message = messageSourceAccessor.getMessage("sms.mtg.send.new", new Object[]{"GrassRoot", "Thabo", "Activism", "The Square", "15 October 2PM"}, Locale.ENGLISH);
-    }
-
-    @Test
-    public void shouldGiveEnglishMeetingMessage() {
-        /*User  user  = userRepository.save(new User("27817770000"));
-        Group group = groupManagementService.createNewGroup(user, Arrays.asList("0828888888", "0829999999"), false);
-        Event event = eventRepository.save(new Event("Drink till you drop", user, group));
-        event.setEventLocation("Ellispark");
-        String message = MessageAssemblingService.createMeetingNotificationMessage(user, new EventDTO(event));
-        log.info("shouldGiveEnglishMeetingMessage..." + message);
-        assertEquals("GrassRoot : 081 777 0000 has called a meeting about Drink till you drop, at Ellispark, on no date specified",
-                message);*/
-    }
-
-    @Test
-    public void shouldGiveEnglishChangeMeetingMessage() {
-        /*User user = userRepository.save(new User("27817770000"));
-        Group group = groupManagementService.createNewGroup(user, Arrays.asList("0828888888", "0829999999"), false);
-        Event event = eventRepository.save(new Event("Drink till you drop",user,group));
-        event.setEventLocation("Ellispark");
-        String message = MessageAssemblingService.createChangeMeetingNotificationMessage(user, new EventDTO(event));
-        log.info("shouldGiveEnglishMeetingMessage..." + message);
-        assertEquals("GrassRoot : 081 777 0000 has changed the meeting about Drink till you drop, it will now be at Ellispark, on no date specified",
-                     message);*/
-    }
-
-    @Test
-    public void shouldGiveEnglishCancelMeetingMessage() {
-        /* User user = userRepository.save(new User("27817770000"));
-        Group group = groupManagementService.createNewGroup(user, Arrays.asList("0828888888", "0829999999"), false);
-        Event event = eventRepository.save(new Event("Drink till you drop",user,group));
-        event.setEventLocation("Ellispark");
-        String message = MessageAssemblingService.createCancelMeetingNotificationMessage(user,new EventDTO(event));
-        log.info("shouldGiveEnglishMeetingMessage..." + message);
-        assertEquals("GrassRoot : 081 777 0000 has cancelled the meeting about Drink till you drop, at Ellispark, on no date specified",
-                     message);*/
+        String message = messageSourceAccessor.getMessage("sms.mtg.send.new", new Object[]{"Grassroot", "Thabo", "Activism", "The Square", "15 October 2PM"}, Locale.ENGLISH);
     }
 
     private String writeTempFile(String data) {

@@ -103,7 +103,7 @@ public class MeetingRestController {
     }
 
     @RequestMapping(value = "/update/{phoneNumber}/{code}/{meetingUid}", method = RequestMethod.POST)
-    public ResponseEntity<TaskDTO> updateMeeting(@PathVariable("phoneNumber")String phoneNumber, @PathVariable("code") String code,
+    public ResponseEntity<ResponseWrapper> updateMeeting(@PathVariable("phoneNumber")String phoneNumber, @PathVariable("code") String code,
                                                          @PathVariable("meetingUid") String meetingUid,
                                                          @RequestParam("title") String title,
                                                          @RequestParam(value = "description", required =false ) String description,
@@ -113,20 +113,16 @@ public class MeetingRestController {
 
         log.info("inside update meeting ... received, date time: {}, members: {}", time.format(DateTimeFormatter.ISO_DATE_TIME), members != null ? members : "null");
 	    User user = userManagementService.findByInputNumber(phoneNumber);
-	    ResponseEntity<TaskDTO> responseEntity;
 
-	    try {
+        try {
 	        eventBroker.updateMeeting(user.getUid(), meetingUid, title, description, time, location, null, -1, members);
             TaskDTO updatedTask =  taskBroker.load(user.getUid(), meetingUid, TaskType.MEETING);
-            responseEntity = new ResponseEntity<>(updatedTask, HttpStatus.OK);
+            return RestUtil.okayResponseWithData(RestMessage.MEETING_DETAILS_UPDATED, Collections.singletonList(updatedTask));
         } catch (IllegalStateException e) {
-		    responseEntity = new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+		    return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.MEETING_UPDATE_ERROR);
         } catch (AccessDeniedException e) {
-            responseEntity = new ResponseEntity<>(HttpStatus.FORBIDDEN);
+            return RestUtil.accessDeniedResponse();
         }
-
-	    log.info("returning response entity: {}, headers: {}, body: {}", responseEntity.getStatusCode(), responseEntity.getHeaders(), responseEntity.getBody());
-	    return responseEntity;
     }
 
     @RequestMapping(value = "/rsvp/{id}/{phoneNumber}/{code}", method = RequestMethod.GET)

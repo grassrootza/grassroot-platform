@@ -10,7 +10,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.TestContextConfiguration;
-import za.org.grassroot.core.GrassRootApplicationProfiles;
+import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventLogType;
 
@@ -33,7 +33,7 @@ import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = TestContextConfiguration.class)
 @Transactional
-@ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
+@ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class MeetingRepositoryTest {
 
     private static final Logger log = LoggerFactory.getLogger(MeetingRepositoryTest.class);

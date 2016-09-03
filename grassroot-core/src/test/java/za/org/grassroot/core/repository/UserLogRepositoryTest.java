@@ -11,7 +11,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.TestContextConfiguration;
-import za.org.grassroot.core.GrassRootApplicationProfiles;
+import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -34,7 +34,7 @@ import static za.org.grassroot.core.enums.UserLogType.*;
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = TestContextConfiguration.class)
 @Transactional
-@ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
+@ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class UserLogRepositoryTest {
 
     private static final Logger log = LoggerFactory.getLogger(UserLogRepositoryTest.class);

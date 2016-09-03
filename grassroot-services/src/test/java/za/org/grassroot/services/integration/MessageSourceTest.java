@@ -9,8 +9,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.GrassRootServicesConfig;
-import za.org.grassroot.core.GrassRootApplicationProfiles;
+import za.org.grassroot.GrassrootServicesConfig;
+import za.org.grassroot.core.GrassrootApplicationProfiles;
 
 import java.util.Locale;
 
@@ -22,9 +22,9 @@ import static org.hamcrest.Matchers.*;
  */
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {GrassRootServicesConfig.class, TestContextConfig.class})
+@ContextConfiguration(classes = {GrassrootServicesConfig.class, TestContextConfig.class})
 @Transactional
-@ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
+@ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class MessageSourceTest {
 
     @Autowired
@@ -34,7 +34,7 @@ public class MessageSourceTest {
     @Test
     public void testMessagesInUKLocale() throws Exception {
         //Calling messageSource.getMessage throws exception if messages for Locale is not found
-      String message =   messageSource.getMessage("sms.mtg.send.new", new Object[]{"GrassRoot", "Thabo", "Activism", "The Square", "15 October 2PM"}, Locale.UK);
+      String message =   messageSource.getMessage("sms.mtg.send.new", new Object[]{"Grassroot", "Thabo", "Activism", "The Square", "15 October 2PM"}, Locale.UK);
       assertThat(message, is(not(isEmptyOrNullString())));
 
     }
@@ -43,7 +43,7 @@ public class MessageSourceTest {
     @Test
     public void testMessagesInEnglishLocale() throws Exception {
         //Calling messageSource.getMessage throws exception if messages for Locale is not found
-        String message =   messageSource.getMessage("sms.mtg.send.new", new Object[]{"GrassRoot", "Thabo", "Activism", "The Square", "15 October 2PM"}, Locale.ENGLISH);
+        String message =   messageSource.getMessage("sms.mtg.send.new", new Object[]{"Grassroot", "Thabo", "Activism", "The Square", "15 October 2PM"}, Locale.ENGLISH);
         assertThat(message, is(not(isEmptyOrNullString())));
 
     }
@@ -51,7 +51,7 @@ public class MessageSourceTest {
     @Test
     public void testMessagesInZuluLocale() throws Exception {
         //Calling messageSource.getMessage throws exception if messages for Locale is not found
-        String message =   messageSource.getMessage("sms.mtg.send.new", new Object[]{"GrassRoot", "Thabo", "Activism", "The Square", "15 October 2PM"}, new Locale("zu"));
+        String message =   messageSource.getMessage("sms.mtg.send.new", new Object[]{"Grassroot", "Thabo", "Activism", "The Square", "15 October 2PM"}, new Locale("zu"));
         assertThat(message, is(not(isEmptyOrNullString())));
 
     }

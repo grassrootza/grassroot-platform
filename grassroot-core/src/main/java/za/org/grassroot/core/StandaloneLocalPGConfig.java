@@ -14,7 +14,7 @@ import javax.sql.DataSource;
  * @author Lesetse Kimwaga
  */
 @Configuration
-@Profile(GrassRootApplicationProfiles.LOCAL_PG)
+@Profile(GrassrootApplicationProfiles.LOCAL_PG)
 public class StandaloneLocalPGConfig extends DatabaseConfig {
 
     private static final Logger log = LoggerFactory.getLogger(StandaloneLocalPGConfig.class);

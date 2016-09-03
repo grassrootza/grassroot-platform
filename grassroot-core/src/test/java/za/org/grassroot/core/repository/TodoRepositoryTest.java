@@ -8,7 +8,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.TestContextConfiguration;
-import za.org.grassroot.core.GrassRootApplicationProfiles;
+import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Todo;
 import za.org.grassroot.core.domain.User;
@@ -30,7 +30,7 @@ import static org.junit.Assert.*;
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = TestContextConfiguration.class)
 @Transactional
-@ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
+@ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class TodoRepositoryTest {
 
     @Autowired

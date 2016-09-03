@@ -10,7 +10,7 @@ import javax.sql.DataSource;
  * @author Lesetse Kimwaga
  */
 @Configuration
-@Profile(GrassRootApplicationProfiles.PRODUCTION)
+@Profile(GrassrootApplicationProfiles.PRODUCTION)
 public class ProductionDatabaseConfig extends  DatabaseConfig {
 
     @Override

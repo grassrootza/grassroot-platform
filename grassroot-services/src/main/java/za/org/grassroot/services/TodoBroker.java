@@ -55,7 +55,7 @@ public interface TodoBroker {
 	// todo: we need some sort of logic here for not showing users the same todo over and over
 	Todo fetchTodoForUserResponse(String userUid, long daysInPast, boolean assignedTodosOnly);
 
-	Todo update(String userUid, String uid, String message, LocalDateTime actionByDate, int reminderMinutes, Set<String> assignnedMemberUids);
+	Todo update(String userUid, String uid, String message, String description, LocalDateTime actionByDate, Integer reminderMinutes, Set<String> assignnedMemberUids);
 
 	/**
 	 * Methods to handle "replicaed" todos (i.e., that cascade down subgroups)

@@ -24,7 +24,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @EntityScan
 @EnableAutoConfiguration
 @EnableJpaRepositories
-public class GrassRootWebApplicationConfig {
+public class GrassrootWebApplicationConfig {
 
     // private ApplicationContext applicationContext;
 

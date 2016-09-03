@@ -7,7 +7,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
-import za.org.grassroot.core.GrassRootApplicationProfiles;
+import za.org.grassroot.core.GrassrootApplicationProfiles;
 
 import javax.annotation.PostConstruct;
 
@@ -50,7 +50,7 @@ public class SmsSendingManager implements SmsSendingService {
         gatewayURI.queryParam("message", message);
 
         // todo: test this on staging
-        if (!environment.acceptsProfiles(GrassRootApplicationProfiles.INMEMORY)) {
+        if (!environment.acceptsProfiles(GrassrootApplicationProfiles.INMEMORY)) {
             log.info("Sending SMS via URL: " + gatewayURI.toUriString());
             //@todo process response message
             String messageResult = restTemplate.getForObject(gatewayURI.build().toUri(), String.class);

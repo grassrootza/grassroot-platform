@@ -47,16 +47,14 @@ public class UserAccountsRecoveryController extends BaseController {
     }
 
     @RequestMapping(value = "/accounts/recovery", method = RequestMethod.GET)
-    public ModelAndView index(Model model) {
+    public String index(Model model) {
         model.addAttribute("userAccountRecovery", new UserAccountRecovery());
-        return new ModelAndView("accounts/recovery", model.asMap());
+        return "accounts/recovery";
     }
 
 
-    @RequestMapping(value = "/grass-root-verification/{grassRootID}", method = RequestMethod.GET)
-    public
-    @ResponseBody
-    String getTime(@PathVariable("grassRootID") String grassRootID) {
+    @RequestMapping(value = "/grass-root-verification/{msisdn}", method = RequestMethod.GET)
+    public @ResponseBody String getTime(@PathVariable("msisdn") String phoneNumber) {
 
         /******************************************************************************************
          * DUE TO SECURITY CONCERNS: NEVER EVER send token back to Web Client! Must be sent to Mobile Phone.
@@ -64,9 +62,9 @@ public class UserAccountsRecoveryController extends BaseController {
 
         VerificationTokenCode verificationTokenCode = null;
         try {
-            verificationTokenCode = passwordTokenService.generateShortLivedOTP(grassRootID);
+            verificationTokenCode = passwordTokenService.generateShortLivedOTP(phoneNumber);
         } catch (Exception e) {
-            log.error("Could not generate verification token for {}", grassRootID);
+            log.error("Could not generate verification token for {}", phoneNumber);
         }
         temporaryTokenSend(verificationTokenCode);
         return null;
@@ -78,12 +76,16 @@ public class UserAccountsRecoveryController extends BaseController {
                                               BindingResult bindingResult, HttpServletRequest request,
                                               RedirectAttributes redirectAttributes) {
 
-        log.info("Okay we've been given the token code back");
+        log.info("Okay we've been given the token code back, it is : " + userAccountRecovery.getVerificationCode());
 
         if (bindingResult.hasErrors()) {
-            log.info("Error on the binding result!");
+            log.info("Error on the binding result");
             model.addAttribute("userAccountRecovery", userAccountRecovery);
-            addMessage(model, MessageType.ERROR, "user.account.recovery.error", request);
+            if (bindingResult.getFieldError("verificationCode") != null) {
+                addMessage(model, MessageType.ERROR, bindingResult.getFieldError("verificationCode").getCode(), request);
+            } else {
+                addMessage(model, MessageType.ERROR, "user.account.recovery.error", request);
+            }
             return new ModelAndView("accounts/recovery", model.asMap());
         }
 
@@ -116,7 +118,7 @@ public class UserAccountsRecoveryController extends BaseController {
 
             if (verificationTokenCode != null && System.getenv("SMSUSER") != null && System.getenv("SMSPASS") != null) {
                 String messageResult = smsSendingService.sendSMS(
-                        "Your GrassRoot verification code is: " + verificationTokenCode.getCode(),
+                        "Your Grassroot verification code is: " + verificationTokenCode.getCode(), // todo : externalize
                         verificationTokenCode.getUsername());
                 log.debug("SMS Send result: {}", messageResult);
             } else {

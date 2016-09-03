@@ -3,7 +3,13 @@
         layout:decorator="layout"
         xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Grassroot - Home</title>
+  <title>Grassroot</title>
+
+  <meta property="og:title" content="Grassroot"/>
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/images/grassroot-logo.png"/>
+  <meta property="og:description" content="The Grassroot Platform"/>
+
 </head>
 <body>
 
@@ -16,8 +22,12 @@
     <div class="cover-container">
       <div class="row">
         <div class="col-md-12">
-        <h1 class="cover-heading text-center">GRASSROOT</h1>
-        <p class="lead text-center">Tools for a nation self-organizing</p>
+          <div class="row text-center">
+            <img th:src="@{/images/horizontal-logo.png}" class="img-responsive col-md-6 col-md-offset-3"/>
+          </div>
+          <div class="row top-buffer">
+            <p class="lead text-center">Tools for a nation self-organizing</p>
+          </div>
         </div>
       </div>
     </div>
@@ -60,7 +70,10 @@
 
             <div class="row ">
               <div class="col-md-8 col-md-offset-2 text-center top-buffer">
-                <a th:href="@{/signup}" href="" class="text-left">New user? Register here</a>
+                <a th:href="@{/signup}" href="" class="text-left">
+                  <strong th:if="${error}">New user? Register here</strong>
+                  <span th:unless="${error}">New user? Register here</span>
+                </a>
               </div>
             </div>
 

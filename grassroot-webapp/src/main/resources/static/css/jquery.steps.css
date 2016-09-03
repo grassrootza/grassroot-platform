@@ -6,7 +6,7 @@
 .tabcontrol
 {
     display: block;
-    width: 100%;
+    width: 80%;
     overflow: hidden;
 }
 
@@ -55,6 +55,7 @@
 .wizard > .steps
 {
     position: relative;
+    text-align: center;
     display: block;
     width: 100%;
 }
@@ -73,7 +74,7 @@
 
 .wizard > .steps > ul > li
 {
-    width: 25%;
+    width: 33%;
 }
 
 .wizard > .steps > ul > li,
@@ -96,11 +97,13 @@
     width: auto;
     margin: 0 0.5em 0.5em;
     padding: 1em 1em;
+    padding-left: 1.5em;
+    padding-right: 1.5em;
     text-decoration: none;
 
-    -webkit-border-radius: 5px;
-    -moz-border-radius: 5px;
-    border-radius: 5px;
+    -webkit-border-radius: 2px;
+    -moz-border-radius: 2px;
+    border-radius: 2px;
 }
 
 .wizard > .steps .disabled a,
@@ -116,7 +119,7 @@
 .wizard > .steps .current a:hover,
 .wizard > .steps .current a:active
 {
-    background: #2184be;
+    background: #207A33;
     color: #fff;
     cursor: default;
 }
@@ -125,10 +128,8 @@
 .wizard > .steps .done a:hover,
 .wizard > .steps .done a:active
 {
-    background: #9dc8e2;
-    color: #fff;
-    /*background: rgba(0, 150, 130, 0.46);*/
-
+    background: #68a96b;
+    color: #e4e4e4;
 ;
 }
 
@@ -145,26 +146,16 @@
     /*background: #eee;*/
     display: block;
     margin: 0.5em;
-    min-height: 35em;
-    overflow: hidden;
+    overflow: auto;
+    min-height: 13em;
+    overflow-x: hidden;
     position: relative;
-    width: auto;
+    width: 100%;
 
-    -webkit-border-radius: 5px;
-    -moz-border-radius: 5px;
-    border-radius: 5px;
+    -webkit-border-radius: 2px;
+    -moz-border-radius: 2px;
+    border-radius: 2px;
 }
-.recovery.wizard > .content
-{
-    display: block;
-    margin: 0.5em;
-    min-height: 18em !important;
-    overflow: hidden;
-    position: relative;
-    width: auto;
-
-}
-
 
 .wizard.vertical > .content
 {
@@ -282,11 +273,11 @@
     padding: 10px 16px;
     font-size: 18px;
     line-height: 1.3333333;
-    border-radius: 6px;
+    border-radius: 2px;
 
     /* .btn-primary */
     color: #fff;
-    background-color: #337ab7;
+    background-color: #207A33;
     border-color: #2e6da4;
 
     /* btn*/
@@ -300,6 +291,9 @@
     text-align: center;
     white-space: nowrap;
     vertical-align: middle;
+    padding-left: 1.5em;
+    padding-right: 1.5em;
+
     -ms-touch-action: manipulation;
     touch-action: manipulation;
     cursor: pointer;
@@ -339,6 +333,7 @@
 {
     position: relative;
     display: block;
+    text-align: center;
     width: 100%;
 }
 
@@ -356,12 +351,12 @@
     margin: 5px 2px 0 0;
     padding: 1px;
 
-    -webkit-border-top-left-radius: 5px;
-    -webkit-border-top-right-radius: 5px;
-    -moz-border-radius-topleft: 5px;
-    -moz-border-radius-topright: 5px;
-    border-top-left-radius: 5px;
-    border-top-right-radius: 5px;
+    -webkit-border-top-left-radius: 2px;
+    -webkit-border-top-right-radius: 2px;
+    -moz-border-radius-topleft: 2px;
+    -moz-border-radius-topright: 2px;
+    border-top-left-radius: 2px;
+    border-top-right-radius: 2px;
 }
 
 .tabcontrol > .steps > ul > li:hover

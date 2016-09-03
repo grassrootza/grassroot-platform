@@ -339,12 +339,13 @@ public class GroupController extends BaseController {
      */
 
     @RequestMapping(value = "remove", method = RequestMethod.POST)
-    public String removeMember(Model model, @RequestParam String groupUid, @RequestParam String msisdn) {
+    public String removeMember(Model model, @RequestParam String groupUid, @RequestParam String msisdn, HttpServletRequest request) {
         log.info(String.format("Alright, removing user with number " + msisdn + "from group with UID " + groupUid));
         Long startTime = System.currentTimeMillis();
         Set<String> memberToRemove = Sets.newHashSet(userManagementService.findByInputNumber(msisdn).getUid());
         groupBroker.removeMembers(getUserProfile().getUid(), groupUid, memberToRemove);
         log.info(String.format("Removing user from group took ... %d msecs", System.currentTimeMillis() - startTime));
+        addMessage(model, MessageType.INFO, "group.member.remove", request);
         return viewGroupIndex(model, groupUid);
     }
 
@@ -421,17 +422,17 @@ public class GroupController extends BaseController {
     @RequestMapping(value = "change_multiple")
     public String modifyGroup(Model model, @RequestParam String groupUid) {
 
-        // todo: check permissions
         Group group = groupBroker.load(groupUid);
         User user = userManagementService.load(getUserProfile().getUid());
-        if (!isUserPartOfGroup(getUserProfile(), group)) throw new AccessDeniedException("");
+
+        // todo : change all in this controller to this pattern
+        permissionBroker.validateGroupPermission(user, group, null);
 
         log.info("Okay, modifying this group: " + group.toString());
 
         GroupWrapper groupModifier = new GroupWrapper();
         groupModifier.populate(group);
 
-        log.info("Checking permissions ... can add member? : " + permissionBroker.isGroupPermissionAvailable(getUserProfile(), group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER));
         groupModifier.setCanRemoveMembers(permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER));
         groupModifier.setCanAddMembers(permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER));
         groupModifier.setCanUpdateDetails(permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS));

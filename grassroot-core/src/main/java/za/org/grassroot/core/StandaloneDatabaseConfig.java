@@ -17,7 +17,7 @@ import javax.sql.DataSource;
  * @author Lesetse Kimwaga
  */
 @Configuration
-@Profile(GrassRootApplicationProfiles.INMEMORY)
+@Profile(GrassrootApplicationProfiles.INMEMORY)
 public class StandaloneDatabaseConfig extends DatabaseConfig {
 
     private Logger log = LoggerFactory.getLogger(StandaloneDatabaseConfig.class);

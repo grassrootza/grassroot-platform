@@ -111,6 +111,7 @@ public class PasswordTokenManager implements PasswordTokenService {
 
         // need to use directly as phone number, not attempt to get user first, else fails on registration
         VerificationTokenCode token = verificationTokenCodeRepository.findByUsernameAndType(phoneNumber, VerificationCodeType.SHORT_OTP);
+
         return token != null && code.equals(token.getCode()) && Instant.now().isBefore(token.getExpiryDateTime());
     }
 

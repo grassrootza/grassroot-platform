@@ -90,19 +90,20 @@ public class TodoRestController {
         }
     }
 
-    @RequestMapping(value ="/update/{phoneNumber}/{code}/{uid}", method = RequestMethod.POST)
+    @RequestMapping(value = "/update/{phoneNumber}/{code}/{taskUid}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> updateTodo(@PathVariable String phoneNumber, @PathVariable String code,
-                                                          @PathVariable String uid,
+                                                          @PathVariable String taskUid,
                                                           @RequestParam String title,
+                                                          @RequestParam String description,
                                                           @RequestParam LocalDateTime dueDate,
-                                                          @RequestParam int reminderMinutes,
+                                                          @RequestParam(value="reminderMinutes", required = false) Integer reminderMinutes,
                                                           @RequestParam(value="members", required = false) Set<String> members) {
 
         User user = userManagementService.findByInputNumber(phoneNumber);
         try {
-            todoBroker.update(user.getUid(), uid, title, dueDate, reminderMinutes, members);
-            TaskDTO taskDTO = taskBroker.load(user.getUid(), uid, TaskType.TODO);
-            return RestUtil.okayResponseWithData(RestMessage.TODO_UPDATED, taskDTO);
+            todoBroker.update(user.getUid(), taskUid, title, description, dueDate, reminderMinutes, members);
+            TaskDTO taskDTO = taskBroker.load(user.getUid(), taskUid, TaskType.TODO);
+            return RestUtil.okayResponseWithData(RestMessage.TODO_UPDATED, Collections.singletonList(taskDTO));
         } catch (AccessDeniedException e) {
             return RestUtil.accessDeniedResponse();
         }

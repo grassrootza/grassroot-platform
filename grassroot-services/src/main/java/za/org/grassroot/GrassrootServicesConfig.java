@@ -33,12 +33,12 @@ import java.util.concurrent.Executors;
 
 @Configuration
 @ComponentScan("za.org.grassroot")
-@EntityScan(basePackageClasses = {GrassRootServicesConfig.class, Jsr310JpaConverters.class})
+@EntityScan(basePackageClasses = {GrassrootServicesConfig.class, Jsr310JpaConverters.class})
 @EnableAutoConfiguration
 @EnableJpaRepositories
 @EnableAsync
 @EnableScheduling
-public class GrassRootServicesConfig implements SchedulingConfigurer {
+public class GrassrootServicesConfig implements SchedulingConfigurer {
 
     @Bean( name = "servicesMessageSource")
     public ResourceBundleMessageSource messageSource() {

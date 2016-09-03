@@ -165,22 +165,6 @@ public class UserRestController {
         return RestUtil.messageOkayResponse(RestMessage.USER_LOGGED_OUT);
     }
 
-    @RequestMapping(value="/profile/settings/update/{phoneNumber}/{code}", method = RequestMethod.POST)
-    public ResponseEntity<ResponseWrapper> updateProfileSettings(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
-                                                                @RequestParam("displayName") String displayName, @RequestParam("language") String language, @RequestParam("alertPreference") String preference){
-
-        User user = userManagementService.findByInputNumber(phoneNumber);
-        log.info("Updating profile settings of user={}",phoneNumber);
-
-        try {
-            userManagementService.updateUserAndroidProfileSettings(user, displayName, language, AlertPreference.valueOf(preference));
-            return RestUtil.messageOkayResponse(RestMessage.PROFILE_SETTINGS_UPDATED);
-        } catch (IllegalArgumentException e){
-            log.info("Invalid arguments supplied " + displayName + " "+ code + " " + preference);
-            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.PROFILE_SETTINGS_ERROR);
-        }
-    }
-
     @RequestMapping(value="/profile/settings/{phoneNumber}/{code}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> getProfileSettings(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code){
         User user = userManagementService.findByInputNumber(phoneNumber);
@@ -197,7 +181,7 @@ public class UserRestController {
     }
 
     /*
-     note : it might be slightly more efficient to just have the integer directly from the client, _but_ there is some
+     note : it might be slightly more efficient to just have the integer (for notification priority) directly from the client, _but_ there is some
      uncertainty about how notification priorities will evolve, and integer meanings within core/services may shift, hence
      the use of strings for flexibility etc
       */

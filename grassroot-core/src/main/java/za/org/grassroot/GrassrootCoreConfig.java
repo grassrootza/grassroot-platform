@@ -27,7 +27,7 @@ import java.io.IOException;
 @ComponentScan("za.org.grassroot")
 @Import({StandaloneDatabaseConfig.class, StandaloneLocalPGConfig.class, StagingDatabaseConfig.class, ProductionDatabaseConfig.class})
 
-public class GrassRootCoreConfig {
+public class GrassrootCoreConfig {
 
 	@Bean
 	public PasswordEncoder getPasswordEncoder() {

@@ -110,13 +110,6 @@ public class BaseController {
 
     }
 
-    /**
-     *
-     * @param model
-     * @param messageType
-     * @param messageKey
-     * @param request
-     */
     public void addMessage(Model model, MessageType messageType, String messageKey, HttpServletRequest request) {
         model.addAttribute(messageType.getMessageKey(), getText(messageKey, request.getLocale()));
     }
@@ -125,25 +118,10 @@ public class BaseController {
         model.addAttribute(messageType.getMessageKey(), getText(messageKey, arguments, request.getLocale()));
     }
 
-    /**
-     *
-     * @param redirectAttributes
-     * @param messageType
-     * @param messageKey
-     * @param request
-     */
     public void addMessage(RedirectAttributes redirectAttributes, MessageType messageType, String messageKey, HttpServletRequest request) {
         redirectAttributes.addFlashAttribute(messageType.getMessageKey(), getText(messageKey, request.getLocale()));
     }
 
-    /**
-     *
-     * @param redirectAttributes
-     * @param messageType
-     * @param messageKey
-     * @param arguments
-     * @param request
-     */
     public void addMessage(RedirectAttributes redirectAttributes, MessageType messageType, String messageKey,Object [] arguments, HttpServletRequest request) {
         redirectAttributes.addFlashAttribute(messageType.getMessageKey(), getText(messageKey, arguments, request.getLocale()));
     }

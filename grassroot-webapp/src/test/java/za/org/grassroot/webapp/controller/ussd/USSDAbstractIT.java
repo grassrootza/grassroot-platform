@@ -15,13 +15,13 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
-import za.org.grassroot.core.GrassRootApplicationProfiles;
+import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.EventLogBroker;
 import za.org.grassroot.services.EventManagementService;
 import za.org.grassroot.services.UserManagementService;
-import za.org.grassroot.webapp.GrassRootWebApplicationConfig;
+import za.org.grassroot.webapp.GrassrootWebApplicationConfig;
 
 import javax.annotation.PostConstruct;
 import javax.net.ssl.*;
@@ -38,9 +38,9 @@ import java.util.List;
  * all in one place here. If this starts impacting test suite performance can undo.
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {GrassRootWebApplicationConfig.class})
+@SpringApplicationConfiguration(classes = {GrassrootWebApplicationConfig.class})
 @WebIntegrationTest(randomPort = true)
-@ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
+@ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class USSDAbstractIT {
 
     private Logger log = LoggerFactory.getLogger(USSDAbstractIT.class);

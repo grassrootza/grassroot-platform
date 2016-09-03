@@ -4,6 +4,7 @@ import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
+import org.mockito.Matchers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.web.servlet.MvcResult;
@@ -175,7 +176,11 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(model().attribute("groupModifier", instanceOf(GroupWrapper.class)));
 
         verify(groupBrokerMock, times(1)).load(dummyGroup.getUid());
-        verify(permissionBrokerMock, times(1)).isGroupPermissionAvailable(sessionTestUser, dummyGroup, null);
+        // verify(permissionBrokerMock, times(3)).isGroupPermissionAvailable(eq(sessionTestUser), eq(dummyGroup), Matchers.any(Permission.class));
+        verify(permissionBrokerMock, times(1)).validateGroupPermission(sessionTestUser, dummyGroup, null);
+        verify(permissionBrokerMock, times(1)).isGroupPermissionAvailable(sessionTestUser, dummyGroup, Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER);
+        verify(permissionBrokerMock, times(1)).isGroupPermissionAvailable(sessionTestUser, dummyGroup, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
+        verify(permissionBrokerMock, times(1)).isGroupPermissionAvailable(sessionTestUser, dummyGroup, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         verify(userManagementServiceMock, times(1)).load(sessionTestUser.getUid());
         verifyNoMoreInteractions(userManagementServiceMock);
     }

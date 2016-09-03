@@ -10,17 +10,17 @@ import org.springframework.test.annotation.Repeat;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.GrassRootServicesConfig;
-import za.org.grassroot.core.GrassRootApplicationProfiles;
+import za.org.grassroot.GrassrootServicesConfig;
+import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.services.util.TokenGeneratorService;
 
 /**
  * @author Lesetse Kimwaga
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {GrassRootServicesConfig.class, TestContextConfig.class})
+@SpringApplicationConfiguration(classes = {GrassrootServicesConfig.class, TestContextConfig.class})
 @Transactional
-@ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
+@ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class TokenGeneratorServiceTest {
 
     private Logger log = LoggerFactory.getLogger(TokenGeneratorServiceTest.class);

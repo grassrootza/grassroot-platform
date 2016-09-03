@@ -86,7 +86,6 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
 
                 if (handler instanceof HandlerMethod) {
                     HandlerMethod handlerMethod = (HandlerMethod) handler;
-
                 }
             }
         });
@@ -129,7 +128,7 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
         // adds "Cache-Control: must-revalidate".
         registry.addResourceHandler("/static/**")
                 .addResourceLocations("classpath:/static/")
-                .setCachePeriod(3600*24);
+                .setCachePeriod(0); // 3600 * 24
     }
 
     @Configuration
@@ -158,7 +157,7 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
     @Bean
     public LocaleResolver localeResolver() {
         SessionLocaleResolver sessionLocaleResolver = new SessionLocaleResolver();
-        sessionLocaleResolver.setDefaultLocale(Locale.UK); //defaulting back to proper English, not American
+        sessionLocaleResolver.setDefaultLocale(Locale.UK);
         return sessionLocaleResolver;
     }
 

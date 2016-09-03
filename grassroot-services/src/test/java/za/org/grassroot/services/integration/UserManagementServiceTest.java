@@ -9,8 +9,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
-import za.org.grassroot.GrassRootServicesConfig;
-import za.org.grassroot.core.GrassRootApplicationProfiles;
+import za.org.grassroot.GrassrootServicesConfig;
+import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.UserManagementService;
 
@@ -22,10 +22,10 @@ import static org.hamcrest.Matchers.equalTo;
  */
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {GrassRootServicesConfig.class, TestContextConfig.class})
+@ContextConfiguration(classes = {GrassrootServicesConfig.class, TestContextConfig.class})
 @EnableTransactionManagement
 @DirtiesContext
-@ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
+@ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class UserManagementServiceTest {
 
     @Autowired

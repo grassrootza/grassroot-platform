@@ -53,8 +53,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/404")
                 .antMatchers("/500").
                 antMatchers("/403");
-
-
     }
 
     @Override

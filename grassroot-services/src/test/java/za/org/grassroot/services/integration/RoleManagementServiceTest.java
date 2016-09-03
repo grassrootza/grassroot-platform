@@ -10,8 +10,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.AbstractTransactionalJUnit4SpringContextTests;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import za.org.grassroot.GrassRootServicesConfig;
-import za.org.grassroot.core.GrassRootApplicationProfiles;
+import za.org.grassroot.GrassrootServicesConfig;
+import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.GroupBroker;
@@ -27,9 +27,9 @@ import static za.org.grassroot.services.enums.GroupPermissionTemplate.DEFAULT_GR
  * Created by luke on 2015/11/19.
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {GrassRootServicesConfig.class, TestContextConfig.class})
+@ContextConfiguration(classes = {GrassrootServicesConfig.class, TestContextConfig.class})
 @Transactional
-@ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
+@ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class RoleManagementServiceTest extends AbstractTransactionalJUnit4SpringContextTests {
 
     private static final Logger log = LoggerFactory.getLogger(RoleManagementServiceTest.class);

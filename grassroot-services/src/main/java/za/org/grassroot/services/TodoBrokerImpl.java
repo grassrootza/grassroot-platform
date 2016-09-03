@@ -10,6 +10,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.TodoInfoNotification;
 import za.org.grassroot.core.domain.notification.TodoReminderNotification;
@@ -329,21 +330,34 @@ public class TodoBrokerImpl implements TodoBroker {
 	}
 
 	@Override
-	public Todo update(String userUid, String uid, String message, LocalDateTime actionByDate, int reminderMinutes, Set<String> assignedMemberUids) {
+	@Transactional
+	public Todo update(String userUid, String taskUid, String message, String description, LocalDateTime actionByDate, Integer reminderMinutes, Set<String> assignedMemberUids) {
+		Objects.requireNonNull(userUid);
+		Objects.requireNonNull(taskUid);
 
-		Instant convertedActionByDate = convertToSystemTime(actionByDate, getSAST());
-		Todo todo = todoRepository.findOneByUid(uid);
+		Todo todo = todoRepository.findOneByUid(taskUid);
 		User user = userRepository.findOneByUid(userUid);
-		todo.setMessage(message);
-		todo.setActionByDate(convertedActionByDate);
-		todo.setReminderMinutes(reminderMinutes);
 
-		if(assignedMemberUids !=null && !assignedMemberUids.isEmpty()){
+		if (!StringUtils.isEmpty(message)) {
+			todo.setMessage(message);
+		}
+
+		if (actionByDate != null) {
+			Instant convertedActionByDate = convertToSystemTime(actionByDate, getSAST());
+			if (!convertedActionByDate.equals(todo.getActionByDate())) {
+				todo.setActionByDate(convertedActionByDate);
+			}
+		}
+
+		if (reminderMinutes != null) {
+			todo.setReminderMinutes(reminderMinutes);
+			todo.calculateScheduledReminderTime();
+		}
+
+		if(assignedMemberUids != null && !assignedMemberUids.isEmpty()){
 			assignedMemberUids.add(userUid);
 			todo.assignMembers(assignedMemberUids);
 		}
-
-		todoRepository.save(todo);
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 		TodoLog todoLog = new TodoLog(TodoLogType.CHANGED, user, todo, null);
@@ -354,23 +368,24 @@ public class TodoBrokerImpl implements TodoBroker {
 
 		logsAndNotificationsBroker.storeBundle(bundle);
 
-
 		return todo;
-
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public boolean hasReplicatedEntries(Todo todo) {
 		return todoRepository.countReplicatedEntries(todo.getAncestorGroup(), todo.getMessage(), todo.getCreatedDateTime()) != 0;
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public List<Todo> getAllReplicatedEntriesFromParent(Todo todo) {
 		return todoRepository.findByReplicatedGroupAndMessageAndActionByDateOrderByParentGroupIdAsc(todo.getAncestorGroup(), todo.getMessage(),
 				todo.getActionByDate());
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public Todo getParentTodoEntry(Todo todo) {
 		Group parentTodoGroup = todo.getReplicatedGroup();
 		if (parentTodoGroup == null) {

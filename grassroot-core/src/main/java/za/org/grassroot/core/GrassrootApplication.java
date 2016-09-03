@@ -13,17 +13,17 @@ import static org.springframework.util.StringUtils.arrayToCommaDelimitedString;
  * Enforces Profile Semantics
  * @author Lesetse Kimwaga
  */
-public class GrassRootApplication extends SpringApplication {
+public class GrassrootApplication extends SpringApplication {
 
-    private static final Logger logger = LoggerFactory.getLogger(GrassRootApplication.class);
+    private static final Logger logger = LoggerFactory.getLogger(GrassrootApplication.class);
 
-    public GrassRootApplication(Class<?> configClass) {
+    public GrassrootApplication(Class<?> configClass) {
         super(configClass);
     }
 
 
     /**
-     * Enforce activation of profiles defined in {@link GrassRootApplicationProfiles}.
+     * Enforce activation of profiles defined in {@link GrassrootApplicationProfiles}.
      */
     @Override
     protected void configureProfiles(ConfigurableEnvironment environment, String[] args) {
@@ -31,14 +31,14 @@ public class GrassRootApplication extends SpringApplication {
 
         int numberActive = 0;
 
-        if (environment.acceptsProfiles(GrassRootApplicationProfiles.INMEMORY)) numberActive++;
-        if (environment.acceptsProfiles(GrassRootApplicationProfiles.LOCAL_PG)) numberActive++;
-        if (environment.acceptsProfiles(GrassRootApplicationProfiles.STAGING)) numberActive++;
-        if (environment.acceptsProfiles(GrassRootApplicationProfiles.PRODUCTION)) numberActive++;
+        if (environment.acceptsProfiles(GrassrootApplicationProfiles.INMEMORY)) numberActive++;
+        if (environment.acceptsProfiles(GrassrootApplicationProfiles.LOCAL_PG)) numberActive++;
+        if (environment.acceptsProfiles(GrassrootApplicationProfiles.STAGING)) numberActive++;
+        if (environment.acceptsProfiles(GrassrootApplicationProfiles.PRODUCTION)) numberActive++;
 
         if (numberActive > 1) {
             throw new IllegalStateException(format("Only one of the following profiles may be specified: [%s]",
-                    arrayToCommaDelimitedString(new String[] {GrassRootApplicationProfiles.PRODUCTION, GrassRootApplicationProfiles.INMEMORY, GrassRootApplicationProfiles.LOCAL_PG })));
+                    arrayToCommaDelimitedString(new String[] {GrassrootApplicationProfiles.PRODUCTION, GrassrootApplicationProfiles.INMEMORY, GrassrootApplicationProfiles.LOCAL_PG })));
         }
 
         if (numberActive == 1) {
@@ -47,7 +47,7 @@ public class GrassRootApplication extends SpringApplication {
         }
         else {
             logger.info("The default 'standalone' profile is active because no other profiles have been specified.");
-            environment.addActiveProfile(GrassRootApplicationProfiles.INMEMORY);
+            environment.addActiveProfile(GrassrootApplicationProfiles.INMEMORY);
         }
     }
 }

@@ -8,8 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import za.org.grassroot.GrassRootServicesConfig;
-import za.org.grassroot.core.GrassRootApplicationProfiles;
+import za.org.grassroot.GrassrootServicesConfig;
+import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.core.repository.PreviousPeriodUserLocationRepository;
@@ -24,8 +24,8 @@ import java.util.HashSet;
 import java.util.List;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {GrassRootServicesConfig.class, TestContextConfig.class})
-@ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
+@ContextConfiguration(classes = {GrassrootServicesConfig.class, TestContextConfig.class})
+@ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class GeoLocationBrokerTest {
 	@Autowired
 	private GeoLocationBroker geoLocationBroker;

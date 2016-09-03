@@ -3,7 +3,7 @@ package za.org.grassroot.core;
 /**
  * @author Lesetse Kimwaga
  */
-public final class GrassRootApplicationProfiles {
+public final class GrassrootApplicationProfiles {
 
 
     /**

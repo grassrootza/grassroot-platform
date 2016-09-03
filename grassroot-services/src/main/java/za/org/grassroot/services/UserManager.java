@@ -24,6 +24,7 @@ import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.services.GcmService;
 import za.org.grassroot.integration.services.SmsSendingService;
 import za.org.grassroot.services.async.AsyncUserLogger;
+import za.org.grassroot.services.exception.InvalidTokenException;
 import za.org.grassroot.services.exception.NoSuchProfileException;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.exception.UserExistsException;
@@ -214,18 +215,18 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public User updateUserAndroidProfileSettings(User user, String name, String language, AlertPreference alertPreference)
+    @Transactional
+    public void updateUser(String userUid, String displayName, AlertPreference alertPreference, Locale locale)
             throws IllegalArgumentException {
-        Objects.nonNull(user);
-        Objects.nonNull(name);
-        Objects.nonNull(language);
-        Objects.nonNull(alertPreference);
-        user.setDisplayName(name);
-        user.setLanguageCode(language);
+
+        Objects.nonNull(userUid);
+
+        User user = userRepository.findOneByUid(userUid);
+
+        user.setDisplayName(displayName);
+        user.setLanguageCode(locale.getLanguage());
         user.setAlertPreference(alertPreference);
         user.setNotificationPriority(alertPreference.getPriority());
-
-        return userRepository.saveAndFlush(user);
     }
 
     @Override
@@ -433,12 +434,15 @@ public class UserManager implements UserManagementService, UserDetailsService {
         log.info("Found this user: " + user);
 
         if (passwordTokenService.isShortLivedOtpValid(user.getPhoneNumber(), token.trim())) {
+            log.info("came in as true, with this token :" + token);
             String encodedPassword = passwordEncoder.encode(newPassword);
             user.setPassword(encodedPassword);
             user = userRepository.save(user);
             passwordTokenService.expireVerificationCode(user.getUid(), VerificationCodeType.SHORT_OTP);
+            return user;
+        } else {
+            throw new InvalidTokenException("Invalid OTP submitted");
         }
-        return user;
     }
 
     @Override

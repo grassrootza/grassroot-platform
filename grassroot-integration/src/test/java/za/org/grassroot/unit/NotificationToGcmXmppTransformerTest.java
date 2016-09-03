@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import za.org.grassroot.core.GrassRootApplicationProfiles;
+import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.integration.xmpp.NotificationToGcmXmppTransformer;
 
 
@@ -17,7 +17,7 @@ import za.org.grassroot.integration.xmpp.NotificationToGcmXmppTransformer;
  */
 @SpringApplicationConfiguration(classes = {NotificationToGcmXmppTransformer.class,TestContextConfig.class})
 @RunWith(SpringJUnit4ClassRunner.class)
-@ActiveProfiles(GrassRootApplicationProfiles.INMEMORY)
+@ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class NotificationToGcmXmppTransformerTest {
 
     private Logger log = LoggerFactory.getLogger(NotificationToGcmXmppTransformerTest.class);

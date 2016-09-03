@@ -12,7 +12,7 @@ import javax.sql.DataSource;
  * @author Luke Jordan
  */
 @Configuration
-@Profile(GrassRootApplicationProfiles.STAGING)
+@Profile(GrassrootApplicationProfiles.STAGING)
 public class StagingDatabaseConfig extends DatabaseConfig {
 
     private static final Logger log = LoggerFactory.getLogger(StagingDatabaseConfig.class);

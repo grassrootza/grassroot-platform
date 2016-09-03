@@ -36,7 +36,7 @@ public interface UserManagementService {
 
     User createAndroidUserProfile(UserDTO userDTO) throws UserExistsException;
 
-    User updateUserAndroidProfileSettings(User user,String name, String language, AlertPreference alertPreference);
+    void updateUser(String userUid, String displayName, AlertPreference alertPreference, Locale locale);
 
     void updateDisplayName(String userUid, String displayName);
 

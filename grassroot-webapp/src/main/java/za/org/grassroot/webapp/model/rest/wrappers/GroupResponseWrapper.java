@@ -10,6 +10,7 @@ import za.org.grassroot.webapp.util.RestUtil;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -45,11 +46,14 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
     private List<String> invalidNumbers; // for added member / group creation error handling
 
     private GroupResponseWrapper(Group group, Role role, boolean hasTasks) {
+        Objects.requireNonNull(group);
+        Objects.requireNonNull(role);
+
         this.groupUid = group.getUid();
         this.groupName = group.getName("");
         this.groupCreator = group.getCreatedByUser().getDisplayName();
         this.groupMemberCount = group.getMemberships().size();
-        this.role = (role!=null)?role.getName():null;
+        this.role = role.getName();
         this.permissions = RestUtil.filterPermissions(role.getPermissions());
         this.hasTasks = hasTasks;
         this.discoverable = group.isDiscoverable();
@@ -63,9 +67,11 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
             this.joinCode = "NONE";
         }
 
-        this.members = group.getMemberships().stream()
-                .map(membership -> new MembershipResponseWrapper(group, membership.getUser(), membership.getRole(), false))
-                .collect(Collectors.toList());
+        if (permissions.contains(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
+            this.members = group.getMemberships().stream()
+                    .map(membership -> new MembershipResponseWrapper(group, membership.getUser(), membership.getRole(), false))
+                    .collect(Collectors.toList());
+        }
 
         this.invalidNumbers = new ArrayList<>();
     }
@@ -185,7 +191,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
                 ", lastChangeType=" + lastChangeType +
                 ", lastMajorChangeMillis=" + lastMajorChangeMillis +
                 ", groupName='" + groupName + '\'' +
-                ", members='" + members.size() + '\'' +
+                ", members='" + ((members == null) ? "none" : members.size()) + '\'' +
                 ", invalidNumbers='" + (invalidNumbers != null ? invalidNumbers.toString() : "none") + '\'' +
                 '}';
     }

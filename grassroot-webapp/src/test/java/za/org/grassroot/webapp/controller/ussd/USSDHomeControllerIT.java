@@ -28,7 +28,7 @@ public class USSDHomeControllerIT extends USSDAbstractIT {
 
     private final String startMenuEN = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>" +
             "<request>" +
-            "    <headertext>Hi! Welcome to GrassRoot. What will you do?</headertext>" +
+            "    <headertext>Hi! Welcome to Grassroot. What will you do?</headertext>" +
             "    <options>" +
             "        <option command=\"1\" order=\"1\" callback=\"http://localhost:8080/ussd/mtg/start\"" +
             "                display=\"true\">Call a meeting</option>\n" +
@@ -45,7 +45,7 @@ public class USSDHomeControllerIT extends USSDAbstractIT {
 
     private final String startMenuZU = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>" +
             "<request>" +
-            "    <headertext>Yebo, siyakwamukela KuGrassRoot. Uzokwenzani?</headertext>" +
+            "    <headertext>Yebo, siyakwamukela KuGrassroot. Uzokwenzani?</headertext>" +
             "    <options>" +
             "        <option command=\"1\" order=\"1\" callback=\"http://localhost:8080/ussd/mtg/start\"" +
             "                display=\"true\">Biza umhlangano</option>\n" +
