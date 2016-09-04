@@ -1,4 +1,7 @@
 UPDATE user_profile SET alert_preference = 'NOTIFY_NEW_AND_REMINDERS' WHERE alert_preference = 'NOTIFY_ALL_EVENTS';
+UPDATE user_profile SET alert_preference = 'NOTIFY_NEW_AND_REMINDERS' WHERE alert_preference = 'NOTIFY_NEW_EVENTS';
+UPDATE user_profile SET alert_preference = 'NOTIFY_EVERYTHING' WHERE alert_preference = 'NOTIFY_NEW_EVENTS_AND_GROUP_CHANGES';
+UPDATE user_profile SET alert_preference = 'NOTIFY_NEW_AND_REMINDERS' WHERE alert_preference = 'NOTIFY_GROUP_CHANGES';
 
 ALTER TABLE action_todo_completion_confirmation RENAME COLUMN log_book_id TO action_todo_id;
 ALTER TABLE event RENAME COLUMN parent_log_book_id TO parent_action_todo_id;

@@ -5,7 +5,6 @@ package za.org.grassroot.core.enums;
  */
 public enum AlertPreference {
 
-    NOTIFY_ALL_EVENTS(1), // this is legacy ... to convert to NOTIFY_NEW_AND_REMINDERS
     NOTIFY_EVERYTHING(0),
     NOTIFY_NEW_AND_REMINDERS(1),
     NOTIFY_ONLY_NEW(2),

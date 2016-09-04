@@ -113,7 +113,7 @@ public class User implements UserDetails, Comparable<User> {
         this.languageCode = "en";
         this.messagingPreference = UserMessagingPreference.SMS; // as default
         this.createdDateTime = Instant.now();
-        this.alertPreference = AlertPreference.NOTIFY_ALL_EVENTS;
+        this.alertPreference = AlertPreference.NOTIFY_NEW_AND_REMINDERS;
     }
 
     /**
