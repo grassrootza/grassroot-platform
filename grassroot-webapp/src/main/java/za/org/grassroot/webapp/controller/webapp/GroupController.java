@@ -275,8 +275,8 @@ public class GroupController extends BaseController {
 
     @RequestMapping(value = "create", method = RequestMethod.POST)
     public String createGroup(Model model, @ModelAttribute("groupCreator") @Validated GroupWrapper groupCreator,
-                              @RequestParam("groupTemplate") String templateRaw,
-                              BindingResult bindingResult, HttpServletRequest request, RedirectAttributes redirectAttributes) {
+                              BindingResult bindingResult, @RequestParam("groupTemplate") String templateRaw,
+                              HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
         Long timeStart, timeEnd;
         GroupPermissionTemplate template = GroupPermissionTemplate.fromString(templateRaw); // todo: set in wrapper
@@ -285,16 +285,20 @@ public class GroupController extends BaseController {
 
         if (bindingResult.hasErrors()) {
             model.addAttribute("groupCreator", groupCreator);
-            addMessage(model, MessageType.ERROR, "group.creation.error", request);
+            addMessage(model, MessageType.ERROR, "user.enter.error.phoneNumber.invalid", request);
+            model.addAttribute("roles", roleDescriptions);
+            model.addAttribute("permissionTemplates", permissionTemplates);
+            model.addAttribute("reminderOptions", reminderMinuteOptions(false)); // todo :create helper method for these
             return "group/create";
         }
 
         timeStart = System.currentTimeMillis();
         User user = getUserProfile();
         String parentUid = (groupCreator.getHasParent()) ? groupCreator.getParent().getUid() : null;
+
         Group groupCreated = groupBroker.create(user.getUid(), groupCreator.getGroupName(), parentUid,
-                                                new HashSet<>(groupCreator.getAddedMembers()), template, null,
-                                                groupCreator.getReminderMinutes(), true);
+                new HashSet<>(groupCreator.getAddedMembers()), template, null,
+                groupCreator.getReminderMinutes(), true);
         timeEnd = System.currentTimeMillis();
         log.info(String.format("User load & group creation: %d msecs", timeEnd - timeStart));
 
@@ -739,14 +743,17 @@ public class GroupController extends BaseController {
     /**
      * SECTION: Group history pages
      * todo: maybe separate this off into its own controller if it starts to become overly complex
+     * todo : definitely separate out these controllers
      */
 
     @RequestMapping(value = "history")
     public String viewGroupHistory(Model model, @RequestParam String groupUid,
                                    @RequestParam(value = "monthToView", required = false) String monthToView) {
 
-        Group group = groupBroker.load(groupUid); // todo: use permissions
-        if (!isUserPartOfGroup(getUserProfile(), group)) throw new AccessDeniedException("");
+        Group group = groupBroker.load(groupUid);
+        User user = userManagementService.load(getUserProfile().getUid());
+
+        permissionBroker.validateGroupPermission(user, group, null);
 
         final LocalDateTime startDateTime;
         final LocalDateTime endDateTime;

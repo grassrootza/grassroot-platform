@@ -94,8 +94,10 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
     @Override
     @Transactional
     public void recordUserInputtedDateTime(String userUid, String dateTimeString, String action, UserInterfaceType interfaceType) {
+
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(dateTimeString);
+
         String description = ((action != null) ? "action: " + action + ", " : "") + "input: " + dateTimeString;
         log.info("Storing user inputted date-time as ... {}", description);
         userLogRepository.save(new UserLog(userUid, UserLogType.USSD_DATE_ENTERED, description, interfaceType));

@@ -18,6 +18,7 @@ import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.EventLogBroker;
 import za.org.grassroot.services.EventRequestBroker;
+import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -235,16 +236,34 @@ public class USSDVoteController extends USSDController {
     @RequestMapping(value = path + "send")
     @ResponseBody
     public Request voteSend(@RequestParam(value = phoneNumber) String inputNumber,
-                            @RequestParam(value = entityUidParam) String requestUid) throws Exception {
+                            @RequestParam(value = entityUidParam) String requestUid) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber, null);
-        String createdUid = eventRequestBroker.finish(user.getUid(), requestUid, true);
+        USSDMenu menu;
 
-        Event vote = eventBroker.load(createdUid);
-        log.info("Vote details confirmed! Closing date and time: " + vote.getEventDateTimeAtSAST().format(dateTimeFormat));
-        USSDMenu menu = new USSDMenu(getMessage(thisSection, "send", promptKey, user), optionsHomeExit(user));
+        try {
+            String createdUid = eventRequestBroker.finish(user.getUid(), requestUid, true);
+            Event vote = eventBroker.load(createdUid);
+            log.info("Vote details confirmed! Closing date and time: " + vote.getEventDateTimeAtSAST().format(dateTimeFormat));
+            menu = new USSDMenu(getMessage(thisSection, "send", promptKey, user), optionsHomeExit(user));
+            return menuBuilder(menu);
+        } catch (EventStartTimeNotInFutureException e) {
+            final String messageKey = USSDSection.VOTES.toKey() + "send.err.past.";
+            menu = new USSDMenu(getMessage(messageKey + promptKey, user));
+            menu.setFreeText(false);
+            menu.addMenuOption(voteMenus + "send-reset" + entityUidUrlSuffix + requestUid, getMessage(messageKey + "yes", user));
+            menu.addMenuOption(backVoteUrl("time", requestUid), getMessage(messageKey + "no", user));
+            return menuBuilder(menu);
+        }
+    }
 
-        return menuBuilder(menu);
+    @RequestMapping(value = path + "send-reset")
+    public Request voteSendResetTime(@RequestParam(value = phoneNumber) String inputNumber,
+                                     @RequestParam(value = entityUidParam) String requestUid) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber, null);
+        setStandardTime(requestUid, "instant", user);
+        eventRequestBroker.finish(user.getUid(), requestUid, true);
+        return menuBuilder(new USSDMenu(getMessage(thisSection, "send", promptKey, user), optionsHomeExit(user)));
     }
 
     /**
@@ -333,32 +352,6 @@ public class USSDVoteController extends USSDController {
 
         return menuBuilder(menu);
     }
-
-    /*@RequestMapping(value = path + "change-vote")
-    @ResponseBody
-    public Request changeVoteMenu(@RequestParam(value = phoneNumber) String inputNumber,
-                                  @RequestParam(value = entityUidParam) String eventUid) throws URISyntaxException {
-
-        final User user = userManager.findByInputNumber(inputNumber, saveVoteMenu("change-vote", eventUid));
-        final Event vote = eventBroker.load(eventUid);
-        final String suffix = entityUidUrlSuffix + eventUid;
-
-        USSDMenu menu;
-        if (vote.getEventStartDateTime().isAfter(Instant.now())) {
-            menu = new USSDMenu("Sorry! This vote is closed, you cannot change your vote");
-            menu.addMenuOption(voteMenus + "details" + suffix, "Back to view vote");
-            menu.addMenuOption(voteMenus + startMenu, "Back to votes menu");
-            menu.addMenuOptions(optionsHomeExit(user));
-        } else {
-            final EventLog eventLog = eventLogManager.getEventLogOfUser(vote, user, EventLogType.RSVP);
-            final String[] fields = { vote.getName(), eventLog.getMessage().toLowerCase() };
-            menu = new USSDMenu("You voted X. What do you want to do?");
-            menu.addMenuOption(voteMenus + "change-vote-do" + suffix, "Vote the other way");
-            menu.addMenuOption(voteMenus + "details" + suffix, "Go back");
-        }
-
-        return menuBuilder(menu);
-    }*/
 
     @RequestMapping(value = path + "change-vote")
     @ResponseBody

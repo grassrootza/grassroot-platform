@@ -97,7 +97,9 @@ public class USSDEventUtil extends USSDUtil {
                                                  includeGroupName, pageNumber - 1), "Back");
         if (includeNewOption)
             menu.addMenuOption(section.toPath() + menuForNew, optionTextForNew);
-         menu.addMenuOption("start", getMessage(section,"start","options.back",user));
+
+        // use start_force so it clears the cache (also todo : add cache clearing to this)
+        menu.addMenuOption("start_force", getMessage(section, "start", "options.back", user));
         return menu;
     }
 

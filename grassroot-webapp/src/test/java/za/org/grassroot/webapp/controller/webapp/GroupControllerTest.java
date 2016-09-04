@@ -4,7 +4,6 @@ import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
-import org.mockito.Matchers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.web.servlet.MvcResult;
@@ -518,7 +517,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(todoBrokerMock.getTodosInPeriod(testGroup, start, end)).thenReturn(dummyLogbooks);
         when(groupBrokerMock.getLogsForGroup(testGroup, start, end)).thenReturn(dummyGroupLogs);
         when(groupBrokerMock.getMonthsGroupActive(testGroup.getUid())).thenReturn(dummyMonths);
-        when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, testGroup, null)).thenReturn(true);
 
         mockMvc.perform(get("/group/history").param("groupUid", testGroup.getUid())).
                 andExpect(view().name("group/history")).
@@ -531,8 +529,9 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         verify(groupBrokerMock, times(1)).load(testGroup.getUid());
         verify(groupBrokerMock, times(1)).getMonthsGroupActive(testGroup.getUid());
         verify(groupBrokerMock, times(1)).getLogsForGroup(testGroup, start, end);
-        verify(permissionBrokerMock, times(1)).isGroupPermissionAvailable(sessionTestUser, testGroup, null);
+        verify(permissionBrokerMock, times(1)).validateGroupPermission(sessionTestUser, testGroup, null);
         verifyNoMoreInteractions(groupBrokerMock);
+        verify(userManagementServiceMock, times(1)).load(sessionTestUser.getUid());
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventManagementServiceMock, times(1)).getGroupEventsInPeriod(testGroup, start, end);
         verifyNoMoreInteractions(eventManagementServiceMock);
@@ -559,7 +558,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         LocalDateTime end = start.plusMonths(1L);
 
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
-        when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, testGroup, null)).thenReturn(true);
         when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
         when(eventManagementServiceMock.getGroupEventsInPeriod(testGroup, start, end)).thenReturn(dummyEvents);
         when(todoBrokerMock.getTodosInPeriod(testGroup, start, end)).thenReturn(dummyTodos);
@@ -575,10 +573,11 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
                 andExpect(model().attribute("monthsToView", is(dummyMonths)));
 
         verify(groupBrokerMock, times(1)).load(testGroup.getUid());
-        verify(permissionBrokerMock, times(1)).isGroupPermissionAvailable(sessionTestUser, testGroup, null);
+        verify(permissionBrokerMock, times(1)).validateGroupPermission(sessionTestUser, testGroup, null);
         verify(groupBrokerMock, times(1)).getMonthsGroupActive(testGroup.getUid());
         verify(groupBrokerMock, times(1)).getLogsForGroup(testGroup, start, end);
         verifyNoMoreInteractions(groupBrokerMock);
+        verify(userManagementServiceMock, times(1)).load(sessionTestUser.getUid());
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventManagementServiceMock, times(1)).getGroupEventsInPeriod(testGroup, start, end);
         verifyNoMoreInteractions(eventManagementServiceMock);

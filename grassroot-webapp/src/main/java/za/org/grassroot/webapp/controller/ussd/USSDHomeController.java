@@ -143,8 +143,8 @@ public class USSDHomeController extends USSDController {
         } else {
             if (!sessionUser.isHasInitiatedSession())
                 userManager.setInitiatedSession(sessionUser);
-            USSDResponseTypes neededResponse = neededResponse(sessionUser);
 
+            USSDResponseTypes neededResponse = neededResponse(sessionUser);
             if (!neededResponse.equals(USSDResponseTypes.NONE)) {
                 openingMenu = requestUserResponse(sessionUser, neededResponse);
             } else {
