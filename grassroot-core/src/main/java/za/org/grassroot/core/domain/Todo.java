@@ -19,7 +19,7 @@ import java.util.Set;
                 @Index(name = "idx_action_todo_replicated_group_id", columnList = "replicated_group_id")})
 public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, VoteContainer, MeetingContainer {
 
-    public static final double COMPLETION_PERCENTAGE_BOUNDARY = 50;
+    public static final double COMPLETION_PERCENTAGE_BOUNDARY = 20; // reducing this to 20 until we see larger proportions of response
     public static final int DEFAULT_NUMBER_REMINDERS = 2;
 
     @Column(name = "cancelled")
@@ -40,7 +40,7 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
 
     @ManyToMany(cascade = CascadeType.ALL)
     @JoinTable(name = "action_todo_assigned_members",
-            joinColumns = @JoinColumn(name = "log_book_id", nullable = false),
+            joinColumns = @JoinColumn(name = "action_todo_id", nullable = false),
             inverseJoinColumns = @JoinColumn(name = "user_id", nullable = false)
     )
     private Set<User> assignedMembers = new HashSet<>();

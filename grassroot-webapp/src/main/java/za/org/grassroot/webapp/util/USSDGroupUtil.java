@@ -366,7 +366,7 @@ public class USSDGroupUtil extends USSDUtil {
             case TODO:
                 String logBookUid = todoRequestBroker.create(user.getUid(), group.getUid()).getUid();
                 cacheManager.putUssdMenuForUser(user.getPhoneNumber(), saveToDoMenu(subjectMenu, logBookUid));
-                nextUrl = "log/due_date" + logbookIdUrlSuffix + logBookUid;
+                nextUrl = "todo/due_date" + logbookIdUrlSuffix + logBookUid;
                 menu = new USSDMenu(getMessage(section, subjectMenu, promptKey + ".skipped", group.getDisplayName(""), user), nextUrl);
                 break;
             case GROUP_MANAGER:

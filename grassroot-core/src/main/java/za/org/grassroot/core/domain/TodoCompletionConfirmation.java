@@ -5,7 +5,7 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "action_todo_completion_confirmation",
-		uniqueConstraints = @UniqueConstraint(name = "uk_compl_confirmation_action_todo_member", columnNames = {"log_book_id", "member_id"}))
+		uniqueConstraints = @UniqueConstraint(name = "uk_compl_confirmation_action_todo_member", columnNames = {"action_todo_id", "member_id"}))
 public class TodoCompletionConfirmation {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -13,11 +13,11 @@ public class TodoCompletionConfirmation {
 	private Long id;
 
 	@ManyToOne(optional = false)
-	@JoinColumn(name = "member_id", nullable = false, foreignKey = @ForeignKey(name = "fk_log_book_compl_confirm_member"))
+	@JoinColumn(name = "member_id", nullable = false, foreignKey = @ForeignKey(name = "fk_action_todo_compl_confirm_member"))
 	private User member;
 
 	@ManyToOne(optional = false)
-	@JoinColumn(name = "log_book_id", nullable = false, foreignKey = @ForeignKey(name = "fk_log_book_compl_confirm_log_book"))
+	@JoinColumn(name = "action_todo_id", nullable = false, foreignKey = @ForeignKey(name = "fk_action_todo_compl_confirm_action_todo"))
 	private Todo todo;
 
 	@Column(name = "completion_time")

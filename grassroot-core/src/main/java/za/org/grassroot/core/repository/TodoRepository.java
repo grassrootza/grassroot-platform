@@ -24,7 +24,7 @@ public interface TodoRepository extends JpaRepository<Todo, Long> {
     // todo: (maybe using Spring Data JPA Specification to compose the query programmatically !?)
 
     /*
-    Retrieve all logbook entries for all the groups of a particular user
+    Retrieve all action/to-do entries for all the groups of a particular user
      */
     List<Todo> findByParentGroupMembershipsUserAndActionByDateGreaterThanAndCancelledFalse(User user, Instant start);
     List<Todo> findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThanAndCancelledFalse(User user, Instant start, Instant end, double maxCompletionPercentage, Sort sort);
@@ -33,13 +33,13 @@ public interface TodoRepository extends JpaRepository<Todo, Long> {
     Page<Todo> findByParentGroupMembershipsUserAndCompletionPercentageLessThanOrderByActionByDateDesc(User user, double maxCompletionPercentage, Pageable pageable);
 
     /*
-    Retrieve all logbook entries assigned to a particular user
+    Retrieve all action/to-do entries assigned to a particular user
      */
     List<Todo> findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(User user, Instant start, Instant end, double minCompletionPercentage, Sort sort);
     List<Todo> findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageLessThan(User user, Instant start, Instant end, double maxCompletionPercentage, Sort sort);
 
     /*
-    Retrieve logbook entries for a group (with variants)
+    Retrieve action/to-do entries for a group (with variants)
      */
     List<Todo> findByParentGroupAndCancelledFalse(Group group);
     List<Todo> findByParentGroupAndCreatedDateTimeBetween(Group group, Instant start, Instant end, Sort sort);
@@ -54,7 +54,7 @@ public interface TodoRepository extends JpaRepository<Todo, Long> {
     List<Todo> findByParentGroupAndMessageAndCreatedDateTime(Group group, String message, Instant createdDateTime);
     List<Todo> findByReplicatedGroupAndMessageAndActionByDateOrderByParentGroupIdAsc(Group replicatedGroup, String message, Instant actionByDateTime);
 
-    // methods for analyzing logbooks (for admin)
+    // methods for analyzing action/to-do (for admin)
     Long countByCreatedDateTimeBetween(Instant start, Instant end);
 
     @Query(value = "select l.* from action_todo l " +

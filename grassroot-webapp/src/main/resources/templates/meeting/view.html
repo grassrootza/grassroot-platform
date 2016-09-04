@@ -33,7 +33,7 @@
           <button type="button" class="btn btn-default" data-toggle="modal" data-target="#dateTimeChange">Change date, time or location</button>
           <button type="button" class="btn btn-default" data-toggle="modal" data-target="#cancelMeeting">Cancel meeting</button>
           <!-- put this back when do implementation of event/logbook chaining -->
-          <!-- <a th:href="@{/log/create/meeting(meetingUid=${meeting.uid})}"><button type="button" class="btn btn-default">Create meeting to-do</button></a> -->
+          <!-- <a th:href="@{/to-do/create/meeting(meetingUid=${meeting.uid})}"><button type="button" class="btn btn-default">Create meeting to-do</button></a> -->
         </div>
       </div>
     </div>
@@ -43,7 +43,7 @@
         <div class="col-md-6 col-md-offset-3">
           <ul class="list-group">
             <li class="list-group-item" th:each="todo : ${todos}">
-              <a th:href="@{/log/details(logBookUid=${todo.uid})}"><span th:text="${todo.message}">Text</span></a>
+              <a th:href="@{/todo/details(logBookUid=${todo.uid})}"><span th:text="${todo.message}">Text</span></a>
             </li>
           </ul>
         </div>

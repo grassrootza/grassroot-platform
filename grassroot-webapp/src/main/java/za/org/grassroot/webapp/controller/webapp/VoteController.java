@@ -13,6 +13,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.services.*;
+import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.EventWrapper;
 
@@ -80,15 +81,20 @@ public class VoteController extends BaseController {
         log.info("Vote passed back to us: " + vote.toString());
         String groupUid = (selectedGroupUid == null) ? vote.getParentUid() : selectedGroupUid;
 
-        eventBroker.createVote(getUserProfile().getUid(), groupUid, JpaEntityType.GROUP, vote.getTitle(), vote.getEventDateTime(),
-                               vote.isIncludeSubGroups(), vote.isRelayable(), vote.getDescription(), Collections.emptySet());
-
-        log.info("Stored vote, at end of creation: " + vote.toString());
-
-        // todo : ask person who called vote for vote (and, in general, add that to group view)
-        addMessage(redirectAttributes, MessageType.SUCCESS, "vote.creation.success", request);
-        redirectAttributes.addAttribute("groupUid", groupUid);
-        return "redirect:/group/view";
+        try {
+            eventBroker.createVote(getUserProfile().getUid(), groupUid, JpaEntityType.GROUP, vote.getTitle(), vote.getEventDateTime(),
+                    vote.isIncludeSubGroups(), vote.isRelayable(), vote.getDescription(), Collections.emptySet());
+            log.info("Stored vote, at end of creation: " + vote.toString());
+            addMessage(redirectAttributes, MessageType.SUCCESS, "vote.creation.success", request);
+            redirectAttributes.addAttribute("groupUid", groupUid);
+            return "redirect:/group/view";
+        } catch (EventStartTimeNotInFutureException e) {
+            addMessage(model, MessageType.ERROR, "vote.creation.time.error", request);
+            Group group = groupBroker.load(groupUid);
+            vote.setParentUid(groupUid);
+            model.addAttribute("group", group);
+            return "vote/create";
+        }
     }
 
     @RequestMapping("view")

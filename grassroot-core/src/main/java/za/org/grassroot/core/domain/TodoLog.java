@@ -11,7 +11,7 @@ import java.util.Objects;
  */
 @Entity
 @Table(name = "action_todo_log",
-		indexes = {@Index(name = "idx_action_todo_log_actiontodo_id", columnList = "log_book_id")})
+		indexes = {@Index(name = "idx_action_todo_log_actiontodo_id", columnList = "action_todo_id")})
 public class TodoLog implements ActionLog {
 
 	@Id
@@ -24,7 +24,7 @@ public class TodoLog implements ActionLog {
 	private Instant createdDateTime;
 
 	@ManyToOne
-	@JoinColumn(name = "log_book_id", nullable = false)
+	@JoinColumn(name = "action_todo_id", nullable = false)
 	private Todo todo;
 
 	@Column(name = "message")

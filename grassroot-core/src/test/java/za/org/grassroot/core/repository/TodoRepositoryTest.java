@@ -48,8 +48,8 @@ public class TodoRepositoryTest {
     public void shouldSaveAndRetrieveLogBookForGroup()  {
 
         User user = userRepository.save(new User("001111141"));
-        Group group = groupRepository.save(new Group("test logbook", user));
-        Group groupUnrelated = groupRepository.save(new Group("not related logbook", user));
+        Group group = groupRepository.save(new Group("test action", user));
+        Group groupUnrelated = groupRepository.save(new Group("not related action", user));
         Todo lb1 = todoRepository.save(new Todo(user, group, "just do it", addHoursFromNow(2)));
         Todo lbUnrelated = todoRepository.save(new Todo(user, groupUnrelated, "just do it too", addHoursFromNow(2)));
         List<Todo> list = todoRepository.findByParentGroupAndCancelledFalse(group);
@@ -61,8 +61,8 @@ public class TodoRepositoryTest {
     public void shouldSaveAndRetrieveLogBookForGroupAndNotCompleted()  {
 
         User user = userRepository.save(new User("001111142"));
-        Group group = groupRepository.save(new Group("test logbook", user));
-        Group groupUnrelated = groupRepository.save(new Group("not related logbook", user));
+        Group group = groupRepository.save(new Group("test action", user));
+        Group groupUnrelated = groupRepository.save(new Group("not related action", user));
         Todo lb1 = todoRepository.save(new Todo(user, group, "just do it", addHoursFromNow(2)));
         Todo lbUnrelated = todoRepository.save(new Todo(user, groupUnrelated, "just do it too", addHoursFromNow(2)));
     }
@@ -71,7 +71,7 @@ public class TodoRepositoryTest {
     public void shouldSaveAndRetrieveLogBookForGroupAndCompleted()  {
 
         User user = userRepository.save(new User("001111143"));
-        Group group = groupRepository.save(new Group("test logbook", user));
+        Group group = groupRepository.save(new Group("test action", user));
         Todo lb1 = todoRepository.save(new Todo(user, group,"just do it", addHoursFromNow(2)));
         Todo lb2 = todoRepository.save(new Todo(user, group, "just do it too", addHoursFromNow(2)));
         lb1 = todoRepository.save(lb1);
@@ -81,10 +81,10 @@ public class TodoRepositoryTest {
     public void shouldSaveAndRetrieveLogBookAssignedToUser()  {
 
         User user = userRepository.save(new User("001111144"));
-        Group group = groupRepository.save(new Group("test logbook", user));
-        Todo lb1 = todoRepository.save(new Todo(user, group, "just do it", addHoursFromNow(2), 60, null, 3));
-        Todo lb2 = todoRepository.save(new Todo(user, group, "not assigned", addHoursFromNow(2)));
-        List<Todo> list = todoRepository.findByAssignedMembersAndActionByDateGreaterThan(user, Instant.now());
+        Group group = groupRepository.save(new Group("test action", user));
+        To-do lb1 = todoRepository.save(new To-do(user, group, "just do it", addHoursFromNow(2), 60, null, 3));
+        To-do lb2 = todoRepository.save(new To-do(user, group, "not assigned", addHoursFromNow(2)));
+        List<To-do> list = todoRepository.findByAssignedMembersAndActionByDateGreaterThan(user, Instant.now());
         assertEquals(1,list.size());
 //        lb2.setAssignedToUser(user);
         lb2 = todoRepository.save(lb2);
@@ -97,7 +97,7 @@ public class TodoRepositoryTest {
     public void shouldSaveAndRetrieveLogBookAssignedToUserAndCompleted()  {
 
         User user = userRepository.save(new User("001111145"));
-        Group group = new Group("test logbook", user);
+        Group group = new Group("test action", user);
         group.addMember(user);
         groupRepository.save(group);
 
@@ -123,7 +123,7 @@ public class TodoRepositoryTest {
     public void shouldSaveAndRetrieveReplicatedEntries() {
 
         User user = userRepository.save(new User("08601112222"));
-        Group groupParent = groupRepository.save(new Group("test replicating logbooks", user));
+        Group groupParent = groupRepository.save(new Group("test replicating actions", user));
         Group group2 = groupRepository.save(new Group("subgroup1", user, groupParent));
         Group group3 = groupRepository.save(new Group("subgroup2", user, groupParent));
         Group group4 = groupRepository.save(new Group("subgroup11", user, group2));
@@ -135,7 +135,7 @@ public class TodoRepositoryTest {
         subGroups.add(group4);
         assertThat(subGroups.size(), is(3));
 
-        String message = "check replicating logbooks";
+        String message = "check replicating actions";
         Instant dueDate1 = LocalDateTime.now().plusHours(2).toInstant(ZoneOffset.UTC);
         Instant dueDate2 = LocalDateTime.now().plusMonths(2).toInstant(ZoneOffset.UTC);
 
@@ -148,8 +148,8 @@ public class TodoRepositoryTest {
             replicatedEntries.add(lbChild);
         }
 
-        // todo: change logbook design so replication references logbook entry, not group, then don't need the
-        // todo: (contd) query checking date & time (which is not going to work) or message (which risks false returns in real life)
+        // todo: change action/todo design so replication references action/todo entry, not group, then don't need the
+        // todo: (contd) query checking date & time (which is not going to work) or message (which risks false returns)
 
         List<Todo> replicatedEntries2 = new ArrayList<>();
         Todo lbParent2 = todoRepository.save(new Todo(user, groupParent, message, dueDate2));

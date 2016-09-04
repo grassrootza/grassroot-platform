@@ -11,7 +11,7 @@ import javax.persistence.MappedSuperclass;
 @MappedSuperclass
 public abstract class TodoNotification extends Notification {
 	@ManyToOne
-	@JoinColumn(name = "log_book_id")
+	@JoinColumn(name = "action_todo_id")
 	private Todo todo;
 
 	@Override

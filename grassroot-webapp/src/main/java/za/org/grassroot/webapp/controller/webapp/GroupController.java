@@ -443,7 +443,6 @@ public class GroupController extends BaseController {
         model.addAttribute("roles", roleDescriptions);
 
         return "group/change_multiple";
-
     }
 
     @RequestMapping(value = "change_multiple", params = {"addMember"})

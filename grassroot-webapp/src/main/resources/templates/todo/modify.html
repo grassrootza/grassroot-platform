@@ -15,7 +15,7 @@
   <div layout:fragment="messages"></div>
   <div class="well">
 
-    <form th:object="${todo}" th:action="@{/log/modify}" method="post" autocomplete="off" class="form-horizontal">
+    <form th:object="${todo}" th:action="@{/todo/modify}" method="post" autocomplete="off" class="form-horizontal">
       <input type="hidden" th:field="*{id}" th:value="*{id}" />
       <div class="form-group">
         <label for="group" class="col-md-2 control-label">Group: </label>

@@ -66,8 +66,8 @@ public class Account implements Serializable {
     private boolean relayableMessages;
 
     @Basic
-    @Column(name="logbook_extra")
-    private boolean logbookExtraMessages;
+    @Column(name="action_todo_extra")
+    private boolean todoExtraMessages;
 
     /*
     Constructors
@@ -95,7 +95,7 @@ public class Account implements Serializable {
         this.enabled = true;
         this.freeFormMessages = true;
         this.relayableMessages = true;
-        this.logbookExtraMessages = true;
+        this.todoExtraMessages = true;
 
     }
 
@@ -106,7 +106,7 @@ public class Account implements Serializable {
         this.enabled = enabled;
         this.freeFormMessages = enabled;
         this.relayableMessages = enabled;
-        this.logbookExtraMessages = enabled;
+        this.todoExtraMessages = enabled;
 
     }
 
@@ -196,9 +196,9 @@ public class Account implements Serializable {
         this.relayableMessages = relayableMessages;
     }
 
-    public boolean isLogbookExtraMessages() { return logbookExtraMessages; }
+    public boolean isTodoExtraMessages() { return todoExtraMessages; }
 
-    public void setLogbookExtraMessages(boolean logbookExtraMessages) { this.logbookExtraMessages = logbookExtraMessages; }
+    public void setTodoExtraMessages(boolean todoExtraMessages) { this.todoExtraMessages = todoExtraMessages; }
 
     /*
     Helper methods for adding and removing administrators and groups

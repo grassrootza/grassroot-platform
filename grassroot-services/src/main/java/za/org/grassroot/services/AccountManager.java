@@ -95,7 +95,7 @@ public class AccountManager implements AccountManagementService {
         Account savedAccount = accountRepository.findOne(changedAccount.getId());
         savedAccount.setFreeFormMessages(changedAccount.isFreeFormMessages());
         savedAccount.setRelayableMessages(changedAccount.isRelayableMessages());
-        savedAccount.setLogbookExtraMessages(changedAccount.isLogbookExtraMessages());
+        savedAccount.setTodoExtraMessages(changedAccount.isTodoExtraMessages());
         return accountRepository.save(savedAccount);
     }
 

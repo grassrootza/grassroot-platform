@@ -118,7 +118,7 @@
                       <a th:href="@{vote/answer(eventUid=${task.taskUid},answer=maybe)}" class="btn btn-default btn-sm">Abstain</a>
                     </div>
                     <div th:case="TODO">
-                      <a th:href="@{log/complete(logBookUid=${task.taskUid})}" class="btn btn-default btn-sm">Mark complete</a>
+                      <a th:href="@{todo/complete(logBookUid=${task.taskUid})}" class="btn btn-default btn-sm">Mark complete</a>
                     </div>
                   </div>
                 </div>
@@ -303,11 +303,11 @@
         var assigned = wholeGroup ? "The action is assigned to the whole group" :
           "The action is assigned to " + task.memberCount + " members";
         summary.html("To-do for " + task.parentName + ", due by " + deadline + ". " + assigned + suffix);
-        replyForm.attr("action", "log/complete");
+        replyForm.attr("action", "todo/complete");
         replyForm.find("#taskUid").attr("name", "logBookUid");
         replyForm.find("#taskModalYesButton").text("Mark completed").toggle(!replied);
         replyForm.find("#taskModalNoButton").hide();
-        detailsButton.attr("href", "log/details?logBookUid=" + uid).show();
+        detailsButton.attr("href", "todo/details?logBookUid=" + uid).show();
       }
 
       modal.find("#taskModalTitle").html(type + ": " + task.title);

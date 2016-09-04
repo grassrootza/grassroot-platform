@@ -51,7 +51,7 @@ public abstract class Notification implements Serializable {
 	private EventLog eventLog;
 
 	@ManyToOne
-	@JoinColumn(name = "log_book_log_id")
+	@JoinColumn(name = "action_todo_log_id")
 	private TodoLog todoLog;
 
 	@ManyToOne

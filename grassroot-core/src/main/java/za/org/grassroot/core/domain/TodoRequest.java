@@ -14,7 +14,7 @@ public class TodoRequest extends AbstractTodoEntity {
 
 	@ManyToMany(cascade = CascadeType.ALL)
 	@JoinTable(name = "action_todo_request_assigned_members",
-			joinColumns = @JoinColumn(name = "log_book_request_id", nullable = false),
+			joinColumns = @JoinColumn(name = "action_todo_request_id", nullable = false),
 			inverseJoinColumns = @JoinColumn(name = "user_id", nullable = false)
 	)
 	private Set<User> assignedMembers = new HashSet<>();

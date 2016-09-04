@@ -298,9 +298,9 @@
           <button class="btn btn-default">Call a meeting</button></a>
         <a th:if="${canCallVote}" href="" th:href="@{/vote/create(groupUid=${group.uid})}">
           <button class="btn btn-default">Take a vote</button></a>
-        <a th:if="${canRecordAction}" href="" th:href="@{/log/create(groupUid=${group.uid})}">
+        <a th:if="${canRecordAction}" href="" th:href="@{/todo/create(groupUid=${group.uid})}">
           <button class="btn btn-default">Record action</button></a>
-        <a href="" th:href="@{/log/view(groupUid=${group.uid})}">
+        <a href="" th:href="@{/todo/view(groupUid=${group.uid})}">
           <button class="btn btn-default">View to-dos</button></a>
       </div>
     </div>
@@ -345,10 +345,10 @@
             </div>
 
             <div th:case="TODO" th:with="deadline=${#temporals.format(task.deadlineDateTime,'EEE d MMM')}">
-              <a href="" th:href="@{/log/details(logBookUid=${task.taskUid})}"><b>TODO:</b>
+              <a href="" th:href="@{/todo/details(logBookUid=${task.taskUid})}"><b>TODO:</b>
                 <span th:text="${task.title}"></span> (due <span th:text="${#temporals.format(task.deadlineDateTime, 'd MMM')}">11 Sep 2015</span>)</a>
               <div th:unless="${task.hasResponded}" class="pull-right">
-                <a th:href="@{/log/complete(logBookUid=${task.taskUid})}" class="btn btn-default btn-xs">Mark as completed</a>
+                <a th:href="@{/todo/complete(logBookUid=${task.taskUid})}" class="btn btn-default btn-xs">Mark as completed</a>
               </div>
             </div>
 

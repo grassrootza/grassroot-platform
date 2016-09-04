@@ -8,7 +8,7 @@ import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
 
 @Entity
-@DiscriminatorValue("LOG_BOOK_REMINDER")
+@DiscriminatorValue("TODO_REMINDER")
 public class TodoReminderNotification extends TodoNotification {
 	private TodoReminderNotification() {
 		// for JPA

@@ -24,18 +24,16 @@ import za.org.grassroot.webapp.model.web.TodoWrapper;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
  * Created by luke on 2016/01/02.
  */
 @Controller
-@RequestMapping("/log/")
+@RequestMapping("/todo/")
 public class TodoController extends BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(TodoController.class);
-    private static final DateTimeFormatter pickerParser = DateTimeFormatter.ofPattern("dd/MM/yyyy h:mm a");
 
     @Autowired
     private GroupBroker groupBroker;
@@ -65,7 +63,7 @@ public class TodoController extends BaseController {
             model.addAttribute("parent", parent);
             model.addAttribute("logBook", wrapper);
 
-            return "log/create_meeting";
+            return "todo/create_meeting";
 
         } else {
 
@@ -93,7 +91,7 @@ public class TodoController extends BaseController {
             entryWrapper.setReminderMinutes(AbstractTodoEntity.DEFAULT_REMINDER_MINUTES);
 
             model.addAttribute("entry", entryWrapper);
-            return "log/create";
+            return "todo/create";
 
         }
 
@@ -126,7 +124,7 @@ public class TodoController extends BaseController {
 
         log.info("Time to create, store, logbooks: {} msecs", System.currentTimeMillis() - startTime);
 
-        addMessage(redirectAttributes, MessageType.SUCCESS, "log.creation.success", request);
+        addMessage(redirectAttributes, MessageType.SUCCESS, "todo.creation.success", request);
         // redirectAttributes.addAttribute("logBookUid", created.getUid());
 
         return "redirect:/home";
@@ -140,15 +138,15 @@ public class TodoController extends BaseController {
                 todo.getParentUid(), todo.getMessage(), todo.getActionByDate(),
                 todo.getReminderMinutes(), false, Collections.emptySet());
 
-        addMessage(attributes, MessageType.SUCCESS, "log.creation.success", request);
+        addMessage(attributes, MessageType.SUCCESS, "todo.creation.success", request);
         attributes.addAttribute("logBookUid", created.getUid());
 
-        return "redirect:/log/details";
+        return "redirect:/todo/details";
 
     }
 
     /**
-     * SECTION: Views and methods for examining a group's logbook
+     * SECTION: Views and methods for examining a group's actions and todos
      * The standard view just looks at the entry as applied to the group ... There's a click through to check sub-group ones
      */
     @RequestMapping(value = "view")
@@ -164,7 +162,7 @@ public class TodoController extends BaseController {
         model.addAttribute("completedEntries", completedEntries);
         log.info("Got back this many complete entries ... " + completedEntries.size());
 
-        return "log/view";
+        return "todo/view";
     }
 
     @RequestMapping(value = "details")
@@ -202,7 +200,7 @@ public class TodoController extends BaseController {
             model.addAttribute("parentEntryGroup", todoEntry.getReplicatedGroup());
         }
 
-        return "log/details";
+        return "todo/details";
     }
 
     @RequestMapping("complete")
@@ -214,7 +212,7 @@ public class TodoController extends BaseController {
                 todoEntry.getAncestorGroup().getMembers() : todoEntry.getAssignedMembers();
         model.addAttribute("assignedMembers", assignedMembers);
 
-        return "log/complete";
+        return "todo/complete";
     }
 
     @RequestMapping(value = "complete-do", method = RequestMethod.POST)
@@ -237,7 +235,7 @@ public class TodoController extends BaseController {
 	        todoBroker.confirmCompletion(sessionUserUid, todo.getUid(), LocalDateTime.now());
         }
 
-        addMessage(model, MessageType.SUCCESS, "log.completed.done", request);
+        addMessage(model, MessageType.SUCCESS, "todo.completed.done", request);
         Group group = (Group) todo.getParent();
         return viewGroupLogBook(model, group.getUid());
     }
@@ -262,7 +260,7 @@ public class TodoController extends BaseController {
             model.addAttribute("assignedUser", todo.getAssignedToUser());
 */
 
-        return "log/modify";
+        return "todo/modify";
     }
 
     // todo: permission checking
@@ -283,7 +281,6 @@ public class TodoController extends BaseController {
         if (todo.getReminderMinutes() != savedTodo.getReminderMinutes())
             savedTodo.setReminderMinutes(todo.getReminderMinutes());
 
-        log.info("Are we going to assigned this to a user? ... " + assignToUser);
         // todo: implement this using new design
 /*
         if (!assignToUser)
@@ -294,7 +291,7 @@ public class TodoController extends BaseController {
 
         savedTodo = todoBroker.update(savedTodo);
 
-        addMessage(model, MessageType.SUCCESS, "log.modified.done", request);
+        addMessage(model, MessageType.SUCCESS, "todo.modified.done", request);
         return viewTodoDetails(model, savedTodo.getUid());
     }
 

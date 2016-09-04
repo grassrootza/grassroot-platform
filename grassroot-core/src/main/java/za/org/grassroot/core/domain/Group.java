@@ -103,8 +103,8 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     private Set<Todo> todos = new HashSet<>();
 
 	/**
-     * These are all descendant logbooks contained maybe in other non-group entities beneath this group.
-     * This does not include logbooks under subgroups!!!
+     * These are all descendant actions/todos contained maybe in other non-group entities beneath this group.
+     * This does not include actions/todos under subgroups!!!
      */
     @OneToMany(mappedBy = "ancestorGroup")
     private Set<Todo> descendantTodos = new HashSet<>();

@@ -16,6 +16,7 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.*;
+import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.MeetingWrapper;
 
@@ -95,15 +96,23 @@ public class MeetingController extends BaseController {
         log.info("The meeting wrapper as passed back to us: " + meeting.toString());
 
         // todo: move parent selection into MeetingWrapper when implement non-group meetings
-        eventBroker.createMeeting(getUserProfile().getUid(), selectedGroupUid, JpaEntityType.GROUP,
-                                  meeting.getTitle(), meeting.getEventDateTime(), meeting.getLocation(),
-                                  meeting.isIncludeSubGroups(), meeting.isRsvpRequired(), meeting.isRelayable(),
-                                  meeting.getReminderType(), meeting.getCustomReminderMinutes(), meeting.getDescription(),
-                                  Collections.emptySet(), MeetingImportance.ORDINARY);
+        try {
+            eventBroker.createMeeting(getUserProfile().getUid(), selectedGroupUid, JpaEntityType.GROUP,
+                    meeting.getTitle(), meeting.getEventDateTime(), meeting.getLocation(),
+                    meeting.isIncludeSubGroups(), meeting.isRsvpRequired(), meeting.isRelayable(),
+                    meeting.getReminderType(), meeting.getCustomReminderMinutes(), meeting.getDescription(),
+                    Collections.emptySet(), MeetingImportance.ORDINARY);
 
-        addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.creation.success", request);
-        redirectAttributes.addAttribute("groupUid", selectedGroupUid);
-        return "redirect:/group/view";
+            addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.creation.success", request);
+            redirectAttributes.addAttribute("groupUid", selectedGroupUid);
+            return "redirect:/group/view";
+        } catch (EventStartTimeNotInFutureException e) {
+            addMessage(model, MessageType.ERROR, "meeting.creation.time.error", request);
+            Group group = groupBroker.load(selectedGroupUid);
+            model.addAttribute("group", group);
+            model.addAttribute("reminderOptions", reminderMinuteOptions(false));
+            return "meeting/create";
+        }
     }
 
     /**
