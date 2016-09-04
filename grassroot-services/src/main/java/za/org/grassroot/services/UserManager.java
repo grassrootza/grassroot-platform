@@ -163,7 +163,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             userToUpdate.setUsername(phoneNumber);
             userToUpdate.setHasAndroidProfile(true);
             userToUpdate.setMessagingPreference(UserMessagingPreference.ANDROID_APP);
-            userToUpdate.setAlertPreference(AlertPreference.NOTIFY_ALL_EVENTS);
+            userToUpdate.setAlertPreference(AlertPreference.NOTIFY_NEW_AND_REMINDERS);
             userToUpdate.setHasInitiatedSession(true);
             userToSave = userToUpdate;
 
@@ -174,7 +174,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             userProfile.setDisplayName(userDTO.getDisplayName());
             userProfile.setHasAndroidProfile(true);
             userProfile.setMessagingPreference(UserMessagingPreference.ANDROID_APP);
-            userProfile.setAlertPreference(AlertPreference.NOTIFY_ALL_EVENTS);
+            userProfile.setAlertPreference(AlertPreference.NOTIFY_NEW_AND_REMINDERS);
             userToSave = userProfile;
         }
 
